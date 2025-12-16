@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Building2, ChevronLeft, ChevronRight, Gauge } from "lucide-react"
+import { Building2, CalendarCheck, ChevronLeft, ChevronRight, Gauge, Users } from "lucide-react"
 import Image from "next/image"
 import { useUi } from "@/lib/store/ui.store"
 import { cn } from "@/lib/utils"
@@ -13,7 +13,8 @@ import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 export const ICON_MAP = {
   Gauge,
-  Building2,
+  Users,
+  CalendarCheck,
 } as const
 
 export function Sidebar() {
