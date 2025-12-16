@@ -16,11 +16,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { darkMode, sidebarCollapsed } = useUi()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login")
-    }
-  }, [isAuthenticated, router])
 
   useEffect(() => {
     if (darkMode) {
@@ -30,9 +25,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [darkMode])
 
-  if (!isAuthenticated) {
-    return null
-  }
 
   return (
     <div className="min-h-screen bg-background">

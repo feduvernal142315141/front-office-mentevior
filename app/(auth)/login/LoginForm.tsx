@@ -42,7 +42,7 @@ export function LoginForm() {
             htmlFor="email"
             className="block text-[13px] 2xl:text-[14px] font-medium text-[var(--color-login-text-primary)]"
           >
-            Email
+            Email <span className="text-[#2563EB]">*</span>
           </label>
 
           <input
@@ -75,7 +75,7 @@ export function LoginForm() {
             htmlFor="password"
             className="block text-[13px] 2xl:text-[14px] font-medium text-[var(--color-login-text-primary)]"
           >
-            Password
+            Password <span className="text-[#2563EB]">*</span>
           </label>
 
           <div className="relative">

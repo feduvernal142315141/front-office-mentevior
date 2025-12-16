@@ -282,7 +282,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const login = async (email: string, password: string) => {
     try {
-      console.log("Logging in user:", email);
       const encrypted = await encryptRsa(password);
 
       const response = await serviceLoginManagerUserAuth({

@@ -7,6 +7,9 @@ import { Gauge, Calendar, Users, UserCog, BarChart3, Settings, Shield, ChevronLe
 import { useSession } from "@/lib/store/session.store"
 import { useUi } from "@/lib/store/ui.store"
 import { cn } from "@/lib/utils"
+import { navItems } from "./nav-items"
+
+const navigation = navItems
 
 const ICON_MAP: Record<string, any> = {
   Gauge,
@@ -20,10 +23,7 @@ const ICON_MAP: Record<string, any> = {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user } = useSession()
   const { sidebarCollapsed, toggleSidebar } = useUi()
-
-  if (!user) return null
 
 
   return (
@@ -77,7 +77,7 @@ export function Sidebar() {
       <nav className={cn("flex-1", sidebarCollapsed ? "px-3 overflow-visible" : "px-5 overflow-y-auto")}>
         <div className={cn("flex flex-col gap-6", sidebarCollapsed ? "items-center" : "")}>
           {navigation.map((item) => {
-            const Icon = ICON_MAP[item.icon]
+            const Icon = ICON_MAP[0]
             const isActive = pathname === item.href
 
             return (
@@ -129,13 +129,13 @@ export function Sidebar() {
 
       <div className="sidebar-separator" />
 
-      <div className={cn("pb-8 flex", sidebarCollapsed ? "px-3 justify-center" : "px-5")}>
+      {/* <div className={cn("pb-8 flex", sidebarCollapsed ? "px-3 justify-center" : "px-5")}>
         <Link href="/settings">
           <div className="sidebar-avatar">
             <span className="text-sm font-bold text-primary">{user.name.charAt(0)}</span>
           </div>
         </Link>
-      </div>
+      </div> */}
     </motion.aside>
   )
 }

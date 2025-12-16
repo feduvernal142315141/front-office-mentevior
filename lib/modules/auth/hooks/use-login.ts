@@ -20,6 +20,7 @@ export function useLogin() {
       const success = await login(email, password);
 
       if (success) {
+        console.log("Login successful, redirecting to /dashboard");
         router.replace("/dashboard");
 
         requestAnimationFrame(() => setTimeout(() => {}, 0));

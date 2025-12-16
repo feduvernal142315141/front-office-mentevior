@@ -14,7 +14,7 @@ export const serviceGetPublicKey = async (
 export const serviceLoginManagerUserAuth = async (
     data: LoginManagerUserAuthRequest): ServiceResponse<LoginManagerUserAuthResponse> => {
     return apiInstance
-        .post<ResponseEntity<LoginManagerUserAuthResponse>>(`/managers-users/auth/login`, data)
+        .post<ResponseEntity<LoginManagerUserAuthResponse>>(`/member-users/auth/login`, data)
 }
 
 export const serviceRefreshToken = async (
