@@ -23,18 +23,16 @@ const variantStyles: Record<Variant, string> = {
   `,
 
   secondary: `
-    bg-white text-slate-700 
-    border border-slate-300 
-    hover:bg-slate-50 
+    bg-white
+    text-slate-800
+    border border-slate-300
+
+    hover:bg-slate-50
     active:bg-slate-100
-    shadow-[0_2px_8px_rgba(0,0,0,0.06)]
-    
-    dark:bg-slate-800 dark:text-slate-200 
-    dark:border-slate-700 
-    dark:hover:bg-slate-700/60 
-    dark:active:bg-slate-700
-    dark:shadow-[0_2px_8px_rgba(0,0,0,0.35)]
-  `,
+
+    shadow-[0_2px_10px_rgba(0,0,0,0.06)]
+  `
+,
 
   ghost: `
     text-slate-600 

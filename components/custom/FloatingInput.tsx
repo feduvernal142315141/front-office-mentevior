@@ -36,45 +36,21 @@ export function FloatingInput({
           placeholder=" "
           autoComplete={autoComplete}
           className={cn(
-              `
-              peer
-              premium-input
+            `
+            peer
+            premium-input
+            h-[52px] 2xl:h-[56px]
+            px-4 pr-12
+            rounded-[16px]
+            text-[15px] 2xl:text-[16px]
 
-              h-[52px] 2xl:h-[56px]
-              px-4
-              rounded-[16px]
-
-              text-[15px] 2xl:text-[16px]
-              text-[var(--color-login-text-primary)]
-
-              bg-[var(--color-login-input-bg)]
-              border border-[var(--color-login-input-border)]
-
-              placeholder:text-transparent
-
-              outline-none
-              focus:outline-none
-
-              transition-all duration-200 ease-out
-
-              focus:border-[#2563EB]
-              focus:ring-4
-              focus:ring-[#2563EB]/15
+            placeholder:text-transparent
           `,
-              hasError &&
-              `
-              border-red-500
-              focus:border-red-500
-              focus:ring-red-500/20
-              `,
-              isSuccess &&
-              `
-              border-green-500
-              focus:border-green-500
-              focus:ring-green-500/20
-              `
-          )}
-          />
+            hasError && "premium-input-error",
+            isSuccess &&
+              "border-green-500 focus:border-green-500 focus:ring-green-500/20"
+            )}
+        />
 
 
         <label
@@ -84,7 +60,7 @@ export function FloatingInput({
             pointer-events-none
             transition-all duration-200 ease-out
 
-            bg-white/80
+            bg-white/20
             backdrop-blur-md
 
             text-sm
@@ -105,7 +81,6 @@ export function FloatingInput({
             peer-[&:not(:placeholder-shown)]:top-0
             peer-[&:not(:placeholder-shown)]:-translate-y-1/2
             peer-[&:not(:placeholder-shown)]:text-xs
-            peer-[&:not(:placeholder-shown)]:text-[#2563EB]
           `
           )}
         >

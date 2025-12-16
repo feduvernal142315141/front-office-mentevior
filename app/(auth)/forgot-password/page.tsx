@@ -29,15 +29,12 @@ export default function ForgotPasswordPage() {
         [color-scheme:light]
       "
     >
-      {/* SUBTLE BACKGROUND GLOW */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="w-[420px] h-[420px] bg-blue-500/10 rounded-full blur-[180px]" />
       </div>
 
-      {/* CONTENT */}
       <div className="relative flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
-          {/* HEADER */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold text-gray-900">
               Recover your password
@@ -47,7 +44,6 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          {/* CARD */}
           <div
             className="
               relative rounded-[28px] p-10
@@ -57,7 +53,6 @@ export default function ForgotPasswordPage() {
             "
           >
             <form onSubmit={onSubmit} className="space-y-7">
-              {/* EMAIL */}
               <FloatingInput
                 label="Email"
                 type="email"
@@ -70,7 +65,6 @@ export default function ForgotPasswordPage() {
                 isSuccess={isValidEmail && touched.email}
               />                          
 
-              {/* SUCCESS */}
               {isSuccess && (
                 <div
                   className="
@@ -83,7 +77,6 @@ export default function ForgotPasswordPage() {
                 </div>
               )}
 
-              {/* ERROR */}
               {error && (
                 <div
                   className="
@@ -96,7 +89,6 @@ export default function ForgotPasswordPage() {
                 </div>
               )}
 
-              {/* ACTIONS */}
               <div className="flex gap-4 pt-2">
                 <Button
                   type="button"
@@ -113,7 +105,7 @@ export default function ForgotPasswordPage() {
                   variant="primary"
                   loading={isLoading}
                   disabled={!isValidEmail || isSuccess}
-                  className="flex-1 shadow-lg shadow-blue-500/25"
+                  className="shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 flex-1"
                 >
                   Send reset link
                 </Button>
@@ -121,7 +113,6 @@ export default function ForgotPasswordPage() {
             </form>
           </div>
 
-          {/* FOOTER */}
           <p className="mt-6 text-center text-xs text-gray-500 leading-relaxed">
             Your password will be encrypted
             <br />

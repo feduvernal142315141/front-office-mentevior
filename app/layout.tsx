@@ -7,6 +7,7 @@ import {Toaster} from "sonner"
 import {InterceptorsInitializer} from "@/components/interceptors-initializer";
 import { InterceptorProvider } from "@/lib/contexts/interceptor-context"
 import { GlobalAlertDialog } from "@/components/global-alert-dialog"
+import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata: Metadata = {
     title: "MenteVior Back Office",
@@ -21,19 +22,24 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className="" suppressHydrationWarning>
-        <body className={`font-sans antialiased`}>
-        <InterceptorProvider>
-            <AuthProvider>
-                <AlertProvider>
+          <body className={`font-sans antialiased`}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem={false}  
+            >
+              <InterceptorProvider>
+                <AuthProvider>
+                  <AlertProvider>
                     <InterceptorsInitializer></InterceptorsInitializer>
                     <GlobalAlertDialog />
                     {children}
-                </AlertProvider>
-            </AuthProvider>
-        </InterceptorProvider>
-        <Toaster position="top-right" richColors closeButton/>
-
-        </body>
+                  </AlertProvider>
+                </AuthProvider>
+              </InterceptorProvider>
+              <Toaster position="top-right" richColors closeButton/>
+            </ThemeProvider>
+          </body>
         </html>
     )
 }
