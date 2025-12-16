@@ -50,7 +50,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="h-16 navbar-glass sticky top-0 z-40">
+    <header className="h-16 navbar-glass top-0 z-40">
       <div className="h-full flex items-center justify-between px-6 gap-6">
 
         {/* SEARCH */}

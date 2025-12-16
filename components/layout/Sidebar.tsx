@@ -1,141 +1,235 @@
 "use client"
 
-import { usePathname } from 'next/navigation'
+import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { motion } from "framer-motion"
-import { Gauge, Calendar, Users, UserCog, BarChart3, Settings, Shield, ChevronLeft, ChevronRight, Activity } from 'lucide-react'
-import { useSession } from "@/lib/store/session.store"
+import { motion, AnimatePresence } from "framer-motion"
+import { Building2, ChevronLeft, ChevronRight, Gauge } from "lucide-react"
+import Image from "next/image"
 import { useUi } from "@/lib/store/ui.store"
 import { cn } from "@/lib/utils"
 import { navItems } from "./nav-items"
+import { useEffect, useState } from "react"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 
-const navigation = navItems
-
-const ICON_MAP: Record<string, any> = {
+export const ICON_MAP = {
   Gauge,
-  Calendar,
-  Users,
-  UserCog,
-  BarChart3,
-  Settings,
-  Shield,
-}
+  Building2,
+} as const
 
 export function Sidebar() {
   const pathname = usePathname()
   const { sidebarCollapsed, toggleSidebar } = useUi()
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
+  const isMobile = useMediaQuery("(max-width: 1024px)")
+
+  useEffect(() => {
+    if (isMobile && !sidebarCollapsed) {
+      toggleSidebar()
+    }
+
+    if (!isMobile && sidebarCollapsed) {
+      toggleSidebar()
+    }
+  }, [isMobile])
 
   return (
     <motion.aside
       initial={false}
-      animate={{ width: sidebarCollapsed ? 80 : 280 }}
-      transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
-      className="fixed left-0 top-0 h-screen sidebar-premium flex flex-col z-40"
+      animate={{ width: sidebarCollapsed ? 80 
+      : 280, }}
+      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+      className="
+        fixed left-0 top-0 z-40 h-screen
+        bg-white dark:bg-gradient-to-b dark:from-[#0B1220] dark:to-[#0F172A]
+        border-r border-border/30
+        backdrop-blur-xl
+        flex flex-col
+        shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)]
+      "
     >
-      <div
-        className={cn("flex items-center pt-8 pb-6", sidebarCollapsed ? "flex-col gap-3 px-3" : "justify-between px-5")}
-      >
-        {sidebarCollapsed ? (
-          <>
-            <Link href="/dashboard">
-              <div className="sidebar-logo flex items-center justify-center">
-                <Activity className="h-6 w-6 text-white" />
-              </div>
-            </Link>
+      <div className={`relative h-16 flex border-b border-border/20 ${sidebarCollapsed ? "items-center justify-center" : "px-6"}`}>
+        <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden group">
+          <div
+            className={cn(
+              "flex shrink-0 transition-all duration-300",
+              sidebarCollapsed ? "h-14 w-14" : "h-16 w-16",
+            )}
+          >
+            <Image
+              src="/logoMenteVior.png"
+              alt="MenteVior"
+              width={sidebarCollapsed ? 56 : 64}
+              height={sidebarCollapsed ? 56 : 64}
+              priority
+              className="object-contain transition-all duration-300 group-hover:scale-110 drop-shadow-[0_4px_12px_rgba(3,126,204,0.25)]"
+            />
+          </div>
 
-            <button
-              onClick={toggleSidebar}
-              className="sidebar-collapse-btn flex items-center justify-center"
-              aria-label="Expand sidebar"
-            >
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </>
-        ) : (
-          <>
-            <Link href="/dashboard" className="flex items-center gap-3">
-              <div className="sidebar-logo flex items-center justify-center">
-                <Activity className="h-6 w-6 text-white" />
-              </div>
-              <span className="font-bold text-lg bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent whitespace-nowrap">
-                MenteVior
-              </span>
-            </Link>
+          <AnimatePresence>
+            {!sidebarCollapsed && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col"
+              >
+                <span
+                  className="
+                  font-bold text-2xl tracking-tight
+                  bg-gradient-to-r from-[#037ECC] via-[#079CFB] to-[#037ECC]
+                  bg-clip-text text-transparent
+                  whitespace-nowrap
+                  animate-gradient
+                  bg-[length:200%_auto]
+                "
+                >
+                  MenteVior
+                </span>
+                
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Link>
 
-            <button
-              onClick={toggleSidebar}
-              className="sidebar-collapse-btn flex items-center justify-center flex-shrink-0"
-              aria-label="Collapse sidebar"
-            >
-              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </>
-        )}
+        <button
+          onClick={toggleSidebar}
+          className="
+            absolute -right-3 top-1/2 -translate-y-1/2
+            h-7 w-7 rounded-full
+            flex items-center justify-center
+            bg-gradient-to-br from-white to-slate-50
+            dark:from-[#1E293B] dark:to-[#0F172A]
+            border border-border/50
+            shadow-[0_2px_8px_rgba(0,0,0,0.08)]
+            dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]
+            hover:shadow-[0_4px_12px_rgba(3,126,204,0.2)]
+            hover:border-[#037ECC]/50
+            transition-all duration-200
+            group/btn
+            z-50
+          "
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover/btn:text-[#037ECC] transition-colors" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground group-hover/btn:text-[#037ECC] transition-colors" />
+          )}
+        </button>
       </div>
 
-      <nav className={cn("flex-1", sidebarCollapsed ? "px-3 overflow-visible" : "px-5 overflow-y-auto")}>
-        <div className={cn("flex flex-col gap-6", sidebarCollapsed ? "items-center" : "")}>
-          {navigation.map((item) => {
-            const Icon = ICON_MAP[0]
+      <nav className={cn("flex-1 pt-8", sidebarCollapsed ? "px-3" : "px-5")}>
+        <div className="flex flex-col gap-2">
+          {navItems.map((item) => {
+            const Icon = ICON_MAP[item.icon]
             const isActive = pathname === item.href
+
+            if (!Icon) return null
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn("w-full", sidebarCollapsed ? "flex justify-center" : "")}
+                onMouseEnter={() => setHoveredItem(item.href)}
+                onMouseLeave={() => setHoveredItem(null)}
+                className="relative"
               >
                 <motion.div
-                  whileHover={{ scale: sidebarCollapsed ? 1.02 : 1 }}
+                  layout
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="relative"
+                  className={cn(
+                    "relative h-12 rounded-xl flex items-center gap-4 transition-all duration-200",
+                    sidebarCollapsed ? "justify-center px-2" : "px-4",
+                    isActive
+                      ? "bg-gradient-to-r from-[#037ECC] to-[#079CFB] text-white shadow-[0_8px_24px_rgba(3,126,204,0.4)]"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:shadow-sm",
+                  )}
                 >
-                  {sidebarCollapsed ? (
-                    <div className={cn("sidebar-nav-item sidebar-item-hover", isActive && "sidebar-item-active")}>
-                      {Icon && (
-                        <Icon
-                          className={cn("h-6 w-6", isActive ? "text-white" : "text-[#334155] dark:text-[#9BB0C3]")}
-                        />
-                      )}
-                      <span className="sidebar-tooltip pointer-events-none">{item.label}</span>
-                    </div>
-                  ) : (
-                    <button
-                      className={cn(
-                        "w-full flex items-center gap-3 h-12 px-4 rounded-xl font-medium text-[15px]",
-                        "sidebar-item-hover transition-all duration-150",
-                        isActive && "sidebar-item-active",
-                        !isActive && "text-[#334155] dark:text-[#9BB0C3]",
-                      )}
-                    >
-                      {Icon && (
-                        <motion.div
-                          animate={isActive ? { scale: [1, 1.05, 1] } : { scale: 1 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <Icon className={cn("h-6 w-6", isActive && "text-white")} />
-                        </motion.div>
-                      )}
-                      <span className="truncate">{item.label}</span>
-                    </button>
+                  {isActive && !sidebarCollapsed && (
+                    <motion.span
+                      layoutId="sidebar-rail"
+                      className="
+                        absolute left-0 top-1/2 -translate-y-1/2
+                        h-8 w-1 rounded-r-full bg-white/90
+                        shadow-[0_0_8px_rgba(255,255,255,0.5)]
+                      "
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+
+                  <Icon className={cn("shrink-0 transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
+
+                  <AnimatePresence>
+                    {!sidebarCollapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="text-sm font-semibold tracking-wide"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+
+                  {isActive && sidebarCollapsed && (
+                    <motion.span
+                      layoutId="sidebar-dot"
+                      className="
+                        absolute bottom-1 left-1/2 -translate-x-1/2
+                        h-1 w-1 rounded-full bg-white
+                        shadow-[0_0_4px_rgba(255,255,255,0.8)]
+                      "
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
                   )}
                 </motion.div>
+
+                <AnimatePresence>
+                  {sidebarCollapsed && hoveredItem === item.href && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: -10, scale: 0.95 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="
+                        absolute left-[72px] top-1/2 -translate-y-1/2
+                        px-3 py-2 rounded-lg
+                        bg-slate-900 dark:bg-slate-800
+                        text-white text-sm font-medium
+                        shadow-[0_8px_24px_rgba(0,0,0,0.3)]
+                        border border-white/10
+                        whitespace-nowrap
+                        pointer-events-none
+                        z-50
+                        backdrop-blur-sm
+                      "
+                      style={{
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)",
+                      }}
+                    >
+                      {item.label}
+                      {/* Arrow */}
+                      <div
+                        className="
+                          absolute right-full top-1/2 -translate-y-1/2
+                          w-0 h-0
+                          border-t-[6px] border-t-transparent
+                          border-r-[6px] border-r-slate-900 dark:border-r-slate-800
+                          border-b-[6px] border-b-transparent
+                        "
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Link>
             )
           })}
         </div>
-      </nav>
-
-      <div className="sidebar-separator" />
-
-      {/* <div className={cn("pb-8 flex", sidebarCollapsed ? "px-3 justify-center" : "px-5")}>
-        <Link href="/settings">
-          <div className="sidebar-avatar">
-            <span className="text-sm font-bold text-primary">{user.name.charAt(0)}</span>
-          </div>
-        </Link>
-      </div> */}
+      </nav>      
     </motion.aside>
   )
 }
