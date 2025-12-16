@@ -23,7 +23,7 @@ export const navItems: NavItem[] = [
     disabled: true,
   },
   {
-    label: "Scheduless",
+    label: "Schedules",
     href: "/schedules",
     icon: "CalendarCheck",
     section: "system",
