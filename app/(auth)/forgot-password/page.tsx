@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
                   variant="secondary"
                   onClick={() => router.push("/login")}
                   disabled={isLoading}
-                  className="flex-1"
+                  className="shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 flex-1"
                 >
                   Back
                 </Button>

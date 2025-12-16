@@ -28,7 +28,6 @@ export function FloatingInput({
   return (
     <div className="w-full">
       <div className="relative w-full">
-        {/* INPUT */}
         <input
           type={type}
           value={value}
@@ -37,33 +36,47 @@ export function FloatingInput({
           placeholder=" "
           autoComplete={autoComplete}
           className={cn(
-            `
-            peer
-            premium-input
+              `
+              peer
+              premium-input
 
-            h-[52px] 2xl:h-[56px]
-            px-4
-            rounded-[16px]
+              h-[52px] 2xl:h-[56px]
+              px-4
+              rounded-[16px]
 
-            text-[15px] 2xl:text-[16px]
-            text-[var(--color-login-text-primary)]
+              text-[15px] 2xl:text-[16px]
+              text-[var(--color-login-text-primary)]
 
-            bg-[var(--color-login-input-bg)]
-            border border-[var(--color-login-input-border)]
+              bg-[var(--color-login-input-bg)]
+              border border-[var(--color-login-input-border)]
 
-            placeholder:text-transparent
+              placeholder:text-transparent
 
-            focus:border-[var(--color-login-input-border-focus)]
-            focus:ring-4
-            focus:ring-[var(--color-login-input-ring)]
+              outline-none
+              focus:outline-none
+
+              transition-all duration-200 ease-out
+
+              focus:border-[#2563EB]
+              focus:ring-4
+              focus:ring-[#2563EB]/15
           `,
-            hasError && "premium-input-error",
-            isSuccess &&
-              "border-green-500 focus:border-green-500 focus:ring-green-500/20"
+              hasError &&
+              `
+              border-red-500
+              focus:border-red-500
+              focus:ring-red-500/20
+              `,
+              isSuccess &&
+              `
+              border-green-500
+              focus:border-green-500
+              focus:ring-green-500/20
+              `
           )}
-        />
+          />
 
-        {/* FLOATING LABEL */}
+
         <label
           className={cn(
             `
