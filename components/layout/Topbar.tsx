@@ -28,16 +28,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useLogout } from "@/lib/modules/auth/hooks/use-logout"
 
 export function Topbar() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { logout, user } = useAuth()
+  const { user } = useAuth()
+  const { logout } = useLogout()
   const { darkMode, toggleDarkMode } = useUi()
   const router = useRouter()
 
   const handleLogout = () => {
     logout()
-    router.push("/login")
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -227,7 +228,7 @@ export function Topbar() {
 
                   {/* CHANGE PASSWORD */}
                   <DropdownMenuItem
-                    onClick={() => router.push("/settings")}
+                    onClick={() => router.push("/change-password")}
                     className="
                       group relative flex items-center gap-3
                       rounded-xl px-4 py-3 text-sm

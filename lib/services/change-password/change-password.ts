@@ -7,5 +7,5 @@ export const serviceUpdatePassword = async (
   data: RequestUpdatePassword
 ): ServiceResponse<string> => {
   return apiInstance
-    .put<ResponseEntity<string>>(`/manager-users/change-password`, data)
+    .put<ResponseEntity<string>>(`/member-users/change-password`, data)
 }

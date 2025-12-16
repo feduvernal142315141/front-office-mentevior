@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { useLogin } from "@/lib/modules/auth/hooks/use-login"
+import Link from "next/link"
 
 export function LoginForm() {
   const { onSubmit, isSubmitting, error } = useLogin()
@@ -156,20 +157,14 @@ export function LoginForm() {
           </button>
         </div>
 
-        <div className="text-center pt-2 animate-in fade-in duration-400 delay-1000">
-          <button
-            type="button"
-            className="
-              text-[13px] 2xl:text-[14px]
-              text-[var(--color-login-text-secondary)]
-              hover:text-[var(--color-login-blue-primary)]
-              transition-colors duration-200
-              hover:underline underline-offset-2
-            "
+        <div className="text-center">
+          <Link
+            href="/forgot-password"
+            className="text-[13px] text-black hover:text-[#2563EB] transition-colors duration-200"
           >
-            Forgot password?
-          </button>
-        </div>
+            Forgot password
+          </Link>
+      </div>
       </form>
 
       <div className="mt-10 2xl:mt-12 pt-2 animate-in fade-in duration-400 delay-1200">

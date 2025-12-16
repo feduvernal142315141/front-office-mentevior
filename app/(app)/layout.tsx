@@ -3,16 +3,17 @@
 import type React from "react"
 
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 import { useSession } from "@/lib/store/session.store"
 import { useUi } from "@/lib/store/ui.store"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Topbar } from "@/components/layout/Topbar"
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useSession()
+  const { token } = useAuth()
   const { darkMode, sidebarCollapsed } = useUi()
   const router = useRouter()
 
@@ -24,6 +25,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.remove("dark")
     }
   }, [darkMode])
+
+  if (!token) {
+    redirect("/login")
+  }
 
 
   return (

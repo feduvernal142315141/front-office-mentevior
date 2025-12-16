@@ -1,0 +1,104 @@
+"use client"
+
+import { cn } from "@/lib/utils"
+
+interface Props {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  onBlur: () => void
+  placeholder?: string
+  type?: React.HTMLInputTypeAttribute
+  hasError?: boolean
+  isSuccess?: boolean
+  autoComplete?: string
+}
+
+export function FloatingInput({
+  label,
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  type = "text",
+  hasError,
+  isSuccess,
+  autoComplete = "off",
+}: Props) {
+  return (
+    <div className="w-full">
+      <div className="relative w-full">
+        {/* INPUT */}
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          placeholder=" "
+          autoComplete={autoComplete}
+          className={cn(
+            `
+            peer
+            premium-input
+
+            h-[52px] 2xl:h-[56px]
+            px-4
+            rounded-[16px]
+
+            text-[15px] 2xl:text-[16px]
+            text-[var(--color-login-text-primary)]
+
+            bg-[var(--color-login-input-bg)]
+            border border-[var(--color-login-input-border)]
+
+            placeholder:text-transparent
+
+            focus:border-[var(--color-login-input-border-focus)]
+            focus:ring-4
+            focus:ring-[var(--color-login-input-ring)]
+          `,
+            hasError && "premium-input-error",
+            isSuccess &&
+              "border-green-500 focus:border-green-500 focus:ring-green-500/20"
+          )}
+        />
+
+        {/* FLOATING LABEL */}
+        <label
+          className={cn(
+            `
+            absolute left-4 px-1
+            pointer-events-none
+            transition-all duration-200 ease-out
+
+            bg-white/80
+            backdrop-blur-md
+
+            text-sm
+            text-[var(--color-login-text-muted)]
+
+            top-1/2 -translate-y-1/2
+
+            peer-placeholder-shown:top-1/2
+            peer-placeholder-shown:-translate-y-1/2
+            peer-placeholder-shown:text-sm
+            peer-placeholder-shown:text-[var(--color-login-text-muted)]
+
+            peer-focus:top-0
+            peer-focus:-translate-y-1/2
+            peer-focus:text-xs
+            peer-focus:text-[#2563EB]
+
+            peer-[&:not(:placeholder-shown)]:top-0
+            peer-[&:not(:placeholder-shown)]:-translate-y-1/2
+            peer-[&:not(:placeholder-shown)]:text-xs
+            peer-[&:not(:placeholder-shown)]:text-[#2563EB]
+          `
+          )}
+        >
+          {label} <span className="text-[#2563EB]">*</span>
+        </label>
+      </div>
+    </div>
+  )
+}
