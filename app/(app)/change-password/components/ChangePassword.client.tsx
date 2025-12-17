@@ -46,7 +46,7 @@ export default function ChangePassword() {
     const encryptedNewPassword = await encryptRsa(newPassword);
 
     const success = await handleChangePassword({
-      managerUserId: user?.id ?? "",
+      memberUserId: user?.id ?? "",
       oldPassword: encryptedCurrentPassword,
       newPassword: encryptedNewPassword,                  
     })

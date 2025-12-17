@@ -1,6 +1,6 @@
 
 export interface RequestUpdatePassword {
-  managerUserId: string;
+  memberUserId: string;
   oldPassword: string;
   newPassword: string;
 }

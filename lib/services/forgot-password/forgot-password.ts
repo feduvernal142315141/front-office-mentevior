@@ -7,7 +7,7 @@ import {RequestForgotPassword} from "@/lib/models/forgot-password/forgot-passwor
 export const serviceForgotPassword = async (
     data: RequestForgotPassword): ServiceResponse<boolean> => {
     return servicePost<RequestForgotPassword,boolean>(
-        `/managers-users/auth/forgot-password`,
+        `/member-users/auth/forgot-password`,
         data
     )
 }
