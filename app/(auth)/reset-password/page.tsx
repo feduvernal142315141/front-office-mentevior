@@ -36,7 +36,6 @@ function ResetPasswordContent() {
         [color-scheme:light]
       "
     >
-      {/* SUBTLE GRID */}
       <div
         className="
           absolute inset-0 opacity-40
@@ -44,7 +43,7 @@ function ResetPasswordContent() {
         "
       />
 
-      {/* SOFT GLOWS */}
+
       <div className="absolute top-1/4 left-1/3 w-[520px] h-[520px] bg-blue-500/10 rounded-full blur-[170px]" />
       <div className="absolute bottom-1/4 right-1/4 w-[420px] h-[420px] bg-cyan-400/10 rounded-full blur-[150px]" />
 
@@ -52,7 +51,6 @@ function ResetPasswordContent() {
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
           <PageHeader />
 
-          {/* CARD (igual feeling premium del Change Password) */}
           <div
             className="
               relative mt-8 rounded-[28px] p-10

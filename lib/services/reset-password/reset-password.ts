@@ -7,7 +7,7 @@ import {RequestResetPassword} from "@/lib/models/reset-password/reset-password";
 export const serviceResetPassword = async (
     data: RequestResetPassword): ServiceResponse<boolean> => {
     return servicePost<RequestResetPassword,boolean>(
-        `/managers-users/auth/reset-password`,
+        `/member-users/auth/reset-password`,
         data
     )
 }
