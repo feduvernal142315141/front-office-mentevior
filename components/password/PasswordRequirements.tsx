@@ -33,16 +33,16 @@ export function PasswordRequirements({ show, rules }: Props) {
           transition={{ duration: 0.2, ease: "easeOut" }}
           className="
             mt-3 rounded-2xl p-4
-            bg-white/70 dark:bg-white/[0.04]
+            bg-white/70
             backdrop-blur-xl
-            border border-gray-200/70 dark:border-white/[0.08]
+            border border-gray-200/70
             shadow-[0_12px_30px_rgba(2,6,23,0.08)]
           "
         >
           <p
             className="
               mb-3 text-xs font-semibold tracking-wide
-              text-gray-600 dark:text-white/60
+              text-gray-600 
             "
           >
             Password must contain
@@ -61,8 +61,8 @@ export function PasswordRequirements({ show, rules }: Props) {
                     rounded-full
                     ${
                       req.valid
-                        ? "bg-green-500/15 text-green-600 dark:text-green-400"
-                        : "bg-gray-200/60 dark:bg-white/10 text-gray-400 dark:text-white/30"
+                        ? "bg-green-500/15 text-green-600"
+                        : "bg-gray-200/60 text-gray-400 "
                     }
                   `}
                 >
@@ -79,8 +79,8 @@ export function PasswordRequirements({ show, rules }: Props) {
                     text-sm
                     ${
                       req.valid
-                        ? "text-green-700 dark:text-green-400 font-medium"
-                        : "text-gray-500 dark:text-white/40"
+                        ? "text-green-700 font-medium"
+                        : "text-gray-500"
                     }
                   `}
                 >

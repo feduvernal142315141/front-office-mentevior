@@ -60,11 +60,11 @@ export function PasswordField({
             pointer-events-none
             transition-all duration-200 ease-out
 
-            bg-white/20 dark:bg-[#0F162A]
+            bg-white/20
             backdrop-blur-md
 
             text-sm
-            text-slate-500 dark:text-slate-400
+            text-slate-500
 
             top-1/2 -translate-y-1/2
 
