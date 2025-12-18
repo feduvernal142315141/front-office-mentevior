@@ -13,6 +13,8 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogTitle,
+  AlertDialogPortal,
+  AlertDialogOverlay,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/custom/Button"
 import {
@@ -69,9 +71,10 @@ export function AlertProvider({ children }: { children: ReactNode }) {
       {children}
 
       <AlertDialog open={!!alert} onOpenChange={close}>
-        <AnimatePresence>
-          {alert && (
-            <AlertDialogContent asChild>
+        <AlertDialogPortal>
+          <AlertDialogOverlay className="z-[90]" />
+          <AnimatePresence>
+            {alert && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.96, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -81,14 +84,18 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                   ease: [0.16, 1, 0.3, 1],
                 }}
                 className="
+                  fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]
                   max-w-[360px] w-full
                   rounded-[22px]
-                  bg-white
-                  border border-gray-200
+                  bg-white dark:bg-gray-900
+                  border border-gray-200 dark:border-gray-800
                   shadow-[0_18px_36px_-14px_rgba(2,6,23,0.18)]
                   px-6 py-5
                   space-y-4
+                  z-[100]
                 "
+                role="alertdialog"
+                aria-modal="true"
               >
                 {/* ICON */}
                 <div className="flex justify-center">
@@ -112,13 +119,13 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                 </div>
 
                 {/* TITLE */}
-                <AlertDialogTitle className="text-center text-base font-semibold text-gray-900">
+                <AlertDialogTitle className="text-center text-base font-semibold text-gray-900 dark:text-white">
                   {alert.title}
                 </AlertDialogTitle>
 
                 {/* DESCRIPTION */}
                 {alert.description && (
-                  <AlertDialogDescription className="text-center text-[13px] text-gray-600">
+                  <AlertDialogDescription className="text-center text-[13px] text-gray-600 dark:text-gray-400">
                     {alert.description}
                   </AlertDialogDescription>
                 )}
@@ -152,9 +159,9 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                   )}
                 </div>
               </motion.div>
-            </AlertDialogContent>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
+        </AlertDialogPortal>
       </AlertDialog>
     </AlertContext.Provider>
   )

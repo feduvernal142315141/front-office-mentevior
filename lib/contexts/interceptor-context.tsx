@@ -222,7 +222,7 @@ export function InterceptorProvider({ children }: { children: ReactNode }) {
   const handleUnauthorized = () => {
     showAlert(
       'Session Expired',
-      'Your session has expired. You will be redirected to the login page.',
+      'Your session has expired. You will be redirected to the login page',
       'warning'
     )
     
