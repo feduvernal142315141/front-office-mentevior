@@ -52,7 +52,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="h-16 navbar-glass top-0 z-40">
+    <header className="h-16 navbar-glass top-0">
       <div className="h-full flex items-center justify-between px-6 gap-6">
 
         {/* SEARCH */}
@@ -172,13 +172,13 @@ export function Topbar() {
                   className="
                     h-9 w-9 rounded-full
                     bg-gradient-to-br from-blue-50 to-blue-100
-                    dark:from-[#037ECC]/10 dark:to-[#037ECC]/20
+                  
                     flex items-center justify-center
-                    ring-1 ring-blue-200 dark:ring-[#037ECC]/30
+                    ring-1 ring-blue-200 
                     shadow-sm group-hover:shadow-md transition
                   "
                 >
-                  <span className="text-sm font-semibold text-[#025f9a] dark:text-primary">
+                  <span className="text-sm font-semibold text-[#025f9a]">
                     {user?.name?.charAt(0)}
                   </span>
                 </div>
@@ -208,7 +208,7 @@ export function Topbar() {
                       <div className="
                         h-10 w-10 rounded-full
                         bg-gradient-to-br from-blue-100 to-blue-200
-                        dark:from-primary/20 dark:to-primary/30
+
                         flex items-center justify-center
                         font-semibold text-[#025f9a]
                         shadow-sm
@@ -237,8 +237,7 @@ export function Topbar() {
                       transition-all duration-200
 
                       bg-white
-                      hover:bg-slate-50
-                      dark:bg-transparent dark:hover:bg-white/5
+                       hover:bg-slate-50                    
                     "
                   >
                     <User className="
@@ -262,7 +261,6 @@ export function Topbar() {
 
                       bg-white
                       hover:bg-slate-50
-                      dark:bg-transparent dark:hover:bg-white/5
                     "
                   >
                     <KeyRound className="

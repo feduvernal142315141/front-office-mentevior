@@ -17,9 +17,6 @@ const variantStyles: Record<Variant, string> = {
     hover:from-blue-500 hover:to-blue-400
     active:from-blue-700 active:to-blue-600
     shadow-[0_4px_18px_rgba(37,99,235,0.35)]
-    dark:bg-gradient-to-r dark:from-blue-500 dark:to-blue-400
-    dark:hover:from-blue-400 dark:hover:to-blue-300 
-    dark:shadow-[0_4px_16px_rgba(37,99,235,0.45)]
   `,
 
   secondary: `
@@ -38,10 +35,6 @@ const variantStyles: Record<Variant, string> = {
     text-slate-600 
     hover:bg-slate-100 
     active:bg-slate-200
-    
-    dark:text-slate-300 
-    dark:hover:bg-slate-700/40 
-    dark:active:bg-slate-700
   `,
 
   danger: `
@@ -49,10 +42,6 @@ const variantStyles: Record<Variant, string> = {
     hover:bg-red-500 
     active:bg-red-700
     shadow-[0_4px_15px_rgba(220,38,38,0.35)]
-    
-    dark:bg-red-500 
-    dark:hover:bg-red-400
-    dark:shadow-[0_4px_15px_rgba(220,38,38,0.45)]
   `,
 }
 
@@ -78,7 +67,6 @@ export function Button({
         /* Animación premium */
         active:scale-[0.97]
         hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)]
-        dark:hover:shadow-[0_6px_20px_rgba(0,0,0,0.45)]
         
         animate-in fade-in-0 zoom-in-95
       `,

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { useLogin } from "@/lib/modules/auth/hooks/use-login"
 import Link from "next/link"
+import { Button } from "@/components/custom/Button"
 
 export function LoginForm() {
   const { onSubmit, isSubmitting, error } = useLogin()
@@ -30,7 +31,7 @@ export function LoginForm() {
         </p>
       </div>
 
-      <form noValidate
+      <form
         onSubmit={(e) => {
           e.preventDefault()
           onSubmit(email, password)
@@ -48,7 +49,7 @@ export function LoginForm() {
 
           <input
             id="email"
-            type="text"
+            type="email"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value)
@@ -134,8 +135,9 @@ export function LoginForm() {
         </div>
 
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-400 delay-900">
-          <button
+          <Button
             type="submit"
+            variant="primary"
             disabled={isSubmitting}
             className="
               w-full h-[52px] 2xl:h-[56px]
@@ -154,7 +156,7 @@ export function LoginForm() {
             ) : (
               "Sign in"
             )}
-          </button>
+          </Button>
         </div>
 
         <div className="text-center">

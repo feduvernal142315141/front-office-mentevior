@@ -19,7 +19,6 @@ export function PasswordField({
   value,
   onChange,
   onBlur,
-  placeholder,
   hasError,
   isSuccess,
 }: Props) {
@@ -33,7 +32,7 @@ export function PasswordField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
-          placeholder=" "
+          placeholder="paceholder"
           autoComplete="off"
           className={cn(
             `
@@ -52,26 +51,23 @@ export function PasswordField({
             )}
         />
 
-        {/* FLOATING LABEL */}
         <label
-          className={cn(
-            `
+          className={cn(`
             absolute left-4 px-1
             pointer-events-none
             transition-all duration-200 ease-out
 
-            bg-white/20
+            bg-white/80
+            supports-[backdrop-filter]:bg-white/40
             backdrop-blur-md
 
-            text-sm
-            text-slate-500
+            text-sm text-slate-500
 
             top-1/2 -translate-y-1/2
 
             peer-placeholder-shown:top-1/2
             peer-placeholder-shown:-translate-y-1/2
             peer-placeholder-shown:text-sm
-            peer-placeholder-shown:text-slate-500
 
             peer-focus:top-0
             peer-focus:-translate-y-1/2
@@ -82,14 +78,11 @@ export function PasswordField({
             peer-[&:not(:placeholder-shown)]:-translate-y-1/2
             peer-[&:not(:placeholder-shown)]:text-xs
             peer-[&:not(:placeholder-shown)]:text-[#2563EB]
-          `
-          )}
-        >
+          `)}
+          >
+            {label} <span className="text-[#2563EB]">*</span>
+          </label>
 
-          {label} <span className="text-[#2563EB]">*</span>
-        </label>
-
-        {/* TOGGLE VISIBILITY */}
         <button
           type="button"
           onClick={() => setShow(!show)}

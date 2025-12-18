@@ -49,11 +49,11 @@ export function Sidebar() {
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       className="
         fixed left-0 top-0 z-40 h-screen
-        bg-white dark:bg-gradient-to-b dark:from-[#0B1220] dark:to-[#0F172A]
+        bg-white
         border-r border-border/30
         backdrop-blur-xl
         flex flex-col
-        shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)]
+        shadow-[0_8px_30px_rgb(0,0,0,0.04)]
       "
     >
       <div className={`relative h-16 flex border-b border-border/20 ${sidebarCollapsed ? "items-center justify-center" : "px-6"}`}>
@@ -108,10 +108,8 @@ export function Sidebar() {
             h-7 w-7 rounded-full
             flex items-center justify-center
             bg-gradient-to-br from-white to-slate-50
-            dark:from-[#1E293B] dark:to-[#0F172A]
             border border-border/50
             shadow-[0_2px_8px_rgba(0,0,0,0.08)]
-            dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]
             hover:shadow-[0_4px_12px_rgba(3,126,204,0.2)]
             hover:border-[#037ECC]/50
             transition-all duration-200
@@ -152,7 +150,7 @@ export function Sidebar() {
                     sidebarCollapsed ? "justify-center px-2" : "px-4",
                     isActive
                       ? "bg-gradient-to-r from-[#037ECC] to-[#079CFB] text-white shadow-[0_8px_24px_rgba(3,126,204,0.4)]"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:shadow-sm",
+                      : "text-slate-600 hover:bg-slate-50 hover:shadow-sm",
                   )}
                 >
                   {isActive && !sidebarCollapsed && (
@@ -206,7 +204,7 @@ export function Sidebar() {
                       className="
                         absolute left-[72px] top-1/2 -translate-y-1/2
                         px-3 py-2 rounded-lg
-                        bg-slate-900 dark:bg-slate-800
+                        bg-slate-900
                         text-white text-sm font-medium
                         shadow-[0_8px_24px_rgba(0,0,0,0.3)]
                         border border-white/10
@@ -226,7 +224,7 @@ export function Sidebar() {
                           absolute right-full top-1/2 -translate-y-1/2
                           w-0 h-0
                           border-t-[6px] border-t-transparent
-                          border-r-[6px] border-r-slate-900 dark:border-r-slate-800
+                          border-r-[6px] border-r-slate-900
                           border-b-[6px] border-b-transparent
                         "
                       />

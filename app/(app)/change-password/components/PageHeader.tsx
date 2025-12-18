@@ -4,7 +4,7 @@ export function PageHeader() {
       <h2
         className="
           text-[28px] font-semibold tracking-tight mb-2
-          text-gray-900 dark:text-white
+          text-gray-900
         "
       >
         Change Your Password
@@ -13,7 +13,7 @@ export function PageHeader() {
       <p
         className="
           text-base leading-relaxed
-          text-gray-600 dark:text-white/60
+          text-gray-600 
         "
       >
         Update your credentials securely.

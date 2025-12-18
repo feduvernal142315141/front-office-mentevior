@@ -29,7 +29,8 @@
   --ring: 235 58% 44%;
 
   /* Brand */
-  --primary: 235 58% 44%;
+  --primary: 210 90% 56%;
+
   --primary-foreground: 0 0% 99%;
   --secondary: 240 10% 96%;
   --secondary-foreground: 240 30% 15%;
@@ -48,39 +49,9 @@
 
   /* Radius */
   --radius: 0.5rem;
-}
-
-/* =========================================================
-   DARK MODE
-   ========================================================= */
-
-.dark {
-  --background: 240 15% 8%;
-  --foreground: 240 20% 96%;
-
-  --card: 240 15% 10%;
-  --card-foreground: 240 20% 96%;
-  --popover: 240 15% 10%;
-  --popover-foreground: 240 20% 96%;
-
-  --border: 240 15% 20%;
-  --input: 240 15% 20%;
-  --ring: 210 90% 60%;
-
-  --primary: 210 90% 60%;
-  --primary-foreground: 240 15% 8%;
-  --secondary: 240 15% 14%;
-  --secondary-foreground: 240 20% 96%;
-  --accent: 210 90% 60%;
-  --accent-foreground: 240 15% 8%;
-
-  --success: 142 71% 45%;
-  --success-foreground: 240 15% 8%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 240 15% 8%;
-
-  --muted: 240 15% 14%;
-  --muted-foreground: 240 10% 65%;
+  --color-login-text-primary: hsl(var(--foreground));
+  --color-login-text-muted: hsl(var(--muted-foreground));
+  --color-login-text-secondary: hsl(var(--primary));
 }
 
 /* =========================================================
@@ -369,6 +340,17 @@
   .premium-button:disabled {
     cursor: not-allowed;
   }
+
+  .navbar-glass {
+    @apply bg-white/70 backdrop-blur-xl border-b border-gray-200/60 shadow-sm;
+  }
+
+  .dropdown-menu-glass {
+    @apply bg-white/95 backdrop-blur-xl rounded-xl border border-gray-200/60 shadow-2xl shadow-gray-900/10 p-1.5;
+  }
+
+  
+
 
 }
 
