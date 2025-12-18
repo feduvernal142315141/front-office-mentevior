@@ -1,106 +1,126 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *):not([data-theme="light"] *));
+/* =========================================================
+   COLOR SYSTEM — HSL ONLY (BROWSER SAFE)
+   ========================================================= */
 
+/*
+  IMPORTANTE:
+  - Todas las variables de color son HSL SIN hsl()
+  - Siempre se usan como: hsl(var(--token))
+  - Esto evita bugs en Firefox y Safari
+*/
 
 :root {
-  /* Clinical NeoGlass - Paleta de tokens refinada */
-  --background: oklch(0.99 0.002 240);
-  --foreground: oklch(0.15 0.03 240);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.03 240);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.03 240);
+  /* Base */
+  --background: 240 20% 99%;
+  --foreground: 240 30% 15%;
 
-  --primary: oklch(0.52 0.14 235);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-hover: oklch(0.58 0.15 235);
+  /* Surfaces */
+  --card: 0 0% 100%;
+  --card-foreground: 240 30% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 30% 15%;
 
-  --accent: oklch(0.68 0.13 220);
-  --accent-foreground: oklch(0.99 0 0);
+  /* Borders / Inputs */
+  --border: 240 20% 93%;
+  --input: 240 20% 93%;
+  --ring: 235 58% 44%;
 
-  --body: oklch(0.35 0.02 240);
-  --muted: oklch(0.56 0.01 240);
-  --muted-foreground: oklch(0.56 0.01 240);
+  /* Brand */
+  --primary: 235 58% 44%;
+  --primary-foreground: 0 0% 99%;
+  --secondary: 240 10% 96%;
+  --secondary-foreground: 240 30% 15%;
+  --accent: 210 90% 60%;
+  --accent-foreground: 240 30% 15%;
 
-  --secondary: oklch(0.96 0.003 240);
-  --secondary-foreground: oklch(0.15 0.03 240);
+  /* States */
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 99%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 99%;
 
-  --success: oklch(0.57 0.15 145);
-  --success-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.58 0.22 25);
-  --destructive-foreground: oklch(0.99 0 0);
+  /* Muted */
+  --muted: 240 10% 94%;
+  --muted-foreground: 240 10% 40%;
 
-  --border: oklch(0.93 0.005 240);
-  --input: oklch(0.93 0.005 240);
-  --ring: oklch(0.52 0.14 235);
-
-  --chart-1: oklch(0.52 0.14 235);
-  --chart-2: oklch(0.68 0.13 220);
-  --chart-3: oklch(0.57 0.15 145);
-  --chart-4: oklch(0.72 0.11 50);
-  --chart-5: oklch(0.58 0.22 25);
-
+  /* Radius */
   --radius: 0.5rem;
 }
 
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
 .dark {
-  --background: oklch(0.10 0.02 240);
-  --foreground: oklch(0.95 0.01 240);
-  --card: oklch(0.12 0.02 240);
-  --card-foreground: oklch(0.95 0.01 240);
-  --popover: oklch(0.12 0.02 240);
-  --popover-foreground: oklch(0.95 0.01 240);
+  --background: 240 15% 8%;
+  --foreground: 240 20% 96%;
 
-  --primary: oklch(0.58 0.15 235);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-hover: oklch(0.52 0.14 235);
+  --card: 240 15% 10%;
+  --card-foreground: 240 20% 96%;
+  --popover: 240 15% 10%;
+  --popover-foreground: 240 20% 96%;
 
-  --accent: oklch(0.68 0.13 220);
-  --accent-foreground: oklch(0.05 0.02 240);
+  --border: 240 15% 20%;
+  --input: 240 15% 20%;
+  --ring: 210 90% 60%;
 
-  --body: oklch(0.70 0.01 240);
-  --muted: oklch(0.40 0.01 240);
-  --muted-foreground: oklch(0.60 0.01 240);
+  --primary: 210 90% 60%;
+  --primary-foreground: 240 15% 8%;
+  --secondary: 240 15% 14%;
+  --secondary-foreground: 240 20% 96%;
+  --accent: 210 90% 60%;
+  --accent-foreground: 240 15% 8%;
 
-  --secondary: oklch(0.15 0.02 240);
-  --secondary-foreground: oklch(0.95 0.01 240);
+  --success: 142 71% 45%;
+  --success-foreground: 240 15% 8%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 240 15% 8%;
 
-  --success: oklch(0.57 0.15 145);
-  --success-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.58 0.22 25);
-  --destructive-foreground: oklch(0.99 0 0);
-
-  --border: oklch(0.20 0.02 240);
-  --input: oklch(0.20 0.02 240);
-  --ring: oklch(0.58 0.15 235);
+  --muted: 240 15% 14%;
+  --muted-foreground: 240 10% 65%;
 }
 
+/* =========================================================
+   BASE STYLES
+   ========================================================= */
+
 @layer base {
-  * {
-    border-color: oklch(0.93 0.005 240);
-    outline-color: oklch(0.52 0.14 235 / 0.5);
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: hsl(var(--border));
   }
-  
-  .dark * {
-    border-color: oklch(0.20 0.02 240);
+
+  html {
+    color-scheme: light dark;
   }
-  
+
   body {
     background-color: var(--background);
     color: var(--foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  input,
+  textarea,
+  select {
+    background-color: transparent;
+    color: inherit;
+    font: inherit;
+  }
   .login-background {
     position: relative;
     background: linear-gradient(
       135deg,
-      oklch(0.985 0.003 240) 0%,
-      oklch(0.992 0.001 240) 50%,
-      oklch(0.988 0.002 240) 100%
+      hsl(240 20% 98%) 0%,
+      hsl(240 18% 99%) 50%,
+      hsl(240 20% 98%) 100%
     );
+    overflow: hidden;
   }
 
   /* Anchor visual - radial gradient for depth */
@@ -108,44 +128,116 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 1400px 900px at 35% 50%, oklch(0.96 0.02 240 / 0.3), transparent 65%);
+
+    background: radial-gradient(
+      ellipse 1400px 900px at 35% 50%,
+      rgba(148, 163, 184, 0.30),
+      transparent 65%
+    );
+
     pointer-events: none;
     z-index: 0;
   }
 
-  /* Fine grain noise texture - 1-2% opacity for life */
+  /* Fine grain noise texture */
   .login-background::after {
     content: "";
     position: absolute;
     inset: 0;
+
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.018'/%3E%3C/svg%3E");
+
     opacity: 1;
     pointer-events: none;
     z-index: 1;
   }
+}
 
-  /* Silky premium inputs with internal gradient top to bottom */
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+
+@layer utilities {
+  .text-muted {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .bg-muted {
+    background-color: hsl(var(--muted));
+  }
+
+  .border-muted {
+    border-color: hsl(var(--border));
+  }
+}
+
+@layer components {
+  .card {
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: calc(var(--radius) - 2px);
+    font-weight: 500;
+    transition: background-color 150ms ease, box-shadow 150ms ease,
+      transform 120ms ease;
+  }
+
+  .btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .btn-primary:hover {
+    filter: brightness(1.05);
+  }
+
+  .input {
+    width: 100%;
+    height: 44px;
+    padding: 0 0.75rem;
+    border-radius: calc(var(--radius) - 2px);
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--input));
+    color: hsl(var(--foreground));
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.2);
+  }
   .premium-input {
     width: 100%;
     height: 44px;
     padding: 0 1rem;
     border-radius: 0.75rem;
 
-    background:
-      linear-gradient(
-        180deg,
-        oklch(0.98 0.003 240) 0%,
-        oklch(0.965 0.004 240) 100%
-      );
+    /* Fondo premium (equivalente a oklch light) */
+    background: linear-gradient(
+      180deg,
+      hsl(240 20% 99%) 0%,
+      hsl(240 18% 96%) 100%
+    );
 
-    border: 1px solid oklch(0.88 0.01 240 / 0.6);
+    /* Borde suave */
+    border: 1px solid hsl(240 20% 88% / 0.6);
 
     font-size: 0.95rem;
-    color: var(--foreground);
+    color: hsl(var(--foreground));
 
+    /* Sombras equivalentes */
     box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.6),
-      0 1px 2px oklch(0.25 0.01 240 / 0.04);
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      0 1px 2px rgba(15, 23, 42, 0.04);
 
     transition:
       background 200ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -156,34 +248,36 @@
     color: var(--color-login-text-primary);
   }
 
+  /* Hover */
   .premium-input:hover {
-    border-color: oklch(0.75 0.04 240 / 0.6);
+    border-color: hsl(240 35% 75% / 0.6);
     box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.7),
-      0 2px 6px oklch(0.25 0.01 240 / 0.06);
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      0 2px 6px rgba(15, 23, 42, 0.06);
   }
 
+  /* Focus */
   .premium-input:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: hsl(var(--primary));
 
-    background:
-      linear-gradient(
-        180deg,
-        oklch(1 0 0) 0%,
-        oklch(0.99 0.002 240) 100%
-      );
+    background: linear-gradient(
+      180deg,
+      hsl(0 0% 100%) 0%,
+      hsl(240 20% 99%) 100%
+    );
 
     box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.8),
-      0 0 0 4px oklch(0.52 0.14 235 / 0.12),
-      0 6px 14px oklch(0.52 0.14 235 / 0.18);
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 0 0 4px hsl(var(--primary) / 0.12),
+      0 6px 14px hsl(var(--primary) / 0.18);
 
     transform: translateY(-1px);
   }
 
+  /* Placeholder */
   .premium-input::placeholder {
-    color: oklch(0.55 0.01 240);
+    color: hsl(240 10% 55%);
     transition: opacity 160ms ease;
   }
 
@@ -191,61 +285,40 @@
     opacity: 0.25;
   }
 
+  /* Error state */
   .premium-input-error {
-    border-color: oklch(0.58 0.22 25 / 0.7);
+    border-color: hsl(0 72% 51% / 0.7);
     box-shadow:
-      0 0 0 4px oklch(0.58 0.22 25 / 0.12);
+      0 0 0 4px hsl(0 72% 51% / 0.12);
   }
 
-
-  /* Button with subtle vertical gradient + elevation states */
-  .premium-button {
-    background: linear-gradient(180deg, oklch(0.56 0.15 240) 0%, oklch(0.52 0.16 240) 100%);
-    box-shadow: 0 1px 3px 0 oklch(0.55 0.15 240 / 0.3), 0 1px 2px -1px oklch(0.55 0.15 240 / 0.2);
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-  }
-
-  .premium-button:hover:not(:disabled) {
-    background: linear-gradient(180deg, oklch(0.49 0.17 240) 0%, oklch(0.45 0.18 240) 100%);
-    box-shadow: 0 8px 20px -4px oklch(0.55 0.15 240 / 0.35), 0 4px 8px -2px oklch(0.55 0.15 240 / 0.25);
-    transform: translateY(-1px);
-  }
-
-  .premium-button:active:not(:disabled) {
-    box-shadow: 0 1px 2px 0 oklch(0.55 0.15 240 / 0.2);
-    transform: translateY(0px);
-  }
-
-  /* Trust badges with enhanced backdrop blur */
-  .trust-badge {
-    background: oklch(0.975 0.01 240 / 0.5);
-    backdrop-filter: blur(12px);
-    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Enhanced card with double shadow, invisible border gradient, and backdrop glow */
   .login-card-wrapper {
     position: relative;
-    /* Two-layer shadow: diffuse + defined */
-    box-shadow: 0 32px 80px -16px oklch(0.25 0.01 240 / 0.08), /* Long diffuse shadow */ 0 12px 40px -10px
-      oklch(0.25 0.01 240 / 0.06), /* Shorter defined shadow */ 0 0 0 1px oklch(0.9 0.005 240 / 0.35); /* Invisible border */
+    border-radius: 24px; /* ⬅ tamaño original */
 
-    /* Subtle border with gradient (almost imperceptible) */
-    border: 1px solid transparent;
-    background: linear-gradient(white, white) padding-box,
-      linear-gradient(135deg, oklch(0.92 0.008 240 / 0.4), oklch(0.96 0.004 240 / 0.2)) border-box;
+    background: #ffffff;
 
-    transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+      0 28px 72px -16px rgba(15, 23, 42, 0.08), /* diffuse */
+      0 10px 32px -10px rgba(15, 23, 42, 0.06), /* defined */
+      0 0 0 1px rgba(226, 232, 240, 0.45);     /* subtle outline */
+
+    transition: box-shadow 400ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Blue glow backdrop - the anchor that eliminates visual "square border" */
+  /* Blue glow backdrop */
   .login-card-wrapper::before {
     content: "";
     position: absolute;
-    inset: -40px;
-    background: radial-gradient(ellipse 650px 550px at center, oklch(0.65 0.13 240 / 0.1), transparent 70%);
-    filter: blur(32px);
+    inset: -32px; /* ⬅ menos expansión */
+
+    background: radial-gradient(
+      ellipse 600px 500px at center,
+      rgba(59, 130, 246, 0.10),
+      transparent 70%
+    );
+
+    filter: blur(28px); /* ⬅ más sutil */
     opacity: 0;
     transition: opacity 600ms cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
@@ -257,8 +330,7 @@
     opacity: 1;
   }
 
-  /* Card background with imperceptible vertical gradient */
-  .login-card-wrapper::after {
+  login-card-wrapper::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -298,8 +370,9 @@
     cursor: not-allowed;
   }
 
-  /* Large monitor optimization - scale typography and spacing */
-  @media (min-width: 1920px) {
+}
+
+@media (min-width: 1920px) {
     .login-large-screen-headline {
       font-size: 48px;
       line-height: 1.1;
@@ -314,1411 +387,12 @@
     .login-large-screen-spacing {
       padding: 3rem;
     }
-  }
-
-  /* Tab focus visible but elegant */
+}
+/* Tab focus visible but elegant */
   *:focus-visible {
     outline: 2px solid var(--color-login-blue-primary);
     outline-offset: 3px;
-    border-radius: 4px;
   }
-}
 
-@layer utilities {
-  .filter-bar {
-    @apply flex items-center gap-3 px-5 py-3 bg-white/70 backdrop-blur-md rounded-2xl shadow-sm border border-gray-200/60;
-  }
-
-  .filter-pill {
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    cursor: pointer;
-  }
-
-  .filter-pill-active {
-    background: linear-gradient(to right, #037ECC, #079CFB);
-    color: white;
-    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.25);
-  }
-
-  .filter-pill-inactive {
-    background-color: rgb(243 244 246);
-    color: rgb(75 85 99);
-    transition: all 0.2s;
-  }
-  
-  .filter-pill-inactive:hover {
-    background-color: rgb(229 231 235);
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  }
-
-  .kpi-card-glass {
-    @apply bg-white/80 backdrop-blur-xl rounded-2xl border border-white/60 shadow-lg shadow-blue-500/5 p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5;
-  }
-
-  .table-premium-bg {
-    background: linear-gradient(180deg, #F9FBFD 0%, #EAF2F9 100%);
-  }
-
-  .table-container-premium {
-    @apply bg-white/85 backdrop-blur-xl rounded-2xl border border-gray-200/50 shadow-xl shadow-gray-900/5;
-  }
-
-  .table-action-bar {
-    @apply sticky top-0 z-10 flex items-center justify-between px-8 py-4 bg-white/90 backdrop-blur-md border-b border-gray-200/60 transition-all duration-300;
-  }
-
-  .table-action-bar.scrolled {
-    @apply shadow-md bg-white/95;
-  }
-
-  .table-search-input {
-    width: 100%;
-    max-width: 20rem;
-    padding: 0.625rem 1rem 0.625rem 2.75rem;
-    background-color: white;
-    border-radius: 0.75rem;
-    border: 1px solid rgb(209 213 219);
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    transition: all 200ms;
-  }
-  
-  .table-search-input::placeholder {
-    color: rgb(107 114 128);
-  }
-  
-  .table-search-input:focus {
-    outline: none;
-    border-color: #037ECC;
-    box-shadow: 0 0 0 4px rgba(3, 126, 204, 0.1);
-  }
-
-  .table-header-glass {
-    @apply bg-white/95 backdrop-blur-sm;
-  }
-
-  .table-row-card {
-    @apply bg-white rounded-2xl shadow-sm border border-gray-200/50 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:bg-blue-50/30;
-  }
-
-  .table-avatar {
-    @apply w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white transition-all duration-200;
-  }
-
-  .table-avatar-admin {
-    background: linear-gradient(135deg, #E5484D 0%, #DC2626 100%);
-  }
-
-  .table-avatar-admin:hover {
-    box-shadow: 0 0 20px rgba(229, 72, 77, 0.4);
-  }
-
-  .table-avatar-bcba {
-    background: linear-gradient(135deg, #037ECC 0%, #0369A1 100%);
-  }
-
-  .table-avatar-bcba:hover {
-    box-shadow: 0 0 20px rgba(3, 126, 204, 0.4);
-  }
-
-  .table-avatar-supervisor {
-    background: linear-gradient(135deg, #5AC8FA 0%, #079CFB 100%);
-  }
-
-  .table-avatar-supervisor:hover {
-    box-shadow: 0 0 20px rgba(90, 200, 250, 0.4);
-  }
-
-  .table-avatar-rbt {
-    background: linear-gradient(135deg, #16A34A 0%, #15803D 100%);
-  }
-
-  .table-avatar-rbt:hover {
-    box-shadow: 0 0 20px rgba(22, 163, 74, 0.4);
-  }
-
-  .table-avatar-billing {
-    background: linear-gradient(135deg, #6B7A88 0%, #475569 100%);
-  }
-
-  .table-avatar-billing:hover {
-    box-shadow: 0 0 20px rgba(107, 122, 136, 0.4);
-  }
-
-  .role-badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200;
-  }
-
-  .role-badge-admin {
-    @apply bg-red-50/80 text-red-600 hover:bg-red-100 hover:shadow-sm;
-  }
-
-  .role-badge-bcba {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    font-weight: 600;
-    transition: all 0.2s;
-    background-color: rgba(59, 130, 246, 0.08);
-    color: #037ECC;
-  }
-  
-  .role-badge-bcba:hover {
-    background-color: rgba(59, 130, 246, 0.15);
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  }
-
-  .role-badge-supervisor {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    font-weight: 600;
-    transition: all 0.2s;
-    background-color: rgba(6, 182, 212, 0.08);
-    color: #079CFB;
-  }
-  
-  .role-badge-supervisor:hover {
-    background-color: rgba(6, 182, 212, 0.15);
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  }
-
-  .role-badge-rbt {
-    @apply bg-green-50/80 text-green-600 hover:bg-green-100 hover:shadow-sm;
-  }
-
-  .role-badge-billing {
-    @apply bg-gray-100/80 text-gray-600 hover:bg-gray-200 hover:shadow-sm;
-  }
-
-  .status-badge-active {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700;
-    animation: pulse-glow 4s ease-in-out infinite;
-  }
-
-  .status-badge-inactive {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600;
-  }
-
-  .dropdown-menu-glass {
-    @apply bg-white/95 backdrop-blur-xl rounded-xl border border-gray-200/60 shadow-2xl shadow-gray-900/10 p-1.5;
-  }
-
-  .dropdown-item-hover {
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    color: rgb(55 65 81);
-    transition: colors 0.15s;
-    cursor: pointer;
-  }
-  
-  .dropdown-item-hover:hover {
-    background-color: rgb(239 246 255);
-    color: #037ECC;
-  }
-
-  .pagination-pill {
-    @apply px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200;
-  }
-
-  .pagination-pill-active {
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    background-color: #037ECC;
-    color: white;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  }
-
-  .pagination-pill-inactive {
-    @apply bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 hover:shadow-sm;
-  }
-
-  .empty-state {
-    @apply flex flex-col items-center justify-center py-16 px-8 text-center;
-  }
-
-  .modal-overlay {
-    @apply fixed inset-0 bg-gray-900/45 backdrop-blur-md z-50;
-  }
-
-  .modal-container {
-    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
-  }
-
-  .modal-card-sm {
-    @apply w-full max-w-md;
-  }
-
-  .modal-card-md {
-    @apply w-full max-w-2xl;
-  }
-
-  .modal-card-lg {
-    @apply w-full max-w-4xl;
-  }
-
-  .modal-card {
-    @apply bg-white/90 backdrop-blur-3xl rounded-3xl border border-white/60 shadow-2xl shadow-blue-500/10 overflow-hidden;
-  }
-
-  .dark .modal-card {
-    @apply bg-gray-900/90 border-gray-700/60;
-  }
-
-  .modal-header {
-    @apply px-10 py-8 border-b border-gray-200/60;
-  }
-
-  .dark .modal-header {
-    @apply border-gray-700/60;
-  }
-
-  .modal-body {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-    max-height: calc(85vh - 200px);
-    overflow-y: auto;
-  }
-
-  .modal-footer {
-    @apply px-10 py-6 border-t border-gray-200/60 bg-gray-50/50;
-  }
-
-  .dark .modal-footer {
-    @apply border-gray-700/60 bg-gray-800/50;
-  }
-
-  .modal-input-container {
-    @apply relative;
-  }
-
-  .modal-input-label {
-    @apply absolute left-12 top-4 text-sm text-gray-500 transition-all duration-200 pointer-events-none px-1;
-    background: rgba(255, 255, 255, 0.9);
-    z-index: 10;
-  }
-
-  .dark .modal-input-label {
-    background: rgba(22, 38, 53, 0.9);
-  }
-
-  .modal-input:focus ~ .modal-input-label,
-  .modal-input:not(:placeholder-shown) ~ .modal-input-label {
-    top: -0.625rem;
-    left: 2.75rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    color: #037ECC;
-    font-weight: 500;
-  }
-
-  .sidebar-premium {
-    @apply bg-white/85 backdrop-blur-2xl border-r border-gray-200/60 shadow-2xl shadow-gray-900/5;
-  }
-
-  .dark .sidebar-premium {
-    background-color: rgba(17, 24, 39, 0.9);
-    border-color: rgba(55, 65, 81, 0.6);
-  }
-
-  .sidebar-logo {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.75rem;
-    background: linear-gradient(to bottom right, #037ECC, #079CFB);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 15px -3px rgba(3, 126, 204, 0.25), 0 4px 6px -2px rgba(3, 126, 204, 0.05);
-  }
-
-  .sidebar-collapse-btn {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 0.5rem;
-    background-color: rgba(243, 244, 246, 0.8);
-    transition: all 200ms;
-  }
-
-  .sidebar-collapse-btn:hover {
-    background-color: rgba(229, 231, 235, 0.8);
-    transform: scale(1.05);
-  }
-
-  .dark .sidebar-collapse-btn {
-    @apply bg-gray-800/80 hover:bg-gray-700/80;
-  }
-
-  .sidebar-nav-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    width: 3.5rem;
-    height: 3.5rem;
-    padding: 0.75rem;
-    border-radius: 0.875rem;
-    transition: all 0.2s;
-    color: rgb(51 65 85);
-  }
-  
-  .dark .sidebar-nav-item {
-    color: rgb(155 176 195);
-  }
-  
-  .sidebar-nav-item:hover {
-    background-color: rgba(59, 130, 246, 0.08);
-    color: #037ECC;
-    transform: scale(1.05);
-  }
-
-  .sidebar-item-active {
-    background: linear-gradient(135deg, #037ECC 0%, #079CFB 100%);
-    color: white !important;
-    box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.3), 0 8px 18px rgba(3, 126, 204, 0.25);
-  }
-
-  .sidebar-item-hover {
-    @apply transition-all duration-150 hover:bg-blue-50/60 hover:shadow-sm dark:hover:bg-blue-900/20;
-  }
-
-  .sidebar-tooltip {
-    @apply absolute left-full ml-3 px-3 py-1.5 bg-gray-900/90 backdrop-blur-sm text-white text-xs rounded-lg whitespace-nowrap opacity-0 transition-opacity duration-200 border border-white/10 shadow-xl z-50;
-  }
-
-  .sidebar-nav-item:hover .sidebar-tooltip {
-    @apply opacity-100;
-  }
-
-  .sidebar-separator {
-    @apply mx-5 my-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent;
-  }
-
-  .dark .sidebar-separator {
-    @apply via-gray-700;
-  }
-
-  .sidebar-avatar {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.75rem;
-    background: linear-gradient(to bottom right, #EBF5FF, #DBEAFE);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border: 2px solid rgba(3, 126, 204, 0.1);
-    transition: all 0.2s;
-  }
-
-  .sidebar-avatar:hover {
-    border-color: rgba(3, 126, 204, 0.3);
-    transform: scale(1.05);
-  }
-
-  .dark .sidebar-avatar {
-    background: linear-gradient(to bottom right, rgba(30, 64, 175, 0.4), rgba(30, 58, 138, 0.4));
-  }
-
-  .navbar-glass {
-    @apply bg-white/70 backdrop-blur-xl border-b border-gray-200/60 shadow-sm;
-  }
-
-  .dark .navbar-glass {
-    @apply bg-gray-900/70 border-gray-700/60;
-  }
-
-  .search-capsule {
-    width: 100%;
-    max-width: 28rem;
-    padding: 0.625rem 1rem 0.625rem 2.75rem;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 9999px;
-    border: 1px solid rgb(229 231 235);
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    transition: all 200ms;
-  }
-  
-  .dark .search-capsule {
-    background-color: rgba(31, 41, 55, 0.9);
-    border-color: rgb(55 65 81);
-  }
-  
-  .search-capsule::placeholder {
-    color: rgb(107 122 136);
-  }
-  
-  .search-capsule:focus {
-    outline: none;
-    border-color: #037ECC;
-    box-shadow: 0 0 0 4px rgba(3, 126, 204, 0.1);
-  }
-
-  .navbar-action-icon {
-    @apply w-10 h-10 flex items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md hover:shadow-blue-500/15 transition-all duration-200;
-  }
-
-  .dark .navbar-action-icon {
-    @apply text-gray-300 hover:bg-gray-800;
-  }
-
-  .dark-mode-toggle {
-    @apply relative overflow-hidden;
-  }
-
-  .notification-badge {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    width: 0.5rem;
-    height: 0.5rem;
-    background-color: #037ECC;
-    border-radius: 9999px;
-    border: 2px solid white;
-    animation: pulse-glow 2.4s ease-in-out infinite;
-  }
-
-  .dark .notification-badge {
-    border-color: rgb(17 24 39);
-  }
-
-  .avatar-halo {
-    transition: all 0.2s;
-  }
-  
-  .avatar-halo:hover {
-    box-shadow: 0 0 0 6px rgba(3, 126, 204, 0.1);
-  }
-
-  .glass-card {
-    @apply bg-white/95 backdrop-blur-xl rounded-xl border border-gray-200/60 shadow-2xl shadow-gray-900/10;
-  }
-
-  .dark .glass-card {
-    @apply bg-gray-900/95 border-gray-700/60;
-  }
-
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -1000px 0;
-    }
-    100% {
-      background-position: 1000px 0;
-    }
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.6;
-    }
-  }
-
-  .animate-fadeInUp {
-    animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .animate-slideIn {
-    animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .skeleton-shimmer {
-    background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
-    background-size: 1000px 100%;
-    animation: shimmer 1.4s infinite linear;
-  }
-
-  .calendar-header-premium {
-    @apply bg-white border-b border-gray-200/80 px-6 py-5 flex items-center justify-between flex-wrap gap-4;
-  }
-
-  .calendar-title {
-    @apply text-lg font-semibold text-gray-900;
-  }
-
-  .calendar-nav-btn {
-    @apply h-10 w-10 flex items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition-all duration-200 hover:shadow-sm;
-  }
-
-  .calendar-today-btn {
-    @apply px-4 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-200 transition-all duration-200 hover:shadow-sm;
-  }
-
-  .calendar-new-apt-btn {
-    @apply px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105;
-    background: linear-gradient(135deg, #037ECC 0%, #079CFB 100%);
-  }
-
-  /* Agregando estilos completos del calendario premium y modal de citas */
-
-  .calendar-filter-chips {
-    @apply bg-white/70 backdrop-blur-md px-6 py-4 flex items-center justify-between gap-4 flex-wrap border border-gray-200/60;
-  }
-
-  /* Convertido calendar-search de @apply a CSS puro */
-  .calendar-search {
-    width: 100%;
-    padding-left: 2.5rem;
-    padding-right: 1rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    border-radius: 0.75rem;
-    border: 1px solid rgb(209 213 219);
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    transition-property: all;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
-  }
-  
-  .calendar-search:focus {
-    border-color: #037ECC;
-    box-shadow: 0 0 0 4px rgba(3, 126, 204, 0.1);
-  }
-
-  .calendar-filter-chip {
-    @apply px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-all duration-200 cursor-pointer flex items-center gap-1.5;
-  }
 
-  .calendar-filter-chip-active {
-    @apply bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100;
-  }
-
-  .calendar-day-header {
-    @apply text-center p-4 rounded-xl font-medium transition-all duration-200;
-  }
-
-  .calendar-day-header-today {
-    @apply bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-md;
-    border-bottom: 3px solid #037ECC;
-  }
-
-  .calendar-day-header-normal {
-    @apply bg-gray-50 text-gray-700 hover:bg-gray-100;
-  }
-
-  .calendar-time-label {
-    @apply text-xs text-gray-500 text-right;
-    padding-right: 1rem;
-  }
-
-  .calendar-grid-background {
-    position: relative;
-  }
-
-  .calendar-grid-cell {
-    min-height: 60px;
-    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
-    transition: all 200ms;
-  }
-
-  .calendar-slot-interactive-transparent {
-    background: transparent;
-    position: relative;
-    transition: all 150ms ease;
-    
-  }
-
-  .calendar-slot-interactive-transparent:hover {
-    background-color: rgba(247, 250, 255, 0.6);
-    border: 1px solid rgba(212, 228, 255, 0.5);
-  }
-
-  .calendar-slot-clicked {
-    background-color: rgba(229, 243, 255, 1);
-    border: 1px solid #037ECC;
-    animation: highlight-fade 1s ease-out forwards;
-  }
-
-  @keyframes highlight-fade {
-    0% {
-      background-color: rgba(229, 243, 255, 1);
-    }
-    100% {
-      background-color: transparent;
-    }
-  }
-
-  .calendar-quick-add-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background-color: white;
-    border: 1px solid rgba(199, 211, 224, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(107, 122, 139, 1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 120ms ease;
-    cursor: pointer;
-    z-index: 30;
-    animation: fadeIn 80ms ease-out;
-  }
-
-  .calendar-quick-add-btn:hover {
-    background-color: #037ECC;
-    color: white;
-    border-color: #037ECC;
-    transform: scale(1.1);
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .appointment-drop-in {
-    animation: dropIn 150ms ease-out forwards;
-  }
-
-  @keyframes dropIn {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Estilos premium del modal de citas */
-
-  .appointment-modal-premium {
-    width: 100%;
-    max-width: 540px;
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.03);
-    padding: 24px;
-  }
-
-  .appointment-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-  }
-
-  .appointment-modal-title {
-    font-size: 22px;
-    font-weight: 600;
-    color: #1E2A38;
-    line-height: 1.2;
-  }
-
-  .appointment-modal-subtitle {
-    font-size: 14px;
-    color: #6B7A8B;
-    margin-top: 4px;
-  }
-
-  .appointment-modal-close {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    color: #6B7A8B;
-    cursor: pointer;
-    transition: all 120ms ease;
-  }
-
-  .appointment-modal-close:hover {
-    background-color: rgba(107, 122, 139, 0.1);
-    color: #1E2A38;
-  }
-
-  .appointment-modal-form {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .appointment-form-section {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .appointment-section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1E2A38;
-    margin-bottom: 4px;
-  }
-
-  .appointment-form-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .appointment-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #6B7A8B;
-  }
-
-  .appointment-input-premium {
-    width: 100%;
-    height: 44px;
-    padding: 0 14px;
-    background-color: #F9FAFB;
-    border: 1px solid #D8DFE8;
-    border-radius: 10px;
-    font-size: 15px;
-    color: #1E2A38;
-    transition: all 120ms ease;
-  }
-
-  .appointment-input-premium::placeholder {
-    font-size: 14px;
-    color: #9AA6B8;
-  }
-
-  .appointment-input-premium:hover {
-    border-color: #B8C5D6;
-  }
-
-  .appointment-input-premium:focus {
-    outline: none;
-    border: 2px solid #037ECC;
-    box-shadow: 0 0 0 2px rgba(3, 126, 204, 0.2);
-  }
-
-  .appointment-input-error {
-    border-color: #E58C8C;
-  }
-
-  .appointment-error-text {
-    font-size: 12px;
-    color: #D64545;
-    animation: slideDown 80ms ease-out;
-  }
-
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .appointment-select-container {
-    position: relative;
-  }
-
-  .appointment-search-wrapper {
-    position: relative;
-  }
-
-  .appointment-search-icon {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    color: #9AA6B8;
-    pointer-events: none;
-  }
-
-  .appointment-search-wrapper .appointment-input-premium {
-    padding-left: 42px;
-  }
-
-  .appointment-dropdown-premium {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
-    max-height: 240px;
-    overflow-y: auto;
-    background-color: white;
-    border: 1px solid #D8DFE8;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 50;
-    animation: fadeIn 100ms ease-out;
-  }
-
-  .appointment-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    cursor: pointer;
-    transition: all 120ms ease;
-    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
-  }
-
-  .appointment-dropdown-item:last-child {
-    border-bottom: none;
-  }
-
-  .appointment-dropdown-item:hover {
-    background-color: #F3F8FD;
-  }
-
-  .appointment-dropdown-item-selected {
-    background-color: #EAF6FF;
-  }
-
-  .appointment-patient-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #037ECC 0%, #079CFB 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: white;
-    flex-shrink: 0;
-  }
-
-  .appointment-dropdown-item-content {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-  }
-
-  .appointment-dropdown-item-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #1E2A38;
-  }
-
-  .appointment-dropdown-item-subtitle {
-    font-size: 12px;
-    color: #6B7A8B;
-  }
-
-  .appointment-location-pills {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .appointment-location-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: 20px;
-    background-color: #F1F5F9;
-    border: 1px solid #E2E8F0;
-    font-size: 14px;
-    color: #475569;
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .appointment-location-pill:hover {
-    background-color: #E8EFF7;
-  }
-
-  .appointment-location-pill-selected {
-    background-color: #037ECC;
-    color: white;
-    border-color: #037ECC;
-  }
-
-  .appointment-textarea-premium {
-    width: 100%;
-    min-height: 100px;
-    padding: 12px 14px;
-    background-color: #F9FAFB;
-    border: 1px solid #D8DFE8;
-    border-radius: 10px;
-    font-size: 15px;
-    color: #1E2A38;
-    transition: all 120ms ease;
-    resize: vertical;
-    font-family: inherit;
-  }
-
-  .appointment-textarea-premium:focus {
-    outline: none;
-    border: 2px solid #037ECC;
-    box-shadow: 0 0 0 2px rgba(3, 126, 204, 0.2);
-  }
-
-  .appointment-modal-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 8px;
-  }
-
-  .appointment-btn-primary {
-    height: 42px;
-    padding: 0 24px;
-    background-color: #037ECC;
-    color: white;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 120ms ease;
-  }
-
-  .appointment-btn-primary:hover {
-    background-color: #0262A2;
-  }
-
-  .appointment-btn-primary:active {
-    transform: scale(0.98);
-  }
-
-  .appointment-btn-secondary {
-    height: 42px;
-    padding: 0 24px;
-    background-color: white;
-    color: #475569;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    border: 1px solid #C8D2DE;
-    cursor: pointer;
-    transition: all 120ms ease;
-  }
-
-  .appointment-btn-secondary:hover {
-    background-color: #F4F7FA;
-  }
-
-  .appointment-btn-delete {
-    height: 42px;
-    padding: 0 24px;
-    background-color: #FDEEEE;
-    color: #CE3A3A;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    border: 1px solid #FBDCDC;
-    cursor: pointer;
-    transition: all 120ms ease;
-  }
-
-  .appointment-btn-delete:hover {
-    background-color: #FBDCDC;
-  }
-
-  /* Estilos del modal duplicar cita */
-
-  .duplicate-modal .appointment-modal-premium {
-    max-width: 480px;
-  }
-
-  .duplicate-summary {
-    background-color: rgba(239, 246, 255, 0.6);
-    border: 1px solid rgba(3, 126, 204, 0.2);
-    border-radius: 12px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .duplicate-summary-item {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .duplicate-summary-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #6B7A8B;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .duplicate-summary-value {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1E2A38;
-    margin-top: 2px;
-  }
-
-  /* Agregando estilos de tarjetas de citas con bordes de color por servicio */
-  .appointment-card-premium {
-    position: relative;
-    background-color: white;
-    border-radius: 10px;
-    padding: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-    cursor: pointer;
-    transition: all 150ms ease;
-    border-left: 5px solid transparent;
-    overflow: hidden;
-  }
-
-  .appointment-card-premium:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
-  }
-
-  .appointment-card-dragging {
-    opacity: 0.8;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    transform: scale(1.02);
-  }
-
-  /* Bordes laterales por tipo de servicio */
-  .service-border-aba {
-    border-left-color: #42A5F5;
-  }
-
-  .service-border-parent {
-    border-left-color: #66BB6A;
-  }
-
-  .service-border-evaluation {
-    border-left-color: #AB47BC;
-  }
-
-  .service-border-supervision {
-    border-left-color: #FF7043;
-  }
-
-  /* Status pills por estado de cita */
-  .status-pill-scheduled {
-    padding: 4px 10px;
-    border-radius: 12px;
-    background-color: rgba(156, 163, 175, 0.15);
-    color: #6B7280;
-    font-weight: 500;
-  }
-
-  .status-pill-inprogress {
-    padding: 4px 10px;
-    border-radius: 12px;
-    background-color: rgba(251, 191, 36, 0.15);
-    color: #D97706;
-    font-weight: 500;
-  }
-
-  .status-pill-completed {
-    padding: 4px 10px;
-    border-radius: 12px;
-    background-color: rgba(34, 197, 94, 0.15);
-    color: #16A34A;
-    font-weight: 500;
-  }
-
-  .status-pill-cancelled {
-    padding: 4px 10px;
-    border-radius: 12px;
-    background-color: rgba(239, 68, 68, 0.15);
-    color: #DC2626;
-    font-weight: 500;
-  }
-
-  /* Resize handle para ajustar duración de citas */
-  .appointment-resize-handle {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background-color: rgba(3, 126, 204, 0.2);
-    cursor: ns-resize;
-    opacity: 0;
-    transition: opacity 150ms ease;
-  }
-
-  .appointment-card-premium:hover .appointment-resize-handle {
-    opacity: 1;
-  }
-
-  .appointment-resize-handle:hover {
-    background-color: rgba(3, 126, 204, 0.4);
-    height: 8px;
-  }
-
-  /* Menú contextual para citas */
-  .appointment-context-menu {
-    position: fixed;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(229, 231, 235, 0.8);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 6px;
-    min-width: 180px;
-    z-index: 100;
-    animation: fadeIn 100ms ease-out;
-  }
-
-  .appointment-context-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #374151;
-    cursor: pointer;
-    transition: all 120ms ease;
-  }
-
-  .appointment-context-menu-item:hover {
-    background-color: rgba(243, 244, 246, 0.8);
-    color: #037ECC;
-  }
-
-  .appointment-context-menu-separator {
-    height: 1px;
-    background-color: rgba(229, 231, 235, 0.6);
-    margin: 6px 0;
-  }
-
-  /* Agregando estilos mobile para el calendario */
-  
-  /* Cabecera mobile minimalista */
-  .calendar-header-mobile {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.25rem;
-    background-color: white;
-    border-bottom: 1px solid rgba(229, 231, 235, 0.8);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    height: 60px;
-  }
-
-  /* Tabs swipeable para mobile */
-  .calendar-mobile-tabs {
-    background-color: white;
-    border-bottom: 1px solid rgba(229, 231, 235, 0.6);
-    overflow-x: hidden;
-  }
-
-  .calendar-mobile-tabs-scroll {
-    display: flex;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 0.5rem 1rem;
-    gap: 0.75rem;
-  }
-
-  .calendar-mobile-tabs-scroll::-webkit-scrollbar {
-    display: none;
-  }
 
-  /* Cada tab individual */
-  .calendar-mobile-tab {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 60px;
-    padding: 0.625rem 0;
-    border-radius: 0.75rem;
-    cursor: pointer;
-    transition: all 150ms ease;
-    color: #6B7280;
-    background-color: transparent;
-    border: none;
-    position: relative;
-  }
-
-  .calendar-mobile-tab:hover {
-    background-color: rgba(243, 244, 246, 0.8);
-  }
-
-  /* Tab activo */
-  .calendar-mobile-tab-active {
-    color: #037ECC;
-    font-weight: 600;
-  }
-
-  .calendar-mobile-tab-active::after {
-    content: '';
-    position: absolute;
-    bottom: -0.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 32px;
-    height: 3px;
-    background-color: #037ECC;
-    border-radius: 2px;
-  }
-
-  /* Etiqueta de hora para mobile */
-  .calendar-time-label-mobile {
-    font-size: 0.875rem;
-    color: #6B7A8B;
-    font-weight: 500;
-    padding: 0.75rem 0;
-    text-align: left;
-    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
-  }
-
-  /* Celda del grid para mobile */
-  .calendar-grid-cell-mobile {
-    min-height: 70px;
-    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
-    position: relative;
-  }
-
-  /* FAB flotante para mobile */
-  .calendar-fab-mobile {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #037ECC 0%, #079CFB 100%);
-    box-shadow: 0 4px 12px rgba(3, 126, 204, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    border: none;
-    cursor: pointer;
-    transition: all 200ms ease;
-    z-index: 50;
-    animation: scaleIn 200ms cubic-bezier(0.16, 0.84, 0.44, 1);
-  }
-
-  @keyframes scaleIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .calendar-fab-mobile:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(3, 126, 204, 0.45);
-  }
-
-  .calendar-fab-mobile:active {
-    transform: scale(0.95);
-  }
-
-  /* Modal full screen para mobile */
-  @media (max-width: 768px) {
-    .appointment-modal-premium {
-      max-width: 100%;
-      height: 100vh;
-      max-height: 100vh;
-      margin: 0;
-      border-radius: 0;
-      overflow-y: auto;
-    }
-
-    .appointment-modal-header {
-      position: sticky;
-      top: 0;
-      background-color: white;
-      z-index: 10;
-      border-bottom: 1px solid rgba(229, 231, 235, 0.6);
-      padding-bottom: 16px;
-    }
-
-    .appointment-modal-actions {
-      position: sticky;
-      bottom: 0;
-      background-color: white;
-      border-top: 1px solid rgba(229, 231, 235, 0.6);
-      padding-top: 16px;
-      margin-top: 24px;
-      z-index: 10;
-    }
-
-    .appointment-input-premium {
-      height: 48px;
-    }
-
-    .appointment-location-pill {
-      padding: 10px 16px;
-      font-size: 15px;
-    }
-
-    
-  }
-}

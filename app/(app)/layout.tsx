@@ -1,30 +1,18 @@
-"use client"
-
 import type React from "react"
 
-import { useEffect } from "react"
-import { redirect, useRouter } from "next/navigation"
-import { useSession } from "@/lib/store/session.store"
+import { redirect } from "next/navigation"
 import { useUi } from "@/lib/store/ui.store"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Topbar } from "@/components/layout/Topbar"
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { cookies } from "next/headers"
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth()
-  const { darkMode, sidebarCollapsed } = useUi()
-  const router = useRouter()
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
 
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }, [darkMode])
+  const cookieStore = await cookies()
+  const token = cookieStore.get("mv_fo_token")?.value
 
   if (!token) {
     redirect("/login")
@@ -34,7 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className={cn("transition-all duration-300", sidebarCollapsed ? "ml-20" : "ml-[280px]")}>
+      <div className={cn("transition-all duration-300 ml-[280px]")}>
         <Topbar />
         <main className="p-6">
           <div className="max-w-7xl mx-auto">

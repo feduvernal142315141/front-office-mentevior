@@ -13,6 +13,7 @@ import {
   UserIcon,
   X,
   KeyRound,
+  User,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSession } from "@/lib/store/session.store"
@@ -227,6 +228,30 @@ export function Topbar() {
                   <DropdownMenuSeparator />
 
                   {/* CHANGE PASSWORD */}
+                  <DropdownMenuItem
+                    onClick={() => router.push("/my-profile")}
+                    className="
+                      group relative flex items-center gap-3
+                      rounded-xl px-4 py-3 text-sm
+                      cursor-pointer
+                      transition-all duration-200
+
+                      bg-white
+                      hover:bg-slate-50
+                      dark:bg-transparent dark:hover:bg-white/5
+                    "
+                  >
+                    <User className="
+                      h-4 w-4 text-muted-foreground
+                      transition-all duration-200
+                      group-hover:text-foreground
+                      group-hover:translate-x-0.5
+                    " />
+
+                    <span>My profile</span>
+                  </DropdownMenuItem>
+
+                  <div className="h-1" />
                   <DropdownMenuItem
                     onClick={() => router.push("/change-password")}
                     className="

@@ -13,6 +13,7 @@ import { jwtDecode } from "jwt-decode";
 import { encryptRsa } from "../utils/encrypt";
 import { serviceLoginManagerUserAuth, serviceRefreshToken } from "../services/login/login";
 import useRefreshTokenWorker from "./use-refresh-token-worker";
+import { useRouter } from "next/navigation";
 
 interface AuthUser {
   id: string;
@@ -156,6 +157,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const router = useRouter();
+
   /**
    * Realiza el logout
    */
@@ -169,6 +172,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshTokenExpiresAt: 0,
     });
     setIsAuthenticated(false);
+
+    router.replace("/login");
 
     // Limpiar cookie del servidor
     fetch("/api/auth/logout", { method: "POST" }).catch(console.error);

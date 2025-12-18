@@ -73,7 +73,8 @@ export default function ForgotPasswordPage() {
                     text-green-700 text-sm
                   "
                 >
-                  We’ve sent a password reset link to your email.
+                  We have sent a link to reset your password.
+                  Please check your email and follow the instructions to complete the process.
                 </div>
               )}
 

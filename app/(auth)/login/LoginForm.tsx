@@ -30,7 +30,7 @@ export function LoginForm() {
         </p>
       </div>
 
-      <form
+      <form noValidate
         onSubmit={(e) => {
           e.preventDefault()
           onSubmit(email, password)
@@ -48,7 +48,7 @@ export function LoginForm() {
 
           <input
             id="email"
-            type="email"
+            type="text"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value)
