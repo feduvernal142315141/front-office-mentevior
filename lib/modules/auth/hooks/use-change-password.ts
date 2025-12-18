@@ -19,7 +19,7 @@ export function useChangePassword() {
 
       if (!response || response.status !== 200) {
         // Extract error message from backend response
-        const errorMessage = response?.data?.errorResponse?.message || "Error updating password"
+        const errorMessage = response?.data?.message || "Error updating password"
         setError(errorMessage)
         return false
       }

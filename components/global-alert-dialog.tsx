@@ -36,18 +36,27 @@ export function GlobalAlertDialog() {
 
   return (
     <AlertDialog open={alertDialog.isOpen} onOpenChange={closeAlert}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
+      <AlertDialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-xl">
+        <AlertDialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
-            <Icon className={`h-6 w-6 ${iconColor}`} />
-            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <Icon className={`h-6 w-6 flex-shrink-0 ${iconColor}`} />
+            <AlertDialogTitle className="text-gray-900 dark:text-white text-left">
+              {alertDialog.title}
+            </AlertDialogTitle>
           </div>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-left">
             {alertDialog.description}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogAction onClick={closeAlert}>
+        <AlertDialogFooter className="mt-4 flex justify-end">
+          <AlertDialogAction 
+            onClick={closeAlert}
+            style={{ 
+              backgroundColor: '#037ECC',
+              color: 'white',
+            }}
+            className="hover:bg-[#0262A2] font-semibold px-8 py-2.5 rounded-lg min-w-[100px] transition-colors"
+          >
             Done
           </AlertDialogAction>
         </AlertDialogFooter>
