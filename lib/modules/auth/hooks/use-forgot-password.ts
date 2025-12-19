@@ -29,7 +29,7 @@ export function useForgotPassword() {
                 setIsSuccess(true)
                 setTimeout(() => {
                     router.push("/login");
-                }, 60000)
+                }, 5000)
 
             }
         } catch (err: any) {
