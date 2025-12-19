@@ -146,10 +146,9 @@ export default function ChangePassword() {
             
                 <>
                   <AnimatePresence>
-                    {showMismatch && <PasswordMismatchMessage />}
-                  </AnimatePresence>
+                    {showMismatch && <PasswordMismatchMessage />}                 
 
-                  <AnimatePresence>
+                
                     {passwordsMatch && <PasswordMatchMessage />}
                   </AnimatePresence>
                 </>

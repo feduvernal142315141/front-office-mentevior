@@ -32,7 +32,7 @@ export function PasswordField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
-          placeholder="paceholder"
+          placeholder=" "
           autoComplete="off"
           className={cn(
             `
@@ -56,10 +56,9 @@ export function PasswordField({
             absolute left-4 px-1
             pointer-events-none
             transition-all duration-200 ease-out
-
-            bg-white/80
-            supports-[backdrop-filter]:bg-white/40
-            backdrop-blur-md
+            floating-label-surface
+            bg-white/20
+            z-40
 
             text-sm text-slate-500
 
@@ -80,7 +79,7 @@ export function PasswordField({
             peer-[&:not(:placeholder-shown)]:text-[#2563EB]
           `)}
           >
-            {label} <span className="text-[#2563EB]">*</span>
+            {label} <span className="floating-label-surface">*</span>
           </label>
 
         <button

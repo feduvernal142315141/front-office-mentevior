@@ -34,7 +34,7 @@ export function PasswordRequirements({ show, rules }: Props) {
           className="
             mt-3 rounded-2xl p-4
             bg-white/70
-            backdrop-blur-xl
+        
             border border-gray-200/70
             shadow-[0_12px_30px_rgba(2,6,23,0.08)]
           "
