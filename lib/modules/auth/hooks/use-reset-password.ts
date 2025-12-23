@@ -34,7 +34,7 @@ export function useResetPassword() {
                 setIsSuccess(true)
                 setTimeout(() => {
                     router.push("/login");
-                }, 60000)
+                }, 5000)
             }
         } catch (err: any) {
             console.error("Error saving reset password:", err);
