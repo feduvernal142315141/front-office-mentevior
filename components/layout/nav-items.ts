@@ -71,11 +71,4 @@ export const navItems: NavItem[] = [
     section: "system",
     disabled: true,
   },
-  {
-    label: "My profile",
-    href: "/my-profile",
-    icon: "User",
-    section: "system",
-    disabled: true,
-  },
 ]
