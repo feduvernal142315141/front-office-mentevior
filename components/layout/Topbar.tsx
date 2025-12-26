@@ -16,7 +16,6 @@ import {
   User,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useSession } from "@/lib/store/session.store"
 import { useUi } from "@/lib/store/ui.store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

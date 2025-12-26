@@ -1,8 +1,8 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { useSession } from "@/lib/store/session.store"
-import type { Role } from "@/lib/types/domain"
+import { useAuth } from "@/lib/hooks/use-auth"
+import type { Role } from "@/lib/types/auth.types"
 
 interface RoleGateProps {
   children: ReactNode
@@ -11,7 +11,7 @@ interface RoleGateProps {
 }
 
 export function RoleGate({ children, allowedRoles, fallback = null }: RoleGateProps) {
-  const { user, isAuthenticated } = useSession()
+  const { user, isAuthenticated } = useAuth()
 
   if (!isAuthenticated || !user) {
     return <>{fallback}</>

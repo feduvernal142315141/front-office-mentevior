@@ -12,7 +12,6 @@ export function useLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = useCallback(
-    
     async (email: string, password: string) => {
       setIsSubmitting(true);
       setError(null);
@@ -22,9 +21,6 @@ export function useLogin() {
       if (success) {
         console.log("Login successful, redirecting to /dashboard");
         router.replace("/dashboard");
-
-        requestAnimationFrame(() => setTimeout(() => {}, 0));
-
         return;
       }
 

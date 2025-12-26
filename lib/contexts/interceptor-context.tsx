@@ -226,10 +226,14 @@ export function InterceptorProvider({ children }: { children: ReactNode }) {
       'warning'
     )
     
-    // Redirect after 2 seconds
-    setTimeout(() => {
-      window.location.href = '/login'
-    }, 2000)
+    // Importar logout desde el store
+    if (typeof window !== 'undefined') {
+      setTimeout(async () => {
+        const { useAuthStore } = await import('@/lib/store/auth.store')
+        useAuthStore.getState().logout()
+        window.location.href = '/login'
+      }, 2000)
+    }
   }
 
   // ============================================

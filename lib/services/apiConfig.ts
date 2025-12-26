@@ -1,20 +1,21 @@
 import axios, {AxiosError, InternalAxiosRequestConfig} from 'axios'
-// Tipos para los handlers que se pueden inyectar desde Redux u otros estados
+import { useAuthStore } from '@/lib/store/auth.store'
+
+// Tipos para los handlers que se pueden inyectar
 type InterceptorHandlers = {
     onLoadingStart?: () => void
     onLoadingEnd?: () => void
     onNotification?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
     onUnauthorized?: () => void
     onForbidden?: () => void
-    onActivity?: () => void // Se llama en cada petición HTTP para resetear inactividad
+    onActivity?: () => void
 }
 
-// Variable para almacenar los handlers (se pueden inyectar posteriormente desde Redux)
+// Variable para almacenar los handlers
 let interceptorHandlers: InterceptorHandlers = {}
 
 /**
  * Función para configurar los handlers de los interceptores
- * Esto permite inyectar dispatch de Redux u otras funciones de estado global
  */
 export const setInterceptorHandlers = (handlers: Partial<InterceptorHandlers>) => {
     interceptorHandlers = {...interceptorHandlers, ...handlers}
@@ -51,14 +52,11 @@ apiInstance.interceptors.request.use(
             const isPublicRoute = PUBLIC_ROUTES.some((path) => config.url?.includes(path))
 
             if (!isPublicRoute) {
-                // Obtener token real desde localStorage
-                const saved = localStorage.getItem("mv-auth")
-
-                if (saved) {
-                    const {token} = JSON.parse(saved)
-                    if (token) {
-                        config.headers.Authorization = `Bearer ${token}`
-                    }
+                // Obtener token desde Zustand store
+                const token = useAuthStore.getState().accessToken
+                
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`
                 }
             }
         } catch (error) {
