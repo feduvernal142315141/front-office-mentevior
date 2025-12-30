@@ -6,9 +6,9 @@ import { useState, useEffect } from "react"
 import { useCreateUser } from "@/lib/modules/users/hooks/use-create-user"
 import { useUpdateUser } from "@/lib/modules/users/hooks/use-update-user"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
-import { useRoles } from "@/lib/modules/users/hooks/use-roles"
 import { userFormSchema, getUserFormDefaults, type UserFormValues } from "@/lib/schemas/user-form.schema"
 import type { CreateMemberUserDto, UpdateMemberUserDto } from "@/lib/types/user.types"
+import {useRoles} from "@/lib/modules/roles/hooks/use-roles";
 
 interface UIState {
   showPassword: boolean
@@ -32,7 +32,7 @@ interface UseUserFormReturn {
   onSubmit: (data: UserFormValues) => Promise<void>
   isSubmitting: boolean
 
-  response: { email: string; temporaryPassword: string } | null
+  response: { email: string; id: string } | null
   
   uiState: UIState
 
@@ -72,15 +72,17 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         lastName: user.lastName,
         email: user.email,
         cellphone: user.cellphone || "",
-        hiringDate: user.hiringDate || "",
+        hiringDate: user.hiringDate.split("T")[0] || "",
         roleId: user.role?.id || "",
       })
     }
-  }, [user, isEditing, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isEditing]) 
   
   const onSubmit = async (data: UserFormValues) => {
     if (isEditing && userId) {
       const dto: UpdateMemberUserDto = {
+        id: userId,
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -89,7 +91,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         roleId: data.roleId,
       }
       
-      const result = await update(userId, dto)
+      const result = await update(dto)
       
       if (result) {
         setTimeout(() => {

@@ -10,13 +10,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 function SuccessScreen({
   email,
-  temporaryPassword,
   countdown,
   onCreateAnother,
   onGoToList,
 }: {
   email: string
-  temporaryPassword: string
   countdown: number
   onCreateAnother: () => void
   onGoToList: () => void
@@ -31,24 +29,6 @@ function SuccessScreen({
         <AlertDescription className="text-green-800 mt-2">
           <p>The user has been created and a welcome email has been sent to:</p>
           <p className="font-mono font-bold mt-2">{email}</p>
-        </AlertDescription>
-      </Alert>
-
-      <Alert className="border-yellow-200 bg-yellow-50">
-        <AlertCircle className="h-5 w-5 text-yellow-600" />
-        <AlertTitle className="text-yellow-900 font-semibold">
-          Temporary Password
-        </AlertTitle>
-        <AlertDescription className="text-yellow-800 mt-2">
-          <p className="mb-2">This password will only be shown once. Please save it:</p>
-          <div className="bg-white border border-yellow-300 rounded-lg p-4 mt-3">
-            <code className="text-lg font-mono font-bold text-gray-900 break-all">
-              {temporaryPassword}
-            </code>
-          </div>
-          <p className="text-sm mt-3 text-yellow-700">
-            ⚠️ The user can change this password after their first login.
-          </p>
         </AlertDescription>
       </Alert>
 
@@ -129,7 +109,6 @@ export function UserForm({ userId = null }: UserFormProps) {
     return (
       <SuccessScreen
         email={response.email}
-        temporaryPassword={response.temporaryPassword}
         countdown={uiState.redirectCountdown}
         onCreateAnother={actions.createAnother}
         onGoToList={actions.goToList}

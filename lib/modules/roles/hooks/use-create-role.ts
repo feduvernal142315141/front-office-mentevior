@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { toast } from "sonner"
 import type { CreateRoleDto, Role } from "@/lib/types/role.types"
 import { createRole } from "../services/roles.service"
@@ -21,7 +21,7 @@ export function useCreateRole(): UseCreateRoleReturn {
   const [error, setError] = useState<Error | null>(null)
   const [createdRole, setCreatedRole] = useState<Role | null>(null)
 
-  const create = async (data: CreateRoleDto): Promise<Role | null> => {
+  const create = useCallback(async (data: CreateRoleDto): Promise<Role | null> => {
     try {
       setIsLoading(true)
       setError(null)
@@ -47,13 +47,13 @@ export function useCreateRole(): UseCreateRoleReturn {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setIsLoading(false)
     setError(null)
     setCreatedRole(null)
-  }
+  }, [])
 
   return {
     create,

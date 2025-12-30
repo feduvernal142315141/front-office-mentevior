@@ -38,7 +38,7 @@ export function RolesTable() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search by role name..."
-                value={filters.searchQuery}
+                value={filters.inputValue}
                 onChange={(e) => filters.setSearchQuery(e.target.value)}
                 className="pl-10"
               />
@@ -51,7 +51,7 @@ export function RolesTable() {
               <span className="font-semibold">{totalCount}</span> roles
             </p>
 
-            {filters.searchQuery && (
+            {filters.inputValue && (
               <Button variant="ghost" onClick={clearFilters} className="text-sm">
                 Clear filters
               </Button>
@@ -68,7 +68,7 @@ export function RolesTable() {
           isLoading={isLoading}
           emptyMessage="No roles found"
           emptyContent={
-            filters.searchQuery ? (
+            filters.inputValue ? (
               <div>
                 <p className="text-gray-500">No roles match your search</p>
                 <Button variant="ghost" onClick={clearFilters} className="mt-2">

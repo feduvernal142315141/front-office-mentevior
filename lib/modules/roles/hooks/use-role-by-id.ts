@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import type { RoleWithUsage } from "@/lib/types/role.types"
 import { getRoleById } from "../services/roles.service"
 
 interface UseRoleByIdReturn {
-
   role: RoleWithUsage | null
-
   isLoading: boolean
-
   error: Error | null
-
   refetch: () => void
 }
 
@@ -18,7 +14,7 @@ export function useRoleById(roleId: string | null): UseRoleByIdReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchRole = async () => {
+  const fetchRole = useCallback(async () => {
     if (!roleId) {
       setRole(null)
       setIsLoading(false)
@@ -41,11 +37,11 @@ export function useRoleById(roleId: string | null): UseRoleByIdReturn {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [roleId])
 
   useEffect(() => {
     fetchRole()
-  }, [roleId])
+  }, [fetchRole])
 
   return {
     role,

@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { toast } from "sonner"
 import type { UpdateRoleDto, Role } from "@/lib/types/role.types"
 import { updateRole } from "../services/roles.service"
@@ -22,7 +22,7 @@ export function useUpdateRole(): UseUpdateRoleReturn {
   const [error, setError] = useState<Error | null>(null)
   const [updatedRole, setUpdatedRole] = useState<Role | null>(null)
 
-  const update = async (
+  const update = useCallback(async (
     roleId: string,
     data: UpdateRoleDto
   ): Promise<Role | null> => {
@@ -51,13 +51,13 @@ export function useUpdateRole(): UseUpdateRoleReturn {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setIsLoading(false)
     setError(null)
     setUpdatedRole(null)
-  }
+  }, [])
 
   return {
     update,

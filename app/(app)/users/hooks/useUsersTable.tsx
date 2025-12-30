@@ -1,21 +1,25 @@
 
-import { useMemo, useState } from "react"
+import {useEffect, useMemo, useState} from "react"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { CustomTableColumn } from "@/components/custom/CustomTable"
-import { MemberUser } from "@/lib/types/user.types"
+import { MemberUserListItem} from "@/lib/types/user.types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, Edit2 } from "lucide-react"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
+import {useRoles} from "@/lib/modules/roles/hooks/use-roles";
+import {useDebouncedState} from "@/lib/hooks/use-debounced-state";
+import {buildFilters} from "@/lib/utils/query-filters";
+import {FilterOperator} from "@/lib/models/filterOperator";
 
 type StatusFilter = "all" | "active" | "inactive"
 
 interface UseUsersTableReturn {
-  data: MemberUser[]
-  columns: CustomTableColumn<MemberUser>[]
+  data: MemberUserListItem[]
+  columns: CustomTableColumn<MemberUserListItem>[]
   isLoading: boolean
   error: Error | null
   
@@ -25,7 +29,9 @@ interface UseUsersTableReturn {
     statusFilter: StatusFilter
     setStatusFilter: (value: StatusFilter) => void
     roleFilter: string
-    setRoleFilter: (value: string) => void
+    setRoleFilter: (value: string) => void,
+    inputValue: string
+    setInputValue: (value: string) => void
   }
   
   uniqueRoles: string[]
@@ -47,6 +53,7 @@ export function useUsersTable(): UseUsersTableReturn {
   const router = useRouter()
   
   const { users, isLoading, error, refetch } = useUsers()
+  const { roles } = useRoles()
   const { view, create, edit, remove } = usePermission()
   const permissions = useMemo(
     () => ({
@@ -57,68 +64,59 @@ export function useUsersTable(): UseUsersTableReturn {
     }),
     [view, create, edit, remove]
   )
-  
-  const [searchQuery, setSearchQuery] = useState("")
+
+  const [inputValue, setInputValue] = useState("")
+  const [searchQuery, setSearchQuery] = useDebouncedState("", 500);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [roleFilter, setRoleFilter] = useState<string>("all")
-  
+
+  useEffect(() => {
+    const filtersArray = buildFilters(
+        [
+          {
+            field: "active",
+            value: statusFilter === "all" ? null : statusFilter === "active",
+            operator: FilterOperator.eq,
+            type: "boolean",
+          },
+          {
+            field: "role.name",
+            value: roleFilter === "all" ? null : roleFilter,
+            operator: FilterOperator.relatedEqual,
+            type: "string",
+          },
+        ],
+        {
+          fields: ["firstName","lastName"],
+          search: searchQuery,
+        }
+    );
+    refetch(filtersArray)
+  }, [searchQuery,statusFilter,roleFilter]);
+
   const uniqueRoles = useMemo(() => {
-    const roles = new Set(users.map((u) => u.role?.name).filter(Boolean) as string[])
-    return Array.from(roles)
+    const rolesList = new Set(roles.map((r) => r.name).filter(Boolean) as string[])
+    return Array.from(rolesList)
   }, [users])
-  
-  const filteredData = useMemo(() => {
-    return users.filter((user) => {
-      const matchesSearch =
-        user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.cellphone?.toLowerCase().includes(searchQuery.toLowerCase())
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && user.isActive) ||
-        (statusFilter === "inactive" && !user.isActive)
-
-      const matchesRole = roleFilter === "all" || user.role?.name === roleFilter
-
-      return matchesSearch && matchesStatus && matchesRole
-    })
-  }, [users, searchQuery, statusFilter, roleFilter])
-  
-  const columns: CustomTableColumn<MemberUser>[] = useMemo(() => {
-    const cols: CustomTableColumn<MemberUser>[] = [
+  const columns: CustomTableColumn<MemberUserListItem>[] = useMemo(() => {
+    const cols: CustomTableColumn<MemberUserListItem>[] = [
       {
         key: "name",
         header: "Name",
         render: (user) => (
           <span className="font-medium">
-            {user.firstName} {user.lastName}
+            {user.fullName}
           </span>
         ),
       },
-      
       {
-        key: "email",
-        header: "Email",
-        render: (user) => <span className="text-gray-600">{user.email}</span>,
-      },
-      
-      {
-        key: "cellphone",
-        header: "Phone",
-        render: (user) => (
-          <span className="text-gray-600">{user.cellphone || "-"}</span>
-        ),
-      },
-      
-      {
-        key: "role",
+        key: "roleName",
         header: "Role",
         render: (user) =>
-          user.role ? (
+          user.roleName ? (
             <Badge variant="outline" className="font-normal">
-              {user.role.name}
+              {user.roleName}
             </Badge>
           ) : (
             <span className="text-gray-400 text-sm">No role</span>
@@ -192,29 +190,37 @@ export function useUsersTable(): UseUsersTableReturn {
     
     return cols
   }, [permissions])
+
+  const handleSearchChange = (value: string) => {
+    setInputValue(value)
+    setSearchQuery(value)
+  }
   
   const clearFilters = () => {
     setSearchQuery("")
+    setInputValue("")
     setStatusFilter("all")
     setRoleFilter("all")
   }
 
   return {
-    data: filteredData,
+    data: users,
     columns,
     isLoading,
     error,
     filters: {
       searchQuery,
-      setSearchQuery,
+      setSearchQuery: handleSearchChange,
       statusFilter,
       setStatusFilter,
       roleFilter,
       setRoleFilter,
+      inputValue,
+      setInputValue
     },
     uniqueRoles,
     totalCount: users.length,
-    filteredCount: filteredData.length,
+    filteredCount: users.length,
     clearFilters,
     refetch,
     permissions,

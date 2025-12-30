@@ -61,16 +61,16 @@ export function FormSelectField<T = any>({
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className={className}>
-          <FormLabel>
-            {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
-          </FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            defaultValue={field.value}
-            disabled={disabled}
-          >
+          <FormItem className={className}>
+            <FormLabel>
+              {label}
+              {required && <span className="text-red-500 ml-1">*</span>}
+            </FormLabel>
+            <Select
+              onValueChange={field.onChange}
+              value={field.value}  
+              disabled={disabled}
+            >
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder={placeholder} />

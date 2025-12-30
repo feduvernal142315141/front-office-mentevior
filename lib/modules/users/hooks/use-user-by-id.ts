@@ -1,16 +1,12 @@
 
 import { useState, useEffect } from "react"
 import type { MemberUser } from "@/lib/types/user.types"
-import { getUserById } from "../services/users.service.mock"
+import {getUserById} from "@/lib/modules/users/services/users.service";
 
 interface UseUserByIdReturn {
-
   user: MemberUser | null
-
   isLoading: boolean
-
   error: Error | null
-
   refetch: () => void
 }
 

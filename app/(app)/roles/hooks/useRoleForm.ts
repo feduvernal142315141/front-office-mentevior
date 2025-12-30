@@ -53,7 +53,8 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
         permissions: role.permissions,
       })
     }
-  }, [role, isEditing, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, isEditing]) // ✅ Solo role e isEditing, form.reset es estable
   
   const canEditName = isEditing ? (role?.canEdit ?? false) : true
   const usersCount = role?.usersCount ?? 0

@@ -1,7 +1,3 @@
-
-
-import type { Role } from "./role.types"
-
 export interface MemberUser {
   id: string
   firstName: string
@@ -10,10 +6,8 @@ export interface MemberUser {
   cellphone: string
   hiringDate: string
   roleId: string
-  role?: Role 
+  role?: RoleMemberUser
   isActive: boolean
-  createdAt: string
-  updatedAt?: string
 }
 
 export interface CreateMemberUserDto {
@@ -26,6 +20,7 @@ export interface CreateMemberUserDto {
 }
 
 export interface UpdateMemberUserDto {
+  id: string
   firstName?: string
   lastName?: string
   email?: string
@@ -38,17 +33,17 @@ export interface UpdateMemberUserDto {
 export interface CreateMemberUserResponse {
   id: string
   email: string
-  temporaryPassword: string  
-  message: string
 }
-
 
 export interface MemberUserListItem {
   id: string
-  fullName: string  
-  email: string
-  cellphone: string
+  fullName: string
   roleName: string
   hiringDate: string
   isActive: boolean
+}
+
+interface RoleMemberUser{
+  id: string
+  name: string
 }

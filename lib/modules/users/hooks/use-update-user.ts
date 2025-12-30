@@ -1,16 +1,16 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import type { UpdateMemberUserDto, MemberUser } from "@/lib/types/user.types"
-import { updateUser } from "../services/users.service.mock"
+import type { UpdateMemberUserDto } from "@/lib/types/user.types"
+import {updateUser} from "@/lib/modules/users/services/users.service";
 
 interface UseUpdateUserReturn {
-  update: (userId: string, data: UpdateMemberUserDto) => Promise<MemberUser | null>
+  update: (data: UpdateMemberUserDto) => Promise<Boolean | null>
   isLoading: boolean
 
   error: Error | null
 
-  updatedUser: MemberUser | null
+  updatedUser: Boolean | null
 
   reset: () => void
 }
@@ -18,21 +18,20 @@ interface UseUpdateUserReturn {
 export function useUpdateUser(): UseUpdateUserReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
-  const [updatedUser, setUpdatedUser] = useState<MemberUser | null>(null)
+  const [updatedUser, setUpdatedUser] = useState<Boolean | null>(null)
 
   const update = async (
-    userId: string,
     data: UpdateMemberUserDto
-  ): Promise<MemberUser | null> => {
+  ): Promise<Boolean | null> => {
     try {
       setIsLoading(true)
       setError(null)
 
-      const result = await updateUser(userId, data)
+      const result = await updateUser(data)
       setUpdatedUser(result)
 
       toast.success("User updated successfully", {
-        description: `${result.firstName} ${result.lastName} has been updated.`,
+        description: `${data.firstName} ${data.lastName} has been updated.`,
       })
 
       return result

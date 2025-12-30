@@ -44,7 +44,7 @@ export function UsersTable() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search by name, email, or phone..."
-                value={filters.searchQuery}
+                value={filters.inputValue}
                 onChange={(e) => filters.setSearchQuery(e.target.value)}
                 className="pl-10"
               />

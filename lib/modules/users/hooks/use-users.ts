@@ -1,26 +1,32 @@
 
 import { useState, useEffect, useCallback } from "react"
-import { MemberUser } from "@/lib/types/user.types"
-import { getUsers } from "../services/users.service.mock"
+import { MemberUserListItem} from "@/lib/types/user.types"
+import {getUsers} from "@/lib/modules/users/services/users.service";
+import {QueryModel} from "@/lib/models/queryModel";
 
 interface UseUsersReturn {
-  users: MemberUser[]
+  users: MemberUserListItem[]
   isLoading: boolean
   error: Error | null
-  refetch: () => void
+  refetch: (filters?: string[]) => Promise<void>
 }
 
 export function useUsers(): UseUsersReturn {
-  const [users, setUsers] = useState<MemberUser[]>([])
+  const [users, setUsers] = useState<MemberUserListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (filters: string[] = []) => {
     try {
       setIsLoading(true)
       setError(null)
-
-      const data = await getUsers()
+      const query: QueryModel = {
+        page: 0,
+        pageSize: 10,
+        filters: filters.length ? filters : undefined,
+        orders: undefined,
+      }
+      const data = await getUsers(query)
       setUsers(data)
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to fetch users"))

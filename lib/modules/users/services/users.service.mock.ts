@@ -2,7 +2,7 @@
 import type { MemberUser, CreateMemberUserDto, CreateMemberUserResponse, UpdateMemberUserDto } from "@/lib/types/user.types"
 import type { Role } from "@/lib/types/role.types"
 import { mockUsers, getMockActiveUsers } from "@/lib/mocks/users.mock"
-import { mockRoles, getMockActiveRoles } from "@/lib/mocks/roles.mock"
+import { getMockActiveRoles } from "@/lib/mocks/roles.mock"
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -35,7 +35,6 @@ export async function createUser(data: CreateMemberUserDto): Promise<CreateMembe
     id: `user-${Date.now()}`,
     ...data,
     isActive: true,
-    createdAt: new Date().toISOString(),
   }
   
   mockUsers.push(newUser)
@@ -45,8 +44,6 @@ export async function createUser(data: CreateMemberUserDto): Promise<CreateMembe
   return {
     id: newUser.id,
     email: newUser.email,
-    temporaryPassword: tempPassword,
-    message: "User created successfully. Welcome email sent.",
   }
 }
 

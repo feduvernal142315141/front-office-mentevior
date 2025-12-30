@@ -2,9 +2,9 @@
 "use client"
 
 import { useState } from "react"
-import { createUser } from "../services/users.service.mock"
 import type { CreateMemberUserDto, CreateMemberUserResponse } from "@/lib/types/user.types"
 import { toast } from "sonner"
+import {createUser} from "@/lib/modules/users/services/users.service";
 
 export function useCreateUser() {
   const [isLoading, setIsLoading] = useState(false)
@@ -18,13 +18,14 @@ export function useCreateUser() {
 
     try {
       const result = await createUser(data)
-      setResponse(result)
+      const res = { id: result ,email: data.email}
+      setResponse(res)
       
       toast.success("User created successfully!", {
-        description: `Welcome email sent to ${result.email}`,
+        description: `Welcome email sent to ${data.email}`,
       })
       
-      return result
+      return res
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to create user"
       setError(errorMessage)

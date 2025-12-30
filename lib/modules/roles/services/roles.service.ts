@@ -4,12 +4,14 @@ import type {
   Role, 
   CreateRoleDto, 
   UpdateRoleDto, 
-  RoleWithUsage, 
-  PaginatedResponse, 
+  RoleWithUsage,
   RoleBackendGet,
   RoleBackendMutate 
 } from "@/lib/types/role.types"
 import { permissionsToFrontend, permissionsToBackend } from "@/lib/utils/permissions-transform"
+import {PaginatedResponse} from "@/lib/types/response.types";
+import {QueryModel} from "@/lib/models/queryModel";
+import {getQueryString} from "@/lib/utils/format";
 
 function normalizeRole(roleBackend: RoleBackendGet): Role {
   const permissions = roleBackend.permissions 
@@ -27,8 +29,10 @@ function normalizeRole(roleBackend: RoleBackendGet): Role {
 }
 
 
-export async function getRoles(): Promise<Role[]> {
-  const response = await serviceGet<PaginatedResponse<RoleBackendGet>>("/roles")
+export async function getRoles(query: QueryModel): Promise<Role[]> {
+  const response = await serviceGet<PaginatedResponse<RoleBackendGet>>(`/roles${
+      query ? `?${getQueryString(query)}` : ''
+  }`)
   
   if (response.status !== 200 || !response.data) {
     throw new Error(response.data?.message || "Failed to fetch roles")
@@ -47,7 +51,6 @@ export async function getRoles(): Promise<Role[]> {
 
 export async function getRoleById(roleId: string): Promise<RoleWithUsage | null> {
   const response = await serviceGet<RoleBackendGet>(`/roles/${roleId}`)
-  
   if (response.status === 404) {
     return null
   }

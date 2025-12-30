@@ -1,13 +1,3 @@
-
-export interface PaginatedResponse<T> {
-  entities: T[]
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-  }
-}
-
 export interface PermissionBackendFormat {
   permissionId: string
   actionsValue: number

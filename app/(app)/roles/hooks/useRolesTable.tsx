@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from "react"
+import {useEffect, useMemo, useState} from "react"
 import { useRoles } from "@/lib/modules/roles/hooks/use-roles"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/custom/Button"
 import { Edit2, Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
+import {useDebouncedState} from "@/lib/hooks/use-debounced-state";
+import {buildFilters} from "@/lib/utils/query-filters";
 
 interface UseRolesTableReturn {
   data: Role[]
@@ -19,6 +21,8 @@ interface UseRolesTableReturn {
   filters: {
     searchQuery: string
     setSearchQuery: (value: string) => void
+    inputValue: string
+    setInputValue: (value: string) => void
   }
   
   totalCount: number
@@ -51,14 +55,28 @@ export function useRolesTable(): UseRolesTableReturn {
     [view, create, edit, remove]
   )
   
-  const [searchQuery, setSearchQuery] = useState("")
-  
-  const filteredData = useMemo(() => {
-    return roles.filter((role) => {
-      const matchesSearch = role.name.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchesSearch
-    })
-  }, [roles, searchQuery])
+  // Estado inmediato para el Input (se actualiza al instante)
+  const [inputValue, setInputValue] = useState("")
+  // Estado debounced para la búsqueda (se actualiza con delay)
+  const [searchQuery, setSearchQuery] = useDebouncedState("", 500);
+
+  // Cuando el usuario escribe, actualiza el inputValue inmediatamente
+  // y el searchQuery con debounce
+  const handleSearchChange = (value: string) => {
+    setInputValue(value)
+    setSearchQuery(value)
+  }
+
+  useEffect(() => {
+    const filtersArray = buildFilters(
+        [],
+        {
+          fields: ["name"],
+          search: searchQuery,
+        }
+    );
+    refetch(filtersArray)
+  }, [searchQuery]);
 
   const columns: CustomTableColumn<Role>[] = useMemo(() => {
     const cols: CustomTableColumn<Role>[] = [
@@ -141,20 +159,23 @@ export function useRolesTable(): UseRolesTableReturn {
   }, [permissions, router])
   
   const clearFilters = () => {
+    setInputValue("")
     setSearchQuery("")
   }
 
   return {
-    data: filteredData,
+    data: roles,
     columns,
     isLoading,
     error,
     filters: {
       searchQuery,
-      setSearchQuery,
+      setSearchQuery: handleSearchChange,
+      inputValue,
+      setInputValue,
     },
     totalCount: roles.length,
-    filteredCount: filteredData.length,
+    filteredCount: roles.length,
     clearFilters,
     refetch,
     permissions,
