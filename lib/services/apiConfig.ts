@@ -100,6 +100,13 @@ apiInstance.interceptors.response.use(
                 case 401:
                     // Solo mostrar el AlertDialog, no el toast (evita notificación duplicada)
                     if (!error.request.responseURL.includes('auth/login')) {
+                        console.error('🔴 401 Unauthorized Error Details:', {
+                            url: error.request.responseURL,
+                            method: error.config?.method,
+                            headers: error.config?.headers,
+                            response: data,
+                            message: data?.message || 'No message provided'
+                        })
                         interceptorHandlers.onUnauthorized?.()
                     }
                     console.error('Error 401 - Unauthorized:', data)
