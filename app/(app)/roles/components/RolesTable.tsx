@@ -2,9 +2,8 @@
 
 import { useRolesTable } from "../hooks/useRolesTable"
 import { CustomTable } from "@/components/custom/CustomTable"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/custom/Button"
-import { Search } from "lucide-react"
+import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
 
 export function RolesTable() {
@@ -14,6 +13,7 @@ export function RolesTable() {
     isLoading,
     error,
     filters,
+    pagination,
     totalCount,
     filteredCount,
     clearFilters,
@@ -32,32 +32,12 @@ export function RolesTable() {
     <div className="space-y-4">
       {/* Filters Card */}
       <Card variant="elevated" padding="md">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search by role name..."
-                value={filters.inputValue}
-                onChange={(e) => filters.setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Showing <span className="font-semibold">{filteredCount}</span> of{" "}
-              <span className="font-semibold">{totalCount}</span> roles
-            </p>
-
-            {filters.inputValue && (
-              <Button variant="ghost" onClick={clearFilters} className="text-sm">
-                Clear filters
-              </Button>
-            )}
-          </div>
-        </div>
+        <SearchInput
+          value={filters.inputValue}
+          onChange={filters.setSearchQuery}
+          placeholder="Search by role name..."
+          onClear={clearFilters}
+        />
       </Card>
 
       {/* Table Card */}
@@ -77,6 +57,7 @@ export function RolesTable() {
               </div>
             ) : undefined
           }
+          pagination={pagination}
           getRowKey={(role) => role.id}
         />
       </Card>

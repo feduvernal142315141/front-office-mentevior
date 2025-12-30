@@ -25,6 +25,15 @@ interface UseRolesTableReturn {
     setInputValue: (value: string) => void
   }
   
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    onPageChange: (page: number) => void
+    onPageSizeChange: (pageSize: number) => void
+    pageSizeOptions: number[]
+  }
+  
   totalCount: number
   filteredCount: number
   
@@ -42,18 +51,9 @@ interface UseRolesTableReturn {
 export function useRolesTable(): UseRolesTableReturn {
   const router = useRouter()
 
-  const { roles, isLoading, error, refetch } = useRoles()
-  
-  const { view, create, edit, remove } = usePermission()
-  const permissions = useMemo(
-    () => ({
-      canView: view(PermissionModule.ROLE),
-      canCreate: create(PermissionModule.ROLE),
-      canEdit: edit(PermissionModule.ROLE),
-      canDelete: remove(PermissionModule.ROLE),
-    }),
-    [view, create, edit, remove]
-  )
+  // Pagination state
+  const [page, setPage] = useState(1) // UI usa 1-based, backend usa 0-based
+  const [pageSize, setPageSize] = useState(10)
   
   // Estado inmediato para el Input (se actualiza al instante)
   const [inputValue, setInputValue] = useState("")
@@ -65,18 +65,36 @@ export function useRolesTable(): UseRolesTableReturn {
   const handleSearchChange = (value: string) => {
     setInputValue(value)
     setSearchQuery(value)
+    setPage(1) // Reset to page 1 on search
   }
 
-  useEffect(() => {
-    const filtersArray = buildFilters(
-        [],
-        {
-          fields: ["name"],
-          search: searchQuery,
-        }
+  // Build filters for the query
+  const filtersArray = useMemo(() => {
+    return buildFilters(
+      [],
+      {
+        fields: ["name"],
+        search: searchQuery,
+      }
     );
-    refetch(filtersArray)
-  }, [searchQuery]);
+  }, [searchQuery])
+
+  const { roles, isLoading, error, totalCount, refetch } = useRoles({
+    page: page - 1, // Convert to 0-based for backend
+    pageSize,
+    filters: filtersArray,
+  })
+  
+  const { view, create, edit, remove } = usePermission()
+  const permissions = useMemo(
+    () => ({
+      canView: view(PermissionModule.ROLE),
+      canCreate: create(PermissionModule.ROLE),
+      canEdit: edit(PermissionModule.ROLE),
+      canDelete: remove(PermissionModule.ROLE),
+    }),
+    [view, create, edit, remove]
+  )
 
   const columns: CustomTableColumn<Role>[] = useMemo(() => {
     const cols: CustomTableColumn<Role>[] = [
@@ -142,14 +160,59 @@ export function useRolesTable(): UseRolesTableReturn {
         align: "right",
         render: (role) => (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              title="Edit role"
+            <button
               onClick={() => router.push(`/roles/${role.id}/edit`)}
+              className="
+                group/edit
+                relative
+                h-9 w-9
+                flex items-center justify-center
+                rounded-xl
+                
+                /* Background gradient */
+                bg-gradient-to-b from-blue-50 to-blue-100/80
+                
+                /* Border */
+                border border-blue-200/60
+                
+                /* Shadow */
+                shadow-sm
+                shadow-blue-900/5
+                
+                /* Hover */
+                hover:from-blue-100
+                hover:to-blue-200/90
+                hover:border-blue-300/80
+                hover:shadow-md
+                hover:shadow-blue-900/10
+                hover:-translate-y-0.5
+                
+                /* Active */
+                active:translate-y-0
+                active:shadow-sm
+                
+                /* Transitions */
+                transition-all
+                duration-200
+                ease-out
+                
+                /* Focus */
+                focus:outline-none
+                focus:ring-2
+                focus:ring-blue-500/30
+                focus:ring-offset-2
+              "
+              title="Edit role"
+              aria-label="Edit role"
             >
-              <Edit2 className="w-4 h-4" />
-            </Button>
+              <Edit2 className="
+                w-4 h-4
+                text-blue-600
+                group-hover/edit:text-blue-700
+                transition-colors
+                duration-200
+              " />
+            </button>
           </div>
         ),
       })
@@ -161,6 +224,16 @@ export function useRolesTable(): UseRolesTableReturn {
   const clearFilters = () => {
     setInputValue("")
     setSearchQuery("")
+    setPage(1)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+  }
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize)
+    setPage(1) // Reset to first page when changing page size
   }
 
   return {
@@ -174,10 +247,18 @@ export function useRolesTable(): UseRolesTableReturn {
       inputValue,
       setInputValue,
     },
-    totalCount: roles.length,
+    pagination: {
+      page,
+      pageSize,
+      total: totalCount,
+      onPageChange: handlePageChange,
+      onPageSizeChange: handlePageSizeChange,
+      pageSizeOptions: [10, 25, 50, 100],
+    },
+    totalCount,
     filteredCount: roles.length,
     clearFilters,
-    refetch,
+    refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
     permissions,
   }
 }

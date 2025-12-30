@@ -2,16 +2,10 @@
 
 import { useUsersTable } from "../hooks/useUsersTable"
 import { CustomTable } from "@/components/custom/CustomTable"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Search } from "lucide-react"
+import { SearchInput } from "@/components/custom/SearchInput"
+import { FilterSelect } from "@/components/custom/FilterSelect"
+import { Card } from "@/components/custom/Card"
+import { Button } from "@/components/custom/Button"
 
 export function UsersTable() {
   const {
@@ -36,65 +30,54 @@ export function UsersTable() {
   }
 
   return (
-    <div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search by name, email, or phone..."
-                value={filters.inputValue}
-                onChange={(e) => filters.setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+    <div className="space-y-4">
+      <Card variant="elevated" padding="md">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <SearchInput
+              value={filters.inputValue}
+              onChange={filters.setSearchQuery}
+              placeholder="Search by name, email, or phone..."
+              onClear={clearFilters}
+            />
+          </div>
 
-            <Select
-              value={filters.statusFilter}
-              onValueChange={filters.setStatusFilter}
+          {/* Status Filter */}
+          <FilterSelect 
+            value={filters.statusFilter}
+            onChange={(value) => filters.setStatusFilter(value as any)}
+            options={[
+              { value: "all", label: "All Status" },
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]}
+            placeholder="Status"
+          />
+
+          {/* Role Filter */}
+          <FilterSelect 
+            value={filters.roleFilter}
+            onChange={filters.setRoleFilter}
+            options={[
+              { value: "all", label: "All Roles" },
+              ...uniqueRoles.map(role => ({ value: role, label: role }))
+            ]}
+            placeholder="Role"
+          />
+
+          {(filters.searchQuery || 
+            filters.statusFilter !== "all" || 
+            filters.roleFilter !== "all") && (
+            <Button 
+              variant="ghost"
+              onClick={clearFilters}
+              className="whitespace-nowrap h-[52px] 2xl:h-[56px]"
             >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filters.roleFilter} onValueChange={filters.setRoleFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                {uniqueRoles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Showing <span className="font-semibold">{filteredCount}</span> of{" "}
-              <span className="font-semibold">{totalCount}</span> users
-            </p>
-
-            {(filters.searchQuery || 
-              filters.statusFilter !== "all" || 
-              filters.roleFilter !== "all") && (
-              <Button variant="link" onClick={clearFilters} className="text-sm">
-                Clear filters
-              </Button>
-            )}
-          </div>
+              Clear filters
+            </Button>
+          )}
         </div>
-      </div>
+      </Card>
 
       <CustomTable
         columns={columns}
@@ -102,11 +85,12 @@ export function UsersTable() {
         isLoading={isLoading}
         emptyMessage="No users found"
         emptyContent={
-          filters.searchQuery ? (
-            <div>
-              <p className="text-gray-500">No users match your search</p>
-              <Button variant="link" onClick={clearFilters} className="mt-2">
-                Clear filters
+          (filters.searchQuery || filters.statusFilter !== "all" || filters.roleFilter !== "all") ? (
+            <div className="text-center py-8">
+              <p className="text-base font-semibold text-gray-800">No users match your filters</p>
+              <p className="mt-1 text-sm text-gray-500">Try adjusting your search criteria</p>
+              <Button variant="ghost" onClick={clearFilters} className="mt-4">
+                Clear all filters
               </Button>
             </div>
           ) : undefined

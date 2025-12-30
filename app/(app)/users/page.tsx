@@ -9,7 +9,7 @@ import { PermissionModule, PermissionAction } from "@/lib/utils/permissions-new"
 import { PermissionGate } from "@/components/layout/PermissionGate"
 import { redirect } from "next/navigation"
 import { usePermission } from "@/lib/hooks/use-permission"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/custom/Button"
 import { Plus } from "lucide-react"
 import Link from "next/link"
 import { UsersTable } from "./components/UsersTable"
@@ -34,7 +34,7 @@ export default function UsersPage() {
 
           <PermissionGate module={PermissionModule.USERS_PROVIDERS} action={PermissionAction.CREATE}>
             <Link href="/users/create">
-              <Button className="gap-2">
+              <Button variant="primary" className="gap-2 flex items-center">
                 <Plus className="w-4 h-4" />
                 Create Provider
               </Button>

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
+import { useRef, useEffect } from "react"
 
 
 function FormSkeleton() {
@@ -50,6 +51,17 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
     actions,
   } = useRoleForm({ roleId })
 
+  const roleNameRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to name field if there's an error
+  useEffect(() => {
+    if (form.formState.errors.name && roleNameRef.current) {
+      roleNameRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
+    }
+  }, [form.formState.errors.name])
 
   if (isEditing && isLoadingRole) {
     return <FormSkeleton />
@@ -78,7 +90,7 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
             name="name"
             control={form.control}
             render={({ field, fieldState }) => (
-              <div>
+              <div ref={roleNameRef}>
                 <FloatingInput
                   label="Role Name"
                   value={field.value}

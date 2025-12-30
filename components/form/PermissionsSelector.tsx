@@ -351,7 +351,7 @@ export function PermissionsSelector({
         
                           {isModuleExpanded && (
                             <div className="px-3 pb-3 pt-2 border-t border-gray-100 bg-gray-50/50">
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="flex justify-around">
                                 {ACTIONS.map(({ key: action, label: actionLabel }) => {
                                   const isActionChecked = hasAction(module, action)
                                   
