@@ -3,11 +3,11 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { NotebookPen, CalendarCheck, ChevronLeft, ChevronRight, Gauge, Users, Hospital, CalendarClock, ClipboardList, ClipboardCheck, TrendingUp, User } from "lucide-react"
+import { NotebookPen, CalendarCheck, ChevronLeft, ChevronRight, Gauge, Users, Hospital, CalendarClock, ClipboardList, ClipboardCheck, TrendingUp, User, UserCog, Shield } from "lucide-react"
 import Image from "next/image"
 import { useUi } from "@/lib/store/ui.store"
 import { cn } from "@/lib/utils"
-import { navItems } from "./nav-items"
+import { useFilteredNavItems } from "@/lib/hooks/use-filtered-nav-items"
 import { useEffect, useState } from "react"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 
@@ -22,12 +22,15 @@ export const ICON_MAP = {
   ClipboardCheck,
   TrendingUp,
   User,
+  UserCog,
+  Shield,
 } as const
 
 export function Sidebar() {
   const pathname = usePathname()
   const { sidebarCollapsed, toggleSidebar } = useUi()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+  const filteredNavItems = useFilteredNavItems()
 
   const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -114,7 +117,7 @@ export function Sidebar() {
             hover:border-[#037ECC]/50
             transition-all duration-200
             group/btn
-            z-50
+            z-[60]
           "
         >
           {sidebarCollapsed ? (
@@ -127,7 +130,7 @@ export function Sidebar() {
 
       <nav className={cn("flex-1 pt-8", sidebarCollapsed ? "px-3" : "px-5")}>
         <div className="flex flex-col gap-2">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const Icon = ICON_MAP[item.icon]
             const isActive = pathname === item.href
 

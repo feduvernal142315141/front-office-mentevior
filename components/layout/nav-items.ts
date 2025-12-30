@@ -16,6 +16,18 @@ export const navItems: NavItem[] = [
     section: "main",
   },
   {
+    label: "Users",
+    href: "/users",
+    icon: "UserCog",
+    section: "main",
+  },
+  {
+    label: "Roles",
+    href: "/roles",
+    icon: "Shield",
+    section: "main",
+  },
+  {
     label: "Clients",
     href: "/clients",
     icon: "Users",

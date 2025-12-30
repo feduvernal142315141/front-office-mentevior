@@ -1,7 +1,3 @@
-/**
- * Authentication Types
- * Tipos centralizados para autenticación y sesión
- */
 
 export type Role = string
 

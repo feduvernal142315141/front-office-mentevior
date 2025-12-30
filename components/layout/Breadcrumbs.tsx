@@ -9,7 +9,7 @@ export function Breadcrumbs() {
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
 
-  if (segments.length <= 1) return null
+  if (segments.length === 0) return null
 
   const breadcrumbs = segments.map((segment, index) => {
     const href = "/" + segments.slice(0, index + 1).join("/")
@@ -24,17 +24,14 @@ export function Breadcrumbs() {
   })
 
   return (
-    <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-      <Link href="/dashboard" className="hover:text-foreground transition-colors">
-        Home
-      </Link>
-      {breadcrumbs.map((crumb) => (
+    <nav className="flex items-center gap-2 text-sm text-gray-500">
+      {breadcrumbs.map((crumb, index) => (
         <Fragment key={crumb.href}>
-          <ChevronRight className="h-4 w-4" />
+          {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-gray-400" />}
           {crumb.isLast ? (
-            <span className="text-foreground font-medium">{crumb.label}</span>
+            <span className="text-gray-900 font-medium">{crumb.label}</span>
           ) : (
-            <Link href={crumb.href} className="hover:text-foreground transition-colors">
+            <Link href={crumb.href} className="hover:text-gray-900 transition-colors">
               {crumb.label}
             </Link>
           )}

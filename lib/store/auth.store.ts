@@ -71,7 +71,7 @@ function decodeUserFromToken(accessToken: string): User {
     email: decoded.username,
     name: decoded.fullName,
     role: decoded.role,
-    permissions: decoded.permissions || [],
+    permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [],  // ⚡ Array de "modulo-valor"
     expiresAt: new Date(decoded.exp * 1000).toISOString(),
   }
 }
