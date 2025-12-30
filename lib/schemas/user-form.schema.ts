@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod"
+import { getTodayLocalDate } from "@/lib/date"
 
 /**
  * Schema de validación
@@ -54,6 +55,6 @@ export const getUserFormDefaults = (): UserFormValues => ({
   lastName: "",
   email: "",
   cellphone: "",
-  hiringDate: new Date().toISOString().split("T")[0], // Today
+  hiringDate: getTodayLocalDate(), // Today in local timezone
   roleId: "",
 })

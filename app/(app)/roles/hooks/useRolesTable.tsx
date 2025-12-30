@@ -122,25 +122,23 @@ export function useRolesTable(): UseRolesTableReturn {
             </div>
           )
         },
-      },
-      
-      {
-        key: "status",
-        header: "Status",
-        render: (role) => (
-          <Badge
-            variant={role.isActive ? "default" : "secondary"}
-            className={
-              role.isActive
-                ? "bg-green-100 text-green-800 hover:bg-green-200"
-                : ""
-            }
-          >
-            {role.isActive ? "Active" : "Inactive"}
-          </Badge>
-        ),
-      },
-      
+      },      
+      // {
+      //   key: "status",
+      //   header: "Status",
+      //   render: (role) => (
+      //     <Badge
+      //       variant={role.isActive ? "default" : "secondary"}
+      //       className={
+      //         role.isActive
+      //           ? "bg-green-100 text-green-800 hover:bg-green-200"
+      //           : ""
+      //       }
+      //     >
+      //       {role.isActive ? "Active" : "Inactive"}
+      //     </Badge>
+      //   ),
+      // },      
       {
         key: "createdAt",
         header: "Created",

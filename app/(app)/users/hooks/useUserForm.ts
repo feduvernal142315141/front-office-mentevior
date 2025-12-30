@@ -8,7 +8,8 @@ import { useUpdateUser } from "@/lib/modules/users/hooks/use-update-user"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { userFormSchema, getUserFormDefaults, type UserFormValues } from "@/lib/schemas/user-form.schema"
 import type { CreateMemberUserDto, UpdateMemberUserDto } from "@/lib/types/user.types"
-import {useRoles} from "@/lib/modules/roles/hooks/use-roles";
+import {useRoles} from "@/lib/modules/roles/hooks/use-roles"
+import { isoToLocalDate } from "@/lib/date"
 
 interface UIState {
   showPassword: boolean
@@ -72,7 +73,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         lastName: user.lastName,
         email: user.email,
         cellphone: user.cellphone || "",
-        hiringDate: user.hiringDate.split("T")[0] || "",
+        hiringDate: isoToLocalDate(user.hiringDate),
         roleId: user.role?.id || "",
       })
     }

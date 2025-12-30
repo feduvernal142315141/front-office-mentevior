@@ -311,13 +311,19 @@ export function PermissionsSelector({
                         >
             
                           <div className="flex items-center gap-3 p-3">
-                            <Checkbox
-                              checked={isChecked}
-                              onCheckedChange={(checked) => {
-                                setModuleAccess(module, checked ? PermissionAction.ALL : 0)
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation()
                               }}
-                              disabled={disabled}
-                            />
+                            >
+                              <Checkbox
+                                checked={isChecked}
+                                onCheckedChange={(checked) => {
+                                  setModuleAccess(module, checked ? PermissionAction.ALL : 0)
+                                }}
+                                disabled={disabled}
+                              />
+                            </div>
                             
                             <button
                               type="button"
@@ -329,24 +335,24 @@ export function PermissionsSelector({
                               <span className="text-sm font-medium text-gray-900 truncate">
                                 {label}
                               </span>
-                            </button>
                             
-                            <div className="flex items-center gap-2">
-                              {isChecked && (
-                                <Badge 
-                                  variant={hasAll ? "default" : "secondary"}
-                                  className={`text-xs ${hasAll ? 'bg-green-100 text-green-800' : ''}`}
-                                >
-                                  {hasAll ? 'Full' : 'Custom'}
-                                </Badge>
-                              )}
-                              
-                              <ChevronDown 
-                                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                                  isModuleExpanded ? 'rotate-180' : ''
-                                }`}
-                              />
-                            </div>
+                              <div className="flex items-center gap-2 ml-auto">
+                                {isChecked && (
+                                  <Badge 
+                                    variant={hasAll ? "default" : "secondary"}
+                                    className={`text-xs ${hasAll ? 'bg-green-100 text-green-800' : ''}`}
+                                  >
+                                    {hasAll ? 'Full' : 'Custom'}
+                                  </Badge>
+                                )}
+                                
+                                <ChevronDown 
+                                  className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                                    isModuleExpanded ? 'rotate-180' : ''
+                                  }`}
+                                />
+                              </div>
+                            </button>
                           </div>
         
                           {isModuleExpanded && (

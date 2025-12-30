@@ -29,13 +29,25 @@ export function PremiumDatePicker({
   const [isFocused, setIsFocused] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   
-  // Convert string value to Date object
-  const dateValue = value ? new Date(value) : undefined
+  // Convert string value to Date object in LOCAL timezone
+  // Usar parseLocalDate para evitar problemas de zona horaria
+  const parseLocalDate = (dateStr: string): Date | undefined => {
+    if (!dateStr) return undefined
+    
+    // Split YYYY-MM-DD y crear fecha en zona local
+    const [year, month, day] = dateStr.split('-').map(Number)
+    if (!year || !month || !day) return undefined
+    
+    // Mes es 0-indexed en JavaScript
+    return new Date(year, month - 1, day)
+  }
+  
+  const dateValue = parseLocalDate(value)
   const hasValue = value && value.length > 0
 
   const handleSelect = (date: Date | undefined) => {
     if (date) {
-      // Convert Date to YYYY-MM-DD format
+      // Convert Date to YYYY-MM-DD format usando zona local
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
