@@ -34,6 +34,15 @@ interface UseUsersTableReturn {
     setInputValue: (value: string) => void
   }
   
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    onPageChange: (page: number) => void
+    onPageSizeChange: (pageSize: number) => void
+    pageSizeOptions: number[]
+  }
+  
   uniqueRoles: string[]
   totalCount: number
   filteredCount: number
@@ -52,7 +61,45 @@ interface UseUsersTableReturn {
 export function useUsersTable(): UseUsersTableReturn {
   const router = useRouter()
   
-  const { users, isLoading, error, refetch } = useUsers()
+  // Pagination state
+  const [page, setPage] = useState(1) // UI usa 1-based, backend usa 0-based
+  const [pageSize, setPageSize] = useState(10)
+  
+  const [inputValue, setInputValue] = useState("")
+  const [searchQuery, setSearchQuery] = useDebouncedState("", 500);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [roleFilter, setRoleFilter] = useState<string>("all")
+
+  // Build filters for the query
+  const filtersArray = useMemo(() => {
+    return buildFilters(
+      [
+        {
+          field: "active",
+          value: statusFilter === "all" ? null : statusFilter === "active",
+          operator: FilterOperator.eq,
+          type: "boolean",
+        },
+        {
+          field: "role.name",
+          value: roleFilter === "all" ? null : roleFilter,
+          operator: FilterOperator.relatedEqual,
+          type: "string",
+        },
+      ],
+      {
+        fields: ["firstName","lastName"],
+        search: searchQuery,
+      }
+    );
+  }, [searchQuery, statusFilter, roleFilter])
+
+  const { users, isLoading, error, totalCount, refetch } = useUsers({
+    page: page - 1, // Convert to 0-based for backend
+    pageSize,
+    filters: filtersArray,
+  })
+  
   const { roles } = useRoles()
   const { view, create, edit, remove } = usePermission()
   const permissions = useMemo(
@@ -65,39 +112,19 @@ export function useUsersTable(): UseUsersTableReturn {
     [view, create, edit, remove]
   )
 
-  const [inputValue, setInputValue] = useState("")
-  const [searchQuery, setSearchQuery] = useDebouncedState("", 500);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
-  const [roleFilter, setRoleFilter] = useState<string>("all")
-
+  // Refetch when filters change
   useEffect(() => {
-    const filtersArray = buildFilters(
-        [
-          {
-            field: "active",
-            value: statusFilter === "all" ? null : statusFilter === "active",
-            operator: FilterOperator.eq,
-            type: "boolean",
-          },
-          {
-            field: "role.name",
-            value: roleFilter === "all" ? null : roleFilter,
-            operator: FilterOperator.relatedEqual,
-            type: "string",
-          },
-        ],
-        {
-          fields: ["firstName","lastName"],
-          search: searchQuery,
-        }
-    );
-    refetch(filtersArray)
-  }, [searchQuery,statusFilter,roleFilter]);
+    refetch({
+      page: page - 1,
+      pageSize,
+      filters: filtersArray,
+    })
+  }, [searchQuery, statusFilter, roleFilter, page, pageSize, filtersArray]);
 
   const uniqueRoles = useMemo(() => {
     const rolesList = new Set(roles.map((r) => r.name).filter(Boolean) as string[])
     return Array.from(rolesList)
-  }, [users])
+  }, [roles])
 
   const columns: CustomTableColumn<MemberUserListItem>[] = useMemo(() => {
     const cols: CustomTableColumn<MemberUserListItem>[] = [
@@ -221,11 +248,12 @@ export function useUsersTable(): UseUsersTableReturn {
     }
     
     return cols
-  }, [permissions])
+  }, [permissions, router])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
     setSearchQuery(value)
+    setPage(1) // Reset to page 1 on search
   }
   
   const clearFilters = () => {
@@ -233,6 +261,16 @@ export function useUsersTable(): UseUsersTableReturn {
     setInputValue("")
     setStatusFilter("all")
     setRoleFilter("all")
+    setPage(1)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+  }
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize)
+    setPage(1) // Reset to first page when changing page size
   }
 
   return {
@@ -250,11 +288,19 @@ export function useUsersTable(): UseUsersTableReturn {
       inputValue,
       setInputValue
     },
+    pagination: {
+      page,
+      pageSize,
+      total: totalCount,
+      onPageChange: handlePageChange,
+      onPageSizeChange: handlePageSizeChange,
+      pageSizeOptions: [10, 25, 50, 100],
+    },
     uniqueRoles,
-    totalCount: users.length,
+    totalCount,
     filteredCount: users.length,
     clearFilters,
-    refetch,
+    refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
     permissions,
   }
 }

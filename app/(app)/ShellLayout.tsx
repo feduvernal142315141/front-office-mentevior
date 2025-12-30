@@ -2,6 +2,7 @@
 
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Topbar } from "@/components/layout/Topbar"
+import { ProtectedRoute } from "@/components/layout/ProtectedRoute"
 import { cn } from "@/lib/utils"
 import { useUi } from "@/lib/store/ui.store"
 
@@ -25,7 +26,9 @@ export default function ShellLayout({
         <Topbar />
 
         <main className="flex-1 overflow-y-auto">
-          {children}
+          <ProtectedRoute>
+            {children}
+          </ProtectedRoute>
         </main>
       </div>
     </div>

@@ -9,7 +9,11 @@ export function Breadcrumbs() {
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
 
-  if (segments.length === 0) return null
+  // Solo mostrar breadcrumbs si hay más de un segmento (rutas anidadas)
+  // Ejemplo: /users/create (2 segmentos) ✅
+  // Ejemplo: /users (1 segmento) ❌
+  // Ejemplo: /dashboard (1 segmento) ❌
+  if (segments.length <= 1) return null
 
   const breadcrumbs = segments.map((segment, index) => {
     const href = "/" + segments.slice(0, index + 1).join("/")

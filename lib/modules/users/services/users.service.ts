@@ -5,23 +5,26 @@ import {getQueryString} from "@/lib/utils/format";
 import {QueryModel} from "@/lib/models/queryModel";
 
 
-export async function getUsers(query: QueryModel): Promise<MemberUserListItem[]> {
+export async function getUsers(query: QueryModel): Promise<{ users: MemberUserListItem[], totalCount: number }> {
   const response = await serviceGet<PaginatedResponse<MemberUserListItem>>(`/member-users${
       query ? `?${getQueryString(query)}` : ''
   }`)
   
   if (response.status !== 200 || !response.data) {
-    throw new Error(response.data?.message || "Failed to fetch roles")
+    throw new Error(response.data?.message || "Failed to fetch users")
   }
   
   const paginatedData = response.data as unknown as PaginatedResponse<MemberUserListItem>
   
   if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
     console.error("Invalid backend response:", response.data)
-    return []
+    return { users: [], totalCount: 0 }
   }
   
-  return paginatedData.entities
+  return {
+    users: paginatedData.entities,
+    totalCount: paginatedData.pagination?.total || 0
+  }
 }
 
 

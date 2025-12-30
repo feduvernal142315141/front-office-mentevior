@@ -14,6 +14,7 @@ export function UsersTable() {
     isLoading,
     error,
     filters,
+    pagination,
     uniqueRoles,
     totalCount,
     filteredCount,
@@ -96,6 +97,7 @@ export function UsersTable() {
           ) : undefined
         }
         getRowKey={(user) => user.id}
+        pagination={pagination}
       />
     </div>
   )
