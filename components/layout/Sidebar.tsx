@@ -42,6 +42,7 @@ export function Sidebar() {
     if (!isMobile && sidebarCollapsed) {
       toggleSidebar()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile])
 
   return (

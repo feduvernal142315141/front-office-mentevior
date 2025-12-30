@@ -1,9 +1,9 @@
 "use client"
 
-import { use } from "react"
+import { use, useEffect } from "react"
 import { PermissionModule, PermissionAction } from "@/lib/utils/permissions-new"
 import { PermissionGate } from "@/components/layout/PermissionGate"
-import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { RoleForm } from "../../components/RoleForm"
 
@@ -14,11 +14,19 @@ interface EditRolePageProps {
 }
 
 export default function EditRolePage({ params }: EditRolePageProps) {
+  const router = useRouter()
   const { edit } = usePermission()
   const { id } = use(params)
+  const canEdit = edit(PermissionModule.ROLE)
 
-  if (!edit(PermissionModule.ROLE)) {
-    redirect("/dashboard")
+  useEffect(() => {
+    if (!canEdit) {
+      router.replace("/dashboard")
+    }
+  }, [canEdit, router])
+
+  if (!canEdit) {
+    return null
   }
 
   return (

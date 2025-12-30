@@ -110,14 +110,13 @@ export function useRolesTable(): UseRolesTableReturn {
       },
       
       {
-        key: "permissions",
+        key: "modules",
         header: "Permissions",
         render: (role) => {
-          const permissionsCount = role.permissions.length
           return (
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-mono">
-                {permissionsCount}
+                {role.modules}
               </Badge>
               <span className="text-sm text-gray-600">module(s)</span>
             </div>

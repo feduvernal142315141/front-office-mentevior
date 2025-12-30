@@ -158,11 +158,7 @@ export function FilterSelect({
             "border border-gray-200/80",
             
             /* Shadow premium */
-            "shadow-xl shadow-gray-900/10",
-            
-            /* Animation - slide down from trigger */
-            "animate-in slide-in-from-top-2",
-            "duration-200"
+            "shadow-xl shadow-gray-900/10"
           )}
         >
           {/* Options List */}

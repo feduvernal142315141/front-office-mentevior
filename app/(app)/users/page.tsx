@@ -7,18 +7,27 @@
 
 import { PermissionModule, PermissionAction } from "@/lib/utils/permissions-new"
 import { PermissionGate } from "@/components/layout/PermissionGate"
-import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { Button } from "@/components/custom/Button"
 import { Plus } from "lucide-react"
 import Link from "next/link"
 import { UsersTable } from "./components/UsersTable"
+import { useEffect } from "react"
 
 export default function UsersPage() {
+  const router = useRouter()
   const { view } = usePermission()
+  const canView = view(PermissionModule.USERS_PROVIDERS)
 
-  if (!view(PermissionModule.USERS_PROVIDERS)) {
-    redirect("/dashboard")
+  useEffect(() => {
+    if (!canView) {
+      router.replace("/dashboard")
+    }
+  }, [canView, router])
+
+  if (!canView) {
+    return null
   }
 
   return (

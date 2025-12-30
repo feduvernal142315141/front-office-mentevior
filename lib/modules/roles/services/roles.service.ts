@@ -25,6 +25,7 @@ function normalizeRole(roleBackend: RoleBackendGet): Role {
     createdAt: roleBackend.createAt,
     updatedAt: roleBackend.updateAt,
     isActive: roleBackend.isActive ?? true,
+    modules: roleBackend.modules ?? 0,
   }
 }
 

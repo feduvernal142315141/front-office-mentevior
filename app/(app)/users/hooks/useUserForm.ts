@@ -126,18 +126,19 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
     const interval = setInterval(() => {
       setUIState((prev) => {
         const newCountdown = prev.redirectCountdown - 1
-        
-        if (newCountdown <= 0) {
-          router.push("/users")
-          return prev
-        }
-        
         return { ...prev, redirectCountdown: newCountdown }
       })
     }, 1000)
     
     return () => clearInterval(interval)
-  }, [uiState.showPassword, uiState.isRedirecting, isEditing, router])
+  }, [uiState.showPassword, uiState.isRedirecting, isEditing])
+
+  // Separate effect to handle redirect when countdown reaches 0
+  useEffect(() => {
+    if (uiState.redirectCountdown <= 0 && uiState.isRedirecting && !isEditing) {
+      router.push("/users")
+    }
+  }, [uiState.redirectCountdown, uiState.isRedirecting, isEditing, router])
   
 
   const actions = {

@@ -158,63 +158,7 @@ export function useUsersTable(): UseUsersTableReturn {
         align: "right",
         render: (user) => (
           <div className="flex items-center justify-end gap-2">
-            {permissions.canView && (
-              <button
-                onClick={() => {
-                  console.log("View user:", user.id)
-                }}
-                className="
-                  group/view
-                  relative
-                  h-9 w-9
-                  flex items-center justify-center
-                  rounded-xl
-                  
-                  /* Background gradient */
-                  bg-gradient-to-b from-gray-50 to-gray-100/80
-                  
-                  /* Border */
-                  border border-gray-200/60
-                  
-                  /* Shadow */
-                  shadow-sm
-                  shadow-gray-900/5
-                  
-                  /* Hover */
-                  hover:from-gray-100
-                  hover:to-gray-200/90
-                  hover:border-gray-300/80
-                  hover:shadow-md
-                  hover:shadow-gray-900/10
-                  hover:-translate-y-0.5
-                  
-                  /* Active */
-                  active:translate-y-0
-                  active:shadow-sm
-                  
-                  /* Transitions */
-                  transition-all
-                  duration-200
-                  ease-out
-                  
-                  /* Focus */
-                  focus:outline-none
-                  focus:ring-2
-                  focus:ring-gray-500/30
-                  focus:ring-offset-2
-                "
-                title="View user"
-                aria-label="View user"
-              >
-                <Eye className="
-                  w-4 h-4
-                  text-gray-600
-                  group-hover/view:text-gray-700
-                  transition-colors
-                  duration-200
-                " />
-              </button>
-            )}
+            
 
             {permissions.canEdit && (
               <button

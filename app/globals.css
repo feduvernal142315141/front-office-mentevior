@@ -345,27 +345,6 @@
     @apply bg-white/95 backdrop-blur-xl rounded-xl border border-gray-200/60 shadow-2xl shadow-gray-900/10 p-1.5;
   }
 
-  
-
-
-}
-
-@media (min-width: 1920px) {
-    .login-large-screen-headline {
-      font-size: 48px;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-    }
-
-    .login-large-screen-body {
-      font-size: 16px;
-      line-height: 1.7;
-    }
-
-    .login-large-screen-spacing {
-      padding: 3rem;
-    }
-  }
   *:focus-visible {
     outline: 2px solid var(--color-login-blue-primary);
     outline-offset: 3px;
@@ -374,23 +353,19 @@
   .floating-label-surface {
     display: inline-block;
     padding: 0 4px;
-
     background: linear-gradient(
       180deg,
       hsl(240 18% 98%) 0%,
       hsl(240 16% 96%) 100%
     );
-
     border-radius: 4px;
   }
 
   /* Premium Select Dropdown Styles */
   select {
-    /* Remove default outline */
     outline: none !important;
   }
 
-  /* Dropdown styling (limited browser support) */
   select option {
     padding: 0.75rem 1rem;
     background-color: white;
@@ -424,7 +399,6 @@
     border: none;
   }
 
-  /* Remove black border from select dropdown in different browsers */
   select::-ms-expand {
     display: none;
   }
@@ -434,13 +408,141 @@
     text-shadow: 0 0 0 hsl(240 30% 20%);
   }
 
-  /* Firefox specific */
-  @-moz-document url-prefix() {
-    select option:checked {
-      background: hsl(210 100% 50%) !important;
-      color: white !important;
-    }
+  /* Date Picker Calendar Styles */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+    position: absolute;
+    right: 0;
+    width: 48px;
+    height: 100%;
+    z-index: 10;
   }
 
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    background: transparent;
+  }
 
+  input[type="date"]::-webkit-datetime-edit {
+    padding: 0;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator::before {
+    content: '';
+  }
+
+  /* Premium Calendar Popup Styling (Limited support) */
+  input[type="date"]::-webkit-inner-spin-button,
+  input[type="date"]::-webkit-clear-button {
+    display: none;
+  }
+
+  /* Experimental: Calendar popup window */
+  ::-webkit-datetime-edit-text {
+    color: hsl(var(--foreground));
+    padding: 0 2px;
+  }
+
+  ::-webkit-datetime-edit-month-field,
+  ::-webkit-datetime-edit-day-field,
+  ::-webkit-datetime-edit-year-field {
+    color: hsl(var(--foreground));
+    font-weight: 500;
+  }
+
+  ::-webkit-datetime-edit-month-field:focus,
+  ::-webkit-datetime-edit-day-field:focus,
+  ::-webkit-datetime-edit-year-field:focus {
+    background-color: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+    outline: none;
+    border-radius: 4px;
+  }
+
+  /* Premium Calendar Styles */
+  [data-slot="calendar"] {
+    --cell-size: 40px;
+  }
+
+  /* Calendar month/year dropdown */
+  [data-slot="calendar"] .rdp-month_caption {
+    font-weight: 600;
+    color: hsl(240 30% 20%);
+    font-size: 0.95rem;
+  }
+
+  /* Calendar day cells */
+  [data-slot="calendar"] .rdp-day button {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 150ms ease;
+  }
+
+  /* Calendar day hover */
+  [data-slot="calendar"] .rdp-day button:hover {
+    background: hsl(210 95% 96%);
+    color: hsl(210 90% 40%);
+    transform: scale(1.05);
+  }
+
+  /* Calendar selected day */
+  [data-slot="calendar"] .rdp-day[data-selected-single="true"] button {
+    background: linear-gradient(135deg, hsl(210 100% 50%) 0%, hsl(210 95% 55%) 100%);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 8px hsl(210 100% 50% / 0.3);
+  }
+
+  /* Calendar today */
+  [data-slot="calendar"] .rdp-today {
+    font-weight: 600;
+  }
+
+  /* Calendar weekday headers */
+  [data-slot="calendar"] .rdp-weekday {
+    color: hsl(240 10% 50%);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  /* Calendar navigation buttons */
+  [data-slot="calendar"] .rdp-button_previous,
+  [data-slot="calendar"] .rdp-button_next {
+    border-radius: 8px;
+    transition: all 150ms ease;
+  }
+
+  [data-slot="calendar"] .rdp-button_previous:hover,
+  [data-slot="calendar"] .rdp-button_next:hover {
+    background: hsl(210 95% 96%);
+    color: hsl(210 90% 40%);
+  }
+
+  /* Calendar outside days (days from other months) */
+  [data-slot="calendar"] .rdp-outside {
+    opacity: 0.3;
+  }
+}
+
+@media (min-width: 1920px) {
+  .login-large-screen-headline {
+    font-size: 48px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .login-large-screen-body {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .login-large-screen-spacing {
+    padding: 3rem;
+  }
+}
 

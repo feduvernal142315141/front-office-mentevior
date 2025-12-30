@@ -154,11 +154,7 @@ export function PremiumSelect({
             "border border-gray-200/80",
             
             /* Shadow premium */
-            "shadow-xl shadow-gray-900/10",
-            
-            /* Animation */
-            "animate-in fade-in-0 zoom-in-95",
-            "duration-150"
+            "shadow-xl shadow-gray-900/10"
           )}
         >
           {/* Options List */}

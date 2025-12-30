@@ -11,6 +11,7 @@ export interface RoleBackendGet {
   createAt: string
   updateAt?: string
   isActive?: boolean
+  modules?: number
 }
 
 
@@ -29,6 +30,7 @@ export interface Role {
   createdAt: string
   updatedAt?: string
   isActive: boolean
+  modules: number
 }
 
 export interface CreateRoleDto {

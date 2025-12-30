@@ -2,18 +2,27 @@
 
 import { PermissionModule, PermissionAction } from "@/lib/utils/permissions-new"
 import { PermissionGate } from "@/components/layout/PermissionGate"
-import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { Button } from "@/components/custom/Button"
 import { Plus } from "lucide-react"
 import Link from "next/link"
 import { RolesTable } from "./components/RolesTable"
+import { useEffect } from "react"
 
 export default function RolesPage() {
+  const router = useRouter()
   const { view } = usePermission()
+  const canView = view(PermissionModule.ROLE)
 
-  if (!view(PermissionModule.ROLE)) {
-    redirect("/dashboard")
+  useEffect(() => {
+    if (!canView) {
+      router.replace("/dashboard")
+    }
+  }, [canView, router])
+
+  if (!canView) {
+    return null
   }
 
   return (

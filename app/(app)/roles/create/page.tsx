@@ -1,15 +1,24 @@
 "use client"
 
 import { PermissionModule } from "@/lib/utils/permissions-new"
-import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { RoleForm } from "../components/RoleForm"
+import { useEffect } from "react"
 
 export default function CreateRolePage() {
+  const router = useRouter()
   const { create } = usePermission()
+  const canCreate = create(PermissionModule.ROLE)
 
-  if (!create(PermissionModule.ROLE)) {
-    redirect("/dashboard")
+  useEffect(() => {
+    if (!canCreate) {
+      router.replace("/dashboard")
+    }
+  }, [canCreate, router])
+
+  if (!canCreate) {
+    return null
   }
 
   return (
