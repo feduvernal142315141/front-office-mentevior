@@ -79,7 +79,7 @@ export function PremiumDatePicker({
                 "rounded-[16px]",
                 
                 /* Text */
-                "text-left",
+                "text-center",
                 "text-[15px] 2xl:text-[16px]",
                 "text-[var(--color-login-text-primary)]",
                 
@@ -115,17 +115,17 @@ export function PremiumDatePicker({
             {/* Floating Label */}
             <label
               className={cn(
-                "absolute left-4 pointer-events-none",
+                "absolute left-4 px-1 pointer-events-none",
                 "transition-all duration-200 ease-out",
-                "text-gray-500",
+                "bg-white/20 backdrop-blur-md",
                 
                 /* Label position based on focus/value */
                 isFocused || hasValue || isOpen
-                  ? "top-2 text-[11px] 2xl:text-[12px] text-[hsl(var(--primary))]"
-                  : "top-1/2 -translate-y-1/2 text-[15px] 2xl:text-[16px]"
+                  ? "top-0 -translate-y-1/2 text-xs text-[#2563EB]"
+                  : "top-1/2 -translate-y-1/2 text-sm text-[var(--color-login-text-muted)]"
               )}
             >
-              {label} <span className="text-red-500">*</span>
+              {label} <span className="text-[#2563EB]">*</span>
             </label>
             
             <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />

@@ -1,12 +1,11 @@
 
-import {useEffect, useMemo, useState} from "react"
+import { useMemo, useState} from "react"
 import { useRoles } from "@/lib/modules/roles/hooks/use-roles"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { CustomTableColumn } from "@/components/custom/CustomTable"
 import { Role } from "@/lib/types/role.types"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/custom/Button"
 import { Edit2, Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {useDebouncedState} from "@/lib/hooks/use-debounced-state";
@@ -51,24 +50,20 @@ interface UseRolesTableReturn {
 export function useRolesTable(): UseRolesTableReturn {
   const router = useRouter()
 
-  // Pagination state
-  const [page, setPage] = useState(1) // UI usa 1-based, backend usa 0-based
+  const [page, setPage] = useState(1) 
   const [pageSize, setPageSize] = useState(10)
   
-  // Estado inmediato para el Input (se actualiza al instante)
+
   const [inputValue, setInputValue] = useState("")
-  // Estado debounced para la búsqueda (se actualiza con delay)
+
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500);
 
-  // Cuando el usuario escribe, actualiza el inputValue inmediatamente
-  // y el searchQuery con debounce
   const handleSearchChange = (value: string) => {
     setInputValue(value)
     setSearchQuery(value)
-    setPage(1) // Reset to page 1 on search
+    setPage(1) 
   }
 
-  // Build filters for the query
   const filtersArray = useMemo(() => {
     return buildFilters(
       [],
@@ -80,7 +75,7 @@ export function useRolesTable(): UseRolesTableReturn {
   }, [searchQuery])
 
   const { roles, isLoading, error, totalCount, refetch } = useRoles({
-    page: page - 1, // Convert to 0-based for backend
+    page: page - 1,
     pageSize,
     filters: filtersArray,
   })
@@ -230,7 +225,7 @@ export function useRolesTable(): UseRolesTableReturn {
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize)
-    setPage(1) // Reset to first page when changing page size
+    setPage(1)
   }
 
   return {

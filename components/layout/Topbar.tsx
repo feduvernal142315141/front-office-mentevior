@@ -15,11 +15,21 @@ import {
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useLogout } from "@/lib/modules/auth/hooks/use-logout"
 import { Breadcrumbs } from "./Breadcrumbs"
+import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 
 export function Topbar() {
   const { user } = useAuth()
   const { logout } = useLogout()
   const router = useRouter()
+  
+  // Fetch completo del usuario para obtener el rol
+  const { user: fullUser } = useUserById(user?.id || null)
+  
+  // Debug
+  console.log('🔍 TOPBAR - user.id:', user?.id)
+  console.log('🔍 TOPBAR - fullUser:', fullUser)
+  console.log('🔍 TOPBAR - fullUser.role:', fullUser?.role)
+  console.log('🔍 TOPBAR - fullUser.role.name:', fullUser?.role?.name)
 
   const handleLogout = () => {
     logout()
@@ -65,6 +75,14 @@ export function Topbar() {
                       <p className="text-xs text-muted-foreground truncate max-w-[160px]">
                         {user?.email}
                       </p>
+                      {/* Badge con el rol del usuario */}
+                      {fullUser?.role?.name && (
+                        <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200">
+                          <span className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide">
+                            {fullUser.role.name}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </DropdownMenuLabel>

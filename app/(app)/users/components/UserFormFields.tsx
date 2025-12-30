@@ -6,7 +6,7 @@ import { FilterSelect } from "@/components/custom/FilterSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { Button } from "@/components/custom/Button"
-import { User, Shield, Save, Info, X, UserCheck, UserX } from "lucide-react"
+import { User, Shield, Save, Info, X, UserCheck } from "lucide-react"
 
 interface RoleOption {
   id: string
@@ -32,11 +32,11 @@ export function UserFormFields({
 
   return (
     <>
-      {/* Form Content - con padding bottom para la sticky bar */}
+
       <div className="pb-24">
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="space-y-8">
-            {/* Personal Information Section */}
+
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-blue-50 rounded-lg">
@@ -52,9 +52,8 @@ export function UserFormFields({
                 </div>
               </div>
 
-              {/* Grid 3 columnas en pantallas grandes */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* First Name */}
+      
                 <Controller
                   name="firstName"
                   control={control}
@@ -78,7 +77,7 @@ export function UserFormFields({
                   )}
                 />
 
-                {/* Last Name */}
+         
                 <Controller
                   name="lastName"
                   control={control}
@@ -102,7 +101,7 @@ export function UserFormFields({
                   )}
                 />
 
-                {/* Email */}
+          
                 <Controller
                   name="email"
                   control={control}
@@ -130,7 +129,7 @@ export function UserFormFields({
                   )}
                 />
 
-                {/* Cellphone */}
+           
                 <Controller
                   name="cellphone"
                   control={control}
@@ -155,7 +154,6 @@ export function UserFormFields({
                   )}
                 />
 
-                {/* Hiring Date */}
                 <Controller
                   name="hiringDate"
                   control={control}
@@ -174,10 +172,10 @@ export function UserFormFields({
               </div>
             </div>
 
-            {/* Divider */}
+    
             <div className="border-t border-gray-200" />
 
-            {/* Role and Permissions Section */}
+      
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-purple-50 rounded-lg">
@@ -197,7 +195,7 @@ export function UserFormFields({
                   render={({ field, fieldState }) => (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Role <span className="text-red-500">*</span>
+                        Role <span className="text-[#2563EB]">*</span>
                       </label>
                       <FilterSelect
                         value={field.value}
@@ -222,7 +220,7 @@ export function UserFormFields({
               </div>
             </div>
 
-            {/* User Status Section (only for edit mode) */}
+  
             {isEditing && (
               <>
                 <div className="border-t border-gray-200" />
@@ -240,7 +238,7 @@ export function UserFormFields({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-4xl">
-                    {/* Active Switch */}
+             
                     <Controller
                       name="active"
                       control={control}
@@ -257,7 +255,6 @@ export function UserFormFields({
                       )}
                     />
 
-                    {/* Terminated Switch */}
                     <Controller
                       name="terminated"
                       control={control}
@@ -278,7 +275,6 @@ export function UserFormFields({
               </>
             )}
 
-            {/* Password Generation Alert (only for create mode) */}
             {!isEditing && (
               <>
                 <div className="border-t border-gray-200" />
@@ -305,7 +301,6 @@ export function UserFormFields({
         </div>
       </div>
 
-      {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-end gap-3">

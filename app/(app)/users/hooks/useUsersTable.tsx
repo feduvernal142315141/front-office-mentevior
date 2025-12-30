@@ -6,14 +6,14 @@ import { PermissionModule } from "@/lib/utils/permissions-new"
 import { CustomTableColumn } from "@/components/custom/CustomTable"
 import { MemberUserListItem} from "@/lib/types/user.types"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Eye, Edit2 } from "lucide-react"
+import { Edit2 } from "lucide-react"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
 import {useRoles} from "@/lib/modules/roles/hooks/use-roles";
 import {useDebouncedState} from "@/lib/hooks/use-debounced-state";
 import {buildFilters} from "@/lib/utils/query-filters";
 import {FilterOperator} from "@/lib/models/filterOperator";
+import { parseLocalDate } from "@/lib/date";
 
 type StatusFilter = "all" | "active" | "inactive"
 
@@ -60,9 +60,7 @@ interface UseUsersTableReturn {
 
 export function useUsersTable(): UseUsersTableReturn {
   const router = useRouter()
-  
-  // Pagination state
-  const [page, setPage] = useState(1) // UI usa 1-based, backend usa 0-based
+  const [page, setPage] = useState(1) 
   const [pageSize, setPageSize] = useState(10)
   
   const [inputValue, setInputValue] = useState("")
@@ -70,7 +68,6 @@ export function useUsersTable(): UseUsersTableReturn {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [roleFilter, setRoleFilter] = useState<string>("all")
 
-  // Build filters for the query
   const filtersArray = useMemo(() => {
     return buildFilters(
       [
@@ -95,7 +92,7 @@ export function useUsersTable(): UseUsersTableReturn {
   }, [searchQuery, statusFilter, roleFilter])
 
   const { users, isLoading, error, totalCount, refetch } = useUsers({
-    page: page - 1, // Convert to 0-based for backend
+    page: page - 1, 
     pageSize,
     filters: filtersArray,
   })
@@ -112,7 +109,6 @@ export function useUsersTable(): UseUsersTableReturn {
     [view, create, edit, remove]
   )
 
-  // Refetch when filters change
   useEffect(() => {
     refetch({
       page: page - 1,
@@ -155,7 +151,7 @@ export function useUsersTable(): UseUsersTableReturn {
         header: "Hiring Date",
         render: (user) => (
           <span className="text-gray-600">
-            {user.hiringDate ? format(new Date(user.hiringDate), "MMM dd, yyyy") : "-"}
+            {user.hiringDate ? format(parseLocalDate(user.hiringDate), "MMM dd, yyyy") : "-"}
           </span>
         ),
       },
@@ -253,7 +249,7 @@ export function useUsersTable(): UseUsersTableReturn {
   const handleSearchChange = (value: string) => {
     setInputValue(value)
     setSearchQuery(value)
-    setPage(1) // Reset to page 1 on search
+    setPage(1)
   }
   
   const clearFilters = () => {
@@ -270,7 +266,7 @@ export function useUsersTable(): UseUsersTableReturn {
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize)
-    setPage(1) // Reset to first page when changing page size
+    setPage(1) 
   }
 
   return {

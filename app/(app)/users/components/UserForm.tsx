@@ -3,7 +3,6 @@
 import { FormProvider } from "react-hook-form"
 import { useUserForm } from "../hooks/useUserForm"
 import { UserFormSkeleton } from "./UserFormSkeleton"
-import { UserSuccessScreen } from "./UserSuccessScreen"
 import { UserFormFields } from "./UserFormFields"
 
 interface UserFormProps {
@@ -20,26 +19,12 @@ export function UserForm({ userId = null }: UserFormProps) {
     isLoadingUser,
     onSubmit,
     isSubmitting,
-    response,
-    uiState,
     actions,
   } = useUserForm({ userId })
 
   // Loading state
   if (isEditing && isLoadingUser) {
     return <UserFormSkeleton />
-  }
-
-  // Success state (only for create mode)
-  if (response && uiState.showPassword && !isEditing) {
-    return (
-      <UserSuccessScreen
-        email={response.email}
-        countdown={uiState.redirectCountdown}
-        onCreateAnother={actions.createAnother}
-        onGoToList={actions.goToList}
-      />
-    )
   }
 
   // Form state

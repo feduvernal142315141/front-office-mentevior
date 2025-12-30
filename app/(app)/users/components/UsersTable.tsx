@@ -16,8 +16,6 @@ export function UsersTable() {
     filters,
     pagination,
     uniqueRoles,
-    totalCount,
-    filteredCount,
     clearFilters,
   } = useUsersTable()
 
@@ -43,7 +41,6 @@ export function UsersTable() {
             />
           </div>
 
-          {/* Status Filter */}
           <FilterSelect 
             value={filters.statusFilter}
             onChange={(value) => filters.setStatusFilter(value as any)}
@@ -55,7 +52,6 @@ export function UsersTable() {
             placeholder="Status"
           />
 
-          {/* Role Filter */}
           <FilterSelect 
             value={filters.roleFilter}
             onChange={filters.setRoleFilter}

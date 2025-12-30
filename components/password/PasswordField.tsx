@@ -79,7 +79,7 @@ export function PasswordField({
             peer-[&:not(:placeholder-shown)]:text-[#2563EB]
           `)}
           >
-            {label} <span className="floating-label-surface">*</span>
+            {label} <span className="text-[#2563EB]">*</span>
           </label>
 
         <button

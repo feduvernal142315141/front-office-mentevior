@@ -41,7 +41,7 @@ export function FormDateField({
         <FormItem className={className}>
           <FormLabel>
             {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="text-[#2563EB] ml-1">*</span>}
           </FormLabel>
           <FormControl>
             <Input

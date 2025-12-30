@@ -67,17 +67,38 @@ export function getTodayLocalDate(): string {
 }
 
 /**
- * Convierte una fecha ISO string a formato YYYY-MM-DD en zona horaria local
- * Evita el desfase de un día que puede ocurrir con .split("T")[0] en fechas UTC
+ * Convierte una fecha ISO string a formato YYYY-MM-DD
+ * Extrae directamente la parte de fecha sin conversiones de timezone
  * 
- * @param isoString - Fecha en formato ISO (ej: "2025-12-30T00:00:00Z")
+ * @param isoString - Fecha en formato ISO (ej: "2025-12-30T00:00:00Z" o "2025-12-30")
  * @returns Fecha en formato YYYY-MM-DD (ej: "2025-12-30")
  */
 export function isoToLocalDate(isoString: string): string {
   if (!isoString) return ""
-  const date = new Date(isoString)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  
+  // Extraer solo la parte YYYY-MM-DD (antes de la T si existe)
+  // Esto evita cualquier conversión de timezone
+  const dateOnly = isoString.includes('T') ? isoString.split('T')[0] : isoString
+  
+  return dateOnly
+}
+
+/**
+ * Parsea una fecha ISO/string a un objeto Date en zona horaria local
+ * Evita problemas de timezone al mostrar fechas en la UI
+ * 
+ * @param dateString - Fecha en formato ISO o YYYY-MM-DD (ej: "2025-12-30T00:00:00Z" o "2025-12-30")
+ * @returns Objeto Date en zona local
+ */
+export function parseLocalDate(dateString: string): Date {
+  if (!dateString) return new Date()
+  
+  // Si es una fecha ISO completa (con hora), extraer solo la parte de la fecha
+  const dateOnly = dateString.includes('T') ? dateString.split('T')[0] : dateString
+  
+  // Parsear YYYY-MM-DD en zona local
+  const [year, month, day] = dateOnly.split('-').map(Number)
+  
+  // Crear fecha en zona local (mes es 0-indexed)
+  return new Date(year, month - 1, day)
 }

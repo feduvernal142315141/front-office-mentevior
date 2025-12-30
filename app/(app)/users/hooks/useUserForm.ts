@@ -2,7 +2,7 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useCreateUser } from "@/lib/modules/users/hooks/use-create-user"
 import { useUpdateUser } from "@/lib/modules/users/hooks/use-update-user"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
@@ -10,12 +10,6 @@ import { userFormSchema, getUserFormDefaults, type UserFormValues } from "@/lib/
 import type { CreateMemberUserDto, UpdateMemberUserDto } from "@/lib/types/user.types"
 import {useRoles} from "@/lib/modules/roles/hooks/use-roles"
 import { isoToLocalDate } from "@/lib/date"
-
-interface UIState {
-  showPassword: boolean
-  isRedirecting: boolean
-  redirectCountdown: number
-}
 
 interface UseUserFormProps {
   userId?: string | null
@@ -33,12 +27,7 @@ interface UseUserFormReturn {
   onSubmit: (data: UserFormValues) => Promise<void>
   isSubmitting: boolean
 
-  response: { email: string; id: string } | null
-  
-  uiState: UIState
-
   actions: {
-    createAnother: () => void
     goToList: () => void
   }
 }
@@ -48,18 +37,12 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
   const isEditing = !!userId
   const mode = isEditing ? "edit" : "create"
   
-  const { create, isLoading: isCreating, response } = useCreateUser()
+  const { create, isLoading: isCreating } = useCreateUser()
   const { update, isLoading: isUpdating } = useUpdateUser()
   const { user, isLoading: isLoadingUser } = useUserById(userId)
   const { roles, isLoading: isLoadingRoles } = useRoles()
   
   const isSubmitting = isCreating || isUpdating
-
-  const [uiState, setUIState] = useState<UIState>({
-    showPassword: false,
-    isRedirecting: false,
-    redirectCountdown: 10,
-  })
 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
@@ -116,46 +99,15 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
       const result = await create(dto)
       
       if (result) {
-        setUIState((prev) => ({
-          ...prev,
-          showPassword: true,
-          isRedirecting: true,
-        }))
+        // Redirigir directamente sin pantalla de éxito
+        setTimeout(() => {
+          router.push("/users")
+        }, 1500)
       }
     }
   }
 
-  useEffect(() => {
-    if (!uiState.showPassword || !uiState.isRedirecting || isEditing) return
-    
-    const interval = setInterval(() => {
-      setUIState((prev) => {
-        const newCountdown = prev.redirectCountdown - 1
-        return { ...prev, redirectCountdown: newCountdown }
-      })
-    }, 1000)
-    
-    return () => clearInterval(interval)
-  }, [uiState.showPassword, uiState.isRedirecting, isEditing])
-
-  // Separate effect to handle redirect when countdown reaches 0
-  useEffect(() => {
-    if (uiState.redirectCountdown <= 0 && uiState.isRedirecting && !isEditing) {
-      router.push("/users")
-    }
-  }, [uiState.redirectCountdown, uiState.isRedirecting, isEditing, router])
-  
-
   const actions = {
-    createAnother: () => {
-      setUIState({
-        showPassword: false,
-        isRedirecting: false,
-        redirectCountdown: 10,
-      })
-      form.reset(getUserFormDefaults())
-    },
-  
     goToList: () => {
       router.push("/users")
     },
@@ -170,8 +122,6 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
     isLoadingUser,
     onSubmit,
     isSubmitting,
-    response,
-    uiState,
     actions,
   }
 }

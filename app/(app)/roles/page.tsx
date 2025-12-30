@@ -26,7 +26,7 @@ export default function RolesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 pb-[300px]">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>

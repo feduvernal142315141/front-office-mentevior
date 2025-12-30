@@ -65,6 +65,11 @@ function getTokenExpiration(token: string): number {
  */
 function decodeUserFromToken(accessToken: string): User {
   const decoded: any = jwtDecode(accessToken)
+  
+  // Debug: Ver todo el token decodificado
+  console.log('🔍 JWT DECODIFICADO COMPLETO:', decoded)
+  console.log('🔍 ROLE EN JWT:', decoded.role)
+  console.log('🔍 TODAS LAS KEYS:', Object.keys(decoded))
 
   return {
     id: decoded.Id,

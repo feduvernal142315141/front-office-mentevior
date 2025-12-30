@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { ChevronDown, Check } from "lucide-react"
 
@@ -21,30 +22,52 @@ export function PremiumSelect({
 }: PremiumSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [isMounted, setIsMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown when clicking outside
+  // Detectar cuando el componente está montado (para evitar SSR issues con Portal)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Close dropdown when clicking outside OR scrolling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
+      const target = event.target as Node
+      
+      // No cerrar si el click es dentro del botón o del dropdown
+      if (
+        (containerRef.current && containerRef.current.contains(target)) ||
+        (dropdownRef.current && dropdownRef.current.contains(target))
+      ) {
+        return
       }
+      
+      setIsOpen(false)
+    }
+
+    const handleScroll = () => {
+      setIsOpen(false)
     }
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside)
+      window.addEventListener("scroll", handleScroll, true) // true = captura en fase de captura
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
+      window.removeEventListener("scroll", handleScroll, true)
     }
   }, [isOpen])
 
-  // Update position when opening
+  // Update position when opening - siempre abre hacia abajo
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
+      
       setPosition({
         top: rect.bottom + window.scrollY + 4,
         left: rect.left + window.scrollX,
@@ -130,9 +153,10 @@ export function PremiumSelect({
         />
       </button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
+      {/* Dropdown Menu - Renderizado en Portal para evitar overflow issues */}
+      {isOpen && isMounted && createPortal(
         <div
+          ref={dropdownRef}
           style={{
             position: 'fixed',
             top: `${position.top}px`,
@@ -141,7 +165,7 @@ export function PremiumSelect({
           }}
           className={cn(
             /* Position */
-            "z-[9999]",
+            "z-[99999]",
             
             /* Shape */
             "rounded-xl",
@@ -157,8 +181,8 @@ export function PremiumSelect({
             "shadow-xl shadow-gray-900/10"
           )}
         >
-          {/* Options List */}
-          <div className="py-1">
+          {/* Options List - Con scroll si hay muchas opciones */}
+          <div className="py-1 max-h-[240px] overflow-y-auto custom-scrollbar">
             {options.map((option) => {
               const isSelected = option === value
 
@@ -204,7 +228,8 @@ export function PremiumSelect({
               )
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       </div>
     </div>

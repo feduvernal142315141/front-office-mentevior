@@ -64,7 +64,7 @@ export function FormSelectField<T = any>({
           <FormItem className={className}>
             <FormLabel>
               {label}
-              {required && <span className="text-red-500 ml-1">*</span>}
+              {required && <span className="text-[#2563EB] ml-1">*</span>}
             </FormLabel>
             <Select
               onValueChange={field.onChange}
