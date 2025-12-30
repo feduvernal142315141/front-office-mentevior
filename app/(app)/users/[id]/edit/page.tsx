@@ -31,7 +31,7 @@ export default function EditUserPage({ params }: EditUserPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <Card variant="elevated" padding="lg">
           <UserForm userId={id} />
         </Card>

@@ -75,6 +75,8 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         cellphone: user.cellphone || "",
         hiringDate: isoToLocalDate(user.hiringDate),
         roleId: user.role?.id || "",
+        active: user.active ?? true,
+        terminated: user.terminated ?? false,
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,6 +92,8 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         cellphone: data.cellphone,
         hiringDate: data.hiringDate,
         roleId: data.roleId,
+        active: data.active,
+        terminated: data.terminated,
       }
       
       const result = await update(dto)

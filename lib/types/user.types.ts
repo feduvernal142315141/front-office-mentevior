@@ -5,9 +5,10 @@ export interface MemberUser {
   email: string
   cellphone: string
   hiringDate: string
-  roleId: string
+  roleId?: string
   role?: RoleMemberUser
-  isActive: boolean
+  active: boolean
+  terminated?: boolean
 }
 
 export interface CreateMemberUserDto {
@@ -27,7 +28,8 @@ export interface UpdateMemberUserDto {
   cellphone?: string
   hiringDate?: string
   roleId?: string
-  isActive?: boolean
+  active?: boolean
+  terminated?: boolean
 }
 
 export interface CreateMemberUserResponse {
@@ -40,7 +42,7 @@ export interface MemberUserListItem {
   fullName: string
   roleName: string
   hiringDate: string
-  isActive: boolean
+  active: boolean
 }
 
 interface RoleMemberUser{

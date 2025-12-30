@@ -165,14 +165,14 @@ export function useUsersTable(): UseUsersTableReturn {
         header: "Status",
         render: (user) => (
           <Badge
-            variant={user.isActive ? "default" : "secondary"}
+            variant={user.active ? "default" : "secondary"}
             className={
-              user.isActive
+              user.active
                 ? "bg-green-100 text-green-800 hover:bg-green-200"
                 : ""
             }
           >
-            {user.isActive ? "Active" : "Inactive"}
+            {user.active ? "Active" : "Inactive"}
           </Badge>
         ),
       },

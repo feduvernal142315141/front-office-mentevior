@@ -40,6 +40,10 @@ export const userFormSchema = z.object({
   roleId: z
     .string()
     .min(1, "Role is required"),
+  
+  // Solo para edición
+  active: z.boolean().optional(),
+  terminated: z.boolean().optional(),
 })
 
 /**
@@ -57,4 +61,6 @@ export const getUserFormDefaults = (): UserFormValues => ({
   cellphone: "",
   hiringDate: getTodayLocalDate(), // Today in local timezone
   roleId: "",
+  active: true,
+  terminated: false,
 })

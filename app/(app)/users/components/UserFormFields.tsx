@@ -4,8 +4,9 @@ import { Controller, useFormContext } from "react-hook-form"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { Button } from "@/components/custom/Button"
-import { User, Shield, Save, Info, X } from "lucide-react"
+import { User, Shield, Save, Info, X, UserCheck, UserX } from "lucide-react"
 
 interface RoleOption {
   id: string
@@ -33,7 +34,7 @@ export function UserFormFields({
     <>
       {/* Form Content - con padding bottom para la sticky bar */}
       <div className="pb-24">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <div className="space-y-8">
             {/* Personal Information Section */}
             <div>
@@ -221,6 +222,62 @@ export function UserFormFields({
               </div>
             </div>
 
+            {/* User Status Section (only for edit mode) */}
+            {isEditing && (
+              <>
+                <div className="border-t border-gray-200" />
+                
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-green-50 rounded-lg">
+                      <UserCheck className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900">
+                        User Status
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-4xl">
+                    {/* Active Switch */}
+                    <Controller
+                      name="active"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50">
+                          <PremiumSwitch
+                            checked={field.value ?? true}
+                            onCheckedChange={field.onChange}
+                            label="Active User"
+                            description="Enable or disable user access to the system"
+                            variant="success"
+                          />
+                        </div>
+                      )}
+                    />
+
+                    {/* Terminated Switch */}
+                    <Controller
+                      name="terminated"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50">
+                          <PremiumSwitch
+                            checked={field.value ?? false}
+                            onCheckedChange={field.onChange}
+                            label="Terminated"
+                            description="Mark user as terminated or unemployed"
+                            variant="danger"
+                          />
+                        </div>
+                      )}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Password Generation Alert (only for create mode) */}
             {!isEditing && (
               <>
@@ -250,7 +307,7 @@ export function UserFormFields({
 
       {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-end gap-3">
             <Button
               type="button"

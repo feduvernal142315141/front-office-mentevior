@@ -5,20 +5,25 @@ import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import { Fragment } from "react"
 
+// Helper function to detect if a segment is a UUID or ID
+function isUUID(segment: string): boolean {
+  // Match UUID pattern: 8-4-4-4-12 hexadecimal characters
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  return uuidRegex.test(segment)
+}
+
 export function Breadcrumbs() {
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
 
-  // Solo mostrar breadcrumbs si hay más de un segmento (rutas anidadas)
-  // Ejemplo: /users/create (2 segmentos) ✅
-  // Ejemplo: /users (1 segmento) ❌
-  // Ejemplo: /dashboard (1 segmento) ❌
-  if (segments.length <= 1) return null
+  // Filter out UUID/ID segments first
+  const filteredSegments = segments.filter(segment => !isUUID(segment))
 
-  const breadcrumbs = segments.map((segment, index) => {
-    const href = "/" + segments.slice(0, index + 1).join("/")
+  // Build breadcrumbs from filtered segments
+  const breadcrumbs = filteredSegments.map((segment, index) => {
+    const href = "/" + filteredSegments.slice(0, index + 1).join("/")
     const label = segment.charAt(0).toUpperCase() + segment.slice(1)
-    const isLast = index === segments.length - 1
+    const isLast = index === filteredSegments.length - 1
 
     return {
       href,
@@ -26,6 +31,12 @@ export function Breadcrumbs() {
       isLast,
     }
   })
+
+  // Solo mostrar breadcrumbs si hay más de un segmento visible después de filtrar
+  // Ejemplo: /users/create → ["Users", "Create"] ✅ (2 visible)
+  // Ejemplo: /users → ["Users"] ❌ (1 visible)
+  // Ejemplo: /users/uuid/edit → ["Users", "Edit"] ✅ (2 visible, href correcto: /users y /users/edit)
+  if (breadcrumbs.length <= 1) return null
 
   return (
     <nav className="flex items-center gap-2 text-sm text-gray-500">
