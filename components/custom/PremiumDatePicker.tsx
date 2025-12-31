@@ -69,17 +69,19 @@ export function PremiumDatePicker({
                 onBlur?.()
               }}
               className={cn(
+                /* Layout */
+                "flex items-center",
+                
                 /* Size */
                 "w-full",
                 "h-[52px] 2xl:h-[56px]",
                 "px-4 pr-12",
-                "pt-6 pb-2",
                 
                 /* Shape */
                 "rounded-[16px]",
                 
                 /* Text */
-                "text-center",
+                "text-left",
                 "text-[15px] 2xl:text-[16px]",
                 "text-[var(--color-login-text-primary)]",
                 
@@ -119,10 +121,15 @@ export function PremiumDatePicker({
                 "transition-all duration-200 ease-out",
                 "bg-white/20 backdrop-blur-md",
                 
-                /* Label position based on focus/value */
+                /* Label position - siempre arriba cuando hay valor o focus */
                 isFocused || hasValue || isOpen
-                  ? "top-0 -translate-y-1/2 text-xs text-[#2563EB]"
-                  : "top-1/2 -translate-y-1/2 text-sm text-[var(--color-login-text-muted)]"
+                  ? "top-0 -translate-y-1/2 text-xs"
+                  : "top-1/2 -translate-y-1/2 text-sm",
+                
+                /* Label color - azul solo cuando focused */
+                isFocused || isOpen
+                  ? "text-[#2563EB]"
+                  : "text-[var(--color-login-text-muted)]"
               )}
             >
               {label} <span className="text-[#2563EB]">*</span>
