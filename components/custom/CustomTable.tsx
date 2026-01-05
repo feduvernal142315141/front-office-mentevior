@@ -145,7 +145,7 @@ export function CustomTable<T>({
           <thead>
             <tr className="
               border-b border-slate-200/80
-              bg-gradient-to-b from-slate-50/80 to-white
+              bg-gradient-to-b from-[#037ECC]/[0.04] to-[#037ECC]/[0.02]
             ">
               {columns.map((column, idx) => (
                 <th
@@ -153,14 +153,14 @@ export function CustomTable<T>({
                   className={cn(
                     "h-14 px-6",
                     "text-xs font-semibold tracking-[0.02em]",
-                    "text-[#037ECC]/70",
+                    "text-[#037ECC]",
                     "sticky top-0 z-10",
-                    "bg-gradient-to-b from-slate-50/95 to-white/95",
+                    "bg-gradient-to-b from-[#037ECC]/[0.04] to-[#037ECC]/[0.02]",
                     "backdrop-blur-sm",
                     "text-left align-middle",
                     "transition-colors duration-150",
                     "cursor-pointer select-none",
-                    "hover:bg-gradient-to-b hover:from-[#037ECC]/5 hover:to-[#037ECC]/[0.02]",
+                    "hover:from-[#037ECC]/[0.08] hover:to-[#037ECC]/[0.04]",
                     "hover:text-[#037ECC]",
                     "group/header",
                     idx === 0 && "rounded-tl-2xl",

@@ -18,8 +18,14 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/assessment": PermissionModule.ASSESSMENT,
   "/behavior-plan": PermissionModule.BEHAVIOR_PLAN,
   "/my-company": PermissionModule.MY_COMPANY,
-  "/billing": PermissionModule.BILLING,
+  "/data-collection": PermissionModule.DATA_COLLECTION,
+  "/signatures-caregiver": PermissionModule.SIGNATURES_CAREGIVER,
+  "/template-documents": PermissionModule.TEMPLATE_DOCUMENTS,
+  "/clinical-documents": PermissionModule.CLINICAL_DOCUMENTS,
+  "/hr-documents": PermissionModule.HR_DOCUMENTS,
+  "/agreements": PermissionModule.AGREEMENTS,
   "/applicants": PermissionModule.APPLICANTS,
+  "/billing": PermissionModule.BILLING,
   "/configuration": PermissionModule.CONFIGURATION,
 }
 

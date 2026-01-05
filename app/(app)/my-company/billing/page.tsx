@@ -1,8 +1,24 @@
 "use client"
 
-import { CreditCard } from "lucide-react"
+import { CreditCard, Clock, FileCheck } from "lucide-react"
+import Link from "next/link"
 
 export default function BillingPage() {
+  const subModules = [
+    {
+      title: "Services Pending Billing",
+      description: "Review and process pending service charges",
+      href: "/my-company/billing/services-pending",
+      icon: Clock,
+    },
+    {
+      title: "Billed Claims",
+      description: "View and manage submitted billing claims",
+      href: "/my-company/billing/billed-claims",
+      icon: FileCheck,
+    },
+  ]
+
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
@@ -14,20 +30,49 @@ export default function BillingPage() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
               Billing
             </h1>
-            <p className="text-slate-600 mt-1">Manage billing and payment information</p>
+            <p className="text-slate-600 mt-1">Manage billing and payment processing</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12">
-          <div className="text-center max-w-md mx-auto">
-            <div className="inline-flex p-4 rounded-full bg-slate-100 mb-4">
-              <CreditCard className="h-12 w-12 text-slate-400" />
-            </div>
-            <h2 className="text-xl font-semibold text-slate-800 mb-2">Coming Soon</h2>
-            <p className="text-slate-600">
-              This module is currently under development. Check back soon for updates.
-            </p>
-          </div>
+        {/* Sub-modules Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {subModules.map((module) => {
+            const IconComponent = module.icon
+            return (
+              <Link
+                key={module.href}
+                href={module.href}
+                className="group block"
+              >
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 transition-all duration-200 hover:shadow-lg hover:border-[#037ECC]/30 hover:-translate-y-1 min-h-[180px] flex flex-col">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-fit p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20 shrink-0">
+                      <IconComponent className="h-6 w-6 text-[#037ECC]" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-800 group-hover:text-[#037ECC] transition-colors">
+                      {module.title}
+                    </h3>
+                  </div>
+                  
+                  <p className="text-sm text-slate-600 flex-1 leading-relaxed">
+                    {module.description}
+                  </p>
+                  <div className="mt-4 flex items-center text-sm font-medium text-[#037ECC] group-hover:translate-x-1 transition-transform pt-2 border-t border-slate-100">
+                    Access →
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Info Card */}
+        <div className="mt-8 bg-gradient-to-br from-[#037ECC]/5 to-[#079CFB]/5 rounded-2xl border border-[#037ECC]/10 p-6">
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">About Billing</h3>
+          <p className="text-slate-600 leading-relaxed">
+            Manage all aspects of billing operations, from pending services to submitted claims. 
+            Track payment status and ensure timely processing of all financial transactions.
+          </p>
         </div>
       </div>
     </div>
