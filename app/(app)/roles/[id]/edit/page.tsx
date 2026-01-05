@@ -33,8 +33,10 @@ export default function EditRolePage({ params }: EditRolePageProps) {
     <div className="p-6">
       <div className="max-w-5xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Edit Role</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+            Edit Role
+          </h1>
+          <p className="text-slate-600 mt-2">
             Update role capabilities and settings
           </p>
         </div>
