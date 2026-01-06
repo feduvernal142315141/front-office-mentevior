@@ -43,6 +43,7 @@ export interface MemberUserListItem {
   roleName: string
   hiringDate: string
   active: boolean
+  terminated: boolean  // User has been terminated (takes precedence over active/inactive)
 }
 
 interface RoleMemberUser{

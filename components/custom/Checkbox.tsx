@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Check } from "lucide-react"
+import { Check, Minus } from "lucide-react"
 import React from "react"
 
 interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
@@ -67,9 +67,7 @@ export function Checkbox({
   
   return (
     <div className={cn("flex items-start gap-2.5", className)}>
-      {/* Custom Checkbox */}
       <div className="relative flex items-center justify-center flex-shrink-0 mt-0.5">
-        {/* Hidden native input */}
         <input
           type="checkbox"
           id={checkboxId}
@@ -79,8 +77,7 @@ export function Checkbox({
           className="peer sr-only"
           {...props}
         />
-        
-        {/* Custom visual */}
+      
         <label
           htmlFor={checkboxId}
           className={cn(
@@ -90,44 +87,47 @@ export function Checkbox({
             "border-2",
             "transition-all duration-200 ease-out",
             "cursor-pointer",
-            
-            // Default state
+
             "border-gray-300 bg-white",
-            
-            // Hover
+   
             "hover:border-blue-400 hover:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]",
-            
-            // Checked
+ 
             "peer-checked:border-blue-600 peer-checked:bg-gradient-to-br peer-checked:from-blue-600 peer-checked:to-blue-500",
             "peer-checked:shadow-[0_2px_8px_rgba(37,99,235,0.3)]",
-            
-            // Focus
+
             "peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2",
-            
-            // Disabled
+    
             disabled && "opacity-50 cursor-not-allowed hover:border-gray-300 hover:shadow-none",
-            
-            // Indeterminate
+    
             indeterminate && "border-blue-600 bg-blue-600"
           )}
         >
-          {/* Check icon */}
-          <Check
-            className={cn(
-              sizes.icon,
-              "text-white",
-              "transition-all duration-200",
-              "absolute",
-              checked || indeterminate
-                ? "opacity-100 scale-100"
-                : "opacity-0 scale-50"
-            )}
-            strokeWidth={3}
-          />
+
+          {indeterminate ? (
+            <Minus
+              className={cn(
+                sizes.icon,
+                "text-white",
+                "transition-all duration-200",
+                "absolute opacity-100 scale-100"
+              )}
+              strokeWidth={3}
+            />
+          ) : (
+            <Check
+              className={cn(
+                sizes.icon,
+                "text-white",
+                "transition-all duration-200",
+                "absolute",
+                checked ? "opacity-100 scale-100" : "opacity-0 scale-50"
+              )}
+              strokeWidth={3}
+            />
+          )}
         </label>
       </div>
       
-      {/* Label */}
       {hasLabel && (
         <div className="flex-1 min-w-0">
           {label && (
@@ -160,9 +160,6 @@ export function Checkbox({
   )
 }
 
-/**
- * Checkbox.Group - Helper para grupos de checkboxes
- */
 Checkbox.Group = function CheckboxGroup({
   children,
   className,

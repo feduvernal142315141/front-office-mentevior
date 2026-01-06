@@ -23,6 +23,57 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/configuration": PermissionModule.CONFIGURATION,
   "/my-profile": "my-profile", // Siempre accesible
   "/change-password": "change-password", // Siempre accesible
+  "/data-collection": PermissionModule.DATA_COLLECTION,
+  "/signatures-caregiver": PermissionModule.SIGNATURES_CAREGIVER,
+  "/template-documents": PermissionModule.TEMPLATE_DOCUMENTS,
+  "/clinical-documents": PermissionModule.CLINICAL_DOCUMENTS,
+  "/hr-documents": PermissionModule.HR_DOCUMENTS,
+  "/agreements": PermissionModule.AGREEMENTS,
+}
+
+// Map of parent routes to their child routes
+// Used to check if user has permission to ANY child when accessing parent
+const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
+  "/my-company": [
+    "/roles",
+    "/my-company/account-profile",
+    "/my-company/address",
+    "/my-company/billing",
+    "/my-company/credentials",
+    "/my-company/events",
+    "/my-company/physicians",
+    "/my-company/service-plans",
+    "/data-collection",  // Now inside My Company
+    "/signatures-caregiver",  // Now inside My Company
+    "/template-documents",  // Now inside My Company
+    "/clinical-documents",  // Now inside My Company
+    "/hr-documents",  // Now inside My Company
+    "/agreements",  // Now inside My Company
+    "/applicants",  // Now inside My Company
+  ],
+  "/behavior-plan": [
+    "/behavior-plan/maladaptive-behaviors",
+    "/behavior-plan/replacement-programs",
+    "/behavior-plan/caregiver-programs",
+  ],
+  "/data-collection": [
+    "/data-collection/datasheets",
+    "/data-collection/onsite-collection",
+    "/data-collection/charts",
+    "/data-collection/data-analysis",
+    "/data-collection/raw-data",
+  ],
+  "/signatures-caregiver": [
+    "/signatures-caregiver/check",
+    "/signatures-caregiver/sign",
+  ],
+  "/template-documents": [
+    "/template-documents/session-note",
+    "/template-documents/service-log",
+    "/template-documents/clinical-monthly",
+    "/template-documents/monthly-supervision",
+    "/template-documents/assessment",
+  ],
 }
 
 interface ProtectedRouteProps {
@@ -65,9 +116,27 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     // Verificar permisos
     const permissionsObj = permissionsToObject(user.permissions || [])
+    
+    // 1. Check parent permission
     const modulePermissions = permissionsObj[module] || 0
+    if (modulePermissions > 0) {
+      return true
+    }
 
-    return modulePermissions > 0
+    // 2. If parent has no permission, check if user has permission to ANY child
+    // This allows accessing "/my-company" if user has permission to "/roles"
+    const childRoutes = PARENT_TO_CHILDREN_MAP[baseRoute]
+    if (childRoutes && childRoutes.length > 0) {
+      return childRoutes.some((childRoute) => {
+        const childModule = ROUTE_TO_PERMISSION_MAP[childRoute]
+        if (!childModule) return false
+        
+        const childPermissions = permissionsObj[childModule] || 0
+        return childPermissions > 0
+      })
+    }
+
+    return false
   }, [pathname, user])
 
   // Efecto para redirigir si no tiene acceso

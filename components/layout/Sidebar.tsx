@@ -395,13 +395,16 @@ export function Sidebar() {
                                 whileHover={{ x: 2 }}
                                 whileTap={{ scale: 0.98 }}
                                 className={cn(
-                                  "h-9 px-3 rounded-lg flex items-center gap-2 transition-all duration-200 text-xs font-medium",
+                                  "h-9 px-3 rounded-lg flex items-center gap-2 justify-between transition-all duration-200 text-xs font-medium",
                                   isChildItemActive
                                     ? "bg-[#037ECC]/10 text-[#037ECC] border-l-2 border-[#037ECC]"
                                     : "text-slate-600 hover:bg-slate-50 hover:text-[#037ECC]",
                                 )}
                               >
-                                <span>{child.label}</span>
+                                <span className="flex-1">{child.label}</span>
+                                {child.hasDeepChildren && (
+                                  <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
+                                )}
                               </motion.div>
                             </Link>
                           )

@@ -48,6 +48,7 @@ export function UsersTable() {
               { value: "all", label: "All Status" },
               { value: "active", label: "Active" },
               { value: "inactive", label: "Inactive" },
+              { value: "terminated", label: "Terminated" },
             ]}
             placeholder="Status"
           />

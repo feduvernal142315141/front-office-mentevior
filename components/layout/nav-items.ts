@@ -13,6 +13,7 @@ export type NavSubItem = {
   label: string
   href: string
   disabled?: boolean
+  hasDeepChildren?: boolean  // Indicates 3rd level exists (shown as cards, not in sidebar)
 }
 
 export const navItems: NavItem[] = [
@@ -94,7 +95,7 @@ export const navItems: NavItem[] = [
     label: "My Company",
     href: "/my-company",
     icon: "Building2",
-    section: "system",
+    section: "main",  // Changed from "system" to "main" - now appears last in main section
     children: [
       {
         label: "Roles",
@@ -128,102 +129,37 @@ export const navItems: NavItem[] = [
         label: "Service Plans",
         href: "/my-company/service-plans",
       },
-    ],
-  },
-  {
-    label: "Data Collection",
-    href: "/data-collection",
-    icon: "BarChart3",
-    section: "system",
-    children: [
       {
-        label: "Datasheets",
-        href: "/data-collection/datasheets",
+        label: "Data Collection",
+        href: "/data-collection",
+        hasDeepChildren: true,  // Has 3rd level - shows > icon
       },
       {
-        label: "On-site Collection",
-        href: "/data-collection/onsite-collection",
+        label: "Signatures Caregiver",
+        href: "/signatures-caregiver",
+        hasDeepChildren: true,  // Has 3rd level - shows > icon
       },
       {
-        label: "Charts",
-        href: "/data-collection/charts",
+        label: "Template Documents",
+        href: "/template-documents",
+        hasDeepChildren: true,  // Has 3rd level - shows > icon
       },
       {
-        label: "Data Analysis",
-        href: "/data-collection/data-analysis",
+        label: "Clinical Documents",
+        href: "/clinical-documents",
       },
       {
-        label: "Raw Data",
-        href: "/data-collection/raw-data",
-      },
-    ],
-  },
-  {
-    label: "Signatures Caregiver",
-    href: "/signatures-caregiver",
-    icon: "FileSignature",
-    section: "system",
-    children: [
-      {
-        label: "Check Signatures",
-        href: "/signatures-caregiver/check",
+        label: "HR Documents",
+        href: "/hr-documents",
       },
       {
-        label: "Sign Signatures",
-        href: "/signatures-caregiver/sign",
+        label: "Agreements",
+        href: "/agreements",
+      },
+      {
+        label: "Applicants",
+        href: "/applicants",
       },
     ],
-  },
-  {
-    label: "Template Documents",
-    href: "/template-documents",
-    icon: "FileText",
-    section: "system",
-    children: [
-      {
-        label: "Session Note",
-        href: "/template-documents/session-note",
-      },
-      {
-        label: "Service Log",
-        href: "/template-documents/service-log",
-      },
-      {
-        label: "Clinical Monthly",
-        href: "/template-documents/clinical-monthly",
-      },
-      {
-        label: "Monthly Supervision",
-        href: "/template-documents/monthly-supervision",
-      },
-      {
-        label: "Assessment",
-        href: "/template-documents/assessment",
-      },
-    ],
-  },
-  {
-    label: "Clinical Documents",
-    href: "/clinical-documents",
-    icon: "FolderHeart",
-    section: "system",
-  },
-  {
-    label: "HR Documents",
-    href: "/hr-documents",
-    icon: "FolderOpen",
-    section: "system",
-  },
-  {
-    label: "Agreements",
-    href: "/agreements",
-    icon: "FileCheck",
-    section: "system",
-  },
-  {
-    label: "Applicants",
-    href: "/applicants",
-    icon: "UserPlus",
-    section: "system",
   },
 ]

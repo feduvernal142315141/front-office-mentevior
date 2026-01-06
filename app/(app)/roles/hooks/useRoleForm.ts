@@ -25,6 +25,10 @@ interface UseRoleFormReturn {
   onSubmit: (data: RoleFormValues) => Promise<void>
   isSubmitting: boolean
   
+  hasPermissions: boolean
+  hasChanges: boolean
+  isFormValid: boolean
+  
   actions: {
     goToList: () => void
   }
@@ -94,6 +98,21 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
       router.push("/roles")
     },
   }
+  
+  // Watch form values to check for changes and permissions
+  const currentName = form.watch("name")
+  const currentPermissions = form.watch("permissions")
+  
+  const hasPermissions = currentPermissions && currentPermissions.length > 0
+  
+  const hasChanges = isEditing 
+    ? (canEditName && currentName !== role?.name) || 
+      JSON.stringify(currentPermissions?.sort()) !== JSON.stringify(role?.permissions?.sort())
+    : true // Always has changes in create mode
+  
+  const isFormValid = isEditing 
+    ? hasPermissions && hasChanges && form.formState.isValid
+    : hasPermissions && form.formState.isValid
 
   return {
     form,
@@ -104,6 +123,9 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
     usersCount,
     onSubmit,
     isSubmitting,
+    hasPermissions,
+    hasChanges,
+    isFormValid,
     actions,
   }
 }

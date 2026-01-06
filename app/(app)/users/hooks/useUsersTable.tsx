@@ -15,7 +15,7 @@ import {buildFilters} from "@/lib/utils/query-filters";
 import {FilterOperator} from "@/lib/models/filterOperator";
 import { parseLocalDate } from "@/lib/date";
 
-type StatusFilter = "all" | "active" | "inactive"
+type StatusFilter = "all" | "active" | "inactive" | "terminated"
 
 interface UseUsersTableReturn {
   data: MemberUserListItem[]
@@ -69,21 +69,46 @@ export function useUsersTable(): UseUsersTableReturn {
   const [roleFilter, setRoleFilter] = useState<string>("all")
 
   const filtersArray = useMemo(() => {
+    const filters = []
+    
+    if (statusFilter === "terminated") {
+      filters.push({
+        field: "terminated",
+        value: true,
+        operator: FilterOperator.eq,
+        type: "boolean" as const,
+      })
+    } else if (statusFilter === "active") {
+      filters.push({
+        field: "active",
+        value: true,
+        operator: FilterOperator.eq,
+        type: "boolean" as const,
+      })
+    } else if (statusFilter === "inactive") {
+      filters.push({
+        field: "active",
+        value: false,
+        operator: FilterOperator.eq,
+        type: "boolean" as const,
+      })
+      filters.push({
+        field: "terminated",
+        value: true,
+        operator: FilterOperator.neq,
+        type: "boolean" as const,
+      })
+    }
+
+    filters.push({
+      field: "role.name",
+      value: roleFilter === "all" ? null : roleFilter,
+      operator: FilterOperator.relatedEqual,
+      type: "string" as const,
+    })
+    
     return buildFilters(
-      [
-        {
-          field: "active",
-          value: statusFilter === "all" ? null : statusFilter === "active",
-          operator: FilterOperator.eq,
-          type: "boolean",
-        },
-        {
-          field: "role.name",
-          value: roleFilter === "all" ? null : roleFilter,
-          operator: FilterOperator.relatedEqual,
-          type: "string",
-        },
-      ],
+      filters,
       {
         fields: ["firstName","lastName"],
         search: searchQuery,
@@ -159,18 +184,31 @@ export function useUsersTable(): UseUsersTableReturn {
       {
         key: "status",
         header: "Status",
-        render: (user) => (
-          <Badge
-            variant={user.active ? "default" : "secondary"}
-            className={
-              user.active
-                ? "bg-green-100 text-green-800 hover:bg-green-200"
-                : ""
-            }
-          >
-            {user.active ? "Active" : "Inactive"}
-          </Badge>
-        ),
+        render: (user) => {
+          if (user.terminated) {
+            return (
+              <Badge
+                variant="destructive"
+                className="bg-red-100 text-red-800 hover:bg-red-200 border-red-200"
+              >
+                Terminated
+              </Badge>
+            )
+          }
+          
+          return (
+            <Badge
+              variant={user.active ? "default" : "secondary"}
+              className={
+                user.active
+                  ? "bg-green-100 text-green-800 hover:bg-green-200"
+                  : ""
+              }
+            >
+              {user.active ? "Active" : "Inactive"}
+            </Badge>
+          )
+        },
       },
     ]
     

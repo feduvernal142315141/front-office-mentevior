@@ -12,6 +12,73 @@ function isUUID(segment: string): boolean {
   return uuidRegex.test(segment)
 }
 
+// Map route segments to readable labels
+const SEGMENT_LABEL_MAP: Record<string, string> = {
+  // Main modules
+  "dashboard": "Dashboard",
+  "users": "Users",
+  "clients": "Clients",
+  "schedules": "Schedules",
+  "session-note": "Session Note",
+  "clinical-monthly": "Clinical Monthly",
+  "monthly-supervisions": "Monthly Supervisions",
+  "service-log": "Service Log",
+  "assessment": "Assessment",
+  "behavior-plan": "Behavior Plan",
+  "my-company": "My Company",
+  
+  // Behavior Plan children
+  "maladaptive-behaviors": "Maladaptive Behaviors",
+  "replacement-programs": "Replacement Programs",
+  "caregiver-programs": "Caregiver Programs",
+  
+  // My Company children
+  "roles": "Roles",
+  "account-profile": "Account Profile",
+  "address": "Address",
+  "billing": "Billing",
+  "credentials": "Credentials",
+  "events": "Events",
+  "physicians": "Physicians",
+  "service-plans": "Service Plans",
+  
+  // Data Collection
+  "data-collection": "Data Collection",
+  "datasheets": "Datasheets",
+  "onsite-collection": "On-site Collection",
+  "charts": "Charts",
+  "data-analysis": "Data Analysis",
+  "raw-data": "Raw Data",
+  
+  // Signatures Caregiver
+  "signatures-caregiver": "Signatures Caregiver",
+  "check": "Check Signatures",
+  "sign": "Sign Signatures",
+  
+  // Template Documents
+  "template-documents": "Template Documents",
+  "monthly-supervision": "Monthly Supervision",
+  
+  // Other modules
+  "clinical-documents": "Clinical Documents",
+  "hr-documents": "HR Documents",
+  "agreements": "Agreements",
+  "applicants": "Applicants",
+  
+  // Common actions
+  "create": "Create",
+  "edit": "Edit",
+  "new": "New",
+  "view": "View",
+}
+
+// Helper to get label for a segment
+function getSegmentLabel(segment: string): string {
+  return SEGMENT_LABEL_MAP[segment] || segment.split("-").map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(" ")
+}
+
 export function Breadcrumbs() {
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
@@ -22,7 +89,7 @@ export function Breadcrumbs() {
   // Build breadcrumbs from filtered segments
   const breadcrumbs = filteredSegments.map((segment, index) => {
     const href = "/" + filteredSegments.slice(0, index + 1).join("/")
-    const label = segment.charAt(0).toUpperCase() + segment.slice(1)
+    const label = getSegmentLabel(segment)
     const isLast = index === filteredSegments.length - 1
 
     return {
