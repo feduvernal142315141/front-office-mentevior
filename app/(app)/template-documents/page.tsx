@@ -2,40 +2,55 @@
 
 import { FileText, FileEdit, ClipboardList, Hospital, CalendarClock, ClipboardCheck } from "lucide-react"
 import Link from "next/link"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionModule } from "@/lib/utils/permissions-new"
+import { useMemo } from "react"
 
 export default function TemplateDocumentsPage() {
-  const subModules = [
+  const { view } = usePermission()
+  
+  const allSubModules = [
     {
       title: "Session Note",
       description: "Customize session note templates",
       href: "/template-documents/session-note",
       icon: FileEdit,
+      module: PermissionModule.SESSION_NOTE_CONFIGURATION,
     },
     {
       title: "Service Log",
       description: "Configure service log templates",
       href: "/template-documents/service-log",
       icon: ClipboardList,
+      module: PermissionModule.SERVICE_LOG_CONFIGURATION,
     },
     {
       title: "Clinical Monthly",
       description: "Manage clinical monthly report templates",
       href: "/template-documents/clinical-monthly",
       icon: Hospital,
+      module: PermissionModule.CLINICAL_MONTHLY_CONFIGURATION,
     },
     {
       title: "Monthly Supervision",
       description: "Set up supervision report templates",
       href: "/template-documents/monthly-supervision",
       icon: CalendarClock,
+      module: PermissionModule.MONTHLY_SUPERVISIONS_CONFIGURATION,
     },
     {
       title: "Assessment",
       description: "Create assessment form templates",
       href: "/template-documents/assessment",
       icon: ClipboardCheck,
+      module: PermissionModule.ASSESSMENT_CONFIGURATION,
     },
   ]
+  
+  // Filter submodules based on user permissions
+  const subModules = useMemo(() => {
+    return allSubModules.filter(module => view(module.module))
+  }, [view])
 
   return (
     <div className="p-8">

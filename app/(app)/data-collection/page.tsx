@@ -2,40 +2,55 @@
 
 import { BarChart3, Sheet, MapPinned, LineChart, Brain, Database } from "lucide-react"
 import Link from "next/link"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionModule } from "@/lib/utils/permissions-new"
+import { useMemo } from "react"
 
 export default function DataCollectionPage() {
-  const subModules = [
+  const { view } = usePermission()
+  
+  const allSubModules = [
     {
       title: "Datasheets",
       description: "Create and manage data collection sheets",
       href: "/data-collection/datasheets",
       icon: Sheet,
+      module: PermissionModule.DATASHEETS,
     },
     {
       title: "On-site Collection",
       description: "Collect data during field sessions",
       href: "/data-collection/onsite-collection",
       icon: MapPinned,
+      module: PermissionModule.ON_SITE_COLLECTION,
     },
     {
       title: "Charts",
       description: "Visualize data with interactive charts",
       href: "/data-collection/charts",
       icon: LineChart,
+      module: PermissionModule.CHARTS,
     },
     {
       title: "Data Analysis",
       description: "Analyze and interpret collected data",
       href: "/data-collection/data-analysis",
       icon: Brain,
+      module: PermissionModule.DATA_ANALYSIS,
     },
     {
       title: "Raw Data",
       description: "Access and export raw data records",
       href: "/data-collection/raw-data",
       icon: Database,
+      module: PermissionModule.RAW_DATA,
     },
   ]
+  
+  // Filter submodules based on user permissions
+  const subModules = useMemo(() => {
+    return allSubModules.filter(module => view(module.module))
+  }, [view])
 
   return (
     <div className="p-8">

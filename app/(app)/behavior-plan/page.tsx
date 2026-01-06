@@ -2,28 +2,41 @@
 
 import { TrendingUp, AlertTriangle, RefreshCw, Heart } from "lucide-react"
 import Link from "next/link"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionModule } from "@/lib/utils/permissions-new"
+import { useMemo } from "react"
 
 export default function BehaviorPlanPage() {
-  const subModules = [
+  const { view } = usePermission()
+  
+  const allSubModules = [
     {
       title: "Maladaptive Behaviors",
       description: "Track and manage challenging behaviors",
       href: "/behavior-plan/maladaptive-behaviors",
       icon: AlertTriangle,
+      module: PermissionModule.MALADAPTIVE_BEHAVIORS,
     },
     {
       title: "Replacement Programs",
       description: "Create and monitor replacement behavior programs",
       href: "/behavior-plan/replacement-programs",
       icon: RefreshCw,
+      module: PermissionModule.REPLACEMENT_PROGRAMS,
     },
     {
       title: "Caregiver Programs",
       description: "Manage caregiver training and support programs",
       href: "/behavior-plan/caregiver-programs",
       icon: Heart,
+      module: PermissionModule.CAREGIVER_PROGRAMS,
     },
   ]
+  
+  // Filter submodules based on user permissions
+  const subModules = useMemo(() => {
+    return allSubModules.filter(module => view(module.module))
+  }, [view])
 
   return (
     <div className="p-8">

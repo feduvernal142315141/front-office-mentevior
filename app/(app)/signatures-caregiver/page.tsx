@@ -2,22 +2,34 @@
 
 import { FileSignature, CheckSquare, PenTool } from "lucide-react"
 import Link from "next/link"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionModule } from "@/lib/utils/permissions-new"
+import { useMemo } from "react"
 
 export default function SignaturesCaregiverPage() {
-  const subModules = [
+  const { view } = usePermission()
+  
+  const allSubModules = [
     {
       title: "Check Signatures",
       description: "Review and verify caregiver signatures",
       href: "/signatures-caregiver/check",
       icon: CheckSquare,
+      module: PermissionModule.CHECK,
     },
     {
       title: "Sign Signatures",
       description: "Sign pending documents as caregiver",
       href: "/signatures-caregiver/sign",
       icon: PenTool,
+      module: PermissionModule.SIGN,
     },
   ]
+  
+  // Filter submodules based on user permissions
+  const subModules = useMemo(() => {
+    return allSubModules.filter(module => view(module.module))
+  }, [view])
 
   return (
     <div className="p-8">

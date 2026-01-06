@@ -17,6 +17,12 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/service-log": PermissionModule.SERVICE_LOG,
   "/assessment": PermissionModule.ASSESSMENT,
   "/behavior-plan": PermissionModule.BEHAVIOR_PLAN,
+  
+  // Behavior Plan children (real permissions)
+  "/behavior-plan/maladaptive-behaviors": PermissionModule.MALADAPTIVE_BEHAVIORS,
+  "/behavior-plan/replacement-programs": PermissionModule.REPLACEMENT_PROGRAMS,
+  "/behavior-plan/caregiver-programs": PermissionModule.CAREGIVER_PROGRAMS,
+  
   "/my-company": PermissionModule.MY_COMPANY,
   "/billing": PermissionModule.BILLING,
   "/applicants": PermissionModule.APPLICANTS,
@@ -89,6 +95,32 @@ const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
   ],
 }
 
+/**
+ * Helper function to check if user has permission to any deep children routes
+ * Used when a child route is not a real permission (e.g., /data-collection)
+ * but has nested children with real permissions (e.g., /data-collection/datasheets)
+ */
+function hasDeepChildrenPermission(
+  baseRoute: string, 
+  permissionsObj: Record<string, number>
+): boolean {
+  // Check if this route has deep children in PARENT_TO_CHILDREN_MAP
+  const deepChildren = PARENT_TO_CHILDREN_MAP[baseRoute]
+  
+  if (!deepChildren || deepChildren.length === 0) {
+    return false
+  }
+  
+  // Check if user has permission to any deep child
+  return deepChildren.some(deepChildRoute => {
+    const deepChildModule = ROUTE_TO_PERMISSION_MAP[deepChildRoute]
+    if (!deepChildModule) return false
+    
+    const deepChildPermissions = permissionsObj[deepChildModule] || 0
+    return deepChildPermissions > 0
+  })
+}
+
 interface ProtectedRouteProps {
   children: React.ReactNode
 }
@@ -137,15 +169,25 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     // 2. If parent has no permission, check if user has permission to ANY child
-    // This allows accessing "/my-company" if user has permission to "/roles"
+    // This allows accessing "/my-company" if user has permission to "/roles" or any deep child
     const childRoutes = PARENT_TO_CHILDREN_MAP[baseRoute]
     if (childRoutes && childRoutes.length > 0) {
       return childRoutes.some((childRoute) => {
         const childModule = ROUTE_TO_PERMISSION_MAP[childRoute]
-        if (!childModule) return false
         
-        const childPermissions = permissionsObj[childModule] || 0
-        return childPermissions > 0
+        // If child has direct permission, allow access
+        if (childModule) {
+          const childPermissions = permissionsObj[childModule] || 0
+          if (childPermissions > 0) return true
+        }
+        
+        // If child is not a real permission (e.g., /data-collection),
+        // check if user has permission to any of its deep children
+        if (!childModule) {
+          return hasDeepChildrenPermission(childRoute, permissionsObj)
+        }
+        
+        return false
       })
     }
 
