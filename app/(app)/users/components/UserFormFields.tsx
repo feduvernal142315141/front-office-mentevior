@@ -28,7 +28,7 @@ export function UserFormFields({
   isSubmitting,
   onCancel,
 }: UserFormFieldsProps) {
-  const { control } = useFormContext()
+  const { control, setValue } = useFormContext()
 
   return (
     <>
@@ -246,7 +246,13 @@ export function UserFormFields({
                         <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50">
                           <PremiumSwitch
                             checked={field.value ?? true}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked)
+          
+                              if (checked) {
+                                setValue("terminated", false)
+                              }
+                            }}
                             label="Active User"
                             description="Enable or disable user access to the system"
                             variant="success"
@@ -262,7 +268,12 @@ export function UserFormFields({
                         <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50">
                           <PremiumSwitch
                             checked={field.value ?? false}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked)
+                              if (checked) {
+                                setValue("active", false)
+                              }
+                            }}
                             label="Terminated"
                             description="Mark user as terminated or unemployed"
                             variant="danger"

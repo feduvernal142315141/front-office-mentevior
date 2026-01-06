@@ -5,10 +5,9 @@ import { FormProvider, Controller } from "react-hook-form"
 import { useRoleForm } from "../hooks/useRoleForm"
 import { PermissionsSelector } from "@/components/form"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, Save, Users, X } from "lucide-react"
+import {  Save, Users, X } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/custom/Button"
-import { FloatingInput } from "@/components/custom/FloatingInput"
 import { useRef, useEffect } from "react"
 
 
@@ -43,7 +42,6 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
 
   const roleNameRef = useRef<HTMLDivElement>(null)
 
-  // Scroll to name field if there's an error
   useEffect(() => {
     if (form.formState.errors.name && roleNameRef.current) {
       roleNameRef.current.scrollIntoView({ 

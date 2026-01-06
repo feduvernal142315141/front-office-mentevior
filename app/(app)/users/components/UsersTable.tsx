@@ -36,7 +36,7 @@ export function UsersTable() {
             <SearchInput
               value={filters.inputValue}
               onChange={filters.setSearchQuery}
-              placeholder="Search by name, email, or phone..."
+              placeholder="Search by name."
               onClear={clearFilters}
             />
           </div>

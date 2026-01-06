@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useCreateRole } from "@/lib/modules/roles/hooks/use-create-role"
 import { useUpdateRole } from "@/lib/modules/roles/hooks/use-update-role"
 import { useRoleById } from "@/lib/modules/roles/hooks/use-role-by-id"
@@ -45,17 +45,23 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
   
   const isSubmitting = isCreating || isUpdating
   
+  // Store original values to detect changes
+  const originalValuesRef = useRef<RoleFormValues | null>(null)
+  
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema),
     defaultValues: getRoleFormDefaults(),
+    mode: "onChange", // Validate on every change
   })
   
   useEffect(() => {
     if (role && isEditing) {
-      form.reset({
+      const initialValues = {
         name: role.name,
         permissions: role.permissions,
-      })
+      }
+      form.reset(initialValues)
+      originalValuesRef.current = initialValues
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, isEditing]) // ✅ Solo role e isEditing, form.reset es estable
@@ -99,20 +105,49 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
     },
   }
   
-  // Watch form values to check for changes and permissions
+  // Watch all form values to detect changes in real-time
   const currentName = form.watch("name")
   const currentPermissions = form.watch("permissions")
   
   const hasPermissions = currentPermissions && currentPermissions.length > 0
   
+  // Detect changes by comparing current values with original values
   const hasChanges = isEditing 
-    ? (canEditName && currentName !== role?.name) || 
-      JSON.stringify(currentPermissions?.sort()) !== JSON.stringify(role?.permissions?.sort())
+    ? (() => {
+        if (!originalValuesRef.current) {
+          console.log("🔴 originalValuesRef.current is null")
+          return false
+        }
+        
+        const nameChanged = canEditName && currentName !== originalValuesRef.current.name
+        const permissionsChanged = JSON.stringify([...(currentPermissions || [])].sort()) !== 
+                                   JSON.stringify([...(originalValuesRef.current.permissions || [])].sort())
+        
+        console.log("🔍 CHANGE DETECTION:", {
+          canEditName,
+          currentName,
+          originalName: originalValuesRef.current.name,
+          nameChanged,
+          permissionsChanged,
+          hasChanges: nameChanged || permissionsChanged
+        })
+        
+        return nameChanged || permissionsChanged
+      })()
     : true // Always has changes in create mode
   
   const isFormValid = isEditing 
     ? hasPermissions && hasChanges && form.formState.isValid
     : hasPermissions && form.formState.isValid
+  
+  console.log("🎯 FORM VALIDATION:", {
+    isEditing,
+    hasPermissions,
+    hasChanges,
+    isValid: form.formState.isValid,
+    errors: form.formState.errors,
+    isFormValid
+  })
 
   return {
     form,
