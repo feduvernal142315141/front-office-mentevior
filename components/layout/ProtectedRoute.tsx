@@ -20,19 +20,32 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/my-company": PermissionModule.MY_COMPANY,
   "/billing": PermissionModule.BILLING,
   "/applicants": PermissionModule.APPLICANTS,
-  "/configuration": PermissionModule.CONFIGURATION,
-  "/my-profile": "my-profile", // Siempre accesible
-  "/change-password": "change-password", // Siempre accesible
-  "/data-collection": PermissionModule.DATA_COLLECTION,
-  "/signatures-caregiver": PermissionModule.SIGNATURES_CAREGIVER,
-  "/template-documents": PermissionModule.TEMPLATE_DOCUMENTS,
+  "/my-profile": "my-profile", 
+  "/change-password": "change-password",
+  // Data Collection, Signatures, Templates are visual parents - access is granted via children
   "/clinical-documents": PermissionModule.CLINICAL_DOCUMENTS,
   "/hr-documents": PermissionModule.HR_DOCUMENTS,
   "/agreements": PermissionModule.AGREEMENTS,
+  
+  // Data Collection children (real permissions)
+  "/data-collection/datasheets": PermissionModule.DATASHEETS,
+  "/data-collection/onsite-collection": PermissionModule.ON_SITE_COLLECTION,
+  "/data-collection/charts": PermissionModule.CHARTS,
+  "/data-collection/data-analysis": PermissionModule.DATA_ANALYSIS,
+  "/data-collection/raw-data": PermissionModule.RAW_DATA,
+  
+  // Signatures Caregiver children (real permissions)
+  "/signatures-caregiver/check": PermissionModule.CHECK,
+  "/signatures-caregiver/sign": PermissionModule.SIGN,
+  
+  // Template Documents children (real permissions)
+  "/template-documents/session-note": PermissionModule.SESSION_NOTE_CONFIGURATION,
+  "/template-documents/service-log": PermissionModule.SERVICE_LOG_CONFIGURATION,
+  "/template-documents/clinical-monthly": PermissionModule.CLINICAL_MONTHLY_CONFIGURATION,
+  "/template-documents/monthly-supervision": PermissionModule.MONTHLY_SUPERVISIONS_CONFIGURATION,
+  "/template-documents/assessment": PermissionModule.ASSESSMENT_CONFIGURATION,
 }
 
-// Map of parent routes to their child routes
-// Used to check if user has permission to ANY child when accessing parent
 const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
   "/my-company": [
     "/roles",
@@ -43,13 +56,13 @@ const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
     "/my-company/events",
     "/my-company/physicians",
     "/my-company/service-plans",
-    "/data-collection",  // Now inside My Company
-    "/signatures-caregiver",  // Now inside My Company
-    "/template-documents",  // Now inside My Company
-    "/clinical-documents",  // Now inside My Company
-    "/hr-documents",  // Now inside My Company
-    "/agreements",  // Now inside My Company
-    "/applicants",  // Now inside My Company
+    "/data-collection",  
+    "/signatures-caregiver",  
+    "/template-documents",  
+    "/clinical-documents", 
+    "/hr-documents", 
+    "/agreements", 
+    "/applicants",
   ],
   "/behavior-plan": [
     "/behavior-plan/maladaptive-behaviors",

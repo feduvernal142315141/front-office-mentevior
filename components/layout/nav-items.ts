@@ -13,7 +13,7 @@ export type NavSubItem = {
   label: string
   href: string
   disabled?: boolean
-  hasDeepChildren?: boolean  // Indicates 3rd level exists (shown as cards, not in sidebar)
+  hasDeepChildren?: boolean 
 }
 
 export const navItems: NavItem[] = [
@@ -95,7 +95,7 @@ export const navItems: NavItem[] = [
     label: "My Company",
     href: "/my-company",
     icon: "Building2",
-    section: "main",  // Changed from "system" to "main" - now appears last in main section
+    section: "main",  
     children: [
       {
         label: "Roles",
@@ -132,17 +132,17 @@ export const navItems: NavItem[] = [
       {
         label: "Data Collection",
         href: "/data-collection",
-        hasDeepChildren: true,  // Has 3rd level - shows > icon
+        hasDeepChildren: true,  
       },
       {
         label: "Signatures Caregiver",
         href: "/signatures-caregiver",
-        hasDeepChildren: true,  // Has 3rd level - shows > icon
+        hasDeepChildren: true,  
       },
       {
         label: "Template Documents",
         href: "/template-documents",
-        hasDeepChildren: true,  // Has 3rd level - shows > icon
+        hasDeepChildren: true,  
       },
       {
         label: "Clinical Documents",
