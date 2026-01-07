@@ -10,11 +10,11 @@ export default function MyCompanyPage() {
   const canViewRoles = useCanViewModule("/roles")
   const canViewAccountProfile = useCanViewModule("/my-company/account-profile")
   const canViewAddress = useCanViewModule("/my-company/address")
-  const canViewBilling = useCanViewModule("/my-company/billing")
   const canViewCredentials = useCanViewModule("/my-company/credentials")
-  const canViewEvents = useCanViewModule("/my-company/events")
   const canViewPhysicians = useCanViewModule("/my-company/physicians")
   const canViewServicePlans = useCanViewModule("/my-company/service-plans")
+  const canViewEvents = useCanViewModule("/my-company/events")
+  const canViewBilling = useCanViewModule("/my-company/billing")
   const canViewDataCollection = useCanViewModule("/data-collection")
   const canViewSignaturesCaregiver = useCanViewModule("/signatures-caregiver")
   const canViewTemplateDocuments = useCanViewModule("/template-documents")
@@ -49,27 +49,11 @@ export default function MyCompanyPage() {
       hasDeepChildren: false,
     },
     {
-      title: "Billing",
-      description: "Handle billing and payment settings",
-      href: "/my-company/billing",
-      icon: CreditCard,
-      canView: canViewBilling,
-      hasDeepChildren: false,
-    },
-    {
       title: "Credentials",
       description: "Manage professional credentials",
       href: "/my-company/credentials",
       icon: Award,
       canView: canViewCredentials,
-      hasDeepChildren: false,
-    },
-    {
-      title: "Events",
-      description: "Track company events and activities",
-      href: "/my-company/events",
-      icon: Calendar,
-      canView: canViewEvents,
       hasDeepChildren: false,
     },
     {
@@ -89,6 +73,22 @@ export default function MyCompanyPage() {
       hasDeepChildren: false,
     },
     {
+      title: "Events",
+      description: "Manage appointments, service plans and supervision",
+      href: "/my-company/events",
+      icon: Calendar,
+      canView: canViewEvents,
+      hasDeepChildren: true,
+    },
+    {
+      title: "Billing",
+      description: "Handle billing and payment processing",
+      href: "/my-company/billing",
+      icon: CreditCard,
+      canView: canViewBilling,
+      hasDeepChildren: true,
+    },
+    {
       title: "Data Collection",
       description: "Manage data collection datasheets and analysis",
       href: "/data-collection",
@@ -102,7 +102,7 @@ export default function MyCompanyPage() {
       href: "/signatures-caregiver",
       icon: FileSignature,
       canView: canViewSignaturesCaregiver,
-      hasDeepChildren: true,
+      hasDeepChildren: false,
     },
     {
       title: "Template Documents",
@@ -152,11 +152,11 @@ export default function MyCompanyPage() {
     canViewRoles, 
     canViewAccountProfile, 
     canViewAddress, 
-    canViewBilling, 
     canViewCredentials, 
-    canViewEvents, 
     canViewPhysicians, 
     canViewServicePlans,
+    canViewEvents,
+    canViewBilling,
     canViewDataCollection,
     canViewSignaturesCaregiver,
     canViewTemplateDocuments,

@@ -110,16 +110,8 @@ export const navItems: NavItem[] = [
         href: "/my-company/address",
       },
       {
-        label: "Billing",
-        href: "/my-company/billing",
-      },
-      {
         label: "Credentials",
         href: "/my-company/credentials",
-      },
-      {
-        label: "Events",
-        href: "/my-company/events",
       },
       {
         label: "Physicians",
@@ -130,6 +122,16 @@ export const navItems: NavItem[] = [
         href: "/my-company/service-plans",
       },
       {
+        label: "Events",
+        href: "/my-company/events",
+        hasDeepChildren: true,
+      },
+      {
+        label: "Billing",
+        href: "/my-company/billing",
+        hasDeepChildren: true,
+      },
+      {
         label: "Data Collection",
         href: "/data-collection",
         hasDeepChildren: true,  
@@ -137,7 +139,6 @@ export const navItems: NavItem[] = [
       {
         label: "Signatures Caregiver",
         href: "/signatures-caregiver",
-        hasDeepChildren: true,  
       },
       {
         label: "Template Documents",

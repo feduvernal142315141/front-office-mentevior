@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { NotebookPen, CalendarCheck, ChevronLeft, ChevronRight, Gauge, Users, Hospital, CalendarClock, ClipboardList, ClipboardCheck, TrendingUp, User, UserCog, Shield, Building2, BarChart3, FileSignature, FileText, FolderHeart, FolderOpen, FileCheck, UserPlus, ChevronDown, ChevronUp } from "lucide-react"
+import { NotebookPen, CalendarCheck, ChevronLeft, ChevronRight, Gauge, Users, Hospital, CalendarClock, ClipboardList, ClipboardCheck, TrendingUp, User, UserCog, Shield, Building2, BarChart3, FileSignature, FileText, FolderHeart, FolderOpen, FileCheck, UserPlus, ChevronDown, ChevronUp, Calendar, CreditCard } from "lucide-react"
 import Image from "next/image"
 import { useUi } from "@/lib/store/ui.store"
 import { cn } from "@/lib/utils"
@@ -32,6 +32,8 @@ export const ICON_MAP = {
   FolderOpen,
   FileCheck,
   UserPlus,
+  Calendar,
+  CreditCard,
 } as const
 
 export function Sidebar() {

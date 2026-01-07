@@ -51,9 +51,8 @@ export const PERMISSION_IDS: Record<string, string> = {
   "data_analysis": "d3e4f5a6-b7c8-49d0-e1f2-a3b4c5d6e7f8",
   "raw_data": "e4f5a6b7-c8d9-40e1-f2a3-b4c5d6e7f8a9",
   
-  // Signatures Caregiver children (real permissions)
-  "check": "f5a6b7c8-d9e0-41f2-a3b4-c5d6e7f8a9b0",
-  "sign": "a6b7c8d9-e0f1-42a3-b4c5-d6e7f8a9b0c1",
+  // Signatures Caregiver (simple module)
+  "signatures_caregiver": "f5a6b7c8-d9e0-41f2-a3b4-c5d6e7f8a9b0",
   
   // Template Documents children (real permissions)
   "session_note_configuration": "b7c8d9e0-f1a2-43b4-c5d6-e7f8a9b0c1d2",

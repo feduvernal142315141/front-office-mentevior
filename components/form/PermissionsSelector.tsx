@@ -47,11 +47,20 @@ const DATA_COLLECTION = {
   ]
 }
 
-const SIGNATURES_CAREGIVER = {
-  label: "Signatures Caregiver",
+const EVENTS = {
+  label: "Events",
   children: [
-    { key: PermissionModule.CHECK, label: "Check Signatures" },
-    { key: PermissionModule.SIGN, label: "Sign Signatures" },
+    { key: PermissionModule.APPOINTMENT, label: "Appointment" },
+    { key: PermissionModule.SERVICE_PLAN, label: "Service Plan" },
+    { key: PermissionModule.SUPERVISION, label: "Supervision" },
+  ]
+}
+
+const BILLING = {
+  label: "Billing",
+  children: [
+    { key: PermissionModule.SERVICES_PENDING_BILLING, label: "Services Pending Billing" },
+    { key: PermissionModule.BILLED_CLAIMS, label: "Billed Claims" },
   ]
 }
 
@@ -69,14 +78,10 @@ const TEMPLATE_DOCUMENTS = {
 const MY_COMPANY_MODULES = [
   { key: PermissionModule.ROLE, label: "Roles" },
   { key: PermissionModule.ACCOUNT_PROFILE, label: "Account Profile" },
-  { key: PermissionModule.SERVICES_PENDING_BILLING, label: "Services Pending Billing" },
-  { key: PermissionModule.BILLED_CLAIMS, label: "Billed Claims" },
-  { key: PermissionModule.APPOINTMENT, label: "Appointment" },
-  { key: PermissionModule.SERVICE_PLAN, label: "Service Plan" },
-  { key: PermissionModule.SUPERVISION, label: "Supervision" },
   { key: PermissionModule.PHYSICIANS, label: "Physicians" },
   { key: PermissionModule.SERVICE_PLANS, label: "Service Plans" },
   { key: PermissionModule.MONTHLY_REPORT, label: "Monthly Report" },
+  { key: PermissionModule.SIGNATURES_CAREGIVER, label: "Signatures Caregiver" },
   { key: PermissionModule.CLINICAL_DOCUMENTS, label: "Clinical Documents" },
   { key: PermissionModule.HR_DOCUMENTS, label: "HR Documents" },
   { key: PermissionModule.AGREEMENTS, label: "Agreements" },
@@ -84,8 +89,9 @@ const MY_COMPANY_MODULES = [
 ]
 
 const MY_COMPANY_EXPANDABLES = [
+  EVENTS,
+  BILLING,
   DATA_COLLECTION,
-  SIGNATURES_CAREGIVER,
   TEMPLATE_DOCUMENTS,
 ]
 
@@ -109,9 +115,10 @@ export function PermissionsSelector({
   const currentPermissions = watch(name) as string[] || []
   const [permissionsObj, setPermissionsObj] = useState<Record<string, number>>({})
   const [behaviorPlanExpanded, setBehaviorPlanExpanded] = useState(false)
+  const [eventsExpanded, setEventsExpanded] = useState(false)
+  const [billingExpanded, setBillingExpanded] = useState(false)
   const [myCompanyExpanded, setMyCompanyExpanded] = useState(false)
   const [dataCollectionExpanded, setDataCollectionExpanded] = useState(false)
-  const [signaturesCaregiverExpanded, setSignaturesCaregiverExpanded] = useState(false)
   const [templateDocumentsExpanded, setTemplateDocumentsExpanded] = useState(false)
   
   useEffect(() => {
@@ -164,10 +171,12 @@ export function PermissionsSelector({
   const toggleAllMyCompany = () => {
     const allChildModules = [
       ...MY_COMPANY_MODULES.map(m => m.key),
+      ...EVENTS.children.map(c => c.key),
+      ...BILLING.children.map(c => c.key),
       ...DATA_COLLECTION.children.map(c => c.key),
-      ...SIGNATURES_CAREGIVER.children.map(c => c.key),
       ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
     ]
+    
     const allHaveFullAccess = allChildModules.every(m => hasFullAccess(m))
     
     const newObj = { ...permissionsObj }
@@ -182,26 +191,24 @@ export function PermissionsSelector({
   
   const allMyCompanyChildModules = [
     ...MY_COMPANY_MODULES.map(m => m.key),
+    ...EVENTS.children.map(c => c.key),
+    ...BILLING.children.map(c => c.key),
     ...DATA_COLLECTION.children.map(c => c.key),
-    ...SIGNATURES_CAREGIVER.children.map(c => c.key),
     ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
   ]
   const allMyCompanySelected = allMyCompanyChildModules.every(m => hasFullAccess(m))
   const someMyCompanySelected = allMyCompanyChildModules.some(m => hasAnyPermission(m))
-  
-  const behaviorPlanChildrenCount = BEHAVIOR_PLAN.children.filter(c => hasAnyPermission(c.key)).length
-  const behaviorPlanIndeterminate = behaviorPlanChildrenCount > 0 && behaviorPlanChildrenCount < BEHAVIOR_PLAN.children.length
   
   const selectAllPermissions = () => {
     if (disabled) return
     
     const allModules = [
       ...CORE_MODULES.map(m => m.key),
-      BEHAVIOR_PLAN.key,
       ...BEHAVIOR_PLAN.children.map(c => c.key),
+      ...EVENTS.children.map(c => c.key),
+      ...BILLING.children.map(c => c.key),
       ...MY_COMPANY_MODULES.map(m => m.key),
       ...DATA_COLLECTION.children.map(c => c.key),
-      ...SIGNATURES_CAREGIVER.children.map(c => c.key),
       ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
     ]
     
@@ -359,11 +366,11 @@ export function PermissionsSelector({
   const activePreset = detectActivePreset()
   const allPermissionsSelected = totalModulesWithFullAccess === [
     ...CORE_MODULES.map(m => m.key),
-    BEHAVIOR_PLAN.key,
     ...BEHAVIOR_PLAN.children.map(c => c.key),
+    ...EVENTS.children.map(c => c.key),
+    ...BILLING.children.map(c => c.key),
     ...MY_COMPANY_MODULES.map(m => m.key),
     ...DATA_COLLECTION.children.map(c => c.key),
-    ...SIGNATURES_CAREGIVER.children.map(c => c.key),
     ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
   ].length
   
@@ -497,17 +504,9 @@ export function PermissionsSelector({
         </tr>
         
         {isExpanded && (
-          <tr>
-            <td colSpan={6} className="p-0">
-              <div className="animate-in slide-in-from-top-2 duration-200">
-                <table className="w-full">
-                  <tbody className="divide-y divide-slate-100">
-                    {module.children.map((child) => renderModuleRow(child, true))}
-                  </tbody>
-                </table>
-              </div>
-            </td>
-          </tr>
+          <>
+            {module.children.map((child) => renderModuleRow(child, true))}
+          </>
         )}
       </>
     )
@@ -527,8 +526,8 @@ export function PermissionsSelector({
           "border-b border-slate-100/50"
         )}
       >
-        <td className={cn("py-3", isChild ? "pl-12 pr-6" : "px-6")}>
-          <div className="flex items-center gap-3">
+        <td className="py-3 px-6">
+          <div className={cn("flex items-center gap-3", isChild && "pl-6")}>
             <Checkbox
               checked={isChecked}
               onCheckedChange={(checked) => {
@@ -727,109 +726,10 @@ export function PermissionsSelector({
             <tbody className="divide-y divide-slate-100">
               {CORE_MODULES.map((module) => renderModuleRow(module))}
               
-              <tr className={cn(
-                "transition-all duration-150",
-                hasAnyPermission(BEHAVIOR_PLAN.key) && "bg-blue-50/30",
-                "hover:bg-slate-50/80 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.1)]"
-              )}>
-                <td className="px-6 py-3">
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={hasAnyPermission(BEHAVIOR_PLAN.key)}
-                      indeterminate={behaviorPlanIndeterminate}
-                      onCheckedChange={(checked) => {
-                        const value = checked ? PermissionAction.ALL : 0
-                        const newObj = { ...permissionsObj }
-                        newObj[BEHAVIOR_PLAN.key] = value
-                        BEHAVIOR_PLAN.children.forEach(child => {
-                          newObj[child.key] = value
-                        })
-                        setPermissionsObj(newObj)
-                        const newPermissions = objectToPermissions(newObj)
-                        setValue(name, newPermissions, { shouldDirty: true, shouldValidate: true })
-                      }}
-                      disabled={disabled}
-                      size="sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setBehaviorPlanExpanded(!behaviorPlanExpanded)}
-                      className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-[#037ECC]"
-                    >
-                      <ChevronRight 
-                        className={cn(
-                          "w-4 h-4 text-slate-400 transition-transform duration-200",
-                          behaviorPlanExpanded && "rotate-90"
-                        )} 
-                      />
-                      <span className={hasAnyPermission(BEHAVIOR_PLAN.key) ? "text-slate-800" : "text-slate-500"}>
-                        {BEHAVIOR_PLAN.label}
-                      </span>
-                      <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-[10px] px-1.5 py-0">
-                        {BEHAVIOR_PLAN.children.length} sub-modules
-                      </Badge>
-                    </button>
-                  </div>
-                </td>
-                
-                {ACTIONS.map(({ key: action }) => (
-                  <td key={action} className="px-4 py-3 text-center">
-                    <div className="flex items-center justify-center">
-                      <Checkbox
-                        checked={hasAction(BEHAVIOR_PLAN.key, action)}
-                        onCheckedChange={() => {
-                          const parentCurrentValue = permissionsObj[BEHAVIOR_PLAN.key] || 0
-                          const newParentValue = (parentCurrentValue & action) 
-                            ? parentCurrentValue & ~action 
-                            : parentCurrentValue | action
-                          
-                          const newObj = { ...permissionsObj }
-                          newObj[BEHAVIOR_PLAN.key] = newParentValue
-                          
-                          BEHAVIOR_PLAN.children.forEach(child => {
-                            const childCurrentValue = permissionsObj[child.key] || 0
-                            newObj[child.key] = (parentCurrentValue & action)
-                              ? childCurrentValue & ~action
-                              : childCurrentValue | action
-                          })
-                          
-                          setPermissionsObj(newObj)
-                          const newPermissions = objectToPermissions(newObj)
-                          setValue(name, newPermissions, { shouldDirty: true, shouldValidate: true })
-                        }}
-                        disabled={disabled}
-                        size="sm"
-                      />
-                    </div>
-                  </td>
-                ))}
-                
-                <td className="px-6 py-3 text-right">
-                  {hasFullAccess(BEHAVIOR_PLAN.key) ? (
-                    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200">
-                      <Check className="w-3 h-3 mr-1" />
-                      Full Access
-                    </Badge>
-                  ) : hasAnyPermission(BEHAVIOR_PLAN.key) ? (
-                    <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">
-                      Custom
-                    </Badge>
-                  ) : null}
-                </td>
-              </tr>
-              
-              {behaviorPlanExpanded && (
-                <tr>
-                  <td colSpan={6} className="p-0">
-                    <div className="animate-in slide-in-from-top-2 duration-200">
-                      <table className="w-full">
-                        <tbody className="divide-y divide-slate-100">
-                          {BEHAVIOR_PLAN.children.map((child) => renderModuleRow(child, true))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </td>
-                </tr>
+              {renderExpandableWithRealChildren(
+                BEHAVIOR_PLAN,
+                behaviorPlanExpanded,
+                () => setBehaviorPlanExpanded(!behaviorPlanExpanded)
               )}
             </tbody>
           </table>
@@ -837,12 +737,12 @@ export function PermissionsSelector({
       </div>
       
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <button
-          type="button"
-          onClick={() => setMyCompanyExpanded(!myCompanyExpanded)}
-          className="w-full px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 flex items-center justify-between hover:from-slate-100 hover:to-slate-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
+        <div className="w-full px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setMyCompanyExpanded(!myCompanyExpanded)}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
             <ChevronRight 
               className={cn(
                 "w-5 h-5 text-slate-400 transition-transform duration-200",
@@ -855,28 +755,58 @@ export function PermissionsSelector({
                 Configure permissions for company management modules
               </p>
             </div>
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (disabled) return
+                const newObj = { ...permissionsObj }
+                allMyCompanyChildModules.forEach((m: string) => {
+                  newObj[m] = 0
+                })
+                setPermissionsObj(newObj)
+                const newPermissions = objectToPermissions(newObj)
+                setValue(name, newPermissions, { shouldDirty: true, shouldValidate: true })
+              }}
+              disabled={disabled || !someMyCompanySelected}
+              className="
+                inline-flex items-center gap-1.5 px-2.5 py-1.5 
+                text-xs font-medium text-slate-600
+                bg-white border border-slate-200 rounded-lg
+                hover:bg-red-50 hover:border-red-200 hover:text-red-700
+                disabled:opacity-50 disabled:cursor-not-allowed
+                transition-all duration-150
+                shadow-sm hover:shadow
+              "
+            >
+              <Eraser className="w-3 h-3" />
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleAllMyCompany()}
+              disabled={disabled}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1.5",
+                "text-xs font-medium rounded-lg",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "transition-all duration-150",
+                "shadow-sm hover:shadow-md",
+                allMyCompanySelected
+                  ? "bg-gradient-to-r from-[#037ECC] to-[#0369a8] text-white ring-2 ring-[#037ECC]/20"
+                  : "bg-white text-slate-700 border border-slate-200 hover:bg-[#037ECC]/5 hover:border-[#037ECC]/30 hover:text-[#037ECC]"
+              )}
+            >
+              <Check className="w-3 h-3" />
+              Select All
+            </button>
           </div>
-          <div className="flex items-center gap-3">
-            {someMyCompanySelected && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                {allMyCompanyChildModules.filter((m: string) => hasAnyPermission(m)).length} selected
-              </Badge>
-            )}
-          </div>
-        </button>
+        </div>
         
         {myCompanyExpanded && (
           <div className="animate-in slide-in-from-top-2 duration-200">
-            <div className="px-6 py-3 bg-blue-50/50 border-b border-slate-200">
-              <Checkbox
-                checked={allMyCompanySelected}
-                indeterminate={someMyCompanySelected && !allMyCompanySelected}
-                onCheckedChange={toggleAllMyCompany}
-                disabled={disabled}
-                label="Select all My Company modules"
-                size="sm"
-              />
-            </div>
             
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -904,14 +834,19 @@ export function PermissionsSelector({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {renderExpandableWithRealChildren(
+                    EVENTS,
+                    eventsExpanded,
+                    () => setEventsExpanded(!eventsExpanded)
+                  )}
+                  {renderExpandableWithRealChildren(
+                    BILLING,
+                    billingExpanded,
+                    () => setBillingExpanded(!billingExpanded)
+                  )}
+                  {renderExpandableWithRealChildren(
                     DATA_COLLECTION, 
                     dataCollectionExpanded, 
                     () => setDataCollectionExpanded(!dataCollectionExpanded)
-                  )}
-                  {renderExpandableWithRealChildren(
-                    SIGNATURES_CAREGIVER, 
-                    signaturesCaregiverExpanded, 
-                    () => setSignaturesCaregiverExpanded(!signaturesCaregiverExpanded)
                   )}
                   {renderExpandableWithRealChildren(
                     TEMPLATE_DOCUMENTS, 

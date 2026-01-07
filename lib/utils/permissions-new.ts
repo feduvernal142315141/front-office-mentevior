@@ -45,8 +45,7 @@ export enum PermissionModule {
   DATA_ANALYSIS = "data_analysis",
   RAW_DATA = "raw_data",
   
-  CHECK = "check",
-  SIGN = "sign",
+  SIGNATURES_CAREGIVER = "signatures_caregiver",
   
   SESSION_NOTE_CONFIGURATION = "session_note_configuration",
   CLINICAL_MONTHLY_CONFIGURATION = "clinical_monthly_configuration",

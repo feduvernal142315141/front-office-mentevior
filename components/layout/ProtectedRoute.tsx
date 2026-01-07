@@ -16,7 +16,6 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/monthly-supervisions": PermissionModule.MONTHLY_SUPERVISIONS,
   "/service-log": PermissionModule.SERVICE_LOG,
   "/assessment": PermissionModule.ASSESSMENT,
-  "/behavior-plan": PermissionModule.BEHAVIOR_PLAN,
   
   // Behavior Plan children (real permissions)
   "/behavior-plan/maladaptive-behaviors": PermissionModule.MALADAPTIVE_BEHAVIORS,
@@ -24,11 +23,19 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/behavior-plan/caregiver-programs": PermissionModule.CAREGIVER_PROGRAMS,
   
   "/my-company": PermissionModule.MY_COMPANY,
-  "/billing": PermissionModule.BILLING,
+  
+  // Events children (real permissions, under My Company)
+  "/my-company/events/appointment": PermissionModule.APPOINTMENT,
+  "/my-company/events/service-plan": PermissionModule.SERVICE_PLAN,
+  "/my-company/events/supervision": PermissionModule.SUPERVISION,
+  
+  // Billing children (real permissions, under My Company)
+  "/my-company/billing/services-pending": PermissionModule.SERVICES_PENDING_BILLING,
+  "/my-company/billing/billed-claims": PermissionModule.BILLED_CLAIMS,
   "/applicants": PermissionModule.APPLICANTS,
   "/my-profile": "my-profile", 
   "/change-password": "change-password",
-  // Data Collection, Signatures, Templates are visual parents - access is granted via children
+  // Data Collection, Behavior Plan, Events, Billing, Signatures, Templates are visual parents - access is granted via children
   "/clinical-documents": PermissionModule.CLINICAL_DOCUMENTS,
   "/hr-documents": PermissionModule.HR_DOCUMENTS,
   "/agreements": PermissionModule.AGREEMENTS,
@@ -39,10 +46,9 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/data-collection/charts": PermissionModule.CHARTS,
   "/data-collection/data-analysis": PermissionModule.DATA_ANALYSIS,
   "/data-collection/raw-data": PermissionModule.RAW_DATA,
-  
-  // Signatures Caregiver children (real permissions)
-  "/signatures-caregiver/check": PermissionModule.CHECK,
-  "/signatures-caregiver/sign": PermissionModule.SIGN,
+
+  // Signatures Caregiver (now a simple module)
+  "/signatures-caregiver": PermissionModule.SIGNATURES_CAREGIVER,
   
   // Template Documents children (real permissions)
   "/template-documents/session-note": PermissionModule.SESSION_NOTE_CONFIGURATION,
@@ -57,11 +63,11 @@ const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
     "/roles",
     "/my-company/account-profile",
     "/my-company/address",
-    "/my-company/billing",
     "/my-company/credentials",
-    "/my-company/events",
     "/my-company/physicians",
     "/my-company/service-plans",
+    "/my-company/events",
+    "/my-company/billing",
     "/data-collection",  
     "/signatures-caregiver",  
     "/template-documents",  
@@ -75,16 +81,21 @@ const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
     "/behavior-plan/replacement-programs",
     "/behavior-plan/caregiver-programs",
   ],
+  "/my-company/events": [
+    "/my-company/events/appointment",
+    "/my-company/events/service-plan",
+    "/my-company/events/supervision",
+  ],
+  "/my-company/billing": [
+    "/my-company/billing/services-pending",
+    "/my-company/billing/billed-claims",
+  ],
   "/data-collection": [
     "/data-collection/datasheets",
     "/data-collection/onsite-collection",
     "/data-collection/charts",
     "/data-collection/data-analysis",
     "/data-collection/raw-data",
-  ],
-  "/signatures-caregiver": [
-    "/signatures-caregiver/check",
-    "/signatures-caregiver/sign",
   ],
   "/template-documents": [
     "/template-documents/session-note",
@@ -104,14 +115,14 @@ function hasDeepChildrenPermission(
   baseRoute: string, 
   permissionsObj: Record<string, number>
 ): boolean {
-  // Check if this route has deep children in PARENT_TO_CHILDREN_MAP
+
   const deepChildren = PARENT_TO_CHILDREN_MAP[baseRoute]
   
   if (!deepChildren || deepChildren.length === 0) {
     return false
   }
   
-  // Check if user has permission to any deep child
+
   return deepChildren.some(deepChildRoute => {
     const deepChildModule = ROUTE_TO_PERMISSION_MAP[deepChildRoute]
     if (!deepChildModule) return false

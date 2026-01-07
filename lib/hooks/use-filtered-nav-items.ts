@@ -16,21 +16,27 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/monthly-supervisions": PermissionModule.MONTHLY_SUPERVISIONS,
   "/service-log": PermissionModule.SERVICE_LOG,
   "/assessment": PermissionModule.ASSESSMENT,
-  "/behavior-plan": PermissionModule.BEHAVIOR_PLAN,
   "/my-company": PermissionModule.MY_COMPANY,
-  "/billing": PermissionModule.BILLING,
   
+  // Behavior Plan children (real permissions)
   "/behavior-plan/maladaptive-behaviors": PermissionModule.MALADAPTIVE_BEHAVIORS,
   "/behavior-plan/replacement-programs": PermissionModule.REPLACEMENT_PROGRAMS,
   "/behavior-plan/caregiver-programs": PermissionModule.CAREGIVER_PROGRAMS,
 
   "/my-company/account-profile": PermissionModule.MY_COMPANY,
   "/my-company/address": PermissionModule.MY_COMPANY,
-  "/my-company/billing": PermissionModule.BILLING,
   "/my-company/credentials": PermissionModule.MY_COMPANY,
-  "/my-company/events": PermissionModule.MY_COMPANY,
   "/my-company/physicians": PermissionModule.MY_COMPANY,
   "/my-company/service-plans": PermissionModule.MY_COMPANY,
+  
+  // Events children (real permissions, under My Company)
+  "/my-company/events/appointment": PermissionModule.APPOINTMENT,
+  "/my-company/events/service-plan": PermissionModule.SERVICE_PLAN,
+  "/my-company/events/supervision": PermissionModule.SUPERVISION,
+  
+  // Billing children (real permissions, under My Company)
+  "/my-company/billing/services-pending": PermissionModule.SERVICES_PENDING_BILLING,
+  "/my-company/billing/billed-claims": PermissionModule.BILLED_CLAIMS,
   
   "/clinical-documents": PermissionModule.CLINICAL_DOCUMENTS,
   "/hr-documents": PermissionModule.HR_DOCUMENTS,
@@ -44,9 +50,8 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/data-collection/data-analysis": PermissionModule.DATA_ANALYSIS,
   "/data-collection/raw-data": PermissionModule.RAW_DATA,
 
-  // Signatures Caregiver children (real permissions)
-  "/signatures-caregiver/check": PermissionModule.CHECK,
-  "/signatures-caregiver/sign": PermissionModule.SIGN,
+  // Signatures Caregiver (now a simple module)
+  "/signatures-caregiver": PermissionModule.SIGNATURES_CAREGIVER,
   
   // Template Documents children (real permissions)
   "/template-documents/session-note": PermissionModule.SESSION_NOTE_CONFIGURATION,
@@ -93,15 +98,15 @@ export function useFilteredNavItems(): NavItem[] {
       
       const module = SIDEBAR_TO_PERMISSION_MAP[item.href]
       
-      if (!module) {
-        return false
-      }
-      
-      const modulePermissions = permissionsObj[module] || 0
-      if (modulePermissions > 0) {
-        return true
+      // If module has direct permission mapping, check it
+      if (module) {
+        const modulePermissions = permissionsObj[module] || 0
+        if (modulePermissions > 0) {
+          return true
+        }
       }
 
+      // If no direct permission OR item has children, check children
       if (item.children && item.children.length > 0) {
         return item.children.some((child) => {
           const childModule = SIDEBAR_TO_PERMISSION_MAP[child.href]
@@ -119,6 +124,11 @@ export function useFilteredNavItems(): NavItem[] {
           
           return false
         })
+      }
+      
+      // If no module mapping and no children, hide it
+      if (!module) {
+        return false
       }
       
       return false
