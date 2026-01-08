@@ -235,7 +235,6 @@ export function PermissionsSelector({
     const newObj: Record<string, number> = {}
     
     if (preset === 'readonly') {
-      // Read Only: Only EDIT permission (view) for clinical modules
       const readOnlyModules = [
         PermissionModule.USERS_PROVIDERS,
         PermissionModule.CLIENTS,
@@ -245,10 +244,9 @@ export function PermissionsSelector({
         PermissionModule.ASSESSMENT,
       ]
       readOnlyModules.forEach(m => {
-        newObj[m] = PermissionAction.EDIT // Only view
+        newObj[m] = PermissionAction.EDIT
       })
     } else if (preset === 'clinical') {
-      // Clinical RBT Default: Full access to clinical modules, limited to company
       const clinicalModules = [
         PermissionModule.CLIENTS,
         PermissionModule.SCHEDULE,
@@ -261,13 +259,9 @@ export function PermissionsSelector({
       clinicalModules.forEach(m => {
         newObj[m] = PermissionAction.ALL
       })
-      
-      // Add specific data collection permissions
-      newObj[PermissionModule.DATASHEETS] = PermissionAction.ALL
-      newObj[PermissionModule.CHARTS] = PermissionAction.EDIT
     } else if (preset === 'supervisor') {
       // Supervisor: Can view, edit, create but NOT delete critical data
-      // Full access to operational modules
+      // Full access to operational modules (Core modules + Behavior Plan only)
       const supervisorModules = [
         PermissionModule.USERS_PROVIDERS,
         PermissionModule.CLIENTS,
@@ -285,16 +279,6 @@ export function PermissionsSelector({
       supervisorModules.forEach(m => {
         newObj[m] = supervisorValue
       })
-      
-      // View access to billing/reports
-      newObj[PermissionModule.SERVICES_PENDING_BILLING] = PermissionAction.EDIT
-      newObj[PermissionModule.BILLED_CLAIMS] = PermissionAction.EDIT
-      newObj[PermissionModule.MONTHLY_REPORT] = PermissionAction.EDIT
-      
-      // Data collection with edit
-      newObj[PermissionModule.DATASHEETS] = supervisorValue
-      newObj[PermissionModule.CHARTS] = PermissionAction.EDIT
-      newObj[PermissionModule.DATA_ANALYSIS] = PermissionAction.EDIT
     }
     
     setPermissionsObj(newObj)
@@ -321,27 +305,32 @@ export function PermissionsSelector({
     if (matchesReadOnly) {
       return 'readonly'
     }
-    
-    // Check Clinical RBT (approximate match)
-    const hasClinicalModules = [
+
+    const clinicalCoreModules = [
       PermissionModule.CLIENTS,
       PermissionModule.SCHEDULE,
       PermissionModule.SESSION_NOTE,
+      PermissionModule.CLINICAL_MONTHLY,
       PermissionModule.SERVICE_LOG,
       PermissionModule.ASSESSMENT,
-    ].every(m => permissionsObj[m] === PermissionAction.ALL)
+    ]
     
-    const hasDatasheets = permissionsObj[PermissionModule.DATASHEETS] === PermissionAction.ALL
-    const hasChartsEdit = permissionsObj[PermissionModule.CHARTS] === PermissionAction.EDIT
+    const hasClinicalModules = clinicalCoreModules.every(m => permissionsObj[m] === PermissionAction.ALL)
     
-    if (hasClinicalModules && hasDatasheets && hasChartsEdit && totalModulesWithPermissions >= 7 && totalModulesWithPermissions <= 12) {
+    const hasBehaviorPlanPermissions = BEHAVIOR_PLAN.children.every(c => permissionsObj[c.key] === PermissionAction.ALL)
+    
+    const hasNoDataCollection = !permissionsObj[PermissionModule.DATASHEETS] && 
+                                 !permissionsObj[PermissionModule.ON_SITE_COLLECTION] &&
+                                 !permissionsObj[PermissionModule.CHARTS] &&
+                                 !permissionsObj[PermissionModule.DATA_ANALYSIS] &&
+                                 !permissionsObj[PermissionModule.RAW_DATA]
+    
+    if (hasClinicalModules && hasBehaviorPlanPermissions && hasNoDataCollection && totalModulesWithPermissions >= 9 && totalModulesWithPermissions <= 12) {
       return 'clinical'
     }
     
-    // Check Supervisor (approximate match)
     const supervisorValue = PermissionAction.CREATE | PermissionAction.EDIT | PermissionAction.BLOCK
     
-    // Check if at least 4 core supervisor modules match
     const supervisorCoreModules = [
       PermissionModule.USERS_PROVIDERS,
       PermissionModule.CLIENTS,
@@ -349,14 +338,27 @@ export function PermissionsSelector({
       PermissionModule.SESSION_NOTE,
       PermissionModule.CLINICAL_MONTHLY,
       PermissionModule.MONTHLY_SUPERVISIONS,
+      PermissionModule.SERVICE_LOG,
+      PermissionModule.ASSESSMENT,
     ]
     const supervisorMatchCount = supervisorCoreModules.filter(m => permissionsObj[m] === supervisorValue).length
     
-    const hasViewBilling = permissionsObj[PermissionModule.SERVICES_PENDING_BILLING] === PermissionAction.EDIT ||
-      permissionsObj[PermissionModule.BILLED_CLAIMS] === PermissionAction.EDIT ||
-      permissionsObj[PermissionModule.MONTHLY_REPORT] === PermissionAction.EDIT
+    const hasBehaviorPlanSupervisorPermissions = BEHAVIOR_PLAN.children.every(c => permissionsObj[c.key] === supervisorValue)
     
-    if (supervisorMatchCount >= 4 && hasViewBilling && totalModulesWithPermissions >= 8) {
+    const hasNoMyCompanyPermissions = !permissionsObj[PermissionModule.SERVICES_PENDING_BILLING] &&
+                                       !permissionsObj[PermissionModule.BILLED_CLAIMS] &&
+                                       !permissionsObj[PermissionModule.MONTHLY_REPORT] &&
+                                       !permissionsObj[PermissionModule.DATASHEETS] &&
+                                       !permissionsObj[PermissionModule.ON_SITE_COLLECTION] &&
+                                       !permissionsObj[PermissionModule.CHARTS] &&
+                                       !permissionsObj[PermissionModule.DATA_ANALYSIS] &&
+                                       !permissionsObj[PermissionModule.RAW_DATA] &&
+                                       !permissionsObj[PermissionModule.APPOINTMENT] &&
+                                       !permissionsObj[PermissionModule.SERVICE_PLAN] &&
+                                       !permissionsObj[PermissionModule.SUPERVISION] &&
+                                       MY_COMPANY_MODULES.every(m => !permissionsObj[m.key])
+    
+    if (supervisorMatchCount >= 6 && hasBehaviorPlanSupervisorPermissions && hasNoMyCompanyPermissions && totalModulesWithPermissions >= 11 && totalModulesWithPermissions <= 14) {
       return 'supervisor'
     }
     
@@ -396,7 +398,6 @@ export function PermissionsSelector({
       )
     }
     
-    // Custom permissions - color based on count
     const actionCount = actions.length
     let badgeColor = "bg-blue-50 text-blue-700 border-blue-200"
     
@@ -576,7 +577,7 @@ export function PermissionsSelector({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">Presets</span>
-            <Tooltip>
+            {/* <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
@@ -600,7 +601,7 @@ export function PermissionsSelector({
               <TooltipContent className="bg-slate-900 text-white">
                 View-only access to core clinical modules
               </TooltipContent>
-            </Tooltip>
+            </Tooltip> */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
