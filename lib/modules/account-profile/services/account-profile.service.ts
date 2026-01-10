@@ -4,7 +4,7 @@ import type { AccountProfile, UpdateAccountProfileDto } from "@/lib/types/accoun
 
 
 export async function getAccountProfile(): Promise<AccountProfile | null> {
-  const response = await serviceGet<AccountProfile>("/company/by-auht-token")
+  const response = await serviceGet<AccountProfile>("/company/by-auth-token")
   
   if (response.status === 404) {
     return null
@@ -17,7 +17,7 @@ export async function getAccountProfile(): Promise<AccountProfile | null> {
   return response.data as unknown as AccountProfile
 }
 export async function updateAccountProfile(data: UpdateAccountProfileDto): Promise<boolean> {
-  const response = await servicePut<UpdateAccountProfileDto, boolean>("/company/by-auht-token", data)
+  const response = await servicePut<UpdateAccountProfileDto, boolean>("/company/by-auth-token", data)
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to update account profile")
