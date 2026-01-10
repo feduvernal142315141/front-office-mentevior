@@ -5,8 +5,8 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
-import { Button } from "@/components/custom/Button"
-import { User, Shield, Save, Info, X, UserCheck } from "lucide-react"
+import { FormBottomBar } from "@/components/custom/FormBottomBar"
+import { User, Shield, Info, UserCheck } from "lucide-react"
 
 interface RoleOption {
   id: string
@@ -312,32 +312,13 @@ export function UserFormFields({
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-end gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCancel}
-              disabled={isSubmitting}
-              className="gap-2 flex items-center"
-            >
-              <X className="w-4 h-4" />
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isSubmitting || isLoadingRoles}
-              loading={isSubmitting}
-              className="gap-2 flex items-center min-w-[160px]"
-            >
-              {!isSubmitting && <Save className="w-4 h-4" />}
-              {isEditing ? "Update User" : "Create User"}
-            </Button>
-          </div>
-        </div>
-      </div>
+      {/* Fixed Bottom Bar */}
+      <FormBottomBar
+        isSubmitting={isSubmitting}
+        onCancel={onCancel}
+        submitText={isEditing ? "Update User" : "Create User"}
+        disabled={isLoadingRoles}
+      />
     </>
   )
 }
