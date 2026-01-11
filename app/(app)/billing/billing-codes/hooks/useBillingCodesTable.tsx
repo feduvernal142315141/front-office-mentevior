@@ -1,25 +1,27 @@
+
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
-import type { AddressListItem } from "@/lib/types/address.types"
-import { useAddresses } from "@/lib/modules/addresses/hooks/use-addresses"
+import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
+import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/custom/Button"
-import { Edit2, MapPin } from "lucide-react"
+import { Edit2 } from "lucide-react"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 
 type StatusFilter = "all" | "active" | "inactive"
+type TypeFilter = "all" | "CPT" | "HCPCS"
 
-export function useAddressesTable() {
+export function useBillingCodesTable() {
   const router = useRouter()
   
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -41,18 +43,27 @@ export function useAddressesTable() {
         type: "boolean" as const,
       })
     }
+
+    if (typeFilter !== "all") {
+      filters.push({
+        field: "type",
+        value: typeFilter,
+        operator: FilterOperator.eq,
+        type: "string" as const,
+      })
+    }
     
     return buildFilters(
       filters,
       {
-        fields: ["nickName"],
+        fields: ["code", "description"],
         search: searchQuery,
       }
     )
-  }, [searchQuery, statusFilter])
+  }, [searchQuery, statusFilter, typeFilter])
 
-  const { addresses, totalCount, isLoading, error, refetch } = useAddresses({
-    page: page - 1, 
+  const { billingCodes, totalCount, isLoading, error, refetch } = useBillingCodes({
+    page: page - 1,
     pageSize,
     filters: filtersArray,
   })
@@ -63,7 +74,7 @@ export function useAddressesTable() {
       pageSize,
       filters: filtersArray,
     })
-  }, [searchQuery, statusFilter, page, pageSize, filtersArray, refetch])
+  }, [searchQuery, statusFilter, typeFilter, page, pageSize, filtersArray, refetch])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
@@ -75,6 +86,7 @@ export function useAddressesTable() {
     setSearchQuery("")
     setInputValue("")
     setStatusFilter("all")
+    setTypeFilter("all")
     setPage(1)
   }
   
@@ -87,49 +99,68 @@ export function useAddressesTable() {
     setPage(1)
   }
 
-  const columns: CustomTableColumn<AddressListItem>[] = [
+  const columns: CustomTableColumn<BillingCodeListItem>[] = useMemo(() => [
     {
-      key: "nickName",
-      header: "Nickname",
-      render: (address: AddressListItem) => (
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600">
-            <MapPin className="w-4 h-4" />
-          </div>
-          <span className="font-medium text-gray-900">{address.nickName}</span>
-        </div>
-      ),
-    },    
-    {
-      key: "location",
-      header: "Location",
-      render: (address: AddressListItem) => (
-        <div className="text-sm">
-          <div className="font-medium text-gray-900">{address.city}</div>
-          <div className="text-gray-500">{address.state}, {address.country}</div>
+      key: "code",
+      header: "Code",
+      render: (item: BillingCodeListItem) => (
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-bold text-gray-900">{item.code}</span>
+          <Badge 
+            variant="outline"
+            className={
+              item.type === "CPT" 
+                ? "border-green-200 bg-green-50 text-green-700"
+                : "border-purple-200 bg-purple-50 text-purple-700"
+            }
+          >
+            {item.type}
+          </Badge>
         </div>
       ),
     },
     {
-      key: "zipCode",
-      header: "Zip Code",
-      render: (address: AddressListItem) => (
-        <span className="text-gray-600">{address.zipCode}</span>
+      key: "description",
+      header: "Description",
+      render: (item: BillingCodeListItem) => (
+        <div className="max-w-md">
+          <p className="text-sm text-gray-900 line-clamp-2">{item.description}</p>
+        </div>
       ),
-    },   
+    },
     {
-      key: "active",
+      key: "modifiers",
+      header: "Modifiers",
+      render: (item: BillingCodeListItem) => (
+        <div className="flex gap-1 flex-wrap">
+          {item.modifiers && item.modifiers.length > 0 ? (
+            item.modifiers.map((mod, idx) => (
+              <span 
+                key={idx}
+                className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-medium"
+              >
+                {mod}
+              </span>
+            ))
+          ) : (
+            <span className="text-sm text-gray-400">-</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "status",
       header: "Status",
-      render: (address: AddressListItem) => (
+      render: (item: BillingCodeListItem) => (
         <Badge
-          variant={address.active ? "default" : "secondary"}
+          variant={item.active ? "default" : "secondary"}
           className={
-            address.active
+            item.active
               ? "bg-green-100 text-green-800 hover:bg-green-200"
               : ""
           }
         >
-          {address.active ? "Active" : "Inactive"}
+          {item.active ? "Active" : "Inactive"}
         </Badge>
       ),
     },
@@ -137,65 +168,41 @@ export function useAddressesTable() {
       key: "actions",
       header: "Actions",
       align: "right" as const,
-      render: (address: AddressListItem) => (
+      render: (item: BillingCodeListItem) => (
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => router.push(`/my-company/address/${address.id}/edit`)}
+            onClick={() => router.push(`/billing/billing-codes/${item.id}/edit`)}
             className="
               group/edit
               relative
               h-9 w-9
               flex items-center justify-center
               rounded-xl
-              
-              /* Background gradient */
               bg-gradient-to-b from-blue-50 to-blue-100/80
-              
-              /* Border */
               border border-blue-200/60
-              
-              /* Shadow */
-              shadow-sm
-              shadow-blue-900/5
-              
-              /* Hover */
-              hover:from-blue-100
-              hover:to-blue-200/90
+              shadow-sm shadow-blue-900/5
+              hover:from-blue-100 hover:to-blue-200/90
               hover:border-blue-300/80
-              hover:shadow-md
-              hover:shadow-blue-900/10
+              hover:shadow-md hover:shadow-blue-900/10
               hover:-translate-y-0.5
-              
-              /* Active */
-              active:translate-y-0
-              active:shadow-sm
-              
-              /* Transitions */
-              transition-all
-              duration-200
-              ease-out
-              
-              /* Focus */
-              focus:outline-none
-              focus:ring-2
-              focus:ring-blue-500/30
-              focus:ring-offset-2
+              active:translate-y-0 active:shadow-sm
+              transition-all duration-200 ease-out
+              focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2
             "
-            title="Edit address"
-            aria-label="Edit address"
+            title="Edit billing code"
+            aria-label="Edit billing code"
           >
             <Edit2 className="
               w-4 h-4
               text-blue-600
               group-hover/edit:text-blue-700
-              transition-colors
-              duration-200
+              transition-colors duration-200
             " />
           </button>
         </div>
       ),
     },
-  ]
+  ], [router])
 
   const pagination = {
     page,
@@ -207,7 +214,7 @@ export function useAddressesTable() {
   }
 
   return {
-    data: addresses,
+    data: billingCodes,
     columns,
     isLoading,
     error,
@@ -215,13 +222,15 @@ export function useAddressesTable() {
       searchQuery,
       inputValue,
       statusFilter,
+      typeFilter,
       setSearchQuery: handleSearchChange,
       setInputValue,
       setStatusFilter,
+      setTypeFilter,
     },
     pagination,
     totalCount,
-    filteredCount: addresses.length,
+    filteredCount: billingCodes.length,
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
   }

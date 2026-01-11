@@ -40,7 +40,6 @@ export function ImageUpload({
 
     setLocalError(null)
 
-    // Validar formato
     const validTypes = ["image/png", "image/jpeg", "image/jpg"]
     if (!validTypes.includes(file.type)) {
       setLocalError("Only PNG or JPG files are allowed.")
@@ -49,7 +48,6 @@ export function ImageUpload({
       return
     }
 
-    // Validar tamaño
     const sizeMB = file.size / (1024 * 1024)
     if (sizeMB > maxSizeMB) {
       setLocalError(`The logo must be less than ${maxSizeMB}MB.`)
@@ -58,7 +56,6 @@ export function ImageUpload({
       return
     }
 
-    // Convertir a base64
     const reader = new FileReader()
     reader.onloadend = () => {
       const base64 = reader.result as string
@@ -79,7 +76,6 @@ export function ImageUpload({
 
   return (
     <div className="space-y-3">
-      {/* Label */}
       {label && (
         <p className="text-sm font-semibold text-slate-700">
           {label} {required && <span className="text-[#037ECC]">*</span>}
@@ -87,13 +83,12 @@ export function ImageUpload({
       )}
 
       {!preview ? (
-        // Upload Area - Empty State
         <label
           htmlFor="logo-upload"
           className={cn(
             `
             flex flex-col items-center justify-center 
-            w-full h-48 rounded-xl cursor-pointer
+            w-full h-42 2xl:h-45 rounded-xl cursor-pointer
             border-2 border-dashed
             bg-gray-50/40
             hover:border-[#037ECC] hover:bg-[#037ECC]/5
@@ -119,9 +114,8 @@ export function ImageUpload({
           />
         </label>
       ) : (
-        // Preview State
         <div className="space-y-3">
-          <div className="relative w-full h-44 rounded-xl overflow-hidden border-2 border-gray-200 bg-white shadow-sm">
+          <div className="relative w-full h-29 2xl:h-31 rounded-xl overflow-hidden border-2 border-gray-200 bg-white shadow-sm">
             <img 
               src={preview} 
               className="w-full h-full object-contain p-4" 
@@ -169,7 +163,6 @@ export function ImageUpload({
         </div>
       )}
 
-      {/* Error Message */}
       {(hasError || localError) && (
         <p className="text-sm text-red-600 font-medium pt-1">
           {localError || "Invalid image"}

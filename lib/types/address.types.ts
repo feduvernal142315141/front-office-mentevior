@@ -1,73 +1,71 @@
-/**
- * ADDRESS TYPES
- * 
- * Types for company address management.
- * Backend response matches: { entities: [], pagination: {} }
- */
 
-/**
- * Address entity from backend (GET response)
- * GET by ID includes countryId and stateId
- */
 export interface Address {
   id: string
+  nickName: string
+  placeServiceId: string
+  placeService?: string  
   city: string
   address: string
   zipCode: string
-  country: string    // Country name (for display)
-  state: string      // State name (for display)
-  countryId?: string // Country ID (for edit)
-  stateId?: string   // State ID (for edit)
+  country: string    
+  state: string      
+  countryId?: string 
+  stateId?: string   
+  startDate: string
+  endDate?: string
+  active: boolean
 }
-
-/**
- * Address list item (same as Address from backend)
- */
 export interface AddressListItem {
   id: string
+  nickName: string
+  placeService?: string
   city: string
   address: string
   zipCode: string
   country: string
   state: string
+  active: boolean
+  startDate: string
 }
 
-/**
- * Create address DTO (POST payload)
- * Backend only requires: stateId, city, address, zipCode
- */
 export interface CreateAddressDto {
+  nickName: string
+  placeServiceId: string
   stateId: string
   city: string
   address: string
   zipCode: string
+  startDate: string
+  endDate?: string
+  active: boolean
 }
 
-/**
- * Update address DTO (PUT payload)
- * Backend requires: id + same fields as create
- */
 export interface UpdateAddressDto {
   id: string
+  nickName: string
+  placeServiceId: string
   stateId: string
   city: string
   address: string
   zipCode: string
+  startDate: string
+  endDate?: string
+  active: boolean
 }
 
-/**
- * Country catalog
- */
 export interface Country {
   id: string
   name: string
 }
 
-/**
- * State catalog (filtered by country)
- */
 export interface State {
   id: string
   name: string
   countryId: string
+}
+
+export interface PlaceOfService {
+  id: string
+  name: string
+  code?: string
 }

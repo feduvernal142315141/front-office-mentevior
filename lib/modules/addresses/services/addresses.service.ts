@@ -1,5 +1,5 @@
 import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
-import type { Address, AddressListItem, CreateAddressDto, UpdateAddressDto, Country, State } from "@/lib/types/address.types"
+import type { Address, AddressListItem, CreateAddressDto, UpdateAddressDto, Country, State, PlaceOfService } from "@/lib/types/address.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import { getQueryString } from "@/lib/utils/format"
 import type { QueryModel } from "@/lib/models/queryModel"
@@ -91,6 +91,26 @@ export async function getStatesByCountry(countryId: string): Promise<State[]> {
   }
 
   const paginatedData = response.data as unknown as PaginatedResponse<State>
+  
+  if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
+    console.error("Invalid backend response:", response.data)
+    return []
+  }
+
+  return paginatedData.entities
+}
+
+/**
+ * Get place of service catalog
+ */
+export async function getPlacesOfService(): Promise<PlaceOfService[]> {
+  const response = await serviceGet<PaginatedResponse<PlaceOfService>>("/place-service/catalog")
+  
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch places of service")
+  }
+
+  const paginatedData = response.data as unknown as PaginatedResponse<PlaceOfService>
   
   if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
     console.error("Invalid backend response:", response.data)

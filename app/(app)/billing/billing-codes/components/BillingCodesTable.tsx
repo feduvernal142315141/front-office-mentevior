@@ -1,13 +1,13 @@
 "use client"
 
-import { useAddressesTable } from "../hooks/useAddressesTable"
+import { useBillingCodesTable } from "../hooks/useBillingCodesTable"
 import { CustomTable } from "@/components/custom/CustomTable"
 import { SearchInput } from "@/components/custom/SearchInput"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 
-export function AddressesTable() {
+export function BillingCodesTable() {
   const {
     data,
     columns,
@@ -16,12 +16,12 @@ export function AddressesTable() {
     filters,
     pagination,
     clearFilters,
-  } = useAddressesTable()
+  } = useBillingCodesTable()
 
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-        <p className="text-red-600 font-medium">Error loading addresses</p>
+        <p className="text-red-600 font-medium">Error loading billing codes</p>
         <p className="text-red-500 text-sm mt-1">{error.message}</p>
       </div>
     )
@@ -35,10 +35,21 @@ export function AddressesTable() {
             <SearchInput
               value={filters.inputValue}
               onChange={filters.setSearchQuery}
-              placeholder="Search by nickname..."
+              placeholder="Search by code or description..."
               onClear={clearFilters}
             />
           </div>
+
+          <FilterSelect 
+            value={filters.typeFilter}
+            onChange={(value) => filters.setTypeFilter(value as any)}
+            options={[
+              { value: "all", label: "All Types" },
+              { value: "CPT", label: "CPT" },
+              { value: "HCPCS", label: "HCPCS" },
+            ]}
+            placeholder="Type"
+          />
 
           <FilterSelect 
             value={filters.statusFilter}
@@ -51,7 +62,9 @@ export function AddressesTable() {
             placeholder="Status"
           />
 
-          {(filters.searchQuery || filters.statusFilter !== "all") && (
+          {(filters.searchQuery || 
+            filters.statusFilter !== "all" || 
+            filters.typeFilter !== "all") && (
             <Button 
               variant="ghost"
               onClick={clearFilters}
@@ -67,11 +80,11 @@ export function AddressesTable() {
         columns={columns}
         data={data}
         isLoading={isLoading}
-        emptyMessage="No addresses found"
+        emptyMessage="No billing codes found"
         emptyContent={
-          (filters.searchQuery || filters.statusFilter !== "all") ? (
+          (filters.searchQuery || filters.statusFilter !== "all" || filters.typeFilter !== "all") ? (
             <div className="text-center py-8">
-              <p className="text-base font-semibold text-gray-800">No addresses match your filters</p>
+              <p className="text-base font-semibold text-gray-800">No billing codes match your filters</p>
               <p className="mt-1 text-sm text-gray-500">Try adjusting your search criteria</p>
               <Button variant="ghost" onClick={clearFilters} className="mt-4">
                 Clear all filters
@@ -79,7 +92,7 @@ export function AddressesTable() {
             </div>
           ) : undefined
         }
-        getRowKey={(address) => address.id}
+        getRowKey={(code) => code.id}
         pagination={pagination}
       />
     </div>

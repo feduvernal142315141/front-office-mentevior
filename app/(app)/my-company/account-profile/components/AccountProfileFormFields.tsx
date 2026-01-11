@@ -247,7 +247,7 @@ export function AccountProfileFormFields({
                     onChange={field.onChange}
                     hasError={!!fieldState.error}
                     disabled={isSubmitting}
-                    maxSizeMB={5}
+                    maxSizeMB={1}
                   />
                 )}
               />

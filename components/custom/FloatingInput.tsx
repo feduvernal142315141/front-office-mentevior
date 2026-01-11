@@ -12,6 +12,9 @@ interface Props {
   hasError?: boolean
   isSuccess?: boolean
   autoComplete?: string
+  maxLength?: number
+  inputMode?: "text" | "numeric" | "decimal" | "tel" | "email" | "url" | "search" | "none"
+  pattern?: string
 }
 
 export function FloatingInput({
@@ -24,6 +27,9 @@ export function FloatingInput({
   hasError,
   isSuccess,
   autoComplete = "off",
+  maxLength,
+  inputMode,
+  pattern,
 }: Props) {
   return (
     <div className="w-full">
@@ -35,6 +41,9 @@ export function FloatingInput({
           onBlur={onBlur}
           placeholder=" "
           autoComplete={autoComplete}
+          maxLength={maxLength}
+          inputMode={inputMode}
+          pattern={pattern}
           className={cn(
             `
             peer

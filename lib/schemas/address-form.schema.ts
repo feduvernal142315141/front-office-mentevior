@@ -1,16 +1,19 @@
-/**
- * ADDRESS FORM SCHEMA
- * 
- * Zod validation schema for address form.
- * Backend only requires: stateId, city, address, zipCode
- */
-
 import { z } from "zod"
+import { getTodayLocalDate } from "@/lib/date"
 
 /**
  * Validation schema
  */
 export const addressFormSchema = z.object({
+  nickName: z
+    .string()
+    .min(1, "Nickname is required")
+    .max(100, "Nickname must be less than 100 characters"),
+  
+  placeServiceId: z
+    .string()
+    .min(1, "Place of service is required"),
+  
   countryId: z
     .string()
     .min(1, "Country is required"),
@@ -32,7 +35,20 @@ export const addressFormSchema = z.object({
   zipCode: z
     .string()
     .min(1, "Zip code is required")
-    .regex(/^\d{5}$/, "ZIP Code must be exactly 5 digits"),
+    .refine((val) => /^\d{5}$/.test(val), {
+      message: "ZIP Code must be exactly 5 digits",
+    }),
+  
+  startDate: z
+    .string()
+    .min(1, "Start date is required"),
+  
+  endDate: z
+    .string()
+    .optional()
+    .or(z.literal("")),
+  
+  active: z.boolean().optional(),
 })
 
 /**
@@ -44,9 +60,14 @@ export type AddressFormValues = z.infer<typeof addressFormSchema>
  * Default form values
  */
 export const getAddressFormDefaults = (): AddressFormValues => ({
+  nickName: "",
+  placeServiceId: "",
   countryId: "",
   stateId: "",
   city: "",
   address: "",
   zipCode: "",
+  startDate: getTodayLocalDate(),
+  endDate: "",
+  active: true,
 })

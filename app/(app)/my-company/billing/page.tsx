@@ -1,6 +1,6 @@
 "use client"
 
-import { CreditCard, Clock, FileCheck } from "lucide-react"
+import { CreditCard, Clock, FileCheck, Code } from "lucide-react"
 import Link from "next/link"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -10,6 +10,13 @@ export default function BillingPage() {
   const { view } = usePermission()
   
   const allSubModules = [
+    {
+      title: "Billing Codes",
+      description: "Manage CPT and HCPCS codes for your organization",
+      href: "/billing/billing-codes",
+      icon: Code,
+      alwaysShow: true,
+    },
     {
       title: "Services Pending Billing",
       description: "Review and process pending service charges",
@@ -27,7 +34,9 @@ export default function BillingPage() {
   ]
   
   const subModules = useMemo(() => {
-    return allSubModules.filter(module => view(module.module))
+    return allSubModules.filter(module => 
+      (module as any).alwaysShow === true || view((module as any).module)
+    )
   }, [view])
 
   return (

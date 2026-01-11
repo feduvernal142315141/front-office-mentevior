@@ -19,8 +19,10 @@ export function AddressForm({ addressId = null }: AddressFormProps) {
     isSubmitting,
     countries,
     states,
+    placesOfService,
     isLoadingCountries,
     isLoadingStates,
+    isLoadingPlaces,
     actions,
   } = useAddressForm({ addressId })
 
@@ -37,8 +39,10 @@ export function AddressForm({ addressId = null }: AddressFormProps) {
           onCancel={actions.goToList}
           countries={countries}
           states={states}
+          placesOfService={placesOfService}
           isLoadingCountries={isLoadingCountries}
           isLoadingStates={isLoadingStates}
+          isLoadingPlaces={isLoadingPlaces}
         />
       </form>
     </FormProvider>

@@ -7,8 +7,10 @@ import { useUpdateAddress } from "@/lib/modules/addresses/hooks/use-update-addre
 import { useAddressById } from "@/lib/modules/addresses/hooks/use-address-by-id"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
+import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
 import { addressFormSchema, getAddressFormDefaults, type AddressFormValues } from "@/lib/schemas/address-form.schema"
 import type { CreateAddressDto, UpdateAddressDto } from "@/lib/types/address.types"
+import { isoToLocalDate } from "@/lib/date"
 
 interface UseAddressFormProps {
   addressId?: string | null
@@ -24,11 +26,12 @@ interface UseAddressFormReturn {
   onSubmit: (data: AddressFormValues) => Promise<void>
   isSubmitting: boolean
 
-  // Catalogs
   countries: { id: string; name: string }[]
   states: { id: string; name: string }[]
+  placesOfService: { id: string; name: string }[]
   isLoadingCountries: boolean
   isLoadingStates: boolean
+  isLoadingPlaces: boolean
 
   actions: {
     goToList: () => void
@@ -44,8 +47,8 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
   const { update, isLoading: isUpdating } = useUpdateAddress()
   const { address, isLoading: isLoadingAddress } = useAddressById(addressId)
   
-  // Catalogs
   const { countries, isLoading: isLoadingCountries } = useCountries()
+  const { placesOfService, isLoading: isLoadingPlaces } = usePlacesOfService()
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
   const { states, isLoading: isLoadingStates } = useStates(selectedCountryId)
   
@@ -54,15 +57,14 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
     defaultValues: getAddressFormDefaults(),
+    mode: "onChange",
   })
   
-  // Watch countryId changes to load states
   const watchCountryId = form.watch("countryId")
   
   useEffect(() => {
     if (watchCountryId) {
       setSelectedCountryId(watchCountryId)
-      // Reset stateId when country changes
       if (watchCountryId !== form.getValues("countryId")) {
         form.setValue("stateId", "")
       }
@@ -72,20 +74,23 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
     }
   }, [watchCountryId, form])
   
-  // Load address data for editing
   useEffect(() => {
     if (address && isEditing) {
-      // Set countryId first to trigger states loading
       if (address.countryId) {
         setSelectedCountryId(address.countryId)
       }
       
       form.reset({
+        nickName: address.nickName || "",
+        placeServiceId: address.placeServiceId || "",
         countryId: address.countryId || "",
         stateId: address.stateId || "",
-        city: address.city,
-        address: address.address,
-        zipCode: address.zipCode,
+        city: address.city || "",
+        address: address.address || "",
+        zipCode: address.zipCode || "",
+        startDate: address.startDate ? isoToLocalDate(address.startDate) : "",
+        endDate: address.endDate ? isoToLocalDate(address.endDate) : "",
+        active: address.active ?? true,
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,10 +100,15 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
     if (isEditing && addressId) {
       const dto: UpdateAddressDto = {
         id: addressId,
+        nickName: data.nickName,
+        placeServiceId: data.placeServiceId,
         stateId: data.stateId,
         city: data.city,
         address: data.address,
         zipCode: data.zipCode,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        active: data.active ?? true,
       }
       
       const result = await update(dto)
@@ -110,10 +120,15 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
       }
     } else {
       const dto: CreateAddressDto = {
+        nickName: data.nickName,
+        placeServiceId: data.placeServiceId,
         stateId: data.stateId,
         city: data.city,
         address: data.address,
         zipCode: data.zipCode,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        active: data.active ?? true,
       }
       
       const result = await create(dto)
@@ -141,8 +156,10 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
     isSubmitting,
     countries,
     states,
+    placesOfService,
     isLoadingCountries,
     isLoadingStates,
+    isLoadingPlaces,
     actions,
   }
 }

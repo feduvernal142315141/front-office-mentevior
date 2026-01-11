@@ -1,37 +1,31 @@
-/**
- * USE ADDRESSES
- * 
- * Hook to fetch paginated addresses list.
- */
-
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import type { AddressListItem } from "@/lib/types/address.types"
+import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import type { QueryModel } from "@/lib/models/queryModel"
-import { getAddresses } from "../services/addresses.service"
+import { getBillingCodes } from "../services/billing-codes.service"
 
-interface UseAddressesParams {
+interface UseBillingCodesParams {
   page?: number
   pageSize?: number
   filters?: string[]
 }
 
-interface UseAddressesReturn {
-  addresses: AddressListItem[]
+interface UseBillingCodesReturn {
+  billingCodes: BillingCodeListItem[]
   totalCount: number
   isLoading: boolean
   error: Error | null
-  refetch: (params?: UseAddressesParams) => Promise<void>
+  refetch: (params?: UseBillingCodesParams) => Promise<void>
 }
 
-export function useAddresses(initialParams?: UseAddressesParams): UseAddressesReturn {
-  const [addresses, setAddresses] = useState<AddressListItem[]>([])
+export function useBillingCodes(initialParams?: UseBillingCodesParams): UseBillingCodesReturn {
+  const [billingCodes, setBillingCodes] = useState<BillingCodeListItem[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchAddresses = useCallback(async (params?: UseAddressesParams) => {
+  const fetchBillingCodes = useCallback(async (params?: UseBillingCodesParams) => {
     try {
       setIsLoading(true)
       setError(null)
@@ -41,12 +35,12 @@ export function useAddresses(initialParams?: UseAddressesParams): UseAddressesRe
         filters: params?.filters && params.filters.length ? params.filters : undefined,
         orders: undefined,
       }
-      const data = await getAddresses(query)
-      setAddresses(data.addresses)
+      const data = await getBillingCodes(query)
+      setBillingCodes(data.billingCodes)
       setTotalCount(data.totalCount)
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch addresses"))
-      setAddresses([])
+      setError(err instanceof Error ? err : new Error("Failed to fetch billing codes"))
+      setBillingCodes([])
       setTotalCount(0)
     } finally {
       setIsLoading(false)
@@ -54,14 +48,14 @@ export function useAddresses(initialParams?: UseAddressesParams): UseAddressesRe
   }, [])
 
   useEffect(() => {
-    fetchAddresses(initialParams)
-  }, []) // Solo fetch inicial
+    fetchBillingCodes(initialParams)
+  }, []) 
 
   return {
-    addresses,
+    billingCodes,
     totalCount,
     isLoading,
     error,
-    refetch: fetchAddresses,
+    refetch: fetchBillingCodes,
   }
 }
