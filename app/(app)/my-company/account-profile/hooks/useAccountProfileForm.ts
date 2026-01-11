@@ -102,6 +102,7 @@ export function useAccountProfileForm(): UseAccountProfileFormReturn {
           logo: accountProfile.logo || "",
         })
       }
+      router.push("/my-company")
     },
   }
   
