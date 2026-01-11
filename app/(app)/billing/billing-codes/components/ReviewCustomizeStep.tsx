@@ -26,20 +26,20 @@ export function ReviewCustomizeStep({ catalogCode, onSuccess, onCancel }: Review
   })
 
   const onSubmit = async (data: BillingCodeFormValues) => {
-    const result = await create({
-      type: data.type,
-      code: data.code,
-      description: data.description,
-      modifiers: data.modifiers,
-      parent: data.parent,
-      allowedPlacesOfService: data.allowedPlacesOfService,
-      active: data.active ?? true,
-      catalogId: data.catalogId,
-    })
+    // const result = await create({
+    //   type: data.type,
+    //   code: data.code,
+    //   description: data.description,
+    //   modifiers: data.modifiers,
+    //   parent: data.parent,
+    //   allowedPlacesOfService: data.allowedPlacesOfService,
+    //   active: data.active ?? true,
+    //   catalogId: data.catalogId,
+    // })
 
-    if (result) {
-      onSuccess()
-    }
+    // if (result) {
+    //   onSuccess()
+    // }
   }
 
   return (

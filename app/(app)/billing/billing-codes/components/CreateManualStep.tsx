@@ -24,19 +24,19 @@ export function CreateManualStep({ onSuccess, onCancel }: CreateManualStepProps)
   })
 
   const onSubmit = async (data: BillingCodeFormValues) => {
-    const result = await create({
-      type: data.type,
-      code: data.code,
-      description: data.description,
-      modifiers: data.modifiers,
-      parent: data.parent,
-      allowedPlacesOfService: data.allowedPlacesOfService,
-      active: data.active ?? true,
-    })
+    // const result = await create({
+    //   type: data.type,
+    //   code: data.code,
+    //   description: data.description,
+    //   modifiers: data.modifiers,
+    //   parent: data.parent,
+    //   allowedPlacesOfService: data.allowedPlacesOfService,
+    //   active: data.active ?? true,
+    // })
 
-    if (result) {
-      onSuccess()
-    }
+    // if (result) {
+    //   onSuccess()
+    // }
   }
 
   return (
@@ -129,7 +129,7 @@ export function CreateManualStep({ onSuccess, onCancel }: CreateManualStepProps)
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Modifiers (Optional)
               </label>
-              
+        
               <input
                 type="text"
                 value={(field.value || []).join(", ")}
