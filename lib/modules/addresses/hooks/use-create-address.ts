@@ -31,7 +31,7 @@ export function useCreateAddress() {
       setResponse(res)
       
       toast.success("Address created successfully!", {
-        description: `${data.nickname} has been added to your addresses.`,
+        description: `${data.nickName} has been added to your addresses.`,
       })
       
       return res
