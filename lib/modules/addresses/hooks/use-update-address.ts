@@ -27,7 +27,7 @@ export function useUpdateAddress(): UseUpdateAddressReturn {
       setUpdatedAddress(result)
 
       toast.success("Address updated successfully", {
-        description: `${data.nickname} has been updated.`,
+        description: `${data.nickName} has been updated.`,
       })
 
       return result
