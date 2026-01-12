@@ -151,7 +151,7 @@ export function usePhysiciansTable() {
           >
             {physician.active ? "Active" : "Inactive"}
           </Badge>
-          {physician.default && (
+          {physician.isDefault && (
             <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
               Default
             </Badge>
