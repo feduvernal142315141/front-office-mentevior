@@ -15,6 +15,7 @@ interface Props {
   maxLength?: number
   inputMode?: "text" | "numeric" | "decimal" | "tel" | "email" | "url" | "search" | "none"
   pattern?: string
+  disabled?: boolean
 }
 
 export function FloatingInput({
@@ -30,6 +31,7 @@ export function FloatingInput({
   maxLength,
   inputMode,
   pattern,
+  disabled,
 }: Props) {
   return (
     <div className="w-full">
@@ -44,6 +46,7 @@ export function FloatingInput({
           maxLength={maxLength}
           inputMode={inputMode}
           pattern={pattern}
+          disabled={disabled}
           className={cn(
             `
             peer

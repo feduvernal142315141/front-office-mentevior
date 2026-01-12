@@ -402,6 +402,7 @@ export function PhysicianFormFields({
                   label="Country"
                   value="United States"
                   onChange={() => {}}
+                  onBlur={field.onBlur}
                   disabled={true}
                   placeholder="United States"
                   hasError={!!fieldState.error}
