@@ -62,7 +62,7 @@ export async function createPhysician(data: CreatePhysicianRequest): Promise<str
 
 
 export async function updatePhysician(data: UpdatePhysicianRequest): Promise<void> {
-  const response = await servicePut<UpdatePhysicianRequest, void>(`/physicians/${data.id}`, data)
+  const response = await servicePut<UpdatePhysicianRequest, { message?: string }>(`/physicians/${data.id}`, data)
 
   if (response.status !== 200) {
     throw new Error(response.data?.message || "Failed to update physician")
