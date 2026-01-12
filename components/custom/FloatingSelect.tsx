@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown, Check } from "lucide-react"
+import { ChevronDown, Check, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Option {
@@ -17,6 +17,7 @@ interface FloatingSelectProps {
   options: Option[]
   hasError?: boolean
   disabled?: boolean
+  searchable?: boolean
 }
 
 export function FloatingSelect({
@@ -27,18 +28,43 @@ export function FloatingSelect({
   options,
   hasError = false,
   disabled = false,
+  searchable = false,
 }: FloatingSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   
   const hasValue = value && value !== ""
   const selectedOption = options.find(opt => opt.value === value)
   const displayText = selectedOption?.label
 
+  // Update dropdown position when opened
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      })
+    }
+  }, [isOpen])
+
+  // Filter options based on search query
+  const filteredOptions = searchable && searchQuery
+    ? options.filter(opt => 
+        opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : options
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false)
+        setSearchQuery("")
         onBlur?.()
       }
     }
@@ -49,9 +75,17 @@ export function FloatingSelect({
     }
   }, [isOpen, onBlur])
 
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (isOpen && searchable && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 100)
+    }
+  }, [isOpen, searchable])
+
   const handleSelect = (optionValue: string) => {
     onChange(optionValue)
     setIsOpen(false)
+    setSearchQuery("")
     onBlur?.()
   }
 
@@ -65,6 +99,7 @@ export function FloatingSelect({
     <div className="w-full" ref={containerRef}>
       <div className="relative w-full">
         <button
+          ref={buttonRef}
           type="button"
           onClick={handleToggle}
           disabled={disabled}
@@ -132,66 +167,95 @@ export function FloatingSelect({
         >
           {label} <span className="text-[#2563EB]">*</span>
         </label>
+      </div>
 
-        {/* Dropdown Menu */}
-        {isOpen && (
-          <div 
-            className={cn(
-              `
-              absolute z-50 w-full mt-2
-              bg-white
-              border border-gray-200
-              rounded-[16px]
-              shadow-[0_8px_30px_rgb(0,0,0,0.12)]
-              overflow-hidden
-              
-              animate-in fade-in-0 zoom-in-95
-              duration-200
-              `
+      {/* Dropdown Menu - Fixed positioning to prevent clipping */}
+      {isOpen && (
+        <div 
+          className={cn(
+            `
+            fixed z-[9999]
+            bg-white
+            border border-gray-200
+            rounded-[16px]
+            shadow-[0_8px_30px_rgb(0,0,0,0.12)]
+            overflow-hidden
+            
+            animate-in fade-in-0 zoom-in-95
+            duration-200
+            `
+          )}
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`
+          }}
+        >
+            {/* Search Input */}
+            {searchable && (
+              <div className="p-3 border-b border-gray-200">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
             )}
-          >
+
             <div className="max-h-[280px] overflow-y-auto py-2">
-              {options.map((option) => {
-                const isSelected = option.value === value
-                
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelect(option.value)}
-                    className={cn(
-                      `
-                      w-full px-4 py-3
-                      text-left text-[15px]
-                      
-                      transition-all duration-150
-                      
-                      flex items-center justify-between
-                      gap-3
-                      `,
-                      isSelected && `
-                        bg-[#037ECC]/5
-                        text-[#037ECC]
-                        font-medium
-                      `,
-                      !isSelected && `
-                        text-gray-700
-                        hover:bg-gray-50
-                        hover:text-gray-900
-                      `
-                    )}
-                  >
-                    <span>{option.label}</span>
-                    {isSelected && (
-                      <Check className="w-5 h-5 text-[#037ECC] flex-shrink-0" />
-                    )}
-                  </button>
-                )
-              })}
+              {filteredOptions.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                  No results found
+                </div>
+              ) : (
+                filteredOptions.map((option) => {
+                  const isSelected = option.value === value
+                  
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSelect(option.value)}
+                      className={cn(
+                        `
+                        w-full px-4 py-3
+                        text-left text-[15px]
+                        
+                        transition-all duration-150
+                        
+                        flex items-center justify-between
+                        gap-3
+                        `,
+                        isSelected && `
+                          bg-[#037ECC]/5
+                          text-[#037ECC]
+                          font-medium
+                        `,
+                        !isSelected && `
+                          text-gray-700
+                          hover:bg-gray-50
+                          hover:text-gray-900
+                        `
+                      )}
+                    >
+                      <span>{option.label}</span>
+                      {isSelected && (
+                        <Check className="w-5 h-5 text-[#037ECC] flex-shrink-0" />
+                      )}
+                    </button>
+                  )
+                })
+              )}
             </div>
           </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }

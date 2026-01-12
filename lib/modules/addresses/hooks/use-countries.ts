@@ -25,7 +25,6 @@ export function useCountries(): UseCountriesReturn {
       } catch (err) {
         const errorObj = err instanceof Error ? err : new Error("Failed to fetch countries")
         setError(errorObj)
-        console.error("Error fetching countries:", errorObj)
       } finally {
         setIsLoading(false)
       }
