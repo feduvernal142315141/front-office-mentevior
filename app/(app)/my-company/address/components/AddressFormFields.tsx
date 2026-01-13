@@ -53,6 +53,7 @@ export function AddressFormFields({
                     onBlur={field.onBlur}
                     placeholder=" "
                     hasError={!!fieldState.error}
+                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -76,6 +77,7 @@ export function AddressFormFields({
                     options={(placesOfService || []).map(p => ({ value: p.id, label: p.name }))}
                     hasError={!!fieldState.error}
                     disabled={isLoadingPlaces}
+                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -99,6 +101,7 @@ export function AddressFormFields({
                     options={(countries || []).map(c => ({ value: c.id, label: c.name }))}
                     hasError={!!fieldState.error}
                     disabled={isLoadingCountries}
+                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -122,6 +125,7 @@ export function AddressFormFields({
                     options={(states || []).map(s => ({ value: s.id, label: s.name }))}
                     hasError={!!fieldState.error}
                     disabled={isStateDisabled}
+                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -149,6 +153,7 @@ export function AddressFormFields({
                     onBlur={field.onBlur}
                     placeholder=" "
                     hasError={!!fieldState.error}
+                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -177,6 +182,7 @@ export function AddressFormFields({
                     inputMode="numeric"
                     maxLength={5}
                     pattern="[0-9]*"
+                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -200,6 +206,7 @@ export function AddressFormFields({
                       onBlur={field.onBlur}
                       placeholder=" "
                       hasError={!!fieldState.error}
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">

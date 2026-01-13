@@ -18,6 +18,7 @@ interface FloatingSelectProps {
   hasError?: boolean
   disabled?: boolean
   searchable?: boolean
+  required?: boolean
 }
 
 export function FloatingSelect({
@@ -29,6 +30,7 @@ export function FloatingSelect({
   hasError = false,
   disabled = false,
   searchable = false,
+  required = false,
 }: FloatingSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -41,7 +43,6 @@ export function FloatingSelect({
   const selectedOption = options.find(opt => opt.value === value)
   const displayText = selectedOption?.label
 
-  // Update dropdown position when opened
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
@@ -53,7 +54,6 @@ export function FloatingSelect({
     }
   }, [isOpen])
 
-  // Filter options based on search query
   const filteredOptions = searchable && searchQuery
     ? options.filter(opt => 
         opt.label.toLowerCase().includes(searchQuery.toLowerCase())
@@ -75,7 +75,6 @@ export function FloatingSelect({
     }
   }, [isOpen, onBlur])
 
-  // Focus search input when dropdown opens
   useEffect(() => {
     if (isOpen && searchable && searchInputRef.current) {
       setTimeout(() => searchInputRef.current?.focus(), 100)
@@ -165,7 +164,7 @@ export function FloatingSelect({
             `
           )}
         >
-          {label} <span className="text-[#2563EB]">*</span>
+          {label} {required && <span className="text-[#2563EB]">*</span>}
         </label>
       </div>
 

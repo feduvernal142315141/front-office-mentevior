@@ -12,7 +12,7 @@ export default function BillingPage() {
   const allSubModules = [
     {
       title: "Billing Codes",
-      description: "Manage CPT and HCPCS codes for your organization",
+      description: "Manage codes for your organization",
       href: "/billing/billing-codes",
       icon: Code,
       alwaysShow: true,

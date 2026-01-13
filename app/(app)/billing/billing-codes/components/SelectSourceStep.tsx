@@ -53,7 +53,7 @@ export function SelectSourceStep({ onSelectSource, onClose }: SelectSourceStepPr
                 </div>
 
                 <p className="text-sm text-gray-600">
-                  Select an existing CPT or HCPCS code and customize it for your organization
+                  Select an existing code and customize it for your organization
                 </p>
               </div>
 

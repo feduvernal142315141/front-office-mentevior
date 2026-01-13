@@ -27,7 +27,7 @@ export default function BillingCodesPage() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
                 Billing Codes
               </h1>
-              <p className="text-slate-600 mt-1">Manage CPT and HCPCS codes for your organization</p>
+              <p className="text-slate-600 mt-1">Manage codes for your organization</p>
             </div>
           </div>
 

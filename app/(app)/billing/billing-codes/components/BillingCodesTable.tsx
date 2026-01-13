@@ -49,18 +49,7 @@ export function BillingCodesTable() {
               { value: "HCPCS", label: "HCPCS" },
             ]}
             placeholder="Type"
-          />
-
-          <FilterSelect 
-            value={filters.statusFilter}
-            onChange={(value) => filters.setStatusFilter(value as any)}
-            options={[
-              { value: "all", label: "All Status" },
-              { value: "active", label: "Active" },
-              { value: "inactive", label: "Inactive" },
-            ]}
-            placeholder="Status"
-          />
+          />          
 
           {(filters.searchQuery || 
             filters.statusFilter !== "all" || 

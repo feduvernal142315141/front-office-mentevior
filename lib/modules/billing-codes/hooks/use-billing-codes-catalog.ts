@@ -45,7 +45,7 @@ export function useBillingCodesCatalog(): UseBillingCodesCatalogReturn {
       
       const query: QueryModel = {
         page: 0,
-        pageSize: 20, 
+        pageSize: 100, 
         filters: filters.length > 0 ? filters : undefined,
       }
       

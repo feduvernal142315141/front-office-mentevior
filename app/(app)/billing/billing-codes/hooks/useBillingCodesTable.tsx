@@ -46,9 +46,9 @@ export function useBillingCodesTable() {
 
     if (typeFilter !== "all") {
       filters.push({
-        field: "type",
+        field: "typeCatalog.name",
         value: typeFilter,
-        operator: FilterOperator.eq,
+        operator: FilterOperator.relatedContains,
         type: "string" as const,
       })
     }
@@ -56,7 +56,7 @@ export function useBillingCodesTable() {
     return buildFilters(
       filters,
       {
-        fields: ["code", "description"],
+        fields: ["code"],
         search: searchQuery,
       }
     )

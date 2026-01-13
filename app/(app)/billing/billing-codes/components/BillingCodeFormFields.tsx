@@ -75,6 +75,7 @@ export function BillingCodeFormFields({
                       onBlur={field.onBlur}
                       placeholder=" "
                       hasError={!!fieldState.error}
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">
@@ -98,6 +99,7 @@ export function BillingCodeFormFields({
                         onBlur={field.onBlur}
                         placeholder=" "
                         hasError={!!fieldState.error}
+                        required
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">

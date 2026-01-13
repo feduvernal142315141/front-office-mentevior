@@ -16,6 +16,7 @@ interface Props {
   inputMode?: "text" | "numeric" | "decimal" | "tel" | "email" | "url" | "search" | "none"
   pattern?: string
   disabled?: boolean
+  required?: boolean
 }
 
 export function FloatingInput({
@@ -32,6 +33,7 @@ export function FloatingInput({
   inputMode,
   pattern,
   disabled,
+  required,
 }: Props) {
   return (
     <div className="w-full">
@@ -96,7 +98,7 @@ export function FloatingInput({
           `
           )}
         >
-          {label} <span className="text-[#2563EB]">*</span>
+          {label} {required && <span className="text-[#2563EB]">*</span>}
         </label>
       </div>
     </div>

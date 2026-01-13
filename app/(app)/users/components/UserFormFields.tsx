@@ -60,13 +60,14 @@ export function UserFormFields({
                   render={({ field, fieldState }) => (
                     <div>
                       <FloatingInput
-                        label="First Name"
+                        label={"First Name"}
                         value={field.value}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         placeholder=" "
                         hasError={!!fieldState.error}
                         autoComplete="given-name"
+                        required
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">
@@ -91,6 +92,7 @@ export function UserFormFields({
                         placeholder=" "
                         hasError={!!fieldState.error}
                         autoComplete="family-name"
+                        required
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">
@@ -116,6 +118,7 @@ export function UserFormFields({
                         type="email"
                         hasError={!!fieldState.error}
                         autoComplete="email"
+                        required
                       />
                       {!fieldState.error && (
                         <p className="text-xs text-gray-500 mt-1.5">Used as username</p>
@@ -144,6 +147,7 @@ export function UserFormFields({
                         type="tel"
                         hasError={!!fieldState.error}
                         autoComplete="tel"
+                        required
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">

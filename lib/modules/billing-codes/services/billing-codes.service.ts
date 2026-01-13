@@ -106,3 +106,15 @@ export async function getBillingCodeTypes(): Promise<BillingCodeTypeItem[]> {
 
   return paginatedData.entities
 }
+
+export async function bulkCreateBillingCodes(catalogIds: string[]): Promise<boolean> {
+  const response = await servicePost<{ catalogIds: string[] }, boolean>("/billing-code/bulk", {
+    catalogIds
+  })
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to bulk create billing codes")
+  }
+
+  return response.data as unknown as boolean
+}
