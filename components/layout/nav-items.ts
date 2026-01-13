@@ -138,7 +138,7 @@ export const navItems: NavItem[] = [
       },
       {
         label: "Signatures Caregiver",
-        href: "/signatures-caregiver",
+        href: "/my-company/signatures-caregiver",
       },
       {
         label: "Template Documents",
