@@ -34,36 +34,12 @@ export function FloatingSelect({
 }: FloatingSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   
   const hasValue = value && value !== ""
   const selectedOption = options.find(opt => opt.value === value)
   const displayText = selectedOption?.label
-
-  useEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const updatePosition = () => {
-        const rect = buttonRef.current!.getBoundingClientRect()
-        setDropdownPosition({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX,
-          width: rect.width
-        })
-      }
-      
-      updatePosition()
-      window.addEventListener('scroll', updatePosition, true)
-      window.addEventListener('resize', updatePosition)
-      
-      return () => {
-        window.removeEventListener('scroll', updatePosition, true)
-        window.removeEventListener('resize', updatePosition)
-      }
-    }
-  }, [isOpen])
 
   const filteredOptions = searchable && searchQuery
     ? options.filter(opt => 
@@ -106,10 +82,9 @@ export function FloatingSelect({
   }
 
   return (
-    <div className="w-full" ref={containerRef}>
+    <div className="w-full relative" ref={containerRef}>
       <div className="relative w-full">
         <button
-          ref={buttonRef}
           type="button"
           onClick={handleToggle}
           disabled={disabled}
@@ -184,7 +159,8 @@ export function FloatingSelect({
         <div 
           className={cn(
             `
-            fixed z-[9999]
+            absolute top-full left-0 right-0 mt-2
+            z-50
             bg-white
             border border-gray-200
             rounded-[16px]
@@ -195,11 +171,6 @@ export function FloatingSelect({
             duration-200
             `
           )}
-          style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`
-          }}
         >
             {/* Search Input */}
             {searchable && (
