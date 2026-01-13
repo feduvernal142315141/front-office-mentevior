@@ -4,14 +4,17 @@
 import { useState, useEffect, useRef } from "react"
 import { Search, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { useRouter } from "next/navigation"
 import { useBillingCodesCatalog } from "@/lib/modules/billing-codes/hooks/use-billing-codes-catalog"
 import type { BillingCodeCatalogItem } from "@/lib/types/billing-code.types"
 
 interface SearchCatalogStepProps {
   onSelectCode: (code: BillingCodeCatalogItem) => void
+  onClose: () => void
 }
 
-export function SearchCatalogStep({ onSelectCode }: SearchCatalogStepProps) {
+export function SearchCatalogStep({ onSelectCode, onClose }: SearchCatalogStepProps) {
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const inputRef = useRef<HTMLInputElement>(null)
@@ -121,7 +124,17 @@ export function SearchCatalogStep({ onSelectCode }: SearchCatalogStepProps) {
             {catalogCodes.map((code) => (
               <button
                 key={code.id}
-                onClick={() => onSelectCode(code)}
+                onClick={() => {
+                  onClose()
+                  const params = new URLSearchParams({
+                    mode: "catalog",
+                    catalogId: code.id,
+                    type: code.type,
+                    code: code.code,
+                    description: code.description,
+                  })
+                  router.push(`/billing/billing-codes/create?${params.toString()}`)
+                }}
                 className="
                   w-full
                   p-4

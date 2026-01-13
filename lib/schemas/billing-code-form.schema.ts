@@ -17,17 +17,19 @@ export const billingCodeFormSchema = z.object({
     .max(500, "Description must be less than 500 characters"),
   
   modifiers: z
-    .array(z.string())
-    .optional(),
+    .string()
+    .optional()
+    .or(z.literal("")),
   
   parent: z
     .string()
     .optional()
     .or(z.literal("")),
   
-  allowedPlacesOfService: z
-    .array(z.string())
-    .optional(),
+  placeServiceId: z
+    .string()
+    .optional()
+    .or(z.literal("")),
   
   active: z.boolean().optional(),
   
@@ -44,9 +46,9 @@ export const getBillingCodeFormDefaults = (): BillingCodeFormValues => ({
   type: "CPT",
   code: "",
   description: "",
-  modifiers: [],
+  modifiers: "",
   parent: "",
-  allowedPlacesOfService: [],
+  placeServiceId: "",
   active: true,
 })
 
@@ -60,9 +62,9 @@ export const getBillingCodeFormFromCatalog = (catalogItem: {
   type: catalogItem.type,
   code: catalogItem.code,
   description: catalogItem.description,
-  modifiers: [], 
+  modifiers: "", 
   parent: "",
-  allowedPlacesOfService: [], 
+  placeServiceId: "", 
   active: true,
   catalogId: catalogItem.id,
 })

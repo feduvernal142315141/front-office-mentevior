@@ -101,22 +101,26 @@ export function useBillingCodesTable() {
 
   const columns: CustomTableColumn<BillingCodeListItem>[] = useMemo(() => [
     {
+      key: "type",
+      header: "Type",
+      render: (item: BillingCodeListItem) => (
+        <Badge 
+          variant="outline"
+          className={
+            item.type === "CPT" 
+              ? "border-green-200 bg-green-50 text-green-700"
+              : "border-purple-200 bg-purple-50 text-purple-700"
+          }
+        >
+          {item.type}
+        </Badge>
+      ),
+    },
+    {
       key: "code",
       header: "Code",
       render: (item: BillingCodeListItem) => (
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-gray-900">{item.code}</span>
-          <Badge 
-            variant="outline"
-            className={
-              item.type === "CPT" 
-                ? "border-green-200 bg-green-50 text-green-700"
-                : "border-purple-200 bg-purple-50 text-purple-700"
-            }
-          >
-            {item.type}
-          </Badge>
-        </div>
+        <span className="text-lg font-bold text-gray-900">{item.code}</span>
       ),
     },
     {
@@ -126,42 +130,6 @@ export function useBillingCodesTable() {
         <div className="max-w-md">
           <p className="text-sm text-gray-900 line-clamp-2">{item.description}</p>
         </div>
-      ),
-    },
-    {
-      key: "modifiers",
-      header: "Modifiers",
-      render: (item: BillingCodeListItem) => (
-        <div className="flex gap-1 flex-wrap">
-          {item.modifiers && item.modifiers.length > 0 ? (
-            item.modifiers.map((mod, idx) => (
-              <span 
-                key={idx}
-                className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-medium"
-              >
-                {mod}
-              </span>
-            ))
-          ) : (
-            <span className="text-sm text-gray-400">-</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (item: BillingCodeListItem) => (
-        <Badge
-          variant={item.active ? "default" : "secondary"}
-          className={
-            item.active
-              ? "bg-green-100 text-green-800 hover:bg-green-200"
-              : ""
-          }
-        >
-          {item.active ? "Active" : "Inactive"}
-        </Badge>
       ),
     },
     {

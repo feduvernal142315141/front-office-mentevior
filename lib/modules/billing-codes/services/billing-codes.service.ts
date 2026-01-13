@@ -3,6 +3,7 @@ import type {
   BillingCode, 
   BillingCodeListItem, 
   BillingCodeCatalogItem,
+  BillingCodeTypeItem,
   CreateBillingCodeDto, 
   UpdateBillingCodeDto 
 } from "@/lib/types/billing-code.types"
@@ -87,4 +88,21 @@ export async function updateBillingCode(data: UpdateBillingCodeDto): Promise<boo
   }
 
   return response.data as unknown as boolean
+}
+
+export async function getBillingCodeTypes(): Promise<BillingCodeTypeItem[]> {
+  const response = await serviceGet<PaginatedResponse<BillingCodeTypeItem>>("/type/catalog")
+  
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch billing code types")
+  }
+
+  const paginatedData = response.data as unknown as PaginatedResponse<BillingCodeTypeItem>
+  
+  if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
+    console.error("Invalid backend response:", response.data)
+    return []
+  }
+
+  return paginatedData.entities
 }

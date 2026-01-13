@@ -2,13 +2,16 @@
 
 import { BookOpen, Edit3, Check } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { useRouter } from "next/navigation"
 import type { SourceType } from "../hooks/useBillingCodeDrawer"
 
 interface SelectSourceStepProps {
   onSelectSource: (source: SourceType) => void
+  onClose: () => void
 }
 
-export function SelectSourceStep({ onSelectSource }: SelectSourceStepProps) {
+export function SelectSourceStep({ onSelectSource, onClose }: SelectSourceStepProps) {
+  const router = useRouter()
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -19,7 +22,9 @@ export function SelectSourceStep({ onSelectSource }: SelectSourceStepProps) {
 
       <div className="grid gap-4">
         <button
-          onClick={() => onSelectSource("catalog")}
+          onClick={() => {
+            onSelectSource("catalog")
+          }}
           className="
             group relative w-full p-6 text-left
             rounded-2xl border-2 border-blue-200
@@ -71,7 +76,10 @@ export function SelectSourceStep({ onSelectSource }: SelectSourceStepProps) {
         </button>
 
         <button
-          onClick={() => onSelectSource("manual")}
+          onClick={() => {
+            onClose()
+            router.push("/billing/billing-codes/create?mode=manual")
+          }}
           className="
             group relative w-full p-6 text-left
             rounded-2xl border-2 border-gray-200 bg-white

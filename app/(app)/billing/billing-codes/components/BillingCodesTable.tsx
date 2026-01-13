@@ -35,7 +35,7 @@ export function BillingCodesTable() {
             <SearchInput
               value={filters.inputValue}
               onChange={filters.setSearchQuery}
-              placeholder="Search by code or description..."
+              placeholder="Search by code..."
               onClear={clearFilters}
             />
           </div>

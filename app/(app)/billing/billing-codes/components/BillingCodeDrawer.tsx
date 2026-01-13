@@ -110,11 +110,11 @@ export function BillingCodeDrawer({ isOpen, onClose, onSuccess }: BillingCodeDra
         
         <div className="flex-1 overflow-hidden bg-white">
           {currentStep === "select-source" && (
-            <SelectSourceStep onSelectSource={selectSource} />
+            <SelectSourceStep onSelectSource={selectSource} onClose={handleClose} />
           )}
 
           {currentStep === "search-catalog" && (
-            <SearchCatalogStep onSelectCode={selectCatalogCode} />
+            <SearchCatalogStep onSelectCode={selectCatalogCode} onClose={handleClose} />
           )}
 
           {currentStep === "review-customize" && selectedCatalogCode && (

@@ -132,12 +132,8 @@ export function CreateManualStep({ onSuccess, onCancel }: CreateManualStepProps)
         
               <input
                 type="text"
-                value={(field.value || []).join(", ")}
-                onChange={(e) => {
-                  const value = e.target.value
-                  const mods = value.split(",").map(m => m.trim()).filter(Boolean)
-                  field.onChange(mods)
-                }}
+                value={field.value || ""}
+                onChange={field.onChange}
                 placeholder="HN, XP, TS"
                 className="
                   w-full h-12 px-4 rounded-xl
@@ -174,21 +170,17 @@ export function CreateManualStep({ onSuccess, onCancel }: CreateManualStepProps)
         />
 
         <Controller
-          name="allowedPlacesOfService"
+          name="placeServiceId"
           control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Allowed Places of Service (Optional)
+                Allowed Place of Service (Optional)
               </label>
               <input
                 type="text"
-                value={(field.value || []).join(", ")}
-                onChange={(e) => {
-                  const value = e.target.value
-                  const places = value.split(",").map(p => p.trim()).filter(Boolean)
-                  field.onChange(places)
-                }}
+                value={field.value || ""}
+                onChange={field.onChange}
                 placeholder="Office, Telehealth, Home"
                 className="
                   w-full h-12 px-4 rounded-xl
