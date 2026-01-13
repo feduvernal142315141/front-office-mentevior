@@ -88,9 +88,9 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
         city: address.city || "",
         address: address.address || "",
         zipCode: address.zipCode || "",
-        startDate: address.startDate ? isoToLocalDate(address.startDate) : "",
-        endDate: address.endDate ? isoToLocalDate(address.endDate) : "",
-        active: address.active ?? true,
+        //startDate: address.startDate ? isoToLocalDate(address.startDate) : "",
+        //endDate: address.endDate ? isoToLocalDate(address.endDate) : "",
+        //active: address.active ?? true,
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,9 +106,9 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
         city: data.city,
         address: data.address,
         zipCode: data.zipCode,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        active: data.active ?? true,
+        //startDate: data.startDate,
+        //endDate: data.endDate,
+        //active: data.active ?? true,
       }
       
       const result = await update(dto)
@@ -126,9 +126,9 @@ export function useAddressForm({ addressId = null }: UseAddressFormProps = {}): 
         city: data.city,
         address: data.address,
         zipCode: data.zipCode,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        active: data.active ?? true,
+        //startDate: data.startDate,
+        //endDate: data.endDate,
+        //active: data.active ?? true,
       }
       
       const result = await create(dto)

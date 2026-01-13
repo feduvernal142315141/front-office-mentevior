@@ -32,8 +32,7 @@ export const accountProfileSchema = z.object({
   fax: z
     .string()
     .regex(/^[\d\s\-\+\(\)]*$/, "Invalid fax format")
-    .optional()
-    .or(z.literal("")),
+    .min(1, "Fax number is required"),
   
   webSite: z
     .string()
@@ -60,8 +59,7 @@ export const accountProfileSchema = z.object({
   logo: z
     .string()
     .url("Invalid logo URL")
-    .optional()
-    .or(z.literal("")),
+    .min(1, "Logo is required")
 })
 
 /**

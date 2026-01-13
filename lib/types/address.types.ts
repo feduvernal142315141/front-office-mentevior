@@ -35,9 +35,9 @@ export interface CreateAddressDto {
   city: string
   address: string
   zipCode: string
-  startDate: string
-  endDate?: string
-  active: boolean
+  //startDate: string
+  //endDate?: string
+  //active: boolean
 }
 
 export interface UpdateAddressDto {
@@ -48,9 +48,9 @@ export interface UpdateAddressDto {
   city: string
   address: string
   zipCode: string
-  startDate: string
-  endDate?: string
-  active: boolean
+  //startDate: string
+  //endDate?: string
+  //active: boolean
 }
 
 export interface Country {

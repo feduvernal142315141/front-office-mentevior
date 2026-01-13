@@ -11,8 +11,7 @@ export const addressFormSchema = z.object({
     .max(100, "Nickname must be less than 100 characters"),
   
   placeServiceId: z
-    .string()
-    .min(1, "Place of service is required"),
+    .string(),
   
   countryId: z
     .string()
@@ -39,16 +38,16 @@ export const addressFormSchema = z.object({
       message: "ZIP Code must be exactly 5 digits",
     }),
   
-  startDate: z
-    .string()
-    .min(1, "Start date is required"),
+  // startDate: z
+  //   .string()
+  //   .min(1, "Start date is required"),
   
-  endDate: z
-    .string()
-    .optional()
-    .or(z.literal("")),
+  // endDate: z
+  //   .string()
+  //   .optional()
+  //   .or(z.literal("")),
   
-  active: z.boolean().optional(),
+  // active: z.boolean().optional(),
 })
 
 /**
@@ -67,7 +66,7 @@ export const getAddressFormDefaults = (): AddressFormValues => ({
   city: "",
   address: "",
   zipCode: "",
-  startDate: getTodayLocalDate(),
-  endDate: "",
-  active: true,
+  //startDate: getTodayLocalDate(),
+  //endDate: "",
+  //active: true,
 })

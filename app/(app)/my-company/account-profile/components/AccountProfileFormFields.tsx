@@ -36,6 +36,7 @@ export function AccountProfileFormFields({
                       placeholder=" "
                       hasError={!!fieldState.error}
                       autoComplete="organization"
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">
@@ -60,6 +61,7 @@ export function AccountProfileFormFields({
                       type="email"
                       hasError={!!fieldState.error}
                       autoComplete="email"
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">
@@ -84,6 +86,7 @@ export function AccountProfileFormFields({
                       type="tel"
                       hasError={!!fieldState.error}
                       autoComplete="tel"
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">
@@ -108,6 +111,7 @@ export function AccountProfileFormFields({
                       type="tel"
                       hasError={!!fieldState.error}
                       autoComplete="tel"
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">
@@ -130,7 +134,6 @@ export function AccountProfileFormFields({
                       onBlur={field.onBlur}
                       placeholder=" "
                       type="url"
-                      hasError={!!fieldState.error}
                       autoComplete="url"
                     />
                     {fieldState.error && (
@@ -154,6 +157,7 @@ export function AccountProfileFormFields({
                       onBlur={field.onBlur}
                       placeholder=" "
                       hasError={!!fieldState.error}
+                      required
                     />
                    
                     {fieldState.error && (
@@ -181,6 +185,7 @@ export function AccountProfileFormFields({
                       onBlur={field.onBlur}
                       placeholder=" "
                       hasError={!!fieldState.error}
+                      required
                     />
                    
                     {fieldState.error && (
@@ -204,6 +209,7 @@ export function AccountProfileFormFields({
                       onBlur={field.onBlur}
                       placeholder=" "
                       hasError={!!fieldState.error}
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">

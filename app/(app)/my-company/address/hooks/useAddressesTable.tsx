@@ -105,8 +105,8 @@ export function useAddressesTable() {
       header: "Location",
       render: (address: AddressListItem) => (
         <div className="text-sm">
-          <div className="font-medium text-gray-900">{address.city}</div>
-          <div className="text-gray-500">{address.state}, {address.country}</div>
+          <div className="font-medium text-gray-900">{address.address}</div>
+          <div className="text-gray-500">{address.city}, {address.state}, {address.country}</div>
         </div>
       ),
     },

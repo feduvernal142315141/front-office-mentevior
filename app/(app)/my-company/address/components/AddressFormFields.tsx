@@ -75,9 +75,7 @@ export function AddressFormFields({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     options={(placesOfService || []).map(p => ({ value: p.id, label: p.name }))}
-                    hasError={!!fieldState.error}
                     disabled={isLoadingPlaces}
-                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -218,7 +216,7 @@ export function AddressFormFields({
               />
             </div>
 
-            <Controller
+            {/* <Controller
               name="startDate"
               control={control}
               render={({ field, fieldState }) => (
@@ -273,7 +271,7 @@ export function AddressFormFields({
                   </div>
                 )}
               />
-            </div>
+            </div> */}
 
           </div>
         </div>

@@ -163,9 +163,9 @@ export function ImageUpload({
         </div>
       )}
 
-      {(hasError || localError) && (
+      {(hasError ) && (
         <p className="text-sm text-red-600 font-medium pt-1">
-          {localError || "Invalid image"}
+          {hasError && "Please upload a valid logo."}
         </p>
       )}
     </div>
