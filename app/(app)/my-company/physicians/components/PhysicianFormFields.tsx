@@ -63,6 +63,7 @@ export function PhysicianFormFields({
                     onBlur={field.onBlur}
                     placeholder=" "
                     hasError={!!fieldState.error}
+                    required={true}
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -96,6 +97,7 @@ export function PhysicianFormFields({
                     onBlur={field.onBlur}
                     placeholder=" "
                     hasError={!!fieldState.error}
+                    required={true}
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -120,6 +122,7 @@ export function PhysicianFormFields({
                   onBlur={field.onBlur}
                   options={PHYSICIAN_SPECIALTIES}
                   hasError={!!fieldState.error}
+                  required={true}
                 />
                 {fieldState.error && (
                   <p className="text-sm text-red-600 mt-2">
@@ -150,6 +153,7 @@ export function PhysicianFormFields({
                     options={typeOptions}
                     hasError={!!fieldState.error}
                     disabled={isLoadingPhysicianTypes}
+                    required={true}
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -185,6 +189,7 @@ export function PhysicianFormFields({
                     onBlur={field.onBlur}
                     placeholder=" "
                     hasError={!!fieldState.error}
+                    required={true}
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -218,6 +223,7 @@ export function PhysicianFormFields({
                     onBlur={field.onBlur}
                     placeholder=" "
                     hasError={!!fieldState.error}
+                    required={true}
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -252,6 +258,7 @@ export function PhysicianFormFields({
                     onBlur={field.onBlur}
                     placeholder=" "
                     hasError={!!fieldState.error}
+                    required={true}
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
@@ -311,6 +318,7 @@ export function PhysicianFormFields({
                   onBlur={field.onBlur}
                   placeholder=" "
                   hasError={!!fieldState.error}
+                  required={true}
                 />
                 {fieldState.error && (
                   <p className="text-sm text-red-600 mt-2">
@@ -478,34 +486,29 @@ export function PhysicianFormFields({
           <Controller
             name="zipCode"
             control={control}
-            render={({ field, fieldState }) => {
-              const handleChange = (e: any) => {
-                if (typeof e === 'string') {
-                  field.onChange(e.replace(/\D/g, "").slice(0, 5))
-                } else if (e?.target?.value !== undefined) {
-                  const value = e.target.value.replace(/\D/g, "").slice(0, 5)
-                  field.onChange(value)
-                }
-              }
-              
-              return (
-                <div>
-                  <FloatingInput
-                    label="ZIP Code"
-                    value={field.value || ""}
-                    onChange={handleChange}
-                    onBlur={field.onBlur}
-                    placeholder=" "
-                    hasError={!!fieldState.error}
-                  />
-                  {fieldState.error && (
-                    <p className="text-sm text-red-600 mt-2">
-                      {fieldState.error.message}
-                    </p>
-                  )}
-                </div>
-              )
-            }}
+            render={({ field, fieldState }) => (
+              <div>
+                <FloatingInput
+                  label="ZIP Code"
+                  value={field.value || ""}
+                  onChange={(value) => {
+                    const sanitized = value.replace(/\D/g, "").slice(0, 5)
+                    field.onChange(sanitized)
+                  }}
+                  onBlur={field.onBlur}
+                  placeholder=" "
+                  hasError={!!fieldState.error}
+                  inputMode="numeric"
+                  maxLength={5}
+                  pattern="[0-9]*"
+                />
+                {fieldState.error && (
+                  <p className="text-sm text-red-600 mt-2">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )}
           />
 
         </div>

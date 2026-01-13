@@ -50,8 +50,8 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/data-collection/data-analysis": PermissionModule.DATA_ANALYSIS,
   "/data-collection/raw-data": PermissionModule.RAW_DATA,
 
-  // Signatures Caregiver (now a simple module)
-  "/signatures-caregiver": PermissionModule.SIGNATURES_CAREGIVER,
+  // Signatures Caregiver (now a simple module, under My Company)
+  "/my-company/signatures-caregiver": PermissionModule.SIGNATURES_CAREGIVER,
   
   // Template Documents children (real permissions)
   "/template-documents/session-note": PermissionModule.SESSION_NOTE_CONFIGURATION,

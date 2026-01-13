@@ -16,7 +16,7 @@ export default function MyCompanyPage() {
   const canViewEvents = useCanViewModule("/my-company/events")
   const canViewBilling = useCanViewModule("/my-company/billing")
   const canViewDataCollection = useCanViewModule("/data-collection")
-  const canViewSignaturesCaregiver = useCanViewModule("/signatures-caregiver")
+  const canViewSignaturesCaregiver = useCanViewModule("/my-company/signatures-caregiver")
   const canViewTemplateDocuments = useCanViewModule("/template-documents")
   const canViewClinicalDocuments = useCanViewModule("/clinical-documents")
   const canViewHRDocuments = useCanViewModule("/hr-documents")
@@ -98,8 +98,8 @@ export default function MyCompanyPage() {
     },
     {
       title: "Signatures Caregiver",
-      description: "Check and manage caregiver signatures",
-      href: "/signatures-caregiver",
+      description: "Configure caregiver confirmation method for Progress Notes",
+      href: "/my-company/signatures-caregiver",
       icon: FileSignature,
       canView: canViewSignaturesCaregiver,
       hasDeepChildren: false,

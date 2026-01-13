@@ -45,12 +45,23 @@ export function FloatingSelect({
 
   useEffect(() => {
     if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      })
+      const updatePosition = () => {
+        const rect = buttonRef.current!.getBoundingClientRect()
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 8,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        })
+      }
+      
+      updatePosition()
+      window.addEventListener('scroll', updatePosition, true)
+      window.addEventListener('resize', updatePosition)
+      
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true)
+        window.removeEventListener('resize', updatePosition)
+      }
     }
   }, [isOpen])
 
@@ -168,7 +179,7 @@ export function FloatingSelect({
         </label>
       </div>
 
-      {/* Dropdown Menu - Fixed positioning to prevent clipping */}
+      {/* Dropdown Menu */}
       {isOpen && (
         <div 
           className={cn(
