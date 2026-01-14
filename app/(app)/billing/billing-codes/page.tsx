@@ -1,18 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Plus, FileText } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { useRouter } from "next/navigation"
-import { BillingCodesTable } from "./components/BillingCodesTable"
+import { BillingCodesTable, type BillingCodesTableRef } from "./components/BillingCodesTable"
 import { BillingCodeDrawer } from "./components/BillingCodeDrawer"
 
 export default function BillingCodesPage() {
   const router = useRouter()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const tableRef = useRef<BillingCodesTableRef>(null)
 
   const handleSuccess = () => {
     setIsDrawerOpen(false)
+    tableRef.current?.refetch()
   }
 
   return (
@@ -41,7 +43,7 @@ export default function BillingCodesPage() {
           </Button>
         </div>
 
-        <BillingCodesTable />
+        <BillingCodesTable ref={tableRef} />
 
         <BillingCodeDrawer
           isOpen={isDrawerOpen}

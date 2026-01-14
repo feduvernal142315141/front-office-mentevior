@@ -13,9 +13,10 @@ import { toast } from "sonner"
 interface SearchCatalogStepProps {
   onSelectCredential: (credential: CredentialCatalogItem) => void
   onClose: () => void
+  onSuccess: () => void
 }
 
-export function SearchCatalogStep({ onSelectCredential, onClose }: SearchCatalogStepProps) {
+export function SearchCatalogStep({ onSelectCredential, onClose, onSuccess }: SearchCatalogStepProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -108,11 +109,8 @@ export function SearchCatalogStep({ onSelectCredential, onClose }: SearchCatalog
         await bulkCreateCredentials(selectedCredentials)
         
         toast.success(`${selectedCredentials.length} credentials added successfully`)
+        onSuccess()
         onClose()
-        
-        setTimeout(() => {
-          router.push("/my-company/credentials")
-        }, 1000)
         
       } catch (error) {
         console.error("Error creating bulk credentials:", error)

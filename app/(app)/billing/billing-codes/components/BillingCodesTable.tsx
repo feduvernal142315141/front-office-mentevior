@@ -1,5 +1,6 @@
 "use client"
 
+import { forwardRef, useImperativeHandle } from "react"
 import { useBillingCodesTable } from "../hooks/useBillingCodesTable"
 import { useBillingCodeTypes } from "@/lib/modules/billing-codes/hooks/use-billing-code-types"
 import { CustomTable } from "@/components/custom/CustomTable"
@@ -8,7 +9,11 @@ import { FilterSelect } from "@/components/custom/FilterSelect"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 
-export function BillingCodesTable() {
+export interface BillingCodesTableRef {
+  refetch: () => void
+}
+
+export const BillingCodesTable = forwardRef<BillingCodesTableRef>((props, ref) => {
   const {
     data,
     columns,
@@ -17,7 +22,12 @@ export function BillingCodesTable() {
     filters,
     pagination,
     clearFilters,
+    refetch,
   } = useBillingCodesTable()
+
+  useImperativeHandle(ref, () => ({
+    refetch,
+  }))
   
   const { types: billingCodeTypes } = useBillingCodeTypes()
 
@@ -91,4 +101,6 @@ export function BillingCodesTable() {
       />
     </div>
   )
-}
+})
+
+BillingCodesTable.displayName = "BillingCodesTable"

@@ -114,7 +114,7 @@ export function BillingCodeDrawer({ isOpen, onClose, onSuccess }: BillingCodeDra
           )}
 
           {currentStep === "search-catalog" && (
-            <SearchCatalogStep onSelectCode={selectCatalogCode} onClose={handleClose} />
+            <SearchCatalogStep onSelectCode={selectCatalogCode} onClose={handleClose} onSuccess={handleSuccess} />
           )}
 
           {currentStep === "review-customize" && selectedCatalogCode && (

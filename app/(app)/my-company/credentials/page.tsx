@@ -1,18 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Plus, Award } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { useRouter } from "next/navigation"
-import { CredentialsTable } from "./components/CredentialsTable"
+import { CredentialsTable, type CredentialsTableRef } from "./components/CredentialsTable"
 import { CredentialDrawer } from "./components/CredentialDrawer"
 
 export default function CredentialsPage() {
   const router = useRouter()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const tableRef = useRef<CredentialsTableRef>(null)
 
   const handleSuccess = () => {
     setIsDrawerOpen(false)
+    tableRef.current?.refetch()
   }
 
   return (
@@ -41,7 +43,7 @@ export default function CredentialsPage() {
           </Button>
         </div>
 
-        <CredentialsTable />
+        <CredentialsTable ref={tableRef} />
 
         <CredentialDrawer
           isOpen={isDrawerOpen}

@@ -15,9 +15,10 @@ import { toast } from "sonner"
 interface SearchCatalogStepProps {
   onSelectCode: (code: BillingCodeCatalogItem) => void
   onClose: () => void
+  onSuccess: () => void
 }
 
-export function SearchCatalogStep({ onSelectCode, onClose }: SearchCatalogStepProps) {
+export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCatalogStepProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
@@ -90,11 +91,8 @@ export function SearchCatalogStep({ onSelectCode, onClose }: SearchCatalogStepPr
         await bulkCreateBillingCodes(selectedCodes)
         
         toast.success(`${selectedCodes.length} billing codes added successfully`)
+        onSuccess()
         onClose()
-        
-        setTimeout(() => {
-          router.push("/billing/billing-codes")
-        }, 1000)
         
       } catch (error) {
         console.error("Error creating bulk billing codes:", error)

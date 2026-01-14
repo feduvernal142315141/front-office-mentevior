@@ -1,12 +1,17 @@
 "use client"
 
+import { forwardRef, useImperativeHandle } from "react"
 import { useCredentialsTable } from "../hooks/useCredentialsTable"
 import { CustomTable } from "@/components/custom/CustomTable"
 import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 
-export function CredentialsTable() {
+export interface CredentialsTableRef {
+  refetch: () => void
+}
+
+export const CredentialsTable = forwardRef<CredentialsTableRef>((props, ref) => {
   const {
     data,
     columns,
@@ -15,7 +20,12 @@ export function CredentialsTable() {
     filters,
     pagination,
     clearFilters,
+    refetch,
   } = useCredentialsTable()
+
+  useImperativeHandle(ref, () => ({
+    refetch,
+  }))
 
   if (error) {
     return (
@@ -72,4 +82,6 @@ export function CredentialsTable() {
       />
     </div>
   )
-}
+})
+
+CredentialsTable.displayName = "CredentialsTable"

@@ -106,7 +106,7 @@ export function CredentialDrawer({ isOpen, onClose, onSuccess }: CredentialDrawe
           )}
 
           {currentStep === "search-catalog" && (
-            <SearchCatalogStep onSelectCredential={() => {}} onClose={handleClose} />
+            <SearchCatalogStep onSelectCredential={() => {}} onClose={handleClose} onSuccess={handleSuccess} />
           )}
         </div>
       </DrawerContent>
