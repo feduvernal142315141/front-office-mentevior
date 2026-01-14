@@ -47,8 +47,6 @@ apiInstance.interceptors.request.use(
                 "/auth/login",
                 "/security/public-key",
                 "/dashboard/public-info",
-                "/physician-specialty",
-                "/physician-type",
             ]
 
             const isPublicRoute = PUBLIC_ROUTES.some((path) => config.url?.includes(path))
