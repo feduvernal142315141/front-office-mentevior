@@ -5,7 +5,8 @@ import type {
   UpdatePhysicianRequest,
   PhysiciansListResponse,
   PhysicianResponse,
-  PhysicianType
+  PhysicianType,
+  PhysicianSpecialty
 } from "@/lib/types/physician.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import { getQueryString } from "@/lib/utils/format"
@@ -94,5 +95,21 @@ export async function getPhysicianTypes(): Promise<PhysicianType[]> {
   }
 
   return paginatedData.entities
+}
+
+export async function getPhysicianSpecialties(): Promise<PhysicianSpecialty[]> {
+  const response = await serviceGet<PhysicianSpecialty[]>("/physician-specialty")
+  
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch physician specialties")
+  }
+
+  // Backend returns simple array, not paginated
+  if (Array.isArray(response.data)) {
+    return response.data
+  }
+
+  console.error("Invalid backend response:", response.data)
+  return []
 }
 

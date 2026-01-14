@@ -5,17 +5,18 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { PHYSICIAN_SPECIALTIES, PHYSICIAN_TYPES } from "@/lib/types/physician.types"
-import type { PhysicianType } from "@/lib/types/physician.types"
+import type { PhysicianType, PhysicianSpecialty } from "@/lib/types/physician.types"
 
 interface PhysicianFormFieldsProps {
   isEditing: boolean
   countries: { id: string; name: string }[]
   states: { id: string; name: string }[]
   physicianTypes: PhysicianType[]
+  physicianSpecialties: PhysicianSpecialty[]
   isLoadingCountries: boolean
   isLoadingStates: boolean
   isLoadingPhysicianTypes: boolean
+  isLoadingPhysicianSpecialties: boolean
 }
 
 // Phone/Fax formatter
@@ -31,9 +32,11 @@ export function PhysicianFormFields({
   countries = [],
   states = [],
   physicianTypes = [],
+  physicianSpecialties = [],
   isLoadingCountries,
   isLoadingStates,
   isLoadingPhysicianTypes,
+  isLoadingPhysicianSpecialties,
 }: PhysicianFormFieldsProps) {
   const { control } = useFormContext()
 
@@ -113,24 +116,32 @@ export function PhysicianFormFields({
           <Controller
             name="specialty"
             control={control}
-            render={({ field, fieldState }) => (
-              <div>
-                <FloatingSelect
-                  label="Specialty"
-                  value={field.value}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  options={PHYSICIAN_SPECIALTIES}
-                  hasError={!!fieldState.error}
-                  required={true}
-                />
-                {fieldState.error && (
-                  <p className="text-sm text-red-600 mt-2">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </div>
-            )}
+            render={({ field, fieldState }) => {
+              const specialtyOptions = physicianSpecialties.map(s => ({ 
+                value: s.code, 
+                label: s.name 
+              }))
+              
+              return (
+                <div>
+                  <FloatingSelect
+                    label="Specialty"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={specialtyOptions}
+                    hasError={!!fieldState.error}
+                    required={true}
+                    disabled={isLoadingPhysicianSpecialties}
+                  />
+                  {fieldState.error && (
+                    <p className="text-sm text-red-600 mt-2">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
+              )
+            }}
           />
 
           {/* Type */}
@@ -138,10 +149,10 @@ export function PhysicianFormFields({
             name="type"
             control={control}
             render={({ field, fieldState }) => {
-              // Use dynamic data if available, otherwise fallback to hardcoded
-              const typeOptions = physicianTypes.length > 0 
-                ? physicianTypes.map(t => ({ value: t.code, label: t.name }))
-                : PHYSICIAN_TYPES
+              const typeOptions = physicianTypes.map(t => ({ 
+                value: t.code, 
+                label: t.name 
+              }))
               
               return (
                 <div>

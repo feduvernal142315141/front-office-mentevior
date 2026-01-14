@@ -27,6 +27,7 @@ export function usePhysiciansTable() {
 
   const filters = buildFilters([
     searchQuery && { field: "firstName", operator: FilterOperator.Contains, value: searchQuery },
+    searchQuery && { field: "lastName", operator: FilterOperator.Contains, value: searchQuery },
     statusFilter === "active" && { field: "active", operator: FilterOperator.Equals, value: true, type: "boolean" as const },
     statusFilter === "inactive" && { field: "active", operator: FilterOperator.Equals, value: false, type: "boolean" as const },
   ])

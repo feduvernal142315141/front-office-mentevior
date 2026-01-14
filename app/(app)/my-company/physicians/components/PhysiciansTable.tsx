@@ -42,7 +42,7 @@ export function PhysiciansTable() {
             <SearchInput
               value={searchQuery}
               onChange={onSearchChange}
-              placeholder="Search by name, specialty, or address..."
+              placeholder="Search by name"
               onClear={onClearFilters}
             />
           </div>
