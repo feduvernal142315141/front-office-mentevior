@@ -103,7 +103,7 @@ export function useCredentialForm({ credentialId = null }: UseCredentialFormProp
         website: credential.website || "",
         taxonomyCode: credential.taxonomyCode,
         description: credential.description || "",
-        billingCodeIds: credential.allowedBillingCodes || [],
+        billingCodeIds: credential.billingCodes || credential.allowedBillingCodes || [],
         active: credential.active ?? true,
       })
     }
@@ -119,7 +119,7 @@ export function useCredentialForm({ credentialId = null }: UseCredentialFormProp
         website: data.website || undefined,
         taxonomyCode: data.taxonomyCode,
         description: data.description || undefined,
-        billingCodeIds: data.billingCodeIds && data.billingCodeIds.length > 0 ? data.billingCodeIds : undefined,
+        billingCodes: data.billingCodeIds && data.billingCodeIds.length > 0 ? data.billingCodeIds : undefined,
       }
       
       const result = await update(dto)
@@ -137,7 +137,7 @@ export function useCredentialForm({ credentialId = null }: UseCredentialFormProp
         website: data.website || undefined,
         taxonomyCode: data.taxonomyCode,
         description: data.description || undefined,
-        billingCodeIds: data.billingCodeIds && data.billingCodeIds.length > 0 ? data.billingCodeIds : undefined,
+        billingCodes: data.billingCodeIds && data.billingCodeIds.length > 0 ? data.billingCodeIds : undefined,
       }
       
       const result = await create(dto)

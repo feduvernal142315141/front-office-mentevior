@@ -46,25 +46,23 @@ export async function getCredentialById(id: string): Promise<Credential | null> 
   return response.data as unknown as Credential
 }
 
-export async function getCredentialsCatalog(query?: QueryModel): Promise<{ catalogCredentials: CredentialCatalogItem[], totalCount: number }> {
-  const response = await serviceGet<PaginatedResponse<CredentialCatalogItem>>(`/credential/catalog${
-    query ? `?${getQueryString(query)}` : ''
-  }`)
+export async function getCredentialsCatalog(): Promise<{ catalogCredentials: CredentialCatalogItem[], totalCount: number }> {
+  const response = await serviceGet<CredentialCatalogItem[]>("/credential/catalog")
   
   if (response.status !== 200 || !response.data) {
     throw new Error(response.data?.message || "Failed to fetch credentials catalog")
   }
   
-  const paginatedData = response.data as unknown as PaginatedResponse<CredentialCatalogItem>
+  const catalogData = response.data as unknown as CredentialCatalogItem[]
   
-  if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
+  if (!Array.isArray(catalogData)) {
     console.error("Invalid backend response:", response.data)
     return { catalogCredentials: [], totalCount: 0 }
   }
   
   return {
-    catalogCredentials: paginatedData.entities,
-    totalCount: paginatedData.pagination?.total || 0
+    catalogCredentials: catalogData,
+    totalCount: catalogData.length
   }
 }
 

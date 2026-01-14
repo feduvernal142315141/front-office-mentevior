@@ -7,6 +7,7 @@ export interface Credential {
   taxonomyCode: string
   description?: string
   allowedBillingCodes?: string[]
+  billingCodes?: string[]
   active: boolean
   isFromCatalog?: boolean
   createdAt?: string
@@ -36,7 +37,7 @@ export interface CreateCredentialDto {
   website?: string
   taxonomyCode: string
   description?: string
-  billingCodeIds?: string[]
+  billingCodes?: string[]
 }
 
 export interface UpdateCredentialDto {
@@ -47,5 +48,5 @@ export interface UpdateCredentialDto {
   website?: string
   taxonomyCode: string
   description?: string
-  billingCodeIds?: string[]
+  billingCodes?: string[]
 }

@@ -22,19 +22,19 @@ export function SearchCatalogStep({ onSelectCredential, onClose }: SearchCatalog
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   
-  const { catalogCredentials, isLoading, search } = useCredentialsCatalog()
+  const { catalogCredentials, isLoading, filterCredentials } = useCredentialsCatalog()
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-   useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
-      search(searchTerm)
+      filterCredentials(searchTerm)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchTerm, search])
+  }, [searchTerm, filterCredentials])
 
   const toggleSelection = (id: string) => {
     setSelectedIds(prev => {
@@ -69,11 +69,21 @@ export function SearchCatalogStep({ onSelectCredential, onClose }: SearchCatalog
       const selectedCredential = catalogCredentials.find(c => selectedIds.has(c.id))
       if (selectedCredential) {
         onClose()
+        
+        let parsedName = selectedCredential.name
+        let parsedShortName = selectedCredential.shortName
+        
+        const parenthesesMatch = selectedCredential.name.match(/^(.+?)\s*\(([^)]+)\)\s*$/)
+        if (parenthesesMatch) {
+          parsedName = parenthesesMatch[1].trim()
+          parsedShortName = parenthesesMatch[2].trim()
+        }
+        
         const params = new URLSearchParams({
           mode: "catalog",
           catalogId: selectedCredential.id,
-          name: selectedCredential.name,
-          shortName: selectedCredential.shortName,
+          name: parsedName,
+          shortName: parsedShortName,
         })
         
         if (selectedCredential.organizationName) {
@@ -88,7 +98,7 @@ export function SearchCatalogStep({ onSelectCredential, onClose }: SearchCatalog
           params.append("description", selectedCredential.description)
         }
         
-        router.push(`/credentials/create?${params.toString()}`)
+        router.push(`/my-company/credentials/create?${params.toString()}`)
       }
     } else {
       setIsSubmitting(true)
@@ -156,12 +166,14 @@ export function SearchCatalogStep({ onSelectCredential, onClose }: SearchCatalog
             <button
               onClick={toggleSelectAll}
               className={`
-                flex items-center gap-2
+                flex items-center justify-center gap-2
                 px-4 py-2
                 rounded-lg
                 border
-                text-sm font-medium
+                text-xs font-medium
                 transition-all
+                whitespace-nowrap
+                shrink-0
                 ${isAllSelected
                   ? "border-blue-600 bg-blue-50 text-blue-700"
                   : isSomeSelected
@@ -188,10 +200,7 @@ export function SearchCatalogStep({ onSelectCredential, onClose }: SearchCatalog
           <div className="flex flex-col items-center justify-center h-64 px-6">
             <Search className="w-12 h-12 text-gray-300 mb-4" />
             <p className="text-gray-600 text-center">
-              {searchTerm.trim() 
-                ? "No credentials found. Try a different search term." 
-                : "Start typing to search for credentials"
-              }
+              No credentials found. Try a different search term.
             </p>
           </div>
         ) : (
@@ -224,9 +233,6 @@ export function SearchCatalogStep({ onSelectCredential, onClose }: SearchCatalog
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-lg font-semibold ${isSelected ? "text-blue-700" : "text-gray-900"}`}>
                           {credential.name}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          ({credential.shortName})
                         </span>
                       </div>
                       {credential.description && (

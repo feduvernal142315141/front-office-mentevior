@@ -36,7 +36,6 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -46,17 +45,11 @@ export function MultiSelect({
   const displayText = hasValue 
     ? `${selectedOptions.length} selected` 
     : placeholder
-
-  useEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      })
-    }
-  }, [isOpen])
+  
+  // Show only first 3 tags + counter
+  const MAX_VISIBLE_TAGS = 6
+  const visibleTags = selectedOptions.slice(0, MAX_VISIBLE_TAGS)
+  const remainingCount = selectedOptions.length - MAX_VISIBLE_TAGS
 
   const filteredOptions = searchable && searchQuery
     ? options.filter(opt => 
@@ -145,22 +138,34 @@ export function MultiSelect({
           {!hasValue ? (
             <span className="text-gray-400">{displayText}</span>
           ) : (
-            <div className="flex flex-wrap gap-2 py-1">
-              {selectedOptions.map((option) => (
+            <div className="flex items-center gap-2 py-1 overflow-hidden">
+              {visibleTags.map((option) => (
                 <span
                   key={option.value}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm"
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm whitespace-nowrap flex-shrink-0"
                 >
                   {option.label}
-                  <button
-                    type="button"
+                  <span
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => handleRemove(option.value, e)}
-                    className="hover:bg-blue-100 rounded-full p-0.5"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleRemove(option.value, e as any)
+                      }
+                    }}
+                    className="hover:bg-blue-100 rounded-full p-0.5 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
-                  </button>
+                  </span>
                 </span>
               ))}
+              {remainingCount > 0 && (
+                <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap flex-shrink-0">
+                  +{remainingCount} more
+                </span>
+              )}
             </div>
           )}
         </button>
@@ -204,13 +209,13 @@ export function MultiSelect({
         >
           {label} {required && <span className="text-[#2563EB]">*</span>}
         </label>
-      </div>
 
-      {isOpen && (
+        {isOpen && (
         <div 
           className={cn(
             `
-            fixed z-[9999]
+            absolute top-full left-0 right-0 mt-2
+            z-[9999]
             bg-white
             border border-gray-200
             rounded-[16px]
@@ -221,11 +226,6 @@ export function MultiSelect({
             duration-200
             `
           )}
-          style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`
-          }}
         >
             {searchable && (
               <div className="p-3 border-b border-gray-200">
@@ -300,7 +300,8 @@ export function MultiSelect({
               )}
             </div>
           </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

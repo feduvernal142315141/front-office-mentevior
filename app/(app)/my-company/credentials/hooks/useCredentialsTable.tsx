@@ -77,7 +77,7 @@ export function useCredentialsTable() {
       render: (item: CredentialListItem) => (
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => router.push(`/credentials/${item.id}/edit`)}
+            onClick={() => router.push(`/my-company/credentials/${item.id}/edit`)}
             className="
               group/edit
               relative
