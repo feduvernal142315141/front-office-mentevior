@@ -232,6 +232,7 @@ export function AccountProfileFormFields({
                       onBlur={field.onBlur}
                       placeholder=" "
                       hasError={!!fieldState.error}
+                      required
                     />
                     
                     {fieldState.error && (
