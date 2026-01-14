@@ -160,7 +160,7 @@ export function FloatingSelect({
           className={cn(
             `
             absolute top-full left-0 right-0 mt-2
-            z-50
+            z-[9999]
             bg-white
             border border-gray-200
             rounded-[16px]

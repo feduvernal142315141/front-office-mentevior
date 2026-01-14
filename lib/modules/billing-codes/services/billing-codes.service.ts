@@ -47,25 +47,23 @@ export async function getBillingCodeById(id: string): Promise<BillingCode | null
   return response.data as unknown as BillingCode
 }
 
-export async function getBillingCodesCatalog(query?: QueryModel): Promise<{ catalogCodes: BillingCodeCatalogItem[], totalCount: number }> {
-  const response = await serviceGet<PaginatedResponse<BillingCodeCatalogItem>>(`/billing-code/catalog${
-    query ? `?${getQueryString(query)}` : ''
-  }`)
+export async function getBillingCodesCatalog(): Promise<{ catalogCodes: BillingCodeCatalogItem[], totalCount: number }> {
+  const response = await serviceGet<BillingCodeCatalogItem[]>("/billing-code/catalog")
   
   if (response.status !== 200 || !response.data) {
     throw new Error(response.data?.message || "Failed to fetch billing codes catalog")
   }
   
-  const paginatedData = response.data as unknown as PaginatedResponse<BillingCodeCatalogItem>
+  const catalogData = response.data as unknown as BillingCodeCatalogItem[]
   
-  if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
+  if (!Array.isArray(catalogData)) {
     console.error("Invalid backend response:", response.data)
     return { catalogCodes: [], totalCount: 0 }
   }
   
   return {
-    catalogCodes: paginatedData.entities,
-    totalCount: paginatedData.pagination?.total || 0
+    catalogCodes: catalogData,
+    totalCount: catalogData.length
   }
 }
 

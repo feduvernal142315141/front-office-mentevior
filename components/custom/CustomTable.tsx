@@ -232,7 +232,7 @@ export function CustomTable<T>({
 
       {pagination && (
         <div className="
-          px-6 py-4
+          px-6 py-4 pb-48
           border-t border-slate-200/60
           bg-gradient-to-b from-slate-50/30 to-white
           flex flex-col sm:flex-row items-start sm:items-center justify-between

@@ -1,8 +1,8 @@
-export type BillingCodeType = "CPT" | "HCPCS"
+export type BillingCodeType = string
 
 export interface BillingCodeTypeItem {
   id: string
-  name: BillingCodeType
+  name: string
   code: string
 }
 
@@ -38,20 +38,20 @@ export interface BillingCodeCatalogItem {
 }
 
 export interface CreateBillingCodeDto {
-  typeId: string  // GUID del tipo (CPT o HCPCS)
+  typeId: string  
   code: string
   modifiers?: string 
   parent?: string
-  placeServiceId?: string  // GUID del place of service
+  placeServiceId?: string  
   description: string
 }
 
 export interface UpdateBillingCodeDto {
-  id: string  // GUID del billing code a actualizar
-  typeId: string  // GUID del tipo (CPT o HCPCS)
+  id: string  
+  typeId: string  
   code: string
   modifiers?: string  
   parent?: string  
-  placeServiceId?: string  // GUID del place of service
+  placeServiceId?: string  
   description: string
 }

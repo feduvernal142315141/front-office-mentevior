@@ -2,9 +2,8 @@ import { z } from "zod"
 
 export const billingCodeFormSchema = z.object({
   type: z
-    .enum(["CPT", "HCPCS"], {
-      required_error: "Type is required",
-    }),
+    .string()
+    .min(1, "Type is required"),
   
   code: z
     .string()
@@ -55,7 +54,7 @@ export const getBillingCodeFormDefaults = (): BillingCodeFormValues => ({
 
 export const getBillingCodeFormFromCatalog = (catalogItem: {
   id: string
-  type: "CPT" | "HCPCS"
+  type: string
   code: string
   description: string
 }): BillingCodeFormValues => ({

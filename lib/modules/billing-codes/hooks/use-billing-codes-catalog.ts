@@ -1,78 +1,75 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import type { BillingCodeCatalogItem } from "@/lib/types/billing-code.types"
-import type { QueryModel } from "@/lib/models/queryModel"
 import { getBillingCodesCatalog } from "../services/billing-codes.service"
-import { FilterOperator } from "@/lib/models/filterOperator"
 
 interface UseBillingCodesCatalogReturn {
   catalogCodes: BillingCodeCatalogItem[]
+  allCatalogCodes: BillingCodeCatalogItem[]
   totalCount: number
   isLoading: boolean
   error: Error | null
-  search: (searchTerm: string, type?: string) => Promise<void>
-  clear: () => void
+  filterCodes: (searchTerm: string, type?: string) => void
 }
 
 export function useBillingCodesCatalog(): UseBillingCodesCatalogReturn {
-  const [catalogCodes, setCatalogCodes] = useState<BillingCodeCatalogItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
+  const [allCatalogCodes, setAllCatalogCodes] = useState<BillingCodeCatalogItem[]>([])
+  const [filteredCodes, setFilteredCodes] = useState<BillingCodeCatalogItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const search = useCallback(async (searchTerm: string, type?: string) => {
-    if (!searchTerm.trim() && !type) {
-      setCatalogCodes([])
-      setTotalCount(0)
+
+  useEffect(() => {
+    const fetchAllCodes = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const data = await getBillingCodesCatalog()
+        setAllCatalogCodes(data.catalogCodes)
+        setFilteredCodes(data.catalogCodes)
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Failed to fetch catalog"))
+        setAllCatalogCodes([])
+        setFilteredCodes([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAllCodes()
+  }, [])
+
+
+  const filterCodes = useCallback((searchTerm: string, type?: string) => {
+    if (!searchTerm.trim() && (!type || type === "all")) {
+      setFilteredCodes(allCatalogCodes)
       return
     }
 
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      const filters: string[] = []
-      
-      if (searchTerm.trim()) {
-        filters.push(`code__CONTAINS_IGNORE_CASE__${searchTerm}__OR`)
-        filters.push(`description__CONTAINS_IGNORE_CASE__${searchTerm}__AND`)
-      }
-      
-      if (type && type !== "all") {
-        filters.push(`typeCatalog.name__${FilterOperator.relatedContains}__${type}__AND`)
-      }
-      
-      const query: QueryModel = {
-        page: 0,
-        pageSize: 100, 
-        filters: filters.length > 0 ? filters : undefined,
-      }
-      
-      const data = await getBillingCodesCatalog(query)
-      setCatalogCodes(data.catalogCodes)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to search catalog"))
-      setCatalogCodes([])
-      setTotalCount(0)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+    const filtered = allCatalogCodes.filter((code) => {
 
-  const clear = useCallback(() => {
-    setCatalogCodes([])
-    setTotalCount(0)
-    setError(null)
-  }, [])
+      const matchesType = !type || type === "all" || code.type === type
+
+
+      const matchesSearch = !searchTerm.trim() || 
+        code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        code.description.toLowerCase().includes(searchTerm.toLowerCase())
+
+      return matchesType && matchesSearch
+    })
+
+    setFilteredCodes(filtered)
+  }, [allCatalogCodes])
+
+  const totalCount = useMemo(() => filteredCodes.length, [filteredCodes])
 
   return {
-    catalogCodes,
+    catalogCodes: filteredCodes,
+    allCatalogCodes,
     totalCount,
     isLoading,
     error,
-    search,
-    clear,
+    filterCodes,
   }
 }

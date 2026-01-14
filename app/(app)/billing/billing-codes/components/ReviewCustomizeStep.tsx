@@ -25,6 +25,17 @@ export function ReviewCustomizeStep({ catalogCode, onSuccess, onCancel }: Review
     defaultValues: getBillingCodeFormFromCatalog(catalogCode),
   })
 
+  // Dynamic badge colors based on type
+  const getBadgeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      "CPT": "border-green-200 bg-green-50 text-green-700",
+      "HCPCS": "border-purple-200 bg-purple-50 text-purple-700",
+      "ICD-10": "border-blue-200 bg-blue-50 text-blue-700",
+      "SNOMED": "border-orange-200 bg-orange-50 text-orange-700",
+    }
+    return colors[type] || "border-gray-200 bg-gray-50 text-gray-700"
+  }
+
   const onSubmit = async (data: BillingCodeFormValues) => {
     // const result = await create({
     //   type: data.type,
@@ -63,11 +74,7 @@ export function ReviewCustomizeStep({ catalogCode, onSuccess, onCancel }: Review
               <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
               <Badge 
                 variant="outline"
-                className={
-                  catalogCode.type === "CPT" 
-                    ? "border-green-200 bg-green-50 text-green-700 text-base px-3 py-1"
-                    : "border-purple-200 bg-purple-50 text-purple-700 text-base px-3 py-1"
-                }
+                className={`${getBadgeColor(catalogCode.type)} text-base px-3 py-1`}
               >
                 {catalogCode.type}
               </Badge>

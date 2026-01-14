@@ -22,22 +22,16 @@ export function Topbar() {
   const { logout } = useLogout()
   const router = useRouter()
   
-  // Fetch completo del usuario para obtener el rol
   const { user: fullUser } = useUserById(user?.id || null)
   
-  // Debug
-  console.log('🔍 TOPBAR - user.id:', user?.id)
-  console.log('🔍 TOPBAR - fullUser:', fullUser)
-  console.log('🔍 TOPBAR - fullUser.role:', fullUser?.role)
-  console.log('🔍 TOPBAR - fullUser.role.name:', fullUser?.role?.name)
 
   const handleLogout = () => {
     logout()
   }
 
   return (
-    <header className="navbar-glass top-0">
-      <div className="flex items-center justify-between px-6 gap-6 h-16 border-b border-gray-100">
+    <header className="navbar-glass top-0" suppressHydrationWarning>
+      <div className="flex items-center justify-between px-6 gap-6 h-16 border-b border-gray-100" suppressHydrationWarning>
         <Breadcrumbs />
 
         <div className="ml-auto">
@@ -75,7 +69,7 @@ export function Topbar() {
                       <p className="text-xs text-muted-foreground truncate max-w-[160px]">
                         {user?.email}
                       </p>
-                      {/* Badge con el rol del usuario */}
+        
                       {fullUser?.role?.name && (
                         <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200">
                           <span className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide">

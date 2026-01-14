@@ -4,6 +4,7 @@ import { Controller, useFormContext } from "react-hook-form"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
+import { useBillingCodeTypes } from "@/lib/modules/billing-codes/hooks/use-billing-code-types"
 
 interface BillingCodeFormFieldsProps {
   isEditing: boolean
@@ -25,6 +26,7 @@ export function BillingCodeFormFields({
   isLoadingParents,
 }: BillingCodeFormFieldsProps) {
   const { control } = useFormContext()
+  const { types: billingCodeTypes, isLoading: isLoadingTypes } = useBillingCodeTypes()
 
   return (
     <>
@@ -48,11 +50,12 @@ export function BillingCodeFormFields({
                       value={field.value || ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
-                      options={[
-                        { value: "CPT", label: "CPT" },
-                        { value: "HCPCS", label: "HCPCS" },
-                      ]}
+                      options={billingCodeTypes.map(type => ({
+                        value: type.name,
+                        label: type.name
+                      }))}
                       hasError={!!fieldState.error}
+                      disabled={isLoadingTypes}
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">
@@ -154,9 +157,7 @@ export function BillingCodeFormFields({
                         { value: "", label: "None" },
                         ...parentOptions.map(p => ({ 
                           value: p.id, 
-                          label: p.description 
-                            ? `${p.code} - ${p.description}` 
-                            : p.code
+                          label: p.code
                         }))
                       ]}
                       hasError={!!fieldState.error}

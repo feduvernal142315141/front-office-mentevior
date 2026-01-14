@@ -9,6 +9,7 @@ import { Button } from "@/components/custom/Button"
 import { Loader2 } from "lucide-react"
 import { billingCodeFormSchema, getBillingCodeFormDefaults, type BillingCodeFormValues } from "@/lib/schemas/billing-code-form.schema"
 import { useCreateBillingCode } from "@/lib/modules/billing-codes/hooks/use-create-billing-code"
+import { useBillingCodeTypes } from "@/lib/modules/billing-codes/hooks/use-billing-code-types"
 
 interface CreateManualStepProps {
   onSuccess: () => void
@@ -17,6 +18,7 @@ interface CreateManualStepProps {
 
 export function CreateManualStep({ onSuccess, onCancel }: CreateManualStepProps) {
   const { create, isLoading } = useCreateBillingCode()
+  const { types: billingCodeTypes, isLoading: isLoadingTypes } = useBillingCodeTypes()
 
   const form = useForm<BillingCodeFormValues>({
     resolver: zodResolver(billingCodeFormSchema),
@@ -58,11 +60,12 @@ export function CreateManualStep({ onSuccess, onCancel }: CreateManualStepProps)
                 value={field.value || ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                options={[
-                  { value: "CPT", label: "CPT" },
-                  { value: "HCPCS", label: "HCPCS" },
-                ]}
+                options={billingCodeTypes.map(type => ({
+                  value: type.name,
+                  label: type.name
+                }))}
                 hasError={!!fieldState.error}
+                disabled={isLoadingTypes}
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>

@@ -46,25 +46,23 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
   const { update, isLoading: isUpdating } = useUpdateBillingCode()
   const { billingCode, isLoading: isLoadingBillingCode } = useBillingCodeById(billingCodeId)
   const { placesOfService, isLoading: isLoadingPlaces } = usePlacesOfService()
-  const { getTypeIdByName } = useBillingCodeTypes()
+  const { types: billingCodeTypes, getTypeIdByName } = useBillingCodeTypes()
   
-  // Traer todos los billing codes para el dropdown de parent
   const { billingCodes: allBillingCodes, isLoading: isLoadingParents } = useBillingCodes({
     page: 0,
-    pageSize: 1000, // Traer todos (ajustar si hay muchos registros)
+    pageSize: 1000,
     filters: [],
   })
   
-  // Filtrar el billing code actual del dropdown parent (no puede ser su propio parent)
   const parentOptions = useMemo(() => {
     if (!allBillingCodes) return []
     
     return allBillingCodes
-      .filter(bc => bc.id !== billingCodeId) // Excluir el código actual en edit mode
+      .filter(bc => bc.id !== billingCodeId) 
       .map(bc => ({
         id: bc.id,
         code: bc.code,
-        description: bc.description || "", // Manejar si description viene undefined
+        description: bc.description || "", 
       }))
   }, [allBillingCodes, billingCodeId])
   
@@ -76,7 +74,6 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
     mode: "onChange",
   })
   
-  // Autocompletar desde URL params cuando viene del catálogo
   useEffect(() => {
     if (!isEditing && searchParams) {
       const catalogMode = searchParams.get("mode")
@@ -103,11 +100,16 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
     }
   }, [isEditing, searchParams, form])
   
-  // Cargar datos cuando es edit mode
   useEffect(() => {
-    if (billingCode && isEditing) {
+    if (billingCode && isEditing && billingCodeTypes.length > 0) {      
+      
+      const typeId = (billingCode as any).typeId
+      const typeObj = billingCodeTypes.find(t => t.id === typeId)
+      const typeName = typeObj?.name || billingCode.type
+      
+      
       form.reset({
-        type: billingCode.type,
+        type: typeName,
         code: billingCode.code,
         description: billingCode.description,
         modifiers: billingCode.modifiers?.join(", ") || "",
@@ -117,10 +119,9 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [billingCode, isEditing])
+  }, [billingCode, isEditing, billingCodeTypes])
   
   const onSubmit = async (data: BillingCodeFormValues) => {
-    // Obtener el typeId correspondiente al type seleccionado
     const typeId = getTypeIdByName(data.type)
     
     if (!typeId) {

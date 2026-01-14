@@ -8,7 +8,7 @@ interface UseBillingCodeTypesReturn {
   types: BillingCodeTypeItem[]
   isLoading: boolean
   error: Error | null
-  getTypeIdByName: (name: "CPT" | "HCPCS") => string | undefined
+  getTypeIdByName: (name: string) => string | undefined
 }
 
 export function useBillingCodeTypes(): UseBillingCodeTypesReturn {
@@ -35,7 +35,7 @@ export function useBillingCodeTypes(): UseBillingCodeTypesReturn {
     fetchTypes()
   }, [])
 
-  const getTypeIdByName = (name: "CPT" | "HCPCS") => {
+  const getTypeIdByName = (name: string) => {
     return types.find(t => t.name === name)?.id
   }
 

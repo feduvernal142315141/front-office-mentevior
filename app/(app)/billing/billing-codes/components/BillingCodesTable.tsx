@@ -1,6 +1,7 @@
 "use client"
 
 import { useBillingCodesTable } from "../hooks/useBillingCodesTable"
+import { useBillingCodeTypes } from "@/lib/modules/billing-codes/hooks/use-billing-code-types"
 import { CustomTable } from "@/components/custom/CustomTable"
 import { SearchInput } from "@/components/custom/SearchInput"
 import { FilterSelect } from "@/components/custom/FilterSelect"
@@ -17,6 +18,8 @@ export function BillingCodesTable() {
     pagination,
     clearFilters,
   } = useBillingCodesTable()
+  
+  const { types: billingCodeTypes } = useBillingCodeTypes()
 
   if (error) {
     return (
@@ -45,8 +48,10 @@ export function BillingCodesTable() {
             onChange={(value) => filters.setTypeFilter(value as any)}
             options={[
               { value: "all", label: "All Types" },
-              { value: "CPT", label: "CPT" },
-              { value: "HCPCS", label: "HCPCS" },
+              ...billingCodeTypes.map(type => ({
+                value: type.name,
+                label: type.name
+              }))
             ]}
             placeholder="Type"
           />          

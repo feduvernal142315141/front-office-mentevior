@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/custom/Checkbox"
 import { Button } from "@/components/custom/Button"
 import { useRouter } from "next/navigation"
 import { useBillingCodesCatalog } from "@/lib/modules/billing-codes/hooks/use-billing-codes-catalog"
+import { useBillingCodeTypes } from "@/lib/modules/billing-codes/hooks/use-billing-code-types"
 import { bulkCreateBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
 import type { BillingCodeCatalogItem } from "@/lib/types/billing-code.types"
 import { toast } from "sonner"
@@ -24,19 +25,20 @@ export function SearchCatalogStep({ onSelectCode, onClose }: SearchCatalogStepPr
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   
-  const { catalogCodes, isLoading, search } = useBillingCodesCatalog()
+  const { catalogCodes, isLoading, filterCodes } = useBillingCodesCatalog()
+  const { types: billingCodeTypes, isLoading: isLoadingTypes } = useBillingCodeTypes()
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-   useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
-      search(searchTerm, typeFilter)
+      filterCodes(searchTerm, typeFilter)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchTerm, typeFilter, search])
+  }, [searchTerm, typeFilter, filterCodes])
 
   const toggleSelection = (id: string) => {
     setSelectedIds(prev => {
@@ -111,6 +113,17 @@ export function SearchCatalogStep({ onSelectCode, onClose }: SearchCatalogStepPr
       ? "Add Billing Code" 
       : `Add ${selectedCount} Billing Codes`
 
+
+  const getBadgeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      "CPT": "border-green-200 bg-green-50 text-green-700",
+      "HCPCS": "border-purple-200 bg-purple-50 text-purple-700",
+      "ICD-10": "border-blue-200 bg-blue-50 text-blue-700",
+      "SNOMED": "border-orange-200 bg-orange-50 text-orange-700",
+    }
+    return colors[type] || "border-gray-200 bg-gray-50 text-gray-700"
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-gray-200">
@@ -141,44 +154,40 @@ export function SearchCatalogStep({ onSelectCode, onClose }: SearchCatalogStepPr
           />
         </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex gap-2">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+  
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setTypeFilter("all")}
               className={`
-                px-4 py-2 rounded-lg text-sm font-medium transition-all
+                px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap
                 ${typeFilter === "all" 
                   ? "bg-blue-600 text-white" 
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }
               `}
             >
-              All Types
+              All
             </button>
-            <button
-              onClick={() => setTypeFilter("CPT")}
-              className={`
-                px-4 py-2 rounded-lg text-sm font-medium transition-all
-                ${typeFilter === "CPT" 
-                  ? "bg-blue-600 text-white" 
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }
-              `}
-            >
-              CPT
-            </button>
-            <button
-              onClick={() => setTypeFilter("HCPCS")}
-              className={`
-                px-4 py-2 rounded-lg text-sm font-medium transition-all
-                ${typeFilter === "HCPCS" 
-                  ? "bg-blue-600 text-white" 
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }
-              `}
-            >
-              HCPCS
-            </button>
+            {isLoadingTypes ? (
+              <div className="px-3 py-2 text-xs text-gray-400">Loading types...</div>
+            ) : (
+              billingCodeTypes.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setTypeFilter(type.name)}
+                  className={`
+                    px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap
+                    ${typeFilter === type.name
+                      ? "bg-blue-600 text-white" 
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }
+                  `}
+                >
+                  {type.name}
+                </button>
+              ))
+            )}
           </div>
 
           {/* Select All / Deselect All */}
@@ -186,12 +195,14 @@ export function SearchCatalogStep({ onSelectCode, onClose }: SearchCatalogStepPr
             <button
               onClick={toggleSelectAll}
               className={`
-                flex items-center gap-2
+                flex items-center justify-center gap-2
                 px-4 py-2
                 rounded-lg
                 border
-                text-sm font-medium
+                text-xs font-medium
                 transition-all
+                whitespace-nowrap
+                shrink-0
                 ${isAllSelected
                   ? "border-blue-600 bg-blue-50 text-blue-700"
                   : isSomeSelected
@@ -257,11 +268,7 @@ export function SearchCatalogStep({ onSelectCode, onClose }: SearchCatalogStepPr
                         </span>
                         <Badge 
                           variant="outline"
-                          className={
-                            code.type === "CPT" 
-                              ? "border-green-200 bg-green-50 text-green-700"
-                              : "border-purple-200 bg-purple-50 text-purple-700"
-                          }
+                          className={getBadgeColor(code.type)}
                         >
                           {code.type}
                         </Badge>

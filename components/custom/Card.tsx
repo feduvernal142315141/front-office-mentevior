@@ -108,7 +108,7 @@ export function Card({
       {...props}
       className={cn(
         // Base styles
-        "rounded-xl overflow-hidden",
+        "rounded-xl overflow-visible",
         "transition-all duration-300 ease-out",
         
         // Variant
