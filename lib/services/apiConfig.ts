@@ -1,5 +1,5 @@
 import axios, {AxiosError, InternalAxiosRequestConfig} from 'axios'
-import { useAuthStore } from '@/lib/store/auth.store'
+import {useAuthStore} from '@/lib/store/auth.store'
 
 // Tipos para los handlers que se pueden inyectar
 type InterceptorHandlers = {
@@ -7,7 +7,7 @@ type InterceptorHandlers = {
     onLoadingEnd?: () => void
     onNotification?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void
     onUnauthorized?: () => void
-    onForbidden?: () => void
+    onForbidden?: (message: string) => void
     onActivity?: () => void
 }
 
@@ -56,7 +56,7 @@ apiInstance.interceptors.request.use(
             if (!isPublicRoute) {
                 // Obtener token desde Zustand store
                 const token = useAuthStore.getState().accessToken
-                
+
                 if (token) {
                     config.headers.Authorization = `Bearer ${token}`
                 }
@@ -117,12 +117,8 @@ apiInstance.interceptors.response.use(
                 case 403:
                     const message403 = data?.message || 'You do not have permission to perform this action.'
 
-                    interceptorHandlers.onNotification?.(message403, 'error')
-
-                    interceptorHandlers.onForbidden?.()
-                    console.error('Error 403 - Forbidden:', data)
-                    break
-
+                    interceptorHandlers.onForbidden?.(message403)
+                  break
                 case 404:
                     const message404 = data?.message || 'The requested resource was not found.'
 
