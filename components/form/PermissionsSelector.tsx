@@ -61,6 +61,7 @@ const BILLING = {
   children: [
     { key: PermissionModule.SERVICES_PENDING_BILLING, label: "Services Pending Billing" },
     { key: PermissionModule.BILLED_CLAIMS, label: "Billed Claims" },
+    { key: PermissionModule.BILLING_CODE, label: "Billing Codes" },
   ]
 }
 
@@ -96,6 +97,7 @@ const MY_COMPANY_EXPANDABLES = [
 ]
 
 const ACTIONS = [
+  { key: PermissionAction.READ, label: "Read" },
   { key: PermissionAction.CREATE, label: "Create" },
   { key: PermissionAction.EDIT, label: "Edit" },
   { key: PermissionAction.DELETE, label: "Delete" },
@@ -235,23 +237,25 @@ export function PermissionsSelector({
     const newObj: Record<string, number> = {}
     
     if (preset === 'readonly') {
-      const readOnlyModules = [
-        PermissionModule.USERS_PROVIDERS,
-        PermissionModule.CLIENTS,
-        PermissionModule.SCHEDULE,
-        PermissionModule.SESSION_NOTE,
-        PermissionModule.CLINICAL_MONTHLY,
-        PermissionModule.ASSESSMENT,
+      // Read Only: Solo lectura en TODOS los módulos (Core + Behavior Plan + My Company expandables)
+      const allModules = [
+        ...CORE_MODULES.map(m => m.key),
+        ...BEHAVIOR_PLAN.children.map(c => c.key),
+        ...EVENTS.children.map(c => c.key),
+        ...BILLING.children.map(c => c.key),
+        ...DATA_COLLECTION.children.map(c => c.key),
+        ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
+        ...MY_COMPANY_MODULES.map(m => m.key),
       ]
-      readOnlyModules.forEach(m => {
-        newObj[m] = PermissionAction.EDIT
+      allModules.forEach(m => {
+        newObj[m] = PermissionAction.READ
       })
     } else if (preset === 'clinical') {
       const clinicalModules = [
         PermissionModule.CLIENTS,
         PermissionModule.SCHEDULE,
         PermissionModule.SESSION_NOTE,
-        PermissionModule.CLINICAL_MONTHLY,
+        PermissionModule.MONTHLY_SUPERVISIONS,
         PermissionModule.SERVICE_LOG,
         PermissionModule.ASSESSMENT,
         ...BEHAVIOR_PLAN.children.map(c => c.key),
@@ -274,8 +278,8 @@ export function PermissionsSelector({
         ...BEHAVIOR_PLAN.children.map(c => c.key),
       ]
       
-      // Create + Edit + Block (no Delete for safety)
-      const supervisorValue = PermissionAction.CREATE | PermissionAction.EDIT | PermissionAction.BLOCK
+      // Read + Create + Edit + Block (no Delete for safety)
+      const supervisorValue = PermissionAction.READ | PermissionAction.CREATE | PermissionAction.EDIT | PermissionAction.BLOCK
       supervisorModules.forEach(m => {
         newObj[m] = supervisorValue
       })
@@ -291,17 +295,18 @@ export function PermissionsSelector({
   
   // Detect which preset is currently active
   const detectActivePreset = (): 'readonly' | 'clinical' | 'supervisor' | null => {
-    // Check Read Only
-    const readOnlyModules = [
-      PermissionModule.USERS_PROVIDERS,
-      PermissionModule.CLIENTS,
-      PermissionModule.SCHEDULE,
-      PermissionModule.SESSION_NOTE,
-      PermissionModule.CLINICAL_MONTHLY,
-      PermissionModule.ASSESSMENT,
+    // Check Read Only - Todos los módulos con solo READ
+    const allModules = [
+      ...CORE_MODULES.map(m => m.key),
+      ...BEHAVIOR_PLAN.children.map(c => c.key),
+      ...EVENTS.children.map(c => c.key),
+      ...BILLING.children.map(c => c.key),
+      ...DATA_COLLECTION.children.map(c => c.key),
+      ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
+      ...MY_COMPANY_MODULES.map(m => m.key),
     ]
-    const matchesReadOnly = readOnlyModules.every(m => permissionsObj[m] === PermissionAction.EDIT) &&
-      totalModulesWithPermissions === readOnlyModules.length
+    const matchesReadOnly = allModules.every(m => permissionsObj[m] === PermissionAction.READ) &&
+      totalModulesWithPermissions === allModules.length
     if (matchesReadOnly) {
       return 'readonly'
     }
@@ -310,7 +315,7 @@ export function PermissionsSelector({
       PermissionModule.CLIENTS,
       PermissionModule.SCHEDULE,
       PermissionModule.SESSION_NOTE,
-      PermissionModule.CLINICAL_MONTHLY,
+      PermissionModule.MONTHLY_SUPERVISIONS,
       PermissionModule.SERVICE_LOG,
       PermissionModule.ASSESSMENT,
     ]
@@ -325,11 +330,13 @@ export function PermissionsSelector({
                                  !permissionsObj[PermissionModule.DATA_ANALYSIS] &&
                                  !permissionsObj[PermissionModule.RAW_DATA]
     
-    if (hasClinicalModules && hasBehaviorPlanPermissions && hasNoDataCollection && totalModulesWithPermissions >= 9 && totalModulesWithPermissions <= 12) {
+    const hasNoClinicalMonthly = !permissionsObj[PermissionModule.CLINICAL_MONTHLY]
+    
+    if (hasClinicalModules && hasBehaviorPlanPermissions && hasNoDataCollection && hasNoClinicalMonthly && totalModulesWithPermissions >= 9 && totalModulesWithPermissions <= 12) {
       return 'clinical'
     }
     
-    const supervisorValue = PermissionAction.CREATE | PermissionAction.EDIT | PermissionAction.BLOCK
+    const supervisorValue = PermissionAction.READ | PermissionAction.CREATE | PermissionAction.EDIT | PermissionAction.BLOCK
     
     const supervisorCoreModules = [
       PermissionModule.USERS_PROVIDERS,
@@ -392,7 +399,7 @@ export function PermissionsSelector({
             </Badge>
           </TooltipTrigger>
           <TooltipContent side="left" className="bg-slate-900 text-white">
-            All permissions enabled (Create, Edit, Delete, Block)
+            All permissions enabled (Read, Create, Edit, Delete, Block)
           </TooltipContent>
         </Tooltip>
       )
@@ -401,8 +408,10 @@ export function PermissionsSelector({
     const actionCount = actions.length
     let badgeColor = "bg-blue-50 text-blue-700 border-blue-200"
     
-    if (actionCount === 3) {
+    if (actionCount === 4) {
       badgeColor = "bg-cyan-50 text-cyan-700 border-cyan-200"
+    } else if (actionCount === 3) {
+      badgeColor = "bg-sky-50 text-sky-700 border-sky-200"
     } else if (actionCount === 2) {
       badgeColor = "bg-amber-50 text-amber-700 border-amber-200"
     } else if (actionCount === 1) {
@@ -410,6 +419,7 @@ export function PermissionsSelector({
     }
     
     const actionNames = actions.map((a: PermissionAction) => {
+      if (a === PermissionAction.READ) return "Read"
       if (a === PermissionAction.CREATE) return "Create"
       if (a === PermissionAction.EDIT) return "Edit"
       if (a === PermissionAction.DELETE) return "Delete"
@@ -487,7 +497,7 @@ export function PermissionsSelector({
             </div>
           </td>
           
-          <td colSpan={4} className="px-4 py-3 text-center">
+          <td colSpan={5} className="px-4 py-3 text-center">
           </td>
           
           <td className="px-6 py-3 text-right">
@@ -577,7 +587,7 @@ export function PermissionsSelector({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">Presets</span>
-            {/* <Tooltip>
+            <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
@@ -599,9 +609,9 @@ export function PermissionsSelector({
                 </button>
               </TooltipTrigger>
               <TooltipContent className="bg-slate-900 text-white">
-                View-only access to core clinical modules
+                View-only access to all modules (Read permission only)
               </TooltipContent>
-            </Tooltip> */}
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -706,6 +716,9 @@ export function PermissionsSelector({
               <tr className="border-b border-slate-200/60 bg-slate-50/30">
                 <th className="px-6 py-3 text-left text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
                   Module Name
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
+                  Read
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
                   Create
@@ -815,6 +828,9 @@ export function PermissionsSelector({
                   <tr className="border-b border-slate-200/60 bg-slate-50/30">
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
                       Module Name
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
+                      Read
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
                       Create

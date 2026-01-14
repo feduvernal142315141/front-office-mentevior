@@ -1,10 +1,11 @@
 export enum PermissionAction {
   NONE = 0,
-  CREATE = 1,
-  EDIT = 2,
-  DELETE = 4,
-  BLOCK = 8,
-  ALL = 15,
+  READ = 1,
+  CREATE = 2,
+  EDIT = 4,
+  DELETE = 8,
+  BLOCK = 16,
+  ALL = 31,
 }
 
 export enum PermissionModule {
@@ -28,6 +29,7 @@ export enum PermissionModule {
   ACCOUNT_PROFILE = "account_profile",
   SERVICES_PENDING_BILLING = "services_pending_billing",
   BILLED_CLAIMS = "billed_claims",
+  BILLING_CODE = "billing_code",
   APPOINTMENT = "appointment",
   SERVICE_PLAN = "service_plan",
   SUPERVISION = "supervision",
@@ -78,6 +80,10 @@ export function hasModulePermission(
   if (!parsed) return false
   
   return (parsed.value & action) === action
+}
+
+export function canRead(permissions: string[], module: PermissionModule | string): boolean {
+  return hasModulePermission(permissions, module, PermissionAction.READ)
 }
 
 export function canCreate(permissions: string[], module: PermissionModule | string): boolean {
