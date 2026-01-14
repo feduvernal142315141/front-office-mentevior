@@ -20,7 +20,7 @@ export const serviceLoginManagerUserAuth = async (
 export const serviceRefreshToken = async (
     data: RefreshTokenRequest): ServiceResponse<RefreshTokenResponse> => {
     return servicePost<RefreshTokenRequest, RefreshTokenResponse>(
-        `/managers-users/auth/refresh-token`,
+        `/member-users/auth/refresh-token`,
         data
     )
 }
