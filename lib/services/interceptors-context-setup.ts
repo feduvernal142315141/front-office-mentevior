@@ -65,8 +65,8 @@ export const setupInterceptorsWithContext = (config: InterceptorConfig) => {
       config.handleUnauthorized()
     },
 
-    onForbidden: () => {
-      config.handleHttpError(403)
+    onForbidden: (message: string) => {
+      config.handleHttpError(403, message)
     },
   })
 }

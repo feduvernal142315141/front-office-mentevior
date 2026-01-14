@@ -59,9 +59,9 @@ export async function updateUser( data: UpdateMemberUserDto): Promise<Boolean> {
 
   const response = await servicePut<UpdateMemberUserDto, Boolean>("/member-users", data)
 
-  if (response.status !== 200) {
-    throw new Error(response.data?.message || "Failed to update role")
+  if (response.status === 200) {
+    return response.data as unknown as Boolean
   }
 
-  return response.data as unknown as Boolean
+  return false
 }

@@ -10,6 +10,7 @@ import { usePhysicianById } from "@/lib/modules/physicians/hooks/use-physician-b
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import { usePhysicianTypes } from "@/lib/modules/physicians/hooks/use-physician-types"
+import { usePhysicianSpecialties } from "@/lib/modules/physicians/hooks/use-physician-specialties"
 import type { Physician } from "@/lib/types/physician.types"
 import { useToast } from "@/hooks/use-toast"
 import { useEffect, useState } from "react"
@@ -30,6 +31,7 @@ export function usePhysicianForm({ physicianId }: UsePhysicianFormProps = {}) {
   // Catalogs - USA only for country
   const { countries, isLoading: isLoadingCountries } = useCountries()
   const { physicianTypes, isLoading: isLoadingPhysicianTypes } = usePhysicianTypes()
+  const { physicianSpecialties, isLoading: isLoadingPhysicianSpecialties } = usePhysicianSpecialties()
   const [usaCountryId, setUsaCountryId] = useState<string | null>(null)
   
   // Find USA country ID
@@ -140,8 +142,10 @@ export function usePhysicianForm({ physicianId }: UsePhysicianFormProps = {}) {
     countries,
     states,
     physicianTypes,
+    physicianSpecialties,
     isLoadingCountries,
     isLoadingStates,
     isLoadingPhysicianTypes,
+    isLoadingPhysicianSpecialties,
   }
 }

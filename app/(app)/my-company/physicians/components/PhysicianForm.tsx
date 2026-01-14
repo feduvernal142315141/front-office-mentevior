@@ -20,9 +20,11 @@ export function PhysicianForm({ physicianId }: PhysicianFormProps) {
     countries,
     states,
     physicianTypes,
+    physicianSpecialties,
     isLoadingCountries,
     isLoadingStates,
     isLoadingPhysicianTypes,
+    isLoadingPhysicianSpecialties,
   } = usePhysicianForm({ physicianId })
 
   if (isLoading) {
@@ -38,15 +40,17 @@ export function PhysicianForm({ physicianId }: PhysicianFormProps) {
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={onSubmit} className="pb-24">
+      <form onSubmit={onSubmit} noValidate className="pb-24">
         <PhysicianFormFields 
           isEditing={isEditing}
           countries={countries}
           states={states}
           physicianTypes={physicianTypes}
+          physicianSpecialties={physicianSpecialties}
           isLoadingCountries={isLoadingCountries}
           isLoadingStates={isLoadingStates}
           isLoadingPhysicianTypes={isLoadingPhysicianTypes}
+          isLoadingPhysicianSpecialties={isLoadingPhysicianSpecialties}
         />
 
         <FormBottomBar
