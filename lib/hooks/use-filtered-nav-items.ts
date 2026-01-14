@@ -8,7 +8,7 @@ import { PermissionModule } from "@/lib/utils/permissions-new"
 const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/dashboard": "dashboard", 
   "/users": PermissionModule.USERS_PROVIDERS,
-  "/roles": PermissionModule.ROLE,
+  "/my-company/roles": PermissionModule.ROLE,
   "/clients": PermissionModule.CLIENTS,
   "/schedules": PermissionModule.SCHEDULE,
   "/session-note": PermissionModule.SESSION_NOTE,

@@ -44,7 +44,7 @@ export default function RolesPage() {
           </div>
 
           <PermissionGate module={PermissionModule.ROLE} action={PermissionAction.CREATE}>
-            <Link href="/roles/create">
+            <Link href="/my-company/roles/create">
               <Button className="gap-2 flex items-center" variant="primary">
                 <Plus className="w-4 h-4" />
                 Create Role

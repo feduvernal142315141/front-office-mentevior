@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { CredentialListItem } from "@/lib/types/credential.types"
 import { useCredentials } from "@/lib/modules/credentials/hooks/use-credentials"
-import { Edit2 } from "lucide-react"
+import { Edit2, Trash2 } from "lucide-react"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { deleteCredential } from "@/lib/modules/credentials/services/credentials.service"
+import { toast } from "sonner"
 
 export function useCredentialsTable() {
   const router = useRouter()
@@ -16,6 +19,9 @@ export function useCredentialsTable() {
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [credentialToDelete, setCredentialToDelete] = useState<CredentialListItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const filtersArray = useMemo(() => {
     return buildFilters(
@@ -62,6 +68,35 @@ export function useCredentialsTable() {
     setPage(1)
   }
 
+  const handleDeleteClick = (credential: CredentialListItem) => {
+    setCredentialToDelete(credential)
+    setDeleteModalOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!credentialToDelete) return
+
+    setIsDeleting(true)
+    try {
+      await deleteCredential(credentialToDelete.id)
+      toast.success("Credential deleted successfully")
+      setDeleteModalOpen(false)
+      setCredentialToDelete(null)
+      refetch({ page: page - 1, pageSize, filters: filtersArray })
+    } catch (error) {
+      console.error("Error deleting credential:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete credential"
+      toast.error(errorMessage)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false)
+    setCredentialToDelete(null)
+  }
+
   const columns: CustomTableColumn<CredentialListItem>[] = useMemo(() => [
     {
       key: "name",
@@ -105,10 +140,40 @@ export function useCredentialsTable() {
               transition-colors duration-200
             " />
           </button>
+          
+          <button
+            onClick={() => handleDeleteClick(item)}
+            className="
+              group/delete
+              relative
+              h-9 w-9
+              flex items-center justify-center
+              rounded-xl
+              bg-gradient-to-b from-red-50 to-red-100/80
+              border border-red-200/60
+              shadow-sm shadow-red-900/5
+              hover:from-red-100 hover:to-red-200/90
+              hover:border-red-300/80
+              hover:shadow-md hover:shadow-red-900/10
+              hover:-translate-y-0.5
+              active:translate-y-0 active:shadow-sm
+              transition-all duration-200 ease-out
+              focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2
+            "
+            title="Delete credential"
+            aria-label="Delete credential"
+          >
+            <Trash2 className="
+              w-4 h-4
+              text-red-600
+              group-hover/delete:text-red-700
+              transition-colors duration-200
+            " />
+          </button>
         </div>
       ),
     },
-  ], [router])
+  ], [router, handleDeleteClick])
 
   const pagination = {
     page,
@@ -135,5 +200,16 @@ export function useCredentialsTable() {
     filteredCount: credentials.length,
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
+    deleteModal: (
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Credential"
+        message="Are you sure you want to delete this credential? This action cannot be undone."
+        itemName={credentialToDelete?.name}
+        isDeleting={isDeleting}
+      />
+    ),
   }
 }

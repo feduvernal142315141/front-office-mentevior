@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import type { 
   BillingCode, 
   BillingCodeListItem, 
@@ -115,4 +115,14 @@ export async function bulkCreateBillingCodes(catalogIds: string[]): Promise<bool
   }
 
   return response.data as unknown as boolean
+}
+
+export async function deleteBillingCode(id: string): Promise<boolean> {
+  const response = await serviceDelete<boolean>(`/billing-code/delete/${id}`)
+
+  if (response.status !== 200 && response.status !== 204) {
+    throw new Error(response.data?.message || "Failed to delete billing code")
+  }
+
+  return true
 }

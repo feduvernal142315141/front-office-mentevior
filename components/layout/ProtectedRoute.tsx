@@ -8,7 +8,7 @@ import { permissionsToObject, PermissionModule } from "@/lib/utils/permissions-n
 const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/dashboard": "dashboard", 
   "/users": PermissionModule.USERS_PROVIDERS,
-  "/roles": PermissionModule.ROLE,
+  "/my-company/roles": PermissionModule.ROLE,
   "/clients": PermissionModule.CLIENTS,
   "/schedules": PermissionModule.SCHEDULE,
   "/session-note": PermissionModule.SESSION_NOTE,
@@ -60,7 +60,7 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
 
 const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
   "/my-company": [
-    "/roles",
+    "/my-company/roles",
     "/my-company/account-profile",
     "/my-company/address",
     "/my-company/credentials",

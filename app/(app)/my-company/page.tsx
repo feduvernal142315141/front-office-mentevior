@@ -7,7 +7,7 @@ import { useMemo } from "react"
 import { ChevronRight } from "lucide-react"
 
 export default function MyCompanyPage() {
-  const canViewRoles = useCanViewModule("/roles")
+  const canViewRoles = useCanViewModule("/my-company/roles")
   const canViewAccountProfile = useCanViewModule("/my-company/account-profile")
   const canViewAddress = useCanViewModule("/my-company/address")
   const canViewCredentials = useCanViewModule("/my-company/credentials")
@@ -27,7 +27,7 @@ export default function MyCompanyPage() {
     {
       title: "Roles",
       description: "Manage user roles and permissions",
-      href: "/roles",
+      href: "/my-company/roles",
       icon: Shield,
       canView: canViewRoles,
       hasDeepChildren: false,

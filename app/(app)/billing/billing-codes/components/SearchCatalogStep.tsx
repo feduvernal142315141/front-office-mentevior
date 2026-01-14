@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Loader2, Check } from "lucide-react"
+import { Search, Loader2, Check, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/custom/Checkbox"
 import { Button } from "@/components/custom/Button"
@@ -140,7 +140,7 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
             className="
               w-full
               h-14
-              pl-12 pr-4
+              pl-12 pr-12
               rounded-xl
               border-2 border-gray-200
               focus:border-blue-500
@@ -150,6 +150,15 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
               outline-none
             "
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Clear search"
+            >
+              <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
         </div>
 
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">

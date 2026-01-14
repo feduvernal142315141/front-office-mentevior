@@ -99,7 +99,7 @@ export const navItems: NavItem[] = [
     children: [
       {
         label: "Roles",
-        href: "/roles",
+        href: "/my-company/roles",
       },
       {
         label: "Account Profile",

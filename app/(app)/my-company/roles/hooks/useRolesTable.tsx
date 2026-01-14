@@ -153,7 +153,7 @@ export function useRolesTable(): UseRolesTableReturn {
         render: (role) => (
           <div className="flex items-center justify-end gap-2">
             <button
-              onClick={() => router.push(`/roles/${role.id}/edit`)}
+              onClick={() => router.push(`/my-company/roles/${role.id}/edit`)}
               className="
                 group/edit
                 relative

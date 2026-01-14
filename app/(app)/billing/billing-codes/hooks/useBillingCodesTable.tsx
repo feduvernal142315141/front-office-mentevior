@@ -7,9 +7,12 @@ import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
 import { Badge } from "@/components/ui/badge"
-import { Edit2 } from "lucide-react"
+import { Edit2, Trash2 } from "lucide-react"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { deleteBillingCode } from "@/lib/modules/billing-codes/services/billing-codes.service"
+import { toast } from "sonner"
 import { FilterOperator } from "@/lib/models/filterOperator"
 
 type StatusFilter = "all" | "active" | "inactive"
@@ -24,6 +27,9 @@ export function useBillingCodesTable() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [codeToDelete, setCodeToDelete] = useState<BillingCodeListItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const filtersArray = useMemo(() => {
     const filters = []
@@ -99,6 +105,35 @@ export function useBillingCodesTable() {
     setPage(1)
   }
 
+  const handleDeleteClick = (code: BillingCodeListItem) => {
+    setCodeToDelete(code)
+    setDeleteModalOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!codeToDelete) return
+
+    setIsDeleting(true)
+    try {
+      await deleteBillingCode(codeToDelete.id)
+      toast.success("Billing code deleted successfully")
+      setDeleteModalOpen(false)
+      setCodeToDelete(null)
+      refetch({ page: page - 1, pageSize, filters: filtersArray })
+    } catch (error) {
+      console.error("Error deleting billing code:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete billing code"
+      toast.error(errorMessage)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false)
+    setCodeToDelete(null)
+  }
+
   const columns: CustomTableColumn<BillingCodeListItem>[] = useMemo(() => [
     {
       key: "type",
@@ -167,10 +202,40 @@ export function useBillingCodesTable() {
               transition-colors duration-200
             " />
           </button>
+          
+          <button
+            onClick={() => handleDeleteClick(item)}
+            className="
+              group/delete
+              relative
+              h-9 w-9
+              flex items-center justify-center
+              rounded-xl
+              bg-gradient-to-b from-red-50 to-red-100/80
+              border border-red-200/60
+              shadow-sm shadow-red-900/5
+              hover:from-red-100 hover:to-red-200/90
+              hover:border-red-300/80
+              hover:shadow-md hover:shadow-red-900/10
+              hover:-translate-y-0.5
+              active:translate-y-0 active:shadow-sm
+              transition-all duration-200 ease-out
+              focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2
+            "
+            title="Delete billing code"
+            aria-label="Delete billing code"
+          >
+            <Trash2 className="
+              w-4 h-4
+              text-red-600
+              group-hover/delete:text-red-700
+              transition-colors duration-200
+            " />
+          </button>
         </div>
       ),
     },
-  ], [router])
+  ], [router, handleDeleteClick])
 
   const pagination = {
     page,
@@ -201,5 +266,16 @@ export function useBillingCodesTable() {
     filteredCount: billingCodes.length,
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
+    deleteModal: (
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Billing Code"
+        message="Are you sure you want to delete this billing code? This action cannot be undone."
+        itemName={codeToDelete ? `${codeToDelete.code} - ${codeToDelete.type}` : undefined}
+        isDeleting={isDeleting}
+      />
+    ),
   }
 }

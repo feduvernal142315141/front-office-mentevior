@@ -117,22 +117,7 @@ export function useAddressesTable() {
         <span className="text-gray-600">{address.zipCode}</span>
       ),
     },   
-    {
-      key: "active",
-      header: "Status",
-      render: (address: AddressListItem) => (
-        <Badge
-          variant={address.active ? "default" : "secondary"}
-          className={
-            address.active
-              ? "bg-green-100 text-green-800 hover:bg-green-200"
-              : ""
-          }
-        >
-          {address.active ? "Active" : "Inactive"}
-        </Badge>
-      ),
-    },
+    
     {
       key: "actions",
       header: "Actions",

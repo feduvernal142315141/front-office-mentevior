@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import type { 
   Credential, 
   CredentialListItem, 
@@ -96,4 +96,14 @@ export async function bulkCreateCredentials(catalogIds: string[]): Promise<boole
   }
 
   return response.data as unknown as boolean
+}
+
+export async function deleteCredential(id: string): Promise<boolean> {
+  const response = await serviceDelete<boolean>(`/credential/delete/${id}`)
+
+  if (response.status !== 200 && response.status !== 204) {
+    throw new Error(response.data?.message || "Failed to delete credential")
+  }
+
+  return true
 }

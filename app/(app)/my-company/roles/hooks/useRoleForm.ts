@@ -79,7 +79,7 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
       
       if (result) {
         setTimeout(() => {
-          router.push("/roles")
+          router.push("/my-company/roles")
         }, 1500)
       }
     } else {
@@ -92,7 +92,7 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
       
       if (result) {
         setTimeout(() => {
-          router.push("/roles")
+          router.push("/my-company/roles")
         }, 1500)
       }
     }
@@ -100,7 +100,7 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
   
   const actions = {
     goToList: () => {
-      router.push("/roles")
+      router.push("/my-company/roles")
     },
   }
   

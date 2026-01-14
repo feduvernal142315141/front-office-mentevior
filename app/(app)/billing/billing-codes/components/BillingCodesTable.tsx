@@ -23,6 +23,7 @@ export const BillingCodesTable = forwardRef<BillingCodesTableRef>((props, ref) =
     pagination,
     clearFilters,
     refetch,
+    deleteModal,
   } = useBillingCodesTable()
 
   useImperativeHandle(ref, () => ({
@@ -41,7 +42,9 @@ export const BillingCodesTable = forwardRef<BillingCodesTableRef>((props, ref) =
   }
 
   return (
-    <div className="space-y-4">
+    <>
+      {deleteModal}
+      <div className="space-y-4">
       <Card variant="elevated" padding="md">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
@@ -100,6 +103,7 @@ export const BillingCodesTable = forwardRef<BillingCodesTableRef>((props, ref) =
         pagination={pagination}
       />
     </div>
+    </>
   )
 })
 

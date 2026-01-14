@@ -47,9 +47,8 @@ export function useCredentialsCatalog(): UseCredentialsCatalogReturn {
 
     const filtered = allCatalogCredentials.filter((credential) => {
       const matchesSearch = 
-        credential.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        credential.shortName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (credential.description && credential.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        credential.name.toLowerCase().includes(searchTerm.toLowerCase())
+       
 
       return matchesSearch
     })
