@@ -6,19 +6,16 @@ export const credentialFormSchema = z.object({
   name: z
     .string()
     .min(1, "Name is required")
-    .max(200, "Name must be less than 200 characters")
-    .regex(/^[a-zA-Z\s]+$/, "Name must contain only letters"),
+    .max(200, "Name must be less than 200 characters"),
   
   shortName: z
     .string()
     .min(1, "Short name is required")
-    .max(50, "Short name must be less than 50 characters")
-    .regex(/^[a-zA-Z\s]+$/, "Short name must contain only letters"),
+    .max(50, "Short name must be less than 50 characters"),
   
   organizationName: z
     .string()
     .max(200, "Organization name must be less than 200 characters")
-    .regex(/^[a-zA-Z\s]*$/, "Organization name must contain only letters")
     .optional()
     .or(z.literal("")),
   
@@ -41,7 +38,7 @@ export const credentialFormSchema = z.object({
   
   billingCodeIds: z
     .array(z.string())
-    .optional(),
+    .min(1, "At least one billing code is required"),
   
   active: z.boolean().optional(),
   

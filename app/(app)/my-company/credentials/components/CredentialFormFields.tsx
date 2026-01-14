@@ -191,6 +191,7 @@ export function CredentialFormFields({
                         placeholder="Select billing codes"
                         disabled={isLoadingBillingCodes}
                         hasError={!!fieldState.error}
+                        required
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">
