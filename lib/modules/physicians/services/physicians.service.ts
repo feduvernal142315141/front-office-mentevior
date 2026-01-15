@@ -96,18 +96,19 @@ export async function getPhysicianTypes(): Promise<PhysicianType[]> {
 }
 
 export async function getPhysicianSpecialties(): Promise<PhysicianSpecialty[]> {
-  const response = await serviceGet<PhysicianSpecialty[]>("/physician-specialty")
+  const response = await serviceGet<PaginatedResponse<PhysicianSpecialty>>("/physician-specialty")
   
   if (response.status !== 200 || !response.data) {
     throw new Error(response.data?.message || "Failed to fetch physician specialties")
   }
 
-  // Backend returns simple array, not paginated
-  if (Array.isArray(response.data)) {
-    return response.data
+  const paginatedData = response.data as unknown as PaginatedResponse<PhysicianSpecialty>
+  
+  if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
+    console.error("Invalid backend response:", response.data)
+    return []
   }
 
-  console.error("Invalid backend response:", response.data)
-  return []
+  return paginatedData.entities
 }
 
