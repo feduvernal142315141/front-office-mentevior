@@ -25,12 +25,13 @@ export function usePhysiciansTable() {
   const [pageSize, setPageSize] = useState(10)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const filters = buildFilters([
-    searchQuery && { field: "firstName", operator: FilterOperator.Contains, value: searchQuery },
-    searchQuery && { field: "lastName", operator: FilterOperator.Contains, value: searchQuery },
-    statusFilter === "active" && { field: "active", operator: FilterOperator.Equals, value: true, type: "boolean" as const },
-    statusFilter === "inactive" && { field: "active", operator: FilterOperator.Equals, value: false, type: "boolean" as const },
-  ])
+  const filters = buildFilters(
+    [
+      statusFilter === "active" && { field: "active", operator: FilterOperator.Equals, value: true, type: "boolean" as const },
+      statusFilter === "inactive" && { field: "active", operator: FilterOperator.Equals, value: false, type: "boolean" as const },
+    ],
+    searchQuery ? { fields: ["firstName", "lastName"], search: searchQuery } : undefined
+  )
 
   const queryModel = {
     pageNumber: page,

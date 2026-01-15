@@ -133,6 +133,7 @@ export function PhysicianFormFields({
                     hasError={!!fieldState.error}
                     required={true}
                     disabled={isLoadingPhysicianSpecialties}
+                    searchable={true}
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">
