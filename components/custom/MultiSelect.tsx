@@ -203,8 +203,8 @@ export function MultiSelect({
               top-0
               -translate-y-1/2
               text-xs
-              text-[#2563EB]
-            `
+            `,
+            (isOpen && !disabled) && "text-[#2563EB]"
           )}
         >
           {label} {required && <span className="text-[#2563EB]">*</span>}
