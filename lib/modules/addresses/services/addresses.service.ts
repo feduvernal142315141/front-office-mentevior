@@ -64,6 +64,16 @@ export async function updateAddress(data: UpdateAddressDto): Promise<boolean> {
   return response.data as unknown as boolean
 }
 
+export async function deleteAddress(id: string): Promise<boolean> {
+  const response = await serviceDelete<boolean>(`/company-address/${id}`)
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to delete credential")
+  }
+
+  return true
+}
+
 
 export async function getCountries(): Promise<Country[]> {
   const response = await serviceGet<PaginatedResponse<Country>>("/country")
@@ -118,14 +128,4 @@ export async function getPlacesOfService(): Promise<PlaceOfService[]> {
   }
 
   return paginatedData.entities
-}
-
-export async function deleteAddress(id: string): Promise<boolean> {
-  const response = await serviceDelete<boolean>(`/company-address/${id}`)
-  
-  if (response.status !== 200 && response.status !== 204) {
-    throw new Error(response.data?.message || "Failed to delete address")
-  }
-  
-  return true
 }

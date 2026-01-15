@@ -99,9 +99,9 @@ export async function bulkCreateCredentials(catalogIds: string[]): Promise<boole
 }
 
 export async function deleteCredential(id: string): Promise<boolean> {
-  const response = await serviceDelete<boolean>(`/credential/delete/${id}`)
+  const response = await serviceDelete<boolean>(`/credential/${id}`)
 
-  if (response.status !== 200 && response.status !== 204) {
+  if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to delete credential")
   }
 
