@@ -1,10 +1,10 @@
 export enum PermissionAction {
   NONE = 0,
-  READ = 1,
-  CREATE = 2,
-  EDIT = 4,
-  DELETE = 8,
-  BLOCK = 16,
+  CREATE = 1,
+  EDIT = 2,
+  DELETE = 4,
+  BLOCK = 8,
+  READ = 16,
   ALL = 31,
 }
 

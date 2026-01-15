@@ -274,7 +274,7 @@ export function SearchCatalogStep({ onSelectCredential, onClose, onSuccess }: Se
           <Button
             onClick={handleSubmit}
             disabled={selectedCount === 0 || isSubmitting}
-            className="min-w-[200px]"
+            className="min-w-[220px] flex items-center justify-center transition-all"
           >
             {isSubmitting ? (
               <>
