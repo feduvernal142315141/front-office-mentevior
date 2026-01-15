@@ -3,8 +3,6 @@ import type {
   Physician,
   CreatePhysicianRequest,
   UpdatePhysicianRequest,
-  PhysiciansListResponse,
-  PhysicianResponse,
   PhysicianType,
   PhysicianSpecialty
 } from "@/lib/types/physician.types"
@@ -74,7 +72,7 @@ export async function updatePhysician(data: UpdatePhysicianRequest): Promise<voi
 export async function deletePhysician(physicianId: string): Promise<void> {
   const response = await serviceDelete<void>(`/physicians/${physicianId}`)
 
-  if (response.status !== 200 && response.status !== 204) {
+  if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to delete physician")
   }
 }

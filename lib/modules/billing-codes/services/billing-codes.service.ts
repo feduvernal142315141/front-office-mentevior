@@ -120,7 +120,7 @@ export async function bulkCreateBillingCodes(catalogIds: string[]): Promise<bool
 export async function deleteBillingCode(id: string): Promise<boolean> {
   const response = await serviceDelete<boolean>(`/billing-code/${id}`)
 
-  if (response.status !== 200 && response.status !== 204) {
+  if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to delete billing code")
   }
 

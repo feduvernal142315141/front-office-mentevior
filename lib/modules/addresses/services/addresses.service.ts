@@ -67,7 +67,7 @@ export async function updateAddress(data: UpdateAddressDto): Promise<boolean> {
 export async function deleteAddress(id: string): Promise<boolean> {
   const response = await serviceDelete<boolean>(`/company-address/${id}`)
 
-  if (response.status !== 200 && response.status !== 204) {
+  if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to delete credential")
   }
 
