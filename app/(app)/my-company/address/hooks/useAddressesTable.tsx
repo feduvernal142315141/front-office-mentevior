@@ -7,10 +7,13 @@ import type { AddressListItem } from "@/lib/types/address.types"
 import { useAddresses } from "@/lib/modules/addresses/hooks/use-addresses"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/custom/Button"
-import { Edit2, MapPin } from "lucide-react"
+import { Edit2, MapPin, Trash2 } from "lucide-react"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { deleteAddress } from "@/lib/modules/addresses/services/addresses.service"
+import { toast } from "sonner"
 
 type StatusFilter = "all" | "active" | "inactive"
 
@@ -22,6 +25,9 @@ export function useAddressesTable() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [addressToDelete, setAddressToDelete] = useState<AddressListItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const filtersArray = useMemo(() => {
     const filters = []
@@ -87,7 +93,35 @@ export function useAddressesTable() {
     setPage(1)
   }
 
-  const columns: CustomTableColumn<AddressListItem>[] = [
+  const handleDeleteClick = (address: AddressListItem) => {
+    setAddressToDelete(address)
+    setDeleteModalOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!addressToDelete) return
+
+    setIsDeleting(true)
+    try {
+      await deleteAddress(addressToDelete.id)
+      toast.success("Address deleted successfully")
+      setDeleteModalOpen(false)
+      setAddressToDelete(null)
+      refetch({ page: page - 1, pageSize, filters: filtersArray })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete address"
+      toast.error(errorMessage)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false)
+    setAddressToDelete(null)
+  }
+
+  const columns: CustomTableColumn<AddressListItem>[] = useMemo(() => [
     {
       key: "nickName",
       header: "Nickname",
@@ -177,10 +211,40 @@ export function useAddressesTable() {
               duration-200
             " />
           </button>
+
+          <button
+            onClick={() => handleDeleteClick(address)}
+            className="
+              group/delete
+              relative
+              h-9 w-9
+              flex items-center justify-center
+              rounded-xl
+              bg-gradient-to-b from-red-50 to-red-100/80
+              border border-red-200/60
+              shadow-sm shadow-red-900/5
+              hover:from-red-100 hover:to-red-200/90
+              hover:border-red-300/80
+              hover:shadow-md hover:shadow-red-900/10
+              hover:-translate-y-0.5
+              active:translate-y-0 active:shadow-sm
+              transition-all duration-200 ease-out
+              focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2
+            "
+            title="Delete address"
+            aria-label="Delete address"
+          >
+            <Trash2 className="
+              w-4 h-4
+              text-red-600
+              group-hover/delete:text-red-700
+              transition-colors duration-200
+            " />
+          </button>
         </div>
       ),
     },
-  ]
+  ], [router, handleDeleteClick])
 
   const pagination = {
     page,
@@ -209,5 +273,16 @@ export function useAddressesTable() {
     filteredCount: addresses.length,
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
+    deleteModal: (
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Address"
+        message="Are you sure you want to delete this address? This action cannot be undone."
+        itemName={addressToDelete ? addressToDelete.nickName : undefined}
+        isDeleting={isDeleting}
+      />
+    ),
   }
 }

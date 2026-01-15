@@ -16,6 +16,7 @@ export function AddressesTable() {
     filters,
     pagination,
     clearFilters,
+    deleteModal,
   } = useAddressesTable()
 
   if (error) {
@@ -82,6 +83,8 @@ export function AddressesTable() {
         getRowKey={(address) => address.id}
         pagination={pagination}
       />
+
+      {deleteModal}
     </div>
   )
 }

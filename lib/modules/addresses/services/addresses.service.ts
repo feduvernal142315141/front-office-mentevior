@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import type { Address, AddressListItem, CreateAddressDto, UpdateAddressDto, Country, State, PlaceOfService } from "@/lib/types/address.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import { getQueryString } from "@/lib/utils/format"
@@ -118,4 +118,14 @@ export async function getPlacesOfService(): Promise<PlaceOfService[]> {
   }
 
   return paginatedData.entities
+}
+
+export async function deleteAddress(id: string): Promise<boolean> {
+  const response = await serviceDelete<boolean>(`/company-address/${id}`)
+  
+  if (response.status !== 200 && response.status !== 204) {
+    throw new Error(response.data?.message || "Failed to delete address")
+  }
+  
+  return true
 }
