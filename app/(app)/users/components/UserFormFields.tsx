@@ -19,6 +19,8 @@ interface UserFormFieldsProps {
   isLoadingRoles: boolean
   isSubmitting: boolean
   onCancel: () => void
+  currentUser: any
+  editingUser: any
 }
 
 export function UserFormFields({
@@ -27,8 +29,16 @@ export function UserFormFields({
   isLoadingRoles,
   isSubmitting,
   onCancel,
+  currentUser,
+  editingUser,
 }: UserFormFieldsProps) {
   const { control, setValue } = useFormContext()
+
+  const isEditingSelf = isEditing && 
+    currentUser && 
+    editingUser && 
+    currentUser.email?.toLowerCase() === editingUser.email?.toLowerCase() &&
+    editingUser.role?.name?.toLowerCase() === "superadmin"
 
   return (
     <>
@@ -258,8 +268,9 @@ export function UserFormFields({
                               }
                             }}
                             label="Active User"
-                            description="Enable or disable user access to the system"
+                            description={isEditingSelf ? "Cannot modify your own status" : "Enable or disable user access to the system"}
                             variant="success"
+                            disabled={isEditingSelf}
                           />
                         </div>
                       )}
@@ -279,8 +290,9 @@ export function UserFormFields({
                               }
                             }}
                             label="Terminated"
-                            description="Mark user as terminated or unemployed"
+                            description={isEditingSelf ? "Cannot modify your own status" : "Mark user as terminated or unemployed"}
                             variant="danger"
+                            disabled={isEditingSelf}
                           />
                         </div>
                       )}

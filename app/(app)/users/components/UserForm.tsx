@@ -4,12 +4,15 @@ import { FormProvider } from "react-hook-form"
 import { useUserForm } from "../hooks/useUserForm"
 import { UserFormSkeleton } from "./UserFormSkeleton"
 import { UserFormFields } from "./UserFormFields"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 interface UserFormProps {
   userId?: string | null
 }
 
 export function UserForm({ userId = null }: UserFormProps) {
+  const { user: currentUser } = useAuth()
+  
   const {
     form,
     mode,
@@ -20,14 +23,13 @@ export function UserForm({ userId = null }: UserFormProps) {
     onSubmit,
     isSubmitting,
     actions,
+    user,
   } = useUserForm({ userId })
 
-  // Loading state
   if (isEditing && isLoadingUser) {
     return <UserFormSkeleton />
   }
 
-  // Form state
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
@@ -37,6 +39,8 @@ export function UserForm({ userId = null }: UserFormProps) {
           isLoadingRoles={isLoadingRoles}
           isSubmitting={isSubmitting}
           onCancel={actions.goToList}
+          currentUser={currentUser}
+          editingUser={user}
         />
       </form>
     </FormProvider>

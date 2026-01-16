@@ -23,6 +23,7 @@ interface UseUserFormReturn {
   roles: Array<{ id: string; name: string }>
   isLoadingRoles: boolean
   isLoadingUser: boolean
+  user: any
   
   onSubmit: (data: UserFormValues) => Promise<void>
   isSubmitting: boolean
@@ -99,7 +100,6 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
       const result = await create(dto)
       
       if (result) {
-        // Redirigir directamente sin pantalla de éxito
         setTimeout(() => {
           router.push("/users")
         }, 1500)
@@ -120,6 +120,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
     roles,
     isLoadingRoles,
     isLoadingUser,
+    user,
     onSubmit,
     isSubmitting,
     actions,
