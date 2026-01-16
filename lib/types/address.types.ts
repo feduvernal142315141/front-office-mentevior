@@ -26,6 +26,7 @@ export interface AddressListItem {
   state: string
   active: boolean
   startDate: string
+  isPrincipal: boolean
 }
 
 export interface CreateAddressDto {

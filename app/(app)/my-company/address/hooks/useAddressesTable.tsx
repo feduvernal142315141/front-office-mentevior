@@ -212,7 +212,7 @@ export function useAddressesTable() {
             " />
           </button>
 
-          <button
+          {!address.isPrincipal ? (<button
             onClick={() => handleDeleteClick(address)}
             className="
               group/delete
@@ -240,7 +240,8 @@ export function useAddressesTable() {
               group-hover/delete:text-red-700
               transition-colors duration-200
             " />
-          </button>
+          </button>) : (<div className="h-9 w-9"/>)
+            }
         </div>
       ),
     },
