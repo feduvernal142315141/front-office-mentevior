@@ -144,7 +144,7 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
       
       if (result) {
         setTimeout(() => {
-          router.push("/billing/billing-codes")
+          router.push("/my-company/billing/billing-codes")
         }, 1500)
       }
     } else {
@@ -161,7 +161,7 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
       
       if (result) {
         setTimeout(() => {
-          router.push("/billing/billing-codes")
+          router.push("/my-company/billing/billing-codes")
         }, 1500)
       }
     }
@@ -169,7 +169,7 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
 
   const actions = {
     goToList: () => {
-      router.push("/billing/billing-codes")
+      router.push("/my-company/billing/billing-codes")
     },
   }
   

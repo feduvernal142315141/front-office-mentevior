@@ -174,7 +174,7 @@ export function useBillingCodesTable() {
       render: (item: BillingCodeListItem) => (
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => router.push(`/billing/billing-codes/${item.id}/edit`)}
+            onClick={() => router.push(`/my-company/billing/billing-codes/${item.id}/edit`)}
             className="
               group/edit
               relative

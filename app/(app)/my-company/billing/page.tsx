@@ -13,7 +13,7 @@ export default function BillingPage() {
     {
       title: "Billing Codes",
       description: "Manage codes for your organization",
-      href: "/billing/billing-codes",
+      href: "/my-company/billing/billing-codes",
       icon: Code,
       alwaysShow: true,
     },

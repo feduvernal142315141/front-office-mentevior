@@ -81,7 +81,7 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
           code: selectedCode.code,
           description: selectedCode.description,
         })
-        router.push(`/billing/billing-codes/create?${params.toString()}`)
+        router.push(`/my-company/billing/billing-codes/create?${params.toString()}`)
       }
     } else {
       setIsSubmitting(true)

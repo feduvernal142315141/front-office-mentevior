@@ -78,7 +78,7 @@ export function SelectSourceStep({ onSelectSource, onClose }: SelectSourceStepPr
         <button
           onClick={() => {
             onClose()
-            router.push("/billing/billing-codes/create?mode=manual")
+            router.push("/my-company/billing/billing-codes/create?mode=manual")
           }}
           className="
             group relative w-full p-6 text-left
