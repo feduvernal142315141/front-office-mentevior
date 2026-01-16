@@ -124,6 +124,7 @@ export function AddressFormFields({
                     hasError={!!fieldState.error}
                     disabled={isStateDisabled}
                     required
+                    searchable={true}
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">

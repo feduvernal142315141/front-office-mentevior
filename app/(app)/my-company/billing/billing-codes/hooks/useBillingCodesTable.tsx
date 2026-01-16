@@ -155,7 +155,7 @@ export function useBillingCodesTable() {
       key: "code",
       header: "Code",
       render: (item: BillingCodeListItem) => (
-        <span className="text-lg font-bold text-gray-900">{item.code}</span>
+        <span className="text-sm text-gray-900">{item.code}</span>
       ),
     },
     {

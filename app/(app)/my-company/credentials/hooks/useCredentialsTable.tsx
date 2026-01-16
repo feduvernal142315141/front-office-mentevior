@@ -102,7 +102,7 @@ export function useCredentialsTable() {
       key: "name",
       header: "Name",
       render: (item: CredentialListItem) => (
-        <span className="text-lg font-bold text-gray-900">{item.name}</span>
+        <span className="text-sm text-gray-900">{item.name}</span>
       ),
     },
     {

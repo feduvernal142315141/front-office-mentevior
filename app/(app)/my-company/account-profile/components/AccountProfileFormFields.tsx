@@ -45,32 +45,7 @@ export function AccountProfileFormFields({
                     )}
                   </div>
                 )}
-              />
-
-              <Controller
-                name="agencyEmail"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <div>
-                    <FloatingInput
-                      label="Agency Email"
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      placeholder=" "
-                      type="email"
-                      hasError={!!fieldState.error}
-                      autoComplete="email"
-                      required
-                    />
-                    {fieldState.error && (
-                      <p className="text-sm text-red-600 mt-2">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
+              />              
 
               <Controller
                 name="phoneNumber"
@@ -86,6 +61,131 @@ export function AccountProfileFormFields({
                       type="tel"
                       hasError={!!fieldState.error}
                       autoComplete="tel"
+                      required
+                    />
+                    {fieldState.error && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+
+              <Controller
+                name="ein"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <FloatingInput
+                      label="Employer Identification Number (EIN)"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder=" "
+                      hasError={!!fieldState.error}
+                      required
+                    />
+                   
+                    {fieldState.error && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+
+              <Controller
+                name="npi"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <FloatingInput
+                      label="National Provider ID (NPI)"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder=" "
+                      hasError={!!fieldState.error}
+                      required
+                    />
+                   
+                    {fieldState.error && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              /> 
+
+              <Controller
+                name="mpi"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <FloatingInput
+                      label="Medicaid/Medicare Provider ID (MPI)"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder=" "
+                      hasError={!!fieldState.error}
+                      required
+                    />
+                    {fieldState.error && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />  
+
+             <Controller
+                name="taxonomyCode"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <FloatingInput
+                      label="Taxonomy Code"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder=" "
+                      hasError={!!fieldState.error}
+                      required
+                    />
+                    
+                    {fieldState.error && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />             
+
+             
+            </div>
+
+            <div className="space-y-6">              
+
+              <Controller
+                name="agencyEmail"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <FloatingInput
+                      label="Agency Email"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder=" "
+                      type="email"
+                      hasError={!!fieldState.error}
+                      autoComplete="email"
                       required
                     />
                     {fieldState.error && (
@@ -143,106 +243,7 @@ export function AccountProfileFormFields({
                     )}
                   </div>
                 )}
-              />
-
-              <Controller
-                name="ein"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <div>
-                    <FloatingInput
-                      label="Employer Identification Number (EIN)"
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      placeholder=" "
-                      hasError={!!fieldState.error}
-                      required
-                    />
-                   
-                    {fieldState.error && (
-                      <p className="text-sm text-red-600 mt-2">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-
-             
-            </div>
-
-            <div className="space-y-6">
-              <Controller
-                name="npi"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <div>
-                    <FloatingInput
-                      label="National Provider ID (NPI)"
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      placeholder=" "
-                      hasError={!!fieldState.error}
-                      required
-                    />
-                   
-                    {fieldState.error && (
-                      <p className="text-sm text-red-600 mt-2">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-              
-              <Controller
-                name="mpi"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <div>
-                    <FloatingInput
-                      label="Medicaid/Medicare Provider ID (MPI)"
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      placeholder=" "
-                      hasError={!!fieldState.error}
-                      required
-                    />
-                    {fieldState.error && (
-                      <p className="text-sm text-red-600 mt-2">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-
-              <Controller
-                name="taxonomyCode"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <div>
-                    <FloatingInput
-                      label="Taxonomy Code"
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      placeholder=" "
-                      hasError={!!fieldState.error}
-                      required
-                    />
-                    
-                    {fieldState.error && (
-                      <p className="text-sm text-red-600 mt-2">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
+              />     
 
               <Controller
                 name="logo"
