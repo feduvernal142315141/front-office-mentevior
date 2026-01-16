@@ -264,7 +264,7 @@ export function PermissionsSelector({
         newObj[m] = PermissionAction.ALL
       })
     } else if (preset === 'supervisor') {
-      // Supervisor: Can view, edit, create but NOT delete critical data
+      // Supervisor: Full control including delete
       // Full access to operational modules (Core modules + Behavior Plan only)
       const supervisorModules = [
         PermissionModule.USERS_PROVIDERS,
@@ -278,8 +278,8 @@ export function PermissionsSelector({
         ...BEHAVIOR_PLAN.children.map(c => c.key),
       ]
       
-      // Read + Create + Edit + Block (no Delete for safety)
-      const supervisorValue = PermissionAction.READ | PermissionAction.CREATE | PermissionAction.EDIT | PermissionAction.BLOCK
+      // Full control: Read + Create + Edit + Block + Delete
+      const supervisorValue = PermissionAction.ALL
       supervisorModules.forEach(m => {
         newObj[m] = supervisorValue
       })
@@ -336,7 +336,7 @@ export function PermissionsSelector({
       return 'clinical'
     }
     
-    const supervisorValue = PermissionAction.READ | PermissionAction.CREATE | PermissionAction.EDIT | PermissionAction.BLOCK
+    const supervisorValue = PermissionAction.ALL
     
     const supervisorCoreModules = [
       PermissionModule.USERS_PROVIDERS,
