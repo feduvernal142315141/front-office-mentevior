@@ -18,7 +18,7 @@ import { Breadcrumbs } from "./Breadcrumbs"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 
 export function Topbar() {
-  const { user } = useAuth()
+  const { user, hydrated } = useAuth()
   const { logout } = useLogout()
   const router = useRouter()
   
@@ -30,27 +30,28 @@ export function Topbar() {
   }
 
   return (
-    <header className="navbar-glass top-0" suppressHydrationWarning>
-      <div className="flex items-center justify-between px-6 gap-6 h-16 border-b border-gray-100" suppressHydrationWarning>
+    <header className="navbar-glass top-0">
+      <div className="flex items-center justify-between px-6 gap-6 h-16 border-b border-gray-100">
         <Breadcrumbs />
 
         <div className="ml-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="flex items-center gap-3 h-10 px-3 rounded-full hover:bg-accent/60 transition group max-w-[220px] overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
-              >
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center ring-1 ring-blue-200 shadow-sm group-hover:shadow-md transition">
-                  <span className="text-sm font-semibold text-[#025f9a]">
-                    {user?.name?.charAt(0)}
+          {hydrated && user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-3 h-10 px-3 rounded-full hover:bg-accent/60 transition group max-w-[220px] overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+                >
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center ring-1 ring-blue-200 shadow-sm group-hover:shadow-md transition">
+                    <span className="text-sm font-semibold text-[#025f9a]">
+                      {user.name?.charAt(0)}
+                    </span>
+                  </div>
+                  <span className="hidden md:inline text-sm font-medium truncate">
+                    {user.name}
                   </span>
-                </div>
-                <span className="hidden md:inline text-sm font-medium truncate">
-                  {user?.name}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
+                </Button>
+              </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" asChild>
               <motion.div
@@ -62,12 +63,12 @@ export function Topbar() {
                 <DropdownMenuLabel className="pb-3">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center font-semibold text-[#025f9a] shadow-sm">
-                      {user?.name?.charAt(0)}
+                      {user.name?.charAt(0)}
                     </div>
                     <div className="leading-tight">
-                      <p className="font-semibold text-sm">{user?.name}</p>
+                      <p className="font-semibold text-sm">{user.name}</p>
                       <p className="text-xs text-muted-foreground truncate max-w-[160px]">
-                        {user?.email}
+                        {user.email}
                       </p>
         
                       {fullUser?.role?.name && (
@@ -113,6 +114,13 @@ export function Topbar() {
               </motion.div>
             </DropdownMenuContent>
           </DropdownMenu>
+          ) : (
+          
+            <div className="flex items-center gap-3 h-10 px-3">
+              <div className="h-9 w-9 rounded-full bg-gray-200 animate-pulse" />
+              <div className="hidden md:block h-4 w-24 bg-gray-200 rounded animate-pulse" />
+            </div>
+          )}
         </div>
       </div>
     </header>

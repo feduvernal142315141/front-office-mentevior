@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => router.push("/login")}
+                  onClick={() => router.push("/login-error")}
                   disabled={isLoading}
                   className="shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 flex-1"
                 >

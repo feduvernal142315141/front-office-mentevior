@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { useFilteredNavItems } from "@/lib/hooks/use-filtered-nav-items"
 import { useEffect, useState } from "react"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 export const ICON_MAP = {
   Gauge,
@@ -39,11 +40,15 @@ export const ICON_MAP = {
 export function Sidebar() {
   const pathname = usePathname()
   const { sidebarCollapsed, toggleSidebar } = useUi()
+  const { company, hydrated } = useAuth()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const filteredNavItems = useFilteredNavItems()
 
   const isMobile = useMediaQuery("(max-width: 1024px)")
+  
+  const companyName = company?.name
+  const companyLogo = company?.logo
 
   const toggleExpanded = (href: string) => {
     setExpandedItems((prev) => {
@@ -118,49 +123,64 @@ export function Sidebar() {
       "
     >
       <div className={`relative h-16 flex border-b border-border/20 ${sidebarCollapsed ? "items-center justify-center" : "px-6"}`}>
-        <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden group">
-          <div
-            className={cn(
-              "flex shrink-0 transition-all duration-300",
-              sidebarCollapsed ? "h-14 w-14" : "h-16 w-16",
-            )}
-          >
-            <Image
-              src="/logoMenteVior.png"
-              alt="MenteVior"
-              width={sidebarCollapsed ? 56 : 64}
-              height={sidebarCollapsed ? 56 : 64}
-              priority
-              className="object-contain transition-all duration-300 group-hover:scale-110 drop-shadow-[0_4px_12px_rgba(3,126,204,0.25)]"
-            />
-          </div>
+        {hydrated && companyLogo && companyName ? (
+          <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden group">
+            <div
+              className={cn(
+                "flex-shrink-0 relative transition-all duration-300",
+                sidebarCollapsed ? "w-[48px] h-[48px]" : "w-[56px] h-[56px]",
+              )}
+            >
+              <Image
+                src={companyLogo}
+                alt={companyName}
+                fill
+                priority
+                className="object-contain transition-all duration-300 group-hover:scale-110 drop-shadow-[0_4px_12px_rgba(3,126,204,0.25)]"
+              />
+            </div>
 
-          <AnimatePresence>
-            {!sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="flex flex-col"
-              >
-                <span
-                  className="
-                  font-bold text-2xl tracking-tight
-                  bg-gradient-to-r from-[#037ECC] via-[#079CFB] to-[#037ECC]
-                  bg-clip-text text-transparent
-                  whitespace-nowrap
-                  animate-gradient
-                  bg-[length:200%_auto]
-                "
+            <AnimatePresence>
+              {!sidebarCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col"
                 >
-                  MenteVior
-                </span>
-                
-              </motion.div>
+                  <span
+                    className="
+                    font-bold text-xl tracking-tight
+                    bg-gradient-to-r from-[#037ECC] via-[#079CFB] to-[#037ECC]
+                    bg-clip-text text-transparent
+                    whitespace-nowrap
+                    animate-gradient
+                    bg-[length:200%_auto]
+                    line-clamp-1
+                  "
+                  >
+                    {companyName}
+                  </span>
+                  
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Link>
+        ) : (
+  
+          <div className="flex items-center gap-3 w-full">
+            <div
+              className={cn(
+                "flex-shrink-0 rounded-lg bg-gray-200 animate-pulse",
+                sidebarCollapsed ? "w-[48px] h-[48px]" : "w-[56px] h-[56px]",
+              )}
+            />
+            {!sidebarCollapsed && (
+              <div className="h-6 bg-gray-200 rounded w-32 animate-pulse" />
             )}
-          </AnimatePresence>
-        </Link>
+          </div>
+        )}
 
         <button
           onClick={toggleSidebar}

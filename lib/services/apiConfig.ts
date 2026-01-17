@@ -47,6 +47,7 @@ apiInstance.interceptors.request.use(
                 "/auth/login",
                 "/security/public-key",
                 "/dashboard/public-info",
+                "/company/get-config-by-identifier",
             ]
 
             const isPublicRoute = PUBLIC_ROUTES.some((path) => config.url?.includes(path))

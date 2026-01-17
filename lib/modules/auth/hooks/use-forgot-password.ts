@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useState } from "react"
 import { useRouter } from "next/navigation";
 import { serviceForgotPassword } from "@/lib/services/forgot-password/forgot-password";
+import { getLoginUrl } from "@/lib/utils/company-identifier";
 
 
 export function useForgotPassword() {
@@ -28,7 +29,7 @@ export function useForgotPassword() {
             if (response?.status === 200) {
                 setIsSuccess(true)
                 setTimeout(() => {
-                    router.push("/login");
+                    router.push(getLoginUrl());
                 }, 5000)
 
             }

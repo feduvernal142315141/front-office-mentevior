@@ -1,22 +1,9 @@
 "use client"
 
-/**
- * CONTEXT API FOR INTERCEPTORS
- * 
- * This context manages the global state of:
- * - Global Loading/Spinner
- * - Notifications and alerts
- * - HTTP error handling
- * 
- * Integrates seamlessly with Axios interceptors
- */
 
 import { createContext, useContext, useState, ReactNode } from "react"
 import { toast } from "sonner"
-
-// ============================================
-// TYPES
-// ============================================
+import { getLoginUrl } from '@/lib/utils/company-identifier'
 
 type NotificationType = 'success' | 'error' | 'warning' | 'info'
 
@@ -35,42 +22,31 @@ interface AlertDialogData {
 }
 
 interface InterceptorContextType {
-  // Loading state
+
   isLoading: boolean
   activeRequests: number
   setLoading: (loading: boolean) => void
   
-  // Notifications
+
   notifications: Notification[]
   showNotification: (message: string, type: NotificationType) => void
   clearNotification: (id: string) => void
   clearAllNotifications: () => void
   
-  // Alert Dialog (for critical errors)
+
   alertDialog: AlertDialogData
   showAlert: (title: string, description: string, type?: 'error' | 'warning' | 'info') => void
   closeAlert: () => void
   
-  // HTTP error handling
   handleHttpError: (statusCode: number, message?: string) => void
   
-  // Unauthorized handling (401)
   handleUnauthorized: () => void
   
-  // Activity reset (for auto-logout)
   onActivity?: () => void
   setOnActivity: (callback: () => void) => void
 }
 
-// ============================================
-// CONTEXT
-// ============================================
-
 const InterceptorContext = createContext<InterceptorContextType | undefined>(undefined)
-
-// ============================================
-// PROVIDER
-// ============================================
 
 export function InterceptorProvider({ children }: { children: ReactNode }) {
   // Loading state
@@ -231,7 +207,7 @@ export function InterceptorProvider({ children }: { children: ReactNode }) {
       setTimeout(async () => {
         const { useAuthStore } = await import('@/lib/store/auth.store')
         useAuthStore.getState().logout()
-        window.location.href = '/login'
+        window.location.href = getLoginUrl()
       }, 5000)
     }
   }

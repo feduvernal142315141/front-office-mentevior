@@ -2,9 +2,16 @@ export interface PublicKeyResponse {
   publicKey: string;
 }
 
+export interface CompanyConfigResponse {
+  id: string;
+  legalName: string;
+  logo: string;
+}
+
 export type LoginManagerUserAuthRequest = {
   email: string;
   password: string;
+  companyId: string;
 };
 
 export type LoginManagerUserAuthResponse = {
@@ -14,7 +21,6 @@ export type LoginManagerUserAuthResponse = {
   refreshTokenExpiresIn: string;
 };
 
-// Refresh Token Types
 export type RefreshTokenRequest = {
   refreshToken: string;
 };

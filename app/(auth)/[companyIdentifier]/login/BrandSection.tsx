@@ -12,7 +12,12 @@ const MOTIVATIONAL_PHRASES = [
   "Coordinate with confidence",
 ]
 
-export function BrandSection() {
+interface BrandSectionProps {
+  companyName: string;
+  companyLogo: string;
+}
+
+export function BrandSection({ companyName, companyLogo }: BrandSectionProps) {
   const [motivationalPhrase, setMotivationalPhrase] = useState(MOTIVATIONAL_PHRASES[0])
 
   useEffect(() => {
@@ -51,24 +56,24 @@ export function BrandSection() {
         "
       >
         <div className="mb-12 2xl:mb-8 animate-in fade-in duration-700">
-          <div className="flex items-center">
-            
+          <div className="flex items-center gap-4">
+          
+            <div className="flex-shrink-0 w-[100px] h-[100px] relative">
               <Image
-                src="/logoMenteVior.png"
-                alt="MenteVior logo"
-                width={150}
-                height={150}
+                src={companyLogo}
+                alt={`${companyName} logo`}
+                fill
                 priority
                 className="object-contain"
               />
-        
+            </div>
 
             <div>
               <h1
                 className="text-[30px] font-bold bg-gradient-to-r from-[#037ECC] via-[#079CFB] to-[#5AC8FA] bg-clip-text text-transparent"
                 style={{ letterSpacing: "-0.005em" }}
               >
-                MenteVior
+                {companyName}
               </h1>
 
               <AnimatePresence mode="wait">

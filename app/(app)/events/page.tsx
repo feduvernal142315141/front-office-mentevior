@@ -33,7 +33,6 @@ export default function EventsPage() {
     },
   ]
   
-  // Filter submodules based on user permissions
   const subModules = useMemo(() => {
     return allSubModules.filter(module => view(module.module))
   }, [view])
@@ -53,7 +52,7 @@ export default function EventsPage() {
           </div>
         </div>
 
-        {/* Sub-modules Grid */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {subModules.map((module) => {
             const IconComponent = module.icon
@@ -82,7 +81,7 @@ export default function EventsPage() {
           })}
         </div>
 
-        {/* Info Card */}
+
         <div className="mt-8 bg-gradient-to-br from-[#037ECC]/5 to-[#079CFB]/5 rounded-2xl border border-[#037ECC]/10 p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-2">About Events</h3>
           <p className="text-slate-600 leading-relaxed">

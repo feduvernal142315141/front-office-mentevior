@@ -1,10 +1,3 @@
-/**
- * USE AUTH - ZUSTAND VERSION
- * Hook simplificado que reemplaza el Context API
- * 
- * Este hook es un wrapper sobre el store de Zustand
- * para mantener la misma API que usaban los componentes
- */
 
 "use client"
 
@@ -13,6 +6,7 @@ import { useEffect } from "react"
 
 export function useAuth() {
   const user = useAuthStore(selectUser)
+  const company = useAuthStore((state) => state.company)
   const token = useAuthStore(selectToken)
   const isAuthenticated = useAuthStore(selectIsAuthenticated)
   const hydrated = useAuthStore(selectHydrated)
@@ -21,7 +15,6 @@ export function useAuth() {
   const logout = useAuthStore((state) => state.logout)
   const refresh = useAuthStore((state) => state.refresh)
 
-  // Auto-iniciar worker después de hidratar
   useEffect(() => {
     if (hydrated && isAuthenticated) {
       useAuthStore.getState().initWorker()
@@ -30,6 +23,7 @@ export function useAuth() {
 
   return {
     user,
+    company,
     token,
     refreshToken: useAuthStore((state) => state.refreshToken),
     isAuthenticated,

@@ -1,14 +1,3 @@
-/**
- * AUTH STORE - ZUSTAND
- * Single Source of Truth para autenticación
- * 
- * Maneja:
- * - Login/Logout
- * - Tokens (access + refresh)
- * - Refresh automático con Web Worker
- * - Persistencia en localStorage + cookies
- */
-
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { jwtDecode } from "jwt-decode"
@@ -16,6 +5,7 @@ import type { User, AuthState, LoginResponse, RefreshTokenResponse } from "@/lib
 import { encryptRsa } from "@/lib/utils/encrypt"
 import { serviceLoginManagerUserAuth, serviceRefreshToken } from "@/lib/services/login/login"
 import { createRefreshTokenWorker } from "@/lib/workers/refresh-token-worker"
+import { getLoginUrl } from "@/lib/utils/company-identifier"
 
 let workerInstance: Worker | null = null
 let isRefreshing = false
@@ -102,7 +92,7 @@ async function updateServerCookie(accessToken: string) {
 
 interface AuthStore extends AuthState {
   // Actions
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => Promise<boolean>
   logout: () => void
   refresh: () => Promise<void>
   
@@ -124,6 +114,7 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       // State inicial
       user: null,
+      company: null,
       accessToken: null,
       accessTokenExpiresAt: 0,
       refreshToken: null,
@@ -134,13 +125,14 @@ export const useAuthStore = create<AuthStore>()(
       // ============================================
       // LOGIN
       // ============================================
-      login: async (email: string, password: string) => {
+      login: async (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => {
         try {
           const encrypted = await encryptRsa(password)
 
           const response = await serviceLoginManagerUserAuth({
             email,
             password: encrypted,
+            companyId,
           })
 
           if (response?.status !== 200) {
@@ -154,6 +146,11 @@ export const useAuthStore = create<AuthStore>()(
 
           const newState = {
             user,
+            company: {
+              id: companyId,
+              name: companyName,
+              logo: companyLogo,
+            },
             accessToken: data.accessToken,
             accessTokenExpiresAt: getTokenExpiration(data.accessToken),
             refreshToken: data.refreshToken,
@@ -186,6 +183,7 @@ export const useAuthStore = create<AuthStore>()(
         // Limpiar estado
         set({
           user: null,
+          company: null,
           accessToken: null,
           accessTokenExpiresAt: 0,
           refreshToken: null,
@@ -287,7 +285,7 @@ export const useAuthStore = create<AuthStore>()(
               case "SESSION_EXPIRED":
                 get().logout()
                 if (typeof window !== "undefined") {
-                  window.location.href = "/login"
+                  window.location.href = getLoginUrl()
                 }
                 break
 
@@ -361,6 +359,7 @@ export const useAuthStore = create<AuthStore>()(
 // ============================================
 
 export const selectUser = (state: AuthStore) => state.user
+export const selectCompany = (state: AuthStore) => state.company
 export const selectToken = (state: AuthStore) => state.accessToken
 export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated
 export const selectHydrated = (state: AuthStore) => state.hydrated

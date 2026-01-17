@@ -6,7 +6,13 @@ import { useLogin } from "@/lib/modules/auth/hooks/use-login"
 import Link from "next/link"
 import { Button } from "@/components/custom/Button"
 
-export function LoginForm() {
+interface LoginFormProps {
+  companyId: string;
+  companyName: string;
+  companyLogo: string;
+}
+
+export function LoginForm({ companyId, companyName, companyLogo }: LoginFormProps) {
   const { onSubmit, isSubmitting, error } = useLogin()
 
   const [email, setEmail] = useState("")
@@ -34,7 +40,7 @@ export function LoginForm() {
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          onSubmit(email, password)
+          onSubmit(email, password, companyId, companyName, companyLogo)
         }}
         className="space-y-5 2xl:space-y-6"
       >
@@ -159,14 +165,15 @@ export function LoginForm() {
           </Button>
         </div>
 
-        <div className="text-center">
+        {/* TODO: Implementar forgot-password con ruta dinámica */}
+        {/* <div className="text-center">
           <Link
             href="/forgot-password"
             className="text-[13px] text-black hover:text-[#2563EB] transition-colors duration-200"
           >
             Forgot password
           </Link>
-      </div>
+        </div> */}
       </form>
 
       <div className="mt-10 2xl:mt-12 pt-2 animate-in fade-in duration-400 delay-1200">

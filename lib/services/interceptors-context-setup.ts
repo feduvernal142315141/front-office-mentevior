@@ -6,6 +6,7 @@
  */
 
 import { setInterceptorHandlers } from './apiConfig'
+import { getLoginUrl } from '@/lib/utils/company-identifier'
 
 // ============================================
 // CONFIGURATION TYPE
@@ -101,7 +102,7 @@ export const setupInterceptorsSimple = (
     onUnauthorized: () => {
       showNotification('Your session has expired. Please log in again.', 'error')
       setTimeout(() => {
-        window.location.href = '/login'
+        window.location.href = getLoginUrl()
       }, 10000)
     },
     onForbidden: () => {

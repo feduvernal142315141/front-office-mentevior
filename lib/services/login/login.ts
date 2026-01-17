@@ -1,4 +1,4 @@
-import { LoginManagerUserAuthRequest, LoginManagerUserAuthResponse, PublicKeyResponse, RefreshTokenRequest, RefreshTokenResponse } from "@/lib/models/login/login"
+import { LoginManagerUserAuthRequest, LoginManagerUserAuthResponse, PublicKeyResponse, RefreshTokenRequest, RefreshTokenResponse, CompanyConfigResponse } from "@/lib/models/login/login"
 import { ResponseEntity, ServiceResponse } from "@/lib/models/response"
 import { serviceGet, servicePost } from "../baseService"
 import apiInstance from "../apiConfig"
@@ -8,6 +8,14 @@ export const serviceGetPublicKey = async (
 ): ServiceResponse<PublicKeyResponse> => {
     return serviceGet<PublicKeyResponse>(
         `/security/public-key`
+    )
+}
+
+export const serviceGetCompanyConfig = async (
+    identifier: string
+): ServiceResponse<CompanyConfigResponse> => {
+    return serviceGet<CompanyConfigResponse>(
+        `/company/get-config-by-identifier/${identifier}`
     )
 }
 

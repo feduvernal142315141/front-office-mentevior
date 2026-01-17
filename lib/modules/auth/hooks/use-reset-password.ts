@@ -4,6 +4,7 @@ import {FormEvent, useCallback, useState} from "react"
 import {serviceResetPassword} from "@/lib/services/reset-password/reset-password";
 import { useRouter, useSearchParams} from "next/navigation";
 import {encryptRsa} from "@/lib/utils/encrypt";
+import { getLoginUrl } from "@/lib/utils/company-identifier";
 
 
 export function useResetPassword() {
@@ -33,7 +34,7 @@ export function useResetPassword() {
             if (response?.status === 200) {
                 setIsSuccess(true)
                 setTimeout(() => {
-                    router.push("/login");
+                    router.push(getLoginUrl());
                 }, 5000)
             }
         } catch (err: any) {

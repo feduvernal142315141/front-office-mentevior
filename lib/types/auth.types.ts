@@ -10,6 +10,12 @@ export interface User {
   expiresAt: string
 }
 
+export interface CompanyInfo {
+  id: string
+  name: string
+  logo: string
+}
+
 export interface TokenState {
   accessToken: string | null
   accessTokenExpiresAt: number
@@ -19,6 +25,7 @@ export interface TokenState {
 
 export interface AuthState extends TokenState {
   user: User | null
+  company: CompanyInfo | null
   isAuthenticated: boolean
   hydrated: boolean
 }

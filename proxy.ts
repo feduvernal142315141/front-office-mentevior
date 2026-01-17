@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/"];
+const PUBLIC_PATHS = ["/", "/login-error"];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (PUBLIC_PATHS.includes(pathname)) {
+  // Allow public paths and dynamic login routes
+  if (PUBLIC_PATHS.includes(pathname) || pathname.match(/^\/[^/]+\/login$/)) {
     return NextResponse.next();
   }
 

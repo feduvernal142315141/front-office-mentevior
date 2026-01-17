@@ -12,11 +12,11 @@ export function useLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => {
       setIsSubmitting(true);
       setError(null);
 
-      const success = await login(email, password);
+      const success = await login(email, password, companyId, companyName, companyLogo);
 
       if (success) {
         console.log("Login successful, redirecting to /dashboard");

@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const token = cookieStore.get("mv_fo_token")?.value
 
   if (!token) {
-    redirect("/login")
+    redirect("/login-error")
   }
 
 
