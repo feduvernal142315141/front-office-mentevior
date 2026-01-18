@@ -233,7 +233,6 @@ export default function SignaturesCaregiverPage() {
         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
           <h4 className="font-semibold text-blue-900 mb-3 text-lg">Important Notes:</h4>
           <ul className="text-sm text-blue-800 space-y-2 list-disc list-inside">
-            <li>Caregiver confirmation is optional and not required to complete Progress Notes</li>
             <li>Changes apply only to new Progress Notes created after this update</li>
             <li>Existing Progress Notes will not be modified</li>
           </ul>
