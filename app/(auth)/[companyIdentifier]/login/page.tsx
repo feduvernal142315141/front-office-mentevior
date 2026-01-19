@@ -65,6 +65,7 @@ export default function LoginPage() {
           companyId={companyConfig.id}
           companyName={companyConfig.legalName}
           companyLogo={companyConfig.logo}
+          companyIdentifier={companyIdentifier}
         />
       </div>
     </div>

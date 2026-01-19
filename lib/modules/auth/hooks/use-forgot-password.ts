@@ -6,7 +6,7 @@ import { serviceForgotPassword } from "@/lib/services/forgot-password/forgot-pas
 import { getLoginUrl } from "@/lib/utils/company-identifier";
 
 
-export function useForgotPassword() {
+export function useForgotPassword(companyId: string) {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isSuccess, setIsSuccess] = useState<boolean>(false)
@@ -16,7 +16,7 @@ export function useForgotPassword() {
 
 
     const onSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault() // ← Previene que la página se recargue
+        e.preventDefault() 
         
         setIsLoading(true)
         setError(null)
@@ -24,6 +24,7 @@ export function useForgotPassword() {
         try {
             const response = await serviceForgotPassword({
                 email: email,
+                companyId: companyId,
             });
 
             if (response?.status === 200) {
@@ -35,14 +36,14 @@ export function useForgotPassword() {
             }
         } catch (err: any) {
             console.error("Error forgot password:", err);
-            // Captura el mensaje de error del backend
+   
             setError(err?.response?.data?.message || err?.message || "An error occurred. Please try again.")
         } finally {
             setIsLoading(false)
         }
-    }, [email, router]);
+    }, [email, companyId, router]);
 
-    // Valor derivado: true si el email actual es válido
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValidEmail = emailRegex.test(email);
 

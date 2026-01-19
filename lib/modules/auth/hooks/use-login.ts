@@ -20,7 +20,10 @@ export function useLogin() {
 
       if (success) {
         console.log("Login successful, redirecting to /dashboard");
-        router.replace("/dashboard");
+        
+        // Usar window.location.href para forzar un hard reload
+        // Esto asegura que el servidor verifique la cookie recién seteada
+        window.location.href = "/dashboard";
         return;
       }
 
