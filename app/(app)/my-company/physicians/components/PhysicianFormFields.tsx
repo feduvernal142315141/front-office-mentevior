@@ -195,7 +195,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
-                    label="NPI"
+                    label="National Provider ID (NPI)"
                     value={field.value}
                     onChange={handleChange}
                     onBlur={field.onBlur}
@@ -229,7 +229,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
-                    label="MPI"
+                    label="Medicaid/Medicare Provider ID (MPI)"
                     value={field.value}
                     onChange={handleChange}
                     onBlur={field.onBlur}
