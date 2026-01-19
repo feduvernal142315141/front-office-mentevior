@@ -36,7 +36,8 @@ export function proxy(req: NextRequest) {
   if (
     PUBLIC_PATHS.includes(pathname) || 
     pathname.match(/^\/[^/]+\/login$/) ||
-    pathname.match(/^\/[^/]+\/forgot-password$/)
+    pathname.match(/^\/[^/]+\/forgot-password$/) ||
+    pathname.match(/^\/[^/]+\/reset-password$/)
   ) {
     return NextResponse.next();
   }

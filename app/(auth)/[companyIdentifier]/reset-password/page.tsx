@@ -1,15 +1,29 @@
 "use client"
 
-import { Suspense } from "react"
-import { PageHeader } from "./components/PageHeader"
+import { Suspense, useEffect } from "react"
+import { useParams } from "next/navigation"
+import { useCompanyConfig } from "@/lib/modules/auth/hooks/use-company-config"
 import { useResetPassword } from "@/lib/modules/auth/hooks/use-reset-password"
 import { usePasswordValidation } from "@/app/(app)/change-password/hooks/usePasswordValidation"
 import { PasswordField } from "@/components/password/PasswordField"
 import { PasswordRequirements } from "@/components/password/PasswordRequirements"
 import { PasswordMismatchMessage } from "@/components/password/PasswordMismatchMessage"
 import { Button } from "@/components/custom/Button"
+import { Loader2, AlertCircle } from "lucide-react"
+import { setCompanyIdentifier } from "@/lib/utils/company-identifier"
 
 function ResetPasswordContent() {
+  const params = useParams()
+  const companyIdentifier = params?.companyIdentifier as string
+
+  const { companyConfig, isLoading: isLoadingCompany, error: companyError } = useCompanyConfig(companyIdentifier)
+
+  useEffect(() => {
+    if (companyIdentifier) {
+      setCompanyIdentifier(companyIdentifier)
+    }
+  }, [companyIdentifier])
+
   const {
     onSubmit,
     isLoading,
@@ -21,12 +35,38 @@ function ResetPasswordContent() {
     touched,
     setTouched,
     isSuccess,
-  } = useResetPassword()
+  } = useResetPassword(companyConfig?.id || "")
 
   const validation = usePasswordValidation(newPassword, confirmPassword)
 
-  const showMismatch =
-    confirmPassword.length > 0 && !validation.passwordsMatch
+  const showMismatch = confirmPassword.length > 0 && !validation.passwordsMatch
+
+  if (isLoadingCompany) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+          <p className="text-sm text-gray-600">Loading company information...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (companyError || !companyConfig) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center p-8">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Company Not Found</h2>
+          <p className="text-sm text-gray-600">
+            {companyError || "The company you're trying to access doesn't exist or is not available."}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -43,17 +83,33 @@ function ResetPasswordContent() {
         "
       />
 
-
       <div className="absolute top-1/4 left-1/3 w-[520px] h-[520px] bg-blue-500/10 rounded-full blur-[170px]" />
       <div className="absolute bottom-1/4 right-1/4 w-[420px] h-[420px] bg-cyan-400/10 rounded-full blur-[150px]" />
 
       <div className="relative flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <PageHeader />
+          <div className="flex justify-center mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-white shadow-lg border border-gray-200">
+              <img
+                src={companyConfig.logo}
+                alt={companyConfig.legalName}
+                className="w-full h-full object-contain p-3"
+              />
+            </div>
+          </div>
+
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Reset Your Password
+            </h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Create a new password for {companyConfig.legalName}
+            </p>
+          </div>
 
           <div
             className="
-              relative mt-8 rounded-[28px] p-10
+              relative rounded-[28px] p-10
               bg-white border border-gray-200
               shadow-[0_20px_40px_-12px_rgba(2,6,23,0.15)]
               transition-all duration-300

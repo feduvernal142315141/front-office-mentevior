@@ -1,5 +1,6 @@
 
 export interface RequestResetPassword {
   code: string
-  password: string;
+  password: string
+  companyId: string
 }

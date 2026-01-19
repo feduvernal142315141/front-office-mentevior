@@ -7,7 +7,7 @@ import {encryptRsa} from "@/lib/utils/encrypt";
 import { getLoginUrl } from "@/lib/utils/company-identifier";
 
 
-export function useResetPassword() {
+export function useResetPassword(companyId: string) {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isSuccess, setIsSuccess] = useState<boolean | null>(false)
@@ -29,6 +29,7 @@ export function useResetPassword() {
             const response = await serviceResetPassword({
                 code: code,
                 password: encryptedNewPassword,
+                companyId: companyId,
             });
 
             if (response?.status === 200) {
@@ -43,7 +44,7 @@ export function useResetPassword() {
         } finally {
             setIsLoading(false)
         }
-    }, [param, router, newPassword]); // ← Agregué newPassword a las dependencias
+    }, [param, router, newPassword, companyId]);
 
 
     return {
