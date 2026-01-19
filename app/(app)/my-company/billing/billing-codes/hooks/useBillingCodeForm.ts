@@ -112,7 +112,7 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
         type: typeName,
         code: billingCode.code,
         description: billingCode.description,
-        modifiers: billingCode.modifiers?.join(", ") || "",
+        modifiers: billingCode.modifier || "",
         parent: billingCode.parent || "",
         placeServiceId: billingCode.allowedPlacesOfService?.[0] || "",
         active: billingCode.active ?? true,

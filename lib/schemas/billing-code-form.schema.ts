@@ -17,8 +17,8 @@ export const billingCodeFormSchema = z.object({
   
   modifiers: z
     .string()
-    .optional()
-    .or(z.literal("")),
+    .optional(),
+
   
   parent: z
     .string()

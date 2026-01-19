@@ -11,7 +11,7 @@ export interface BillingCode {
   type: BillingCodeType
   code: string
   description: string
-  modifiers?: string[]
+  modifier?: string
   parent?: string
   allowedPlacesOfService?: string[]
   active: boolean

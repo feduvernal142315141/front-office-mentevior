@@ -33,7 +33,6 @@ export function BillingCodeFormFields({
       <div className="pb-24">
         <div className="max-w-5xl mx-auto">
           
-          {/* BASIC INFORMATION */}
           <div className="mb-8 space-y-6">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
               Basic Information
@@ -116,7 +115,6 @@ export function BillingCodeFormFields({
             </div>
           </div>
 
-          {/* ORGANIZATION CONFIGURATION */}
           <div className="space-y-6">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
               Organization Configuration

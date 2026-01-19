@@ -6,9 +6,21 @@ const PUBLIC_PATHS = ["/", "/login-error"];
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow public paths and dynamic login routes
+ 
   if (PUBLIC_PATHS.includes(pathname) || pathname.match(/^\/[^/]+\/login$/)) {
     return NextResponse.next();
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  
+  if (segments.length === 1) {
+    const companyIdentifier = segments[0];
+    
+
+    const url = req.nextUrl.clone();
+    url.pathname = `/${companyIdentifier}/login`;
+    
+    return NextResponse.redirect(url);
   }
 
   const token = req.cookies.get("mv_fo_token");
@@ -22,5 +34,7 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/users/:path*", "/organizations/:path*"],
+  matcher: [
+       '/((?!api|_next|.*\\..*).*)',
+  ],
 };
