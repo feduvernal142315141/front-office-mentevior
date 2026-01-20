@@ -23,6 +23,7 @@ export function PhysiciansTable() {
     setStatusFilter,
     onSearchChange,
     onClearFilters,
+    deleteModal,
   } = usePhysiciansTable()
 
   if (error) {
@@ -95,6 +96,7 @@ export function PhysiciansTable() {
           onPageSizeChange,
         }}
       />
+      {deleteModal}
     </div>
   )
 }
