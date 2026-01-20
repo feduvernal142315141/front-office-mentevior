@@ -271,7 +271,7 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-lg font-semibold ${isSelected ? "text-blue-700" : "text-gray-900"}`}>
-                          {code.code}
+                          {code.modifier !=="" && code.modifier !==" " ? `${code.code}-${code.modifier}` : code.code}
                         </span>
                         <Badge 
                           variant="outline"

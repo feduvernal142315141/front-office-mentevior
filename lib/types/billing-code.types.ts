@@ -25,7 +25,7 @@ export interface BillingCodeListItem {
   type: BillingCodeType
   code: string
   description: string
-  modifiers?: string[]
+  modifier?: string
   active: boolean
   isFromCatalog?: boolean
 }
@@ -35,6 +35,7 @@ export interface BillingCodeCatalogItem {
   type: BillingCodeType
   code: string
   description: string
+  modifier?: string
 }
 
 export interface CreateBillingCodeDto {
