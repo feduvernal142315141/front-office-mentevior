@@ -13,6 +13,8 @@ import { buildFilters } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { deletePhysician } from "@/lib/modules/physicians/services/physicians.service"
 import { useToast } from "@/hooks/use-toast"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { toast as sonnerToast } from "sonner"
 
 export function usePhysiciansTable() {
   const router = useRouter()
@@ -24,6 +26,8 @@ export function usePhysiciansTable() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [physicianToDelete, setPhysicianToDelete] = useState<Physician | null>(null)
 
   const filters = buildFilters(
     [
@@ -61,29 +65,33 @@ export function usePhysiciansTable() {
     setPage(1)
   }
 
-  const handleDelete = async (physicianId: string) => {
-    if (!confirm("Are you sure you want to delete this physician?")) {
-      return
-    }
+  const handleDeleteClick = (physician: Physician) => {
+    setPhysicianToDelete(physician)
+    setDeleteModalOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!physicianToDelete) return
 
     try {
       setIsDeleting(true)
-      await deletePhysician(physicianId)
-      toast({
-        title: "Success",
-        description: "Physician deleted successfully",
-      })
+      await deletePhysician(physicianToDelete.id)
+      sonnerToast.success("Physician deleted successfully")
+      setDeleteModalOpen(false)
+      setPhysicianToDelete(null)
       refetch(queryModel)
     } catch (err) {
       console.error("Error deleting physician:", err)
-      toast({
-        title: "Error",
-        description: "Failed to delete physician",
-        variant: "destructive",
-      })
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete physician"
+      sonnerToast.error(errorMessage)
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false)
+    setPhysicianToDelete(null)
   }
 
   const columns: CustomTableColumn<Physician>[] = [
@@ -214,7 +222,7 @@ export function usePhysiciansTable() {
           </button>
 
           <button
-            onClick={() => handleDelete(physician.id)}
+            onClick={() => handleDeleteClick(physician)}
             disabled={isDeleting}
             className="
               group/delete
@@ -276,5 +284,16 @@ export function usePhysiciansTable() {
     onSearchChange: handleSearchQueryChange,
     onClearFilters: clearFilters,
     refetch: () => refetch(queryModel),
+    deleteModal: (
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Physician"
+        message="Are you sure you want to delete this physician? This action cannot be undone."
+        itemName={physicianToDelete ? `${physicianToDelete.firstName} ${physicianToDelete.lastName}` : undefined}
+        isDeleting={isDeleting}
+      />
+    ),
   }
 }
