@@ -76,6 +76,7 @@ export function useCredentialForm({ credentialId = null }: UseCredentialFormProp
         const organizationName = searchParams.get("organizationName")
         const website = searchParams.get("website")
         const description = searchParams.get("description")
+        const taxonomyCode = searchParams.get("taxonomyCode")
         
         if (name && shortName) {
           form.reset({
@@ -83,7 +84,7 @@ export function useCredentialForm({ credentialId = null }: UseCredentialFormProp
             shortName,
             organizationName: organizationName || "",
             website: website || "",
-            taxonomyCode: "",
+            taxonomyCode: taxonomyCode || "",
             description: description || "",
             billingCodeIds: [],
             active: true,

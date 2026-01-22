@@ -98,6 +98,12 @@ export function SearchCatalogStep({ onSelectCredential, onClose, onSuccess }: Se
         if (selectedCredential.description) {
           params.append("description", selectedCredential.description)
         }
+
+        if (selectedCredential.taxonomyCode) {
+          params.append("taxonomyCode", selectedCredential.taxonomyCode)
+        }
+
+        console.log(params, "Params")
         
         router.push(`/my-company/credentials/create?${params.toString()}`)
       }
@@ -239,7 +245,7 @@ export function SearchCatalogStep({ onSelectCredential, onClose, onSuccess }: Se
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-lg font-semibold ${isSelected ? "text-blue-700" : "text-gray-900"}`}>
-                          {credential.name}
+                          {`${credential.name} - ${credential.shortName}`}
                         </span>
                       </div>
                       {credential.description && (
