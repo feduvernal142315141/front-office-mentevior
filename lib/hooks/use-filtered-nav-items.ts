@@ -66,6 +66,13 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
  * Deep children are routes like /data-collection/datasheets that are nested under /data-collection
  */
 function hasDeepChildrenPermission(baseHref: string, permissionsObj: Record<string, number>): boolean {
+  // Special case: /my-company/documents has Clinical Documents and HR Documents as children
+  if (baseHref === "/my-company/documents") {
+    const clinicalPerms = permissionsObj[PermissionModule.CLINICAL_DOCUMENTS] || 0
+    const hrPerms = permissionsObj[PermissionModule.HR_DOCUMENTS] || 0
+    return clinicalPerms > 0 || hrPerms > 0
+  }
+  
   // Get all routes that start with the baseHref
   const deepChildRoutes = Object.keys(SIDEBAR_TO_PERMISSION_MAP).filter(
     route => route.startsWith(baseHref + "/")

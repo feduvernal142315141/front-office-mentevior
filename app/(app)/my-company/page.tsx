@@ -18,8 +18,7 @@ export default function MyCompanyPage() {
   const canViewDataCollection = useCanViewModule("/data-collection")
   const canViewSignaturesCaregiver = useCanViewModule("/my-company/signatures-caregiver")
   const canViewTemplateDocuments = useCanViewModule("/template-documents")
-  const canViewClinicalDocuments = useCanViewModule("/clinical-documents")
-  const canViewHRDocuments = useCanViewModule("/hr-documents")
+  const canViewDocuments = useCanViewModule("/my-company/documents")
   const canViewAgreements = useCanViewModule("/agreements")
   const canViewApplicants = useCanViewModule("/applicants")
 
@@ -113,20 +112,12 @@ export default function MyCompanyPage() {
       hasDeepChildren: true,
     },
     {
-      title: "Clinical Documents",
-      description: "Access and manage clinical documentation",
-      href: "/clinical-documents",
+      title: "Documents",
+      description: "Manage clinical and HR documentation",
+      href: "/my-company/documents",
       icon: FolderHeart,
-      canView: canViewClinicalDocuments,
-      hasDeepChildren: false,
-    },
-    {
-      title: "HR Documents",
-      description: "Manage human resources documents",
-      href: "/hr-documents",
-      icon: FolderOpen,
-      canView: canViewHRDocuments,
-      hasDeepChildren: false,
+      canView: canViewDocuments,
+      hasDeepChildren: true,
     },
     {
       title: "Agreements",
@@ -160,8 +151,7 @@ export default function MyCompanyPage() {
     canViewDataCollection,
     canViewSignaturesCaregiver,
     canViewTemplateDocuments,
-    canViewClinicalDocuments,
-    canViewHRDocuments,
+    canViewDocuments,
     canViewAgreements,
     canViewApplicants,
   ])

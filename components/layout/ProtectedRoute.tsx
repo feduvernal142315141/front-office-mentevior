@@ -71,10 +71,13 @@ const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
     "/data-collection",  
     "/signatures-caregiver",  
     "/template-documents",  
-    "/clinical-documents", 
-    "/hr-documents", 
+    "/my-company/documents",
     "/agreements", 
     "/applicants",
+  ],
+  "/my-company/documents": [
+    "/clinical-documents",
+    "/hr-documents",
   ],
   "/behavior-plan": [
     "/behavior-plan/maladaptive-behaviors",

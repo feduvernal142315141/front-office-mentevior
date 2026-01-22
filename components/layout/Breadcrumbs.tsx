@@ -44,6 +44,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "events": "Events",
   "physicians": "Physicians",
   "service-plans": "Service Plans",
+  "documents": "Documents",
   
   // Data Collection
   "data-collection": "Data Collection",

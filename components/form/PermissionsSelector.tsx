@@ -76,6 +76,14 @@ const TEMPLATE_DOCUMENTS = {
   ]
 }
 
+const DOCUMENTS = {
+  label: "Documents",
+  children: [
+    { key: PermissionModule.CLINICAL_DOCUMENTS, label: "Clinical Documents" },
+    { key: PermissionModule.HR_DOCUMENTS, label: "HR Documents" },
+  ]
+}
+
 const MY_COMPANY_MODULES = [
   { key: PermissionModule.ROLE, label: "Roles" },
   { key: PermissionModule.ACCOUNT_PROFILE, label: "Account Profile" },
@@ -83,8 +91,6 @@ const MY_COMPANY_MODULES = [
   { key: PermissionModule.SERVICE_PLANS, label: "Service Plans" },
   { key: PermissionModule.MONTHLY_REPORT, label: "Monthly Report" },
   { key: PermissionModule.SIGNATURES_CAREGIVER, label: "Signatures Caregiver" },
-  { key: PermissionModule.CLINICAL_DOCUMENTS, label: "Clinical Documents" },
-  { key: PermissionModule.HR_DOCUMENTS, label: "HR Documents" },
   { key: PermissionModule.AGREEMENTS, label: "Agreements" },
   { key: PermissionModule.APPLICANTS, label: "Applicants" },
 ]
@@ -94,6 +100,7 @@ const MY_COMPANY_EXPANDABLES = [
   BILLING,
   DATA_COLLECTION,
   TEMPLATE_DOCUMENTS,
+  DOCUMENTS,
 ]
 
 const ACTIONS = [
@@ -122,6 +129,7 @@ export function PermissionsSelector({
   const [myCompanyExpanded, setMyCompanyExpanded] = useState(false)
   const [dataCollectionExpanded, setDataCollectionExpanded] = useState(false)
   const [templateDocumentsExpanded, setTemplateDocumentsExpanded] = useState(false)
+  const [documentsExpanded, setDocumentsExpanded] = useState(false)
   
   useEffect(() => {
     const obj = permissionsToObject(currentPermissions)
@@ -177,6 +185,7 @@ export function PermissionsSelector({
       ...BILLING.children.map(c => c.key),
       ...DATA_COLLECTION.children.map(c => c.key),
       ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
+      ...DOCUMENTS.children.map(c => c.key),
     ]
     
     const allHaveFullAccess = allChildModules.every(m => hasFullAccess(m))
@@ -197,6 +206,7 @@ export function PermissionsSelector({
     ...BILLING.children.map(c => c.key),
     ...DATA_COLLECTION.children.map(c => c.key),
     ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
+    ...DOCUMENTS.children.map(c => c.key),
   ]
   const allMyCompanySelected = allMyCompanyChildModules.every(m => hasFullAccess(m))
   const someMyCompanySelected = allMyCompanyChildModules.some(m => hasAnyPermission(m))
@@ -212,6 +222,7 @@ export function PermissionsSelector({
       ...MY_COMPANY_MODULES.map(m => m.key),
       ...DATA_COLLECTION.children.map(c => c.key),
       ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
+      ...DOCUMENTS.children.map(c => c.key),
     ]
     
     const newObj: Record<string, number> = {}
@@ -245,6 +256,7 @@ export function PermissionsSelector({
         ...BILLING.children.map(c => c.key),
         ...DATA_COLLECTION.children.map(c => c.key),
         ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
+        ...DOCUMENTS.children.map(c => c.key),
         ...MY_COMPANY_MODULES.map(m => m.key),
       ]
       allModules.forEach(m => {
@@ -303,6 +315,7 @@ export function PermissionsSelector({
       ...BILLING.children.map(c => c.key),
       ...DATA_COLLECTION.children.map(c => c.key),
       ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
+      ...DOCUMENTS.children.map(c => c.key),
       ...MY_COMPANY_MODULES.map(m => m.key),
     ]
     const matchesReadOnly = allModules.every(m => permissionsObj[m] === PermissionAction.READ) &&
@@ -381,6 +394,7 @@ export function PermissionsSelector({
     ...MY_COMPANY_MODULES.map(m => m.key),
     ...DATA_COLLECTION.children.map(c => c.key),
     ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
+    ...DOCUMENTS.children.map(c => c.key),
   ].length
   
   const getAccessLevelBadge = (moduleKey: string) => {
@@ -869,6 +883,11 @@ export function PermissionsSelector({
                     TEMPLATE_DOCUMENTS, 
                     templateDocumentsExpanded, 
                     () => setTemplateDocumentsExpanded(!templateDocumentsExpanded)
+                  )}
+                  {renderExpandableWithRealChildren(
+                    DOCUMENTS,
+                    documentsExpanded,
+                    () => setDocumentsExpanded(!documentsExpanded)
                   )}
                   
                   {MY_COMPANY_MODULES.map((module) => renderModuleRow(module))}

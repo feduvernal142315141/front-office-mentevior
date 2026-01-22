@@ -146,12 +146,9 @@ export const navItems: NavItem[] = [
         hasDeepChildren: true,  
       },
       {
-        label: "Clinical Documents",
-        href: "/clinical-documents",
-      },
-      {
-        label: "HR Documents",
-        href: "/hr-documents",
+        label: "Documents",
+        href: "/my-company/documents",
+        hasDeepChildren: true,
       },
       {
         label: "Agreements",
