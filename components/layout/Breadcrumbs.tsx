@@ -1,18 +1,15 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, ArrowLeft } from "lucide-react"
 import { Fragment } from "react"
 
-// Helper function to detect if a segment is a UUID or ID
 function isUUID(segment: string): boolean {
-  // Match UUID pattern: 8-4-4-4-12 hexadecimal characters
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   return uuidRegex.test(segment)
 }
 
-// Map route segments to readable labels
 const SEGMENT_LABEL_MAP: Record<string, string> = {
   // Main modules
   "dashboard": "Dashboard",
@@ -85,22 +82,18 @@ function getSegmentLabel(segment: string): string {
 
 export function Breadcrumbs() {
   const pathname = usePathname()
+  const router = useRouter()
   const segments = pathname.split("/").filter(Boolean)
 
-  // Filter out UUID/ID segments first
   let filteredSegments = segments.filter(segment => !isUUID(segment))
 
-  // Special handling: Inject "Documents" parent for clinical-documents and hr-documents
   if (filteredSegments.includes("clinical-documents") || filteredSegments.includes("hr-documents")) {
     const documentsIndex = filteredSegments.findIndex(seg => seg === "clinical-documents" || seg === "hr-documents")
     
-    // Only inject if "documents" is not already present
     if (!filteredSegments.includes("documents")) {
-      // Insert "my-company" and "documents" before the document type
       const beforeDocs = filteredSegments.slice(0, documentsIndex)
       const afterDocs = filteredSegments.slice(documentsIndex)
       
-      // Check if my-company is already there
       if (!beforeDocs.includes("my-company")) {
         filteredSegments = ["my-company", "documents", ...afterDocs]
       } else {
@@ -109,9 +102,7 @@ export function Breadcrumbs() {
     }
   }
 
-  // Build breadcrumbs from filtered segments
   const breadcrumbs = filteredSegments.map((segment, index) => {
-    // Build href correctly by skipping injected segments that don't have real routes
     let href = ""
     
     if (segment === "documents" && (filteredSegments.includes("clinical-documents") || filteredSegments.includes("hr-documents"))) {
@@ -142,26 +133,48 @@ export function Breadcrumbs() {
     }
   })
 
-  // Solo mostrar breadcrumbs si hay más de un segmento visible después de filtrar
-  // Ejemplo: /users/create → ["Users", "Create"] ✅ (2 visible)
-  // Ejemplo: /users → ["Users"] ❌ (1 visible)
-  // Ejemplo: /users/uuid/edit → ["Users", "Edit"] ✅ (2 visible, href correcto: /users y /users/edit)
   if (breadcrumbs.length <= 1) return null
 
+  const showBackButton = breadcrumbs.length >= 3
+  const backHref = showBackButton ? breadcrumbs[breadcrumbs.length - 2].href : null
+
+  const handleBack = () => {
+    if (backHref) {
+      router.push(backHref)
+    } else {
+      router.back()
+    }
+  }
+
   return (
-    <nav className="flex items-center gap-2 text-sm text-gray-500">
-      {breadcrumbs.map((crumb, index) => (
-        <Fragment key={crumb.href}>
-          {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-gray-400" />}
-          {crumb.isLast ? (
-            <span className="text-gray-900 font-medium">{crumb.label}</span>
-          ) : (
-            <Link href={crumb.href} className="hover:text-gray-900 transition-colors">
-              {crumb.label}
-            </Link>
-          )}
-        </Fragment>
-      ))}
+    <nav className="flex items-center gap-3">
+      {showBackButton && (
+        <>
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+          <div className="h-4 w-px bg-gray-300" />
+        </>
+      )}
+      
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        {breadcrumbs.map((crumb, index) => (
+          <Fragment key={crumb.href}>
+            {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-gray-400" />}
+            {crumb.isLast ? (
+              <span className="text-gray-900 font-medium">{crumb.label}</span>
+            ) : (
+              <Link href={crumb.href} className="hover:text-gray-900 transition-colors">
+                {crumb.label}
+              </Link>
+            )}
+          </Fragment>
+        ))}
+      </div>
     </nav>
   )
 }
