@@ -27,6 +27,7 @@ export interface CredentialCatalogItem {
   shortName: string
   organizationName?: string
   website?: string
+  taxonomyCode: string
   description?: string
 }
 
