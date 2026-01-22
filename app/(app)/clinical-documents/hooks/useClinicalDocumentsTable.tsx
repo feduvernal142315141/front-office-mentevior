@@ -3,18 +3,18 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
-import type { HRDocumentListItem } from "@/lib/types/hr-document.types"
-import { useHRDocuments } from "@/lib/modules/hr-documents/hooks/use-hr-documents"
+import type { ClinicalDocumentListItem } from "@/lib/types/clinical-document.types"
+import { useClinicalDocuments } from "@/lib/modules/clinical-documents/hooks/use-clinical-documents"
 import { Edit2, Trash2 } from "lucide-react"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
-import { deleteHRDocument } from "@/lib/modules/hr-documents/services/hr-documents.service"
+import { deleteClinicalDocument } from "@/lib/modules/clinical-documents/services/clinical-documents.service"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Check, X } from "lucide-react"
 
-export function useHRDocumentsTable() {
+export function useClinicalDocumentsTable() {
   const router = useRouter()
   
   const [inputValue, setInputValue] = useState("")
@@ -22,7 +22,7 @@ export function useHRDocumentsTable() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [documentToDelete, setDocumentToDelete] = useState<HRDocumentListItem | null>(null)
+  const [documentToDelete, setDocumentToDelete] = useState<ClinicalDocumentListItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const filtersArray = useMemo(() => {
@@ -30,7 +30,7 @@ export function useHRDocumentsTable() {
       [
         {
           field: "documentCategory",
-          value: "HR",
+          value: "CLINICAL",
           operator: "EQ",
         }
       ],
@@ -41,13 +41,13 @@ export function useHRDocumentsTable() {
     )
   }, [searchQuery])
 
-  const { data, isLoading, error, refetch } = useHRDocuments({
+  const { data, isLoading, error, refetch } = useClinicalDocuments({
     page: page - 1,
     pageSize,
     filters: filtersArray,
   })
 
-  const hrDocuments = data?.hrDocuments || []
+  const clinicalDocuments = data?.clinicalDocuments || []
   const totalCount = data?.totalCount || 0
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export function useHRDocumentsTable() {
     setPage(1)
   }
 
-  const handleDeleteClick = (document: HRDocumentListItem) => {
+  const handleDeleteClick = (document: ClinicalDocumentListItem) => {
     setDocumentToDelete(document)
     setDeleteModalOpen(true)
   }
@@ -85,7 +85,7 @@ export function useHRDocumentsTable() {
 
     setIsDeleting(true)
     try {
-      await deleteHRDocument(documentToDelete.id)
+      await deleteClinicalDocument(documentToDelete.id)
       toast.success("Document deleted successfully")
       setDeleteModalOpen(false)
       setDocumentToDelete(null)
@@ -127,11 +127,11 @@ export function useHRDocumentsTable() {
     )
   }
 
-  const columns: CustomTableColumn<HRDocumentListItem>[] = useMemo(() => [
+  const columns: CustomTableColumn<ClinicalDocumentListItem>[] = useMemo(() => [
     {
       key: "name",
       header: "Document Name",
-      render: (item: HRDocumentListItem) => (
+      render: (item: ClinicalDocumentListItem) => (
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-medium text-gray-900">{item.name}</span>
           {item.isFromCatalog && (
@@ -144,7 +144,7 @@ export function useHRDocumentsTable() {
       key: "issuedDate",
       header: "Allow Issued Date",
       align: "center" as const,
-      render: (item: HRDocumentListItem) => (
+      render: (item: ClinicalDocumentListItem) => (
         <div className="flex justify-center">
           <BooleanBadge value={item.issuedDate} />
         </div>
@@ -154,7 +154,7 @@ export function useHRDocumentsTable() {
       key: "expirationDate",
       header: "Allow Expiration Date",
       align: "center" as const,
-      render: (item: HRDocumentListItem) => (
+      render: (item: ClinicalDocumentListItem) => (
         <div className="flex justify-center">
           <BooleanBadge value={item.expirationDate} />
         </div>
@@ -164,7 +164,7 @@ export function useHRDocumentsTable() {
       key: "uploadFile",
       header: "Allow Upload File",
       align: "center" as const,
-      render: (item: HRDocumentListItem) => (
+      render: (item: ClinicalDocumentListItem) => (
         <div className="flex justify-center">
           <BooleanBadge value={item.uploadFile} />
         </div>
@@ -174,7 +174,7 @@ export function useHRDocumentsTable() {
       key: "downloadFile",
       header: "Allow Download File",
       align: "center" as const,
-      render: (item: HRDocumentListItem) => (
+      render: (item: ClinicalDocumentListItem) => (
         <div className="flex justify-center">
           <BooleanBadge value={item.downloadFile} />
         </div>
@@ -184,7 +184,7 @@ export function useHRDocumentsTable() {
       key: "status",
       header: "Allow Status",
       align: "center" as const,
-      render: (item: HRDocumentListItem) => (
+      render: (item: ClinicalDocumentListItem) => (
         <div className="flex justify-center">
           <BooleanBadge value={item.status} />
         </div>
@@ -194,10 +194,10 @@ export function useHRDocumentsTable() {
       key: "actions",
       header: "Actions",
       align: "right" as const,
-      render: (item: HRDocumentListItem) => (
+      render: (item: ClinicalDocumentListItem) => (
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => router.push(`/hr-documents/${item.id}/edit`)}
+            onClick={() => router.push(`/clinical-documents/${item.id}/edit`)}
             className="
               group/edit
               relative
@@ -265,7 +265,7 @@ export function useHRDocumentsTable() {
       isOpen={deleteModalOpen}
       onClose={handleDeleteCancel}
       onConfirm={handleDeleteConfirm}
-      title="Delete HR Document"
+      title="Delete Clinical Document"
       message="Are you sure you want to delete this document? This action cannot be undone."
       itemName={documentToDelete?.name}
       isDeleting={isDeleting}
@@ -273,7 +273,7 @@ export function useHRDocumentsTable() {
   )
 
   return {
-    data: hrDocuments,
+    data: clinicalDocuments,
     columns,
     isLoading,
     error,

@@ -88,11 +88,50 @@ export function Breadcrumbs() {
   const segments = pathname.split("/").filter(Boolean)
 
   // Filter out UUID/ID segments first
-  const filteredSegments = segments.filter(segment => !isUUID(segment))
+  let filteredSegments = segments.filter(segment => !isUUID(segment))
+
+  // Special handling: Inject "Documents" parent for clinical-documents and hr-documents
+  if (filteredSegments.includes("clinical-documents") || filteredSegments.includes("hr-documents")) {
+    const documentsIndex = filteredSegments.findIndex(seg => seg === "clinical-documents" || seg === "hr-documents")
+    
+    // Only inject if "documents" is not already present
+    if (!filteredSegments.includes("documents")) {
+      // Insert "my-company" and "documents" before the document type
+      const beforeDocs = filteredSegments.slice(0, documentsIndex)
+      const afterDocs = filteredSegments.slice(documentsIndex)
+      
+      // Check if my-company is already there
+      if (!beforeDocs.includes("my-company")) {
+        filteredSegments = ["my-company", "documents", ...afterDocs]
+      } else {
+        filteredSegments = [...beforeDocs, "documents", ...afterDocs]
+      }
+    }
+  }
 
   // Build breadcrumbs from filtered segments
   const breadcrumbs = filteredSegments.map((segment, index) => {
-    const href = "/" + filteredSegments.slice(0, index + 1).join("/")
+    // Build href correctly by skipping injected segments that don't have real routes
+    let href = ""
+    
+    if (segment === "documents" && (filteredSegments.includes("clinical-documents") || filteredSegments.includes("hr-documents"))) {
+      // Documents is virtual, point to /my-company/documents
+      href = "/my-company/documents"
+    } else if (segment === "my-company" && index === 0 && (filteredSegments.includes("clinical-documents") || filteredSegments.includes("hr-documents"))) {
+      // My Company link when it's injected
+      href = "/my-company"
+    } else {
+      // Build normal href based on actual path segments
+      const actualSegments = segments.filter(s => !isUUID(s))
+      const segmentIndexInActual = actualSegments.indexOf(segment)
+      
+      if (segmentIndexInActual !== -1) {
+        href = "/" + actualSegments.slice(0, segmentIndexInActual + 1).join("/")
+      } else {
+        href = "/" + filteredSegments.slice(0, index + 1).join("/")
+      }
+    }
+    
     const label = getSegmentLabel(segment)
     const isLast = index === filteredSegments.length - 1
 
