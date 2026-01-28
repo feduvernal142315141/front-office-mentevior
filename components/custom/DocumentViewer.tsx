@@ -1,0 +1,150 @@
+"use client";
+
+import { useState } from "react";
+import { X, Download, FileText, Loader2 } from "lucide-react";
+import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+
+interface DocumentViewerProps {
+  open: boolean;
+  onClose: () => void;
+  documentUrl: string;
+  fileName?: string;
+}
+
+export function DocumentViewer({ open, onClose, documentUrl, fileName }: DocumentViewerProps) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const displayFileName = fileName || 'document.pdf';
+  const fileType = 'PDF Document';
+
+  const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(documentUrl)}&embedded=true`;
+
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = documentUrl;
+    link.download = displayFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleIframeLoad = () => {
+    setLoading(false);
+  };
+
+  const handleIframeError = () => {
+    setError(true);
+    setLoading(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogPortal>
+        <DialogOverlay className="z-[9998]" />
+        <DialogPrimitive.Content
+          className={cn(
+            "fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
+            "z-[9999]",
+            "max-w-[75vw] w-full h-[85vh]",
+            "bg-surface-primary border border-border-hairline rounded-xl shadow-2xl",
+            "overflow-hidden flex flex-col",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            "duration-200"
+          )}
+        >
+          <div className="px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-[#037ECC]" />
+                </div>
+                <div>
+                  <DialogTitle className="text-gray-900 text-base font-semibold">
+                    {displayFileName}
+                  </DialogTitle>
+                  <p className="text-xs text-gray-500 mt-0.5">{fileType}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownload}
+                  className={cn(
+                    "h-9 px-4 rounded-lg",
+                    "bg-white border border-gray-200",
+                    "hover:bg-gradient-to-br hover:from-[#037ECC]/10 hover:to-[#079CFB]/10",
+                    "hover:border-[#037ECC]/30",
+                    "transition-all duration-200",
+                    "flex items-center gap-2",
+                    "text-sm font-medium text-gray-700",
+                    "cursor-pointer"
+                  )}
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+
+                <button
+                  onClick={onClose}
+                  className={cn(
+                    "w-9 h-9 rounded-lg",
+                    "bg-white border border-gray-200",
+                    "hover:bg-red-50 hover:border-red-300",
+                    "transition-all duration-200",
+                    "flex items-center justify-center",
+                    "cursor-pointer"
+                  )}
+                >
+                  <X className="w-4 h-4 text-gray-600 hover:text-red-600" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-hidden bg-gray-50 relative">
+            {loading && !error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 text-[#037ECC] animate-spin" />
+                  <p className="text-sm text-gray-600">Loading PDF document...</p>
+                </div>
+              </div>
+            )}
+
+            {error ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center max-w-md px-6">
+                  <FileText className="w-16 h-16 text-red-400 mx-auto mb-4" />
+                  <p className="text-red-600 font-medium text-lg mb-2">Unable to display PDF</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    The document could not be displayed in the viewer. Please download it to view.
+                  </p>
+                  <button
+                    onClick={handleDownload}
+                    className="px-6 py-3 bg-[#037ECC] text-white rounded-lg hover:bg-[#079CFB] transition-colors inline-flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download PDF
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <iframe
+                src={viewerUrl}
+                className="w-full h-full border-0"
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
+                title={displayFileName}
+              />
+            )}
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    </Dialog>
+  );
+}

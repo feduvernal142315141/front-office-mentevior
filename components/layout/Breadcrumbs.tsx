@@ -98,9 +98,13 @@ export function Breadcrumbs() {
     return segment
   }).filter((segment): segment is string => segment !== null)
 
-  // Add "my-company" prefix for applicants if not present
+  // Add "my-company" prefix for applicants and agreements if not present
   if (filteredSegments.includes("applicants") && !filteredSegments.includes("my-company")) {
     const applicantsIndex = filteredSegments.indexOf("applicants")
+    filteredSegments = ["my-company", ...filteredSegments]
+  }
+
+  if (filteredSegments.includes("agreements") && !filteredSegments.includes("my-company")) {
     filteredSegments = ["my-company", ...filteredSegments]
   }
 

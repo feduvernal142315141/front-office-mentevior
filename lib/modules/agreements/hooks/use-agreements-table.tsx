@@ -1,15 +1,23 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useAgreements } from "./use-agreements"
 import { Eye } from "lucide-react"
 import type { Agreement } from "@/lib/types/agreement.types"
 
 export function useAgreementsTable() {
   const { agreements, isLoading, error, refetch } = useAgreements()
+  const [selectedDocument, setSelectedDocument] = useState<{ url: string; name: string } | null>(null)
 
   const handleViewDocument = (agreement: Agreement) => {
     if (agreement.documentUrl) {
-      window.open(agreement.documentUrl, "_blank", "noopener,noreferrer")
+      setSelectedDocument({
+        url: agreement.documentUrl,
+        name: agreement.name
+      })
     }
+  }
+
+  const handleCloseViewer = () => {
+    setSelectedDocument(null)
   }
 
   const columns = useMemo(
@@ -81,5 +89,7 @@ export function useAgreementsTable() {
     isLoading,
     error,
     refetch,
+    selectedDocument,
+    handleCloseViewer,
   }
 }

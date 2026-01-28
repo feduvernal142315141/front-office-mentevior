@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import type { Applicant } from "@/lib/types/applicant.types"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Download } from "lucide-react"
+import { FileText, Eye } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { cn } from "@/lib/utils"
 
 interface CustomSectionsProps {
@@ -235,71 +237,122 @@ export function ReferencesSection({ applicant, flashSection }: CustomSectionsPro
 }
 
 export function DocumentsSection({ applicant, flashSection }: CustomSectionsProps) {
+  const [selectedDocument, setSelectedDocument] = useState<{ url: string; name: string } | null>(null)
+
+  const handleViewDocument = (url: string, name: string) => {
+    setSelectedDocument({ url, name })
+  }
+
+  const handleCloseViewer = () => {
+    setSelectedDocument(null)
+  }
+
   return (
-    <SideSectionCard id="documents" title="Documents required to be attached to this application" flashSection={flashSection}>
-      <div className="space-y-4">
-        {applicant.documents.resumeUrl && (
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-slate-600" />
-              <div>
-                <p className="text-sm font-medium text-slate-900">Resume</p>
-                <p className="text-xs text-slate-500">{applicant.documents.resumeFileName || "resume.pdf"}</p>
+    <>
+      <SideSectionCard id="documents" title="Documents required to be attached to this application" flashSection={flashSection}>
+        <div className="space-y-4">
+          {applicant.documents.resumeUrl && (
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-slate-600" />
+                <div>
+                  <p className="text-sm font-medium text-slate-900">Resume</p>
+                  <p className="text-xs text-slate-500">{applicant.documents.resumeFileName || "resume.pdf"}</p>
+                </div>
               </div>
+              <button
+                onClick={() => handleViewDocument(applicant.documents.resumeUrl!, applicant.documents.resumeFileName || "Resume")}
+                className="
+                  h-9 w-9
+                  flex items-center justify-center
+                  rounded-xl
+                  bg-gradient-to-b from-[#037ECC]/10 to-[#079CFB]/10
+                  ring-1 ring-[#037ECC]/20
+                  hover:ring-[#037ECC]/40
+                  hover:from-[#037ECC]/15 hover:to-[#079CFB]/15
+                  hover:shadow-[0_4px_12px_rgba(3,126,204,0.15)]
+                  transition-all duration-200
+                  active:scale-95
+                "
+                title="View Document"
+              >
+                <Eye className="w-[18px] h-[18px] text-[#037ECC]" />
+              </button>
             </div>
-            <a
-              href={applicant.documents.resumeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <Download className="w-4 h-4 text-[#037ECC]" />
-            </a>
-          </div>
-        )}
-        {applicant.documents.professionalCredentialsUrl && (
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-slate-600" />
-              <div>
-                <p className="text-sm font-medium text-slate-900">Professional Credentials</p>
-                <p className="text-xs text-slate-500">{applicant.documents.professionalCredentialsFileName || "credentials.pdf"}</p>
+          )}
+          {applicant.documents.professionalCredentialsUrl && (
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-slate-600" />
+                <div>
+                  <p className="text-sm font-medium text-slate-900">Professional Credentials</p>
+                  <p className="text-xs text-slate-500">{applicant.documents.professionalCredentialsFileName || "credentials.pdf"}</p>
+                </div>
               </div>
+              <button
+                onClick={() => handleViewDocument(applicant.documents.professionalCredentialsUrl!, applicant.documents.professionalCredentialsFileName || "Professional Credentials")}
+                className="
+                  h-9 w-9
+                  flex items-center justify-center
+                  rounded-xl
+                  bg-gradient-to-b from-[#037ECC]/10 to-[#079CFB]/10
+                  ring-1 ring-[#037ECC]/20
+                  hover:ring-[#037ECC]/40
+                  hover:from-[#037ECC]/15 hover:to-[#079CFB]/15
+                  hover:shadow-[0_4px_12px_rgba(3,126,204,0.15)]
+                  transition-all duration-200
+                  active:scale-95
+                "
+                title="View Document"
+              >
+                <Eye className="w-[18px] h-[18px] text-[#037ECC]" />
+              </button>
             </div>
-            <a
-              href={applicant.documents.professionalCredentialsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <Download className="w-4 h-4 text-[#037ECC]" />
-            </a>
-          </div>
-        )}
-        {applicant.documents.othersUrl && (
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-slate-600" />
-              <div>
-                <p className="text-sm font-medium text-slate-900">Others</p>
-                <p className="text-xs text-slate-500">{applicant.documents.othersFileName || "document.pdf"}</p>
+          )}
+          {applicant.documents.othersUrl && (
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-slate-600" />
+                <div>
+                  <p className="text-sm font-medium text-slate-900">Others</p>
+                  <p className="text-xs text-slate-500">{applicant.documents.othersFileName || "document.pdf"}</p>
+                </div>
               </div>
+              <button
+                onClick={() => handleViewDocument(applicant.documents.othersUrl!, applicant.documents.othersFileName || "Other Document")}
+                className="
+                  h-9 w-9
+                  flex items-center justify-center
+                  rounded-xl
+                  bg-gradient-to-b from-[#037ECC]/10 to-[#079CFB]/10
+                  ring-1 ring-[#037ECC]/20
+                  hover:ring-[#037ECC]/40
+                  hover:from-[#037ECC]/15 hover:to-[#079CFB]/15
+                  hover:shadow-[0_4px_12px_rgba(3,126,204,0.15)]
+                  transition-all duration-200
+                  active:scale-95
+                "
+                title="View Document"
+              >
+                <Eye className="w-[18px] h-[18px] text-[#037ECC]" />
+              </button>
             </div>
-            <a
-              href={applicant.documents.othersUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <Download className="w-4 h-4 text-[#037ECC]" />
-            </a>
-          </div>
-        )}
-        {!applicant.documents.resumeUrl && !applicant.documents.professionalCredentialsUrl && !applicant.documents.othersUrl && (
-          <p className="text-sm text-slate-500">No documents uploaded</p>
-        )}
-      </div>
-    </SideSectionCard>
+          )}
+          {!applicant.documents.resumeUrl && !applicant.documents.professionalCredentialsUrl && !applicant.documents.othersUrl && (
+            <p className="text-sm text-slate-500">No documents uploaded</p>
+          )}
+        </div>
+      </SideSectionCard>
+
+      {selectedDocument && (
+        <DocumentViewer
+          open={!!selectedDocument}
+          onClose={handleCloseViewer}
+          documentUrl={selectedDocument.url}
+          fileName={selectedDocument.name}
+        />
+      )}
+    </>
   )
 }
 

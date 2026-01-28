@@ -2,6 +2,7 @@
 
 import { useAgreementsTable } from "@/lib/modules/agreements/hooks/use-agreements-table"
 import { CustomTable } from "@/components/custom/CustomTable"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
 
 export function AgreementsTable() {
   const {
@@ -9,6 +10,8 @@ export function AgreementsTable() {
     columns,
     isLoading,
     error,
+    selectedDocument,
+    handleCloseViewer,
   } = useAgreementsTable()
 
   if (error) {
@@ -21,19 +24,30 @@ export function AgreementsTable() {
   }
 
   return (
-    <CustomTable
-      columns={columns}
-      data={agreements}
-      isLoading={isLoading}
-      emptyMessage="No agreements found"
-      emptyContent={
-        <div className="text-center py-8">
-          <p className="text-base font-semibold text-gray-800">No agreements available</p>
-          <p className="text-sm text-gray-600 mt-1">
-            Agreements will appear here when they are added to the system.
-          </p>
-        </div>
-      }
-    />
+    <>
+      <CustomTable
+        columns={columns}
+        data={agreements}
+        isLoading={isLoading}
+        emptyMessage="No agreements found"
+        emptyContent={
+          <div className="text-center py-8">
+            <p className="text-base font-semibold text-gray-800">No agreements available</p>
+            <p className="text-sm text-gray-600 mt-1">
+              Agreements will appear here when they are added to the system.
+            </p>
+          </div>
+        }
+      />
+
+      {selectedDocument && (
+        <DocumentViewer
+          open={!!selectedDocument}
+          onClose={handleCloseViewer}
+          documentUrl={selectedDocument.url}
+          fileName={selectedDocument.name}
+        />
+      )}
+    </>
   )
 }
