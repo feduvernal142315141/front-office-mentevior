@@ -15,12 +15,9 @@ interface DocumentViewerProps {
 
 export function DocumentViewer({ open, onClose, documentUrl, fileName }: DocumentViewerProps) {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
   const displayFileName = fileName || 'document.pdf';
   const fileType = 'PDF Document';
-
-  const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(documentUrl)}&embedded=true`;
 
   const handleDownload = () => {
     const link = document.createElement("a");
@@ -29,15 +26,6 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName }: Documen
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const handleIframeLoad = () => {
-    setLoading(false);
-  };
-
-  const handleIframeError = () => {
-    setError(true);
-    setLoading(false);
   };
 
   return (
@@ -107,7 +95,7 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName }: Documen
           </div>
 
           <div className="flex-1 overflow-hidden bg-gray-50 relative">
-            {loading && !error && (
+            {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="w-8 h-8 text-[#037ECC] animate-spin" />
@@ -116,32 +104,12 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName }: Documen
               </div>
             )}
 
-            {error ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center max-w-md px-6">
-                  <FileText className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                  <p className="text-red-600 font-medium text-lg mb-2">Unable to display PDF</p>
-                  <p className="text-sm text-gray-600 mb-4">
-                    The document could not be displayed in the viewer. Please download it to view.
-                  </p>
-                  <button
-                    onClick={handleDownload}
-                    className="px-6 py-3 bg-[#037ECC] text-white rounded-lg hover:bg-[#079CFB] transition-colors inline-flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download PDF
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <iframe
-                src={viewerUrl}
-                className="w-full h-full border-0"
-                onLoad={handleIframeLoad}
-                onError={handleIframeError}
-                title={displayFileName}
-              />
-            )}
+            <iframe
+              src={documentUrl}
+              className="w-full h-full border-0"
+              onLoad={() => setLoading(false)}
+              title={displayFileName}
+            />
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>
