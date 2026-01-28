@@ -71,6 +71,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "edit": "Edit",
   "new": "New",
   "view": "View",
+  "details": "Details",
 }
 
 // Helper to get label for a segment
@@ -85,7 +86,23 @@ export function Breadcrumbs() {
   const router = useRouter()
   const segments = pathname.split("/").filter(Boolean)
 
-  let filteredSegments = segments.filter(segment => !isUUID(segment))
+  // Replace UUID with "Details" for applicants
+  let filteredSegments = segments.map((segment, index) => {
+    if (isUUID(segment)) {
+      // Check if previous segment is "applicants"
+      if (index > 0 && segments[index - 1] === "applicants") {
+        return "details"
+      }
+      return null // Filter out other UUIDs
+    }
+    return segment
+  }).filter((segment): segment is string => segment !== null)
+
+  // Add "my-company" prefix for applicants if not present
+  if (filteredSegments.includes("applicants") && !filteredSegments.includes("my-company")) {
+    const applicantsIndex = filteredSegments.indexOf("applicants")
+    filteredSegments = ["my-company", ...filteredSegments]
+  }
 
   if (filteredSegments.includes("clinical-documents") || filteredSegments.includes("hr-documents")) {
     const documentsIndex = filteredSegments.findIndex(seg => seg === "clinical-documents" || seg === "hr-documents")

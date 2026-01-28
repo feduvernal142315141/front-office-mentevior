@@ -262,6 +262,30 @@
       0 0 0 4px hsl(0 72% 51% / 0.12);
   }
 
+  /* Disabled state - read-only appearance */
+  .premium-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
+    background: linear-gradient(
+      180deg,
+      hsl(240 20% 98%) 0%,
+      hsl(240 18% 95%) 100%
+    );
+    border-color: hsl(240 20% 88% / 0.4);
+    color: hsl(240 10% 40%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 1px 2px rgba(15, 23, 42, 0.02);
+  }
+
+  .premium-input:disabled:hover {
+    border-color: hsl(240 20% 88% / 0.4);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 1px 2px rgba(15, 23, 42, 0.02);
+    transform: none;
+  }
+
   .login-card-wrapper {
     position: relative;
     border-radius: 24px; 
@@ -579,4 +603,14 @@
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: hsl(240 10% 80%) transparent;
+}
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
