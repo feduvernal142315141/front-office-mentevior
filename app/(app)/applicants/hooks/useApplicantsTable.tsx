@@ -18,7 +18,7 @@ export function useApplicantsTable() {
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [inputValue, setInputValue] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "read" | "unread">("all")
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
 
   const filters = buildFilters(
@@ -38,7 +38,7 @@ export function useApplicantsTable() {
   const { applicants, totalCount, isLoading, error, refetch } = useApplicants(queryModel)
 
   useEffect(() => {
-    setPage(1)
+    setPage(0)
   }, [searchQuery, statusFilter])
 
   useEffect(() => {
