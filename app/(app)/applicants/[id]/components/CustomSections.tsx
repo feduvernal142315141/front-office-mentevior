@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { FileText, Eye } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { cn } from "@/lib/utils"
 
@@ -14,9 +15,11 @@ interface CustomSectionsProps {
   flashSection?: string | null
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | null | undefined) => {
+  if (!dateString) return ""
   try {
     const date = new Date(dateString)
+    if (isNaN(date.getTime())) return ""
     return date.toLocaleDateString("en-US", {
       month: "2-digit",
       day: "2-digit",
@@ -46,6 +49,18 @@ const renderReadOnlySelect = (label: string, value: string | undefined | null, r
     options={[{ value: value || "", label: value || "-" }]}
     disabled={true}
     required={required}
+  />
+)
+
+const renderReadOnlyTextarea = (label: string, value: string | undefined | null, required: boolean = false) => (
+  <FloatingTextarea
+    label={label}
+    value={value || ""}
+    onChange={() => {}}
+    onBlur={() => {}}
+    disabled={true}
+    required={required}
+    rows={3}
   />
 )
 
@@ -188,12 +203,7 @@ export function ExperienceSection({ applicant, flashSection }: CustomSectionsPro
                   {renderReadOnlySelect("May We Contact", exp.mayWeContact ? "Yes" : "No")}
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Reason for Leaving</label>
-                    <div className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 min-h-[80px]">
-                      {exp.reasonForLeaving || "-"}
-                    </div>
-                  </div>
+                  {renderReadOnlyTextarea("Reason for Leaving", exp.reasonForLeaving)}
                 </div>
               </div>
             </div>

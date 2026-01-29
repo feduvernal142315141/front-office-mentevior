@@ -3,9 +3,11 @@ import { applicantViewerSchema, type ApplicantViewerFormData } from "../schemas/
 import type { Applicant } from "@/lib/types/applicant.types"
 
 function applicantToFormData(applicant: Applicant): ApplicantViewerFormData {
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return ""
     try {
       const date = new Date(dateString)
+      if (isNaN(date.getTime())) return ""
       return date.toLocaleDateString("en-US", {
         month: "2-digit",
         day: "2-digit",

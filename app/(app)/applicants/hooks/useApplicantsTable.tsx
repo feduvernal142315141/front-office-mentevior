@@ -135,7 +135,14 @@ export function useApplicantsTable() {
       key: "licenseExpirationDate",
       header: "License Exp. Date",
       render: (applicant: Applicant) => {
-        const date = new Date(applicant.licenseExpirationDate)
+        const dateValue = applicant.licenseExpirationDate || applicant.licenceExpirationDate
+        if (!dateValue) {
+          return <span className="text-gray-400">-</span>
+        }
+        const date = new Date(dateValue)
+        if (isNaN(date.getTime())) {
+          return <span className="text-gray-400">-</span>
+        }
         const formattedDate = date.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",

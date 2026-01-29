@@ -77,7 +77,8 @@ export interface Applicant {
   // Certification Information
   currentCertification: string
   licenseNumber: string
-  licenseExpirationDate: string
+  licenseExpirationDate?: string
+  licenceExpirationDate?: string
   npi?: string
   insurancesCurrentlyLicensedWith?: string[]
   
