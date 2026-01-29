@@ -11,7 +11,7 @@ import type { QueryModel } from "@/lib/models/queryModel"
  * Get paginated list of applicants
  */
 export async function getApplicants(query: QueryModel): Promise<{ applicants: Applicant[], totalCount: number }> {
-  const response = await serviceGet<PaginatedResponse<Applicant>>(`/company/applicants${
+  const response = await serviceGet<PaginatedResponse<Applicant>>(`/company/applicant${
     query ? `?${getQueryString(query)}` : ''
   }`)
   
@@ -36,7 +36,7 @@ export async function getApplicants(query: QueryModel): Promise<{ applicants: Ap
  * Get a single applicant by ID
  */
 export async function getApplicantById(applicantId: string): Promise<Applicant | null> {
-  const response = await serviceGet<Applicant>(`/company/applicants/${applicantId}`)
+  const response = await serviceGet<Applicant>(`/company/applicant/${applicantId}`)
   
   if (response.status === 404) {
     return null
@@ -54,7 +54,7 @@ export async function getApplicantById(applicantId: string): Promise<Applicant |
  */
 export async function markApplicantAsRead(applicantId: string, isRead: boolean = true): Promise<void> {
   const data: MarkApplicantAsReadRequest = { applicantId, isRead }
-  const response = await servicePut<MarkApplicantAsReadRequest, { message?: string }>(`/company/applicants/${applicantId}/mark-as-read`, data)
+  const response = await servicePut<MarkApplicantAsReadRequest, { message?: string }>(`/company/applicant/${applicantId}/mark-as-read`, data)
 
   if (response.status !== 200) {
     throw new Error(response.data?.message || "Failed to update applicant read status")
