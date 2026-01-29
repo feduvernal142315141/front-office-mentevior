@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react"
 import { useAgreements } from "./use-agreements"
 import { Eye } from "lucide-react"
-import type { Agreement } from "@/lib/types/agreement.types"
+import type { AgreementListItem } from "@/lib/types/agreement.types"
 
 export function useAgreementsTable() {
   const { agreements, isLoading, error, refetch } = useAgreements()
   const [selectedDocument, setSelectedDocument] = useState<{ url: string; name: string } | null>(null)
 
-  const handleViewDocument = (agreement: Agreement) => {
-    if (agreement.documentUrl) {
+  const handleViewDocument = (agreement: AgreementListItem) => {
+    if (agreement.content) {
       setSelectedDocument({
-        url: agreement.documentUrl,
+        url: agreement.content,
         name: agreement.name
       })
     }
@@ -20,20 +20,40 @@ export function useAgreementsTable() {
     setSelectedDocument(null)
   }
 
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      })
+    } catch {
+      return dateString
+    }
+  }
+
   const columns = useMemo(
     () => [
       {
         key: "name",
         header: "Agreement Name",
-        render: (agreement: Agreement) => (
+        render: (agreement: AgreementListItem) => (
           <div className="font-medium text-gray-900">{agreement.name}</div>
+        ),
+      },
+      {
+        key: "createdAt",
+        header: "Created Date",
+        render: (agreement: AgreementListItem) => (
+          <div className="text-gray-600">{formatDate(agreement.createdAt)}</div>
         ),
       },
       {
         key: "actions",
         header: "Actions",
         align: "right" as const,
-        render: (agreement: Agreement) => (
+        render: (agreement: AgreementListItem) => (
           <div className="flex justify-end gap-2">
             <button
               onClick={(e) => {

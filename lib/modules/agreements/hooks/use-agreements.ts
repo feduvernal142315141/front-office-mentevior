@@ -1,17 +1,11 @@
-/**
- * USE AGREEMENTS
- * 
- * Hook to fetch agreements list.
- */
-
 "use client"
 
 import { useState, useEffect } from "react"
-import type { Agreement } from "@/lib/types/agreement.types"
+import type { AgreementListItem } from "@/lib/types/agreement.types"
 import { getAgreements } from "../services/agreements.service"
 
 interface UseAgreementsReturn {
-  agreements: Agreement[]
+  agreements: AgreementListItem[]
   totalCount: number
   isLoading: boolean
   error: Error | null
@@ -19,7 +13,7 @@ interface UseAgreementsReturn {
 }
 
 export function useAgreements(): UseAgreementsReturn {
-  const [agreements, setAgreements] = useState<Agreement[]>([])
+  const [agreements, setAgreements] = useState<AgreementListItem[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)

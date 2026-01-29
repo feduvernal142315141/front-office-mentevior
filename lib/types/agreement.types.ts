@@ -1,12 +1,20 @@
 // Agreement types
 
-export interface AgreementsResponse {
-  businessAgreement?: string
-  serviceAgreement?: string
+/**
+ * Agreement entity from backend
+ * Structure: { name: string, content: string, createdAt: string }
+ */
+export interface Agreement {
+  name: string
+  content: string
+  createdAt: string
 }
 
-export interface Agreement {
-  id: string
+/**
+ * Agreement list item for table display
+ */
+export interface AgreementListItem {
   name: string
-  documentUrl: string
+  content: string
+  createdAt: string
 }
