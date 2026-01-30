@@ -24,7 +24,6 @@ export const setInterceptorHandlers = (handlers: Partial<InterceptorHandlers>) =
 // Crear instancia de axios
 const apiInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
-    timeout: 30000, // 30 segundos
     headers: {
         'Content-Type': 'application/json',
     }
