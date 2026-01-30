@@ -27,8 +27,16 @@ export async function getApplicants(query: QueryModel): Promise<{ applicants: Ap
   }
   
   return {
-    applicants: paginatedData.entities,
+    applicants: paginatedData.entities.map(normalizeApplicant),
     totalCount: paginatedData.pagination?.total || 0
+  }
+}
+
+function normalizeApplicant(applicant: Applicant): Applicant {
+  const licenseDate = applicant.licenseExpirationDate || applicant.licenceExpirationDate
+  return {
+    ...applicant,
+    licenseExpirationDate: licenseDate,
   }
 }
 
@@ -46,7 +54,7 @@ export async function getApplicantById(applicantId: string): Promise<Applicant |
     throw new Error(response.data?.message || "Failed to fetch applicant")
   }
 
-  return response.data as unknown as Applicant
+  return normalizeApplicant(response.data as unknown as Applicant)
 }
 
 /**
