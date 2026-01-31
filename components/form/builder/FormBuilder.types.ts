@@ -9,6 +9,8 @@ export interface FieldConfig<TFormValues> {
   optionsKey?: string;
   visible?: boolean;
   disabled?: boolean;
+
+  colSpan?: 1 | 2 | 3;
 }
 
 export interface SectionConfig<TFormValues> {
@@ -16,7 +18,7 @@ export interface SectionConfig<TFormValues> {
   title: string;
   tabLabel?: string;
   description?: string;
-  columns?: 1 | 2; 
+  columns?: 1 | 2 | 3; 
   side?: "left" | "right"; 
   fields: FieldConfig<TFormValues>[];
 }
@@ -27,6 +29,7 @@ export interface FormConfig<TFormValues> {
   schema: ZodTypeAny;
   defaultValues: TFormValues;
   sections: SectionConfig<TFormValues>[];
+  layout?: "two-column" | "single-column";
 }
 
 export interface GlobalOptionsMap {
@@ -44,4 +47,6 @@ export interface FormBuilderProps<TFormValues> {
     left?: React.ReactNode;
     right?: React.ReactNode;
   };
+
+  customSectionComponents?: Record<string, (flashSection: string | null) => React.ReactNode>;
 }

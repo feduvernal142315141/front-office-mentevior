@@ -55,4 +55,5 @@ export interface UpdateHRDocumentDto {
 
 export interface BulkCreateHRDocumentsDto {
   catalogIds: string[]
+  documentCategory: DocumentCategory
 }

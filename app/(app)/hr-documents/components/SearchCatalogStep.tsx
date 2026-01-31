@@ -64,7 +64,7 @@ export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps
     }
 
     if (selectedIds.size === 1) {
-      // Si es solo 1, navegar a página de creación
+
       const selectedDocument = catalogDocuments.find((c: HRDocumentCatalogItem) => selectedIds.has(c.id))
       if (selectedDocument) {
         onClose()
@@ -78,12 +78,12 @@ export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps
         router.push(`/hr-documents/create?${params.toString()}`)
       }
     } else {
-      // Si son múltiples, bulk create
+
       setIsSubmitting(true)
       try {
         const selectedCatalogIds = Array.from(selectedIds)
   
-        await bulkCreateHRDocuments({ catalogIds: selectedCatalogIds })
+        await bulkCreateHRDocuments({ catalogIds: selectedCatalogIds, documentCategory: "HR" })
         
         toast.success(`${selectedCatalogIds.length} documents added successfully`)
         onSuccess()

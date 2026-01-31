@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { ChevronDown, Check, Search, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 interface Option {
   value: string
@@ -46,8 +47,8 @@ export function MultiSelect({
     ? `${selectedOptions.length} selected` 
     : placeholder
   
-  // Show only first 3 tags + counter
-  const MAX_VISIBLE_TAGS = 6
+  // Show only first 2 tags + counter to prevent overflow
+  const MAX_VISIBLE_TAGS = 2
   const visibleTags = selectedOptions.slice(0, MAX_VISIBLE_TAGS)
   const remainingCount = selectedOptions.length - MAX_VISIBLE_TAGS
 
@@ -138,33 +139,51 @@ export function MultiSelect({
           {!hasValue ? (
             <span className="text-gray-400">{displayText}</span>
           ) : (
-            <div className="flex items-center gap-2 py-1 overflow-hidden">
+            <div className="flex items-center gap-2 py-1 overflow-hidden flex-wrap">
               {visibleTags.map((option) => (
                 <span
                   key={option.value}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm whitespace-nowrap flex-shrink-0"
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm whitespace-nowrap flex-shrink-0",
+                    disabled 
+                      ? "bg-gray-100 text-gray-600" 
+                      : "bg-blue-50 text-blue-700"
+                  )}
                 >
                   {option.label}
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => handleRemove(option.value, e)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        handleRemove(option.value, e as any)
-                      }
-                    }}
-                    className="hover:bg-blue-100 rounded-full p-0.5 cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </span>
+                  {!disabled && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => handleRemove(option.value, e)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleRemove(option.value, e as any)
+                        }
+                      }}
+                      className="hover:bg-blue-100 rounded-full p-0.5 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </span>
+                  )}
                 </span>
               ))}
               {remainingCount > 0 && (
-                <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap flex-shrink-0">
-                  +{remainingCount} more
-                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap flex-shrink-0 cursor-pointer">
+                      +{remainingCount} more
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-slate-900 text-white max-w-xs">
+                    <div className="flex flex-col gap-1">
+                      {selectedOptions.slice(MAX_VISIBLE_TAGS).map((opt) => (
+                        <span key={opt.value}>{opt.label}</span>
+                      ))}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
           )}

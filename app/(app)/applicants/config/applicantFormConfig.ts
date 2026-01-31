@@ -79,14 +79,14 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
     subtitle: "Job Application Details",
     schema: applicantViewerSchema,
     defaultValues: applicantToFormData(applicant),
+    layout: "single-column",
     
     sections: [
       {
         id: "general",
         title: "General Information",
         tabLabel: "General",
-        side: "left",
-        columns: 2,
+        columns: 3,
         fields: [
           { name: "firstName", label: "First Name", type: "text", required: true, disabled: true },
           { name: "middleName", label: "Middle Name", type: "text", disabled: true },
@@ -126,31 +126,15 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "certification",
         title: "Certification Information",
         tabLabel: "Certification",
-        columns: 2,
-        side: "left",
-        fields: [
-          { 
-            name: "currentCertification", 
-            label: "Current Certification", 
-            type: "select", 
-            required: true, 
-            disabled: true,
-            options: [
-              { value: applicant.currentCertification || "", label: applicant.currentCertification || "-" }
-            ]
-          },
-          { name: "licenseNumber", label: "License/Certification Number", type: "text", required: true, disabled: true },
-          { name: "licenseExpirationDate", label: "License/Certification Exp. Date", type: "text", required: true, disabled: true },
-          { name: "npi", label: "NPI", type: "text", disabled: true },
-        ]
+        columns: 3,
+        fields: [] 
       },
       
       {
         id: "emergency",
         title: "Emergency Contact",
         tabLabel: "Emergency",
-        side: "left",
-        columns: 2,
+        columns: 3,
         fields: [
           { name: "emergencyContactFirstName", label: "First Name", type: "text", disabled: true },
           { name: "emergencyContactLastName", label: "Last Name", type: "text", disabled: true },
@@ -164,8 +148,7 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "languages",
         title: "Languages Spoken",
         tabLabel: "Languages",
-        side: "left",
-        columns: 1,
+        columns: 3,
         fields: [] 
       },
       
@@ -173,7 +156,6 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "availability",
         title: "Availability",
         tabLabel: "Availability",
-        side: "left",
         columns: 1,
         fields: [] 
       },
@@ -182,8 +164,7 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "experience",
         title: "Professional Experience (Starting from current or most recent)",
         tabLabel: "Experience",
-        side: "left",
-        columns: 1,
+        columns: 3,
         fields: []
       },
       
@@ -191,8 +172,7 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "education",
         title: "Education (please enter your higher degree)",
         tabLabel: "Education",
-        side: "right",
-        columns: 1,
+        columns: 3,
         fields: [
           { 
             name: "educationType", 
@@ -215,8 +195,7 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "references",
         title: "Professional References",
         tabLabel: "References",
-        side: "right",
-        columns: 1,
+        columns: 3,
         fields: [] 
       },
       
@@ -224,7 +203,6 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "documents",
         title: "Documents required to be attached to this application",
         tabLabel: "Documents",
-        side: "right",
         columns: 1,
         fields: [] 
       },
@@ -233,8 +211,7 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "other",
         title: "Other Information",
         tabLabel: "Other",
-        side: "right",
-        columns: 1,
+        columns: 3,
         fields: [
           { 
             name: "authorizedToWorkInUS", 
@@ -267,7 +244,8 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
             name: "behaviorAnalysisExperienceDescription", 
             label: "Briefly, please describe your experience in the Behavior Analysis field", 
             type: "textarea", 
-            disabled: true 
+            disabled: true,
+            colSpan: 3
           },
         ]
       },
@@ -276,8 +254,7 @@ export const applicantFormConfig = (applicant: Applicant): FormConfig<ApplicantV
         id: "checklist",
         title: "Mark if you currently have the following documents",
         tabLabel: "Checklist",
-        side: "right",
-        columns: 1,
+        columns: 3,
         fields: [] 
       },
     ]

@@ -21,6 +21,7 @@ export function FormBuilder<TFormValues extends FieldValues>({
   onFieldChange,
   loadStatesByCountry,
   customSections,
+  customSectionComponents,
 }: FormBuilderProps<TFormValues>) {
   const [activeSection, setActiveSection] = React.useState<string>("general");
   const [hoveredSection, setHoveredSection] = React.useState<string | null>(null);
@@ -83,8 +84,10 @@ export function FormBuilder<TFormValues extends FieldValues>({
     }
   };
 
+  const layout = config.layout || "two-column";
   const leftSections = config.sections.filter((s) => s.side !== "right" && s.fields.length > 0);
   const rightSections = config.sections.filter((s) => s.side === "right" && s.fields.length > 0);
+  const allSectionsWithFields = config.sections.filter((s) => s.fields.length > 0);
 
   return (
     <FormProvider {...form}>
@@ -97,41 +100,90 @@ export function FormBuilder<TFormValues extends FieldValues>({
         onSubmit={form.handleSubmit(handleSubmit, handleInvalid)}
         className="pb-32 max-w-[1360px] mx-auto px-12"
       >
-        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-10 items-start pt-6 pb-12">
+        {layout === "single-column" ? (
+          <div className="space-y-10 pt-6 pb-12">
+            {customSectionComponents ? (
 
-          <div className="space-y-10">
-            {leftSections.map((section) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                globalOptions={globalOptions}
-                activeSection={activeSection}
-                setActiveSection={handleSectionClick}
-                hoveredSection={hoveredSection}
-                setHoveredSection={setHoveredSection}
-                flashSection={flashSection}
-                onFieldChange={handleFieldChange}
-              />
-            ))}
-            {customSections?.(flashSection)?.left}
+              config.sections.map((section) => {
+                const hasCustomComponent = customSectionComponents[section.id];
+                if (hasCustomComponent) {
+                  return <React.Fragment key={section.id}>{hasCustomComponent(flashSection)}</React.Fragment>;
+                }
+                if (section.fields.length > 0) {
+                  return (
+                    <SectionCard
+                      key={section.id}
+                      section={section}
+                      globalOptions={globalOptions}
+                      activeSection={activeSection}
+                      setActiveSection={handleSectionClick}
+                      hoveredSection={hoveredSection}
+                      setHoveredSection={setHoveredSection}
+                      flashSection={flashSection}
+                      onFieldChange={handleFieldChange}
+                    />
+                  );
+                }
+                return null;
+              })
+            ) : (
+  
+              <>
+                {allSectionsWithFields.map((section) => (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    globalOptions={globalOptions}
+                    activeSection={activeSection}
+                    setActiveSection={handleSectionClick}
+                    hoveredSection={hoveredSection}
+                    setHoveredSection={setHoveredSection}
+                    flashSection={flashSection}
+                    onFieldChange={handleFieldChange}
+                  />
+                ))}
+                {customSections?.(flashSection)?.left}
+                {customSections?.(flashSection)?.right}
+              </>
+            )}
           </div>
+        ) : (
+          <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-10 items-start pt-6 pb-12">
 
-          <div className="space-y-10">
-            {rightSections.map((section) => (
-              <SideSectionCard
-                key={section.id}
-                section={section}
-                globalOptions={globalOptions}
-                activeSection={activeSection}
-                setActiveSection={handleSectionClick}
-                hoveredSection={hoveredSection}
-                setHoveredSection={setHoveredSection}
-                flashSection={flashSection}
-              />
-            ))}
-            {customSections?.(flashSection)?.right}
+            <div className="space-y-10">
+              {leftSections.map((section) => (
+                <SectionCard
+                  key={section.id}
+                  section={section}
+                  globalOptions={globalOptions}
+                  activeSection={activeSection}
+                  setActiveSection={handleSectionClick}
+                  hoveredSection={hoveredSection}
+                  setHoveredSection={setHoveredSection}
+                  flashSection={flashSection}
+                  onFieldChange={handleFieldChange}
+                />
+              ))}
+              {customSections?.(flashSection)?.left}
+            </div>
+
+            <div className="space-y-10">
+              {rightSections.map((section) => (
+                <SideSectionCard
+                  key={section.id}
+                  section={section}
+                  globalOptions={globalOptions}
+                  activeSection={activeSection}
+                  setActiveSection={handleSectionClick}
+                  hoveredSection={hoveredSection}
+                  setHoveredSection={setHoveredSection}
+                  flashSection={flashSection}
+                />
+              ))}
+              {customSections?.(flashSection)?.right}
+            </div>
           </div>
-        </div>
+        )}
       </form>
     </FormProvider>
   );

@@ -8,6 +8,7 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
+import { MultiSelect } from "@/components/custom/MultiSelect"
 import { cn } from "@/lib/utils"
 
 interface CustomSectionsProps {
@@ -85,24 +86,29 @@ const SectionCard = ({ id, title, children, flashSection }: { id: string, title:
   )
 }
 
-const SideSectionCard = ({ id, title, children, flashSection }: { id: string, title: string, children: React.ReactNode, flashSection?: string | null }) => {
-  const isFlashing = flashSection === id
-  
+export function CertificationSection({ applicant, flashSection }: CustomSectionsProps) {
+  const insuranceValues = applicant.insurancesCurrentlyLicensedWith || []
+  const insuranceOptions = insuranceValues.map(insurance => ({
+    value: insurance,
+    label: insurance
+  }))
+
   return (
-    <section id={id} className="scroll-mt-[100px]">
-      <div className={cn(
-        "rounded-3xl p-6 transition-all duration-300 backdrop-blur-[3px] bg-white/90 ring-1 ring-slate-200/60 hover:-translate-y-[2px] hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]",
-        isFlashing && "ring-2 ring-[#2563EB] shadow-[0_0_0_4px_rgba(37,99,235,0.18)]"
-      )}>
-        <h3 className="text-[15px] font-semibold tracking-wide mb-1 text-[#037ECC]">
-          {title}
-        </h3>
-        <div className="h-px my-3 bg-gradient-to-r from-transparent via-slate-300/40 to-transparent" />
-        <div className="mt-4">
-          {children}
-        </div>
+    <SectionCard id="certification" title="Certification Information" flashSection={flashSection}>
+      <div className="grid grid-cols-3 gap-8">
+        {renderReadOnlySelect("Current Certification", applicant.currentCertification, true)}
+        {renderReadOnlyInput("License/Certification Number", applicant.licenseNumber, true)}
+        {renderReadOnlyInput("License/Certification Exp. Date", formatDate(applicant.licenseExpirationDate || applicant.licenceExpirationDate), true)}
+        {renderReadOnlyInput("NPI", applicant.npi)}
+        <MultiSelect
+          label="Insurances currently licensed with"
+          value={insuranceValues}
+          onChange={() => {}}
+          options={insuranceOptions}
+          disabled={true}
+        />
       </div>
-    </section>
+    </SectionCard>
   )
 }
 
@@ -129,6 +135,25 @@ export function LanguagesSection({ applicant, flashSection }: CustomSectionsProp
   )
 }
 
+const formatTimeSlot = (timeSlot: string): string => {
+  const formatSingleTime = (time: string): string => {
+    const match = time.trim().match(/^(\d{1,2})(AM|PM)$/i)
+    if (match) {
+      const hour = match[1]
+      const period = match[2].toUpperCase()
+      return `${hour}:00 ${period}`
+    }
+    return time
+  }
+
+  if (timeSlot.includes(" - ")) {
+    const [start, end] = timeSlot.split(" - ")
+    return `${formatSingleTime(start)} - ${formatSingleTime(end)}`
+  }
+  
+  return formatSingleTime(timeSlot)
+}
+
 export function AvailabilitySection({ applicant, flashSection }: CustomSectionsProps) {
   return (
     <SectionCard id="availability" title="Availability" flashSection={flashSection}>
@@ -149,7 +174,7 @@ export function AvailabilitySection({ applicant, flashSection }: CustomSectionsP
           <tbody>
             {Object.entries(applicant.availability || {}).map(([timeSlot, days]) => (
               <tr key={timeSlot} className="border-b border-slate-100">
-                <td className="p-3 text-sm text-slate-900 font-medium">{timeSlot}</td>
+                <td className="p-3 text-sm text-slate-900 font-medium whitespace-nowrap">{formatTimeSlot(timeSlot)}</td>
                 {["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => (
                   <td key={day} className="p-3 text-center">
                     {days[day as keyof typeof days] ? (
@@ -181,25 +206,23 @@ export function ExperienceSection({ applicant, flashSection }: CustomSectionsPro
                 </Badge>
               </div>
               <div className="space-y-6">
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   {renderReadOnlyInput("Employer", exp.employer)}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   {renderReadOnlyInput("Start Date", formatDate(exp.startDate))}
                   {renderReadOnlyInput("End Date", formatDate(exp.endDate))}
                 </div>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   {renderReadOnlyInput("Position/Job Title", exp.positionJobTitle)}
                   {renderReadOnlyInput("Immediate Supervisor", exp.immediateSupervisor)}
                   {renderReadOnlyInput("Phone Number", exp.phoneNumber)}
-                  {renderReadOnlyInput("Address", exp.address)}
                 </div>
                 <div className="grid grid-cols-3 gap-4">
+                  {renderReadOnlyInput("Address", exp.address)}
                   {renderReadOnlyInput("City", exp.city)}
                   {renderReadOnlySelect("State", exp.state)}
-                  {renderReadOnlyInput("Zip Code", exp.zipCode)}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                  {renderReadOnlyInput("Zip Code", exp.zipCode)}
                   {renderReadOnlySelect("May We Contact", exp.mayWeContact ? "Yes" : "No")}
                 </div>
                 <div className="grid grid-cols-1 gap-4">
@@ -218,7 +241,7 @@ export function ExperienceSection({ applicant, flashSection }: CustomSectionsPro
 
 export function ReferencesSection({ applicant, flashSection }: CustomSectionsProps) {
   return (
-    <SideSectionCard id="references" title="Professional References" flashSection={flashSection}>
+    <SectionCard id="references" title="Professional References" flashSection={flashSection}>
       <div className="space-y-6">
         {applicant.professionalReferences && applicant.professionalReferences.length > 0 ? (
           applicant.professionalReferences.map((ref, idx) => (
@@ -228,7 +251,7 @@ export function ReferencesSection({ applicant, flashSection }: CustomSectionsPro
                   Reference #{idx + 1}
                 </Badge>
               </div>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 {renderReadOnlyInput("First Name", ref.firstName)}
                 {renderReadOnlyInput("Last Name", ref.lastName)}
                 {renderReadOnlyInput("Phone Number", ref.phoneNumber)}
@@ -242,7 +265,7 @@ export function ReferencesSection({ applicant, flashSection }: CustomSectionsPro
           <p className="text-sm text-slate-500">No professional references listed</p>
         )}
       </div>
-    </SideSectionCard>
+    </SectionCard>
   )
 }
 
@@ -259,7 +282,7 @@ export function DocumentsSection({ applicant, flashSection }: CustomSectionsProp
 
   return (
     <>
-      <SideSectionCard id="documents" title="Documents required to be attached to this application" flashSection={flashSection}>
+      <SectionCard id="documents" title="Documents required to be attached to this application" flashSection={flashSection}>
         <div className="space-y-4">
           {applicant.documents.resumeUrl && (
             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -352,7 +375,7 @@ export function DocumentsSection({ applicant, flashSection }: CustomSectionsProp
             <p className="text-sm text-slate-500">No documents uploaded</p>
           )}
         </div>
-      </SideSectionCard>
+      </SectionCard>
 
       {selectedDocument && (
         <DocumentViewer
@@ -368,8 +391,8 @@ export function DocumentsSection({ applicant, flashSection }: CustomSectionsProp
 
 export function ChecklistSection({ applicant, flashSection }: CustomSectionsProps) {
   return (
-    <SideSectionCard id="checklist" title="Mark if you currently have the following documents" flashSection={flashSection}>
-      <div className="grid grid-cols-1 gap-3">
+    <SectionCard id="checklist" title="Mark if you currently have the following documents" flashSection={flashSection}>
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Liability Insurance", value: applicant.hasLiabilityInsurance },
           { label: "Social Security Card (Original)", value: applicant.hasSocialSecurityCard },
@@ -391,6 +414,6 @@ export function ChecklistSection({ applicant, flashSection }: CustomSectionsProp
           </div>
         ))}
       </div>
-    </SideSectionCard>
+    </SectionCard>
   )
 }
