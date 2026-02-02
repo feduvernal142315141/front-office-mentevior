@@ -13,7 +13,7 @@ interface DocumentViewerProps {
   fileName?: string;
 }
 
-export function DocumentViewer({ open, onClose, documentUrl, fileName }: DocumentViewerProps) {
+export function DocumentViewer({ open, onClose, documentUrl, fileName = "document.pdf" }: DocumentViewerProps) {
   const [loading, setLoading] = useState(true);
 
   const displayFileName = fileName || 'document.pdf';
@@ -22,7 +22,8 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName }: Documen
   const handleDownload = () => {
     const link = document.createElement("a");
     link.href = documentUrl;
-    link.download = displayFileName;
+    link.download = fileName;
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

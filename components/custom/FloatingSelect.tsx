@@ -100,14 +100,12 @@ export function FloatingSelect({
             text-left
             cursor-pointer
             
-            disabled:opacity-50
-            disabled:cursor-not-allowed
-            
             transition-all duration-200
           `,
             hasError && "premium-input-error",
-            !hasValue && "text-gray-400",
-            hasValue && "text-gray-900"
+            !hasValue && !disabled && "text-gray-400",
+            hasValue && !disabled && "text-gray-900",
+            disabled && "!cursor-not-allowed"
           )}
         >
           {displayText}

@@ -47,7 +47,6 @@ export function MultiSelect({
     ? `${selectedOptions.length} selected` 
     : placeholder
   
-  // Show only first 2 tags + counter to prevent overflow
   const MAX_VISIBLE_TAGS = 2
   const visibleTags = selectedOptions.slice(0, MAX_VISIBLE_TAGS)
   const remainingCount = selectedOptions.length - MAX_VISIBLE_TAGS
@@ -125,15 +124,13 @@ export function MultiSelect({
             text-left
             cursor-pointer
             
-            disabled:opacity-50
-            disabled:cursor-not-allowed
-            
             transition-all duration-200
             
             flex flex-wrap items-center gap-2
           `,
             hasError && "premium-input-error",
-            !hasValue && "text-gray-400",
+            !hasValue && !disabled && "text-gray-400",
+            disabled && "!cursor-not-allowed"
           )}
         >
           {!hasValue ? (
