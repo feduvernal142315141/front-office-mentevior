@@ -95,18 +95,20 @@ export function CertificationSection({ applicant, flashSection }: CustomSections
 
   return (
     <SectionCard id="certification" title="Certification Information" flashSection={flashSection}>
-      <div className="grid grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {renderReadOnlySelect("Current Certification", applicant.currentCertification, true)}
         {renderReadOnlyInput("License/Certification Number", applicant.licenseNumber, true)}
         {renderReadOnlyInput("License/Certification Exp. Date", formatDate(applicant.licenseExpirationDate || applicant.licenceExpirationDate), true)}
         {renderReadOnlyInput("NPI", applicant.npi)}
-        <MultiSelect
-          label="Insurances currently licensed with"
-          value={insuranceValues}
-          onChange={() => {}}
-          options={insuranceOptions}
-          disabled={true}
-        />
+        <div className="md:col-span-2">
+          <MultiSelect
+            label="Insurances currently licensed with"
+            value={insuranceValues}
+            onChange={() => {}}
+            options={insuranceOptions}
+            disabled={true}
+          />
+        </div>
       </div>
     </SectionCard>
   )
@@ -120,7 +122,7 @@ export function LanguagesSection({ applicant, flashSection }: CustomSectionsProp
           applicant.languagesSpoken.map((lang, idx) => (
             <div key={idx} className="p-6 bg-slate-50 rounded-xl border border-slate-200">
               <h3 className="font-semibold text-slate-900 mb-4">{lang.language}</h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {renderReadOnlySelect("Write", lang.write || "-")}
                 {renderReadOnlySelect("Read", lang.read || "-")}
                 {renderReadOnlySelect("Speech", lang.speech || "-")}
@@ -161,7 +163,7 @@ export function AvailabilitySection({ applicant, flashSection }: CustomSectionsP
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-slate-200">
-              <th className="text-left p-3 text-sm font-semibold text-slate-700">Times</th>
+              <th className="text-right p-3 text-sm font-semibold text-slate-700 w-[100px]">Times</th>
               <th className="text-center p-3 text-sm font-semibold text-slate-700">Mon</th>
               <th className="text-center p-3 text-sm font-semibold text-slate-700">Tue</th>
               <th className="text-center p-3 text-sm font-semibold text-slate-700">Wed</th>
@@ -174,7 +176,9 @@ export function AvailabilitySection({ applicant, flashSection }: CustomSectionsP
           <tbody>
             {Object.entries(applicant.availability || {}).map(([timeSlot, days]) => (
               <tr key={timeSlot} className="border-b border-slate-100">
-                <td className="p-3 text-sm text-slate-900 font-medium whitespace-nowrap">{formatTimeSlot(timeSlot)}</td>
+                <td className="p-3 text-right text-sm text-slate-900 font-medium whitespace-nowrap w-[100px]">
+                  {formatTimeSlot(timeSlot)}
+                </td>
                 {["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => (
                   <td key={day} className="p-3 text-center">
                     {days[day as keyof typeof days] ? (
@@ -206,22 +210,22 @@ export function ExperienceSection({ applicant, flashSection }: CustomSectionsPro
                 </Badge>
               </div>
               <div className="space-y-6">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {renderReadOnlyInput("Employer", exp.employer)}
                   {renderReadOnlyInput("Start Date", formatDate(exp.startDate))}
                   {renderReadOnlyInput("End Date", formatDate(exp.endDate))}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {renderReadOnlyInput("Position/Job Title", exp.positionJobTitle)}
                   {renderReadOnlyInput("Immediate Supervisor", exp.immediateSupervisor)}
                   {renderReadOnlyInput("Phone Number", exp.phoneNumber)}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {renderReadOnlyInput("Address", exp.address)}
                   {renderReadOnlyInput("City", exp.city)}
                   {renderReadOnlySelect("State", exp.state)}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {renderReadOnlyInput("Zip Code", exp.zipCode)}
                   {renderReadOnlySelect("May We Contact", exp.mayWeContact ? "Yes" : "No")}
                 </div>
@@ -251,7 +255,7 @@ export function ReferencesSection({ applicant, flashSection }: CustomSectionsPro
                   Reference #{idx + 1}
                 </Badge>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {renderReadOnlyInput("First Name", ref.firstName)}
                 {renderReadOnlyInput("Last Name", ref.lastName)}
                 {renderReadOnlyInput("Phone Number", ref.phoneNumber)}
@@ -392,7 +396,7 @@ export function DocumentsSection({ applicant, flashSection }: CustomSectionsProp
 export function ChecklistSection({ applicant, flashSection }: CustomSectionsProps) {
   return (
     <SectionCard id="checklist" title="Mark if you currently have the following documents" flashSection={flashSection}>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {[
           { label: "Liability Insurance", value: applicant.hasLiabilityInsurance },
           { label: "Social Security Card (Original)", value: applicant.hasSocialSecurityCard },

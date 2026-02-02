@@ -80,10 +80,9 @@ export function SectionCard<TFormValues extends FieldValues>({
 
         <div
           className={cn(
-            "mt-8 gap-8",
-            columns === 1 && "grid grid-cols-1",
-            columns === 2 && "grid grid-cols-2",
-            columns === 3 && "grid grid-cols-3"
+            "mt-8 gap-8 grid grid-cols-1",
+            columns === 2 && "md:grid-cols-2",
+            columns === 3 && "md:grid-cols-2 xl:grid-cols-3"
           )}
         >
           {fields.map((field) => (
@@ -91,8 +90,8 @@ export function SectionCard<TFormValues extends FieldValues>({
                <div 
                  key={String(field.name)}
                  className={cn(
-                   field.colSpan === 2 && "col-span-2",
-                   field.colSpan === 3 && "col-span-3"
+                   field.colSpan === 2 && "md:col-span-2",
+                   field.colSpan === 3 && "md:col-span-2 xl:col-span-3"
                  )}
                >
                  <FormField

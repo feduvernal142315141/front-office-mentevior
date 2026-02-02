@@ -47,9 +47,9 @@ export function MultiSelect({
     ? `${selectedOptions.length} selected` 
     : placeholder
   
-  const MAX_VISIBLE_TAGS = 2
-  const visibleTags = selectedOptions.slice(0, MAX_VISIBLE_TAGS)
-  const remainingCount = selectedOptions.length - MAX_VISIBLE_TAGS
+  const [maxVisibleTags, setMaxVisibleTags] = useState(2)
+  const visibleTags = selectedOptions.slice(0, maxVisibleTags)
+  const remainingCount = selectedOptions.length - maxVisibleTags
 
   const filteredOptions = searchable && searchQuery
     ? options.filter(opt => 
@@ -71,6 +71,29 @@ export function MultiSelect({
       return () => document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [isOpen, onBlur])
+
+  useEffect(() => {
+    const updateMaxVisibleTags = () => {
+      const width = window.innerWidth
+      if (width >= 1280) {
+        setMaxVisibleTags(5)
+        return
+      }
+      if (width >= 1000) {
+        setMaxVisibleTags(3)
+        return
+      }
+      if (width >= 768) {
+        setMaxVisibleTags(2)
+        return
+      }
+      setMaxVisibleTags(1)
+    }
+
+    updateMaxVisibleTags()
+    window.addEventListener("resize", updateMaxVisibleTags)
+    return () => window.removeEventListener("resize", updateMaxVisibleTags)
+  }, [])
 
   useEffect(() => {
     if (isOpen && searchable && searchInputRef.current) {
@@ -126,7 +149,7 @@ export function MultiSelect({
             
             transition-all duration-200
             
-            flex flex-wrap items-center gap-2
+            flex flex-nowrap md:flex-wrap items-center gap-2
           `,
             hasError && "premium-input-error",
             !hasValue && !disabled && "text-gray-400",
@@ -136,12 +159,12 @@ export function MultiSelect({
           {!hasValue ? (
             <span className="text-gray-400">{displayText}</span>
           ) : (
-            <div className="flex items-center gap-2 py-1 overflow-hidden flex-wrap">
+            <div className="flex items-center gap-2 py-1 overflow-hidden flex-nowrap md:flex-wrap min-w-0">
               {visibleTags.map((option) => (
                 <span
                   key={option.value}
                   className={cn(
-                    "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm whitespace-nowrap flex-shrink-0",
+                    "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm whitespace-nowrap flex-shrink-0 max-w-[180px] truncate",
                     disabled 
                       ? "bg-gray-100 text-gray-600" 
                       : "bg-blue-50 text-blue-700"
@@ -169,13 +192,13 @@ export function MultiSelect({
               {remainingCount > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap flex-shrink-0 cursor-pointer">
+                    <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap flex-shrink-0 cursor-pointer max-w-[140px] truncate">
                       +{remainingCount} more
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-slate-900 text-white max-w-xs">
                     <div className="flex flex-col gap-1">
-                      {selectedOptions.slice(MAX_VISIBLE_TAGS).map((opt) => (
+                      {selectedOptions.slice(maxVisibleTags).map((opt) => (
                         <span key={opt.value}>{opt.label}</span>
                       ))}
                     </div>

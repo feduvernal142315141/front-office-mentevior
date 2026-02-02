@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Download, FileText, Loader2 } from "lucide-react";
+import { X, FileText, Loader2 } from "lucide-react";
 import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -18,16 +18,6 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName = "documen
 
   const displayFileName = fileName || 'document.pdf';
   const fileType = 'PDF Document';
-
-  const handleDownload = () => {
-    const link = document.createElement("a");
-    link.href = documentUrl;
-    link.download = fileName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -61,23 +51,6 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName = "documen
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleDownload}
-                  className={cn(
-                    "h-9 px-4 rounded-lg",
-                    "bg-white border border-gray-200",
-                    "hover:bg-gradient-to-br hover:from-[#037ECC]/10 hover:to-[#079CFB]/10",
-                    "hover:border-[#037ECC]/30",
-                    "transition-all duration-200",
-                    "flex items-center gap-2",
-                    "text-sm font-medium text-gray-700",
-                    "cursor-pointer"
-                  )}
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </button>
-
                 <button
                   onClick={onClose}
                   className={cn(

@@ -1,8 +1,7 @@
 
-import { ReactNode } from "react"
-import { Loader2, FileQuestion, ChevronLeft, ChevronRight } from "lucide-react"
+import { ReactNode, useEffect, useRef, useState } from "react"
+import { FileQuestion, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { PremiumSelect } from "./PremiumSelect"
 
 export interface CustomTableColumn<T> {
   key: string
@@ -56,6 +55,19 @@ export function CustomTable<T>({
   className = "",
   getRowKey,
 }: CustomTableProps<T>) {
+  const [pageSizeOpen, setPageSizeOpen] = useState(false)
+  const pageSizeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!pageSizeOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (pageSizeRef.current && !pageSizeRef.current.contains(event.target as Node)) {
+        setPageSizeOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [pageSizeOpen])
 
   const getKey = (row: T, index: number): string => {
     if (getRowKey) {
@@ -121,13 +133,30 @@ export function CustomTable<T>({
     )
   }
 
+  const isZeroBased = pagination ? pagination.page === 0 : false
+  const currentPage = pagination ? (isZeroBased ? pagination.page + 1 : pagination.page) : 1
+  const totalPages = pagination
+    ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
+    : 1
+
+  const startRow = pagination
+    ? pagination.total === 0 ? 0 : (currentPage - 1) * pagination.pageSize + 1
+    : 1
+
+  const endRow = pagination
+    ? Math.min(currentPage * pagination.pageSize, pagination.total)
+    : data.length
+
+  const toPageIndex = (pageOneBased: number) => (
+    isZeroBased ? pageOneBased - 1 : pageOneBased
+  )
+
   return (
     <div className={cn(
       "relative",
       "bg-white rounded-2xl",
       "border border-slate-200/60",
       "shadow-[0_1px_3px_rgba(15,23,42,0.03),0_1px_2px_rgba(15,23,42,0.02)]",
-      "overflow-hidden",
       className
     )}>
       <div className="
@@ -232,110 +261,120 @@ export function CustomTable<T>({
 
       {pagination && (
         <div className="
-          px-6 py-4 pb-48
+          flex items-center justify-between px-6 py-3
           border-t border-slate-200/60
           bg-gradient-to-b from-slate-50/30 to-white
-          flex flex-col sm:flex-row items-start sm:items-center justify-between
           gap-4
+          flex-wrap
         ">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <p className="text-xs text-slate-500 whitespace-nowrap">
-              Showing{" "}
-              <span className="font-semibold text-slate-700">
-                {pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1}
-              </span>
-              {" "}-{" "}
-              <span className="font-semibold text-slate-700">
-                {Math.min(pagination.page * pagination.pageSize, pagination.total)}
-              </span>
-              {" "}of{" "}
-              <span className="font-semibold text-slate-700">{pagination.total}</span>
-            </p>
-
-            {pagination.onPageSizeChange && (
-              <PremiumSelect
-                value={pagination.pageSize}
-                onChange={pagination.onPageSizeChange}
-                options={pagination.pageSizeOptions || [10, 25, 50, 100]}
-                label="Rows:"
-              />
-            )}
+          <div className="text-xs font-medium text-slate-500">
+            Showing {startRow}-{endRow} of {pagination.total}
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => pagination.onPageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              className={cn(
-                "group/prev",
-                "flex items-center gap-2",
-                "h-9 px-3",
-                "rounded-lg",
-                "text-xs font-medium",
-                
-                "bg-white",
-                "border border-slate-200",
-                "text-slate-600",
-                "shadow-sm shadow-slate-950/[0.02]",
-                
-                "hover:bg-[#037ECC]/5",
-                "hover:border-[#037ECC]/30",
-                "hover:text-[#037ECC]",
-                "hover:shadow-md hover:shadow-[#037ECC]/5",
-                
-                "disabled:opacity-40",
-                "disabled:cursor-not-allowed",
-                "disabled:hover:bg-white",
-                "disabled:hover:border-slate-200",
-                "disabled:hover:text-slate-600",
-                
-                "transition-all duration-150"
-              )}
-            >
-              <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover/prev:-translate-x-0.5" />
-              <span className="hidden sm:inline">Prev</span>
-            </button>
+          <div className="flex items-center gap-4">
+            {pagination.onPageSizeChange && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">Rows per page:</span>
+                <div className="relative z-[20]" ref={pageSizeRef}>
+                  <button
+                    type="button"
+                    onClick={() => setPageSizeOpen((prev) => !prev)}
+                    className="
+                      h-9 px-3 pr-8 rounded-lg text-xs font-semibold
+                      bg-white
+                      border border-slate-200
+                      text-slate-800
+                      shadow-sm
+                      cursor-pointer
+                      focus:outline-none
+                      focus:ring-2 focus:ring-[#037ECC]/20
+                      focus:border-[#037ECC]/40
+                      relative
+                    "
+                  >
+                    {pagination.pageSize}
+                    <ChevronRight className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-slate-500" />
+                  </button>
 
-            <div className="
-              h-9 px-4
-              rounded-lg
-              bg-gradient-to-br from-[#037ECC] to-[#079CFB]
-              text-xs font-semibold text-white
-              flex items-center justify-center
-              shadow-sm shadow-[#037ECC]/20
-              whitespace-nowrap
-              min-w-[80px]
-            ">
-              {pagination.page} / {Math.ceil(pagination.total / pagination.pageSize) || 1}
+                  {pageSizeOpen && (
+                    <div className="
+                      absolute right-0 mt-2 z-[60]
+                      min-w-[90px]
+                      rounded-lg
+                      border border-slate-200
+                      bg-white
+                      shadow-lg
+                      overflow-hidden
+                    ">
+                      {(pagination.pageSizeOptions || [10, 20, 50]).map((size) => {
+                        const isSelected = size === pagination.pageSize
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => {
+                              pagination.onPageSizeChange?.(size)
+                              setPageSizeOpen(false)
+                            }}
+                            className={cn(
+                              "w-full px-3 py-2 text-xs text-left",
+                              "cursor-pointer transition-colors",
+                              isSelected
+                                ? "bg-[#037ECC] text-white"
+                                : "text-slate-700 hover:bg-[#037ECC]/10"
+                            )}
+                          >
+                            {size}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              {[
+                {
+                  icon: <ChevronsLeft className="w-4 h-4" />,
+                  action: () => pagination.onPageChange(toPageIndex(1)),
+                  disabled: currentPage === 1,
+                },
+                {
+                  icon: <ChevronLeft className="w-4 h-4" />,
+                  action: () => pagination.onPageChange(toPageIndex(currentPage - 1)),
+                  disabled: currentPage === 1,
+                },
+                {
+                  icon: <ChevronRight className="w-4 h-4" />,
+                  action: () => pagination.onPageChange(toPageIndex(currentPage + 1)),
+                  disabled: currentPage === totalPages,
+                },
+                {
+                  icon: <ChevronsRight className="w-4 h-4" />,
+                  action: () => pagination.onPageChange(toPageIndex(totalPages)),
+                  disabled: currentPage === totalPages,
+                },
+              ].map((btn, i) => (
+                <button
+                  key={i}
+                  onClick={btn.action}
+                  disabled={btn.disabled}
+                  className={cn(
+                    "w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150",
+                    "bg-white",
+                    "border border-slate-200",
+                    "text-slate-600",
+                    "shadow-sm",
+                    "hover:bg-[#037ECC]/5 hover:border-[#037ECC]/30 hover:text-[#037ECC]",
+                    "disabled:opacity-40 disabled:cursor-not-allowed"
+                  )}
+                >
+                  {btn.icon}
+                </button>
+              ))}
             </div>
-
-            <button
-              onClick={() => pagination.onPageChange(pagination.page + 1)}
-              disabled={pagination.page * pagination.pageSize >= pagination.total}
-              className={cn(
-                "group/next",
-                "flex items-center gap-2",
-                "h-9 px-3",
-                "rounded-lg",
-                "text-xs font-medium",
-                
-                "bg-gradient-to-br from-[#037ECC] to-[#079CFB]",
-                "text-white",
-                "shadow-sm shadow-[#037ECC]/20",
-                
-                "hover:shadow-md hover:shadow-[#037ECC]/30",
-                "hover:brightness-110",
-                
-                "disabled:opacity-40",
-                "disabled:cursor-not-allowed",
-                "disabled:hover:brightness-100",
-                
-                "transition-all duration-150"
-              )}
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover/next:translate-x-0.5" />
-            </button>
           </div>
         </div>
       )}
