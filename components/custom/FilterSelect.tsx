@@ -15,6 +15,7 @@ interface FilterSelectProps {
   options: FilterSelectOption[]
   placeholder?: string
   className?: string
+  disabled?: boolean
 }
 
 export function FilterSelect({
@@ -23,6 +24,7 @@ export function FilterSelect({
   options,
   placeholder = "Select...",
   className,
+  disabled = false,
 }: FilterSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
@@ -72,7 +74,8 @@ export function FilterSelect({
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
         className={cn(
           /* Size */
           "min-w-[140px]",
@@ -112,6 +115,9 @@ export function FilterSelect({
           
           /* Active/Open */
           isOpen && "border-[hsl(var(--primary))] bg-gradient-to-b from-white to-[hsl(240_20%_99%)]",
+          
+          /* Disabled */
+          disabled && "opacity-50 cursor-not-allowed hover:border-[hsl(240_20%_88%/0.6)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(15,23,42,0.04)]",
           
           /* Transitions */
           "transition-all duration-200 ease-out"

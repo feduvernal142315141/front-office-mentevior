@@ -23,6 +23,8 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "assessment": "Assessment",
   "behavior-plan": "Behavior Plan",
   "my-company": "My Company",
+  "my-profile": "My Profile",
+  "manager": "Profile Management",
   
   // Behavior Plan children
   "maladaptive-behaviors": "Maladaptive Behaviors",
