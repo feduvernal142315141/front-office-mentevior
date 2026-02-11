@@ -5,9 +5,10 @@ import { FormProvider, Controller } from "react-hook-form"
 import { useRoleForm } from "../hooks/useRoleForm"
 import { PermissionsSelector } from "@/components/form"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {  Save, Users, X } from "lucide-react"
+import { Save, Users, X, Settings2 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/custom/Button"
+import { Checkbox } from "@/components/custom/Checkbox"
 import { useRef, useEffect } from "react"
 
 
@@ -117,6 +118,47 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
               </AlertDescription>
             </Alert>
           )}
+        </div>
+
+        {/* Role Configuration */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
+            <div className="flex items-center gap-2">
+              <Settings2 className="w-4 h-4 text-slate-500" />
+              <div>
+                <h3 className="text-base font-semibold text-slate-800">Role Configuration</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Define which sections are available for users with this role</p>
+              </div>
+            </div>
+          </div>
+          <div className="px-6 py-5 flex items-center gap-8">
+            <Controller
+              name="professionalInformation"
+              control={form.control}
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  label="Professional Information"
+                  description="Enable the professional information section in user profiles"
+                  size="md"
+                />
+              )}
+            />
+            <Controller
+              name="credentialsSignature"
+              control={form.control}
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  label="Credentials & Signature"
+                  description="Enable the credentials and signature section in user profiles"
+                  size="md"
+                />
+              )}
+            />
+          </div>
         </div>
 
         {/* Permissions */}

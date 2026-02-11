@@ -58,6 +58,8 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
       const initialValues = {
         name: role.name,
         permissions: role.permissions,
+        professionalInformation: role.professionalInformation,
+        credentialsSignature: role.credentialsSignature,
       }
       form.reset(initialValues)
       originalValuesRef.current = initialValues
@@ -73,6 +75,8 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
       const dto: UpdateRoleDto = {
         name: canEditName ? data.name : undefined,
         permissions: data.permissions,
+        professionalInformation: data.professionalInformation,
+        credentialsSignature: data.credentialsSignature,
       }
       
       const result = await update(roleId, dto)
@@ -86,6 +90,8 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
       const dto: CreateRoleDto = {
         name: data.name,
         permissions: data.permissions,
+        professionalInformation: data.professionalInformation,
+        credentialsSignature: data.credentialsSignature,
       }
       
       const result = await create(dto)
@@ -106,6 +112,8 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
   
   const currentName = form.watch("name")
   const currentPermissions = form.watch("permissions")
+  const currentProfessionalInfo = form.watch("professionalInformation")
+  const currentCredentialsSignature = form.watch("credentialsSignature")
   
   const hasPermissions = currentPermissions && currentPermissions.length > 0
   
@@ -117,9 +125,11 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
         
         const nameChanged = canEditName && currentName !== originalValuesRef.current.name
         const permissionsChanged = JSON.stringify([...(currentPermissions || [])].sort()) !== 
-                                   JSON.stringify([...(originalValuesRef.current.permissions || [])].sort())
+                                    JSON.stringify([...(originalValuesRef.current.permissions || [])].sort())
+        const professionalInfoChanged = currentProfessionalInfo !== originalValuesRef.current.professionalInformation
+        const credentialsSignatureChanged = currentCredentialsSignature !== originalValuesRef.current.credentialsSignature
         
-        return nameChanged || permissionsChanged
+        return nameChanged || permissionsChanged || professionalInfoChanged || credentialsSignatureChanged
       })()
     : true 
   

@@ -9,6 +9,7 @@ import { User } from "lucide-react"
 import { useRoles } from "@/lib/modules/roles/hooks/use-roles"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
+import { useState } from "react"
 
 export function PersonalInformationSection() {
   const { control } = useFormContext()
@@ -19,6 +20,12 @@ export function PersonalInformationSection() {
   const usaCountryId = usaCountry?.id || null
   
   const { states, isLoading: isLoadingStates } = useStates(usaCountryId)
+
+  // Watch roleName from form (comes from backend)
+  const roleName = useWatch({ control, name: "roleName" }) || ""
+
+  // SSN masking state
+  const [isEditingSSN, setIsEditingSSN] = useState(false)
 
   return (
     <CollapsableSection
@@ -266,18 +273,15 @@ export function PersonalInformationSection() {
           control={control}
           render={({ field, fieldState }) => (
             <div>
-              <FloatingSelect
+              <FloatingInput
                 label="Role"
-                value={field.value}
-                onChange={field.onChange}
+                value={roleName}
+                onChange={() => {}}
                 onBlur={field.onBlur}
-                options={roles.map((role) => ({
-                  value: role.id,
-                  label: role.name,
-                }))}
+                placeholder=" "
+                disabled={true}
                 hasError={!!fieldState.error}
                 required
-                disabled={isLoadingRoles}
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">
@@ -306,35 +310,56 @@ export function PersonalInformationSection() {
         <Controller
           name="ssn"
           control={control}
-          render={({ field, fieldState }) => (
-            <div>
-              <FloatingInput
-                label="Social Security Number (SSN)"
-                value={field.value}
-                onChange={(value) => {
-                  let cleanValue = value.replace(/\D/g, "")
-                  if (cleanValue.length >= 3) {
-                    cleanValue = cleanValue.slice(0, 3) + "-" + cleanValue.slice(3)
-                  }
-                  if (cleanValue.length >= 6) {
-                    cleanValue = cleanValue.slice(0, 6) + "-" + cleanValue.slice(6, 10)
-                  }
-                  field.onChange(cleanValue)
-                }}
-                onBlur={field.onBlur}
-                placeholder="XXX-XX-XXXX"
-                hasError={!!fieldState.error}
-                type="text"
-                maxLength={11}
-                required
-              />
-              {fieldState.error && (
-                <p className="text-sm text-red-600 mt-2">
-                  {fieldState.error.message}
-                </p>
-              )}
-            </div>
-          )}
+          render={({ field, fieldState }) => {
+            // Get clean SSN (only digits)
+            const cleanSSN = field.value.replace(/\D/g, "")
+            
+            // Display value based on editing state and SSN length
+            let displayValue = cleanSSN
+            
+            if (!isEditingSSN) {
+              if (cleanSSN.length === 9) {
+                // Full SSN: show xxx-xx-4444
+                displayValue = `xxx-xx-${cleanSSN.slice(5)}`
+              } else if (cleanSSN.length === 4) {
+                // Partial SSN (last 4 from backend): show xxx-xx-4444
+                displayValue = `xxx-xx-${cleanSSN}`
+              } else {
+                // Unknown length: show as is
+                displayValue = field.value
+              }
+            }
+
+            return (
+              <div 
+                onFocus={() => setIsEditingSSN(true)}
+                onBlur={() => setIsEditingSSN(false)}
+              >
+                <FloatingInput
+                  label="Social Security Number (SSN)"
+                  value={displayValue}
+                  onChange={(value) => {
+                    // When user starts typing, switch to edit mode and accept only digits
+                    const digits = value.replace(/\D/g, "").slice(0, 9)
+                    field.onChange(digits)
+                  }}
+                  onBlur={() => {
+                    field.onBlur()
+                  }}
+                  placeholder="XXX-XX-XXXX"
+                  hasError={!!fieldState.error}
+                  type="text"
+                  maxLength={isEditingSSN ? 9 : 11}
+                  required
+                />
+                {fieldState.error && (
+                  <p className="text-sm text-red-600 mt-2">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )
+          }}
         />
       </div>
     </CollapsableSection>

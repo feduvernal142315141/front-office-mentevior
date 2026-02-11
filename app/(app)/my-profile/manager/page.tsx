@@ -4,6 +4,7 @@ import { Settings, FileText, Award, Sliders } from "lucide-react"
 import { Card } from "@/components/custom/Card"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { GeneralInformationForm } from "./general-information/components/GeneralInformationForm"
+import { CredentialsSignatureOverview } from "./credentials-signature/components/CredentialsSignatureOverview"
 
 export default function ManagerPage() {
   const tabs: TabItem[] = [
@@ -17,19 +18,7 @@ export default function ManagerPage() {
       id: "credentials",
       label: "Credentials - Signature",
       icon: <Award className="w-4 h-4" />,
-      content: (
-        <div className="py-12 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-50 mb-4">
-            <Award className="w-8 h-8 text-purple-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Credentials - Signature
-          </h3>
-          <p className="text-gray-600 max-w-md mx-auto">
-            Coming soon
-          </p>
-        </div>
-      ),
+      content: <CredentialsSignatureOverview />,
     },
     {
       id: "documents",

@@ -26,6 +26,8 @@ function normalizeRole(roleBackend: RoleBackendGet): Role {
     updatedAt: roleBackend.updateAt,
     isActive: roleBackend.isActive ?? true,
     modules: roleBackend.modules ?? 0,
+    professionalInformation: roleBackend.professionalInformation ?? false,
+    credentialsSignature: roleBackend.credentialsSignature ?? false,
   }
 }
 
@@ -76,6 +78,8 @@ export async function createRole(data: CreateRoleDto): Promise<Role> {
   const payload = {
     roleName: data.name,
     permissions: backendPermissions,
+    professionalInformation: data.professionalInformation,
+    credentialsSignature: data.credentialsSignature,
   }
   
   const response = await servicePost<typeof payload, RoleBackendGet>("/roles", payload)
@@ -97,6 +101,8 @@ export async function updateRole(roleId: string, data: UpdateRoleDto): Promise<R
     id: roleId,
     roleName: data.name,
     permissions: backendPermissions || [],
+    professionalInformation: data.professionalInformation,
+    credentialsSignature: data.credentialsSignature,
   }
   
   const response = await servicePut<RoleBackendMutate, RoleBackendGet>("/roles", payload)

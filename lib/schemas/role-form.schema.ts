@@ -20,6 +20,10 @@ export const roleFormSchema = z.object({
   permissions: z
     .array(z.string())
     .min(0, "At least select some permissions"),
+
+  professionalInformation: z.boolean(),
+
+  credentialsSignature: z.boolean(),
 })
 
 /**
@@ -32,5 +36,7 @@ export type RoleFormValues = z.infer<typeof roleFormSchema>
  */
 export const getRoleFormDefaults = (): RoleFormValues => ({
   name: "",
-  permissions: [], // Sin permisos por defecto
+  permissions: [],
+  professionalInformation: false,
+  credentialsSignature: false,
 })

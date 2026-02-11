@@ -12,6 +12,8 @@ export interface RoleBackendGet {
   updateAt?: string
   isActive?: boolean
   modules?: number
+  professionalInformation?: boolean
+  credentialsSignature?: boolean
 }
 
 
@@ -20,6 +22,8 @@ export interface RoleBackendMutate {
   name?: string  
   roleName?: string  
   permissions: PermissionBackendFormat[]
+  professionalInformation?: boolean
+  credentialsSignature?: boolean
 }
 
 
@@ -31,17 +35,23 @@ export interface Role {
   updatedAt?: string
   isActive: boolean
   modules: number
+  professionalInformation: boolean
+  credentialsSignature: boolean
 }
 
 export interface CreateRoleDto {
   name: string
-  permissions: string[]  
+  permissions: string[]
+  professionalInformation: boolean
+  credentialsSignature: boolean
 }
 
 export interface UpdateRoleDto {
   name?: string
   permissions?: string[] 
   isActive?: boolean
+  professionalInformation?: boolean
+  credentialsSignature?: boolean
 }
 
 

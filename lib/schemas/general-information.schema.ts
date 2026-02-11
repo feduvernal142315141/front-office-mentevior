@@ -51,6 +51,10 @@ export const generalInformationSchema = z.object({
   roleId: z
     .string()
     .min(1, "Role is required"),
+
+  roleName: z
+    .string()
+    .optional(),
   
   hiringDate: z
     .string()
@@ -59,7 +63,7 @@ export const generalInformationSchema = z.object({
   ssn: z
     .string()
     .min(1, "Social Security Number is required")
-    .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in format XXX-XX-XXXX"),
+    .regex(/^\d{9}$/, "SSN must be exactly 9 digits"),
   
   npi: z
     .string()
@@ -96,7 +100,7 @@ export const generalInformationSchema = z.object({
     .optional()
     .or(z.literal("")),
 }).superRefine((data, ctx) => {
-  const roleName = data.roleId.toLowerCase()
+  const roleName = (data.roleName || "").toLowerCase()
   const requiresProfessionalInfo = ["rbt", "bcba", "bcaba", "supervisor"].some(r => roleName.includes(r))
   
   if (requiresProfessionalInfo) {
@@ -166,6 +170,7 @@ export const getGeneralInformationDefaults = (): GeneralInformationFormValues =>
   email: "",
   cellphone: "",
   roleId: "",
+  roleName: "",
   hiringDate: "",
   ssn: "",
   npi: "",

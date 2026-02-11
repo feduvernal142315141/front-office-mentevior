@@ -75,8 +75,8 @@ export function CollapsableSection({
 
       <div
         className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out",
-          isOpen ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"
+          "transition-all duration-300 ease-in-out",
+          isOpen ? "max-h-[5000px] opacity-100 overflow-visible" : "max-h-0 opacity-0 overflow-hidden"
         )}
       >
         <div className="pt-6 pb-8">{children}</div>

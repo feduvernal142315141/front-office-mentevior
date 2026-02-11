@@ -4,64 +4,98 @@ import { FormProvider, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { 
   generalInformationSchema, 
-  type GeneralInformationFormValues 
+  type GeneralInformationFormValues,
+  getGeneralInformationDefaults,
 } from "@/lib/schemas/general-information.schema"
 import { PersonalInformationSection } from "./PersonalInformationSection"
 import { ProfessionalInformationSection } from "./ProfessionalInformationSection"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import { mockGeneralInformation } from "../mocks/general-information.mock"
-import { toast } from "sonner"
+import { useEffect } from "react"
+import { useGeneralInformation } from "@/lib/modules/general-information/hooks/use-general-information"
+import { useUpdateGeneralInformation } from "@/lib/modules/general-information/hooks/use-update-general-information"
+import type { GeneralInformation } from "@/lib/types/general-information.types"
+import type { UpdateGeneralInformationDto } from "@/lib/types/general-information.types"
+
+/**
+ * Maps the backend response (nested objects) to flat form values.
+ */
+function mapToFormValues(data: GeneralInformation): GeneralInformationFormValues {
+  return {
+    firstName: data.firstName ?? "",
+    lastName: data.lastName ?? "",
+    birthday: data.birthday ? data.birthday.split("T")[0] : "",
+    country: data.country?.name ?? "United States",
+    state: data.state?.id ?? "",
+    city: data.city ?? "",
+    zipCode: data.zipCode ?? "",
+    homeAddressLine1: data.homeAddressLine1 ?? "",
+    email: data.email ?? "",
+    cellphone: data.cellphone ?? "",
+    roleId: data.role?.id ?? "",
+    roleName: data.role?.name ?? "",
+    hiringDate: data.hiringDate ? data.hiringDate.split("T")[0] : "",
+    ssn: data.ssn ?? "",
+    npi: data.professionalInfo?.npi ?? "",
+    mpi: data.professionalInfo?.mpi ?? "",
+    caqhNumber: data.professionalInfo?.caqhNumber ?? "",
+    companyName: data.professionalInfo?.companyName ?? "",
+    ein: data.professionalInfo?.ein ?? "",
+    employerId: data.professionalInfo?.employerId ?? "",
+  }
+}
+
+/**
+ * Maps flat form values to the DTO expected by the PUT endpoint.
+ */
+function mapToDto(data: GeneralInformationFormValues): UpdateGeneralInformationDto {
+  return {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    birthday: data.birthday,
+    country: data.country,
+    state: data.state,
+    city: data.city,
+    zipCode: data.zipCode,
+    homeAddressLine1: data.homeAddressLine1,
+    email: data.email,
+    cellphone: data.cellphone,
+    roleId: data.roleId,
+    hiringDate: data.hiringDate,
+    ssn: data.ssn.replace(/\D/g, ""), // Send only digits to backend
+    npi: data.npi ?? "",
+    mpi: data.mpi ?? "",
+    caqhNumber: data.caqhNumber ?? "",
+    companyName: data.companyName ?? "",
+    ein: data.ein ?? "",
+    employerId: data.employerId ?? "",
+  }
+}
 
 export function GeneralInformationForm() {
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const { generalInformation, isLoading } = useGeneralInformation()
+  const { update, isLoading: isSubmitting } = useUpdateGeneralInformation()
 
   const form = useForm<GeneralInformationFormValues>({
     resolver: zodResolver(generalInformationSchema),
-    defaultValues: mockGeneralInformation,
+    defaultValues: getGeneralInformationDefaults(),
   })
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 800))
-        form.reset(mockGeneralInformation)
-      } catch (error) {
-        console.error("Error loading data:", error)
-        toast.error("Failed to load user information")
-      } finally {
-        setIsLoading(false)
-      }
+    if (generalInformation) {
+      form.reset(mapToFormValues(generalInformation))
     }
-
-    loadData()
-  }, [form])
+  }, [generalInformation, form])
 
   const onSubmit = async (data: GeneralInformationFormValues) => {
-    try {
-      setIsSubmitting(true)
-      console.log("Form data:", data)
-      
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      toast.success("Information updated successfully", {
-        description: "Your profile has been updated.",
-      })
-      
+    const dto = mapToDto(data)
+    const result = await update(dto)
+
+    if (result) {
       setTimeout(() => {
         router.push("/my-profile")
       }, 500)
-      
-    } catch (error) {
-      console.error("Error submitting form:", error)
-      toast.error("Failed to update information", {
-        description: "Please try again later.",
-      })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
