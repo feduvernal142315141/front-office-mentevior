@@ -12,7 +12,6 @@ import {
   getUserCredentialTypes,
   createUserCredential,
   updateUserCredential,
-  deleteUserCredential,
 } from "../services/user-credentials.service"
 import { toast } from "sonner"
 import { EXPIRING_SOON_DAYS } from "@/lib/constants/credentials.constants"
@@ -47,11 +46,9 @@ interface UseUserCredentialsReturn {
   expiringSoonCredentials: UserCredential[]
   create: (data: CreateUserCredentialDto) => Promise<UserCredential | null>
   update: (id: string, data: UpdateUserCredentialDto) => Promise<UserCredential | null>
-  remove: (id: string) => Promise<boolean>
   refetch: () => Promise<void>
   isCreating: boolean
   isUpdating: boolean
-  isDeleting: boolean
   getComputedStatus: (expirationDate: string) => "Active" | "Expired"
 }
 
@@ -63,21 +60,18 @@ export function useUserCredentials(): UseUserCredentialsReturn {
   const [error, setError] = useState<Error | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchCredentials = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
       const data = await getUserCredentials()
-      const withStatus = data.map((c) => ({
-        ...c,
-        status: getCredentialStatus(c.expirationDate),
-      }))
-      setCredentials(withStatus)
+
+      setCredentials(data)
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error("Failed to fetch credentials")
       setError(errorObj)
+      console.error("Error fetching credentials:", errorObj)
     } finally {
       setIsLoading(false)
     }
@@ -110,12 +104,13 @@ export function useUserCredentials(): UseUserCredentialsReturn {
   const create = async (data: CreateUserCredentialDto): Promise<UserCredential | null> => {
     try {
       setIsCreating(true)
-      const result = await createUserCredential(data)
-      const status = getCredentialStatus(result.expirationDate)
 
-      if (status === "Expired") {
-        toast.warning("Credential saved as Expired. Please update expiration date if needed.")
-      } else {
+      const status = data.status ?? getCredentialStatus(data.expirationDate)
+      const payload: CreateUserCredentialDto = { ...data, status }
+      
+      const result = await createUserCredential(payload)
+
+      if (result) {       
         toast.success("Credential saved successfully.")
       }
 
@@ -133,12 +128,16 @@ export function useUserCredentials(): UseUserCredentialsReturn {
   const update = async (id: string, data: UpdateUserCredentialDto): Promise<UserCredential | null> => {
     try {
       setIsUpdating(true)
-      const result = await updateUserCredential(id, data)
-      const status = getCredentialStatus(result.expirationDate)
+      
+      const status = data.expirationDate 
+        ? getCredentialStatus(data.expirationDate)
+        : undefined
+      const payload = status !== undefined ? { ...data, status } : data
+      
+      const result = await updateUserCredential(id, payload)
 
-      if (status === "Expired") {
-        toast.warning("Credential updated as Expired. Please update expiration date if needed.")
-      } else {
+      if (result) {
+      
         toast.success("Credential updated successfully.")
       }
 
@@ -153,22 +152,6 @@ export function useUserCredentials(): UseUserCredentialsReturn {
     }
   }
 
-  const remove = async (id: string): Promise<boolean> => {
-    try {
-      setIsDeleting(true)
-      await deleteUserCredential(id)
-      toast.success("Credential deleted successfully.")
-      await fetchCredentials()
-      return true
-    } catch (err) {
-      const errorObj = err instanceof Error ? err : new Error("Failed to delete credential")
-      toast.error(errorObj.message)
-      return false
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
   return {
     credentials,
     credentialTypes,
@@ -179,11 +162,9 @@ export function useUserCredentials(): UseUserCredentialsReturn {
     expiringSoonCredentials,
     create,
     update,
-    remove,
     refetch: fetchCredentials,
     isCreating,
     isUpdating,
-    isDeleting,
     getComputedStatus: getCredentialStatus,
   }
 }

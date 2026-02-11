@@ -20,17 +20,20 @@ export interface UserCredential {
 }
 
 export interface CreateUserCredentialDto {
-  credentialTypeId: string
+  credentialId: string
   identificationNumber: string
   effectiveDate: string
   expirationDate: string
+  status?: UserCredentialStatus // Optional - will be calculated from expirationDate if not provided
 }
 
 export interface UpdateUserCredentialDto {
-  credentialTypeId?: string
+  id: string
+  credentialId?: string
   identificationNumber?: string
   effectiveDate?: string
   expirationDate?: string
+  status?: UserCredentialStatus
 }
 
 export interface UserSignature {

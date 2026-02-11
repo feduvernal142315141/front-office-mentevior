@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from "react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { useUserCredentials } from "@/lib/modules/user-credentials/hooks/use-user-credentials"
 import { useSignature } from "@/lib/modules/signature/hooks/use-signature"
 import { ELIGIBLE_ROLES_FOR_CREDENTIALS } from "@/lib/constants/credentials.constants"
@@ -15,12 +16,14 @@ import { AlertsBanner } from "./AlertsBanner"
 import { CredentialsSection } from "./CredentialsSection"
 import { SignatureSection } from "./SignatureSection"
 import { SignatureEditorModal } from "./SignatureEditorModal"
+import { SignatureScrollIndicator } from "./SignatureScrollIndicator"
 import { ConfirmationModal } from "@/components/custom/ConfirmationModal"
 
 const DEFAULT_PAGE_SIZE = 5
 
 export function CredentialsSignatureOverview() {
   const { user } = useAuth()
+  const { user: fullUser } = useUserById(user?.id || null)
 
   const {
     credentials,
@@ -49,7 +52,7 @@ export function CredentialsSignatureOverview() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
-  const roleName = user?.role || "Unknown"
+  const roleName = fullUser?.role?.name || user?.role || "Unknown"
   const canManageCredentials = ELIGIBLE_ROLES_FOR_CREDENTIALS.includes(
     roleName as (typeof ELIGIBLE_ROLES_FOR_CREDENTIALS)[number]
   )
@@ -85,6 +88,19 @@ export function CredentialsSignatureOverview() {
 
   const handleEditCredential = useCallback((credential: UserCredential) => {
     setEditingCredential(credential)
+    
+    setTimeout(() => {
+      const container = document.getElementById("main-scroll")
+      const formElement = document.getElementById("credentials-form")
+      
+      if (container && formElement) {
+        const containerRect = container.getBoundingClientRect()
+        const formRect = formElement.getBoundingClientRect()
+        const targetY = container.scrollTop + (formRect.top - containerRect.top) - 30
+        
+        container.scrollTo({ top: targetY, behavior: "smooth" })
+      }
+    }, 100)
   }, [])
 
   const handleOpenSignatureEditor = useCallback(() => {
@@ -176,6 +192,9 @@ export function CredentialsSignatureOverview() {
         onConfirm={handleConfirmDeleteSignature}
         variant="danger"
       />
+
+      {/* Indicador flotante para la sección de firma */}
+      <SignatureScrollIndicator />
     </div>
   )
 }

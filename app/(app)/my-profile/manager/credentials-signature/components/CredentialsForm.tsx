@@ -53,7 +53,7 @@ export function CredentialsForm({
   useEffect(() => {
     if (editingCredential) {
       form.reset({
-        credentialTypeId: editingCredential.credentialTypeId,
+        credentialId: editingCredential.credentialTypeId,
         identificationNumber: editingCredential.identificationNumber,
         effectiveDate: editingCredential.effectiveDate,
         expirationDate: editingCredential.expirationDate,
@@ -64,14 +64,15 @@ export function CredentialsForm({
   const handleSubmit = async (data: UserCredentialFormValues) => {
     if (editingCredential) {
       await onUpdate(editingCredential.id, {
-        credentialTypeId: data.credentialTypeId,
+        id: editingCredential.id,
+        credentialId: data.credentialId,
         identificationNumber: data.identificationNumber,
         effectiveDate: data.effectiveDate,
         expirationDate: data.expirationDate,
       })
     } else {
       await onSave({
-        credentialTypeId: data.credentialTypeId,
+        credentialId: data.credentialId,
         identificationNumber: data.identificationNumber,
         effectiveDate: data.effectiveDate,
         expirationDate: data.expirationDate,
@@ -85,17 +86,19 @@ export function CredentialsForm({
     onCancelEdit()
   }
 
-  const credentialTypeOptions = credentialTypes.map((ct) => ({
-    value: ct.id,
-    label: ct.label,
-  }))
+  const credentialTypeOptions = Array.isArray(credentialTypes) 
+    ? credentialTypes.map((ct) => ({
+        value: ct.id,
+        label: ct.label,
+      }))
+    : []
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form id="credentials-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Controller
-            name="credentialTypeId"
+            name="credentialId"
             control={form.control}
             render={({ field, fieldState }) => (
               <div>

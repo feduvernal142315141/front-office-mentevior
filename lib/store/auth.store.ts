@@ -59,13 +59,17 @@ function decodeUserFromToken(accessToken: string): User {
   // Debug: Ver todo el token decodificado
   console.log('🔍 JWT DECODIFICADO COMPLETO:', decoded)
   console.log('🔍 ROLE EN JWT:', decoded.role)
+  console.log('🔍 ROLE NAME EN JWT:', decoded.roleName)
   console.log('🔍 TODAS LAS KEYS:', Object.keys(decoded))
+
+  // El backend puede mandar el rol con diferentes nombres
+  const role = decoded.role || decoded.roleName || decoded.Role || decoded.RoleName || 'Unknown'
 
   return {
     id: decoded.Id,
     email: decoded.username,
     name: decoded.fullName,
-    role: decoded.role,
+    role,
     permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [],  // ⚡ Array de "modulo-valor"
     expiresAt: new Date(decoded.exp * 1000).toISOString(),
   }

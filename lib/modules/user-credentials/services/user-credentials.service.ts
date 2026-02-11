@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import type {
   UserCredential,
   UserCredentialTypeOption,
@@ -6,129 +6,166 @@ import type {
   UpdateUserCredentialDto,
 } from "@/lib/types/user-credentials.types"
 
-const MOCK_CREDENTIAL_TYPE_OPTIONS: UserCredentialTypeOption[] = [
-  { id: "1", value: "RBT", label: "RBT", requiresIdentificationNumber: true },
-  { id: "2", value: "BCBA", label: "BCBA", requiresIdentificationNumber: true },
-  { id: "3", value: "BCaBA", label: "BCaBA", requiresIdentificationNumber: true },
-  { id: "4", value: "LMHC", label: "LMHC", requiresIdentificationNumber: true },
-  { id: "5", value: "LMFT", label: "LMFT", requiresIdentificationNumber: true },
-  { id: "6", value: "LCSW", label: "LCSW", requiresIdentificationNumber: true },
-]
+/**
+ * Helper seguro para parsear fechas del backend
+ * Maneja varios formatos: ISO string, fecha ya formateada, etc.
+ */
+function parseDateFromBackend(dateValue: string): string {
+  if (!dateValue) return ""
+  
+  // Si ya viene en formato YYYY-MM-DD, devuélvelo tal cual
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue
+  }
+  
+  // Si viene como ISO string o timestamp, parsealo
+  try {
+    const date = new Date(dateValue)
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date value:", dateValue)
+      return ""
+    }
+    return date.toISOString().split('T')[0]
+  } catch (err) {
+    console.error("Error parsing date:", dateValue, err)
+    return ""
+  }
+}
 
-const MOCK_USER_CREDENTIALS: UserCredential[] = [
-  {
-    id: "cred-1",
-    credentialTypeId: "2",
-    credentialTypeName: "BCBA",
-    identificationNumber: "24-345678",
-    effectiveDate: "2024-01-15",
-    expirationDate: "2026-12-15",
-    status: "Active",
-    createdAt: "2024-01-15T00:00:00Z",
-    updatedAt: "2024-01-15T00:00:00Z",
-  },
-  {
-    id: "cred-2",
-    credentialTypeId: "1",
-    credentialTypeName: "RBT",
-    identificationNumber: "123-456",
-    effectiveDate: "2023-05-03",
-    expirationDate: "2026-02-25",
-    status: "Active",
-    createdAt: "2023-05-03T00:00:00Z",
-    updatedAt: "2023-05-03T00:00:00Z",
-  },
-  {
-    id: "cred-3",
-    credentialTypeId: "3",
-    credentialTypeName: "BCaBA",
-    identificationNumber: "789-012",
-    effectiveDate: "2024-06-01",
-    expirationDate: "2027-06-01",
-    status: "Active",
-    createdAt: "2024-06-01T00:00:00Z",
-    updatedAt: "2024-06-01T00:00:00Z",
-  },
-]
+interface BackendCredentialCatalogItem {
+  id: string
+  name: string
+}
 
-let mockCredentialsStore = [...MOCK_USER_CREDENTIALS]
+interface BackendCredentialResponse {
+  entities: {
+    id: string
+    credentialId: string
+    identificationNumber: string
+    credentialName: string
+    effectiveDate: string
+    expirationDate: string
+    status: "active" | "expired" // Backend usa lowercase
+  }[]
+}
 
 export async function getUserCredentialTypes(): Promise<UserCredentialTypeOption[]> {
-  await new Promise((resolve) => setTimeout(resolve, 300))
-  return MOCK_CREDENTIAL_TYPE_OPTIONS
+  const response = await serviceGet<{ entities: BackendCredentialCatalogItem[] }>("/signature-credential/catalog")
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch credential types")
+  }
+
+  const responseData = response.data as unknown as { entities: BackendCredentialCatalogItem[] }
+
+  if (!responseData.entities || !Array.isArray(responseData.entities)) {
+    console.error("Invalid backend response:", response.data)
+    return []
+  }
+
+  return responseData.entities.map(item => ({
+    id: item.id,
+    value: item.name,
+    label: item.name,
+    requiresIdentificationNumber: true,
+  }))
 }
 
 export async function getUserCredentials(): Promise<UserCredential[]> {
-  await new Promise((resolve) => setTimeout(resolve, 300))
-  return mockCredentialsStore
-}
+  const response = await serviceGet<BackendCredentialResponse>("/member-users/credential")
 
-export async function getUserCredentialById(id: string): Promise<UserCredential | null> {
-  await new Promise((resolve) => setTimeout(resolve, 200))
-  return mockCredentialsStore.find((c) => c.id === id) || null
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch credentials")
+  }
+
+  const responseData = response.data as unknown as BackendCredentialResponse
+
+  if (!responseData.entities || !Array.isArray(responseData.entities)) {
+    console.error("Invalid backend response:", response.data)
+    return []
+  }
+
+  return responseData.entities.map(item => ({
+    id: item.id,
+    credentialTypeId: item.credentialId,
+    credentialTypeName: item.credentialName,
+    identificationNumber: item.identificationNumber,
+    effectiveDate: parseDateFromBackend(item.effectiveDate),
+    expirationDate: parseDateFromBackend(item.expirationDate),
+    status: item.status === "active" ? "Active" : "Expired", // Mapear lowercase a PascalCase
+    createdAt: item.effectiveDate,
+    updatedAt: item.effectiveDate,
+  }))
 }
 
 export async function createUserCredential(data: CreateUserCredentialDto): Promise<UserCredential> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  const credentialType = MOCK_CREDENTIAL_TYPE_OPTIONS.find((o) => o.id === data.credentialTypeId)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const expDate = new Date(data.expirationDate)
-  expDate.setHours(0, 0, 0, 0)
-
-  const newCredential: UserCredential = {
-    id: `cred-${Date.now()}`,
-    credentialTypeId: data.credentialTypeId,
-    credentialTypeName: credentialType?.label || "",
+  // Convertir status de PascalCase a lowercase para el backend
+  const backendPayload = {
+    credentialId: data.credentialId,
     identificationNumber: data.identificationNumber,
     effectiveDate: data.effectiveDate,
     expirationDate: data.expirationDate,
-    status: expDate > today ? "Active" : "Expired",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    status: data.status?.toLowerCase() as "active" | "expired", // Convertir "Active" → "active"
   }
 
-  mockCredentialsStore = [newCredential, ...mockCredentialsStore]
-  return newCredential
+  const response = await servicePost<typeof backendPayload, BackendCredentialResponse["entities"][0]>(
+    "/member-users/credential",
+    backendPayload
+  )
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to create credential")
+  }
+
+  const item = response.data as unknown as BackendCredentialResponse["entities"][0]
+
+  return {
+    id: item.id,
+    credentialTypeId: item.credentialId,
+    credentialTypeName: item.credentialName,
+    identificationNumber: item.identificationNumber,
+    effectiveDate: parseDateFromBackend(item.effectiveDate),
+    expirationDate: parseDateFromBackend(item.expirationDate),
+    status: item.status === "active" ? "Active" : "Expired", // Mapear lowercase a PascalCase
+    createdAt: item.effectiveDate,
+    updatedAt: item.effectiveDate,
+  }
 }
 
 export async function updateUserCredential(
   id: string,
-  data: UpdateUserCredentialDto
+  data: Omit<UpdateUserCredentialDto, "id">
 ): Promise<UserCredential> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  const index = mockCredentialsStore.findIndex((c) => c.id === id)
-  if (index === -1) throw new Error("Credential not found")
-
-  const existing = mockCredentialsStore[index]
-  const credentialType = data.credentialTypeId
-    ? MOCK_CREDENTIAL_TYPE_OPTIONS.find((o) => o.id === data.credentialTypeId)
-    : null
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const expDate = new Date(data.expirationDate || existing.expirationDate)
-  expDate.setHours(0, 0, 0, 0)
-
-  const updated: UserCredential = {
-    ...existing,
-    credentialTypeId: data.credentialTypeId || existing.credentialTypeId,
-    credentialTypeName: credentialType?.label || existing.credentialTypeName,
-    identificationNumber: data.identificationNumber || existing.identificationNumber,
-    effectiveDate: data.effectiveDate || existing.effectiveDate,
-    expirationDate: data.expirationDate || existing.expirationDate,
-    status: expDate > today ? "Active" : "Expired",
-    updatedAt: new Date().toISOString(),
+  // Convertir status de PascalCase a lowercase para el backend
+  const backendPayload: Record<string, unknown> = {
+    id,
+    ...(data.credentialId && { credentialId: data.credentialId }),
+    ...(data.identificationNumber && { identificationNumber: data.identificationNumber }),
+    ...(data.effectiveDate && { effectiveDate: data.effectiveDate }),
+    ...(data.expirationDate && { expirationDate: data.expirationDate }),
+    ...(data.status && { status: data.status.toLowerCase() }), // Convertir "Active" → "active"
   }
 
-  mockCredentialsStore[index] = updated
-  return updated
-}
+  const response = await servicePut<typeof backendPayload, BackendCredentialResponse["entities"][0]>(
+    "/member-users/credential",
+    backendPayload
+  )
 
-export async function deleteUserCredential(id: string): Promise<boolean> {
-  await new Promise((resolve) => setTimeout(resolve, 300))
-  mockCredentialsStore = mockCredentialsStore.filter((c) => c.id !== id)
-  return true
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to update credential")
+  }
+
+  const item = response.data as unknown as BackendCredentialResponse["entities"][0]
+
+  return {
+    id: item.id,
+    credentialTypeId: item.credentialId,
+    credentialTypeName: item.credentialName,
+    identificationNumber: item.identificationNumber,
+    effectiveDate: parseDateFromBackend(item.effectiveDate),
+    expirationDate: parseDateFromBackend(item.expirationDate),
+    status: item.status === "active" ? "Active" : "Expired", // Mapear lowercase a PascalCase
+    createdAt: item.effectiveDate,
+    updatedAt: item.effectiveDate,
+  }
 }

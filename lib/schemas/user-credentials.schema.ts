@@ -7,7 +7,7 @@ function normalizeDate(dateStr: string): Date {
 
 export const userCredentialFormSchema = z
   .object({
-    credentialTypeId: z.string().min(1, "Credential is required"),
+    credentialId: z.string().min(1, "Credential is required"),
 
     identificationNumber: z
       .string()
@@ -34,7 +34,7 @@ export const userCredentialFormSchema = z
 export type UserCredentialFormValues = z.infer<typeof userCredentialFormSchema>
 
 export const getUserCredentialFormDefaults = (): UserCredentialFormValues => ({
-  credentialTypeId: "",
+  credentialId: "",
   identificationNumber: "",
   effectiveDate: "",
   expirationDate: "",

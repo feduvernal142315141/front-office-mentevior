@@ -616,3 +616,38 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Custom animations for SignatureScrollIndicator */
+@keyframes indicator-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-8px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes chevron-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(3px);
+    opacity: 0.5;
+  }
+}
+
+.animate-indicator-bounce {
+  animation: indicator-bounce 2s ease-in-out infinite;
+}
+
+.animate-chevron-bounce {
+  animation: chevron-bounce 1.5s ease-in-out infinite;
+}

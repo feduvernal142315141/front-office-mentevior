@@ -25,7 +25,7 @@ export default function ShellLayout({
       >
         <Topbar />
 
-        <main className="flex-1 overflow-y-auto">
+        <main id="main-scroll" className="flex-1 overflow-y-auto">
           <ProtectedRoute>
             {children}
           </ProtectedRoute>
