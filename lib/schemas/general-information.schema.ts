@@ -63,7 +63,7 @@ export const generalInformationSchema = z.object({
   ssn: z
     .string()
     .min(1, "Social Security Number is required")
-    .regex(/^\d{9}$/, "SSN must be exactly 9 digits"),
+    .regex(/^\d{4}$|^\d{9}$/, "SSN must be 4 or 9 digits"),
   
   npi: z
     .string()
@@ -78,10 +78,12 @@ export const generalInformationSchema = z.object({
     .or(z.literal("")),
   
   caqhNumber: z
-    .string()
-    .regex(/^\d*$/, "CAQH Number must contain only numbers")
-    .optional()
-    .or(z.literal("")),
+    .preprocess((val) => (val === null || val === undefined ? "" : String(val)), z
+      .string()
+      .regex(/^\d*$/, "CAQH Number must contain only numbers")
+      .optional()
+      .or(z.literal(""))
+    ),
   
   companyName: z
     .string()

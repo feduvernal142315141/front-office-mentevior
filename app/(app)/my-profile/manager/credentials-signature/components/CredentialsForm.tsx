@@ -108,6 +108,7 @@ export function CredentialsForm({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   options={credentialTypeOptions}
+                  searchable
                   required
                   hasError={!!fieldState.error}
                   disabled={isLoadingTypes}
@@ -170,24 +171,6 @@ export function CredentialsForm({
               />
             )}
           />
-        </div>
-
-        <div className="rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3 flex items-center justify-between gap-3">
-          <div className="text-sm text-gray-700 font-medium">Status (auto):</div>
-          <span
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
-              computedStatus === "Active"
-                ? "bg-green-100 text-green-700 border border-green-200"
-                : "bg-red-100 text-red-700 border border-red-200"
-            }`}
-          >
-            {computedStatus === "Active" ? (
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5" />
-            )}
-            {computedStatus}
-          </span>
         </div>
 
         <div className="flex flex-wrap justify-end gap-3">

@@ -16,12 +16,14 @@ interface AlertsBannerProps {
   expiredCount: number
   expiringSoonCount: number
   hasSignature: boolean
+  isLoadingSignature?: boolean
 }
 
 export function AlertsBanner({
   expiredCount,
   expiringSoonCount,
   hasSignature,
+  isLoadingSignature = false,
 }: AlertsBannerProps) {
   const alerts: AlertItem[] = [
     {
@@ -42,7 +44,7 @@ export function AlertsBanner({
     },
     {
       id: "signature",
-      show: !hasSignature,
+      show: !hasSignature && !isLoadingSignature,
       icon: <AlertTriangle className="h-5 w-5 text-blue-700" />,
       title: "No signature on file",
       description: "Please create a digital signature to enable document signing.",

@@ -19,6 +19,7 @@ interface MyProfileFormFieldsProps {
   isLoadingRoles: boolean
   isSubmitting: boolean
   onCancel: () => void
+  currentRole?: RoleOption | null
 }
 
 export function MyProfileFormFields({
@@ -26,14 +27,23 @@ export function MyProfileFormFields({
   isLoadingRoles,
   isSubmitting,
   onCancel,
+  currentRole = null,
 }: MyProfileFormFieldsProps) {
   const { control, setValue } = useFormContext()
+  const roleOptions = [
+    { value: "", label: "Select a role" },
+    ...roles.map((role) => ({ value: role.id, label: role.name })),
+  ]
+
+  if (currentRole && !roleOptions.some((option) => option.value === currentRole.id)) {
+    roleOptions.splice(1, 0, { value: currentRole.id, label: currentRole.name })
+  }
 
   return (
     <>
       <div className="pb-24">
         <div className="max-w-5xl mx-auto space-y-6">
-          <div className="space-y-8">
+          <div className="space-y-7">
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-blue-50 rounded-lg">
@@ -182,7 +192,7 @@ export function MyProfileFormFields({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-[60%_38%] gap-6 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
                 <div>
                   <Controller
                     name="roleId"
@@ -195,14 +205,10 @@ export function MyProfileFormFields({
                         <FilterSelect
                           value={field.value}
                           onChange={field.onChange}
-                          options={[
-                            { value: "", label: "Select a role" },
-                            ...roles.map((role) => ({
-                              value: role.id,
-                              label: role.name,
-                            })),
-                          ]}
+                          options={roleOptions}
                           placeholder="Select a role"
+                          className="w-full"
+                          fullWidth
                           disabled={true}
                         />
                         {fieldState.error && (
@@ -216,23 +222,23 @@ export function MyProfileFormFields({
                 </div>
 
                 <Link href="/my-profile/manager" className="block w-full">
-                  <div className="group relative overflow-hidden cursor-pointer rounded-xl border-2 border-[#037ECC]/20 bg-gradient-to-br from-blue-50/50 via-white to-[#037ECC]/5 hover:border-[#037ECC]/40 hover:shadow-lg hover:shadow-[#037ECC]/10 transition-all duration-300 h-full min-h-[120px] flex items-center">
+                  <div className="group relative overflow-hidden cursor-pointer rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm hover:border-[#037ECC]/40 hover:shadow-lg hover:shadow-[#037ECC]/10 transition-all duration-300 h-full min-h-[112px] flex items-center">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#037ECC]/0 via-[#079CFB]/0 to-[#037ECC]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    
-                    <div className="relative p-4 w-full">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 p-2.5 rounded-lg bg-gradient-to-br from-[#037ECC] to-[#079CFB] shadow-md shadow-[#037ECC]/20 group-hover:shadow-lg group-hover:shadow-[#037ECC]/30 transition-all duration-300">
-                          <Sliders className="w-5 h-5 text-white" />
+
+                    <div className="relative px-5 py-4 w-full">
+                      <div className="flex items-start gap-3.5">
+                        <div className="flex-shrink-0 p-2.5 rounded-xl bg-[#037ECC]/10 text-[#037ECC] ring-1 ring-inset ring-[#037ECC]/20 group-hover:bg-[#037ECC]/15 transition-colors">
+                          <Sliders className="w-5 h-5" />
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <h4 className="text-sm font-bold text-gray-900 group-hover:text-[#037ECC] transition-colors leading-tight">
+                            <h4 className="text-sm font-semibold text-slate-900 group-hover:text-[#037ECC] transition-colors leading-tight">
                               Profile Management
                             </h4>
                             <ArrowRight className="w-4 h-4 text-[#037ECC] group-hover:text-[#079CFB] group-hover:translate-x-0.5 transition-all duration-300 flex-shrink-0 mt-0.5" />
                           </div>
-                          <p className="text-xs text-gray-600 leading-snug">
+                          <p className="text-xs text-slate-600 leading-snug">
                             Advanced configuration for this user
                           </p>
                         </div>
@@ -259,7 +265,7 @@ export function MyProfileFormFields({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-4xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Controller
                   name="active"
                   control={control}

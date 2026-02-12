@@ -7,6 +7,7 @@ import type { UserSignature } from "@/lib/types/user-credentials.types"
 interface SignatureSectionProps {
   signature: UserSignature | null
   blocked: boolean
+  isLoadingSignature?: boolean
   onOpenEditor: () => void
   onDelete: () => void
 }
@@ -14,16 +15,14 @@ interface SignatureSectionProps {
 export function SignatureSection({
   signature,
   blocked,
+  isLoadingSignature = false,
   onOpenEditor,
   onDelete,
 }: SignatureSectionProps) {
   return (
     <div className="w-full lg:w-1/2">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-lg bg-blue-50 border border-blue-100">
-          <FileSignature className="h-5 w-5 text-[#037ECC]" />
-        </div>
-        <div>
+                <div>
           <h3 className="text-lg font-semibold text-gray-900">Signature</h3>
           <p className="text-sm text-gray-600">Single active digital signature per user.</p>
         </div>
@@ -40,6 +39,7 @@ export function SignatureSection({
       <SignatureCard
         signature={signature}
         blocked={blocked}
+        isLoading={isLoadingSignature}
         onOpenEditor={onOpenEditor}
         onDelete={onDelete}
       />

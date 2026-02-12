@@ -9,9 +9,13 @@ import { User } from "lucide-react"
 import { useRoles } from "@/lib/modules/roles/hooks/use-roles"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
-export function PersonalInformationSection() {
+interface PersonalInformationSectionProps {
+  canEditRole: boolean
+}
+
+export function PersonalInformationSection({ canEditRole }: PersonalInformationSectionProps) {
   const { control } = useFormContext()
   const { roles, isLoading: isLoadingRoles } = useRoles()
   const { countries, isLoading: isLoadingCountries } = useCountries()
@@ -21,8 +25,16 @@ export function PersonalInformationSection() {
   
   const { states, isLoading: isLoadingStates } = useStates(usaCountryId)
 
-  // Watch roleName from form (comes from backend)
   const roleName = useWatch({ control, name: "roleName" }) || ""
+  const roleId = useWatch({ control, name: "roleId" }) || ""
+
+  const roleOptions = useMemo(() => {
+    const options = roles.map((role) => ({ value: role.id, label: role.name }))
+    if (roleId && roleName && !options.some((opt) => opt.value === roleId)) {
+      options.unshift({ value: roleId, label: roleName })
+    }
+    return options
+  }, [roles, roleId, roleName])
 
   // SSN masking state
   const [isEditingSSN, setIsEditingSSN] = useState(false)
@@ -273,15 +285,15 @@ export function PersonalInformationSection() {
           control={control}
           render={({ field, fieldState }) => (
             <div>
-              <FloatingInput
+              <FloatingSelect
                 label="Role"
-                value={roleName}
-                onChange={() => {}}
+                value={field.value}
+                onChange={field.onChange}
                 onBlur={field.onBlur}
-                placeholder=" "
-                disabled={true}
+                options={roleOptions}
                 hasError={!!fieldState.error}
                 required
+                disabled={!canEditRole || isLoadingRoles}
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">

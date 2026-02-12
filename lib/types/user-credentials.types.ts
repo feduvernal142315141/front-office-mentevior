@@ -24,6 +24,7 @@ export interface CreateUserCredentialDto {
   identificationNumber: string
   effectiveDate: string
   expirationDate: string
+  memberUserId?: string
   status?: UserCredentialStatus // Optional - will be calculated from expirationDate if not provided
 }
 
@@ -33,20 +34,17 @@ export interface UpdateUserCredentialDto {
   identificationNumber?: string
   effectiveDate?: string
   expirationDate?: string
+  memberUserId?: string
   status?: UserCredentialStatus
 }
 
 export interface UserSignature {
-  id: string
-  imageBase64: string
-  createdAt: string
-  updatedAt: string
+  url: string
+  createdAt?: string
+  updatedAt?: string
 }
 
-export interface CreateUserSignatureDto {
-  imageBase64: string
-}
-
-export interface UpdateUserSignatureDto {
-  imageBase64: string
+export interface SaveUserSignatureDto {
+  memberUserId: string
+  signature: string
 }

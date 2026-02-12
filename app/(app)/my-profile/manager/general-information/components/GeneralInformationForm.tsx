@@ -16,6 +16,7 @@ import { useGeneralInformation } from "@/lib/modules/general-information/hooks/u
 import { useUpdateGeneralInformation } from "@/lib/modules/general-information/hooks/use-update-general-information"
 import type { GeneralInformation } from "@/lib/types/general-information.types"
 import type { UpdateGeneralInformationDto } from "@/lib/types/general-information.types"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 /**
  * Maps the backend response (nested objects) to flat form values.
@@ -54,7 +55,7 @@ function mapToDto(data: GeneralInformationFormValues): UpdateGeneralInformationD
     lastName: data.lastName,
     birthday: data.birthday,
     country: data.country,
-    state: data.state,
+    stateId: data.state,
     city: data.city,
     zipCode: data.zipCode,
     homeAddressLine1: data.homeAddressLine1,
@@ -72,10 +73,27 @@ function mapToDto(data: GeneralInformationFormValues): UpdateGeneralInformationD
   }
 }
 
-export function GeneralInformationForm() {
+interface GeneralInformationFormProps {
+  memberUserId: string | null
+  onCancelRoute?: string
+  onSuccessRoute?: string
+}
+
+export function GeneralInformationForm({
+  memberUserId,
+  onCancelRoute = "/my-profile",
+  onSuccessRoute = "/my-profile",
+}: GeneralInformationFormProps) {
   const router = useRouter()
-  const { generalInformation, isLoading } = useGeneralInformation()
+  const { user: currentUser } = useAuth()
+  const { generalInformation, isLoading } = useGeneralInformation(memberUserId)
   const { update, isLoading: isSubmitting } = useUpdateGeneralInformation()
+
+  const roleValue = currentUser?.role || (currentUser as any)?.roleName || ""
+  const normalizedRole = String(roleValue).replace(/[\s_-]/g, "").toLowerCase()
+  const isSuperAdmin = normalizedRole.includes("superadmin")
+  const isEditingSelf = currentUser?.id && memberUserId ? currentUser.id === memberUserId : false
+  const canEditRole = isSuperAdmin && !isEditingSelf
 
   const form = useForm<GeneralInformationFormValues>({
     resolver: zodResolver(generalInformationSchema),
@@ -89,18 +107,21 @@ export function GeneralInformationForm() {
   }, [generalInformation, form])
 
   const onSubmit = async (data: GeneralInformationFormValues) => {
-    const dto = mapToDto(data)
+    const dto = {
+      ...mapToDto(data),
+      ...(memberUserId ? { memberUserId } : {}),
+    }
     const result = await update(dto)
 
     if (result) {
       setTimeout(() => {
-        router.push("/my-profile")
+        router.push(onSuccessRoute)
       }, 500)
     }
   }
 
   const handleCancel = () => {
-    router.push("/my-profile")
+    router.push(onCancelRoute)
   }
 
   if (isLoading) {
@@ -137,7 +158,7 @@ export function GeneralInformationForm() {
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
         <div className="pb-24 space-y-8">
-          <PersonalInformationSection />
+          <PersonalInformationSection canEditRole={canEditRole} />
           <ProfessionalInformationSection />
         </div>
 

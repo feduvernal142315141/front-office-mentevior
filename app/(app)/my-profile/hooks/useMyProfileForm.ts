@@ -16,6 +16,7 @@ interface UseMyProfileFormReturn {
   isLoadingRoles: boolean
   isLoadingUser: boolean
   user: any
+  currentRole: { id: string; name: string } | null
   onSubmit: (data: UserFormValues) => Promise<void>
   isSubmitting: boolean
   actions: {
@@ -47,7 +48,7 @@ export function useMyProfileForm(): UseMyProfileFormReturn {
         email: user.email,
         cellphone: user.cellphone || "",
         hiringDate: isoToLocalDate(user.hiringDate),
-        roleId: user.role?.id || "",
+        roleId: user.roleId || user.role?.id || "",
         active: user.active ?? true,
         terminated: user.terminated ?? false,
       })
@@ -91,6 +92,7 @@ export function useMyProfileForm(): UseMyProfileFormReturn {
     isLoadingRoles,
     isLoadingUser,
     user,
+    currentRole: user?.role ? { id: user.role.id, name: user.role.name } : null,
     onSubmit,
     isSubmitting,
     actions,

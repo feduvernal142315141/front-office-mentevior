@@ -1,49 +1,62 @@
-import type {
-  UserSignature,
-  CreateUserSignatureDto,
-  UpdateUserSignatureDto,
-} from "@/lib/types/user-credentials.types"
+import { serviceDelete, serviceGet, servicePut } from "@/lib/services/baseService"
+import type { SaveUserSignatureDto, UserSignature } from "@/lib/types/user-credentials.types"
 
-let mockSignatureStore: UserSignature | null = null
-
-export async function getSignature(): Promise<UserSignature | null> {
-  await new Promise((resolve) => setTimeout(resolve, 300))
-  return mockSignatureStore
+interface BackendSignatureResponse {
+  url: string
 }
 
-export async function createSignature(data: CreateUserSignatureDto): Promise<UserSignature> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
+export async function getSignature(
+  memberUserId: string
+): Promise<UserSignature | null> {
+  const response = await serviceGet<BackendSignatureResponse>(
+    `/member-users/sign/${memberUserId}`
+  )
 
-  const newSignature: UserSignature = {
-    id: `sig-${Date.now()}`,
-    imageBase64: data.imageBase64,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+  if (response.status === 404 || response.status === 204) {
+    return null
   }
 
-  mockSignatureStore = newSignature
-  return newSignature
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch signature")
+  }
+
+  if (!response.data.url) {
+    return null
+  }
+
+  return {
+    url: response.data.url,
+  }
 }
 
-export async function updateSignature(data: UpdateUserSignatureDto): Promise<UserSignature> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
+export async function saveSignature(
+  data: SaveUserSignatureDto
+): Promise<UserSignature | null> {
+  const response = await servicePut<SaveUserSignatureDto, BackendSignatureResponse>(
+    "/member-users/sign",
+    data
+  )
 
-  if (!mockSignatureStore) {
-    throw new Error("No signature exists to update")
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to save signature")
   }
 
-  const updated: UserSignature = {
-    ...mockSignatureStore,
-    imageBase64: data.imageBase64,
-    updatedAt: new Date().toISOString(),
+  const url = (response.data as BackendSignatureResponse).url
+  if (!url) {
+    return null
   }
 
-  mockSignatureStore = updated
-  return updated
+  return { url }
 }
 
-export async function deleteSignature(): Promise<boolean> {
-  await new Promise((resolve) => setTimeout(resolve, 300))
-  mockSignatureStore = null
+export async function deleteSignature(memberUserId: string): Promise<boolean> {
+  const response = await serviceDelete<boolean>(
+    `/member-users/sign/${memberUserId}`
+  )
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(response.data?.message || "Failed to delete signature")
+  }
+
   return true
 }

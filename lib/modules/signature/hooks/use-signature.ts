@@ -3,13 +3,11 @@
 import { useState, useEffect, useCallback } from "react"
 import type {
   UserSignature,
-  CreateUserSignatureDto,
-  UpdateUserSignatureDto,
+  SaveUserSignatureDto,
 } from "@/lib/types/user-credentials.types"
 import {
   getSignature,
-  createSignature,
-  updateSignature,
+  saveSignature,
   deleteSignature,
 } from "../services/signature.service"
 import { toast } from "sonner"
@@ -26,7 +24,10 @@ interface UseSignatureReturn {
   refetch: () => Promise<void>
 }
 
-export function useSignature(): UseSignatureReturn {
+export function useSignature(
+  memberUserId: string | null,
+  enabled: boolean
+): UseSignatureReturn {
   const [signature, setSignature] = useState<UserSignature | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -37,7 +38,11 @@ export function useSignature(): UseSignatureReturn {
     try {
       setIsLoading(true)
       setError(null)
-      const data = await getSignature()
+      if (!memberUserId || !enabled) {
+        setSignature(null)
+        return
+      }
+      const data = await getSignature(memberUserId)
       setSignature(data)
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error("Failed to fetch signature")
@@ -45,28 +50,37 @@ export function useSignature(): UseSignatureReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [memberUserId, enabled])
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      setSignature(null)
+      return
+    }
     fetchSignature()
   }, [fetchSignature])
 
   const save = async (imageBase64: string): Promise<UserSignature | null> => {
     try {
       setIsSaving(true)
-
-      let result: UserSignature
-
-      if (signature) {
-        const dto: UpdateUserSignatureDto = { imageBase64 }
-        result = await updateSignature(dto)
-        toast.success("Signature updated successfully.")
-      } else {
-        const dto: CreateUserSignatureDto = { imageBase64 }
-        result = await createSignature(dto)
-        toast.success("Digital signature saved successfully.")
+      if (!memberUserId) {
+        return null
       }
 
+      const dto: SaveUserSignatureDto = {
+        memberUserId,
+        signature: imageBase64,
+      }
+
+      const result = await saveSignature(dto)
+      if (!result) {
+        await fetchSignature()
+        toast.success(signature ? "Signature updated successfully." : "Digital signature saved successfully.")
+        return signature
+      }
+
+      toast.success(signature ? "Signature updated successfully." : "Digital signature saved successfully.")
       setSignature(result)
       return result
     } catch (err) {
@@ -81,7 +95,10 @@ export function useSignature(): UseSignatureReturn {
   const remove = async (): Promise<boolean> => {
     try {
       setIsDeleting(true)
-      await deleteSignature()
+      if (!memberUserId) {
+        return false
+      }
+      await deleteSignature(memberUserId)
       setSignature(null)
       toast.success("Signature removed successfully.")
       return true
@@ -100,7 +117,7 @@ export function useSignature(): UseSignatureReturn {
     error,
     isSaving,
     isDeleting,
-    hasSignature: !!signature,
+    hasSignature: !!signature?.url,
     save,
     remove,
     refetch: fetchSignature,

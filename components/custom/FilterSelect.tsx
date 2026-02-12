@@ -16,6 +16,7 @@ interface FilterSelectProps {
   placeholder?: string
   className?: string
   disabled?: boolean
+  fullWidth?: boolean
 }
 
 export function FilterSelect({
@@ -25,6 +26,7 @@ export function FilterSelect({
   placeholder = "Select...",
   className,
   disabled = false,
+  fullWidth = false,
 }: FilterSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
@@ -69,7 +71,10 @@ export function FilterSelect({
   const displayLabel = selectedOption?.label || placeholder
 
   return (
-    <div ref={containerRef} className={cn("relative inline-block", className)}>
+    <div
+      ref={containerRef}
+      className={cn("relative", fullWidth ? "w-full" : "inline-block", className)}
+    >
       {/* Trigger Button */}
       <button
         ref={buttonRef}
@@ -78,7 +83,7 @@ export function FilterSelect({
         disabled={disabled}
         className={cn(
           /* Size */
-          "min-w-[140px]",
+          fullWidth ? "w-full" : "min-w-[140px]",
           "h-[52px] 2xl:h-[56px]",
           "px-4 pr-10",
           

@@ -14,6 +14,7 @@ export function MyProfileForm() {
     onSubmit,
     isSubmitting,
     actions,
+    currentRole,
   } = useMyProfileForm()
 
   if (isLoadingUser) {
@@ -28,6 +29,7 @@ export function MyProfileForm() {
           isLoadingRoles={isLoadingRoles}
           isSubmitting={isSubmitting}
           onCancel={actions.goToDashboard}
+          currentRole={currentRole}
         />
       </form>
     </FormProvider>

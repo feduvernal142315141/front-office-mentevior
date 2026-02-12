@@ -3,6 +3,7 @@
 import type { ReactNode } from "react"
 import { CredentialsForm } from "./CredentialsForm"
 import { CredentialsTable } from "./CredentialsTable"
+import { Button } from "@/components/custom/Button"
 import type {
   UserCredential,
   UserCredentialTypeOption,
@@ -17,17 +18,14 @@ interface CredentialsSectionProps {
   credentialTypes: UserCredentialTypeOption[]
   isLoadingTypes: boolean
   editingCredential: UserCredential | null
+  isFormOpen: boolean
   onSave: (data: CreateUserCredentialDto) => Promise<void>
   onUpdate: (id: string, data: UpdateUserCredentialDto) => Promise<void>
   onCancelEdit: () => void
   onEdit: (credential: UserCredential) => void
+  onAdd: () => void
   isSaving: boolean
   getComputedStatus: (expirationDate: string) => "Active" | "Expired"
-  page: number
-  pageSize: number
-  total: number
-  onPageChange: (page: number) => void
-  onPageSizeChange: (pageSize: number) => void
   signatureSection?: ReactNode
 }
 
@@ -38,17 +36,14 @@ export function CredentialsSection({
   credentialTypes,
   isLoadingTypes,
   editingCredential,
+  isFormOpen,
   onSave,
   onUpdate,
   onCancelEdit,
   onEdit,
+  onAdd,
   isSaving,
   getComputedStatus,
-  page,
-  pageSize,
-  total,
-  onPageChange,
-  onPageSizeChange,
   signatureSection,
 }: CredentialsSectionProps) {
   return (
@@ -66,26 +61,29 @@ export function CredentialsSection({
       </div>
 
       <div className="space-y-7">
-        <CredentialsForm
-          credentialTypes={credentialTypes}
-          isLoadingTypes={isLoadingTypes}
-          editingCredential={editingCredential}
-          onSave={onSave}
-          onUpdate={onUpdate}
-          onCancelEdit={onCancelEdit}
-          isSaving={isSaving}
-          getComputedStatus={getComputedStatus}
-        />
-
         <CredentialsTable
           data={credentials}
-          page={page}
-          pageSize={pageSize}
-          total={total}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
           onEdit={onEdit}
         />
+
+        {isFormOpen && (
+          <CredentialsForm
+            credentialTypes={credentialTypes}
+            isLoadingTypes={isLoadingTypes}
+            editingCredential={editingCredential}
+            onSave={onSave}
+            onUpdate={onUpdate}
+            onCancelEdit={onCancelEdit}
+            isSaving={isSaving}
+            getComputedStatus={getComputedStatus}
+          />
+        )}
+
+        {!isFormOpen && credentials.length === 0 && (
+          <div className="flex justify-end">
+            <Button onClick={onAdd}>Add Credential</Button>
+          </div>
+        )}
 
         {signatureSection && (
           <div className="pt-2">

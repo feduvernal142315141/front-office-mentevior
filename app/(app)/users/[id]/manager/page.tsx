@@ -1,22 +1,34 @@
 "use client"
 
+import { use, useState } from "react"
 import { Settings, FileText, Award, Sliders } from "lucide-react"
-import { useState } from "react"
 import { Card } from "@/components/custom/Card"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
-import { GeneralInformationForm } from "./general-information/components/GeneralInformationForm"
-import { CredentialsSignatureOverview } from "./credentials-signature/components/CredentialsSignatureOverview"
-import { useAuth } from "@/lib/hooks/use-auth"
+import { GeneralInformationForm } from "@/app/(app)/my-profile/manager/general-information/components/GeneralInformationForm"
+import { CredentialsSignatureOverview } from "@/app/(app)/my-profile/manager/credentials-signature/components/CredentialsSignatureOverview"
 
-export default function ManagerPage() {
-  const { user } = useAuth()
+interface UserManagerPageProps {
+  params: Promise<{
+    id: string
+  }>
+}
+
+export default function UserManagerPage({ params }: UserManagerPageProps) {
+  const { id } = use(params)
   const [activeTab, setActiveTab] = useState("general")
+
   const tabs: TabItem[] = [
     {
       id: "general",
       label: "General Information",
       icon: <Settings className="w-4 h-4" />,
-      content: <GeneralInformationForm memberUserId={user?.id ?? null} />,
+      content: (
+        <GeneralInformationForm
+          memberUserId={id}
+          onCancelRoute={`/users/${id}/edit`}
+          onSuccessRoute={`/users/${id}/edit`}
+        />
+      ),
     },
     {
       id: "credentials",
@@ -25,7 +37,7 @@ export default function ManagerPage() {
       content: (
         <CredentialsSignatureOverview
           isActive={activeTab === "credentials"}
-          memberUserId={user?.id ?? null}
+          memberUserId={id}
         />
       ),
     },
@@ -59,7 +71,7 @@ export default function ManagerPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-                Profile Management
+                User Management
               </h1>
               <p className="text-slate-600 mt-1">
                 Advanced configuration for credentials, documents, and additional information

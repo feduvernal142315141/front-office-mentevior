@@ -18,6 +18,7 @@ export interface CustomTableProps<T> {
   isLoading?: boolean
   emptyMessage?: string
   emptyContent?: ReactNode
+  compactEmpty?: boolean
   pagination?: {
     page: number
     pageSize: number
@@ -51,6 +52,7 @@ export function CustomTable<T>({
   isLoading = false,
   emptyMessage = "No data available",
   emptyContent,
+  compactEmpty = false,
   pagination,
   className = "",
   getRowKey,
@@ -111,21 +113,42 @@ export function CustomTable<T>({
         "shadow-sm",
         className
       )}>
-        <div className="flex flex-col items-center justify-center py-20 px-6">
-          {/* Icon */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 bg-[#037ECC]/10 rounded-full blur-2xl" />
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20 flex items-center justify-center">
-              <FileQuestion className="w-10 h-10 text-[#037ECC]/60" />
+        <div className={cn(
+          "flex flex-col items-center justify-center",
+          compactEmpty ? "py-4 px-6" : "py-20 px-6"
+        )}>
+          <div className={cn(
+            "relative",
+            compactEmpty ? "mb-3" : "mb-6"
+          )}>
+            <div className={cn(
+              "absolute inset-0 bg-[#037ECC]/10 rounded-full blur-2xl",
+              compactEmpty && "opacity-60"
+            )} />
+            <div className={cn(
+              "relative rounded-2xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20 flex items-center justify-center",
+              compactEmpty ? "w-10 h-10" : "w-20 h-20"
+            )}>
+              <FileQuestion className={cn(
+                "text-[#037ECC]/60",
+                compactEmpty ? "w-5 h-5" : "w-10 h-10"
+              )} />
             </div>
           </div>
-          
+
           {emptyContent || (
             <>
-              <p className="text-lg font-semibold text-slate-800">{emptyMessage}</p>
-              <p className="mt-2 text-sm text-slate-500 max-w-md text-center">
-                No records found in the database. Try adjusting your filters or create a new record to get started.
+              <p className={cn(
+                "font-semibold text-slate-800",
+                compactEmpty ? "text-sm" : "text-lg"
+              )}>
+                {emptyMessage}
               </p>
+              {!compactEmpty && (
+                <p className="mt-2 text-sm text-slate-500 max-w-md text-center">
+                  No records found in the database. Try adjusting your filters or create a new record to get started.
+                </p>
+              )}
             </>
           )}
         </div>

@@ -51,7 +51,7 @@ export interface UpdateGeneralInformationDto {
   lastName: string
   birthday: string
   country: string
-  state: string
+  stateId: string
   city: string
   zipCode: string
   homeAddressLine1: string
@@ -66,4 +66,5 @@ export interface UpdateGeneralInformationDto {
   companyName: string
   ein: string
   employerId: string
+  memberUserId?: string
 }

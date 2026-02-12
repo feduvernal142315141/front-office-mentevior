@@ -6,21 +6,11 @@ import type { UserCredential } from "@/lib/types/user-credentials.types"
 
 interface CredentialsTableProps {
   data: UserCredential[]
-  page: number
-  pageSize: number
-  total: number
-  onPageChange: (page: number) => void
-  onPageSizeChange: (pageSize: number) => void
   onEdit: (credential: UserCredential) => void
 }
 
 export function CredentialsTable({
   data,
-  page,
-  pageSize,
-  total,
-  onPageChange,
-  onPageSizeChange,
   onEdit,
 }: CredentialsTableProps) {
   const columns: CustomTableColumn<UserCredential>[] = [
@@ -84,16 +74,9 @@ export function CredentialsTable({
     <CustomTable
       columns={columns}
       data={data}
-      emptyMessage="No credentials found"
+      emptyMessage="No credentials yet"
+      compactEmpty
       getRowKey={(item) => item.id}
-      pagination={{
-        page,
-        pageSize,
-        total,
-        onPageChange,
-        onPageSizeChange,
-        pageSizeOptions: [5, 10, 20],
-      }}
     />
   )
 }

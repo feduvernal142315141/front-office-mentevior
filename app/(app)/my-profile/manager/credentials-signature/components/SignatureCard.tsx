@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { FileSignature, PenLine, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { UserSignature } from "@/lib/types/user-credentials.types"
@@ -7,6 +8,7 @@ import type { UserSignature } from "@/lib/types/user-credentials.types"
 interface SignatureCardProps {
   signature: UserSignature | null
   blocked?: boolean
+  isLoading?: boolean
   onOpenEditor: () => void
   onDelete?: () => void
 }
@@ -14,10 +16,36 @@ interface SignatureCardProps {
 export function SignatureCard({
   signature,
   blocked = false,
+  isLoading = false,
   onOpenEditor,
   onDelete,
 }: SignatureCardProps) {
-  if (!signature) {
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-3">
+        <div className="animate-pulse space-y-3">
+          <div className="h-4 w-40 rounded bg-slate-200" />
+          <div className="h-[82px] w-full rounded bg-slate-100" />
+        </div>
+      </div>
+    )
+  }
+
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!signature?.url) {
+      setIsLoaded(false)
+      return
+    }
+
+    setIsLoaded(false)
+    const img = new Image()
+    img.src = signature.url
+    img.onload = () => setIsLoaded(true)
+  }, [signature?.url])
+
+  if (!signature?.url) {
     return (
       <button
         type="button"
@@ -42,14 +70,14 @@ export function SignatureCard({
     )
   }
 
-  const imageDataUrl = `data:image/png;base64,${signature.imageBase64}`
+  const imageUrl = signature.url
 
   return (
     <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-3">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-gray-500">Current signature preview</p>
         <div className="inline-flex items-center gap-1.5">
-          {onDelete && (
+          {/* {onDelete && (
             <button
               type="button"
               onClick={onDelete}
@@ -64,7 +92,7 @@ export function SignatureCard({
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-          )}
+          )} */}
           <button
             type="button"
             onClick={onOpenEditor}
@@ -83,7 +111,20 @@ export function SignatureCard({
       </div>
 
       <div className="rounded-lg bg-white border border-gray-200 px-3 py-2 min-h-[82px] flex items-center">
-        <img src={imageDataUrl} alt="Digital signature preview" className="max-h-[70px] object-contain" />
+        {!isLoaded && (
+          <div className="w-full h-[70px] rounded bg-slate-100 animate-pulse" />
+        )}
+        <img
+          src={imageUrl}
+          alt="Digital signature preview"
+          className={`max-h-[70px] object-contain transition-opacity duration-200 ${
+            isLoaded ? "opacity-100" : "opacity-0"
+          }`}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+          onLoad={() => setIsLoaded(true)}
+        />
       </div>
 
       {signature.updatedAt && (

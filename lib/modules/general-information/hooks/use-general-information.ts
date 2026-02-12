@@ -18,7 +18,9 @@ interface UseGeneralInformationReturn {
   refetch: () => Promise<void>
 }
 
-export function useGeneralInformation(): UseGeneralInformationReturn {
+export function useGeneralInformation(
+  memberUserId: string | null
+): UseGeneralInformationReturn {
   const [generalInformation, setGeneralInformation] =
     useState<GeneralInformation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -28,7 +30,11 @@ export function useGeneralInformation(): UseGeneralInformationReturn {
     try {
       setIsLoading(true)
       setError(null)
-      const data = await getGeneralInformation()
+      if (!memberUserId) {
+        setGeneralInformation(null)
+        return
+      }
+      const data = await getGeneralInformation(memberUserId)
       setGeneralInformation(data)
     } catch (err) {
       const errorObj =
@@ -44,7 +50,7 @@ export function useGeneralInformation(): UseGeneralInformationReturn {
 
   useEffect(() => {
     fetchGeneralInformation()
-  }, [])
+  }, [memberUserId])
 
   return {
     generalInformation,

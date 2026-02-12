@@ -58,7 +58,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         email: user.email,
         cellphone: user.cellphone || "",
         hiringDate: isoToLocalDate(user.hiringDate),
-        roleId: user.role?.id || "",
+        roleId: user.roleId || user.role?.id || "",
         active: user.active ?? true,
         terminated: user.terminated ?? false,
       })

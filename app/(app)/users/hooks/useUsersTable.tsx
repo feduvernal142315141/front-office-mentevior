@@ -6,7 +6,7 @@ import { PermissionModule } from "@/lib/utils/permissions-new"
 import { CustomTableColumn } from "@/components/custom/CustomTable"
 import { MemberUserListItem} from "@/lib/types/user.types"
 import { Badge } from "@/components/ui/badge"
-import { Edit2 } from "lucide-react"
+import { Edit2, Sliders } from "lucide-react"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
 import {useRoles} from "@/lib/modules/roles/hooks/use-roles";
@@ -219,7 +219,52 @@ export function useUsersTable(): UseUsersTableReturn {
         align: "right",
         render: (user) => (
           <div className="flex items-center justify-end gap-2">
-            
+            {permissions.canEdit && (
+              <button
+                onClick={() => router.push(`/users/${user.id}/manager`)}
+                className="
+                  group/manage
+                  relative
+                  h-9 w-9
+                  flex items-center justify-center
+                  rounded-xl
+                  
+                  bg-gradient-to-b from-slate-50 to-slate-100/80
+                  border border-slate-200/70
+                  shadow-sm
+                  shadow-slate-900/5
+                  
+                  hover:from-slate-100
+                  hover:to-slate-200/90
+                  hover:border-slate-300/80
+                  hover:shadow-md
+                  hover:shadow-slate-900/10
+                  hover:-translate-y-0.5
+                  
+                  active:translate-y-0
+                  active:shadow-sm
+                  
+                  transition-all
+                  duration-200
+                  ease-out
+                  
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-[#037ECC]/20
+                  focus:ring-offset-2
+                "
+                title="User management"
+                aria-label="User management"
+              >
+                <Sliders className="
+                  w-4 h-4
+                  text-slate-600
+                  group-hover/manage:text-[#037ECC]
+                  transition-colors
+                  duration-200
+                " />
+              </button>
+            )}
 
             {permissions.canEdit && (
               <button

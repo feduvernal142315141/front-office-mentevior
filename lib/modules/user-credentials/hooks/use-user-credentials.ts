@@ -10,7 +10,6 @@ import type {
 import {
   getUserCredentials,
   getUserCredentialTypes,
-  createUserCredential,
   updateUserCredential,
 } from "../services/user-credentials.service"
 import { toast } from "sonner"
@@ -52,7 +51,10 @@ interface UseUserCredentialsReturn {
   getComputedStatus: (expirationDate: string) => "Active" | "Expired"
 }
 
-export function useUserCredentials(): UseUserCredentialsReturn {
+export function useUserCredentials(
+  memberUserId: string | null,
+  enabled: boolean
+): UseUserCredentialsReturn {
   const [credentials, setCredentials] = useState<UserCredential[]>([])
   const [credentialTypes, setCredentialTypes] = useState<UserCredentialTypeOption[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -65,7 +67,11 @@ export function useUserCredentials(): UseUserCredentialsReturn {
     try {
       setIsLoading(true)
       setError(null)
-      const data = await getUserCredentials()
+      if (!memberUserId || !enabled) {
+        setCredentials([])
+        return
+      }
+      const data = await getUserCredentials(memberUserId)
 
       setCredentials(data)
     } catch (err) {
@@ -75,7 +81,7 @@ export function useUserCredentials(): UseUserCredentialsReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [memberUserId, enabled])
 
   const fetchCredentialTypes = useCallback(async () => {
     try {
@@ -90,9 +96,14 @@ export function useUserCredentials(): UseUserCredentialsReturn {
   }, [])
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      setIsLoadingTypes(false)
+      return
+    }
     fetchCredentials()
     fetchCredentialTypes()
-  }, [fetchCredentials, fetchCredentialTypes])
+  }, [fetchCredentials, fetchCredentialTypes, enabled])
 
   const expiredCredentials = credentials.filter((c) => c.status === "Expired")
 
@@ -106,9 +117,13 @@ export function useUserCredentials(): UseUserCredentialsReturn {
       setIsCreating(true)
 
       const status = data.status ?? getCredentialStatus(data.expirationDate)
-      const payload: CreateUserCredentialDto = { ...data, status }
+      const payload: CreateUserCredentialDto = {
+        ...data,
+        status,
+        ...(memberUserId ? { memberUserId } : {}),
+      }
       
-      const result = await createUserCredential(payload)
+      const result = await updateUserCredential(payload)
 
       if (result) {       
         toast.success("Credential saved successfully.")
@@ -132,9 +147,14 @@ export function useUserCredentials(): UseUserCredentialsReturn {
       const status = data.expirationDate 
         ? getCredentialStatus(data.expirationDate)
         : undefined
-      const payload = status !== undefined ? { ...data, status } : data
-      
-      const result = await updateUserCredential(id, payload)
+      const payload = {
+        ...(status !== undefined ? { ...data, status } : data),
+        ...(memberUserId ? { memberUserId } : {}),
+      }
+
+      const result = await updateUserCredential(
+        payload.id ? payload : { ...payload, id }
+      )
 
       if (result) {
       

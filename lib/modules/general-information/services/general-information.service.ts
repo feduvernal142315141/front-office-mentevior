@@ -4,9 +4,11 @@ import type {
   UpdateGeneralInformationDto,
 } from "@/lib/types/general-information.types"
 
-export async function getGeneralInformation(): Promise<GeneralInformation | null> {
+export async function getGeneralInformation(
+  memberUserId: string
+): Promise<GeneralInformation | null> {
   const response = await serviceGet<GeneralInformation>(
-    "/member-users/general-information"
+    `/member-users/general-information/${memberUserId}`
   )
 
   if (response.status === 404) {

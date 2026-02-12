@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { toast } from "sonner"
-import { useAuth } from "@/lib/hooks/use-auth"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { useUserCredentials } from "@/lib/modules/user-credentials/hooks/use-user-credentials"
 import { useSignature } from "@/lib/modules/signature/hooks/use-signature"
@@ -18,17 +17,25 @@ import { SignatureSection } from "./SignatureSection"
 import { SignatureEditorModal } from "./SignatureEditorModal"
 import { SignatureScrollIndicator } from "./SignatureScrollIndicator"
 import { ConfirmationModal } from "@/components/custom/ConfirmationModal"
+import { CredentialsSignatureSkeleton } from "./CredentialsSignatureSkeleton"
 
-const DEFAULT_PAGE_SIZE = 5
+interface CredentialsSignatureOverviewProps {
+  isActive: boolean
+  memberUserId: string | null
+}
 
-export function CredentialsSignatureOverview() {
-  const { user } = useAuth()
-  const { user: fullUser } = useUserById(user?.id || null)
+export function CredentialsSignatureOverview({
+  isActive,
+  memberUserId,
+}: CredentialsSignatureOverviewProps) {
+  const [hasLoaded, setHasLoaded] = useState(false)
+  const { user: fullUser } = useUserById(isActive ? memberUserId : null)
 
   const {
     credentials,
     credentialTypes,
     isLoadingTypes,
+    isLoading,
     expiredCredentials,
     expiringSoonCredentials,
     create: createCredential,
@@ -36,40 +43,32 @@ export function CredentialsSignatureOverview() {
     isCreating,
     isUpdating,
     getComputedStatus,
-  } = useUserCredentials()
+  } = useUserCredentials(memberUserId, isActive)
 
   const {
     signature,
     hasSignature,
     save: saveSignature,
     remove: removeSignature,
+    isLoading: isLoadingSignature,
     isSaving: isSavingSignature,
-  } = useSignature()
+  } = useSignature(memberUserId, isActive)
 
   const [editingCredential, setEditingCredential] = useState<UserCredential | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [isSignatureEditorOpen, setIsSignatureEditorOpen] = useState(false)
   const [isDeleteSignatureModalOpen, setIsDeleteSignatureModalOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
-  const roleName = fullUser?.role?.name || user?.role || "Unknown"
+  const roleName = fullUser?.role?.name || "Unknown"
   const canManageCredentials = ELIGIBLE_ROLES_FOR_CREDENTIALS.includes(
     roleName as (typeof ELIGIBLE_ROLES_FOR_CREDENTIALS)[number]
   )
   const isSignatureBlocked = expiredCredentials.length > 0
 
-  const paginatedCredentials = useMemo(() => {
-    const totalPages = Math.max(1, Math.ceil(credentials.length / pageSize))
-    const safePage = Math.min(page, totalPages)
-    const start = (safePage - 1) * pageSize
-    const end = start + pageSize
-    return credentials.slice(start, end)
-  }, [credentials, page, pageSize])
-
   const handleSaveCredential = useCallback(
     async (data: CreateUserCredentialDto) => {
       await createCredential(data)
-      setPage(1)
+      setIsFormOpen(false)
     },
     [createCredential]
   )
@@ -78,29 +77,24 @@ export function CredentialsSignatureOverview() {
     async (id: string, data: UpdateUserCredentialDto) => {
       await updateCredential(id, data)
       setEditingCredential(null)
+      setIsFormOpen(false)
     },
     [updateCredential]
   )
 
   const handleCancelEdit = useCallback(() => {
     setEditingCredential(null)
+    setIsFormOpen(false)
   }, [])
 
   const handleEditCredential = useCallback((credential: UserCredential) => {
     setEditingCredential(credential)
-    
-    setTimeout(() => {
-      const container = document.getElementById("main-scroll")
-      const formElement = document.getElementById("credentials-form")
-      
-      if (container && formElement) {
-        const containerRect = container.getBoundingClientRect()
-        const formRect = formElement.getBoundingClientRect()
-        const targetY = container.scrollTop + (formRect.top - containerRect.top) - 30
-        
-        container.scrollTo({ top: targetY, behavior: "smooth" })
-      }
-    }, 100)
+    setIsFormOpen(true)
+  }, [])
+
+  const handleAddCredential = useCallback(() => {
+    setEditingCredential(null)
+    setIsFormOpen(true)
   }, [])
 
   const handleOpenSignatureEditor = useCallback(() => {
@@ -129,14 +123,25 @@ export function CredentialsSignatureOverview() {
     setIsDeleteSignatureModalOpen(false)
   }, [removeSignature])
 
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage)
-  }, [])
+  useEffect(() => {
+    if (!isActive) {
+      setHasLoaded(false)
+      return
+    }
 
-  const handlePageSizeChange = useCallback((newPageSize: number) => {
-    setPageSize(newPageSize)
-    setPage(1)
-  }, [])
+    if (!memberUserId) {
+      setHasLoaded(false)
+      return
+    }
+
+    if (!isLoading && !isLoadingTypes && !isLoadingSignature) {
+      setHasLoaded(true)
+    }
+  }, [isActive, memberUserId, isLoading, isLoadingTypes, isLoadingSignature])
+
+  if (isActive && !hasLoaded && (isLoading || isLoadingTypes || isLoadingSignature)) {
+    return <CredentialsSignatureSkeleton />
+  }
 
   return (
     <div className="space-y-6">
@@ -144,30 +149,29 @@ export function CredentialsSignatureOverview() {
         expiredCount={expiredCredentials.length}
         expiringSoonCount={expiringSoonCredentials.length}
         hasSignature={hasSignature}
+        isLoadingSignature={isLoadingSignature}
       />
 
       <CredentialsSection
         roleName={roleName}
         canManageCredentials={canManageCredentials}
-        credentials={paginatedCredentials}
+        credentials={credentials}
         credentialTypes={credentialTypes}
         isLoadingTypes={isLoadingTypes}
         editingCredential={editingCredential}
+        isFormOpen={isFormOpen}
         onSave={handleSaveCredential}
         onUpdate={handleUpdateCredential}
         onCancelEdit={handleCancelEdit}
         onEdit={handleEditCredential}
+        onAdd={handleAddCredential}
         isSaving={isCreating || isUpdating}
         getComputedStatus={getComputedStatus}
-        page={page}
-        pageSize={pageSize}
-        total={credentials.length}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
         signatureSection={
           <SignatureSection
             signature={signature}
             blocked={isSignatureBlocked}
+            isLoadingSignature={isLoadingSignature}
             onOpenEditor={handleOpenSignatureEditor}
             onDelete={handleDeleteSignature}
           />
@@ -191,10 +195,7 @@ export function CredentialsSignatureOverview() {
         cancelText="Cancel"
         onConfirm={handleConfirmDeleteSignature}
         variant="danger"
-      />
-
-      {/* Indicador flotante para la sección de firma */}
-      <SignatureScrollIndicator />
+      />      
     </div>
   )
 }

@@ -33,6 +33,7 @@ export function SignaturePad({
 }: SignaturePadProps & { ref?: React.Ref<SignaturePadRef> }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const isDrawingRef = useRef(false)
+  const hasDrawnRef = useRef(false)
   const [hasDrawn, setHasDrawn] = useState(false)
 
   useEffect(() => {
@@ -102,7 +103,10 @@ export function SignaturePad({
 
     ctx.lineTo(point.x, point.y)
     ctx.stroke()
-    setHasDrawn(true)
+    if (!hasDrawnRef.current) {
+      hasDrawnRef.current = true
+      setHasDrawn(true)
+    }
   }
 
   const stopDrawing = () => {
@@ -120,12 +124,13 @@ export function SignaturePad({
     if (!ctx) return
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+    hasDrawnRef.current = false
     setHasDrawn(false)
   }, [])
 
   const isEmpty = useCallback(() => {
-    return !hasDrawn
-  }, [hasDrawn])
+    return !hasDrawnRef.current
+  }, [])
 
   const toDataURL = useCallback((type: string = "image/png") => {
     const canvas = canvasRef.current
