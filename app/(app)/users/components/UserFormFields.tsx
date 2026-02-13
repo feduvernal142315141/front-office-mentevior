@@ -44,15 +44,24 @@ export function UserFormFields({
     roleOptions.splice(1, 0, { value: editingUser.role.id, label: editingUser.role.name })
   }
 
+  // Helper to safely extract role name from either string or object
+  const getRoleName = (role: any): string => {
+    if (!role) return ""
+    if (typeof role === "string") return role
+    if (typeof role === "object" && role.name) return role.name
+    return String(role)
+  }
+
+  const currentRoleName = getRoleName(currentUser?.role) || currentUser?.roleName || ""
+  const normalizedRole = currentRoleName.replace(/[\s_-]/g, "").toLowerCase()
+  const isSuperAdmin = normalizedRole.includes("superadmin")
+
   const isEditingSelf = isEditing && 
     currentUser && 
     editingUser && 
-    currentUser.email?.toLowerCase() === editingUser.email?.toLowerCase() &&
-    editingUser.role?.name?.toLowerCase() === "superadmin"
+    (currentUser.id === editingUser.id || 
+     currentUser.email?.toLowerCase() === editingUser.email?.toLowerCase())
 
-  const currentRoleName = currentUser?.role?.name || currentUser?.role || currentUser?.roleName || ""
-  const normalizedRole = String(currentRoleName).replace(/[\s_-]/g, "").toLowerCase()
-  const isSuperAdmin = normalizedRole.includes("superadmin")
   const canEditRole = isSuperAdmin && !isEditingSelf
 
   return (

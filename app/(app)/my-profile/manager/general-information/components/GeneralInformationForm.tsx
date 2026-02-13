@@ -17,6 +17,7 @@ import { useUpdateGeneralInformation } from "@/lib/modules/general-information/h
 import type { GeneralInformation } from "@/lib/types/general-information.types"
 import type { UpdateGeneralInformationDto } from "@/lib/types/general-information.types"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 
 /**
  * Maps the backend response (nested objects) to flat form values.
@@ -87,14 +88,25 @@ export function GeneralInformationForm({
   onSuccessRoute = "/my-profile",
 }: GeneralInformationFormProps) {
   const router = useRouter()
-  const { user: currentUser } = useAuth()
+  const { user: authUser } = useAuth()
+  // Fetch full user data from API (like Topbar does) to get role as object with .name
+  const { user: fullCurrentUser } = useUserById(authUser?.id || null)
   const { generalInformation, isLoading } = useGeneralInformation(memberUserId)
   const { update, isLoading: isSubmitting } = useUpdateGeneralInformation()
 
-  const roleValue = currentUser?.role || (currentUser as any)?.roleName || ""
-  const normalizedRole = String(roleValue).replace(/[\s_-]/g, "").toLowerCase()
+  // Helper to safely extract role name from either string or object
+  const getRoleName = (role: any): string => {
+    if (!role) return ""
+    if (typeof role === "string") return role
+    if (typeof role === "object" && role.name) return role.name
+    return String(role)
+  }
+
+  const currentUserRole = fullCurrentUser?.role || authUser?.role
+  const currentRoleName = getRoleName(currentUserRole) || (authUser as any)?.roleName || ""
+  const normalizedRole = currentRoleName.replace(/[\s_-]/g, "").toLowerCase()
   const isSuperAdmin = normalizedRole.includes("superadmin")
-  const isEditingSelf = currentUser?.id && memberUserId ? currentUser.id === memberUserId : false
+  const isEditingSelf = authUser?.id && memberUserId ? authUser.id === memberUserId : false
   const canEditRole = isSuperAdmin && !isEditingSelf
 
   const form = useForm<GeneralInformationFormValues>({

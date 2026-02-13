@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
@@ -30,24 +30,20 @@ export function PremiumDatePicker({
   const [isOpen, setIsOpen] = useState(false)
   const currentYear = new Date().getFullYear()
   const fromYear = currentYear - 100
-  const toYear = currentYear + 10
+  const toYear = currentYear + 50
   const [displayMonth, setDisplayMonth] = useState<Date>(new Date())
   const [monthOpen, setMonthOpen] = useState(false)
   const [yearOpen, setYearOpen] = useState(false)
-  
-  // Convert string value to Date object in LOCAL timezone
-  // Usar parseLocalDate para evitar problemas de zona horaria
+  const yearListRef = useRef<HTMLDivElement>(null)
+  const monthListRef = useRef<HTMLDivElement>(null)
+
   const parseLocalDate = (dateStr: string): Date | undefined => {
     if (!dateStr) return undefined
-    
-    // Split YYYY-MM-DD y crear fecha en zona local
     const [year, month, day] = dateStr.split('-').map(Number)
     if (!year || !month || !day) return undefined
-    
-    // Mes es 0-indexed en JavaScript
     return new Date(year, month - 1, day)
   }
-  
+
   const dateValue = useMemo(() => parseLocalDate(value), [value])
   const hasValue = value && value.length > 0
 
@@ -63,9 +59,33 @@ export function PremiumDatePicker({
     }
   }, [isOpen])
 
+  const scrollToSelected = useCallback((container: HTMLDivElement | null, selectedAttr: string) => {
+    if (!container) return
+    requestAnimationFrame(() => {
+      const selected = container.querySelector(`[data-selected="${selectedAttr}"]`) as HTMLElement
+      if (selected) {
+        const containerHeight = container.clientHeight
+        const selectedTop = selected.offsetTop
+        const selectedHeight = selected.offsetHeight
+        container.scrollTop = selectedTop - containerHeight / 2 + selectedHeight / 2
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    if (yearOpen) {
+      scrollToSelected(yearListRef.current, String(displayMonth.getFullYear()))
+    }
+  }, [yearOpen, displayMonth, scrollToSelected])
+
+  useEffect(() => {
+    if (monthOpen) {
+      scrollToSelected(monthListRef.current, String(displayMonth.getMonth()))
+    }
+  }, [monthOpen, displayMonth, scrollToSelected])
+
   const handleSelect = (date: Date | undefined) => {
     if (date) {
-      // Convert Date to YYYY-MM-DD format usando zona local
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
@@ -89,64 +109,40 @@ export function PremiumDatePicker({
                 onBlur?.()
               }}
               className={cn(
-                /* Layout */
                 "flex items-center",
-                
-                /* Size */
                 "w-full",
                 "h-[52px] 2xl:h-[56px]",
                 "px-4 pr-12",
-                
-                /* Shape */
                 "rounded-[16px]",
-                
-                /* Text */
                 "text-left",
                 "text-[15px] 2xl:text-[16px]",
                 "text-[var(--color-login-text-primary)]",
-                
-                /* Background gradient */
                 "bg-gradient-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
-                
-                /* Border */
                 hasError 
                   ? "border-2 border-red-500/70"
                   : "border border-[hsl(240_20%_88%/0.6)]",
-                
-                /* Shadow */
                 "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(15,23,42,0.04)]",
-                
-                /* Hover */
                 "hover:border-[hsl(240_35%_75%/0.6)]",
                 "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_2px_6px_rgba(15,23,42,0.06)]",
-                
-                /* Focus */
                 "focus:outline-none",
                 "focus:border-[hsl(var(--primary))]",
                 "focus:bg-gradient-to-b focus:from-white focus:to-[hsl(240_20%_99%)]",
                 "focus:shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_0_0_4px_hsl(var(--primary)/0.12),0_6px_14px_hsl(var(--primary)/0.18)]",
                 "focus:-translate-y-[1px]",
-                
-                /* Transitions */
                 "transition-all duration-200 ease-out"
               )}
             >
               {hasValue && dateValue ? format(dateValue, "dd/MM/yyyy") : ""}
             </button>
             
-            {/* Floating Label */}
             <label
               className={cn(
                 "absolute left-4 px-1 pointer-events-none",
                 "transition-all duration-200 ease-out",
                 "bg-white/20 backdrop-blur-md",
-                
-                /* Label position - siempre arriba cuando hay valor o focus */
                 isFocused || hasValue || isOpen
                   ? "top-0 -translate-y-1/2 text-xs"
                   : "top-1/2 -translate-y-1/2 text-sm",
-                
-                /* Label color - azul solo cuando focused */
                 isFocused || isOpen
                   ? "text-[#2563EB]"
                   : "text-[var(--color-login-text-muted)]"
@@ -175,24 +171,31 @@ export function PremiumDatePicker({
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setMonthOpen((prev) => !prev)}
-                    className="h-8 px-2.5 pr-6 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-900 shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]/40 relative"
+                    onClick={() => {
+                      setYearOpen(false)
+                      setMonthOpen((prev) => !prev)
+                    }}
+                    className="h-9 px-3 pr-7 rounded-lg text-sm font-semibold bg-white border border-slate-200 text-slate-900 shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]/40 relative"
                   >
                     {format(new Date(2020, displayMonth.getMonth(), 1), "MMM")}
-                    <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
                   </button>
                   {monthOpen && (
-                    <div className="absolute left-0 mt-2 z-[60] min-w-[120px] rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden">
+                    <div
+                      ref={monthListRef}
+                      className="absolute left-0 mt-2 z-[60] min-w-[120px] max-h-[200px] overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg"
+                    >
                       {Array.from({ length: 12 }).map((_, index) => {
                         const isSelected = index === displayMonth.getMonth()
                         return (
                           <button
                             key={index}
                             type="button"
+                            data-selected={String(index)}
                             onClick={() => {
                               setDisplayMonth(new Date(displayMonth.getFullYear(), index, 1))
                               setMonthOpen(false)
@@ -215,14 +218,20 @@ export function PremiumDatePicker({
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setYearOpen((prev) => !prev)}
-                    className="h-8 px-2.5 pr-6 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-700 shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]/40 relative"
+                    onClick={() => {
+                      setMonthOpen(false)
+                      setYearOpen((prev) => !prev)
+                    }}
+                    className="h-9 px-3 pr-7 rounded-lg text-sm font-medium bg-white border border-slate-200 text-slate-700 shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]/40 relative"
                   >
                     {displayMonth.getFullYear()}
-                    <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
                   </button>
                   {yearOpen && (
-                    <div className="absolute right-0 mt-2 z-[60] min-w-[90px] max-h-[200px] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                    <div
+                      ref={yearListRef}
+                      className="absolute right-0 mt-2 z-[60] min-w-[90px] max-h-[200px] overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg"
+                    >
                       {Array.from({ length: toYear - fromYear + 1 }).map((_, idx) => {
                         const year = fromYear + idx
                         const isSelected = year === displayMonth.getFullYear()
@@ -230,6 +239,7 @@ export function PremiumDatePicker({
                           <button
                             key={year}
                             type="button"
+                            data-selected={String(year)}
                             onClick={() => {
                               setDisplayMonth(new Date(year, displayMonth.getMonth(), 1))
                               setYearOpen(false)
