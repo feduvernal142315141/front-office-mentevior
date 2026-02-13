@@ -47,6 +47,7 @@ export interface GeneralInformation {
 }
 
 export interface UpdateGeneralInformationDto {
+  id?: string | null
   firstName: string
   lastName: string
   birthday: string

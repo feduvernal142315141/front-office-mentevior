@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 export const generalInformationSchema = z.object({
+  id: z.string().optional(),
   firstName: z
     .string()
     .min(1, "First name is required")
@@ -161,6 +162,7 @@ export const generalInformationSchema = z.object({
 export type GeneralInformationFormValues = z.infer<typeof generalInformationSchema>
 
 export const getGeneralInformationDefaults = (): GeneralInformationFormValues => ({
+  id: "",
   firstName: "",
   lastName: "",
   birthday: "",

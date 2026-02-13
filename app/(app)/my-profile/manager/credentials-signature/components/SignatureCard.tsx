@@ -20,6 +20,25 @@ export function SignatureCard({
   onOpenEditor,
   onDelete,
 }: SignatureCardProps) {
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  useEffect(() => {
+    if (isLoading) {
+      setIsLoaded(false)
+      return
+    }
+
+    if (!signature?.url) {
+      setIsLoaded(false)
+      return
+    }
+
+    setIsLoaded(false)
+    const img = new Image()
+    img.src = signature.url
+    img.onload = () => setIsLoaded(true)
+  }, [signature?.url, isLoading])
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-3">
@@ -30,20 +49,6 @@ export function SignatureCard({
       </div>
     )
   }
-
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  useEffect(() => {
-    if (!signature?.url) {
-      setIsLoaded(false)
-      return
-    }
-
-    setIsLoaded(false)
-    const img = new Image()
-    img.src = signature.url
-    img.onload = () => setIsLoaded(true)
-  }, [signature?.url])
 
   if (!signature?.url) {
     return (

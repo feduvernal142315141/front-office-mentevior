@@ -23,6 +23,7 @@ import { useAuth } from "@/lib/hooks/use-auth"
  */
 function mapToFormValues(data: GeneralInformation): GeneralInformationFormValues {
   return {
+    id: data.id ?? "",
     firstName: data.firstName ?? "",
     lastName: data.lastName ?? "",
     birthday: data.birthday ? data.birthday.split("T")[0] : "",
@@ -51,6 +52,7 @@ function mapToFormValues(data: GeneralInformation): GeneralInformationFormValues
  */
 function mapToDto(data: GeneralInformationFormValues): UpdateGeneralInformationDto {
   return {
+    id: data.id || null,
     firstName: data.firstName,
     lastName: data.lastName,
     birthday: data.birthday,
