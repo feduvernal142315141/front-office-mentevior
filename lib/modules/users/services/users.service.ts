@@ -55,13 +55,11 @@ export async function createUser(data: CreateMemberUserDto): Promise<string> {
 }
 
 export async function updateUser( data: UpdateMemberUserDto): Promise<Boolean> {
-
-
   const response = await servicePut<UpdateMemberUserDto, Boolean>("/member-users", data)
 
-  if (response.status === 200) {
-    return response.data as unknown as Boolean
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to update user")
   }
 
-  return false
+  return response.data as unknown as Boolean
 }
