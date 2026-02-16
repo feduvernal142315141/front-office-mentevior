@@ -11,7 +11,8 @@ import { PersonalInformationSection } from "./PersonalInformationSection"
 import { ProfessionalInformationSection } from "./ProfessionalInformationSection"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useCallback } from "react"
+import type { FieldErrors } from "react-hook-form"
 import { useGeneralInformation } from "@/lib/modules/general-information/hooks/use-general-information"
 import { useUpdateGeneralInformation } from "@/lib/modules/general-information/hooks/use-update-general-information"
 import type { GeneralInformation } from "@/lib/types/general-information.types"
@@ -120,6 +121,38 @@ export function GeneralInformationForm({
     }
   }, [generalInformation, form])
 
+  const scrollToFirstError = useCallback((errors: FieldErrors<GeneralInformationFormValues>) => {
+    const firstErrorKey = Object.keys(errors)[0]
+    if (!firstErrorKey) return
+
+    // Try to find the field element by name attribute
+    const errorElement = 
+      document.querySelector(`[name="${firstErrorKey}"]`) ||
+      document.querySelector(`[data-field="${firstErrorKey}"]`)
+
+    if (errorElement) {
+      const scrollContainer = document.getElementById("main-scroll")
+      
+      if (scrollContainer) {
+        const elementRect = errorElement.getBoundingClientRect()
+        const containerRect = scrollContainer.getBoundingClientRect()
+        const scrollOffset = elementRect.top - containerRect.top + scrollContainer.scrollTop - 100
+        
+        scrollContainer.scrollTo({
+          top: scrollOffset,
+          behavior: "smooth",
+        })
+      } else {
+        errorElement.scrollIntoView({ behavior: "smooth", block: "center" })
+      }
+
+      // Focus the element if it's focusable
+      if (errorElement instanceof HTMLElement) {
+        setTimeout(() => errorElement.focus(), 400)
+      }
+    }
+  }, [])
+
   const onSubmit = async (data: GeneralInformationFormValues) => {
     const dto = {
       ...mapToDto(data),
@@ -170,7 +203,7 @@ export function GeneralInformationForm({
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={form.handleSubmit(onSubmit, scrollToFirstError)} noValidate>
         <div className="pb-24 space-y-8">
           <PersonalInformationSection canEditRole={canEditRole} />
           <ProfessionalInformationSection />

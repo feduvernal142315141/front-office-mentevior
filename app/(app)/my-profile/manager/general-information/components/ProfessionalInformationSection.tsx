@@ -20,9 +20,10 @@ export function ProfessionalInformationSection() {
           name="npi"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="npi">
               <FloatingInput
                 label="National Provider ID (NPI)"
+                name="npi"
                 value={field.value}
                 onChange={(value) => {
                   const cleanValue = value.replace(/\D/g, "")
@@ -47,9 +48,10 @@ export function ProfessionalInformationSection() {
           name="mpi"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="mpi">
               <FloatingInput
                 label="Medicaid / Medicare Number (MPI)"
+                name="mpi"
                 value={field.value}
                 onChange={(value) => {
                   const cleanValue = value.replace(/\D/g, "")
@@ -74,9 +76,10 @@ export function ProfessionalInformationSection() {
           name="caqhNumber"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="caqhNumber">
               <FloatingInput
                 label="CAQH Number"
+                name="caqhNumber"
                 value={field.value}
                 onChange={(value) => {
                   const cleanValue = value.replace(/\D/g, "")
@@ -101,9 +104,10 @@ export function ProfessionalInformationSection() {
           name="companyName"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="companyName">
               <FloatingInput
                 label="Company Name"
+                name="companyName"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -124,9 +128,10 @@ export function ProfessionalInformationSection() {
           name="ein"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="ein">
               <FloatingInput
                 label="Employer Identification Number (EIN)"
+                name="ein"
                 value={field.value}
                 onChange={(value) => {
                    const cleanValue = value.replace(/\D/g, "")
@@ -151,9 +156,10 @@ export function ProfessionalInformationSection() {
           name="employerId"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="employerId">
               <FloatingInput
                 label="Employer ID"
+                name="employerId"
                 value={field.value}
                 onChange={(value) => {
                   const cleanValue = value.replace(/\D/g, "")

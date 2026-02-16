@@ -17,6 +17,7 @@ interface Props {
   pattern?: string
   disabled?: boolean
   required?: boolean
+  name?: string
 }
 
 export function FloatingInput({
@@ -34,6 +35,7 @@ export function FloatingInput({
   pattern,
   disabled,
   required,
+  name,
 }: Props) {
   return (
     <div className="w-full">
@@ -49,6 +51,7 @@ export function FloatingInput({
           inputMode={inputMode}
           pattern={pattern}
           disabled={disabled}
+          name={name}
           className={cn(
             `
             peer

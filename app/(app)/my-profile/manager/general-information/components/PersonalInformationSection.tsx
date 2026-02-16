@@ -51,9 +51,10 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="firstName"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="firstName">
               <FloatingInput
                 label="First Name"
+                name="firstName"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -75,9 +76,10 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="lastName"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="lastName">
               <FloatingInput
                 label="Last Name"
+                name="lastName"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -99,14 +101,16 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="birthday"
           control={control}
           render={({ field, fieldState }) => (
-            <PremiumDatePicker
-              label="Birthday"
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              hasError={!!fieldState.error}
-              errorMessage={fieldState.error?.message}
-            />
+            <div data-field="birthday">
+              <PremiumDatePicker
+                label="Birthday"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                hasError={!!fieldState.error}
+                errorMessage={fieldState.error?.message}
+              />
+            </div>
           )}
         />
 
@@ -114,9 +118,10 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="country"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="country">
               <FloatingInput
                 label="Country"
+                name="country"
                 value="United States"
                 onChange={() => {}}
                 onBlur={field.onBlur}
@@ -138,7 +143,7 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="state"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="state">
               <FloatingSelect
                 label="State"
                 value={field.value}
@@ -162,9 +167,10 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="city"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="city">
               <FloatingInput
                 label="City"
+                name="city"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -185,9 +191,10 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="zipCode"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="zipCode">
               <FloatingInput
                 label="Zip Code"
+                name="zipCode"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -210,9 +217,10 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="homeAddressLine1"
           control={control}
           render={({ field, fieldState }) => (
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2" data-field="homeAddressLine1">
               <FloatingInput
                 label="Home Address - Line 1"
+                name="homeAddressLine1"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -234,9 +242,10 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="email"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="email">
               <FloatingInput
                 label="Email"
+                name="email"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -259,9 +268,10 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="cellphone"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="cellphone">
               <FloatingInput
                 label="Cellphone Number"
+                name="cellphone"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -284,7 +294,7 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="roleId"
           control={control}
           render={({ field, fieldState }) => (
-            <div>
+            <div data-field="roleId">
               <FloatingSelect
                 label="Role"
                 value={field.value}
@@ -308,14 +318,16 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
           name="hiringDate"
           control={control}
           render={({ field, fieldState }) => (
-            <PremiumDatePicker
-              label="Hiring Date"
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              hasError={!!fieldState.error}
-              errorMessage={fieldState.error?.message}
-            />
+            <div data-field="hiringDate">
+              <PremiumDatePicker
+                label="Hiring Date"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                hasError={!!fieldState.error}
+                errorMessage={fieldState.error?.message}
+              />
+            </div>
           )}
         />
 
@@ -344,11 +356,13 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
 
             return (
               <div 
+                data-field="ssn"
                 onFocus={() => setIsEditingSSN(true)}
                 onBlur={() => setIsEditingSSN(false)}
               >
                 <FloatingInput
                   label="Social Security Number (SSN)"
+                  name="ssn"
                   value={displayValue}
                   onChange={(value) => {
                     // When user starts typing, switch to edit mode and accept only digits
