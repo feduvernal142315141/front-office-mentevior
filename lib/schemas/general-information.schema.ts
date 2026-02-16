@@ -81,95 +81,40 @@ export const generalInformationSchema = z.object({
   
   npi: z
     .string()
-    .regex(/^\d*$/, "NPI must contain only numbers")
-    .optional()
-    .or(z.literal("")),
+    .trim()
+    .min(1, "NPI is required")
+    .regex(/^\d+$/, "NPI must contain only numbers"),
   
   mpi: z
     .string()
-    .regex(/^\d*$/, "MPI must contain only numbers")
-    .optional()
-    .or(z.literal("")),
+    .trim()
+    .min(1, "MPI is required")
+    .regex(/^\d+$/, "MPI must contain only numbers"),
   
   caqhNumber: z
     .preprocess((val) => (val === null || val === undefined ? "" : String(val)), z
       .string()
-      .regex(/^\d*$/, "CAQH Number must contain only numbers")
-      .optional()
-      .or(z.literal(""))
+      .trim()
+      .min(1, "CAQH Number is required")
+      .regex(/^\d+$/, "CAQH Number must contain only numbers")
     ),
   
   companyName: z
     .string()
-    .optional()
-    .or(z.literal("")),
+    .trim()
+    .min(1, "Company Name is required"),
   
   ein: z
     .string()
-    .regex(/^\d*$/, "EIN must contain only numbers")
-    .optional()
-    .or(z.literal("")),
+    .trim()
+    .min(1, "EIN is required")
+    .regex(/^\d+$/, "EIN must contain only numbers"),
   
   employerId: z
     .string()
-    .regex(/^\d*$/, "Employer ID must contain only numbers")
-    .optional()
-    .or(z.literal("")),
-}).superRefine((data, ctx) => {
-  const roleName = (data.roleName || "").toLowerCase()
-  const requiresProfessionalInfo = ["rbt", "bcba", "bcaba", "supervisor"].some(r => roleName.includes(r))
-  
-  if (requiresProfessionalInfo) {
-    if (!data.npi || data.npi.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "NPI is required",
-        path: ["npi"],
-      })
-    }
-    
-    if (!data.mpi || data.mpi.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "MPI is required",
-        path: ["mpi"],
-      })
-    }
-    
-    if (!data.caqhNumber || String(data.caqhNumber).trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "CAQH Number is required",
-        path: ["caqhNumber"],
-      })
-    }
-    
-    if (!data.employerId || data.employerId.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Employer ID is required",
-        path: ["employerId"],
-      })
-    }
-    
-    if (["rbt", "bcba", "bcaba"].some(r => roleName.includes(r))) {
-      if (!data.companyName || data.companyName.trim() === "") {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Company Name is required",
-          path: ["companyName"],
-        })
-      }
-      
-      if (!data.ein || data.ein.trim() === "") {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "EIN is required",
-          path: ["ein"],
-        })
-      }
-    }
-  }
+    .trim()
+    .min(1, "Employer ID is required")
+    .regex(/^\d+$/, "Employer ID must contain only numbers"),
 })
 
 export type GeneralInformationFormValues = z.infer<typeof generalInformationSchema>

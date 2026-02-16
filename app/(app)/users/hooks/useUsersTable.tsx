@@ -159,6 +159,15 @@ export function useUsersTable(): UseUsersTableReturn {
         ),
       },
       {
+        key: "email",
+        header: "Email",
+        render: (user) => (
+          <span className="text-gray-600">
+            {user.email || "-"}
+          </span>
+        ),
+      },
+      {
         key: "roleName",
         header: "Role",
         render: (user) =>

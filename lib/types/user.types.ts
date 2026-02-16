@@ -40,6 +40,7 @@ export interface CreateMemberUserResponse {
 export interface MemberUserListItem {
   id: string
   fullName: string
+  email: string
   roleName: string
   hiringDate: string
   active: boolean
