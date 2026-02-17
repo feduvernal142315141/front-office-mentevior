@@ -25,6 +25,7 @@ export function Tabs({
   onChange,
 }: TabsProps) {
   const [activeTab, setActiveTab] = useState(defaultTab || items[0]?.id)
+  const activeItem = items.find((item) => item.id === activeTab) ?? items[0]
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId)
@@ -92,20 +93,16 @@ export function Tabs({
         </div>
       </div>
 
-      <div className="relative">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            id={`panel-${item.id}`}
-            role="tabpanel"
-            aria-labelledby={item.id}
-            hidden={activeTab !== item.id}
-            className="px-6 py-6 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            {item.content}
-          </div>
-        ))}
-      </div>
+      {activeItem && (
+        <div
+          id={`panel-${activeItem.id}`}
+          role="tabpanel"
+          aria-labelledby={activeItem.id}
+          className="relative px-6 py-6 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          {activeItem.content}
+        </div>
+      )}
     </div>
   )
 }

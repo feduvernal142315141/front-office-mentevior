@@ -174,9 +174,9 @@ export function CredentialsForm({
         </div>
 
         <div className="flex flex-wrap justify-end gap-3">
-          {editingCredential && (
+          { (
             <Button type="button" variant="secondary" onClick={handleCancel} disabled={isSaving}>
-              Cancel Edit
+              Cancel
             </Button>
           )}
           <Button type="submit" disabled={isSaving} loading={isSaving}>

@@ -36,7 +36,6 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
     return options
   }, [roles, roleId, roleName])
 
-  // SSN masking state
   const [isEditingSSN, setIsEditingSSN] = useState(false)
 
   return (
@@ -153,6 +152,7 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
                 hasError={!!fieldState.error}
                 required
                 disabled={isLoadingStates || !usaCountryId}
+                searchable
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">

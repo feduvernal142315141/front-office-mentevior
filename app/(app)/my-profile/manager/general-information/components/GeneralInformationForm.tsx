@@ -67,7 +67,7 @@ function mapToDto(data: GeneralInformationFormValues): UpdateGeneralInformationD
     cellphone: data.cellphone,
     roleId: data.roleId,
     hiringDate: data.hiringDate,
-    ssn: data.ssn.replace(/\D/g, ""), // Send only digits to backend
+    ssn: data.ssn.replace(/\D/g, ""),
     npi: data.npi ?? "",
     mpi: data.mpi ?? "",
     caqhNumber: data.caqhNumber ?? "",
@@ -90,12 +90,12 @@ export function GeneralInformationForm({
 }: GeneralInformationFormProps) {
   const router = useRouter()
   const { user: authUser } = useAuth()
-  // Fetch full user data from API (like Topbar does) to get role as object with .name
+
   const { user: fullCurrentUser } = useUserById(authUser?.id || null)
   const { generalInformation, isLoading } = useGeneralInformation(memberUserId)
   const { update, isLoading: isSubmitting } = useUpdateGeneralInformation()
 
-  // Helper to safely extract role name from either string or object
+
   const getRoleName = (role: any): string => {
     if (!role) return ""
     if (typeof role === "string") return role
@@ -125,7 +125,7 @@ export function GeneralInformationForm({
     const firstErrorKey = Object.keys(errors)[0]
     if (!firstErrorKey) return
 
-    // Try to find the field element by name attribute
+
     const errorElement = 
       document.querySelector(`[name="${firstErrorKey}"]`) ||
       document.querySelector(`[data-field="${firstErrorKey}"]`)
@@ -146,7 +146,7 @@ export function GeneralInformationForm({
         errorElement.scrollIntoView({ behavior: "smooth", block: "center" })
       }
 
-      // Focus the element if it's focusable
+
       if (errorElement instanceof HTMLElement) {
         setTimeout(() => errorElement.focus(), 400)
       }
