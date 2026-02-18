@@ -73,7 +73,7 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
   const onSubmit = async (data: RoleFormValues) => {
     if (isEditing && roleId) {
       const dto: UpdateRoleDto = {
-        name: canEditName ? data.name : undefined,
+        name: canEditName ? data.name.trim() : undefined,
         permissions: data.permissions,
         professionalInformation: data.professionalInformation,
         credentialsSignature: data.credentialsSignature,
@@ -88,7 +88,7 @@ export function useRoleForm({ roleId = null }: UseRoleFormProps = {}): UseRoleFo
       }
     } else {
       const dto: CreateRoleDto = {
-        name: data.name,
+        name: data.name.trim(),
         permissions: data.permissions,
         professionalInformation: data.professionalInformation,
         credentialsSignature: data.credentialsSignature,

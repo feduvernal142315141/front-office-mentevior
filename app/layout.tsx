@@ -2,10 +2,8 @@ import type React from "react"
 import type {Metadata} from "next"
 import "./globals.css"
 import {AlertProvider} from "@/lib/contexts/alert-context"
-import {Toaster} from "sonner"
 import {InterceptorsInitializer} from "@/components/interceptors-initializer"
 import { InterceptorProvider } from "@/lib/contexts/interceptor-context"
-import { GlobalAlertDialog } from "@/components/global-alert-dialog"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthInitializer } from "@/components/auth-initializer"
 
@@ -28,15 +26,13 @@ export default function RootLayout({
               defaultTheme="light"
               enableSystem={false}  
             >
-              <InterceptorProvider>
-                <AlertProvider>
+              <AlertProvider>
+                <InterceptorProvider>
                   <AuthInitializer />
                   <InterceptorsInitializer />
-                  <GlobalAlertDialog />
                   {children}
-                </AlertProvider>
-              </InterceptorProvider>
-              <Toaster position="top-right" richColors closeButton/>
+                </InterceptorProvider>
+              </AlertProvider>
             </ThemeProvider>
           </body>
         </html>

@@ -1,12 +1,18 @@
 
 export type Role = string
 
+export interface RequiredOptions {
+  credentialsSignature: boolean
+  professionalInformation: boolean
+}
+
 export interface User {
   id: string
   email: string
   name: string
   role: Role
   permissions: string[]
+  requiredOptions: RequiredOptions
   expiresAt: string
 }
 

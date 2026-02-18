@@ -12,7 +12,7 @@ import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import { usePhysicianTypes } from "@/lib/modules/physicians/hooks/use-physician-types"
 import { usePhysicianSpecialties } from "@/lib/modules/physicians/hooks/use-physician-specialties"
 import type { Physician } from "@/lib/types/physician.types"
-import { useToast } from "@/hooks/use-toast"
+import { useAlert } from "@/lib/contexts/alert-context"
 import { useEffect, useState } from "react"
 
 interface UsePhysicianFormProps {
@@ -21,7 +21,7 @@ interface UsePhysicianFormProps {
 
 export function usePhysicianForm({ physicianId }: UsePhysicianFormProps = {}) {
   const router = useRouter()
-  const { toast } = useToast()
+  const alert = useAlert()
   const isEditing = !!physicianId
 
   const { physician, isLoading: isLoadingPhysician } = usePhysicianById(physicianId || "")
@@ -99,31 +99,22 @@ export function usePhysicianForm({ physicianId }: UsePhysicianFormProps = {}) {
           specialty: data.specialty as any,
           type: data.type as any,
         })
-        toast({
-          title: "Success",
-          description: "Physician updated successfully",
-        })
+        alert.success("Success", "Physician updated successfully")
       } else {
         await create({
           ...data,
           specialty: data.specialty as any,
           type: data.type as any,
         })
-        toast({
-          title: "Success",
-          description: "Physician created successfully",
-        })
+        alert.success("Success", "Physician created successfully")
       }
       router.push("/my-company/physicians")
     } catch (error) {
       console.error("Error saving physician:", error)
-      toast({
-        title: "Error",
-        description: isEditing
-          ? "Failed to update physician"
-          : "Failed to create physician",
-        variant: "destructive",
-      })
+      alert.error(
+        "Error",
+        isEditing ? "Failed to update physician" : "Failed to create physician"
+      )
     }
   }
 

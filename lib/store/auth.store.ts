@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { jwtDecode } from "jwt-decode"
-import type { User, AuthState, LoginResponse, RefreshTokenResponse } from "@/lib/types/auth.types"
+import type { User, AuthState, LoginResponse, RefreshTokenResponse, RequiredOptions } from "@/lib/types/auth.types"
 import { encryptRsa } from "@/lib/utils/encrypt"
 import { serviceLoginManagerUserAuth, serviceRefreshToken } from "@/lib/services/login/login"
 import { createRefreshTokenWorker } from "@/lib/workers/refresh-token-worker"
@@ -53,16 +53,17 @@ function getTokenExpiration(token: string): number {
 /**
  * Decodifica JWT y extrae User
  */
+function parseRequiredOptions(raw: unknown): RequiredOptions {
+  const options: string[] = Array.isArray(raw) ? raw : []
+  return {
+    credentialsSignature: options.includes("credentialsSignature"),
+    professionalInformation: options.includes("professionalInformation"),
+  }
+}
+
 function decodeUserFromToken(accessToken: string): User {
   const decoded: any = jwtDecode(accessToken)
-  
-  // Debug: Ver todo el token decodificado
-  console.log('🔍 JWT DECODIFICADO COMPLETO:', decoded)
-  console.log('🔍 ROLE EN JWT:', decoded.role)
-  console.log('🔍 ROLE NAME EN JWT:', decoded.roleName)
-  console.log('🔍 TODAS LAS KEYS:', Object.keys(decoded))
 
-  // El backend puede mandar el rol con diferentes nombres
   const role = decoded.role || decoded.roleName || decoded.Role || decoded.RoleName || 'Unknown'
 
   return {
@@ -70,7 +71,8 @@ function decodeUserFromToken(accessToken: string): User {
     email: decoded.username,
     name: decoded.fullName,
     role,
-    permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [],  // ⚡ Array de "modulo-valor"
+    permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [],
+    requiredOptions: parseRequiredOptions(decoded.requiredOptions),
     expiresAt: new Date(decoded.exp * 1000).toISOString(),
   }
 }
@@ -362,8 +364,11 @@ export const useAuthStore = create<AuthStore>()(
 // SELECTORS (para optimización)
 // ============================================
 
+const DEFAULT_REQUIRED_OPTIONS: RequiredOptions = { credentialsSignature: false, professionalInformation: false }
+
 export const selectUser = (state: AuthStore) => state.user
 export const selectCompany = (state: AuthStore) => state.company
 export const selectToken = (state: AuthStore) => state.accessToken
 export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated
 export const selectHydrated = (state: AuthStore) => state.hydrated
+export const selectRequiredOptions = (state: AuthStore) => state.user?.requiredOptions ?? DEFAULT_REQUIRED_OPTIONS

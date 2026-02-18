@@ -14,21 +14,35 @@ import {QueryModel} from "@/lib/models/queryModel";
 import {getQueryString} from "@/lib/utils/format";
 
 function normalizeRole(roleBackend: RoleBackendGet): Role {
+  const normalizedName = roleBackend.name ?? roleBackend.roleName ?? "Unnamed role"
   const permissions = roleBackend.permissions 
     ? permissionsToFrontend(roleBackend.permissions)
     : []
   
   return {
     id: roleBackend.id,
-    name: roleBackend.name,
+    name: normalizedName,
     permissions,
-    createdAt: roleBackend.createAt,
+    createdAt: roleBackend.createAt ?? new Date().toISOString(),
     updatedAt: roleBackend.updateAt,
     isActive: roleBackend.isActive ?? true,
     modules: roleBackend.modules ?? 0,
     professionalInformation: roleBackend.professionalInformation ?? false,
     credentialsSignature: roleBackend.credentialsSignature ?? false,
   }
+}
+
+function extractRolePayload(payload: unknown): RoleBackendGet {
+  const data = payload as Record<string, unknown>
+
+  if (data && typeof data === "object") {
+    const nested = (data.entity ?? data.data) as unknown
+    if (nested && typeof nested === "object") {
+      return nested as RoleBackendGet
+    }
+  }
+
+  return payload as RoleBackendGet
 }
 
 
@@ -88,7 +102,7 @@ export async function createRole(data: CreateRoleDto): Promise<Role> {
     throw new Error(response.data?.message || "Failed to create role")
   }
   
-  const roleBackend = response.data as unknown as RoleBackendGet
+  const roleBackend = extractRolePayload(response.data)
   return normalizeRole(roleBackend)
 }
 
@@ -111,6 +125,6 @@ export async function updateRole(roleId: string, data: UpdateRoleDto): Promise<R
     throw new Error(response.data?.message || "Failed to update role")
   }
   
-  const roleBackend = response.data as unknown as RoleBackendGet
+  const roleBackend = extractRolePayload(response.data)
   return normalizeRole(roleBackend)
 }

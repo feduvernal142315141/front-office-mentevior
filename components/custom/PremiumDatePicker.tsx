@@ -132,7 +132,7 @@ export function PremiumDatePicker({
                 "transition-all duration-200 ease-out"
               )}
             >
-              {hasValue && dateValue ? format(dateValue, "dd/MM/yyyy") : ""}
+              {hasValue && dateValue ? format(dateValue, "MM/dd/yyyy") : ""}
             </button>
             
             <label

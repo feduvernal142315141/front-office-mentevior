@@ -26,7 +26,7 @@ import type {
 import { useAppointments } from "@/lib/store/appointments.store"
 import { getWeekDays, getWeekStart } from "@/lib/date"
 import { getMockClientById } from "@/lib/modules/schedules/mocks"
-import { useToast } from "@/hooks/use-toast"
+import { useAlert } from "@/lib/contexts/alert-context"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 
@@ -96,7 +96,7 @@ interface UseWeekCalendarReturn {
 
 export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalendarReturn {
 
-  const { toast } = useToast()
+  const alert = useAlert()
   const isMobile = useIsMobile()
   const { 
     appointments, 
@@ -238,22 +238,16 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
         break
       case "delete":
         deleteAppointment(appointmentId)
-        toast({
-          title: "Appointment Deleted",
-          description: "The appointment has been removed",
-        })
+        alert.success("Appointment Deleted", "The appointment has been removed")
         break
       case "cancel":
         updateAppointment(appointmentId, { status: "Cancelled" })
-        toast({
-          title: "Appointment Cancelled",
-          description: "The appointment has been cancelled",
-        })
+        alert.success("Appointment Cancelled", "The appointment has been cancelled")
         break
     }
     
     setContextMenu(null)
-  }, [myAppointments, setSelectedAppointment, deleteAppointment, updateAppointment, toast])
+  }, [myAppointments, setSelectedAppointment, deleteAppointment, updateAppointment, alert])
   
   
   const handleSlotClick = useCallback((date: Date, hour: number) => {
@@ -296,11 +290,7 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     const newEnd = addMinutes(parseISO(newStart), duration).toISOString()
     
     if (checkConflict(rbtId, newStart, newEnd, appointment.id)) {
-      toast({
-        title: "Schedule Conflict",
-        description: "Cannot move appointment to this time slot",
-        variant: "destructive",
-      })
+      alert.error("Schedule Conflict", "Cannot move appointment to this time slot")
       return
     }
     
@@ -309,20 +299,14 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
       endsAt: newEnd,
     })
     
-    toast({
-      title: "Appointment Moved",
-      description: "The appointment has been rescheduled",
-    })
-  }, [myAppointments, weekDays, rbtId, checkConflict, updateAppointment, toast])
+    alert.success("Appointment Moved", "The appointment has been rescheduled")
+  }, [myAppointments, weekDays, rbtId, checkConflict, updateAppointment, alert])
   
  
   const handleStatusChange = useCallback((appointmentId: string, status: AppointmentStatus) => {
     updateAppointment(appointmentId, { status })
-    toast({
-      title: "Status Updated",
-      description: `Appointment marked as ${status}`,
-    })
-  }, [updateAppointment, toast])
+    alert.success("Status Updated", `Appointment marked as ${status}`)
+  }, [updateAppointment, alert])
   
 
   const getAppointmentPosition = useCallback((appointment: Appointment): AppointmentPosition | null => {

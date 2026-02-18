@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useAuthStore, selectUser, selectToken, selectIsAuthenticated, selectHydrated } from "@/lib/store/auth.store"
+import { useAuthStore, selectUser, selectToken, selectIsAuthenticated, selectHydrated, selectRequiredOptions } from "@/lib/store/auth.store"
 import { useEffect } from "react"
 
 export function useAuth() {
@@ -10,6 +10,7 @@ export function useAuth() {
   const token = useAuthStore(selectToken)
   const isAuthenticated = useAuthStore(selectIsAuthenticated)
   const hydrated = useAuthStore(selectHydrated)
+  const requiredOptions = useAuthStore(selectRequiredOptions)
   
   const login = useAuthStore((state) => state.login)
   const logout = useAuthStore((state) => state.logout)
@@ -28,6 +29,7 @@ export function useAuth() {
     refreshToken: useAuthStore((state) => state.refreshToken),
     isAuthenticated,
     hydrated,
+    requiredOptions,
     login,
     logout,
     refresh,

@@ -32,9 +32,11 @@ export function useUpdateRole(): UseUpdateRoleReturn {
 
       const result = await updateRole(roleId, data)
       setUpdatedRole(result)
+      const inputName = data.name?.trim() || ""
+      const roleName = inputName || result.name.trim() || "The role"
 
       toast.success("Role updated successfully", {
-        description: `${result.name} has been updated.`,
+        description: `${roleName} has been updated.`,
       })
 
       return result

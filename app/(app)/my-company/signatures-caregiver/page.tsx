@@ -7,14 +7,14 @@ import {
   getCaregiverSignatureConfig,
   updateCaregiverSignatureConfig,
 } from "@/lib/services/caregiver-signature-config.service"
-import { useToast } from "@/hooks/use-toast"
+import { useAlert } from "@/lib/contexts/alert-context"
 
 export default function SignaturesCaregiverPage() {
   const [selectedType, setSelectedType] = useState<SignatureType>(SignatureType.CHECKMARK)
   const [configId, setConfigId] = useState<string | undefined>()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const { toast } = useToast()
+  const alert = useAlert()
 
   useEffect(() => {
     loadConfiguration()
@@ -48,11 +48,7 @@ export default function SignaturesCaregiverPage() {
       }
     } catch (error) {
       console.error("Error loading configuration:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load configuration",
-        variant: "destructive",
-      })
+      alert.error("Error", "Failed to load configuration")
     } finally {
       setIsLoading(false)
     }
@@ -80,17 +76,10 @@ export default function SignaturesCaregiverPage() {
       }
       
       setSelectedType(type)
-      toast({
-        title: "Success",
-        description: "Configuration updated successfully",
-      })
+      alert.success("Success", "Configuration updated successfully")
     } catch (error) {
       console.error("Error updating configuration:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update configuration",
-        variant: "destructive",
-      })
+      alert.error("Error", "Failed to update configuration")
     } finally {
       setIsSaving(false)
     }

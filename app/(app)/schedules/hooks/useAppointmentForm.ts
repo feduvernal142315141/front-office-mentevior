@@ -14,7 +14,7 @@ import {
   getMockBCBAs 
 } from "@/lib/modules/schedules/mocks"
 import { addMinutes } from "@/lib/date"
-import { useToast } from "@/hooks/use-toast"
+import { useAlert } from "@/lib/contexts/alert-context"
 
 interface UseAppointmentFormProps {
   appointment?: Appointment | null
@@ -74,7 +74,7 @@ export function useAppointmentForm({
   rbtId,
   onSuccess,
 }: UseAppointmentFormProps): UseAppointmentFormReturn {
-  const { toast } = useToast()
+  const alert = useAlert()
   const { addAppointment, updateAppointment, deleteAppointment, checkConflict } = useAppointments()
   
   const [formData, setFormData] = useState<AppointmentFormData>(getInitialFormData())
@@ -157,11 +157,7 @@ export function useAppointmentForm({
     e.preventDefault()
     
     if (!validateForm()) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
+      alert.error("Validation Error", "Please fill in all required fields")
       return
     }
     
@@ -170,11 +166,7 @@ export function useAppointmentForm({
     try {
       const service = services.find((s) => s.id === formData.serviceId)
       if (!service) {
-        toast({
-          title: "Error",
-          description: "Selected service not found",
-          variant: "destructive",
-        })
+        alert.error("Error", "Selected service not found")
         return
       }
       
@@ -183,11 +175,7 @@ export function useAppointmentForm({
       
       const hasConflict = checkConflict(rbtId, startsAt, endsAt, appointment?.id)
       if (hasConflict) {
-        toast({
-          title: "Schedule Conflict",
-          description: "This time slot conflicts with another appointment",
-          variant: "destructive",
-        })
+        alert.error("Schedule Conflict", "This time slot conflicts with another appointment")
         return
       }
       
@@ -202,10 +190,7 @@ export function useAppointmentForm({
           notes: formData.notes,
         })
         
-        toast({
-          title: "Appointment Updated",
-          description: "The appointment has been updated successfully",
-        })
+        alert.success("Appointment Updated", "The appointment has been updated successfully")
       } else {
 
         const newAppointment: Appointment = {
@@ -224,10 +209,7 @@ export function useAppointmentForm({
         
         addAppointment(newAppointment)
         
-        toast({
-          title: "Appointment Created",
-          description: "New appointment has been scheduled",
-        })
+        alert.success("Appointment Created", "New appointment has been scheduled")
       }
       
       onSuccess?.()
@@ -244,7 +226,7 @@ export function useAppointmentForm({
     checkConflict,
     updateAppointment,
     addAppointment,
-    toast,
+    alert,
     onSuccess,
   ])
   
@@ -254,13 +236,10 @@ export function useAppointmentForm({
     
     if (confirm("Are you sure you want to delete this appointment?")) {
       deleteAppointment(appointment.id)
-      toast({
-        title: "Appointment Deleted",
-        description: "The appointment has been removed",
-      })
+      alert.success("Appointment Deleted", "The appointment has been removed")
       onSuccess?.()
     }
-  }, [appointment, deleteAppointment, toast, onSuccess])
+  }, [appointment, deleteAppointment, alert, onSuccess])
   
   return {
     formData,

@@ -28,9 +28,11 @@ export function useCreateRole(): UseCreateRoleReturn {
 
       const result = await createRole(data)
       setCreatedRole(result)
+      const inputName = data.name.trim()
+      const roleName = inputName || result.name.trim() || "The role"
 
       toast.success("Role created successfully", {
-        description: `${result.name} has been created.`,
+        description: `${roleName} has been created.`,
       })
 
       return result

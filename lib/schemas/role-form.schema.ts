@@ -13,6 +13,7 @@ import { z } from "zod"
 export const roleFormSchema = z.object({
   name: z
     .string()
+    .trim()
     .min(1, "Role name is required")
     .max(100, "Role name must be less than 100 characters")
     .regex(/^[a-zA-Z0-9\s\-_]+$/, "Role name can only contain letters, numbers, spaces, hyphens and underscores"),

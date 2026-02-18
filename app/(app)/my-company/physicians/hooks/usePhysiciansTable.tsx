@@ -12,13 +12,12 @@ import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { deletePhysician } from "@/lib/modules/physicians/services/physicians.service"
-import { useToast } from "@/hooks/use-toast"
+import { useAlert } from "@/lib/contexts/alert-context"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
-import { toast as sonnerToast } from "sonner"
 
 export function usePhysiciansTable() {
   const router = useRouter()
-  const { toast } = useToast()
+  const alert = useAlert()
   
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [inputValue, setInputValue] = useState("")
@@ -76,14 +75,14 @@ export function usePhysiciansTable() {
     try {
       setIsDeleting(true)
       await deletePhysician(physicianToDelete.id)
-      sonnerToast.success("Physician deleted successfully")
+      alert.success("Physician deleted successfully")
       setDeleteModalOpen(false)
       setPhysicianToDelete(null)
       refetch(queryModel)
     } catch (err) {
       console.error("Error deleting physician:", err)
       const errorMessage = err instanceof Error ? err.message : "Failed to delete physician"
-      sonnerToast.error(errorMessage)
+      alert.error(errorMessage)
     } finally {
       setIsDeleting(false)
     }

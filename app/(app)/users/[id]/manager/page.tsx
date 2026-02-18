@@ -6,6 +6,7 @@ import { Card } from "@/components/custom/Card"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { GeneralInformationForm } from "@/app/(app)/my-profile/manager/general-information/components/GeneralInformationForm"
 import { CredentialsSignatureOverview } from "@/app/(app)/my-profile/manager/credentials-signature/components/CredentialsSignatureOverview"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 interface UserManagerPageProps {
   params: Promise<{
@@ -15,6 +16,7 @@ interface UserManagerPageProps {
 
 export default function UserManagerPage({ params }: UserManagerPageProps) {
   const { id } = use(params)
+  const { requiredOptions } = useAuth()
   const [activeTab, setActiveTab] = useState("general")
 
   const tabs: TabItem[] = [
@@ -30,17 +32,21 @@ export default function UserManagerPage({ params }: UserManagerPageProps) {
         />
       ),
     },
-    {
-      id: "credentials",
-      label: "Credentials - Signature",
-      icon: <Award className="w-4 h-4" />,
-      content: (
-        <CredentialsSignatureOverview
-          isActive={activeTab === "credentials"}
-          memberUserId={id}
-        />
-      ),
-    },
+    ...(requiredOptions.credentialsSignature
+      ? [
+          {
+            id: "credentials",
+            label: "Credentials - Signature",
+            icon: <Award className="w-4 h-4" />,
+            content: (
+              <CredentialsSignatureOverview
+                isActive={activeTab === "credentials"}
+                memberUserId={id}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: "documents",
       label: "Required Documents",

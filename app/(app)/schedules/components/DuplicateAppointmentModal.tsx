@@ -13,7 +13,7 @@ import { Calendar, Clock, MapPin, Briefcase } from "lucide-react"
 import type { Appointment } from "@/lib/types/appointment.types"
 import { getMockClientById, getMockServiceById } from "@/lib/modules/schedules/mocks"
 import { useAppointments } from "@/lib/store/appointments.store"
-import { useToast } from "@/hooks/use-toast"
+import { useAlert } from "@/lib/contexts/alert-context"
 import { format, parseISO, setHours, setMinutes, differenceInMinutes, addMinutes } from "date-fns"
 import { cn } from "@/lib/utils"
 
@@ -32,7 +32,7 @@ export function DuplicateAppointmentModal({
   appointment,
   rbtId,
 }: DuplicateAppointmentModalProps) {
-  const { toast } = useToast()
+  const alert = useAlert()
   const { addAppointment, checkConflict } = useAppointments()
   
   const [newDate, setNewDate] = useState("")
@@ -48,22 +48,14 @@ export function DuplicateAppointmentModal({
   
   const handleDuplicate = () => {
     if (!newDate) {
-      toast({
-        title: "Date required",
-        description: "Please select a date for the duplicated appointment",
-        variant: "destructive",
-      })
+      alert.error("Date required", "Please select a date for the duplicated appointment")
       return
     }
     
     const timeToUse = keepSameTime ? format(originalStart, "HH:mm") : newTime
     
     if (!timeToUse) {
-      toast({
-        title: "Time required",
-        description: "Please enter a time for the appointment",
-        variant: "destructive",
-      })
+      alert.error("Time required", "Please enter a time for the appointment")
       return
     }
     
@@ -83,11 +75,7 @@ export function DuplicateAppointmentModal({
       const endsAt = addMinutes(parseISO(startsAt), duration).toISOString()
       
       if (checkConflict(rbtId, startsAt, endsAt)) {
-        toast({
-          title: "Schedule Conflict",
-          description: "There's already an appointment at this time",
-          variant: "destructive",
-        })
+        alert.error("Schedule Conflict", "There's already an appointment at this time")
         return
       }
       
@@ -102,10 +90,7 @@ export function DuplicateAppointmentModal({
       
       addAppointment(duplicatedAppointment)
       
-      toast({
-        title: "Appointment Duplicated",
-        description: "The appointment has been duplicated successfully",
-      })
+      alert.success("Appointment Duplicated", "The appointment has been duplicated successfully")
     
       setNewDate("")
       setKeepSameTime(true)

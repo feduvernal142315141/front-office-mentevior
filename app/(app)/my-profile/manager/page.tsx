@@ -9,7 +9,7 @@ import { CredentialsSignatureOverview } from "./credentials-signature/components
 import { useAuth } from "@/lib/hooks/use-auth"
 
 export default function ManagerPage() {
-  const { user } = useAuth()
+  const { user, requiredOptions } = useAuth()
   const [activeTab, setActiveTab] = useState("general")
   const tabs: TabItem[] = [
     {
@@ -18,17 +18,21 @@ export default function ManagerPage() {
       icon: <Settings className="w-4 h-4" />,
       content: <GeneralInformationForm memberUserId={user?.id ?? null} />,
     },
-    {
-      id: "credentials",
-      label: "Credentials - Signature",
-      icon: <Award className="w-4 h-4" />,
-      content: (
-        <CredentialsSignatureOverview
-          isActive={activeTab === "credentials"}
-          memberUserId={user?.id ?? null}
-        />
-      ),
-    },
+    ...(requiredOptions.credentialsSignature
+      ? [
+          {
+            id: "credentials",
+            label: "Credentials - Signature",
+            icon: <Award className="w-4 h-4" />,
+            content: (
+              <CredentialsSignatureOverview
+                isActive={activeTab === "credentials"}
+                memberUserId={user?.id ?? null}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: "documents",
       label: "Required Documents",

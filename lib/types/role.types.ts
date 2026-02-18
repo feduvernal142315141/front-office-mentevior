@@ -6,7 +6,8 @@ export interface PermissionBackendFormat {
 
 export interface RoleBackendGet {
   id: string
-  name: string
+  name?: string
+  roleName?: string
   permissions?: PermissionBackendFormat[]  
   createAt: string
   updateAt?: string

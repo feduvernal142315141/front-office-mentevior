@@ -89,7 +89,7 @@ export function GeneralInformationForm({
   onSuccessRoute = "/my-profile",
 }: GeneralInformationFormProps) {
   const router = useRouter()
-  const { user: authUser } = useAuth()
+  const { user: authUser, requiredOptions } = useAuth()
 
   const { user: fullCurrentUser } = useUserById(authUser?.id || null)
   const { generalInformation, isLoading } = useGeneralInformation(memberUserId)
@@ -206,7 +206,7 @@ export function GeneralInformationForm({
       <form onSubmit={form.handleSubmit(onSubmit, scrollToFirstError)} noValidate>
         <div className="pb-24 space-y-8">
           <PersonalInformationSection canEditRole={canEditRole} />
-          <ProfessionalInformationSection />
+          {requiredOptions.professionalInformation && <ProfessionalInformationSection />}
         </div>
 
         <FormBottomBar
