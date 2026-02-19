@@ -1,11 +1,12 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useCallback } from "react"
 import { Settings, FileText, Award, Sliders } from "lucide-react"
 import { Card } from "@/components/custom/Card"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { GeneralInformationForm } from "@/app/(app)/my-profile/manager/general-information/components/GeneralInformationForm"
 import { CredentialsSignatureOverview } from "@/app/(app)/my-profile/manager/credentials-signature/components/CredentialsSignatureOverview"
+import { RequiredDocumentsOverview } from "@/app/(app)/my-profile/manager/required-documents/components/RequiredDocumentsOverview"
 import { useAuth } from "@/lib/hooks/use-auth"
 
 interface UserManagerPageProps {
@@ -18,6 +19,11 @@ export default function UserManagerPage({ params }: UserManagerPageProps) {
   const { id } = use(params)
   const { requiredOptions } = useAuth()
   const [activeTab, setActiveTab] = useState("general")
+  const [documentsAlertCount, setDocumentsAlertCount] = useState(0)
+
+  const handleDocumentsAlertChange = useCallback((count: number) => {
+    setDocumentsAlertCount(count)
+  }, [])
 
   const tabs: TabItem[] = [
     {
@@ -51,18 +57,13 @@ export default function UserManagerPage({ params }: UserManagerPageProps) {
       id: "documents",
       label: "Required Documents",
       icon: <FileText className="w-4 h-4" />,
+      badge: documentsAlertCount > 0 ? documentsAlertCount : undefined,
       content: (
-        <div className="py-12 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4">
-            <FileText className="w-8 h-8 text-green-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Required Documents
-          </h3>
-          <p className="text-gray-600 max-w-md mx-auto">
-            Coming soon
-          </p>
-        </div>
+        <RequiredDocumentsOverview
+          isActive={activeTab === "documents"}
+          memberUserId={id}
+          onAlertCountChange={handleDocumentsAlertChange}
+        />
       ),
     },
   ]

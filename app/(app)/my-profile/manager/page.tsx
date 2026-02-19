@@ -1,16 +1,23 @@
 "use client"
 
 import { Settings, FileText, Award, Sliders } from "lucide-react"
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Card } from "@/components/custom/Card"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { GeneralInformationForm } from "./general-information/components/GeneralInformationForm"
 import { CredentialsSignatureOverview } from "./credentials-signature/components/CredentialsSignatureOverview"
+import { RequiredDocumentsOverview } from "./required-documents/components/RequiredDocumentsOverview"
 import { useAuth } from "@/lib/hooks/use-auth"
 
 export default function ManagerPage() {
   const { user, requiredOptions } = useAuth()
   const [activeTab, setActiveTab] = useState("general")
+  const [documentsAlertCount, setDocumentsAlertCount] = useState(0)
+
+  const handleDocumentsAlertChange = useCallback((count: number) => {
+    setDocumentsAlertCount(count)
+  }, [])
+
   const tabs: TabItem[] = [
     {
       id: "general",
@@ -37,18 +44,13 @@ export default function ManagerPage() {
       id: "documents",
       label: "Required Documents",
       icon: <FileText className="w-4 h-4" />,
+      badge: documentsAlertCount > 0 ? documentsAlertCount : undefined,
       content: (
-        <div className="py-12 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4">
-            <FileText className="w-8 h-8 text-green-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Required Documents
-          </h3>
-          <p className="text-gray-600 max-w-md mx-auto">
-            Coming soon
-          </p>
-        </div>
+        <RequiredDocumentsOverview
+          isActive={activeTab === "documents"}
+          memberUserId={user?.id ?? null}
+          onAlertCountChange={handleDocumentsAlertChange}
+        />
       ),
     },
   ]

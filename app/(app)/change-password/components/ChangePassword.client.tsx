@@ -18,7 +18,7 @@ import { PasswordMatchMessage } from "@/components/password/PasswordMatchMessage
 export default function ChangePassword() {
   const { handleChangePassword, isLoading, error } = useChangePassword()
   const { user } = useAuth()
-  const { showSuccess } = useAlert()
+  const alert = useAlert()
   const router = useRouter()
 
   const [currentPassword, setCurrentPassword] = useState("")
@@ -55,7 +55,7 @@ export default function ChangePassword() {
       // Error is now displayed in the form error section (not via toast)
       return
     }
-    showSuccess("Password updated", "Your password has been changed successfully.");
+    alert.success("Password updated", "Your password has been changed successfully.");
     router.push("/dashboard");
   }
 
