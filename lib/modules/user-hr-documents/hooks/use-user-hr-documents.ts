@@ -7,14 +7,12 @@ import type {
   UserHRDocumentStatus,
   RequiredHRDocumentConfig,
   SaveUserHRDocumentDto,
-  DeleteUserHRDocumentDto,
 } from "@/lib/types/user-hr-document.types"
 import {
   getRequiredHRDocumentConfigs,
   getUserHRDocuments,
   createUserHRDocument,
   updateUserHRDocument,
-  deleteUserHRDocument,
 } from "../services/user-hr-documents.service"
 
 
@@ -54,11 +52,9 @@ export interface UseUserHRDocumentsReturn {
   configs: RequiredHRDocumentConfig[]
   isLoading: boolean
   isSaving: boolean
-  isDeleting: boolean
   error: Error | null
   alertCount: number
   save: (data: SaveUserHRDocumentDto) => Promise<boolean>
-  deleteRecord: (data: DeleteUserHRDocumentDto) => Promise<boolean>
   refetch: () => Promise<void>
 }
 
@@ -71,7 +67,6 @@ export function useUserHRDocuments(
   const [rows, setRows] = useState<UserHRDocumentRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
   const buildRows = useCallback(
@@ -173,25 +168,6 @@ export function useUserHRDocuments(
     [fetchAll, rows]
   )
 
-  const deleteRecord = useCallback(
-    async (data: DeleteUserHRDocumentDto): Promise<boolean> => {
-      try {
-        setIsDeleting(true)
-        await deleteUserHRDocument(data)
-        toast.success("Document deleted successfully.")
-        await fetchAll()
-        return true
-      } catch (err) {
-        const errorObj = err instanceof Error ? err : new Error("Failed to delete document")
-        toast.error(errorObj.message)
-        return false
-      } finally {
-        setIsDeleting(false)
-      }
-    },
-    [fetchAll]
-  )
-
   const alertCount = rows.filter(
     (r) => r.status === "PENDING" || r.status === "NEAR_EXPIRATION" || r.status === "EXPIRED"
   ).length
@@ -201,11 +177,9 @@ export function useUserHRDocuments(
     configs,
     isLoading,
     isSaving,
-    isDeleting,
     error,
     alertCount,
     save,
-    deleteRecord,
     refetch: fetchAll,
   }
 }

@@ -115,7 +115,7 @@ export function RequiredDocumentsOverview({
   const [selectedDocument, setSelectedDocument] = useState<{ url: string; name: string } | null>(null)
   const [loadingDocumentId, setLoadingDocumentId] = useState<string | null>(null)
 
-  const { rows, isLoading, isSaving, isDeleting, error, alertCount, save, deleteRecord } = useUserHRDocuments(
+  const { rows, isLoading, isSaving, error, alertCount, save } = useUserHRDocuments(
     memberUserId,
     isActive
   )
@@ -196,15 +196,6 @@ export function RequiredDocumentsOverview({
     [editingRow, memberUserId, save]
   )
 
-  const handleModalDelete = useCallback(async () => {
-    if (!editingRow || !memberUserId) return
-    const success = await deleteRecord({
-      memberUserId,
-      documentConfigId: editingRow.documentConfigId,
-    })
-    if (success) setIsModalOpen(false)
-  }, [editingRow, memberUserId, deleteRecord])
-
   const { columns } = useRequiredDocumentsTable({
     onEdit: handleEdit,
     onDownload: handleDownload,
@@ -266,9 +257,7 @@ export function RequiredDocumentsOverview({
         onOpenChange={setIsModalOpen}
         row={editingRow}
         isSaving={isSaving}
-        isDeleting={isDeleting}
         onSave={handleModalSave}
-        onDelete={handleModalDelete}
       />
 
       {/* Document viewer modal */}

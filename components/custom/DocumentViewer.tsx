@@ -54,15 +54,17 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName = "documen
                 <button
                   onClick={onClose}
                   className={cn(
-                    "w-9 h-9 rounded-lg",
-                    "bg-white border border-gray-200",
-                    "hover:bg-red-50 hover:border-red-300",
-                    "transition-all duration-200",
+                    "w-9 h-9 rounded-xl",
                     "flex items-center justify-center",
-                    "cursor-pointer"
+                    "bg-slate-50 hover:bg-slate-100",
+                    "border border-slate-200/60",
+                    "text-slate-400 hover:text-slate-700",
+                    "transition-all duration-200",
+                    "hover:scale-105 active:scale-95",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30 focus-visible:ring-offset-2"
                   )}
                 >
-                  <X className="w-4 h-4 text-gray-600 hover:text-red-600" />
+                  <X className="w-[18px] h-[18px]" />
                 </button>
               </div>
             </div>

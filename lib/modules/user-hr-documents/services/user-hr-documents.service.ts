@@ -1,5 +1,6 @@
 import { serviceGet, servicePut, serviceDelete, servicePost } from "@/lib/services/baseService"
 import { getQueryString } from "@/lib/utils/format"
+import { parseDateFromBackend, dateToISO } from "@/lib/utils/date"
 import type { QueryModel } from "@/lib/models/queryModel"
 import type {
   BackendUserHRDocument,
@@ -11,25 +12,6 @@ import type {
 } from "@/lib/types/user-hr-document.types"
 import type { HRDocumentListItem } from "@/lib/types/hr-document.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
-
-function convertToISODate(dateStr: string | null | undefined): string | null {
-  if (!dateStr) return null
-  
-  const parts = dateStr.split("/")
-  if (parts.length === 3) {
-    const [month, day, year] = parts
-    if (month && day && year && year.length === 4) {
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
-    }
-  }
-  
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr
-  }
-  
-  return null
-}
 
 
 function normalizeStatus(status: any): "PENDING" | "DELIVERED" | "NEAR_EXPIRATION" | "EXPIRED" | undefined {
@@ -47,12 +29,15 @@ function normalizeStatus(status: any): "PENDING" | "DELIVERED" | "NEAR_EXPIRATIO
 }
 
 function mapBackendDocument(doc: any): BackendUserHRDocument {
+  const issuedDateParsed = parseDateFromBackend(doc.issuedDate)
+  const expirationDateParsed = parseDateFromBackend(doc.expiredDate ?? doc.expireDate ?? doc.expirationDate)
+  
   return {
     id: doc.id,
     memberUserId: doc.memberUserId ?? "",
     documentConfigId: doc.documentConfigId,
-    issuedDate: convertToISODate(doc.issuedDate),
-    expirationDate: convertToISODate(doc.expiredDate ?? doc.expireDate ?? doc.expirationDate),
+    issuedDate: dateToISO(issuedDateParsed),
+    expirationDate: dateToISO(expirationDateParsed),
     fileUrl: doc.fileUrl ?? null,
     fileName: doc.fileName ?? doc.name ?? null,
     comments: doc.comment ?? doc.comments ?? null,

@@ -3,9 +3,9 @@
 import { useMemo } from "react"
 import { Upload, Edit2, Download, Eye, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatDateDisplay } from "@/lib/utils/date"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { UserHRDocumentRow, UserHRDocumentStatus } from "@/lib/types/user-hr-document.types"
-import { format } from "date-fns"
 
 // ---------------------------------------------------------------------------
 // Status badge helpers
@@ -56,15 +56,7 @@ function StatusBadge({ status }: { status: UserHRDocumentStatus }) {
   )
 }
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—"
-  try {
-    const [year, month, day] = dateStr.split("-").map(Number)
-    return format(new Date(year, month - 1, day), "MM/dd/yyyy")
-  } catch {
-    return dateStr
-  }
-}
+
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -103,34 +95,28 @@ export function useRequiredDocumentsTable({
         key: "issuedDate",
         header: "Issued Date",
         align: "center",
-        render: (row) =>
-          row.allowIssuedDate ? (
-            <span className="text-sm text-slate-700">{formatDate(row.issuedDate)}</span>
-          ) : (
-            <span className="text-xs text-slate-400">N/A</span>
-          ),
+        render: (row) => (
+          <span className="text-sm text-slate-700">{formatDateDisplay(row.issuedDate)}</span>
+        ),
       },
       {
         key: "expirationDate",
         header: "Expiration Date",
         align: "center",
-        render: (row) =>
-          row.allowExpirationDate ? (
-            <span
-              className={cn(
-                "text-sm",
-                row.status === "EXPIRED"
-                  ? "text-red-600 font-semibold"
-                  : row.status === "NEAR_EXPIRATION"
-                  ? "text-amber-600 font-semibold"
-                  : "text-slate-700"
-              )}
-            >
-              {formatDate(row.expirationDate)}
-            </span>
-          ) : (
-            <span className="text-xs text-slate-400">N/A</span>
-          ),
+        render: (row) => (
+          <span
+            className={cn(
+              "text-sm",
+              row.status === "EXPIRED"
+                ? "text-red-600 font-semibold"
+                : row.status === "NEAR_EXPIRATION"
+                ? "text-amber-600 font-semibold"
+                : "text-slate-700"
+            )}
+          >
+            {formatDateDisplay(row.expirationDate)}
+          </span>
+        ),
       },
       {
         key: "status",
@@ -186,34 +172,35 @@ export function useRequiredDocumentsTable({
                 </button>
               )}
 
-              {/* Upload / Edit button — always shown */}
-              <button
-                onClick={() => onEdit(row)}
-                className={cn(
-                  "group/edit",
-                  "relative h-9 w-9",
-                  "flex items-center justify-center",
-                  "rounded-xl",
-                  "bg-gradient-to-b from-blue-50 to-blue-100/80",
-                  "border border-blue-200/60",
-                  "shadow-sm shadow-blue-900/5",
-                  "hover:from-blue-100 hover:to-blue-200/90",
-                  "hover:border-blue-300/80",
-                  "hover:shadow-md hover:shadow-blue-900/10",
-                  "hover:-translate-y-0.5",
-                  "active:translate-y-0 active:shadow-sm",
-                  "transition-all duration-200 ease-out",
-                  "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
-                )}
-                title={row.userDocumentId ? "Edit document" : "Upload document"}
-                aria-label={row.userDocumentId ? "Edit document" : "Upload document"}
-              >
-                {row.userDocumentId ? (
-                  <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
-                ) : (
-                  <Upload className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
-                )}
-              </button>
+              {(row.allowUploadFile || row.allowIssuedDate || row.allowExpirationDate) && (
+                <button
+                  onClick={() => onEdit(row)}
+                  className={cn(
+                    "group/edit",
+                    "relative h-9 w-9",
+                    "flex items-center justify-center",
+                    "rounded-xl",
+                    "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                    "border border-blue-200/60",
+                    "shadow-sm shadow-blue-900/5",
+                    "hover:from-blue-100 hover:to-blue-200/90",
+                    "hover:border-blue-300/80",
+                    "hover:shadow-md hover:shadow-blue-900/10",
+                    "hover:-translate-y-0.5",
+                    "active:translate-y-0 active:shadow-sm",
+                    "transition-all duration-200 ease-out",
+                    "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+                  )}
+                  title={row.userDocumentId ? "Edit document" : "Upload document"}
+                  aria-label={row.userDocumentId ? "Edit document" : "Upload document"}
+                >
+                  {row.userDocumentId ? (
+                    <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+                  ) : (
+                    <Upload className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+                  )}
+                </button>
+              )}
             </div>
           )
         },

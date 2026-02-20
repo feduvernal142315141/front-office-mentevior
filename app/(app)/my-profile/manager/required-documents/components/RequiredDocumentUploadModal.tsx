@@ -3,16 +3,17 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import {
   FileText, Upload, X, AlertCircle, File,
-  Plus, Trash2, RefreshCw, Save, RotateCcw,
+  Plus, RefreshCw, Save, Loader2, Eye,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { parseDate, dateToISO } from "@/lib/utils/date"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { Button } from "@/components/custom/Button"
 import type { UserHRDocumentRow } from "@/lib/types/user-hr-document.types"
 import { getUserDocumentUrl } from "@/lib/modules/user-hr-documents/services/user-hr-documents.service"
-import { format, addMonths, addYears } from "date-fns"
+import { addMonths, addYears } from "date-fns"
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -59,9 +60,7 @@ interface RequiredDocumentUploadModalProps {
   onOpenChange: (open: boolean) => void
   row: UserHRDocumentRow | null
   isSaving: boolean
-  isDeleting: boolean
   onSave: (data: RequiredDocumentUploadModalSavePayload) => Promise<void>
-  onDelete: () => Promise<void>
 }
 
 // ---------------------------------------------------------------------------
@@ -81,25 +80,14 @@ function readFileAsBase64(file: File): Promise<string> {
   })
 }
 
-function parseDateStr(str: string): Date | null {
-  if (!str) return null
-  const [y, m, d] = str.split("-").map(Number)
-  if (!y || !m || !d) return null
-  return new Date(y, m - 1, d)
-}
 
-function toDateStr(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
-}
 
 // ---------------------------------------------------------------------------
 // Sub-component: file zone
 // ---------------------------------------------------------------------------
 
 interface FileZoneProps {
+  documentName: string
   existingFileUrl: string | null
   existingFileName: string | null
   newFile: File | null
@@ -118,6 +106,7 @@ interface FileZoneProps {
 }
 
 function FileZone({
+  documentName,
   existingFileUrl,
   existingFileName,
   newFile,
@@ -138,81 +127,86 @@ function FileZone({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-semibold text-slate-700">
-        File
-        {!hasExisting && !newFile && (
-          <span className="ml-1 font-normal text-slate-400">(required to mark as Delivered)</span>
-        )}
-      </p>
 
       {/* Existing file row */}
       {hasExisting && !newFile && (
-        <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50">
-          <div className="w-9 h-9 rounded-lg bg-[#037ECC]/10 flex items-center justify-center flex-shrink-0">
-            <File className="w-4 h-4 text-[#037ECC]" />
+        <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white">
+          <div className="w-11 h-11 rounded-lg bg-[#037ECC]/10 flex items-center justify-center flex-shrink-0">
+            <FileText className="w-5 h-5 text-[#037ECC]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-800 truncate">
-              {existingFileName ?? "Uploaded file"}
+            <p className="text-base font-bold text-slate-900 truncate">
+              {documentName}
             </p>
-            <a
-              href={existingFileUrl!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-[#037ECC] hover:underline"
-            >
-              View file
-            </a>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Ready to save
+            </p>
           </div>
-          {/* X — removes existing file from record */}
-          <button
-            type="button"
-            onClick={onRemoveExisting}
-            className="p-1.5 rounded-lg hover:bg-red-50 transition-colors group/remove"
-            title="Remove file from record"
-          >
-            <X className="w-4 h-4 text-slate-400 group-hover/remove:text-red-500 transition-colors" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (existingFileUrl) {
+                  window.open(existingFileUrl, '_blank', 'noopener,noreferrer')
+                }
+              }}
+              className={cn(
+                "w-9 h-9 rounded-lg",
+                "flex items-center justify-center",
+                "bg-slate-50 hover:bg-slate-100",
+                "border border-slate-200",
+                "text-slate-600 hover:text-slate-900",
+                "transition-all duration-200"
+              )}
+              title="View document"
+            >
+              <Eye className="w-[18px] h-[18px]" />
+            </button>
+            <button
+              type="button"
+              onClick={onUploadAnother}
+              className={cn(
+                "w-9 h-9 rounded-lg",
+                "flex items-center justify-center",
+                "bg-slate-50 hover:bg-slate-100",
+                "border border-slate-200",
+                "text-slate-600 hover:text-slate-900",
+                "transition-all duration-200"
+              )}
+              title="Change document"
+            >
+              <Upload className="w-[18px] h-[18px]" />
+            </button>
+          </div>
         </div>
-      )}
-
-      {/* Upload another — only when existing file shown */}
-      {hasExisting && !newFile && (
-        <button
-          type="button"
-          onClick={onUploadAnother}
-          className={cn(
-            "w-full flex items-center justify-center gap-2",
-            "py-2.5 rounded-xl border-2 border-dashed border-slate-200",
-            "text-sm font-medium text-slate-500",
-            "hover:border-[#037ECC]/50 hover:text-[#037ECC] hover:bg-[#037ECC]/3",
-            "transition-all duration-200"
-          )}
-        >
-          <RefreshCw className="w-4 h-4" />
-          Upload another file
-        </button>
       )}
 
       {/* New file selected preview */}
       {newFile && (
-        <div className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50">
-          <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <File className="w-4 h-4 text-blue-600" />
+        <div className="flex items-center gap-4 p-4 rounded-xl border border-blue-200 bg-blue-50">
+          <div className="w-11 h-11 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <File className="w-5 h-5 text-blue-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-800 truncate">{newFile.name}</p>
-            <p className="text-xs text-slate-500">
-              {(newFile.size / 1024 / 1024).toFixed(2)} MB
+            <p className="text-base font-bold text-slate-900 truncate">{documentName}</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {newFile.name} • {(newFile.size / 1024 / 1024).toFixed(2)} MB
             </p>
           </div>
           <button
             type="button"
             onClick={onRemoveNew}
-            className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+            className={cn(
+              "w-9 h-9 rounded-lg",
+              "flex items-center justify-center",
+              "bg-white hover:bg-slate-50",
+              "border border-slate-200",
+              "text-slate-400 hover:text-slate-600",
+              "transition-all duration-200"
+            )}
             title="Remove selected file"
           >
-            <X className="w-4 h-4 text-slate-400" />
+            <X className="w-[18px] h-[18px]" />
           </button>
         </div>
       )}
@@ -274,14 +268,11 @@ export function RequiredDocumentUploadModal({
   onOpenChange,
   row,
   isSaving,
-  isDeleting,
   onSave,
-  onDelete,
 }: RequiredDocumentUploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedQuickOffset, setSelectedQuickOffset] = useState<string | null>(null)
   const [fetchedFileUrl, setFetchedFileUrl] = useState<string | null>(null)
   const [loadingExistingFile, setLoadingExistingFile] = useState(false)
@@ -296,9 +287,7 @@ export function RequiredDocumentUploadModal({
   })
 
   const isEditMode = Boolean(row?.userDocumentId)
-  const isBusy = isSaving || isDeleting
 
-  // Populate form when modal opens
   useEffect(() => {
     if (open && row) {
       setForm({
@@ -310,11 +299,9 @@ export function RequiredDocumentUploadModal({
         removeExistingFile: false,
       })
       setFileError(null)
-      setShowDeleteConfirm(false)
       setSelectedQuickOffset(null)
       setFetchedFileUrl(null)
 
-      // Fetch existing file URL if document exists
       if (row.userDocumentId) {
         setLoadingExistingFile(true)
         getUserDocumentUrl(row.userDocumentId)
@@ -384,30 +371,16 @@ export function RequiredDocumentUploadModal({
 
   const handleQuickOffset = useCallback(
     (label: string, applyFn: (d: Date) => Date) => {
-      const base = parseDateStr(form.issuedDate) ?? new Date()
+      const base = parseDate(form.issuedDate) ?? new Date()
       const result = applyFn(base)
-      setForm((prev) => ({ ...prev, expirationDate: toDateStr(result) }))
+      const isoDate = dateToISO(result)
+      if (isoDate) {
+        setForm((prev) => ({ ...prev, expirationDate: isoDate }))
+      }
       setSelectedQuickOffset(label)
     },
     [form.issuedDate]
   )
-
-  // ---------------------------------------------------------------------------
-  // Clear / Save / Delete
-  // ---------------------------------------------------------------------------
-
-  const handleClear = useCallback(() => {
-    if (!row) return
-    setForm({
-      issuedDate: "",
-      expirationDate: "",
-      comments: "",
-      newFile: null,
-      newFileBase64: null,
-      removeExistingFile: false,
-    })
-    setFileError(null)
-  }, [row])
 
   const handleSave = useCallback(async () => {
     if (!row) return
@@ -420,44 +393,54 @@ export function RequiredDocumentUploadModal({
     })
   }, [row, form, onSave])
 
-  const handleDelete = useCallback(async () => {
-    await onDelete()
-    setShowDeleteConfirm(false)
-  }, [onDelete])
-
   const handleClose = useCallback(() => {
-    if (!isBusy) onOpenChange(false)
-  }, [isBusy, onOpenChange])
+    if (!isSaving) onOpenChange(false)
+  }, [isSaving, onOpenChange])
 
   if (!row) return null
 
   const showFileZone = row.allowUploadFile
-  // Use the fetched signed URL if available, otherwise fall back to row.fileUrl
+  const showDates = row.allowIssuedDate || row.allowExpirationDate
+  const showComments = showFileZone || showDates
   const existingFileUrl = form.removeExistingFile ? null : (fetchedFileUrl ?? row.fileUrl ?? null)
   const existingFileName = form.removeExistingFile ? null : (row.fileName ?? null)
+
+  if (!row) return null
+
+  if (loadingExistingFile) {
+    return (
+      <CustomModal
+        open={open}
+        onOpenChange={handleClose}
+        title={isEditMode ? "Edit Document" : "Upload Document"}
+        description={row.documentConfigName}
+        maxWidthClassName="sm:max-w-[760px]"
+      >
+        <div className="p-6 space-y-5">
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="w-8 h-8 text-[#037ECC] animate-spin" />
+              <p className="text-sm text-slate-600">Loading document...</p>
+            </div>
+          </div>
+        </div>
+      </CustomModal>
+    )
+  }
 
   return (
     <CustomModal
       open={open}
       onOpenChange={handleClose}
       title={isEditMode ? "Edit Document" : "Upload Document"}
-      description={row.documentConfigName}
       maxWidthClassName="sm:max-w-[760px]"
     >
       <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
 
-        {/* Document name — read only */}
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200">
-          <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
-          <div>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Document</p>
-            <p className="text-sm font-semibold text-slate-800 mt-0.5">{row.documentConfigName}</p>
-          </div>
-        </div>
-
         {/* File zone */}
         {showFileZone && (
           <FileZone
+            documentName={row.documentConfigName}
             existingFileUrl={existingFileUrl}
             existingFileName={existingFileName}
             newFile={form.newFile}
@@ -477,7 +460,7 @@ export function RequiredDocumentUploadModal({
         )}
 
         {/* Date fields */}
-        {(row.allowIssuedDate || row.allowExpirationDate) && (
+        {showDates && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {row.allowIssuedDate && (
@@ -538,102 +521,38 @@ export function RequiredDocumentUploadModal({
           </div>
         )}
 
-        {/* Comments */}
-        <FloatingTextarea
-          label="Comments"
-          value={form.comments}
-          onChange={(val) => setForm((prev) => ({ ...prev, comments: val }))}
-          onBlur={() => {}}
-          maxLength={500}
-          rows={3}
-        />
-
-        {/* Delete confirmation inline */}
-        {showDeleteConfirm && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
-            <p className="text-sm font-semibold text-red-800">
-              Delete this document record?
-            </p>
-            <p className="text-xs text-red-600">
-              This will permanently remove the uploaded file, dates, and comments for{" "}
-              <span className="font-semibold">{row.documentConfigName}</span>. The document will
-              revert to <span className="font-semibold">Pending</span> status.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="danger"
-                onClick={handleDelete}
-                loading={isDeleting}
-                disabled={isBusy}
-                className="h-9 px-4 text-xs gap-2 flex items-center"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Yes, delete
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isBusy}
-                className="h-9 px-4 text-xs gap-2 flex items-center"
-              >
-                <X className="w-3.5 h-3.5" />
-                Cancel
-              </Button>
-            </div>
-          </div>
+        {showComments && (
+          <FloatingTextarea
+            label="Comments"
+            value={form.comments}
+            onChange={(val) => setForm((prev) => ({ ...prev, comments: val }))}
+            onBlur={() => {}}
+            maxLength={500}
+            rows={3}
+          />
         )}
 
-        {/* Action buttons — mirrors FormBottomBar pattern */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-          {/* Left side: Delete trigger (edit mode) or Clear (new upload) */}
-          <div>
-            {isEditMode ? (
-              !showDeleteConfirm && (
-                <Button
-                  variant="danger"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isBusy}
-                  className="gap-2 flex items-center"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </Button>
-              )
-            ) : (
-              <Button
-                variant="secondary"
-                onClick={handleClear}
-                disabled={isBusy}
-                className="gap-2 flex items-center"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Clear
-              </Button>
-            )}
-          </div>
-
-          {/* Right side: Cancel + primary action */}
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              onClick={handleClose}
-              disabled={isBusy}
-              className="gap-2 flex items-center"
-            >
-              <X className="w-4 h-4" />
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              disabled={isBusy || Boolean(fileError)}
-              loading={isSaving}
-              className="gap-2 flex items-center min-w-[140px]"
-            >
-              {!isSaving && <Save className="w-4 h-4" />}
-              {isEditMode ? "Update" : "Upload"}
-            </Button>
-          </div>
+        {/* Action buttons */}
+        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+          <Button
+            variant="secondary"
+            onClick={handleClose}
+            disabled={isSaving}
+            className="gap-2 flex items-center"
+          >
+            <X className="w-4 h-4" />
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={isSaving || Boolean(fileError)}
+            loading={isSaving}
+            className="gap-2 flex items-center min-w-[140px]"
+          >
+            {!isSaving && <Save className="w-4 h-4" />}
+            {isEditMode ? "Update" : "Upload"}
+          </Button>
         </div>
       </div>
     </CustomModal>
