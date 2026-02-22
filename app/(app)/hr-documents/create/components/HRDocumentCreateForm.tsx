@@ -19,8 +19,6 @@ export function HRDocumentCreateForm({ mode, catalogId, initialDocumentName }: H
   const [name, setName] = useState(initialDocumentName || "")
   const [issuedDate, setIssuedDate] = useState(true)
   const [expirationDate, setExpirationDate] = useState(true)
-  const [uploadFile, setUploadFile] = useState(true)
-  const [downloadFile, setDownloadFile] = useState(true)
   const [status, setStatus] = useState(true)
 
   const createMutation = useCreateHRDocument()
@@ -37,8 +35,8 @@ export function HRDocumentCreateForm({ mode, catalogId, initialDocumentName }: H
       documentCategory: "HR",
       issuedDate,
       expirationDate,
-      uploadFile,
-      downloadFile,
+      uploadFile: true,
+      downloadFile: true,
       status,
       ...(catalogId && { catalogId }),
     }
@@ -117,19 +115,21 @@ export function HRDocumentCreateForm({ mode, catalogId, initialDocumentName }: H
 
             <div className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-colors">
               <PremiumSwitch
-                checked={uploadFile}
-                onCheckedChange={setUploadFile}
+                checked={true}
+                onCheckedChange={() => {}}
                 label="Upload File"
                 description="Allow users to upload files"
+                disabled
               />
             </div>
 
             <div className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-colors">
               <PremiumSwitch
-                checked={downloadFile}
-                onCheckedChange={setDownloadFile}
+                checked={true}
+                onCheckedChange={() => {}}
                 label="Download File"
                 description="Allow users to download files"
+                disabled
               />
             </div>
 

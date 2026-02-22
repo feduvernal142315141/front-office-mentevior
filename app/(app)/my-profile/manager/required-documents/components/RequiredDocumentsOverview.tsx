@@ -204,9 +204,9 @@ export function RequiredDocumentsOverview({
   })
 
   // Derived alert counts for the banner
-  const pendingCount = rows.filter((r) => r.status === "PENDING").length
-  const nearExpirationCount = rows.filter((r) => r.status === "NEAR_EXPIRATION").length
-  const expiredCount = rows.filter((r) => r.status === "EXPIRED").length
+  const pendingCount = rows.filter((r) => r.allowStatus && r.status === "PENDING").length
+  const nearExpirationCount = rows.filter((r) => r.allowStatus && r.status === "NEAR_EXPIRATION").length
+  const expiredCount = rows.filter((r) => r.allowStatus && r.status === "EXPIRED").length
 
   if (isActive && !hasLoaded && isLoading) {
     return <RequiredDocumentsSkeleton />

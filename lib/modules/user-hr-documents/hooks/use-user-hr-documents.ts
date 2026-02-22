@@ -5,11 +5,9 @@ import { toast } from "sonner"
 import type {
   UserHRDocumentRow,
   UserHRDocumentStatus,
-  RequiredHRDocumentConfig,
   SaveUserHRDocumentDto,
 } from "@/lib/types/user-hr-document.types"
 import {
-  getRequiredHRDocumentConfigs,
   getUserHRDocuments,
   createUserHRDocument,
   updateUserHRDocument,
@@ -49,7 +47,6 @@ export function computeDocumentStatus(
 
 export interface UseUserHRDocumentsReturn {
   rows: UserHRDocumentRow[]
-  configs: RequiredHRDocumentConfig[]
   isLoading: boolean
   isSaving: boolean
   error: Error | null
@@ -63,38 +60,36 @@ export function useUserHRDocuments(
   memberUserId: string | null,
   enabled: boolean
 ): UseUserHRDocumentsReturn {
-  const [configs, setConfigs] = useState<RequiredHRDocumentConfig[]>([])
   const [rows, setRows] = useState<UserHRDocumentRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
   const buildRows = useCallback(
-    (
-      configList: RequiredHRDocumentConfig[],
-      userDocs: Awaited<ReturnType<typeof getUserHRDocuments>>
-    ): UserHRDocumentRow[] => {
-      return configList.map((config) => {
-        const userDoc = userDocs.find((d) => d.documentConfigId === config.id) ?? null
-        const fileUrl = userDoc?.fileUrl ?? null
-        const expirationDate = userDoc?.expirationDate ?? null
+    (userDocs: Awaited<ReturnType<typeof getUserHRDocuments>>): UserHRDocumentRow[] => {
+      return userDocs.map((doc) => {
+        const fileUrl = doc.fileUrl ?? null
+        const expirationDate = doc.expirationDate ?? null
       
-        const status = userDoc?.status ?? computeDocumentStatus(fileUrl, expirationDate)
+        const status = doc.allowStatus 
+          ? (doc.status ?? computeDocumentStatus(fileUrl, expirationDate))
+          : "PENDING"
 
         return {
-          documentConfigId: config.id,
-          documentConfigName: config.name,
-          userDocumentId: userDoc?.id ?? null,
-          issuedDate: userDoc?.issuedDate ?? null,
+          documentConfigId: doc.documentConfigId,
+          documentConfigName: doc.documentConfigName,
+          userDocumentId: doc.id,
+          issuedDate: doc.issuedDate,
           expirationDate,
           fileUrl,
-          fileName: userDoc?.fileName ?? null,
-          comments: userDoc?.comments ?? null,
+          fileName: doc.fileName,
+          comments: doc.comments,
           status,
-          allowIssuedDate: config.allowIssuedDate,
-          allowExpirationDate: config.allowExpirationDate,
-          allowUploadFile: config.allowUploadFile,
-          allowDownloadFile: config.allowDownloadFile,
+          allowIssuedDate: doc.allowIssuedDate,
+          allowExpirationDate: doc.allowExpirationDate,
+          allowUploadFile: doc.allowUploadFile,
+          allowDownloadFile: doc.allowDownloadFile,
+          allowStatus: doc.allowStatus,
         }
       })
     },
@@ -112,13 +107,9 @@ export function useUserHRDocuments(
       setIsLoading(true)
       setError(null)
 
-      const [configList, userDocs] = await Promise.all([
-        getRequiredHRDocumentConfigs(),
-        getUserHRDocuments(memberUserId),
-      ])
+      const userDocs = await getUserHRDocuments(memberUserId)
 
-      setConfigs(configList)
-      setRows(buildRows(configList, userDocs))
+      setRows(buildRows(userDocs))
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error("Failed to fetch required document configuration")
       setError(errorObj)
@@ -169,12 +160,11 @@ export function useUserHRDocuments(
   )
 
   const alertCount = rows.filter(
-    (r) => r.status === "PENDING" || r.status === "NEAR_EXPIRATION" || r.status === "EXPIRED"
+    (r) => r.allowStatus && (r.status === "PENDING" || r.status === "NEAR_EXPIRATION" || r.status === "EXPIRED")
   ).length
 
   return {
     rows,
-    configs,
     isLoading,
     isSaving,
     error,

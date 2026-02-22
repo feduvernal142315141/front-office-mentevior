@@ -32,6 +32,23 @@ const QUICK_OFFSETS = [
   { label: "+5 years",  apply: (d: Date) => addYears(d, 5)   },
 ]
 
+function detectQuickOffset(issuedDateStr: string, expirationDateStr: string): string | null {
+  const issuedDate = parseDate(issuedDateStr)
+  const expirationDate = parseDate(expirationDateStr)
+  
+  if (!issuedDate || !expirationDate) return null
+  
+  for (const offset of QUICK_OFFSETS) {
+    const calculatedDate = offset.apply(issuedDate)
+    const calculatedISO = dateToISO(calculatedDate)
+    if (calculatedISO === expirationDateStr) {
+      return offset.label
+    }
+  }
+  
+  return null
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -290,16 +307,24 @@ export function RequiredDocumentUploadModal({
 
   useEffect(() => {
     if (open && row) {
+      const issuedDate = row.issuedDate ?? ""
+      const expirationDate = row.expirationDate ?? ""
+      
       setForm({
-        issuedDate: row.issuedDate ?? "",
-        expirationDate: row.expirationDate ?? "",
+        issuedDate,
+        expirationDate,
         comments: row.comments ?? "",
         newFile: null,
         newFileBase64: null,
         removeExistingFile: false,
       })
       setFileError(null)
-      setSelectedQuickOffset(null)
+      
+      const matchingOffset = issuedDate && expirationDate 
+        ? detectQuickOffset(issuedDate, expirationDate)
+        : null
+      setSelectedQuickOffset(matchingOffset)
+      
       setFetchedFileUrl(null)
 
       if (row.userDocumentId) {
@@ -384,6 +409,17 @@ export function RequiredDocumentUploadModal({
 
   const handleSave = useCallback(async () => {
     if (!row) return
+    
+    if (row.allowIssuedDate && !form.issuedDate) {
+      return
+    }
+    if (row.allowExpirationDate && !form.expirationDate) {
+      return
+    }
+    if (row.allowUploadFile && !row.userDocumentId && !form.newFile) {
+      return
+    }
+    
     await onSave({
       issuedDate: form.issuedDate || null,
       expirationDate: form.expirationDate || null,
@@ -399,13 +435,13 @@ export function RequiredDocumentUploadModal({
 
   if (!row) return null
 
-  const showFileZone = row.allowUploadFile
-  const showDates = row.allowIssuedDate || row.allowExpirationDate
-  const showComments = showFileZone || showDates
   const existingFileUrl = form.removeExistingFile ? null : (fetchedFileUrl ?? row.fileUrl ?? null)
   const existingFileName = form.removeExistingFile ? null : (row.fileName ?? null)
 
-  if (!row) return null
+  const isMissingRequiredFields = 
+    (row.allowIssuedDate && !form.issuedDate) ||
+    (row.allowExpirationDate && !form.expirationDate) ||
+    (row.allowUploadFile && !row.userDocumentId && !form.newFile)
 
   if (loadingExistingFile) {
     return (
@@ -437,100 +473,89 @@ export function RequiredDocumentUploadModal({
     >
       <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
 
-        {/* File zone */}
-        {showFileZone && (
-          <FileZone
-            documentName={row.documentConfigName}
-            existingFileUrl={existingFileUrl}
-            existingFileName={existingFileName}
-            newFile={form.newFile}
-            removeExistingFile={form.removeExistingFile}
-            dragOver={dragOver}
-            fileError={fileError}
-            fileInputRef={fileInputRef}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onBrowseClick={() => fileInputRef.current?.click()}
-            onRemoveNew={handleRemoveNew}
-            onRemoveExisting={handleRemoveExisting}
-            onUploadAnother={handleUploadAnother}
-            onFileInputChange={handleFileInputChange}
-          />
-        )}
+        <FileZone
+          documentName={row.documentConfigName}
+          existingFileUrl={existingFileUrl}
+          existingFileName={existingFileName}
+          newFile={form.newFile}
+          removeExistingFile={form.removeExistingFile}
+          dragOver={dragOver}
+          fileError={fileError}
+          fileInputRef={fileInputRef}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onBrowseClick={() => fileInputRef.current?.click()}
+          onRemoveNew={handleRemoveNew}
+          onRemoveExisting={handleRemoveExisting}
+          onUploadAnother={handleUploadAnother}
+          onFileInputChange={handleFileInputChange}
+        />
 
-        {/* Date fields */}
-        {showDates && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {row.allowIssuedDate && (
-                <PremiumDatePicker
-                  label="Issued Date"
-                  value={form.issuedDate}
-                  onChange={(val) => setForm((prev) => ({ ...prev, issuedDate: val }))}
-                />
-              )}
-              {row.allowExpirationDate && (
-                <PremiumDatePicker
-                  label="Expiration Date"
-                  value={form.expirationDate}
-                  onChange={(val) => {
-                    setForm((prev) => ({ ...prev, expirationDate: val }))
-                    setSelectedQuickOffset(null) // Deselect button if user changes manually
-                  }}
-                />
-              )}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <PremiumDatePicker
+              label={row.allowIssuedDate ? "Issued Date *" : "Issued Date"}
+              value={form.issuedDate}
+              onChange={(val) => {
+                setForm((prev) => ({ ...prev, issuedDate: val, expirationDate: "" }))
+                setSelectedQuickOffset(null)
+              }}
+            />
+            <PremiumDatePicker
+              label={row.allowExpirationDate ? "Expiration Date *" : "Expiration Date"}
+              value={form.expirationDate}
+              onChange={(val) => {
+                setForm((prev) => ({ ...prev, expirationDate: val }))
+                const matchingOffset = detectQuickOffset(form.issuedDate, val)
+                setSelectedQuickOffset(matchingOffset)
+              }}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Quick expiration from issued date
+            </p>
+            <div className="flex gap-2 overflow-x-auto pb-1 pr-4">
+              {QUICK_OFFSETS.map(({ label, apply }) => {
+                const isSelected = selectedQuickOffset === label
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => handleQuickOffset(label, apply)}
+                    className={cn(
+                      "h-8 px-3 rounded-lg text-xs font-semibold whitespace-nowrap flex-shrink-0",
+                      "border transition-all duration-150",
+                      isSelected
+                        ? "border-[#037ECC] bg-[#037ECC] text-white shadow-md"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-[#037ECC]/50 hover:text-[#037ECC] hover:bg-[#037ECC]/5",
+                      "disabled:opacity-40 disabled:cursor-not-allowed"
+                    )}
+                    disabled={!form.issuedDate}
+                    title={!form.issuedDate ? "Set an issued date first" : `Set expiration to ${label} from issued date`}
+                  >
+                    <Plus className="w-3 h-3 inline mr-1 -mt-0.5" />
+                    {label.replace("+", "")}
+                  </button>
+                )
+              })}
             </div>
-
-            {/* Quick-date buttons — only when expiration is allowed */}
-            {row.allowExpirationDate && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Quick expiration from issued date
-                </p>
-                <div className="flex gap-2 overflow-x-auto pb-1 pr-4">
-                  {QUICK_OFFSETS.map(({ label, apply }) => {
-                    const isSelected = selectedQuickOffset === label
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => handleQuickOffset(label, apply)}
-                        className={cn(
-                          "h-8 px-3 rounded-lg text-xs font-semibold whitespace-nowrap flex-shrink-0",
-                          "border transition-all duration-150",
-                          isSelected
-                            ? "border-[#037ECC] bg-[#037ECC] text-white shadow-md"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-[#037ECC]/50 hover:text-[#037ECC] hover:bg-[#037ECC]/5",
-                          "disabled:opacity-40 disabled:cursor-not-allowed"
-                        )}
-                        disabled={!form.issuedDate}
-                        title={!form.issuedDate ? "Set an issued date first" : `Set expiration to ${label} from issued date`}
-                      >
-                        <Plus className="w-3 h-3 inline mr-1 -mt-0.5" />
-                        {label.replace("+", "")}
-                      </button>
-                    )
-                  })}
-                </div>
-                {!form.issuedDate && (
-                  <p className="text-xs text-slate-400">Set an issued date to use quick buttons</p>
-                )}
-              </div>
+            {!form.issuedDate && (
+              <p className="text-xs text-slate-400">Set an issued date to use quick buttons</p>
             )}
           </div>
-        )}
+        </div>
 
-        {showComments && (
-          <FloatingTextarea
-            label="Comments"
-            value={form.comments}
-            onChange={(val) => setForm((prev) => ({ ...prev, comments: val }))}
-            onBlur={() => {}}
-            maxLength={500}
-            rows={3}
-          />
-        )}
+        <FloatingTextarea
+          label="Comments"
+          value={form.comments}
+          onChange={(val) => setForm((prev) => ({ ...prev, comments: val }))}
+          onBlur={() => {}}
+          maxLength={500}
+          rows={3}
+        />
 
         {/* Action buttons */}
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
@@ -546,7 +571,7 @@ export function RequiredDocumentUploadModal({
           <Button
             variant="primary"
             onClick={handleSave}
-            disabled={isSaving || Boolean(fileError)}
+            disabled={isSaving || Boolean(fileError) || isMissingRequiredFields}
             loading={isSaving}
             className="gap-2 flex items-center min-w-[140px]"
           >

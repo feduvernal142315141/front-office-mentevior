@@ -17,8 +17,6 @@ export function ClinicalDocumentEditForm({ document }: ClinicalDocumentEditFormP
   const [name, setName] = useState(document.name || "")
   const [issuedDate, setIssuedDate] = useState(document.issuedDate)
   const [expirationDate, setExpirationDate] = useState(document.expirationDate)
-  const [uploadFile, setUploadFile] = useState(document.uploadFile)
-  const [downloadFile, setDownloadFile] = useState(document.downloadFile)
   const [status, setStatus] = useState(document.status)
 
   const updateMutation = useUpdateClinicalDocument()
@@ -36,8 +34,8 @@ export function ClinicalDocumentEditForm({ document }: ClinicalDocumentEditFormP
       documentCategory: "CLINICAL",
       issuedDate,
       expirationDate,
-      uploadFile,
-      downloadFile,
+      uploadFile: true,
+      downloadFile: true,
       status,
     }
 
@@ -115,19 +113,21 @@ export function ClinicalDocumentEditForm({ document }: ClinicalDocumentEditFormP
 
             <div className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-colors">
               <PremiumSwitch
-                checked={uploadFile}
-                onCheckedChange={setUploadFile}
+                checked={true}
+                onCheckedChange={() => {}}
                 label="Upload File"
                 description="Allow users to upload files"
+                disabled
               />
             </div>
 
             <div className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-colors">
               <PremiumSwitch
-                checked={downloadFile}
-                onCheckedChange={setDownloadFile}
+                checked={true}
+                onCheckedChange={() => {}}
                 label="Download File"
                 description="Allow users to download files"
+                disabled
               />
             </div>
 

@@ -1,17 +1,12 @@
 import { serviceGet, servicePut, serviceDelete, servicePost } from "@/lib/services/baseService"
-import { getQueryString } from "@/lib/utils/format"
 import { parseDateFromBackend, dateToISO } from "@/lib/utils/date"
-import type { QueryModel } from "@/lib/models/queryModel"
 import type {
   BackendUserHRDocument,
-  RequiredHRDocumentConfig,
   SaveUserHRDocumentDto,
   CreateUserHRDocumentDto,
   UpdateUserHRDocumentDto,
   DeleteUserHRDocumentDto,
 } from "@/lib/types/user-hr-document.types"
-import type { HRDocumentListItem } from "@/lib/types/hr-document.types"
-import type { PaginatedResponse } from "@/lib/types/response.types"
 
 
 function normalizeStatus(status: any): "PENDING" | "DELIVERED" | "NEAR_EXPIRATION" | "EXPIRED" | undefined {
@@ -33,58 +28,34 @@ function mapBackendDocument(doc: any): BackendUserHRDocument {
   const expirationDateParsed = parseDateFromBackend(doc.expiredDate ?? doc.expireDate ?? doc.expirationDate)
   
   return {
-    id: doc.id,
+    id: doc.id ?? null,
     memberUserId: doc.memberUserId ?? "",
     documentConfigId: doc.documentConfigId,
+    documentConfigName: doc.name,
     issuedDate: dateToISO(issuedDateParsed),
     expirationDate: dateToISO(expirationDateParsed),
     fileUrl: doc.fileUrl ?? null,
     fileName: doc.fileName ?? doc.name ?? null,
     comments: doc.comment ?? doc.comments ?? null,
     status: normalizeStatus(doc.status),
+    allowIssuedDate: doc.hasIssuedDate ?? false,
+    allowExpirationDate: doc.hasExpirationDate ?? false,
+    allowUploadFile: doc.hasUploadFile ?? true,
+    allowDownloadFile: doc.hasDownloadFile ?? true,
+    allowStatus: doc.hasStatus ?? false,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   }
 }
 
 
-export async function getRequiredHRDocumentConfigs(): Promise<RequiredHRDocumentConfig[]> {
-  const query: QueryModel = {
-    page: 0,
-    pageSize: 100,
-    filters: ["documentCategory__EQ__HR__AND"],
-  }
 
-  const response = await serviceGet<PaginatedResponse<HRDocumentListItem>>(
-    `/document-config?${getQueryString(query)}`
-  )
-
-  if (response.status !== 200 || !response.data) {
-    throw new Error(response.data?.message || "Failed to fetch required HR document configs")
-  }
-
-  const paginatedData = response.data as unknown as PaginatedResponse<HRDocumentListItem>
-
-  if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
-    return []
-  }
-
-  return paginatedData.entities.map((item) => ({
-    id: item.id,
-    name: item.name,
-    allowIssuedDate: item.issuedDate,
-    allowExpirationDate: item.expirationDate,
-    allowUploadFile: item.uploadFile,
-    allowDownloadFile: item.downloadFile,
-    allowStatus: item.status,
-  }))
-}
 
 
 export async function getUserHRDocuments(
   memberUserId: string
 ): Promise<BackendUserHRDocument[]> {
-  const response = await serviceGet<any>(
+  const response = await serviceGet<{ documents: any[] }>(
     `/member-users/documents/${memberUserId}`
   )
 
@@ -92,22 +63,9 @@ export async function getUserHRDocuments(
     return []
   }
 
-  const responseData = response.data as unknown
-  let rawDocuments: any[] = []
+  const documents = response.data.documents || []
 
-  if (Array.isArray(responseData)) {
-    rawDocuments = responseData
-  } else if ((responseData as any)?.documents && Array.isArray((responseData as any).documents)) {
-
-    rawDocuments = (responseData as any).documents
-  } else if ((responseData as any)?.entities && Array.isArray((responseData as any).entities)) {
-
-    rawDocuments = (responseData as any).entities
-  }
-
-  return rawDocuments
-    .filter((doc) => doc.id != null)
-    .map(mapBackendDocument)
+  return documents.map(mapBackendDocument)
 }
 
 

@@ -17,7 +17,22 @@ export const generalInformationSchema = z.object({
   birthday: z
     .string()
     .trim()
-    .min(1, "Birthday is required"),
+    .min(1, "Birthday is required")
+    .refine(
+      (dateStr) => {
+        if (!dateStr) return false
+        const birthDate = new Date(dateStr)
+        const today = new Date()
+        const age = today.getFullYear() - birthDate.getFullYear()
+        const monthDiff = today.getMonth() - birthDate.getMonth()
+        const dayDiff = today.getDate() - birthDate.getDate()
+        
+        const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age
+        
+        return actualAge >= 18
+      },
+      { message: "You must be at least 18 years old" }
+    ),
   
   country: z
     .string()

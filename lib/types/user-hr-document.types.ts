@@ -52,6 +52,7 @@ export interface UserHRDocumentRow {
   allowExpirationDate: boolean
   allowUploadFile: boolean
   allowDownloadFile: boolean
+  allowStatus: boolean
 }
 
 export interface CreateUserHRDocumentDto {
@@ -99,16 +100,21 @@ export interface DeleteUserHRDocumentDto {
 
 
 export interface BackendUserHRDocument {
-  id: string
+  id: string | null
   memberUserId: string
   documentConfigId: string
+  documentConfigName: string
   issuedDate: string | null
   expirationDate: string | null
   fileUrl: string | null
   fileName: string | null
   comments: string | null
- 
   status?: UserHRDocumentStatus
+  allowIssuedDate: boolean
+  allowExpirationDate: boolean
+  allowUploadFile: boolean
+  allowDownloadFile: boolean
+  allowStatus: boolean
   createdAt?: string
   updatedAt?: string
 }
