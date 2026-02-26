@@ -5,12 +5,14 @@ import {
   FileText, Upload, X, AlertCircle, File,
   Plus, RefreshCw, Save, Loader2, Eye,
 } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { parseDate, dateToISO } from "@/lib/utils/date"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { Button } from "@/components/custom/Button"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import type { UserHRDocumentRow } from "@/lib/types/user-hr-document.types"
 import { getUserDocumentUrl } from "@/lib/modules/user-hr-documents/services/user-hr-documents.service"
 import { addMonths, addYears } from "date-fns"
@@ -495,7 +497,7 @@ export function RequiredDocumentUploadModal({
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <PremiumDatePicker
-              label={row.allowIssuedDate ? "Issued Date *" : "Issued Date"}
+              label="Issued Date"
               value={form.issuedDate}
               onChange={(val) => {
                 setForm((prev) => ({ ...prev, issuedDate: val, expirationDate: "" }))
@@ -503,7 +505,7 @@ export function RequiredDocumentUploadModal({
               }}
             />
             <PremiumDatePicker
-              label={row.allowExpirationDate ? "Expiration Date *" : "Expiration Date"}
+              label="Expiration Date"
               value={form.expirationDate}
               onChange={(val) => {
                 setForm((prev) => ({ ...prev, expirationDate: val }))

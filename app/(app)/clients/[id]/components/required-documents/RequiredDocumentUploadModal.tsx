@@ -5,12 +5,14 @@ import {
   FileText, Upload, X, AlertCircle, File,
   Plus, RefreshCw, Save, Loader2, Eye,
 } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { parseDate, dateToISO } from "@/lib/utils/date"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { Button } from "@/components/custom/Button"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import type { ClientDocumentRow } from "@/lib/types/client-document.types"
 import { getClientDocumentUrl } from "@/lib/modules/client-documents/services/client-documents.service"
 import { addMonths, addYears } from "date-fns"
@@ -120,6 +122,7 @@ interface FileZoneProps {
   onRemoveExisting: () => void
   onUploadAnother: () => void
   onFileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onViewDocument: () => void
 }
 
 function FileZone({
@@ -139,6 +142,7 @@ function FileZone({
   onRemoveExisting,
   onUploadAnother,
   onFileInputChange,
+  onViewDocument,
 }: FileZoneProps) {
   const hasExisting = Boolean(existingFileUrl) && !removeExistingFile
 
@@ -162,11 +166,7 @@ function FileZone({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                if (existingFileUrl) {
-                  window.open(existingFileUrl, '_blank', 'noopener,noreferrer')
-                }
-              }}
+              onClick={onViewDocument}
               className={cn(
                 "w-9 h-9 rounded-lg",
                 "flex items-center justify-center",
@@ -293,6 +293,7 @@ export function RequiredDocumentUploadModal({
   const [selectedQuickOffset, setSelectedQuickOffset] = useState<string | null>(null)
   const [fetchedFileUrl, setFetchedFileUrl] = useState<string | null>(null)
   const [loadingExistingFile, setLoadingExistingFile] = useState(false)
+  const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
 
   const [form, setForm] = useState<UploadModalFormState>({
     issuedDate: "",
@@ -389,6 +390,20 @@ export function RequiredDocumentUploadModal({
   const handleUploadAnother = useCallback(() => {
     fileInputRef.current?.click()
   }, [])
+
+  const handleViewDocument = useCallback(async () => {
+    if (!row?.clientDocumentId) return
+    try {
+      const url = await getClientDocumentUrl(row.clientDocumentId)
+      setViewerDocument({
+        url,
+        name: row.documentConfigName,
+      })
+    } catch (err) {
+      console.error("Error fetching document:", err)
+      toast.error(err instanceof Error ? err.message : "Failed to load document")
+    }
+  }, [row])
 
   // ---------------------------------------------------------------------------
   // Quick-date buttons
@@ -490,26 +505,29 @@ export function RequiredDocumentUploadModal({
           onRemoveExisting={handleRemoveExisting}
           onUploadAnother={handleUploadAnother}
           onFileInputChange={handleFileInputChange}
+          onViewDocument={handleViewDocument}
         />
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <PremiumDatePicker
-              label={row.allowIssuedDate ? "Issued Date *" : "Issued Date"}
+              label="Issued Date"
               value={form.issuedDate}
               onChange={(val) => {
                 setForm((prev) => ({ ...prev, issuedDate: val, expirationDate: "" }))
                 setSelectedQuickOffset(null)
               }}
+              required={row.allowIssuedDate}
             />
             <PremiumDatePicker
-              label={row.allowExpirationDate ? "Expiration Date *" : "Expiration Date"}
+              label="Expiration Date"
               value={form.expirationDate}
               onChange={(val) => {
                 setForm((prev) => ({ ...prev, expirationDate: val }))
                 const matchingOffset = detectQuickOffset(form.issuedDate, val)
                 setSelectedQuickOffset(matchingOffset)
               }}
+              required={row.allowExpirationDate}
             />
           </div>
 
@@ -580,6 +598,14 @@ export function RequiredDocumentUploadModal({
           </Button>
         </div>
       </div>
+      {viewerDocument && (
+        <DocumentViewer
+          open={!!viewerDocument}
+          onClose={() => setViewerDocument(null)}
+          documentUrl={viewerDocument.url}
+          fileName={viewerDocument.name}
+        />
+      )}
     </CustomModal>
   )
 }
