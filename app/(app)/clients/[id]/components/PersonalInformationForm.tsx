@@ -192,7 +192,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       <div>
                         <FloatingInput
                           label="Email"
-                          value={field.value}
+                          value={field.value || ""}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                           placeholder=" "
@@ -216,7 +216,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       <div>
                         <FloatingInput
                           label="Gender"
-                          value={field.value}
+                          value={field.value || ""}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                           placeholder=" "
@@ -238,7 +238,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       <div>
                         <FloatingInput
                           label="SSN"
-                          value={field.value}
+                          value={field.value || ""}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                           placeholder=" "

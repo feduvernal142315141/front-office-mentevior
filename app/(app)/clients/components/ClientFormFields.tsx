@@ -132,7 +132,7 @@ export function ClientFormFields({
                     <div>
                       <FloatingInput
                         label="Email"
-                        value={field.value}
+                        value={field.value || ""}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         placeholder=" "
@@ -156,7 +156,7 @@ export function ClientFormFields({
                     <div>
                       <FloatingInput
                         label="Gender"
-                        value={field.value}
+                        value={field.value || ""}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         placeholder=" "
@@ -178,7 +178,7 @@ export function ClientFormFields({
                     <div>
                       <FloatingInput
                         label="SSN"
-                        value={field.value}
+                        value={field.value || ""}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         placeholder=" "
