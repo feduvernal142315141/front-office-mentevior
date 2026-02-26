@@ -15,6 +15,7 @@ interface PremiumDatePickerProps {
   hasError?: boolean
   errorMessage?: string
   description?: string
+  required?: boolean
 }
 
 export function PremiumDatePicker({
@@ -25,6 +26,7 @@ export function PremiumDatePicker({
   hasError,
   errorMessage,
   description,
+  required = false,
 }: PremiumDatePickerProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -148,7 +150,7 @@ export function PremiumDatePicker({
                   : "text-[var(--color-login-text-muted)]"
               )}
             >
-              {label} <span className="text-[#2563EB]">*</span>
+              {label} {required && <span className="text-[#2563EB]">*</span>}
             </label>
             
             <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
