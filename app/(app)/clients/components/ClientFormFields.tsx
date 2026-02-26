@@ -2,45 +2,29 @@
 
 import { Controller, useFormContext } from "react-hook-form"
 import { FloatingInput } from "@/components/custom/FloatingInput"
-import { FilterSelect } from "@/components/custom/FilterSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
-import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
-import { User, Heart, FileText, UserCheck } from "lucide-react"
-import type { Insurance } from "@/lib/modules/clients/mocks/insurances.mock"
-
-interface RbtOption {
-  id: string
-  name: string
-}
+import { FilterSelect } from "@/components/custom/FilterSelect"
+import { User, FileText, Languages } from "lucide-react"
+import { useLanguagesCatalog } from "@/lib/modules/languages/hooks/use-languages-catalog"
 
 interface ClientFormFieldsProps {
   isEditing: boolean
-  insurances: Insurance[]
-  rbts: RbtOption[]
-  isLoadingRbts: boolean
   isSubmitting: boolean
   onCancel: () => void
 }
 
 export function ClientFormFields({
   isEditing,
-  insurances,
-  rbts,
-  isLoadingRbts,
   isSubmitting,
   onCancel,
 }: ClientFormFieldsProps) {
   const { control } = useFormContext()
-
-  const insuranceOptions = [
-    { value: "", label: "Select an insurance" },
-    ...insurances.map((ins) => ({ value: ins.id, label: ins.name })),
-  ]
-
-  const rbtOptions = [
-    { value: "", label: "No RBT assigned" },
-    ...rbts.map((rbt) => ({ value: rbt.id, label: rbt.name })),
+  const { languages, isLoading: isLoadingLanguages } = useLanguagesCatalog()
+  
+  const languageOptions = [
+    { value: "", label: "Select languages" },
+    ...languages.map((lang) => ({ value: lang.id, label: lang.name })),
   ]
 
   return (
@@ -141,25 +125,99 @@ export function ClientFormFields({
                   )}
                 />
 
-                {!isEditing && (
-                  <div className="md:col-span-2 lg:col-span-3">
-                    <Controller
-                      name="active"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50 max-w-md">
-                          <PremiumSwitch
-                            checked={field.value ?? true}
-                            onCheckedChange={field.onChange}
-                            label="Active Client"
-                            description="Set initial client status"
-                            variant="success"
-                          />
-                        </div>
+                <Controller
+                  name="email"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <FloatingInput
+                        label="Email"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder=" "
+                        type="email"
+                        hasError={!!fieldState.error}
+                        autoComplete="email"
+                      />
+                      {fieldState.error && (
+                        <p className="text-sm text-red-600 mt-2">
+                          {fieldState.error.message}
+                        </p>
                       )}
-                    />
-                  </div>
-                )}
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="gender"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <FloatingInput
+                        label="Gender"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder=" "
+                        hasError={!!fieldState.error}
+                      />
+                      {fieldState.error && (
+                        <p className="text-sm text-red-600 mt-2">
+                          {fieldState.error.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="ssn"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <FloatingInput
+                        label="SSN"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder=" "
+                        hasError={!!fieldState.error}
+                      />
+                      {fieldState.error && (
+                        <p className="text-sm text-red-600 mt-2">
+                          {fieldState.error.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="languages"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <div className="md:col-span-2 lg:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Languages
+                      </label>
+                      <FilterSelect
+                        value={field.value?.[0] || ""}
+                        onChange={(value) => field.onChange(value ? [value] : [])}
+                        options={languageOptions}
+                        placeholder="Select a language"
+                        className="w-full"
+                        fullWidth
+                        disabled={isLoadingLanguages}
+                      />
+                      {fieldState.error && (
+                        <p className="text-sm text-red-600 mt-2">
+                          {fieldState.error.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
               </div>
             </div>
 
@@ -175,14 +233,14 @@ export function ClientFormFields({
                     Clinical Information
                   </h3>
                   <p className="text-sm text-gray-600">
-                    {isEditing ? "Required clinical details" : "Optional - can be completed later"}
+                    Clinical details for the client
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Controller
-                  name="dateOfBirth"
+                  name="brithDate"
                   control={control}
                   render={({ field, fieldState }) => (
                     <PremiumDatePicker
@@ -208,30 +266,6 @@ export function ClientFormFields({
                         onBlur={field.onBlur}
                         placeholder=" "
                         hasError={!!fieldState.error}
-                        required={isEditing}
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="diagnosisCode"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <FloatingInput
-                        label="Diagnosis Code"
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        placeholder=" "
-                        hasError={!!fieldState.error}
-                        required={isEditing}
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">
@@ -243,200 +277,6 @@ export function ClientFormFields({
                 />
               </div>
             </div>
-
-            <div className="border-t border-gray-200" />
-
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <Heart className="w-5 h-5 text-green-700" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    Care Details
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {isEditing ? "Insurance and assigned therapist" : "Optional - can be assigned later"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Controller
-                  name="insuranceId"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Insurance {isEditing && <span className="text-[#2563EB]">*</span>}
-                      </label>
-                      <FilterSelect
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        options={insuranceOptions}
-                        placeholder="Select an insurance"
-                        className="w-full"
-                        fullWidth
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="rbtId"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Assigned RBT
-                      </label>
-                      <FilterSelect
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        options={rbtOptions}
-                        placeholder="Select an RBT"
-                        className="w-full"
-                        fullWidth
-                        disabled={isLoadingRbts}
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200" />
-
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-amber-50 rounded-lg">
-                  <FileText className="w-5 h-5 text-amber-700" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    Guardian Information
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Contact details for the client's guardian
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Controller
-                  name="guardianName"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <FloatingInput
-                        label="Guardian Name"
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        placeholder=" "
-                        hasError={!!fieldState.error}
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="guardianPhone"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <FloatingInput
-                        label="Guardian Phone"
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        placeholder=" "
-                        type="tel"
-                        hasError={!!fieldState.error}
-                        autoComplete="tel"
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="address"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <div className="md:col-span-2 lg:col-span-1">
-                      <FloatingInput
-                        label="Address"
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        placeholder=" "
-                        hasError={!!fieldState.error}
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-              </div>
-            </div>
-
-            {isEditing && (
-              <>
-                <div className="border-t border-gray-200" />
-                
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-sky-50 rounded-lg">
-                      <UserCheck className="w-5 h-5 text-sky-700" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-gray-900">
-                        Client Status
-                      </h3>
-                    </div>
-                  </div>
-
-                  <Controller
-                    name="active"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50 max-w-md">
-                        <PremiumSwitch
-                          checked={field.value ?? true}
-                          onCheckedChange={field.onChange}
-                          label="Active Client"
-                          description="Enable or disable client's active status"
-                          variant="success"
-                        />
-                      </div>
-                    )}
-                  />
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -445,7 +285,6 @@ export function ClientFormFields({
         isSubmitting={isSubmitting}
         onCancel={onCancel}
         submitText={isEditing ? "Update Client" : "Create Client"}
-        disabled={isLoadingRbts}
       />
     </>
   )

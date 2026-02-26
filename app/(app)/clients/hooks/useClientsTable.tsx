@@ -8,7 +8,6 @@ import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { ClientListItem } from "@/lib/types/client.types"
 import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
-import { buildFilters } from "@/lib/utils/query-filters"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
@@ -57,47 +56,20 @@ export function useClientsTable(): UseClientsTableReturn {
   const [rbtFilter, setRbtFilter] = useState<string>("all")
 
   const filtersArray = useMemo(() => {
-    const filters = []
+    const filters: string[] = []
     
     if (statusFilter === "active") {
-      filters.push({
-        field: "active",
-        value: true,
-        operator: "EQ",
-        type: "boolean" as const,
-      })
+      filters.push("status__EQ__true")
     } else if (statusFilter === "inactive") {
-      filters.push({
-        field: "active",
-        value: false,
-        operator: "EQ",
-        type: "boolean" as const,
-      })
+      filters.push("status__EQ__false")
     }
     
-    if (insuranceFilter !== "all") {
-      filters.push({
-        field: "insurance.name",
-        value: insuranceFilter,
-        operator: "RELATED_EQUAL",
-        type: "string" as const,
-      })
+    if (searchQuery) {
+      filters.push(`fullName__CONTAINS__${searchQuery}`)
     }
     
-    if (rbtFilter !== "all") {
-      filters.push({
-        field: "rbt.fullName",
-        value: rbtFilter,
-        operator: "RELATED_EQUAL",
-        type: "string" as const,
-      })
-    }
-    
-    return buildFilters(filters, {
-      fields: ["firstName", "lastName", "chartId"],
-      search: searchQuery,
-    })
-  }, [searchQuery, statusFilter, insuranceFilter, rbtFilter])
+    return filters
+  }, [searchQuery, statusFilter])
 
   const { clients, isLoading, error, totalCount, refetch } = useClients({
     page: page - 1,
@@ -133,19 +105,8 @@ export function useClientsTable(): UseClientsTableReturn {
     setPage(1)
   }
 
-  const uniqueInsurances = useMemo(() => {
-    const insurances = clients
-      .map((c) => c.insuranceName)
-      .filter((name) => name && name.trim() !== "")
-    return Array.from(new Set(insurances)).sort()
-  }, [clients])
-
-  const uniqueRBTs = useMemo(() => {
-    const rbts = clients
-      .map((c) => c.rbtName)
-      .filter((name) => name && name.trim() !== "")
-    return Array.from(new Set(rbts)).sort()
-  }, [clients])
+  const uniqueInsurances: string[] = []
+  const uniqueRBTs: string[] = []
 
   const columns: CustomTableColumn<ClientListItem>[] = useMemo(() => [
     {
@@ -168,12 +129,12 @@ export function useClientsTable(): UseClientsTableReturn {
         <Badge
           variant="outline"
           className={cn(
-            client.active
+            client.status
               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
               : "bg-slate-50 text-slate-600 border-slate-200"
           )}
         >
-          {client.active ? "Active" : "Inactive"}
+          {client.status ? "Active" : "Inactive"}
         </Badge>
       ),
     },
@@ -181,28 +142,7 @@ export function useClientsTable(): UseClientsTableReturn {
       key: "chartId",
       header: "Chart ID",
       render: (client) => (
-        <span className="text-sm text-slate-700 font-mono">{client.chartId}</span>
-      ),
-    },
-    {
-      key: "diagnosisCode",
-      header: "Diagnosis Code",
-      render: (client) => (
-        <span className="text-sm text-slate-700 font-mono">{client.diagnosisCode}</span>
-      ),
-    },
-    {
-      key: "insurance",
-      header: "Insurance",
-      render: (client) => (
-        <span className="text-sm text-slate-700">{client.insuranceName || "—"}</span>
-      ),
-    },
-    {
-      key: "rbt",
-      header: "RBT",
-      render: (client) => (
-        <span className="text-sm text-slate-700">{client.rbtName || "—"}</span>
+        <span className="text-sm text-slate-700 font-mono">{client.chartId || "—"}</span>
       ),
     },
     {

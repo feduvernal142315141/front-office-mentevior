@@ -5,41 +5,47 @@ import type {
   CreateClientDto,
   UpdateClientDto,
 } from "@/lib/types/client.types"
-import {
-  filterMockClients,
-  getMockClientById,
-  paginateMockClients,
-} from "../mocks/clients.mock"
+import apiInstance from "@/lib/services/apiConfig"
+
+interface PaginatedResponse<T> {
+  entities: T[]
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+  }
+}
 
 export async function getClients(query: QueryModel): Promise<{
   clients: ClientListItem[]
   totalCount: number
 }> {
-  const search = query.filters?.find((f) => f.includes("fullName__CONTAINS"))?.split("__")[2]
-  const activeFilter = query.filters?.find((f) => f.includes("active__EQ"))
-  const active = activeFilter ? activeFilter.split("__")[2] === "true" : undefined
-  const insuranceFilter = query.filters?.find((f) => f.includes("insuranceName__EQ"))
-  const insurance = insuranceFilter ? insuranceFilter.split("__")[2] : undefined
-  const rbtFilter = query.filters?.find((f) => f.includes("rbtName__EQ"))
-  const rbt = rbtFilter ? rbtFilter.split("__")[2] : undefined
-
-  const filtered = filterMockClients({ search, active, insurance, rbt })
-  const paginated = paginateMockClients(filtered, query.page || 0, query.pageSize || 10)
-
-  return paginated
+  const response = await apiInstance.get<PaginatedResponse<ClientListItem>>("/client", {
+    params: {
+      page: query.page,
+      pageSize: query.pageSize,
+      filters: query.filters,
+      orders: query.orders,
+    },
+  })
+  
+  return {
+    clients: response.data.entities,
+    totalCount: response.data.pagination.total,
+  }
 }
 
 export async function getClientById(clientId: string): Promise<Client | null> {
-  const client = getMockClientById(clientId)
-  return client || null
+  const response = await apiInstance.get<Client>(`/client/${clientId}`)
+  return response.data
 }
 
 export async function createClient(data: CreateClientDto): Promise<string> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  return `client-${Date.now()}`
+  const response = await apiInstance.post<{ id: string }>("/client", data)
+  return response.data.id
 }
 
-export async function updateClient(data: UpdateClientDto): Promise<boolean> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
+export async function updateClient(id: string, data: UpdateClientDto): Promise<boolean> {
+  await apiInstance.put("/client", { ...data, id })
   return true
 }

@@ -13,9 +13,6 @@ export function ClientForm({ clientId = null }: ClientFormProps) {
   const {
     form,
     isEditing,
-    insurances,
-    rbts,
-    isLoadingRbts,
     isLoadingClient,
     onSubmit,
     isSubmitting,
@@ -31,9 +28,6 @@ export function ClientForm({ clientId = null }: ClientFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
         <ClientFormFields
           isEditing={isEditing}
-          insurances={insurances}
-          rbts={rbts}
-          isLoadingRbts={isLoadingRbts}
           isSubmitting={isSubmitting}
           onCancel={actions.goToList}
         />

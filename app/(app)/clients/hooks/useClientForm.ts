@@ -6,15 +6,12 @@ import { useCreateClient } from "@/lib/modules/clients/hooks/use-create-client"
 import { useUpdateClient } from "@/lib/modules/clients/hooks/use-update-client"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { 
-  clientCreateFormSchema, 
-  clientEditFormSchema, 
+  clientFormSchema, 
   getClientFormDefaults, 
   type ClientFormValues 
 } from "@/lib/schemas/client-form.schema"
 import type { CreateClientDto, UpdateClientDto } from "@/lib/types/client.types"
 import { isoToLocalDate } from "@/lib/date"
-import { getMockInsurances, type Insurance } from "@/lib/modules/clients/mocks/insurances.mock"
-import { useUsers } from "@/lib/modules/users/hooks/use-users"
 
 interface UseClientFormProps {
   clientId?: string | null
@@ -25,9 +22,6 @@ interface UseClientFormReturn {
   
   mode: "create" | "edit"
   isEditing: boolean
-  insurances: Insurance[]
-  rbts: Array<{ id: string; name: string }>
-  isLoadingRbts: boolean
   isLoadingClient: boolean
   client: any
   
@@ -47,43 +41,26 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
   const { create, isLoading: isCreating } = useCreateClient()
   const { update, isLoading: isUpdating } = useUpdateClient()
   const { client, isLoading: isLoadingClient } = useClientById(clientId)
-  
-  const { users, isLoading: isLoadingUsers } = useUsers({
-    page: 0,
-    pageSize: 1000,
-    filters: [],
-  })
 
-  const rbts = users
-    .filter((u) => u.roleName?.toLowerCase().includes("rbt"))
-    .map((u) => ({
-      id: u.id,
-      name: u.fullName,
-    }))
-
-  const insurances = getMockInsurances()
   const isSubmitting = isCreating || isUpdating
 
   const form = useForm<ClientFormValues>({
-    resolver: zodResolver(isEditing ? clientEditFormSchema : clientCreateFormSchema),
+    resolver: zodResolver(clientFormSchema),
     defaultValues: getClientFormDefaults(),
   })
   
   useEffect(() => {
     if (client && isEditing) {
       form.reset({
-        firstName: client.firstName,
-        lastName: client.lastName,
-        phoneNumber: client.phoneNumber,
+        firstName: client.firstName || "",
+        lastName: client.lastName || "",
+        phoneNumber: client.phoneNumber || "",
         chartId: client.chartId || "",
-        diagnosisCode: client.diagnosisCode || "",
-        insuranceId: client.insuranceId || "",
-        rbtId: client.rbtId || "",
-        dateOfBirth: client.dateOfBirth ? isoToLocalDate(client.dateOfBirth) : "",
-        guardianName: client.guardianName || "",
-        guardianPhone: client.guardianPhone || "",
-        address: client.address || "",
-        active: client.active ?? true,
+        brithDate: client.brithDate ? isoToLocalDate(client.brithDate) : "",
+        languages: client.languages?.map(l => l.id) || [],
+        gender: client.gender || "",
+        email: client.email || "",
+        ssn: client.ssn || "",
       })
     }
   }, [client, isEditing, form])
@@ -96,17 +73,14 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         lastName: data.lastName,
         phoneNumber: data.phoneNumber,
         chartId: data.chartId || undefined,
-        diagnosisCode: data.diagnosisCode || undefined,
-        insuranceId: data.insuranceId || undefined,
-        rbtId: data.rbtId || undefined,
-        dateOfBirth: data.dateOfBirth || undefined,
-        guardianName: data.guardianName || undefined,
-        guardianPhone: data.guardianPhone || undefined,
-        address: data.address || undefined,
-        active: data.active,
+        brithDate: data.brithDate || undefined,
+        languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
+        gender: data.gender || undefined,
+        email: data.email || undefined,
+        ssn: data.ssn || undefined,
       }
       
-      const result = await update(dto)
+      const result = await update(clientId, dto)
       
       if (result) {
         setTimeout(() => {
@@ -118,15 +92,12 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         firstName: data.firstName,
         lastName: data.lastName,
         phoneNumber: data.phoneNumber,
-        active: data.active,
         chartId: data.chartId || undefined,
-        diagnosisCode: data.diagnosisCode || undefined,
-        insuranceId: data.insuranceId || undefined,
-        rbtId: data.rbtId || undefined,
-        dateOfBirth: data.dateOfBirth || undefined,
-        guardianName: data.guardianName || undefined,
-        guardianPhone: data.guardianPhone || undefined,
-        address: data.address || undefined,
+        brithDate: data.brithDate || undefined,
+        languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
+        gender: data.gender || undefined,
+        email: data.email || undefined,
+        ssn: data.ssn || undefined,
       }
       
       const result = await create(dto)
@@ -149,9 +120,6 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
     form,
     mode,
     isEditing,
-    insurances,
-    rbts,
-    isLoadingRbts: isLoadingUsers,
     isLoadingClient,
     client,
     onSubmit,
