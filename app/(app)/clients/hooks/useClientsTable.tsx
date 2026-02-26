@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Edit2, UserSquare2 } from "lucide-react"
+import { Edit2, Sliders } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { ClientListItem } from "@/lib/types/client.types"
 import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
+import { FilterOperator } from "@/lib/models/filterOperator"
 
 type StatusFilter = "all" | "active" | "inactive"
 
@@ -24,10 +26,6 @@ interface UseClientsTableReturn {
     setSearchQuery: (value: string) => void
     statusFilter: StatusFilter
     setStatusFilter: (value: StatusFilter) => void
-    insuranceFilter: string
-    setInsuranceFilter: (value: string) => void
-    rbtFilter: string
-    setRbtFilter: (value: string) => void
   }
   pagination: {
     page: number
@@ -36,8 +34,6 @@ interface UseClientsTableReturn {
     onPageChange: (page: number) => void
     onPageSizeChange: (pageSize: number) => void
   }
-  uniqueInsurances: string[]
-  uniqueRBTs: string[]
   totalCount: number
   filteredCount: number
   clearFilters: () => void
@@ -52,23 +48,33 @@ export function useClientsTable(): UseClientsTableReturn {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
-  const [insuranceFilter, setInsuranceFilter] = useState<string>("all")
-  const [rbtFilter, setRbtFilter] = useState<string>("all")
 
   const filtersArray = useMemo(() => {
-    const filters: string[] = []
+    const filters: FilterRule[] = []
     
     if (statusFilter === "active") {
-      filters.push("status__EQ__true")
+      filters.push({
+        field: "active",
+        value: true,
+        operator: FilterOperator.eq,
+        type: "boolean" as const,
+      })
     } else if (statusFilter === "inactive") {
-      filters.push("status__EQ__false")
+      filters.push({
+        field: "active",
+        value: false,
+        operator: FilterOperator.eq,
+        type: "boolean" as const,
+      })
     }
     
-    if (searchQuery) {
-      filters.push(`fullName__CONTAINS__${searchQuery}`)
-    }
-    
-    return filters
+    return buildFilters(
+      filters,
+      {
+        fields: ["firstName", "lastName"],
+        search: searchQuery,
+      }
+    )
   }, [searchQuery, statusFilter])
 
   const { clients, isLoading, error, totalCount, refetch } = useClients({
@@ -79,7 +85,7 @@ export function useClientsTable(): UseClientsTableReturn {
 
   useEffect(() => {
     refetch({ page: page - 1, pageSize, filters: filtersArray })
-  }, [searchQuery, page, pageSize, statusFilter, insuranceFilter, rbtFilter])
+  }, [searchQuery, page, pageSize, statusFilter, filtersArray])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
@@ -91,8 +97,6 @@ export function useClientsTable(): UseClientsTableReturn {
     setSearchQuery("")
     setInputValue("")
     setStatusFilter("all")
-    setInsuranceFilter("all")
-    setRbtFilter("all")
     setPage(1)
   }
   
@@ -104,9 +108,6 @@ export function useClientsTable(): UseClientsTableReturn {
     setPageSize(newPageSize)
     setPage(1)
   }
-
-  const uniqueInsurances: string[] = []
-  const uniqueRBTs: string[] = []
 
   const columns: CustomTableColumn<ClientListItem>[] = useMemo(() => [
     {
@@ -156,18 +157,18 @@ export function useClientsTable(): UseClientsTableReturn {
             className={cn(
               "group/profile relative h-9 w-9",
               "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-purple-50 to-purple-100/80",
-              "border border-purple-200/60 shadow-sm shadow-purple-900/5",
-              "hover:from-purple-100 hover:to-purple-200/90",
-              "hover:border-purple-300/80 hover:shadow-md hover:shadow-purple-900/10",
+              "bg-gradient-to-b from-slate-50 to-slate-100/80",
+              "border border-slate-200/70 shadow-sm shadow-slate-900/5",
+              "hover:from-slate-100 hover:to-slate-200/90",
+              "hover:border-slate-300/80 hover:shadow-md hover:shadow-slate-900/10",
               "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
               "transition-all duration-200 ease-out",
-              "focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:ring-offset-2"
+              "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:ring-offset-2"
             )}
             title="View profile"
             aria-label="View profile"
           >
-            <UserSquare2 className="w-4 h-4 text-purple-600 group-hover/profile:text-purple-700 transition-colors duration-200" />
+            <Sliders className="w-4 h-4 text-slate-600 group-hover/profile:text-[#037ECC] transition-colors duration-200" />
           </button>
           <button
             onClick={() => router.push(`/clients/${client.id}/edit`)}
@@ -203,10 +204,6 @@ export function useClientsTable(): UseClientsTableReturn {
       setSearchQuery: handleSearchChange,
       statusFilter,
       setStatusFilter,
-      insuranceFilter,
-      setInsuranceFilter,
-      rbtFilter,
-      setRbtFilter,
     },
     pagination: {
       page,
@@ -215,8 +212,6 @@ export function useClientsTable(): UseClientsTableReturn {
       onPageChange: handlePageChange,
       onPageSizeChange: handlePageSizeChange,
     },
-    uniqueInsurances,
-    uniqueRBTs,
     totalCount,
     filteredCount: clients.length,
     clearFilters,

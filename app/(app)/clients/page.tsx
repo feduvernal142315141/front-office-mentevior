@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Users, Plus } from "lucide-react"
+import { UserCog, Plus } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { ClientsTable } from "./components/ClientsTable"
 
@@ -12,7 +12,7 @@ export default function ClientsPage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
-              <Users className="h-8 w-8 text-[#037ECC]" />
+              <UserCog className="h-8 w-8 text-[#037ECC]" />
             </div>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">

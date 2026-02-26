@@ -15,8 +15,6 @@ export function ClientsTable() {
     error,
     filters,
     pagination,
-    uniqueInsurances,
-    uniqueRBTs,
     clearFilters,
   } = useClientsTable()
 
@@ -29,7 +27,7 @@ export function ClientsTable() {
     )
   }
 
-  const hasFilters = filters.searchQuery || filters.statusFilter !== "all" || filters.insuranceFilter !== "all" || filters.rbtFilter !== "all"
+  const hasFilters = filters.searchQuery || filters.statusFilter !== "all"
 
   return (
     <div className="space-y-4">
@@ -39,7 +37,7 @@ export function ClientsTable() {
             <SearchInput
               value={filters.inputValue}
               onChange={filters.setSearchQuery}
-              placeholder="Search by name or chart ID..."
+              placeholder="Search by name."
               onClear={clearFilters}
             />
           </div>
@@ -52,30 +50,7 @@ export function ClientsTable() {
               { value: "active", label: "Active" },
               { value: "inactive", label: "Inactive" },
             ]}
-          />
-
-          <FilterSelect
-            value={filters.insuranceFilter}
-            onChange={filters.setInsuranceFilter}
-            options={[
-              { value: "all", label: "All Insurances" },
-              ...uniqueInsurances.map((insurance) => ({
-                value: insurance,
-                label: insurance,
-              })),
-            ]}
-          />
-
-          <FilterSelect
-            value={filters.rbtFilter}
-            onChange={filters.setRbtFilter}
-            options={[
-              { value: "all", label: "All RBTs" },
-              ...uniqueRBTs.map((rbt) => ({
-                value: rbt,
-                label: rbt,
-              })),
-            ]}
+            placeholder="Status"
           />
 
           {hasFilters && (

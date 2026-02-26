@@ -17,6 +17,7 @@ import {
 import { Card } from "@/components/custom/Card"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { PersonalInformationOverview } from "../components/PersonalInformationOverview"
+import { RequiredDocumentsOverview } from "../components/required-documents/RequiredDocumentsOverview"
 
 interface ClientProfilePageProps {
   params: Promise<{
@@ -147,11 +148,11 @@ export default function ClientProfilePage({ params }: ClientProfilePageProps) {
       icon: <FileText className="w-4 h-4" />,
       badge: documentsAlertCount > 0 ? documentsAlertCount : undefined,
       content: (
-        <div className="p-8 text-center text-slate-500">
-          <FileText className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-          <p className="font-medium">Required Documents</p>
-          <p className="text-sm mt-1">Coming soon - SCRUM-130</p>
-        </div>
+        <RequiredDocumentsOverview
+          isActive={activeTab === "documents"}
+          clientId={id}
+          onAlertCountChange={handleDocumentsAlertChange}
+        />
       ),
     },
   ]
