@@ -3,11 +3,6 @@ export interface Language {
   name: string
 }
 
-export interface Gender {
-  id: string
-  name: string
-}
-
 export interface Client {
   id: string
   firstName: string
@@ -15,7 +10,7 @@ export interface Client {
   phoneNumber: string
   brithDate?: string
   languages?: Language[]
-  gender?: Gender
+  genderId?: string
   email?: string
   ssn?: string
   chartId?: string

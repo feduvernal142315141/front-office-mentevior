@@ -59,7 +59,7 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         chartId: client.chartId || "",
         brithDate: client.brithDate ? isoToLocalDate(client.brithDate) : "",
         languages: client.languages?.map(l => l.id) || [],
-        genderId: client.gender?.id || "",
+        genderId: client.genderId || "",
         email: client.email || "",
         ssn: client.ssn || "",
       })
