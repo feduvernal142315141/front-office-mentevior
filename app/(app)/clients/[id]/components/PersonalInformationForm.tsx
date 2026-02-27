@@ -12,7 +12,7 @@ import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useUpdateClient } from "@/lib/modules/clients/hooks/use-update-client"
 import { 
-  clientFormSchema, 
+  clientEditFormSchema, 
   type ClientFormValues 
 } from "@/lib/schemas/client-form.schema"
 import type { Client, UpdateClientDto } from "@/lib/types/client.types"
@@ -27,6 +27,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
   const router = useRouter()
   const { update, isLoading: isUpdating } = useUpdateClient()
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isEditingSSN, setIsEditingSSN] = useState(false)
   const { languages, isLoading: isLoadingLanguages } = useLanguagesCatalog()
 
   const languageOptions = languages.map((lang) => ({ 
@@ -35,7 +36,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
   }))
 
   const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
+    resolver: zodResolver(clientEditFormSchema),
     defaultValues: {
       firstName: client.firstName || "",
       lastName: client.lastName || "",
@@ -180,6 +181,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                           type="email"
                           hasError={!!fieldState.error}
                           autoComplete="email"
+                          required
                         />
                         {fieldState.error && (
                           <p className="text-sm text-red-600 mt-2">
@@ -202,6 +204,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                           onBlur={field.onBlur}
                           placeholder=" "
                           hasError={!!fieldState.error}
+                          required
                         />
                         {fieldState.error && (
                           <p className="text-sm text-red-600 mt-2">
@@ -215,23 +218,58 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                   <Controller
                     name="ssn"
                     control={form.control}
-                    render={({ field, fieldState }) => (
-                      <div>
-                        <FloatingInput
-                          label="SSN"
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          placeholder=" "
-                          hasError={!!fieldState.error}
-                        />
-                        {fieldState.error && (
-                          <p className="text-sm text-red-600 mt-2">
-                            {fieldState.error.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                    render={({ field, fieldState }) => {
+                      // Get clean SSN (only digits)
+                      const cleanSSN = (field.value || "").replace(/\D/g, "")
+                      
+                      // Display value based on editing state and SSN length
+                      let displayValue = cleanSSN
+                      
+                      if (!isEditingSSN) {
+                        if (cleanSSN.length === 9) {
+                          // Full SSN: show xxx-xx-4444
+                          displayValue = `xxx-xx-${cleanSSN.slice(5)}`
+                        } else if (cleanSSN.length === 4) {
+                          // Partial SSN (last 4 from backend): show xxx-xx-4444
+                          displayValue = `xxx-xx-${cleanSSN}`
+                        } else {
+                          // Unknown length: show as is
+                          displayValue = field.value || ""
+                        }
+                      }
+
+                      return (
+                        <div 
+                          data-field="ssn"
+                          onFocus={() => setIsEditingSSN(true)}
+                          onBlur={() => setIsEditingSSN(false)}
+                        >
+                          <FloatingInput
+                            label="Social Security Number (SSN)"
+                            name="ssn"
+                            value={displayValue}
+                            onChange={(value) => {
+                              // When user starts typing, switch to edit mode and accept only digits
+                              const digits = value.replace(/\D/g, "").slice(0, 9)
+                              field.onChange(digits)
+                            }}
+                            onBlur={() => {
+                              field.onBlur()
+                            }}
+                            placeholder="XXX-XX-XXXX"
+                            hasError={!!fieldState.error}
+                            type="text"
+                            maxLength={isEditingSSN ? 9 : 11}
+                            required
+                          />
+                          {fieldState.error && (
+                            <p className="text-sm text-red-600 mt-2">
+                              {fieldState.error.message}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    }}
                   />
 
               <Controller
@@ -245,6 +283,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                     onBlur={field.onBlur}
                     hasError={!!fieldState.error}
                     errorMessage={fieldState.error?.message}
+                    required
                   />
                 )}
               />
@@ -261,6 +300,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       onBlur={field.onBlur}
                       placeholder=" "
                       hasError={!!fieldState.error}
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">
@@ -285,6 +325,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       hasError={!!fieldState.error}
                       disabled={isLoadingLanguages}
                       searchable
+                      required
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">

@@ -13,8 +13,6 @@ import { cn } from "@/lib/utils"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 
-type StatusFilter = "all" | "active" | "inactive"
-
 interface UseClientsTableReturn {
   data: ClientListItem[]
   columns: CustomTableColumn<ClientListItem>[]
@@ -24,8 +22,6 @@ interface UseClientsTableReturn {
     inputValue: string
     searchQuery: string
     setSearchQuery: (value: string) => void
-    statusFilter: StatusFilter
-    setStatusFilter: (value: StatusFilter) => void
   }
   pagination: {
     page: number
@@ -47,35 +43,16 @@ export function useClientsTable(): UseClientsTableReturn {
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
 
   const filtersArray = useMemo(() => {
-    const filters: FilterRule[] = []
-    
-    if (statusFilter === "active") {
-      filters.push({
-        field: "active",
-        value: true,
-        operator: FilterOperator.eq,
-        type: "boolean" as const,
-      })
-    } else if (statusFilter === "inactive") {
-      filters.push({
-        field: "active",
-        value: false,
-        operator: FilterOperator.eq,
-        type: "boolean" as const,
-      })
-    }
-    
     return buildFilters(
-      filters,
+      [],
       {
         fields: ["firstName", "lastName"],
         search: searchQuery,
       }
     )
-  }, [searchQuery, statusFilter])
+  }, [searchQuery])
 
   const { clients, isLoading, error, totalCount, refetch } = useClients({
     page: page - 1,
@@ -85,7 +62,7 @@ export function useClientsTable(): UseClientsTableReturn {
 
   useEffect(() => {
     refetch({ page: page - 1, pageSize, filters: filtersArray })
-  }, [searchQuery, page, pageSize, statusFilter, filtersArray])
+  }, [searchQuery, page, pageSize, filtersArray])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
@@ -96,7 +73,6 @@ export function useClientsTable(): UseClientsTableReturn {
   const clearFilters = () => {
     setSearchQuery("")
     setInputValue("")
-    setStatusFilter("all")
     setPage(1)
   }
   
@@ -202,8 +178,6 @@ export function useClientsTable(): UseClientsTableReturn {
       inputValue,
       searchQuery,
       setSearchQuery: handleSearchChange,
-      statusFilter,
-      setStatusFilter,
     },
     pagination: {
       page,

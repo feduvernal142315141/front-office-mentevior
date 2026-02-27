@@ -1,10 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { FloatingInput } from "@/components/custom/FloatingInput"
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
-import { FilterSelect } from "@/components/custom/FilterSelect"
 import { User, FileText, Languages } from "lucide-react"
 import { useLanguagesCatalog } from "@/lib/modules/languages/hooks/use-languages-catalog"
 
@@ -21,9 +22,9 @@ export function ClientFormFields({
 }: ClientFormFieldsProps) {
   const { control } = useFormContext()
   const { languages, isLoading: isLoadingLanguages } = useLanguagesCatalog()
+  const [isEditingSSN, setIsEditingSSN] = useState(false)
   
   const languageOptions = [
-    { value: "", label: "Select languages" },
     ...languages.map((lang) => ({ value: lang.id, label: lang.name })),
   ]
 
@@ -139,6 +140,7 @@ export function ClientFormFields({
                         type="email"
                         hasError={!!fieldState.error}
                         autoComplete="email"
+                        required={isEditing}
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">
@@ -161,6 +163,7 @@ export function ClientFormFields({
                         onBlur={field.onBlur}
                         placeholder=" "
                         hasError={!!fieldState.error}
+                        required={isEditing}
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">
@@ -174,41 +177,75 @@ export function ClientFormFields({
                 <Controller
                   name="ssn"
                   control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <FloatingInput
-                        label="SSN"
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        placeholder=" "
-                        hasError={!!fieldState.error}
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  render={({ field, fieldState }) => {
+                    // Get clean SSN (only digits)
+                    const cleanSSN = (field.value || "").replace(/\D/g, "")
+                    
+                    // Display value based on editing state and SSN length
+                    let displayValue = cleanSSN
+                    
+                    if (!isEditingSSN) {
+                      if (cleanSSN.length === 9) {
+                        // Full SSN: show xxx-xx-4444
+                        displayValue = `xxx-xx-${cleanSSN.slice(5)}`
+                      } else if (cleanSSN.length === 4) {
+                        // Partial SSN (last 4 from backend): show xxx-xx-4444
+                        displayValue = `xxx-xx-${cleanSSN}`
+                      } else {
+                        // Unknown length: show as is
+                        displayValue = field.value || ""
+                      }
+                    }
+
+                    return (
+                      <div 
+                        data-field="ssn"
+                        onFocus={() => setIsEditingSSN(true)}
+                        onBlur={() => setIsEditingSSN(false)}
+                      >
+                        <FloatingInput
+                          label="Social Security Number (SSN)"
+                          name="ssn"
+                          value={displayValue}
+                          onChange={(value) => {
+                            // When user starts typing, switch to edit mode and accept only digits
+                            const digits = value.replace(/\D/g, "").slice(0, 9)
+                            field.onChange(digits)
+                          }}
+                          onBlur={() => {
+                            field.onBlur()
+                          }}
+                          placeholder="XXX-XX-XXXX"
+                          hasError={!!fieldState.error}
+                          type="text"
+                          maxLength={isEditingSSN ? 9 : 11}
+                          required={isEditing}
+                        />
+                        {fieldState.error && (
+                          <p className="text-sm text-red-600 mt-2">
+                            {fieldState.error.message}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  }}
                 />
 
                 <Controller
                   name="languages"
                   control={control}
                   render={({ field, fieldState }) => (
-                    <div className="md:col-span-2 lg:col-span-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Languages
-                      </label>
-                      <FilterSelect
+                    <div>
+                      <FloatingSelect
+                        label="Languages"
                         value={field.value?.[0] || ""}
-                        onChange={(value) => field.onChange(value ? [value] : [])}
+                        onChange={(value: string) => field.onChange(value ? [value] : [])}
+                        onBlur={field.onBlur}
                         options={languageOptions}
-                        placeholder="Select a language"
-                        className="w-full"
-                        fullWidth
+                        hasError={!!fieldState.error}
                         disabled={isLoadingLanguages}
+                        searchable
+                        required={isEditing}
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">
@@ -250,6 +287,7 @@ export function ClientFormFields({
                       onBlur={field.onBlur}
                       hasError={!!fieldState.error}
                       errorMessage={fieldState.error?.message}
+                      required={isEditing}
                     />
                   )}
                 />
@@ -266,6 +304,7 @@ export function ClientFormFields({
                         onBlur={field.onBlur}
                         placeholder=" "
                         hasError={!!fieldState.error}
+                        required={isEditing}
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">

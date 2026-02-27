@@ -3,7 +3,6 @@
 import { useClientsTable } from "../hooks/useClientsTable"
 import { CustomTable } from "@/components/custom/CustomTable"
 import { SearchInput } from "@/components/custom/SearchInput"
-import { FilterSelect } from "@/components/custom/FilterSelect"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 
@@ -27,7 +26,7 @@ export function ClientsTable() {
     )
   }
 
-  const hasFilters = filters.searchQuery || filters.statusFilter !== "all"
+  const hasFilters = filters.searchQuery
 
   return (
     <div className="space-y-4">
@@ -41,17 +40,6 @@ export function ClientsTable() {
               onClear={clearFilters}
             />
           </div>
-
-          <FilterSelect
-            value={filters.statusFilter}
-            onChange={(value) => filters.setStatusFilter(value as "all" | "active" | "inactive")}
-            options={[
-              { value: "all", label: "All Status" },
-              { value: "active", label: "Active" },
-              { value: "inactive", label: "Inactive" },
-            ]}
-            placeholder="Status"
-          />
 
           {hasFilters && (
             <Button variant="ghost" onClick={clearFilters} className="whitespace-nowrap h-[52px] 2xl:h-[56px]">

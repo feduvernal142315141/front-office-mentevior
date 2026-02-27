@@ -6,7 +6,8 @@ import { useCreateClient } from "@/lib/modules/clients/hooks/use-create-client"
 import { useUpdateClient } from "@/lib/modules/clients/hooks/use-update-client"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { 
-  clientFormSchema, 
+  clientCreateFormSchema,
+  clientEditFormSchema,
   getClientFormDefaults, 
   type ClientFormValues 
 } from "@/lib/schemas/client-form.schema"
@@ -45,7 +46,7 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
   const isSubmitting = isCreating || isUpdating
 
   const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
+    resolver: zodResolver(isEditing ? clientEditFormSchema : clientCreateFormSchema),
     defaultValues: getClientFormDefaults(),
   })
   
