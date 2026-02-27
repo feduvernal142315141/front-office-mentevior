@@ -15,7 +15,7 @@ export const clientCreateFormSchema = z.object({
   chartId: z.string().max(50).optional().or(z.literal("")),
   brithDate: z.string().optional().or(z.literal("")),
   languages: z.array(z.string()).optional(),
-  gender: z.string().max(50).optional().or(z.literal("")),
+  genderId: z.string().max(50).optional().or(z.literal("")),
   email: z.string().max(100).regex(emailRegex, "Invalid email format").optional().or(z.literal("")),
   ssn: z
     .string()
@@ -36,7 +36,7 @@ export const clientEditFormSchema = z.object({
   chartId: z.string().min(1, "Chart ID is required").max(50),
   brithDate: z.string().min(1, "Date of birth is required"),
   languages: z.array(z.string()).min(1, "At least one language is required"),
-  gender: z.string().min(1, "Gender is required").max(50),
+  genderId: z.string().min(1, "Gender is required").max(50),
   email: z.string().min(1, "Email is required").max(100).regex(emailRegex, "Invalid email format"),
   ssn: z
     .string()
@@ -56,7 +56,7 @@ export const getClientFormDefaults = (): ClientFormValues => ({
   chartId: "",
   brithDate: "",
   languages: [],
-  gender: "",
+  genderId: "",
   email: "",
   ssn: "",
 })

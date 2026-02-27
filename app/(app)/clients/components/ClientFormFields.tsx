@@ -8,6 +8,7 @@ import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { User, FileText, Languages } from "lucide-react"
 import { useLanguagesCatalog } from "@/lib/modules/languages/hooks/use-languages-catalog"
+import { useGenderCatalog } from "@/lib/modules/gender/hooks/use-gender-catalog"
 
 interface ClientFormFieldsProps {
   isEditing: boolean
@@ -22,10 +23,15 @@ export function ClientFormFields({
 }: ClientFormFieldsProps) {
   const { control } = useFormContext()
   const { languages, isLoading: isLoadingLanguages } = useLanguagesCatalog()
+  const { genders, isLoading: isLoadingGenders } = useGenderCatalog()
   const [isEditingSSN, setIsEditingSSN] = useState(false)
   
   const languageOptions = [
     ...languages.map((lang) => ({ value: lang.id, label: lang.name })),
+  ]
+
+  const genderOptions = [
+    ...genders.map((gender) => ({ value: gender.id, label: gender.name })),
   ]
 
   return (
@@ -152,17 +158,18 @@ export function ClientFormFields({
                 />
 
                 <Controller
-                  name="gender"
+                  name="genderId"
                   control={control}
                   render={({ field, fieldState }) => (
                     <div>
-                      <FloatingInput
+                      <FloatingSelect
                         label="Gender"
                         value={field.value || ""}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
-                        placeholder=" "
+                        options={genderOptions}
                         hasError={!!fieldState.error}
+                        disabled={isLoadingGenders}
                         required={isEditing}
                       />
                       {fieldState.error && (

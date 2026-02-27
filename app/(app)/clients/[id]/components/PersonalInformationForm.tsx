@@ -17,6 +17,7 @@ import {
 } from "@/lib/schemas/client-form.schema"
 import type { Client, UpdateClientDto } from "@/lib/types/client.types"
 import { useLanguagesCatalog } from "@/lib/modules/languages/hooks/use-languages-catalog"
+import { useGenderCatalog } from "@/lib/modules/gender/hooks/use-gender-catalog"
 import { isoToLocalDate } from "@/lib/date"
 
 interface PersonalInformationFormProps {
@@ -29,10 +30,16 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isEditingSSN, setIsEditingSSN] = useState(false)
   const { languages, isLoading: isLoadingLanguages } = useLanguagesCatalog()
+  const { genders, isLoading: isLoadingGenders } = useGenderCatalog()
 
   const languageOptions = languages.map((lang) => ({ 
     value: lang.id, 
     label: lang.name 
+  }))
+
+  const genderOptions = genders.map((gender) => ({ 
+    value: gender.id, 
+    label: gender.name 
   }))
 
   const form = useForm<ClientFormValues>({
@@ -44,7 +51,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
       chartId: client.chartId || "",
       brithDate: client.brithDate ? isoToLocalDate(client.brithDate) : "",
       languages: client.languages?.map(l => l.id) || [],
-      gender: client.gender || "",
+      genderId: client.gender?.id || "",
       email: client.email || "",
       ssn: client.ssn || "",
     },
@@ -66,7 +73,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
       chartId: data.chartId || undefined,
       brithDate: data.brithDate || undefined,
       languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
-      gender: data.gender || undefined,
+      genderId: data.genderId || undefined,
       email: data.email || undefined,
       ssn: data.ssn || undefined,
     }
@@ -193,17 +200,18 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                   />
 
                   <Controller
-                    name="gender"
+                    name="genderId"
                     control={form.control}
                     render={({ field, fieldState }) => (
                       <div>
-                        <FloatingInput
+                        <FloatingSelect
                           label="Gender"
                           value={field.value || ""}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
-                          placeholder=" "
+                          options={genderOptions}
                           hasError={!!fieldState.error}
+                          disabled={isLoadingGenders}
                           required
                         />
                         {fieldState.error && (

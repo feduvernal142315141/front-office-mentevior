@@ -59,7 +59,7 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         chartId: client.chartId || "",
         brithDate: client.brithDate ? isoToLocalDate(client.brithDate) : "",
         languages: client.languages?.map(l => l.id) || [],
-        gender: client.gender || "",
+        genderId: client.gender?.id || "",
         email: client.email || "",
         ssn: client.ssn || "",
       })
@@ -76,7 +76,7 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         chartId: data.chartId || undefined,
         brithDate: data.brithDate || undefined,
         languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
-        gender: data.gender || undefined,
+        genderId: data.genderId || undefined,
         email: data.email || undefined,
         ssn: data.ssn || undefined,
       }
@@ -96,7 +96,7 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         chartId: data.chartId || undefined,
         brithDate: data.brithDate || undefined,
         languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
-        gender: data.gender || undefined,
+        genderId: data.genderId || undefined,
         email: data.email || undefined,
         ssn: data.ssn || undefined,
       }

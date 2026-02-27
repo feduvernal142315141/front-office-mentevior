@@ -3,6 +3,11 @@ export interface Language {
   name: string
 }
 
+export interface Gender {
+  id: string
+  name: string
+}
+
 export interface Client {
   id: string
   firstName: string
@@ -10,7 +15,7 @@ export interface Client {
   phoneNumber: string
   brithDate?: string
   languages?: Language[]
-  gender?: string
+  gender?: Gender
   email?: string
   ssn?: string
   chartId?: string
@@ -29,7 +34,7 @@ export interface CreateClientDto {
   phoneNumber: string
   brithDate?: string
   languages?: string[]
-  gender?: string
+  genderId?: string
   email?: string
   ssn?: string
   chartId?: string
@@ -42,7 +47,7 @@ export interface UpdateClientDto {
   phoneNumber: string
   brithDate?: string
   languages?: string[]
-  gender?: string
+  genderId?: string
   email?: string
   ssn?: string
   chartId?: string
