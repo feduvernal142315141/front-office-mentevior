@@ -9,7 +9,7 @@ import { RequiredDocumentUploadModal } from "./RequiredDocumentUploadModal"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { useClientDocuments } from "@/lib/modules/client-documents/hooks/use-client-documents"
 import { useRequiredDocumentsTable } from "../../hooks/useRequiredDocumentsTable"
-import { getClientDocumentUrl } from "@/lib/modules/client-documents/services/client-documents.service"
+import { getClientDocumentUrl, getClientDocumentDownloadUrl } from "@/lib/modules/client-documents/services/client-documents.service"
 import type { ClientDocumentRow, SaveClientDocumentDto } from "@/lib/types/client-document.types"
 
 interface AlertsConfig {
@@ -101,6 +101,7 @@ export function RequiredDocumentsOverview({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<{ url: string; name: string } | null>(null)
   const [loadingDocumentId, setLoadingDocumentId] = useState<string | null>(null)
+  const [downloadingDocumentId, setDownloadingDocumentId] = useState<string | null>(null)
 
   const { rows, isLoading, isSaving, error, alertCount, save } = useClientDocuments(
     clientId,
@@ -124,8 +125,47 @@ export function RequiredDocumentsOverview({
     setIsModalOpen(true)
   }, [])
 
-  const handleDownload = useCallback((row: ClientDocumentRow) => {
-    if (row.fileUrl) window.open(row.fileUrl, "_blank", "noopener,noreferrer")
+  const handleDownload = useCallback(async (row: ClientDocumentRow) => {
+    if (!row.clientDocumentId) return
+    
+    try {
+      setDownloadingDocumentId(row.clientDocumentId)
+      
+      // Obtener la URL de descarga (urlDownload del backend)
+      // El backend debe devolver urlDownload con response-content-disposition=attachment
+      const url = await getClientDocumentDownloadUrl(row.clientDocumentId)
+      
+      // Extraer extensión de la URL
+      let extension = '.pdf' // Default
+      const urlWithoutParams = url.split('?')[0]
+      if (urlWithoutParams.includes('.')) {
+        const parts = urlWithoutParams.split('.')
+        extension = `.${parts[parts.length - 1]}`
+      }
+      
+      // Crear link para descargar
+      // La urlDownload ya viene con response-content-disposition=attachment
+      // por lo que descargará automáticamente sin abrir nueva pestaña
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${row.documentConfigName}${extension}`
+      link.style.display = 'none'
+      
+      document.body.appendChild(link)
+      link.click()
+      
+      setTimeout(() => {
+        document.body.removeChild(link)
+      }, 100)
+      
+      toast.success('Document downloaded successfully')
+    } catch (err) {
+      console.error("Error downloading document:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to download document"
+      toast.error(errorMessage)
+    } finally {
+      setDownloadingDocumentId(null)
+    }
   }, [])
 
   const handleViewDocument = useCallback(async (row: ClientDocumentRow) => {
@@ -184,6 +224,7 @@ export function RequiredDocumentsOverview({
     onDownload: handleDownload,
     onView: handleViewDocument,
     loadingDocumentId,
+    downloadingDocumentId,
   })
 
   const pendingCount = rows.filter((r) => r.allowStatus && r.status === "PENDING").length

@@ -88,3 +88,31 @@ export function dateToISO(date: Date | null | undefined): string | null {
 
   return `${year}-${month}-${day}`
 }
+
+/**
+ * Format date string to readable format
+ * @param dateStr - ISO date string or Date object
+ * @param format - Format pattern (currently supports "MMM dd, yyyy")
+ * @returns Formatted date string or "—" if invalid
+ */
+export function formatDate(
+  dateStr: string | Date | null | undefined, 
+  format: "MMM dd, yyyy" | "MM/dd/yyyy" = "MM/dd/yyyy"
+): string {
+  if (!dateStr) return "—"
+  
+  const date = typeof dateStr === 'string' ? parseDateFromBackend(dateStr) : dateStr
+  if (!date || isNaN(date.getTime())) return "—"
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  
+  if (format === "MMM dd, yyyy") {
+    const month = monthNames[date.getMonth()]
+    const day = date.getDate()
+    const year = date.getFullYear()
+    return `${month} ${day}, ${year}`
+  }
+  
+  // Default: MM/dd/yyyy
+  return formatDateFromDate(date)
+}

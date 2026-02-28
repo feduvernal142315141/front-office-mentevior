@@ -9,6 +9,7 @@ import { Controller } from "react-hook-form"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useUpdateClient } from "@/lib/modules/clients/hooks/use-update-client"
 import { 
@@ -19,6 +20,8 @@ import type { Client, UpdateClientDto } from "@/lib/types/client.types"
 import { useLanguagesCatalog } from "@/lib/modules/languages/hooks/use-languages-catalog"
 import { useGenderCatalog } from "@/lib/modules/gender/hooks/use-gender-catalog"
 import { isoToLocalDate } from "@/lib/date"
+import { formatPhoneInput, normalizePhone } from "@/lib/utils/phone-format"
+import { UserCheck } from "lucide-react"
 
 interface PersonalInformationFormProps {
   client: Client
@@ -54,6 +57,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
       genderId: client.genderId || "",
       email: client.email || "",
       ssn: client.ssn || "",
+      active: client.status ?? true, // Map from 'status' to 'active' for form
     },
   })
 
@@ -69,13 +73,14 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
       id: client.id,
       firstName: data.firstName,
       lastName: data.lastName,
-      phoneNumber: data.phoneNumber,
+      phoneNumber: normalizePhone(data.phoneNumber), // Normalize phone before saving
       chartId: data.chartId || undefined,
       brithDate: data.brithDate || undefined,
       languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
       genderId: data.genderId || undefined,
       email: data.email || undefined,
       ssn: data.ssn || undefined,
+      status: data.active, // Send as 'status' to backend
     }
 
     const result = await update(client.id, dto)
@@ -152,26 +157,34 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                   <Controller
                     name="phoneNumber"
                     control={form.control}
-                    render={({ field, fieldState }) => (
-                      <div>
-                        <FloatingInput
-                          label="Phone Number"
-                          value={field.value}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          placeholder=" "
-                          type="tel"
-                          hasError={!!fieldState.error}
-                          autoComplete="tel"
-                          required
-                        />
-                        {fieldState.error && (
-                          <p className="text-sm text-red-600 mt-2">
-                            {fieldState.error.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                    render={({ field, fieldState }) => {
+                      const [displayValue, setDisplayValue] = useState(formatPhoneInput(field.value))
+                      
+                      return (
+                        <div>
+                          <FloatingInput
+                            label="Phone Number"
+                            value={displayValue}
+                            onChange={(value) => {
+                              const formatted = formatPhoneInput(value, displayValue)
+                              setDisplayValue(formatted)
+                              field.onChange(formatted)
+                            }}
+                            onBlur={field.onBlur}
+                            placeholder="(305) 555-1234"
+                            type="tel"
+                            hasError={!!fieldState.error}
+                            autoComplete="tel"
+                            required
+                          />
+                          {fieldState.error && (
+                            <p className="text-sm text-red-600 mt-2">
+                              {fieldState.error.message}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    }}
                   />
 
                   <Controller
@@ -340,6 +353,37 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                         {fieldState.error.message}
                       </p>
                     )}
+                  </div>
+                )}
+              />
+            </div>
+
+            <div className="border-t border-gray-200 mt-8 pt-8" />
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <UserCheck className="w-5 h-5 text-green-700" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">
+                  Client Status
+                </h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Controller
+                name="active"
+                control={form.control}
+                render={({ field }) => (
+                  <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50">
+                    <PremiumSwitch
+                      checked={field.value ?? true}
+                      onCheckedChange={field.onChange}
+                      label="Active Client"
+                      description="Enable or disable client access and visibility"
+                      variant="success"
+                    />
                   </div>
                 )}
               />

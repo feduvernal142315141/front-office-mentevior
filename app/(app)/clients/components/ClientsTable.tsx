@@ -3,6 +3,7 @@
 import { useClientsTable } from "../hooks/useClientsTable"
 import { CustomTable } from "@/components/custom/CustomTable"
 import { SearchInput } from "@/components/custom/SearchInput"
+import { FilterSelect } from "@/components/custom/FilterSelect"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 
@@ -26,8 +27,6 @@ export function ClientsTable() {
     )
   }
 
-  const hasFilters = filters.searchQuery
-
   return (
     <div className="space-y-4">
       <Card variant="elevated" padding="md">
@@ -36,13 +35,28 @@ export function ClientsTable() {
             <SearchInput
               value={filters.inputValue}
               onChange={filters.setSearchQuery}
-              placeholder="Search by name."
+              placeholder="Search by name..."
               onClear={clearFilters}
             />
           </div>
 
-          {hasFilters && (
-            <Button variant="ghost" onClick={clearFilters} className="whitespace-nowrap h-[52px] 2xl:h-[56px]">
+          <FilterSelect 
+            value={filters.statusFilter}
+            onChange={(value) => filters.setStatusFilter(value as any)}
+            options={[
+              { value: "all", label: "All Status" },
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]}
+            placeholder="Status"
+          />
+
+          {(filters.searchQuery || filters.statusFilter !== "active") && (
+            <Button 
+              variant="ghost"
+              onClick={clearFilters}
+              className="whitespace-nowrap h-[52px] 2xl:h-[56px]"
+            >
               Clear filters
             </Button>
           )}
@@ -55,7 +69,7 @@ export function ClientsTable() {
         isLoading={isLoading}
         emptyMessage="No clients found"
         emptyContent={
-          filters.searchQuery || hasFilters ? (
+          (filters.searchQuery || filters.statusFilter !== "active") ? (
             <div className="text-center py-8">
               <p className="text-base font-semibold text-gray-800">No clients match your filters</p>
               <p className="mt-1 text-sm text-gray-500">Try adjusting your search criteria</p>

@@ -17,7 +17,19 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName = "documen
   const [loading, setLoading] = useState(true);
 
   const displayFileName = fileName || 'document.pdf';
-  const fileType = 'PDF Document';
+  
+  // Detectar tipo de archivo por extensión del fileName o de la URL
+  const fileNameExtension = displayFileName.toLowerCase().split('.').pop() || '';
+  // Extraer la extensión de la URL antes de los query params
+  const urlPath = documentUrl.split('?')[0]; // Elimina query params
+  const urlParts = urlPath.split('/').pop() || ''; // Obtiene el nombre del archivo
+  const urlExtension = urlParts.split('.').pop()?.toLowerCase() || '';
+  
+  // Priorizar la extensión de la URL sobre el fileName
+  const extension = urlExtension || fileNameExtension;
+  
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension);
+  const fileType = isImage ? 'Image Document' : 'PDF Document';
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -70,22 +82,37 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName = "documen
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden bg-gray-50 relative">
+          <div className={cn(
+            "flex-1 bg-gray-50 relative",
+            isImage ? "overflow-auto" : "overflow-hidden"
+          )}>
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="w-8 h-8 text-[#037ECC] animate-spin" />
-                  <p className="text-sm text-gray-600">Loading PDF document...</p>
+                  <p className="text-sm text-gray-600">Loading {isImage ? 'image' : 'PDF document'}...</p>
                 </div>
               </div>
             )}
 
-            <iframe
-              src={documentUrl}
-              className="w-full h-full border-0"
-              onLoad={() => setLoading(false)}
-              title={displayFileName}
-            />
+            {isImage ? (
+              <div className="w-full h-full flex items-center justify-center p-4 sm:p-8">
+                <img
+                  src={documentUrl}
+                  alt={displayFileName}
+                  className="block max-w-full max-h-full w-auto h-auto object-contain"
+                  onLoad={() => setLoading(false)}
+                  onError={() => setLoading(false)}
+                />
+              </div>
+            ) : (
+              <iframe
+                src={documentUrl}
+                className="w-full h-full border-0"
+                onLoad={() => setLoading(false)}
+                title={displayFileName}
+              />
+            )}
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>

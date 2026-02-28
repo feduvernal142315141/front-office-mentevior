@@ -14,6 +14,8 @@ export interface Client {
   email?: string
   ssn?: string
   chartId?: string
+  status?: boolean
+  createdAt?: string
 }
 
 export interface ClientListItem {
@@ -21,6 +23,10 @@ export interface ClientListItem {
   fullName: string
   chartId: string
   status: boolean
+  createdAt?: string
+  diagnosis?: string
+  insurance?: string
+  rbt?: string
 }
 
 export interface CreateClientDto {
@@ -33,6 +39,7 @@ export interface CreateClientDto {
   email?: string
   ssn?: string
   chartId?: string
+  status?: boolean
 }
 
 export interface UpdateClientDto {
@@ -46,6 +53,7 @@ export interface UpdateClientDto {
   email?: string
   ssn?: string
   chartId?: string
+  status?: boolean
 }
 
 export interface CreateClientResponse {

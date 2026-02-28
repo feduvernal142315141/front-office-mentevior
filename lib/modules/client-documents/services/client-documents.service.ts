@@ -130,7 +130,7 @@ export async function deleteClientDocument(
 }
 
 export async function getClientDocumentUrl(documentId: string): Promise<string> {
-  const response = await serviceGet<{ url: string }>(`/client/document/${documentId}`)
+  const response = await serviceGet<{ url: string; urlDownload?: string }>(`/client/document/${documentId}`)
 
   if (response.status !== 200 || !response.data) {
     throw new Error(response.data?.message || "Failed to fetch document URL")
@@ -143,4 +143,23 @@ export async function getClientDocumentUrl(documentId: string): Promise<string> 
   }
 
   return url
+}
+
+export async function getClientDocumentDownloadUrl(documentId: string): Promise<string> {
+  const response = await serviceGet<{ url: string; urlDownload?: string }>(`/client/document/${documentId}`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch document URL")
+  }
+
+  const data = response.data as unknown as { url: string; urlDownload?: string }
+  
+  // Usar urlDownload si existe, sino fallback a url
+  const downloadUrl = data.urlDownload || data.url
+
+  if (!downloadUrl || downloadUrl.trim() === "") {
+    throw new Error("Document download URL is empty. The file may not exist or the backend failed to generate a signed URL.")
+  }
+
+  return downloadUrl
 }

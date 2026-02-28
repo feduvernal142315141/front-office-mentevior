@@ -13,6 +13,7 @@ import {
 } from "@/lib/schemas/client-form.schema"
 import type { CreateClientDto, UpdateClientDto } from "@/lib/types/client.types"
 import { isoToLocalDate } from "@/lib/date"
+import { normalizePhone, formatPhoneInput } from "@/lib/utils/phone-format"
 
 interface UseClientFormProps {
   clientId?: string | null
@@ -55,13 +56,14 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
       form.reset({
         firstName: client.firstName || "",
         lastName: client.lastName || "",
-        phoneNumber: client.phoneNumber || "",
+        phoneNumber: formatPhoneInput(client.phoneNumber || ""),
         chartId: client.chartId || "",
         brithDate: client.brithDate ? isoToLocalDate(client.brithDate) : "",
         languages: client.languages?.map(l => l.id) || [],
         genderId: client.genderId || "",
         email: client.email || "",
         ssn: client.ssn || "",
+        active: client.status ?? true, // Map from 'status' to 'active' for form
       })
     }
   }, [client, isEditing, form])
@@ -72,13 +74,14 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         id: clientId,
         firstName: data.firstName,
         lastName: data.lastName,
-        phoneNumber: data.phoneNumber,
+        phoneNumber: normalizePhone(data.phoneNumber),
         chartId: data.chartId || undefined,
         brithDate: data.brithDate || undefined,
         languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
         genderId: data.genderId || undefined,
         email: data.email || undefined,
         ssn: data.ssn || undefined,
+        status: data.active, // Send as 'status' to backend
       }
       
       const result = await update(clientId, dto)
@@ -92,13 +95,14 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
       const dto: CreateClientDto = {
         firstName: data.firstName,
         lastName: data.lastName,
-        phoneNumber: data.phoneNumber,
+        phoneNumber: normalizePhone(data.phoneNumber),
         chartId: data.chartId || undefined,
         brithDate: data.brithDate || undefined,
         languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
         genderId: data.genderId || undefined,
         email: data.email || undefined,
         ssn: data.ssn || undefined,
+        status: data.active, // Send as 'status' to backend
       }
       
       const result = await create(dto)

@@ -57,6 +57,7 @@ interface UseRequiredDocumentsTableOptions {
   onDownload?: (row: ClientDocumentRow) => void
   onView?: (row: ClientDocumentRow) => void
   loadingDocumentId?: string | null
+  downloadingDocumentId?: string | null
 }
 
 export function useRequiredDocumentsTable({
@@ -64,6 +65,7 @@ export function useRequiredDocumentsTable({
   onDownload,
   onView,
   loadingDocumentId,
+  downloadingDocumentId,
 }: UseRequiredDocumentsTableOptions) {
   const columns: CustomTableColumn<ClientDocumentRow>[] = useMemo(
     () => [
@@ -143,6 +145,7 @@ export function useRequiredDocumentsTable({
         align: "right",
         render: (row) => {
           const isLoadingThis = loadingDocumentId === row.clientDocumentId
+          const isDownloadingThis = downloadingDocumentId === row.clientDocumentId
           return (
             <div className="flex justify-end gap-2">
               {row.clientDocumentId && onView && (
@@ -180,6 +183,41 @@ export function useRequiredDocumentsTable({
                 </button>
               )}
 
+              {row.clientDocumentId && onDownload && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (!isDownloadingThis) {
+                      onDownload(row)
+                    }
+                  }}
+                  disabled={isDownloadingThis}
+                  className={cn(
+                    "group/download",
+                    "relative h-9 w-9",
+                    "flex items-center justify-center",
+                    "rounded-xl",
+                    "bg-gradient-to-b from-[#037ECC]/10 to-[#079CFB]/10",
+                    "ring-1 ring-[#037ECC]/20",
+                    "hover:ring-[#037ECC]/40",
+                    "hover:from-[#037ECC]/15 hover:to-[#079CFB]/15",
+                    "hover:shadow-[0_4px_12px_rgba(3,126,204,0.15)]",
+                    "transition-all duration-200",
+                    "active:scale-95",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
+                    "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/30 focus:ring-offset-2"
+                  )}
+                  title="Download document"
+                  aria-label="Download document"
+                >
+                  {isDownloadingThis ? (
+                    <Loader2 className="w-[18px] h-[18px] text-[#037ECC] animate-spin" />
+                  ) : (
+                    <Download className="w-[18px] h-[18px] text-[#037ECC] group-hover/download:text-[#079CFB] transition-colors duration-200" />
+                  )}
+                </button>
+              )}
+
               <button
                 onClick={() => onEdit(row)}
                 className={cn(
@@ -212,7 +250,7 @@ export function useRequiredDocumentsTable({
         },
       },
     ],
-    [onEdit, onDownload, onView, loadingDocumentId]
+    [onEdit, onDownload, onView, loadingDocumentId, downloadingDocumentId]
   )
 
   return { columns }

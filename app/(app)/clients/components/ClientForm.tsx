@@ -30,6 +30,7 @@ export function ClientForm({ clientId = null }: ClientFormProps) {
           isEditing={isEditing}
           isSubmitting={isSubmitting}
           onCancel={actions.goToList}
+          editingClientId={clientId || undefined}
         />
       </form>
     </FormProvider>

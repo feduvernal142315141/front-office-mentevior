@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Edit2, Sliders } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { ClientListItem } from "@/lib/types/client.types"
@@ -12,6 +11,9 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
+import { formatDate } from "@/lib/utils/date"
+
+type StatusFilter = "all" | "active" | "inactive"
 
 interface UseClientsTableReturn {
   data: ClientListItem[]
@@ -22,6 +24,8 @@ interface UseClientsTableReturn {
     inputValue: string
     searchQuery: string
     setSearchQuery: (value: string) => void
+    statusFilter: StatusFilter
+    setStatusFilter: (value: StatusFilter) => void
   }
   pagination: {
     page: number
@@ -41,18 +45,38 @@ export function useClientsTable(): UseClientsTableReturn {
   
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
   const filtersArray = useMemo(() => {
+    const filters: FilterRule[] = []
+    
+    if (statusFilter === "active") {
+      filters.push({
+        field: "active",
+        value: true,
+        operator: FilterOperator.eq,
+        type: "boolean" as const,
+      })
+    } else if (statusFilter === "inactive") {
+      filters.push({
+        field: "active",
+        value: false,
+        operator: FilterOperator.eq,
+        type: "boolean" as const,
+      })
+    }
+
+    
     return buildFilters(
-      [],
+      filters,
       {
         fields: ["firstName", "lastName"],
         search: searchQuery,
       }
     )
-  }, [searchQuery])
+  }, [searchQuery, statusFilter])
 
   const { clients, isLoading, error, totalCount, refetch } = useClients({
     page: page - 1,
@@ -62,7 +86,7 @@ export function useClientsTable(): UseClientsTableReturn {
 
   useEffect(() => {
     refetch({ page: page - 1, pageSize, filters: filtersArray })
-  }, [searchQuery, page, pageSize, filtersArray])
+  }, [searchQuery, statusFilter, page, pageSize, filtersArray])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
@@ -73,6 +97,7 @@ export function useClientsTable(): UseClientsTableReturn {
   const clearFilters = () => {
     setSearchQuery("")
     setInputValue("")
+    setStatusFilter("active") // Reset to default "active"
     setPage(1)
   }
   
@@ -90,12 +115,47 @@ export function useClientsTable(): UseClientsTableReturn {
       key: "fullName",
       header: "Client Name",
       render: (client) => (
-        <Link
-          href={`/clients/${client.id}/edit`}
-          className="text-sm font-medium text-[#037ECC] hover:underline hover:text-[#079CFB] transition-colors"
-        >
+        <span className="text-sm font-medium text-slate-900">
           {client.fullName}
-        </Link>
+        </span>
+      ),
+    },
+    {
+      key: "chartId",
+      header: "Chart ID",
+      render: (client) => (
+        <span className="text-sm text-slate-700 font-mono">{client.chartId || "—"}</span>
+      ),
+    },
+    {
+      key: "diagnosis",
+      header: "Diagnosis",
+      render: (client) => (
+        <span className="text-sm text-slate-700">{client.diagnosis || "—"}</span>
+      ),
+    },
+    {
+      key: "insurance",
+      header: "Insurance",
+      render: (client) => (
+        <span className="text-sm text-slate-700">{client.insurance || "—"}</span>
+      ),
+    },
+    {
+      key: "rbt",
+      header: "RBT",
+      render: (client) => (
+        <span className="text-sm text-slate-700">{client.rbt || "—"}</span>
+      ),
+    },
+    {
+      key: "createdAt",
+      header: "Created",
+      align: "center",
+      render: (client) => (
+        <span className="text-sm text-slate-600">
+          {client.createdAt ? formatDate(client.createdAt, "MMM dd, yyyy") : "—"}
+        </span>
       ),
     },
     {
@@ -113,13 +173,6 @@ export function useClientsTable(): UseClientsTableReturn {
         >
           {client.status ? "Active" : "Inactive"}
         </Badge>
-      ),
-    },
-    {
-      key: "chartId",
-      header: "Chart ID",
-      render: (client) => (
-        <span className="text-sm text-slate-700 font-mono">{client.chartId || "—"}</span>
       ),
     },
     {
@@ -178,6 +231,8 @@ export function useClientsTable(): UseClientsTableReturn {
       inputValue,
       searchQuery,
       setSearchQuery: handleSearchChange,
+      statusFilter,
+      setStatusFilter,
     },
     pagination: {
       page,

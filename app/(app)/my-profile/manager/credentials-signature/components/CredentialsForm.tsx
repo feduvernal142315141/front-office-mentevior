@@ -153,6 +153,7 @@ export function CredentialsForm({
                 onBlur={field.onBlur}
                 hasError={!!fieldState.error}
                 errorMessage={fieldState.error?.message}
+                required
               />
             )}
           />
@@ -168,6 +169,7 @@ export function CredentialsForm({
                 onBlur={field.onBlur}
                 hasError={!!fieldState.error}
                 errorMessage={fieldState.error?.message}
+                required
               />
             )}
           />

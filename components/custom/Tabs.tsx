@@ -41,9 +41,10 @@ export function Tabs({
     if (!scrollContainerRef.current) return
 
     const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
+    const needsScroll = scrollWidth > clientWidth
     
-    setShowLeftArrow(scrollLeft > 5)
-    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 5)
+    setShowLeftArrow(needsScroll && scrollLeft > 5)
+    setShowRightArrow(needsScroll && scrollLeft < scrollWidth - clientWidth - 5)
   }
 
   useEffect(() => {
@@ -86,7 +87,10 @@ export function Tabs({
         <div className="relative border-b border-slate-200">
           <div
             ref={scrollContainerRef}
-            className="flex items-center gap-4 select-none overflow-x-auto scrollbar-hide scroll-smooth px-16"
+            className={cn(
+              "flex items-center gap-4 select-none overflow-x-auto scrollbar-hide scroll-smooth",
+              showLeftArrow || showRightArrow ? "px-16" : "px-6"
+            )}
             role="tablist"
             aria-orientation="horizontal"
             style={{ 
@@ -147,39 +151,43 @@ export function Tabs({
           </div>
         </div>
 
-        <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-r from-gray-50 via-gray-50 to-transparent pl-1 pr-6">
-          <button
-            type="button"
-            onClick={() => scroll('left')}
-            disabled={!showLeftArrow}
-            className={cn(
-              "h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 shadow-md transition-all",
-              showLeftArrow 
-                ? "hover:bg-slate-50 hover:border-slate-300 cursor-pointer" 
-                : "opacity-40 cursor-not-allowed"
-            )}
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-4 h-4 text-slate-700" />
-          </button>
-        </div>
+        {(showLeftArrow || showRightArrow) && (
+          <>
+            <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-r from-gray-50 via-gray-50 to-transparent pl-1 pr-6">
+              <button
+                type="button"
+                onClick={() => scroll('left')}
+                disabled={!showLeftArrow}
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 shadow-md transition-all",
+                  showLeftArrow 
+                    ? "hover:bg-slate-50 hover:border-slate-300 cursor-pointer" 
+                    : "opacity-40 cursor-not-allowed"
+                )}
+                aria-label="Scroll left"
+              >
+                <ChevronLeft className="w-4 h-4 text-slate-700" />
+              </button>
+            </div>
 
-        <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-l from-gray-50 via-gray-50 to-transparent pr-1 pl-6">
-          <button
-            type="button"
-            onClick={() => scroll('right')}
-            disabled={!showRightArrow}
-            className={cn(
-              "h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 shadow-md transition-all",
-              showRightArrow 
-                ? "hover:bg-slate-50 hover:border-slate-300 cursor-pointer" 
-                : "opacity-40 cursor-not-allowed"
-            )}
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-4 h-4 text-slate-700" />
-          </button>
-        </div>
+            <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-l from-gray-50 via-gray-50 to-transparent pr-1 pl-6">
+              <button
+                type="button"
+                onClick={() => scroll('right')}
+                disabled={!showRightArrow}
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 shadow-md transition-all",
+                  showRightArrow 
+                    ? "hover:bg-slate-50 hover:border-slate-300 cursor-pointer" 
+                    : "opacity-40 cursor-not-allowed"
+                )}
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="w-4 h-4 text-slate-700" />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {activeItem && (
