@@ -7,9 +7,10 @@ import { ClientFormFields } from "./ClientFormFields"
 
 interface ClientFormProps {
   clientId?: string | null
+  onSuccess?: (clientId: string) => void
 }
 
-export function ClientForm({ clientId = null }: ClientFormProps) {
+export function ClientForm({ clientId = null, onSuccess }: ClientFormProps) {
   const {
     form,
     isEditing,
@@ -17,7 +18,7 @@ export function ClientForm({ clientId = null }: ClientFormProps) {
     onSubmit,
     isSubmitting,
     actions,
-  } = useClientForm({ clientId })
+  } = useClientForm({ clientId, onSuccess })
 
   if (isEditing && isLoadingClient) {
     return <ClientFormSkeleton />

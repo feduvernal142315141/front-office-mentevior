@@ -1,8 +1,7 @@
 "use client"
 
-import { use } from "react"
-import { ClientForm } from "../../components/ClientForm"
-import { Card } from "@/components/custom/Card"
+import { use, useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 interface EditClientPageProps {
   params: Promise<{
@@ -12,21 +11,11 @@ interface EditClientPageProps {
 
 export default function EditClientPage({ params }: EditClientPageProps) {
   const { id } = use(params)
+  const router = useRouter()
 
-  return (
-    <div className="min-h-screen bg-gray-50/50 p-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-            Edit Client
-          </h1>
-          <p className="text-slate-600 mt-2">Update client information</p>
-        </div>
-        
-        <Card variant="elevated" padding="lg">
-          <ClientForm clientId={id} />
-        </Card>
-      </div>
-    </div>
-  )
+  useEffect(() => {
+    router.replace(`/clients/${id}/profile`)
+  }, [id, router])
+
+  return null
 }

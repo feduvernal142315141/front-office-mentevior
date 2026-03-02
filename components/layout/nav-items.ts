@@ -24,15 +24,15 @@ export const navItems: NavItem[] = [
     section: "main",
   },
   {
-    label: "Users",
-    href: "/users",
-    icon: "UserCog",
-    section: "main",
-  },
-  {
     label: "Clients",
     href: "/clients",
     icon: "Users",
+    section: "main",
+  },
+  {
+    label: "Users/Providers",
+    href: "/users",
+    icon: "UserCog",
     section: "main",
   },
   {

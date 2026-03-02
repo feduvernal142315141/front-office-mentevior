@@ -44,7 +44,7 @@ export function useClientsTable(): UseClientsTableReturn {
   const router = useRouter()
   
   const [inputValue, setInputValue] = useState("")
-  const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
+  const searchQuery = inputValue
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -90,14 +90,12 @@ export function useClientsTable(): UseClientsTableReturn {
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
-    setSearchQuery(value)
     setPage(1)
   }
 
   const clearFilters = () => {
-    setSearchQuery("")
     setInputValue("")
-    setStatusFilter("active") // Reset to default "active"
+    setStatusFilter("active")
     setPage(1)
   }
   
@@ -115,7 +113,7 @@ export function useClientsTable(): UseClientsTableReturn {
       key: "fullName",
       header: "Client Name",
       render: (client) => (
-        <span className="text-sm font-medium text-slate-900">
+        <span className="text-sm font-semibold text-slate-900">
           {client.fullName}
         </span>
       ),
@@ -151,7 +149,6 @@ export function useClientsTable(): UseClientsTableReturn {
     {
       key: "createdAt",
       header: "Created",
-      align: "center",
       render: (client) => (
         <span className="text-sm text-slate-600">
           {client.createdAt ? formatDate(client.createdAt, "MMM dd, yyyy") : "—"}
@@ -161,7 +158,6 @@ export function useClientsTable(): UseClientsTableReturn {
     {
       key: "status",
       header: "Status",
-      align: "center",
       render: (client) => (
         <Badge
           variant="outline"
@@ -183,24 +179,6 @@ export function useClientsTable(): UseClientsTableReturn {
         <div className="flex justify-end gap-2">
           <button
             onClick={() => router.push(`/clients/${client.id}/profile`)}
-            className={cn(
-              "group/profile relative h-9 w-9",
-              "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-slate-50 to-slate-100/80",
-              "border border-slate-200/70 shadow-sm shadow-slate-900/5",
-              "hover:from-slate-100 hover:to-slate-200/90",
-              "hover:border-slate-300/80 hover:shadow-md hover:shadow-slate-900/10",
-              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-              "transition-all duration-200 ease-out",
-              "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:ring-offset-2"
-            )}
-            title="View profile"
-            aria-label="View profile"
-          >
-            <Sliders className="w-4 h-4 text-slate-600 group-hover/profile:text-[#037ECC] transition-colors duration-200" />
-          </button>
-          <button
-            onClick={() => router.push(`/clients/${client.id}/edit`)}
             className={cn(
               "group/edit relative h-9 w-9",
               "flex items-center justify-center rounded-xl",

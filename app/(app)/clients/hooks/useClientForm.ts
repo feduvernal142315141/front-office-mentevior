@@ -17,6 +17,7 @@ import { normalizePhone, formatPhoneInput } from "@/lib/utils/phone-format"
 
 interface UseClientFormProps {
   clientId?: string | null
+  onSuccess?: (clientId: string) => void
 }
 
 interface UseClientFormReturn {
@@ -35,7 +36,7 @@ interface UseClientFormReturn {
   }
 }
 
-export function useClientForm({ clientId = null }: UseClientFormProps = {}): UseClientFormReturn {
+export function useClientForm({ clientId = null, onSuccess }: UseClientFormProps = {}): UseClientFormReturn {
   const router = useRouter()
   const isEditing = !!clientId
   const mode = isEditing ? "edit" : "create"
@@ -63,7 +64,7 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         genderId: client.genderId || "",
         email: client.email || "",
         ssn: client.ssn || "",
-        active: client.status ?? true, // Map from 'status' to 'active' for form
+        active: client.status ?? true,
       })
     }
   }, [client, isEditing, form])
@@ -81,15 +82,19 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         genderId: data.genderId || undefined,
         email: data.email || undefined,
         ssn: data.ssn || undefined,
-        status: data.active, // Send as 'status' to backend
+        status: data.active,
       }
       
       const result = await update(clientId, dto)
       
       if (result) {
-        setTimeout(() => {
-          router.push("/clients")
-        }, 1500)
+        if (onSuccess) {
+          onSuccess(clientId)
+        } else {
+          setTimeout(() => {
+            router.push("/clients")
+          }, 1500)
+        }
       }
     } else {
       const dto: CreateClientDto = {
@@ -102,15 +107,19 @@ export function useClientForm({ clientId = null }: UseClientFormProps = {}): Use
         genderId: data.genderId || undefined,
         email: data.email || undefined,
         ssn: data.ssn || undefined,
-        status: data.active, // Send as 'status' to backend
+        status: data.active,
       }
       
       const result = await create(dto)
       
-      if (result) {
-        setTimeout(() => {
-          router.push("/clients")
-        }, 1500)
+      if (result && result.id) {
+        if (onSuccess) {
+          onSuccess(result.id)
+        } else {
+          setTimeout(() => {
+            router.push("/clients")
+          }, 1500)
+        }
       }
     }
   }
