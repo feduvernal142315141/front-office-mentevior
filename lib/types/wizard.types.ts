@@ -7,13 +7,17 @@ export interface StepConfig {
   status: StepStatus
   isLocked: boolean
   requiredFieldsMissing?: number
-  component: React.ComponentType<StepComponentProps>
+  component: React.ComponentType<any>
 }
 
 export interface StepComponentProps {
   clientId: string
+  client: any
+  isCreateMode?: boolean
   onSaveSuccess: (data: unknown) => void
   onValidationError: (errors: Record<string, string>) => void
+  registerSubmit: (submitFn: () => Promise<void>) => void
+  registerValidation: (isValid: boolean) => void
 }
 
 export interface WizardState {
