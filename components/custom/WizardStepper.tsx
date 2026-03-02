@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Check, Lock, AlertCircle, Clock } from "lucide-react"
+import { Check, AlertCircle, Clock } from "lucide-react"
 import type { StepConfig } from "@/lib/types/wizard.types"
 
 interface WizardStepperProps {
@@ -20,35 +20,23 @@ export function WizardStepper({ steps, activeStepIndex, onStepClick }: WizardSte
         <p className="text-sm text-slate-500 mt-1">Complete all required sections</p>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 pb-8">
         {steps.map((step, index) => {
           const isActive = index === activeStepIndex
           const isCompleted = step.status === "COMPLETE"
           const hasError = step.status === "ERROR"
-          const isLocked = step.isLocked
-          const canClick = !isLocked && (isCompleted || index <= activeStepIndex)
 
           return (
             <div key={step.id} className="relative">
-              {index < steps.length - 1 && (
-                <div
-                  className={cn(
-                    "absolute left-[19px] top-11 w-[2px] h-10 transition-colors duration-300",
-                    isCompleted ? "bg-gradient-to-b from-[#037ECC] to-[#079CFB]" : "bg-slate-200"
-                  )}
-                />
-              )}
-
               <button
                 type="button"
-                onClick={() => canClick && onStepClick(index)}
-                disabled={!canClick}
+                onClick={() => onStepClick(index)}
                 className={cn(
                   "relative w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-300",
                   "group",
                   isActive && "bg-gradient-to-br from-[#037ECC]/5 to-[#079CFB]/5 border border-[#037ECC]/20 shadow-sm",
-                  !isActive && !isLocked && "hover:bg-slate-50/80",
-                  isLocked && "opacity-50 cursor-not-allowed"
+                  isCompleted && !isActive && "bg-gradient-to-br from-[#037ECC]/5 to-[#079CFB]/5 border border-[#037ECC]/10",
+                  !isActive && !isCompleted && "hover:bg-slate-50/80"
                 )}
               >
                 <div
@@ -61,9 +49,7 @@ export function WizardStepper({ steps, activeStepIndex, onStepClick }: WizardSte
                     !isActive && !isCompleted && !hasError && "border-slate-300 bg-white"
                   )}
                 >
-                  {isLocked ? (
-                    <Lock className="w-4 h-4 text-slate-400" />
-                  ) : isCompleted ? (
+                  {isCompleted ? (
                     <Check className="w-5 h-5 text-white" />
                   ) : hasError ? (
                     <AlertCircle className="w-5 h-5 text-red-500" />
@@ -75,21 +61,12 @@ export function WizardStepper({ steps, activeStepIndex, onStepClick }: WizardSte
                 </div>
 
                 <div className="flex-1 text-left min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "text-xs font-semibold tracking-wider transition-colors",
-                        isActive ? "text-[#037ECC]" : "text-slate-400"
-                      )}
-                    >
-                      STEP {index + 1}
-                    </span>
-                  </div>
                   <h3
                     className={cn(
-                      "text-sm font-semibold mt-0.5 transition-colors truncate",
-                      isActive ? "text-[#037ECC]" : "text-slate-700",
-                      isLocked && "text-slate-400"
+                      "text-sm font-semibold transition-colors truncate",
+                      isActive && "text-[#037ECC]",
+                      isCompleted && !isActive && "text-[#037ECC]/90",
+                      !isActive && !isCompleted && "text-slate-700"
                     )}
                   >
                     {step.title}
