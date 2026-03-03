@@ -1,14 +1,26 @@
 "use client"
 
+import { useEffect } from "react"
 import { LucideIcon } from "lucide-react"
+import type { StepComponentProps } from "@/lib/types/wizard.types"
 
-interface StepPlaceholderProps {
+interface StepPlaceholderProps extends Partial<StepComponentProps> {
   icon: LucideIcon
   title: string
   scrumId: string
 }
 
-export function StepPlaceholder({ icon: Icon, title, scrumId }: StepPlaceholderProps) {
+export function StepPlaceholder({ icon: Icon, title, scrumId, onSaveSuccess, registerSubmit, registerValidation }: StepPlaceholderProps) {
+  useEffect(() => {
+    registerValidation?.(true)
+  }, [registerValidation])
+
+  useEffect(() => {
+    registerSubmit?.(async () => {
+      onSaveSuccess?.({})
+    })
+  }, [registerSubmit, onSaveSuccess])
+
   return (
     <div className="max-w-5xl mx-auto p-8">
       <div className="flex flex-col items-center justify-center py-20 text-center">

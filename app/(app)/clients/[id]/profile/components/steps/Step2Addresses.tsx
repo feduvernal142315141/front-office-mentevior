@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { MapPin } from "lucide-react"
 import { StepPlaceholder } from "./StepPlaceholder"
 
@@ -13,6 +14,16 @@ interface Step2AddressesProps {
   registerValidation: (isValid: boolean) => void
 }
 
-export function Step2Addresses(props: Step2AddressesProps) {
+export function Step2Addresses({ onSaveSuccess, registerSubmit, registerValidation }: Step2AddressesProps) {
+  useEffect(() => {
+    registerValidation(true)
+  }, [registerValidation])
+
+  useEffect(() => {
+    registerSubmit(async () => {
+      onSaveSuccess({})
+    })
+  }, [registerSubmit, onSaveSuccess])
+
   return <StepPlaceholder icon={MapPin} title="Addresses" scrumId="SCRUM-124" />
 }

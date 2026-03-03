@@ -90,7 +90,7 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
       onSaveSuccess(form.getValues())
       return
     }
-    
+
     const updateDto: UpdateClientDto = {
       id: client!.id,
       firstName: data.firstName,

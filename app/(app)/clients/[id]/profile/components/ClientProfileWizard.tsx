@@ -18,7 +18,7 @@ import { WizardStepper } from "@/components/custom/WizardStepper"
 import { WizardHeader } from "@/components/custom/WizardHeader"
 import { WizardFooter } from "@/components/custom/WizardFooter"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
-import type { StepConfig, StepStatus } from "@/lib/types/wizard.types"
+import type { StepComponentProps, StepConfig, StepStatus } from "@/lib/types/wizard.types"
 import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
 import { Step10RequiredDocuments } from "./steps/Step10RequiredDocuments"
@@ -50,6 +50,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   const stepSubmitRef = useRef<(() => Promise<void>) | null>(null)
   const shouldContinueRef = useRef<boolean>(true)
+  const didSetInitialStepRef = useRef(false)
 
   const checkPersonalInfoComplete = useCallback((clientData: any) => {
     if (!clientData) return false
@@ -103,7 +104,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Users className="w-4 h-4" />,
       status: stepStatuses.caregivers,
       isLocked: false,
-      component: () => <StepPlaceholder icon={Users} title="Caregivers" scrumId="SCRUM-125" />,
+      component: (props: StepComponentProps) => <StepPlaceholder icon={Users} title="Caregivers" scrumId="SCRUM-125" {...props} />,
     },
     {
       id: "medications",
@@ -111,7 +112,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Pill className="w-4 h-4" />,
       status: stepStatuses.medications,
       isLocked: false,
-      component: () => <StepPlaceholder icon={Pill} title="Medications" scrumId="SCRUM-132" />,
+      component: (props: StepComponentProps) => <StepPlaceholder icon={Pill} title="Medications" scrumId="SCRUM-132" {...props} />,
     },
     {
       id: "physicians",
@@ -119,7 +120,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Stethoscope className="w-4 h-4" />,
       status: stepStatuses.physicians,
       isLocked: false,
-      component: () => <StepPlaceholder icon={Stethoscope} title="Physicians" scrumId="SCRUM-126" />,
+      component: (props: StepComponentProps) => <StepPlaceholder icon={Stethoscope} title="Physicians" scrumId="SCRUM-126" {...props} />,
     },
     {
       id: "diagnoses",
@@ -127,7 +128,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Activity className="w-4 h-4" />,
       status: stepStatuses.diagnoses,
       isLocked: false,
-      component: () => <StepPlaceholder icon={Activity} title="Diagnoses" scrumId="SCRUM-127" />,
+      component: (props: StepComponentProps) => <StepPlaceholder icon={Activity} title="Diagnoses" scrumId="SCRUM-127" {...props} />,
     },
     {
       id: "insurances",
@@ -135,7 +136,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Shield className="w-4 h-4" />,
       status: stepStatuses.insurances,
       isLocked: false,
-      component: () => <StepPlaceholder icon={Shield} title="Insurances" scrumId="SCRUM-128" />,
+      component: (props: StepComponentProps) => <StepPlaceholder icon={Shield} title="Insurances" scrumId="SCRUM-128" {...props} />,
     },
     {
       id: "priorAuth",
@@ -143,7 +144,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <FileCheck className="w-4 h-4" />,
       status: stepStatuses.priorAuth,
       isLocked: false,
-      component: () => <StepPlaceholder icon={FileCheck} title="Prior Authorizations" scrumId="SCRUM-48" />,
+      component: (props: StepComponentProps) => <StepPlaceholder icon={FileCheck} title="Prior Authorizations" scrumId="SCRUM-48" {...props} />,
     },
     {
       id: "providers",
@@ -151,7 +152,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <UserCog className="w-4 h-4" />,
       status: stepStatuses.providers,
       isLocked: false,
-      component: () => <StepPlaceholder icon={UserCog} title="Providers" scrumId="SCRUM-129" />,
+      component: (props: StepComponentProps) => <StepPlaceholder icon={UserCog} title="Providers" scrumId="SCRUM-129" {...props} />,
     },
     {
       id: "documents",
@@ -163,14 +164,30 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     },
   ], [stepStatuses])
 
+  useEffect(() => {
+    if (didSetInitialStepRef.current) return
+    if (isCreateMode || !client) return
+
+    const personalInfoComplete = checkPersonalInfoComplete(client)
+    const resolvedStatuses = steps.map((step) =>
+      step.id === "personalInfo"
+        ? (personalInfoComplete ? "COMPLETE" : "PENDING")
+        : step.status
+    )
+    const firstIncompleteIndex = resolvedStatuses.findIndex((status) => status !== "COMPLETE")
+    if (firstIncompleteIndex >= 0) {
+      setActiveStepIndex(firstIncompleteIndex)
+    }
+    didSetInitialStepRef.current = true
+  }, [steps, isCreateMode, client, checkPersonalInfoComplete])
+
   const completionPercentage = useMemo(() => {
     const completedCount = Object.values(stepStatuses).filter(status => status === "COMPLETE").length
     return Math.round((completedCount / Object.keys(stepStatuses).length) * 100)
   }, [stepStatuses])
 
   const profileStatus = useMemo(() => {
-    if (completionPercentage === 100) return "ready"
-    if (completionPercentage > 0) return "complete"
+    if (completionPercentage === 100) return "complete"
     return "incomplete"
   }, [completionPercentage])
 
@@ -217,15 +234,18 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       [currentStepId]: "COMPLETE"
     }))
 
-    // Check if should continue to next step or redirect
+    if (currentStepId === "documents") {
+      setIsSubmitting(false)
+      router.push("/clients")
+      return
+    }
+
     if (shouldContinueRef.current) {
-      // Save & Continue: advance to next step
       if (activeStepIndex < steps.length - 1) {
         setActiveStepIndex(activeStepIndex + 1)
       }
       setIsSubmitting(false)
     } else {
-      // Save: redirect to clients table
       router.push("/clients")
     }
     
@@ -233,6 +253,13 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       refetch()
     }
   }, [activeStepIndex, steps, refetch, isCreateMode, router])
+
+  const handleDocumentsAlertChange = useCallback((count: number) => {
+    setStepStatuses((prev) => ({
+      ...prev,
+      documents: count === 0 ? "COMPLETE" : "PENDING",
+    }))
+  }, [])
 
   const handleValidationError = useCallback((errors: Record<string, string>) => {
     const currentStepId = steps[activeStepIndex].id
@@ -275,7 +302,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
           onStepClick={handleStepClick}
         />
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pb-36">
           <div className="max-w-6xl mx-auto py-8">
             <ActiveStepComponent
               clientId={clientId}
@@ -283,6 +310,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
               isCreateMode={isCreateMode}
               onSaveSuccess={handleSaveSuccess}
               onValidationError={handleValidationError}
+              onDocumentsAlertChange={handleDocumentsAlertChange}
               registerSubmit={(submitFn: () => Promise<void>) => {
                 stepSubmitRef.current = submitFn
               }}

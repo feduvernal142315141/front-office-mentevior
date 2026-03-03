@@ -4,6 +4,10 @@ import { useEffect } from "react"
 import { RequiredDocumentsOverview } from "../../../components/required-documents/RequiredDocumentsOverview"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 
+interface Step10RequiredDocumentsProps extends StepComponentProps {
+  onDocumentsAlertChange?: (count: number) => void
+}
+
 export function Step10RequiredDocuments({
   clientId,
   client,
@@ -11,7 +15,8 @@ export function Step10RequiredDocuments({
   onSaveSuccess,
   registerSubmit,
   registerValidation,
-}: StepComponentProps) {
+  onDocumentsAlertChange,
+}: Step10RequiredDocumentsProps) {
   
   // Este step siempre está válido (no tiene validaciones obligatorias)
   useEffect(() => {
@@ -49,6 +54,7 @@ export function Step10RequiredDocuments({
       <RequiredDocumentsOverview
         isActive={true}
         clientId={clientId}
+        onAlertCountChange={onDocumentsAlertChange}
       />
     </div>
   )

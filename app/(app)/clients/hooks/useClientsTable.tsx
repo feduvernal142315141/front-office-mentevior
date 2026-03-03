@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
-import { formatDate } from "@/lib/utils/date"
+import { format } from "date-fns"
+import { parseLocalDate } from "@/lib/date"
 
 type StatusFilter = "all" | "active" | "inactive"
 
@@ -151,7 +152,7 @@ export function useClientsTable(): UseClientsTableReturn {
       header: "Created",
       render: (client) => (
         <span className="text-sm text-slate-600">
-          {client.createdAt ? formatDate(client.createdAt, "MMM dd, yyyy") : "—"}
+          {client.createdAt ? format(parseLocalDate(client.createdAt), "MMM dd, yyyy") : "-"}
         </span>
       ),
     },

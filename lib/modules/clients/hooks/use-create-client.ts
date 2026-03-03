@@ -20,9 +20,7 @@ export function useCreateClient() {
       const res = { id: result, chartId: data.chartId }
       setResponse(res)
 
-      toast.success("Client created successfully!", {
-        description: `Chart ID: ${data.chartId}`,
-      })
+      toast.success("Client created successfully!")
 
       return res
     } catch (err) {
