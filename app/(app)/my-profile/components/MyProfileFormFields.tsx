@@ -281,7 +281,7 @@ export function MyProfileFormFields({
                         }}
                         label="Active User"
                         description="Cannot modify your own status"
-                        variant="success"
+                        variant="default"
                         disabled={true}
                       />
                     </div>

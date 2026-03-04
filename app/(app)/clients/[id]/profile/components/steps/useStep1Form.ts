@@ -3,13 +3,12 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useUpdateClient } from "@/lib/modules/clients/hooks/use-update-client"
 import { useCreateClient } from "@/lib/modules/clients/hooks/use-create-client"
 import { clientEditFormSchema, clientCreateFormSchema, type ClientFormValues } from "@/lib/schemas/client-form.schema"
 import type { Client, UpdateClientDto, CreateClientDto } from "@/lib/types/client.types"
 import { isoToLocalDate } from "@/lib/date"
-import { formatPhoneInput, normalizePhone } from "@/lib/utils/phone-format"
+import { normalizePhone } from "@/lib/utils/phone-format"
 
 interface UseStep1FormProps {
   client: Client | null
@@ -19,7 +18,6 @@ interface UseStep1FormProps {
 }
 
 export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onValidationError }: UseStep1FormProps) {
-  const router = useRouter()
   const { update } = useUpdateClient()
   const { create } = useCreateClient()
 
@@ -41,8 +39,30 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
   })
 
   useEffect(() => {
-    form.trigger()
-  }, [form])
+    if (isCreateMode) {
+      void form.trigger()
+      return
+    }
+
+    if (!client) {
+      return
+    }
+
+    form.reset({
+      firstName: client.firstName || "",
+      lastName: client.lastName || "",
+      phoneNumber: client.phoneNumber || "",
+      chartId: client.chartId || "",
+      brithDate: client.brithDate ? isoToLocalDate(client.brithDate) : "",
+      languages: client.languages?.map((l) => l.id) || [],
+      genderId: client.genderId || "",
+      email: client.email || "",
+      ssn: client.ssn || "",
+      active: client.status ?? true,
+    })
+
+    void form.trigger()
+  }, [client, isCreateMode, form])
 
   const handleSubmit = async () => {
     const isValid = await form.trigger()
@@ -86,13 +106,13 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
       return
     }
 
-    if (!form.formState.isDirty) {
-      onSaveSuccess(form.getValues())
+    if (!client?.id) {
+      onValidationError({ general: "Client not found" })
       return
     }
 
     const updateDto: UpdateClientDto = {
-      id: client!.id,
+      id: client.id,
       firstName: data.firstName,
       lastName: data.lastName,
       phoneNumber: normalizePhone(data.phoneNumber),
@@ -105,7 +125,7 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
       status: data.active,
     }
 
-    const result = await update(client!.id, updateDto)
+    const result = await update(client.id, updateDto)
 
     if (result) {
       form.reset(data)

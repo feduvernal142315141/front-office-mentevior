@@ -382,7 +382,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       onCheckedChange={field.onChange}
                       label="Active Client"
                       description="Enable or disable client access and visibility"
-                      variant="success"
+                      variant="default"
                     />
                   </div>
                 )}

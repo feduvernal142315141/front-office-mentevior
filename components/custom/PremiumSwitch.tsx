@@ -23,9 +23,9 @@ export function PremiumSwitch({
 }: PremiumSwitchProps) {
   const variantColors = {
     default: {
-      bg: checked ? "bg-blue-500" : "bg-gray-200",
-      hover: checked ? "hover:bg-blue-600" : "hover:bg-gray-300",
-      label: checked ? "text-blue-700" : "text-gray-700",
+      bg: checked ? "bg-[#037ECC]" : "bg-gray-200",
+      hover: checked ? "hover:bg-[#026fb8]" : "hover:bg-gray-300",
+      label: "text-slate-900",
     },
     success: {
       bg: checked ? "bg-green-500" : "bg-gray-200",

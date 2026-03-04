@@ -316,13 +316,13 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
           control={form.control}
           render={({ field }) => (
             <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50">
-              <PremiumSwitch
-                checked={field.value ?? true}
-                onCheckedChange={field.onChange}
-                label="Active Client"
-                description="Enable or disable client access and visibility"
-                variant="success"
-              />
+                <PremiumSwitch
+                  checked={field.value ?? true}
+                  onCheckedChange={field.onChange}
+                  label="Active Client"
+                  description="Enable or disable client access and visibility"
+                  variant="default"
+                />
             </div>
           )}
         />

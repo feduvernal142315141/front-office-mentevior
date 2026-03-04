@@ -194,9 +194,12 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const handleStepClick = useCallback((index: number) => {
     const targetStep = steps[index]
     if (!targetStep.isLocked) {
+      if (!isCreateMode && targetStep.id === "personalInfo") {
+        void refetch()
+      }
       setActiveStepIndex(index)
     }
-  }, [steps])
+  }, [steps, isCreateMode, refetch])
 
   const handleBack = useCallback(() => {
     if (activeStepIndex > 0) {
@@ -249,10 +252,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       router.push("/clients")
     }
     
-    if (!isCreateMode) {
-      refetch()
-    }
-  }, [activeStepIndex, steps, refetch, isCreateMode, router])
+  }, [activeStepIndex, steps, isCreateMode, router])
 
   const handleDocumentsAlertChange = useCallback((count: number) => {
     setStepStatuses((prev) => ({

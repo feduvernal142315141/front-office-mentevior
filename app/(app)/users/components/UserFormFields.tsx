@@ -315,14 +315,14 @@ export function UserFormFields({
                             checked={field.value ?? true}
                             onCheckedChange={(checked) => {
                               field.onChange(checked)
-          
+           
                               if (checked) {
                                 setValue("terminated", false)
                               }
                             }}
                             label="Active User"
                             description={isEditingSelf ? "Cannot modify your own status" : "Enable or disable user access to the system"}
-                            variant="success"
+                            variant="default"
                             disabled={isEditingSelf}
                           />
                         </div>
