@@ -44,7 +44,7 @@ export function WizardFooter({
             loading={isSubmitting}
             className="h-12 px-8"
           >
-            Save
+            Save & Close
           </Button>
 
           <Button
