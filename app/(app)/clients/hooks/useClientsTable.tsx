@@ -16,6 +16,13 @@ import { parseLocalDate } from "@/lib/date"
 
 type StatusFilter = "all" | "active" | "inactive"
 
+function getProgressBadgeClass(progress: number): string {
+  if (progress >= 100) return "bg-emerald-50 text-emerald-700 border-emerald-200"
+  if (progress >= 70) return "bg-amber-50 text-amber-700 border-amber-200"
+  if (progress >= 40) return "bg-orange-50 text-orange-700 border-orange-200"
+  return "bg-red-50 text-red-700 border-red-200"
+}
+
 interface UseClientsTableReturn {
   data: ClientListItem[]
   columns: CustomTableColumn<ClientListItem>[]
@@ -171,6 +178,24 @@ export function useClientsTable(): UseClientsTableReturn {
           {client.status ? "Active" : "Inactive"}
         </Badge>
       ),
+    },
+    {
+      key: "progress",
+      header: "Profile",
+      render: (client) => {
+        const progress = Math.min(100, Math.max(0, client.progress ?? 0))
+        return (
+          <Badge
+            variant="outline"
+            className={cn(
+              "font-semibold tabular-nums",
+              getProgressBadgeClass(progress)
+            )}
+          >
+            {progress}%
+          </Badge>
+        )
+      },
     },
     {
       key: "actions",

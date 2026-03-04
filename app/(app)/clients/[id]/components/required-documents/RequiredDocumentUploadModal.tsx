@@ -514,8 +514,11 @@ export function RequiredDocumentUploadModal({
               label="Issued Date"
               value={form.issuedDate}
               onChange={(val) => {
-                setForm((prev) => ({ ...prev, issuedDate: val, expirationDate: "" }))
-                setSelectedQuickOffset(null)
+                setForm((prev) => ({ ...prev, issuedDate: val }))
+                const matchingOffset = val && form.expirationDate
+                  ? detectQuickOffset(val, form.expirationDate)
+                  : null
+                setSelectedQuickOffset(matchingOffset)
               }}
               required={row.allowIssuedDate}
             />

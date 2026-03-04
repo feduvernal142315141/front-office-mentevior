@@ -27,6 +27,7 @@ export interface ClientListItem {
   diagnosis?: string
   insurance?: string
   rbt?: string
+  progress?: number
 }
 
 export interface CreateClientDto {
