@@ -7,6 +7,8 @@ export interface MemberUser {
   hiringDate: string
   roleId?: string
   role?: RoleMemberUser
+  professionalInformation?: boolean
+  credentialsSignature?: boolean
   active: boolean
   terminated?: boolean
 }

@@ -8,6 +8,7 @@ import { GeneralInformationForm } from "@/app/(app)/my-profile/manager/general-i
 import { CredentialsSignatureOverview } from "@/app/(app)/my-profile/manager/credentials-signature/components/CredentialsSignatureOverview"
 import { RequiredDocumentsOverview } from "@/app/(app)/my-profile/manager/required-documents/components/RequiredDocumentsOverview"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 
 interface UserManagerPageProps {
   params: Promise<{
@@ -18,8 +19,12 @@ interface UserManagerPageProps {
 export default function UserManagerPage({ params }: UserManagerPageProps) {
   const { id } = use(params)
   const { requiredOptions } = useAuth()
+  const { user: selectedUser } = useUserById(id)
   const [activeTab, setActiveTab] = useState("general")
   const [documentsAlertCount, setDocumentsAlertCount] = useState(0)
+
+  const showProfessionalInformation = selectedUser?.professionalInformation ?? requiredOptions.professionalInformation
+  const showCredentialsSignature = selectedUser?.credentialsSignature ?? requiredOptions.credentialsSignature
 
   const handleDocumentsAlertChange = useCallback((count: number) => {
     setDocumentsAlertCount(count)
@@ -33,12 +38,13 @@ export default function UserManagerPage({ params }: UserManagerPageProps) {
       content: (
         <GeneralInformationForm
           memberUserId={id}
+          showProfessionalInformation={showProfessionalInformation}
           onCancelRoute={`/users/${id}/edit`}
           onSuccessRoute={`/users/${id}/edit`}
         />
       ),
     },
-    ...(requiredOptions.credentialsSignature
+    ...(showCredentialsSignature
       ? [
           {
             id: "credentials",

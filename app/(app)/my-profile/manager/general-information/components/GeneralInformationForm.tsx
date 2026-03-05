@@ -79,12 +79,14 @@ function mapToDto(data: GeneralInformationFormValues): UpdateGeneralInformationD
 
 interface GeneralInformationFormProps {
   memberUserId: string | null
+  showProfessionalInformation?: boolean
   onCancelRoute?: string
   onSuccessRoute?: string
 }
 
 export function GeneralInformationForm({
   memberUserId,
+  showProfessionalInformation,
   onCancelRoute = "/my-profile",
   onSuccessRoute = "/my-profile",
 }: GeneralInformationFormProps) {
@@ -206,7 +208,7 @@ export function GeneralInformationForm({
       <form onSubmit={form.handleSubmit(onSubmit, scrollToFirstError)} noValidate>
         <div className="pb-24 space-y-8">
           <PersonalInformationSection canEditRole={canEditRole} />
-          {requiredOptions.professionalInformation && <ProfessionalInformationSection />}
+          {(showProfessionalInformation ?? requiredOptions.professionalInformation) && <ProfessionalInformationSection />}
         </div>
 
         <FormBottomBar
