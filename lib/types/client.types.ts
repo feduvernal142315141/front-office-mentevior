@@ -14,6 +14,7 @@ export interface Client {
   email?: string
   ssn?: string
   chartId?: string
+  progress?: number
   status?: boolean
   createdAt?: string
 }
@@ -39,7 +40,6 @@ export interface CreateClientDto {
   genderId?: string
   email?: string
   ssn?: string
-  chartId?: string
   status?: boolean
 }
 
@@ -59,5 +59,4 @@ export interface UpdateClientDto {
 
 export interface CreateClientResponse {
   id: string
-  chartId?: string
 }

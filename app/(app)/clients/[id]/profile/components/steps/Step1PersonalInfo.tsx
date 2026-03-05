@@ -249,29 +249,6 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
         />
 
         <Controller
-          name="chartId"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <div>
-              <FloatingInput
-                label="Chart ID"
-                value={field.value || ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                placeholder=" "
-                hasError={!!fieldState.error}
-                required
-              />
-              {fieldState.error && (
-                <p className="text-sm text-red-600 mt-2">
-                  {fieldState.error.message}
-                </p>
-              )}
-            </div>
-          )}
-        />
-
-        <Controller
           name="languages"
           control={form.control}
           render={({ field, fieldState }) => (
@@ -295,6 +272,32 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
             </div>
           )}
         />
+
+        {!isCreateMode && (
+          <Controller
+            name="chartId"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <div>
+                <FloatingInput
+                  label="Chart ID"
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  placeholder=" "
+                  hasError={!!fieldState.error}
+                  required
+                  disabled
+                />
+                {fieldState.error && (
+                  <p className="text-sm text-red-600 mt-2">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+        )}
       </div>
 
       <div className="border-t border-gray-200 mt-8 pt-8" />

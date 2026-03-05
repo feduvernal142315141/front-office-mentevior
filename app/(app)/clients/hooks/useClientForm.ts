@@ -101,7 +101,6 @@ export function useClientForm({ clientId = null, onSuccess }: UseClientFormProps
         firstName: data.firstName,
         lastName: data.lastName,
         phoneNumber: normalizePhone(data.phoneNumber),
-        chartId: data.chartId || undefined,
         brithDate: data.brithDate || undefined,
         languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
         genderId: data.genderId || undefined,

@@ -310,29 +310,6 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
               />
 
               <Controller
-                name="chartId"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <div>
-                    <FloatingInput
-                      label="Chart ID"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      placeholder=" "
-                      hasError={!!fieldState.error}
-                      required
-                    />
-                    {fieldState.error && (
-                      <p className="text-sm text-red-600 mt-2">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-
-              <Controller
                 name="languages"
                 control={form.control}
                 render={({ field, fieldState }) => (
@@ -347,6 +324,30 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       disabled={isLoadingLanguages}
                       searchable
                       required
+                    />
+                    {fieldState.error && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+
+              <Controller
+                name="chartId"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <FloatingInput
+                      label="Chart ID"
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder=" "
+                      hasError={!!fieldState.error}
+                      required
+                      disabled
                     />
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">

@@ -73,16 +73,31 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     return requiredFields.every(field => !!field)
   }, [])
 
+  const resolveInitialStepStatuses = useCallback((clientData: NonNullable<typeof client>): {
+    personalInfo: StepStatus
+    documents: StepStatus
+  } => {
+    const normalizedProgress = Math.min(100, Math.max(0, clientData.progress ?? 0))
+    const personalInfoComplete = normalizedProgress >= 10 || checkPersonalInfoComplete(clientData)
+    const documentsComplete = normalizedProgress >= 20
+
+    return {
+      personalInfo: personalInfoComplete ? "COMPLETE" : "PENDING",
+      documents: documentsComplete ? "COMPLETE" : "PENDING",
+    }
+  }, [checkPersonalInfoComplete])
+
   useEffect(() => {
     if (client) {
-      const isComplete = checkPersonalInfoComplete(client)
-      
+      const initialStatuses = resolveInitialStepStatuses(client)
+
       setStepStatuses(prev => ({
         ...prev,
-        personalInfo: isComplete ? "COMPLETE" : "PENDING"
+        personalInfo: initialStatuses.personalInfo,
+        documents: initialStatuses.documents,
       }))
     }
-  }, [client, checkPersonalInfoComplete])
+  }, [client, resolveInitialStepStatuses])
 
   const steps: StepConfig[] = useMemo(() => [
     {
@@ -171,10 +186,12 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     if (didSetInitialStepRef.current) return
     if (isCreateMode || !client) return
 
-    const personalInfoComplete = checkPersonalInfoComplete(client)
+    const initialStatuses = resolveInitialStepStatuses(client)
     const resolvedStatuses = steps.map((step) =>
       step.id === "personalInfo"
-        ? (personalInfoComplete ? "COMPLETE" : "PENDING")
+        ? initialStatuses.personalInfo
+        : step.id === "documents"
+          ? initialStatuses.documents
         : step.status
     )
     const firstIncompleteIndex = resolvedStatuses.findIndex((status) => status !== "COMPLETE")
@@ -182,7 +199,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       setActiveStepIndex(firstIncompleteIndex)
     }
     didSetInitialStepRef.current = true
-  }, [steps, isCreateMode, client, checkPersonalInfoComplete])
+  }, [steps, isCreateMode, client, resolveInitialStepStatuses])
 
   const completionPercentage = useMemo(() => {
     const completedCount = Object.values(stepStatuses).filter(status => status === "COMPLETE").length

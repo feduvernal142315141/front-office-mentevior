@@ -26,7 +26,6 @@ export const clientCreateFormSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(100),
   lastName: z.string().min(1, "Last name is required").max(100),
   phoneNumber: phoneValidation,
-  chartId: z.string().max(50).optional().or(z.literal("")),
   brithDate: birthDateValidation.optional().or(z.literal("")),
   languages: z.array(z.string()).optional(),
   genderId: z.string().max(50).optional().or(z.literal("")),

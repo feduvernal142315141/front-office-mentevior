@@ -17,7 +17,7 @@ export function useCreateClient() {
 
     try {
       const result = await createClient(data)
-      const res = { id: result, chartId: data.chartId }
+      const res = { id: result }
       setResponse(res)
 
       toast.success("Client created successfully!")

@@ -251,30 +251,31 @@ export function ClientFormFields({
                   }}
                 />
 
-                <Controller
-                  name="languages"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <FloatingSelect
-                        label="Languages"
-                        value={field.value?.[0] || ""}
-                        onChange={(value: string) => field.onChange(value ? [value] : [])}
-                        onBlur={field.onBlur}
-                        options={languageOptions}
-                        hasError={!!fieldState.error}
-                        disabled={isLoadingLanguages}
-                        searchable
-                        required={isEditing}
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
+                {isEditing && (
+                  <Controller
+                    name="chartId"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <div>
+                        <FloatingInput
+                          label="Chart ID"
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          placeholder=" "
+                          hasError={!!fieldState.error}
+                          required
+                          disabled
+                        />
+                        {fieldState.error && (
+                          <p className="text-sm text-red-600 mt-2">
+                            {fieldState.error.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  />
+                )}
               </div>
             </div>
 
@@ -311,17 +312,19 @@ export function ClientFormFields({
                   />
 
                   <Controller
-                    name="chartId"
+                    name="languages"
                     control={control}
                     render={({ field, fieldState }) => (
                       <div>
-                        <FloatingInput
-                          label="Chart ID"
-                          value={field.value}
-                          onChange={field.onChange}
+                        <FloatingSelect
+                          label="Languages"
+                          value={field.value?.[0] || ""}
+                          onChange={(value: string) => field.onChange(value ? [value] : [])}
                           onBlur={field.onBlur}
-                          placeholder=" "
+                          options={languageOptions}
                           hasError={!!fieldState.error}
+                          disabled={isLoadingLanguages}
+                          searchable
                           required={isEditing}
                         />
                         {fieldState.error && (
