@@ -21,6 +21,9 @@ import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import type { StepComponentProps, StepConfig, StepStatus } from "@/lib/types/wizard.types"
 import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
+import { Step3Caregivers } from "./steps/Step3Caregivers"
+import { Step4Medications } from "./steps/Step4Medications"
+import { Step6Diagnoses } from "./steps/Step6Diagnoses"
 import { Step10RequiredDocuments } from "./steps/Step10RequiredDocuments"
 import { StepPlaceholder } from "./steps/StepPlaceholder"
 
@@ -104,7 +107,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Users className="w-4 h-4" />,
       status: stepStatuses.caregivers,
       isLocked: false,
-      component: (props: StepComponentProps) => <StepPlaceholder icon={Users} title="Caregivers" scrumId="SCRUM-125" {...props} />,
+      component: Step3Caregivers,
     },
     {
       id: "medications",
@@ -112,7 +115,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Pill className="w-4 h-4" />,
       status: stepStatuses.medications,
       isLocked: false,
-      component: (props: StepComponentProps) => <StepPlaceholder icon={Pill} title="Medications" scrumId="SCRUM-132" {...props} />,
+      component: Step4Medications,
     },
     {
       id: "physicians",
@@ -128,7 +131,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Activity className="w-4 h-4" />,
       status: stepStatuses.diagnoses,
       isLocked: false,
-      component: (props: StepComponentProps) => <StepPlaceholder icon={Activity} title="Diagnoses" scrumId="SCRUM-127" {...props} />,
+      component: Step6Diagnoses,
     },
     {
       id: "insurances",
