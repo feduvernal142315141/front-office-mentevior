@@ -23,8 +23,10 @@ import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
 import { Step3Caregivers } from "./steps/Step3Caregivers"
 import { Step4Medications } from "./steps/Step4Medications"
+import { Step5Physicians } from "./steps/Step5Physicians"
 import { Step6Diagnoses } from "./steps/Step6Diagnoses"
 import { Step10RequiredDocuments } from "./steps/Step10RequiredDocuments"
+import { Step9Providers } from "./steps/Step9Providers"
 import { StepPlaceholder } from "./steps/StepPlaceholder"
 
 interface ClientProfileWizardProps {
@@ -138,7 +140,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Stethoscope className="w-4 h-4" />,
       status: stepStatuses.physicians,
       isLocked: false,
-      component: (props: StepComponentProps) => <StepPlaceholder icon={Stethoscope} title="Physicians" scrumId="SCRUM-126" {...props} />,
+      component: Step5Physicians,
     },
     {
       id: "diagnoses",
@@ -170,7 +172,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <UserCog className="w-4 h-4" />,
       status: stepStatuses.providers,
       isLocked: false,
-      component: (props: StepComponentProps) => <StepPlaceholder icon={UserCog} title="Providers" scrumId="SCRUM-129" {...props} />,
+      component: Step9Providers,
     },
     {
       id: "documents",

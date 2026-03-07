@@ -3,7 +3,7 @@ import { z } from "zod"
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Validación de teléfono: acepta formatos con símbolos pero valida longitud de dígitos
-const phoneValidation = z.string().refine((val) => {
+export const phoneValidation = z.string().refine((val) => {
   const digitsOnly = val.replace(/\D/g, "")
   return digitsOnly.length >= 10 && digitsOnly.length <= 11
 }, {

@@ -20,7 +20,8 @@ import { useCreateDiagnosis } from "@/lib/modules/diagnoses/hooks/use-create-dia
 import { useUpdateDiagnosis } from "@/lib/modules/diagnoses/hooks/use-update-diagnosis"
 import type { Diagnosis } from "@/lib/types/diagnosis.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
-import { formatDateDisplay } from "@/lib/utils/date"
+import { dateToISO, formatDateDisplay } from "@/lib/utils/date"
+import { isoToLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 
 export function Step6Diagnoses({
@@ -62,7 +63,8 @@ export function Step6Diagnoses({
 
   const form = useForm<DiagnosisFormValues>({
     resolver: zodResolver(diagnosisFormSchema),
-    mode: "onChange",
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: diagnosisFormDefaults,
   })
 
@@ -78,19 +80,10 @@ export function Step6Diagnoses({
     {
       key: "referralDate",
       header: "Referral Date",
-      render: (diagnosis) => formatDateDisplay(diagnosis.referralDate),
-    },
-    {
-      key: "treatmentStartDate",
-      header: "Treatment Start Date",
-      render: (diagnosis) => formatDateDisplay(diagnosis.treatmentStartDate),
-    },
-    {
-      key: "treatmentEndDate",
-      header: "Treatment End Date",
-      render: (diagnosis) => diagnosis.treatmentEndDate
-        ? formatDateDisplay(diagnosis.treatmentEndDate)
-        : "-",
+      render: (diagnosis) =>
+        diagnosis.referralDate
+          ? formatDateDisplay(isoToLocalDate(diagnosis.referralDate))
+          : "—",
     },
     {
       key: "status",
@@ -127,15 +120,16 @@ export function Step6Diagnoses({
           <button
             onClick={() => {
               setEditingDiagnosis(diagnosis)
-              form.reset({
-                code: diagnosis.code,
-                name: diagnosis.name,
-                referralDate: diagnosis.referralDate,
-                treatmentStartDate: diagnosis.treatmentStartDate,
-                status: diagnosis.status,
-                treatmentEndDate: diagnosis.treatmentEndDate ?? "",
-                isPrimary: diagnosis.isPrimary,
-              })
+              const resetValues = {
+                code: diagnosis.code ?? "",
+                name: diagnosis.name ?? "",
+                referralDate: diagnosis.referralDate ? isoToLocalDate(diagnosis.referralDate) : "",
+                treatmentStartDate: diagnosis.treatmentStartDate ? isoToLocalDate(diagnosis.treatmentStartDate) : "",
+                status: Boolean(diagnosis.status),
+                treatmentEndDate: diagnosis.treatmentEndDate ? isoToLocalDate(diagnosis.treatmentEndDate) : "",
+                isPrimary: Boolean(diagnosis.isPrimary),
+              }
+              form.reset(resetValues)
               setIsDiagnosisModalOpen(true)
             }}
             className={cn(
@@ -188,6 +182,18 @@ export function Step6Diagnoses({
       return
     }
 
+    const currentDate = dateToISO(new Date())
+
+    if (currentDate && values.treatmentStartDate > currentDate) {
+      const message = "Treatment start date is later than the current date"
+      form.setError("treatmentStartDate", {
+        type: "manual",
+        message,
+      })
+      onValidationError({ treatmentStartDate: message })
+      return
+    }
+
     const payload = {
       code: values.code,
       name: values.name,
@@ -198,14 +204,14 @@ export function Step6Diagnoses({
       isPrimary: values.isPrimary,
     }
 
-    const result = editingDiagnosis
+    const ok = editingDiagnosis
       ? await update(editingDiagnosis.id, payload)
       : await create({
           clientId: resolvedClientId,
           ...payload,
         })
 
-    if (!result) {
+    if (!ok) {
       return
     }
 
@@ -266,10 +272,14 @@ export function Step6Diagnoses({
         data={paginatedDiagnoses}
         isLoading={isLoading}
         emptyMessage="No diagnoses added yet"
+        hideEmptyIcon
         emptyContent={
           <div className="flex flex-col items-center justify-center gap-3 py-10">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Activity className="h-8 w-8 text-slate-400" />
+            <div className="relative mb-1">
+              <div className="absolute inset-0 rounded-full bg-[#037ECC]/10 blur-2xl" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl border border-[#037ECC]/20 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10">
+                <Activity className="h-10 w-10 text-[#037ECC]/60" />
+              </div>
             </div>
             <p className="text-sm font-medium text-slate-700">No diagnoses available</p>
             <p className="max-w-md text-center text-sm text-slate-500">
@@ -311,6 +321,13 @@ export function Step6Diagnoses({
           }}
           className="px-6 py-6"
         >
+          {Object.keys(form.formState.errors).length > 0 && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {Object.entries(form.formState.errors).map(([key, err]) => (
+                <p key={key}>{String(err?.message ?? key)}</p>
+              ))}
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <Controller
               name="code"
@@ -384,17 +401,14 @@ export function Step6Diagnoses({
               name="treatmentEndDate"
               control={form.control}
               render={({ field, fieldState }) => (
-                <div>
-                  <FloatingInput
-                    label="Treatment End Date"
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    type="date"
-                    hasError={!!fieldState.error}
-                  />
-                  {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
-                </div>
+                <PremiumDatePicker
+                  label="Treatment End Date"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  hasError={!!fieldState.error}
+                  errorMessage={fieldState.error?.message}
+                />
               )}
             />
           </div>

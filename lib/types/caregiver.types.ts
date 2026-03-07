@@ -1,30 +1,13 @@
-export const caregiverRelationshipOptions = [
-  "Mother",
-  "Father",
-  "Brother",
-  "Sister",
-  "Grandfather",
-  "Grandmother",
-  "Teacher",
-  "Son",
-  "Daugther",
-  "Grandson",
-  "Grandaugther",
-  "Husband",
-  "Wife",
-  "Uncle",
-  "Aunt",
-] as const
-
-export type CaregiverRelationship = (typeof caregiverRelationshipOptions)[number]
-
 export interface Caregiver {
   id: string
   clientId: string
   firstName: string
   lastName: string
-  relationship: CaregiverRelationship
+  fullName?: string
+  relationshipId: string
+  relationship?: string
   phone: string
+  phoneNumber?: string
   email: string
   status: boolean
   isPrimary: boolean
@@ -35,7 +18,7 @@ export interface CreateCaregiverDto {
   clientId: string
   firstName: string
   lastName: string
-  relationship: CaregiverRelationship
+  relationshipId: string
   phone: string
   email: string
   status: boolean
@@ -45,7 +28,7 @@ export interface CreateCaregiverDto {
 export interface UpdateCaregiverDto {
   firstName: string
   lastName: string
-  relationship: CaregiverRelationship
+  relationshipId: string
   phone: string
   email: string
   status: boolean

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Edit2, Pill } from "lucide-react"
+import { Edit2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -20,7 +20,8 @@ import { useCreateMedication } from "@/lib/modules/medications/hooks/use-create-
 import { useUpdateMedication } from "@/lib/modules/medications/hooks/use-update-medication"
 import type { Medication } from "@/lib/types/medication.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
-import { formatDateDisplay } from "@/lib/utils/date"
+import { dateToISO, formatDateDisplay } from "@/lib/utils/date"
+import { isoToLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 
 export function Step4Medications({
@@ -62,7 +63,8 @@ export function Step4Medications({
 
   const form = useForm<MedicationFormValues>({
     resolver: zodResolver(medicationFormSchema),
-    mode: "onChange",
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: medicationFormDefaults,
   })
 
@@ -76,14 +78,12 @@ export function Step4Medications({
       header: "Dosage",
     },
     {
-      key: "prescriptionDate",
-      header: "Prescription Date",
-      render: (medication) => formatDateDisplay(medication.prescriptionDate),
-    },
-    {
       key: "treatmentStartDate",
       header: "Treatment Start Date",
-      render: (medication) => formatDateDisplay(medication.treatmentStartDate),
+      render: (medication) =>
+        medication.treatmentStartDate
+          ? formatDateDisplay(isoToLocalDate(medication.treatmentStartDate))
+          : "—",
     },
     {
       key: "comments",
@@ -101,8 +101,8 @@ export function Step4Medications({
               form.reset({
                 name: medication.name,
                 dosage: medication.dosage,
-                prescriptionDate: medication.prescriptionDate,
-                treatmentStartDate: medication.treatmentStartDate,
+                prescriptionDate: medication.prescriptionDate ? isoToLocalDate(medication.prescriptionDate) : "",
+                treatmentStartDate: medication.treatmentStartDate ? isoToLocalDate(medication.treatmentStartDate) : "",
                 comments: medication.comments,
               })
               setIsMedicationModalOpen(true)
@@ -154,6 +154,18 @@ export function Step4Medications({
   const handleSaveMedication = form.handleSubmit(async (values) => {
     if (!resolvedClientId) {
       onValidationError({ general: "Client not found" })
+      return
+    }
+
+    const currentDate = dateToISO(new Date())
+
+    if (currentDate && values.treatmentStartDate > currentDate) {
+      const message = "Treatment start date is later than the current date"
+      form.setError("treatmentStartDate", {
+        type: "manual",
+        message,
+      })
+      onValidationError({ treatmentStartDate: message })
       return
     }
 
@@ -237,9 +249,6 @@ export function Step4Medications({
         emptyMessage="No medications added yet"
         emptyContent={
           <div className="flex flex-col items-center justify-center gap-3 py-10">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Pill className="h-8 w-8 text-slate-400" />
-            </div>
             <p className="text-sm font-medium text-slate-700">No medications available</p>
             <p className="max-w-md text-center text-sm text-slate-500">
               Add medications to keep this patient treatment plan complete.

@@ -11,14 +11,12 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { caregiverFormDefaults, caregiverFormSchema, type CaregiverFormValues } from "@/lib/schemas/caregiver-form.schema"
-import {
-  caregiverRelationshipOptions,
-  type Caregiver,
-} from "@/lib/types/caregiver.types"
+import type { Caregiver } from "@/lib/types/caregiver.types"
 import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
 import { useCreateCaregiver } from "@/lib/modules/caregivers/hooks/use-create-caregiver"
 import { useUpdateCaregiver } from "@/lib/modules/caregivers/hooks/use-update-caregiver"
-import { formatPhoneDisplay } from "@/lib/utils/phone-format"
+import { useRelationshipCatalog } from "@/lib/modules/relationships/hooks/use-relationship-catalog"
+import { formatPhoneDisplay, formatPhoneInput } from "@/lib/utils/phone-format"
 import { cn } from "@/lib/utils"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 
@@ -50,40 +48,90 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
   const { caregivers, isLoading, error, refetch } = useCaregiversByClient(resolvedClientId)
   const { create, isLoading: isCreating } = useCreateCaregiver()
   const { update, isLoading: isUpdating } = useUpdateCaregiver()
+  const { relationships, isLoading: isLoadingRelationships, error: relationshipError } = useRelationshipCatalog()
 
   const form = useForm<CaregiverFormValues>({
     resolver: zodResolver(caregiverFormSchema),
-    mode: "onChange",
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: caregiverFormDefaults,
   })
 
-  const relationshipOptions = caregiverRelationshipOptions.map((relationship) => ({
-    value: relationship,
-    label: relationship,
-  }))
+  const relationshipOptions = useMemo(() => relationships.map((relationship) => ({
+    value: relationship.id,
+    label: relationship.name,
+  })), [relationships])
+
+  const relationshipNameById = useMemo(() => new Map(
+    relationships.map((relationship) => [relationship.id, relationship.name])
+  ), [relationships])
+
+  const relationshipIdByName = useMemo(() => new Map(
+    relationships.map((relationship) => [relationship.name, relationship.id])
+  ), [relationships])
+
+  const getCaregiverFullName = (caregiver: Caregiver) => {
+    const fullName = caregiver.fullName?.trim()
+    if (fullName) {
+      return fullName
+    }
+
+    const composedName = [caregiver.firstName, caregiver.lastName]
+      .map((value) => value?.trim() ?? "")
+      .filter(Boolean)
+      .join(" ")
+
+    return composedName || "-"
+  }
+
+  const getCaregiverFormValues = (caregiver: Caregiver): CaregiverFormValues => ({
+    firstName: caregiver.firstName ?? "",
+    lastName: caregiver.lastName ?? "",
+    relationshipId: caregiver.relationshipId || relationshipIdByName.get(caregiver.relationship || "") || "",
+    phone: caregiver.phone || caregiver.phoneNumber || "",
+    email: caregiver.email ?? "",
+    status: caregiver.status ?? true,
+    isPrimary: caregiver.isPrimary ?? true,
+  })
 
   const columns: CustomTableColumn<Caregiver>[] = [
     {
       key: "fullName",
-      header: "Caregiver",
-      render: (caregiver) => `${caregiver.firstName} ${caregiver.lastName}`,
+      header: "Name",
+     
+      render: (caregiver) => (
+        <span className="block min-w-0 truncate whitespace-nowrap" title={getCaregiverFullName(caregiver)}>
+          {getCaregiverFullName(caregiver)}
+        </span>
+      ),
     },
     {
       key: "relationship",
       header: "Relationship",
+      render: (caregiver) => caregiver.relationship || relationshipNameById.get(caregiver.relationshipId) || "-",
     },
     {
-      key: "phone",
-      header: "Phone",
-      render: (caregiver) => formatPhoneDisplay(caregiver.phone),
+      key: "phoneNumber",
+      header: "Phone Number",
+      render: (caregiver) => {
+        const phoneNumber = caregiver.phone || caregiver.phoneNumber
+        return phoneNumber ? formatPhoneDisplay(phoneNumber) : "-"
+      },
     },
-    {
-      key: "email",
-      header: "Email",
-    },
+    // {
+    //   key: "email",
+    //   header: "Email",
+    //   className: "w-[24%] min-w-[240px]",
+    //   render: (caregiver) => (
+    //     <span className="block min-w-0 truncate whitespace-nowrap" title={caregiver.email || "-"}>
+    //       {caregiver.email || "-"}
+    //     </span>
+    //   ),
+    // },
     {
       key: "status",
       header: "Status",
+      className: "w-[8%] min-w-[120px] whitespace-nowrap",
       render: (caregiver) => (
         <span className={caregiver.status
           ? "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
@@ -97,6 +145,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "isPrimary",
       header: "Type",
+      className: "w-[8%] min-w-[120px] whitespace-nowrap",
       render: (caregiver) => (
         <span className={caregiver.isPrimary
           ? "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-blue-50 text-[#037ECC] border border-blue-200"
@@ -110,21 +159,14 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "actions",
       header: "Actions",
+      className: "w-[6%] min-w-[90px] whitespace-nowrap",
       align: "right",
       render: (caregiver) => (
         <div className="flex justify-end gap-2">
           <button
             onClick={() => {
               setEditingCaregiver(caregiver)
-              form.reset({
-                firstName: caregiver.firstName,
-                lastName: caregiver.lastName,
-                relationship: caregiver.relationship,
-                phone: caregiver.phone,
-                email: caregiver.email,
-                status: caregiver.status,
-                isPrimary: caregiver.isPrimary,
-              })
+              form.reset(getCaregiverFormValues(caregiver))
               setIsCaregiverModalOpen(true)
             }}
             className={cn(
@@ -181,7 +223,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
       ? await update(editingCaregiver.id, {
           firstName: values.firstName,
           lastName: values.lastName,
-          relationship: values.relationship,
+          relationshipId: values.relationshipId,
           phone: values.phone,
           email: values.email,
           status: values.status,
@@ -191,7 +233,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
           clientId: resolvedClientId,
           firstName: values.firstName,
           lastName: values.lastName,
-          relationship: values.relationship,
+          relationshipId: values.relationshipId,
           phone: values.phone,
           email: values.email,
           status: values.status,
@@ -254,15 +296,25 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
         </div>
       )}
 
+      {relationshipError && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {relationshipError.message}
+        </div>
+      )}
+
       <CustomTable
         columns={columns}
         data={paginatedCaregivers}
         isLoading={isLoading}
         emptyMessage="No caregivers added yet"
+        hideEmptyIcon
         emptyContent={
           <div className="flex flex-col items-center justify-center gap-3 py-10">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Users className="h-8 w-8 text-slate-400" />
+            <div className="relative mb-1">
+              <div className="absolute inset-0 rounded-full bg-[#037ECC]/10 blur-2xl" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl border border-[#037ECC]/20 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10">
+                <Users className="h-10 w-10 text-[#037ECC]/60" />
+              </div>
             </div>
             <p className="text-sm font-medium text-slate-700">No caregivers available</p>
             <p className="max-w-md text-center text-sm text-slate-500">
@@ -312,7 +364,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                 <div>
                   <FloatingInput
                     label="First Name"
-                    value={field.value}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     hasError={!!fieldState.error}
@@ -330,7 +382,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                 <div>
                   <FloatingInput
                     label="Last Name"
-                    value={field.value}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     hasError={!!fieldState.error}
@@ -342,17 +394,18 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
             />
 
             <Controller
-              name="relationship"
+              name="relationshipId"
               control={form.control}
               render={({ field, fieldState }) => (
                 <div>
                   <FloatingSelect
                     label="Relationship"
-                    value={field.value}
+                    value={field.value || ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     options={relationshipOptions}
                     hasError={!!fieldState.error}
+                    disabled={isLoadingRelationships}
                     required
                   />
                   {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
@@ -361,23 +414,33 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
             />
 
             <Controller
+              key={`caregiver-phone-${editingCaregiver?.id ?? "new"}-${isCaregiverModalOpen ? "open" : "closed"}`}
               name="phone"
               control={form.control}
-              render={({ field, fieldState }) => (
-                <div>
-                  <FloatingInput
-                    label="Phone"
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    type="tel"
-                    inputMode="tel"
-                    hasError={!!fieldState.error}
-                    required
-                  />
-                  {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
-                </div>
-              )}
+              render={({ field, fieldState }) => {
+                const [displayValue, setDisplayValue] = useState(formatPhoneInput(field.value ?? ""))
+
+                return (
+                  <div>
+                    <FloatingInput
+                      label="Phone"
+                      value={displayValue}
+                      onChange={(value) => {
+                        const formatted = formatPhoneInput(value, displayValue)
+                        setDisplayValue(formatted)
+                        field.onChange(formatted)
+                      }}
+                      onBlur={field.onBlur}
+                      placeholder="(305) 555-1234"
+                      type="tel"
+                      inputMode="tel"
+                      hasError={!!fieldState.error}
+                      required
+                    />
+                    {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
+                  </div>
+                )
+              }}
             />
 
             <Controller
@@ -387,7 +450,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                 <div className="md:col-span-2">
                   <FloatingInput
                     label="Email"
-                    value={field.value}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     type="email"
@@ -408,7 +471,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               render={({ field }) => (
                 <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
                   <PremiumSwitch
-                    checked={field.value}
+                    checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
                     label={field.value ? "Active" : "Inactive"}
                     description="Control caregiver availability"
@@ -424,7 +487,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               render={({ field }) => (
                 <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
                   <PremiumSwitch
-                    checked={field.value}
+                    checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
                     label={field.value ? "Primary" : "Secondary"}
                     description="Set caregiver role priority"
