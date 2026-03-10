@@ -41,7 +41,7 @@ export function useAssignProvider(): UseAssignProviderReturn {
     setError(null)
 
     try {
-      await Promise.all(userIds.map((userId) => assignProvider({ clientId, userId })))
+      await assignProvider({ clientId, userId: userIds })
       toast.success(
         userIds.length === 1
           ? "Provider assigned successfully"

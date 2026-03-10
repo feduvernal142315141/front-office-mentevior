@@ -11,5 +11,5 @@ export interface ClientProvider {
 
 export interface AssignProviderDto {
   clientId: string
-  userId: string
+  userId: string | string[]
 }
