@@ -98,7 +98,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "fullName",
       header: "Name",
-     
+      className: "w-[28%] min-w-[220px]",
       render: (caregiver) => (
         <span className="block min-w-0 truncate whitespace-nowrap" title={getCaregiverFullName(caregiver)}>
           {getCaregiverFullName(caregiver)}
@@ -108,14 +108,22 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "relationship",
       header: "Relationship",
+      className: "w-[20%] min-w-[160px] whitespace-nowrap",
       render: (caregiver) => caregiver.relationship || relationshipNameById.get(caregiver.relationshipId) || "-",
     },
     {
       key: "phoneNumber",
       header: "Phone Number",
+      className: "w-[18%] min-w-[180px]",
       render: (caregiver) => {
         const phoneNumber = caregiver.phone || caregiver.phoneNumber
-        return phoneNumber ? formatPhoneDisplay(phoneNumber) : "-"
+        return phoneNumber
+          ? (
+            <span className="inline-block whitespace-nowrap font-medium tabular-nums tracking-[0.01em] text-slate-700" title={formatPhoneDisplay(phoneNumber)}>
+              {formatPhoneDisplay(phoneNumber)}
+            </span>
+          )
+          : "-"
       },
     },
     // {

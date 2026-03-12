@@ -9,6 +9,7 @@ import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { User, FileText, Sliders, ArrowRight, UserCheck } from "lucide-react"
+import { InfoTooltip } from "@/components/custom/InfoTooltip"
 import { useLanguagesCatalog } from "@/lib/modules/languages/hooks/use-languages-catalog"
 import { useGenderCatalog } from "@/lib/modules/gender/hooks/use-gender-catalog"
 import { formatPhoneInput } from "@/lib/utils/phone-format"
@@ -256,7 +257,7 @@ export function ClientFormFields({
                     name="chartId"
                     control={control}
                     render={({ field, fieldState }) => (
-                      <div>
+                      <div className="relative">
                         <FloatingInput
                           label="Chart ID"
                           value={field.value}
@@ -267,6 +268,9 @@ export function ClientFormFields({
                           required
                           disabled
                         />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <InfoTooltip message="To change the Chart ID format, go to My Company → Account Profile" />
+                        </div>
                         {fieldState.error && (
                           <p className="text-sm text-red-600 mt-2">
                             {fieldState.error.message}

@@ -22,6 +22,7 @@ import { useGenderCatalog } from "@/lib/modules/gender/hooks/use-gender-catalog"
 import { isoToLocalDate } from "@/lib/date"
 import { formatPhoneInput, normalizePhone } from "@/lib/utils/phone-format"
 import { UserCheck } from "lucide-react"
+import { InfoTooltip } from "@/components/custom/InfoTooltip"
 
 interface PersonalInformationFormProps {
   client: Client
@@ -338,7 +339,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                 name="chartId"
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <div>
+                  <div className="relative">
                     <FloatingInput
                       label="Chart ID"
                       value={field.value || ""}
@@ -349,6 +350,9 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       required
                       disabled
                     />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <InfoTooltip message="To change the Chart ID format, go to My Company → Account Profile" />
+                    </div>
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">
                         {fieldState.error.message}

@@ -1,17 +1,5 @@
-/**
- * ACCOUNT PROFILE SCHEMA
- * 
- * Zod validation schema for account profile form.
- * Separated for reusability and testing.
- * 
- * NOTE: Field names match backend API from /api/company/by-auth-token
- */
-
 import { z } from "zod"
 
-/**
- * Validation schema
- */
 export const accountProfileSchema = z.object({
   legalName: z
     .string()
@@ -59,17 +47,22 @@ export const accountProfileSchema = z.object({
   logo: z
     .string()
     .url("Invalid logo URL")
-    .min(1, "Logo is required")
+    .min(1, "Logo is required"),
+
+  chartPrefix: z
+    .string()
+    .min(1, "Chart prefix is required")
+    .max(10, "Chart prefix must be less than 10 characters")
+    .regex(/^[A-Za-z]+$/, "Only letters are allowed"),
+
+  chartStartNumber: z
+    .number({ invalid_type_error: "Must be a number" })
+    .int("Must be a whole number")
+    .min(1, "Must be at least 1"),
 })
 
-/**
- * Inferred type from schema
- */
 export type AccountProfileFormValues = z.infer<typeof accountProfileSchema>
 
-/**
- * Default form values
- */
 export const getAccountProfileDefaults = (): AccountProfileFormValues => ({
   legalName: "",
   agencyEmail: "",
@@ -81,4 +74,6 @@ export const getAccountProfileDefaults = (): AccountProfileFormValues => ({
   mpi: "",
   taxonomyCode: "",
   logo: "",
+  chartPrefix: "BA",
+  chartStartNumber: 1,
 })

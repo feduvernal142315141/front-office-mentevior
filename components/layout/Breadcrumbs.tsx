@@ -40,7 +40,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "services-pending": "Services Pending",
   "billed-claims": "Billed Claims",
   "credentials": "Credentials",
-  "events": "Events",
+  "events": "Schedules",
   "physicians": "Physicians",
   "service-plans": "Service Plans",
   "documents": "Documents",
@@ -159,7 +159,11 @@ export function Breadcrumbs() {
   if (breadcrumbs.length <= 1) return null
 
   const showBackButton = breadcrumbs.length >= 3
-  const backHref = showBackButton ? breadcrumbs[breadcrumbs.length - 2].href : null
+  const backHref = showBackButton
+    ? pathname.startsWith("/clients/new/profile")
+      ? "/clients"
+      : breadcrumbs[breadcrumbs.length - 2].href
+    : null
 
   const handleBack = () => {
     if (backHref) {

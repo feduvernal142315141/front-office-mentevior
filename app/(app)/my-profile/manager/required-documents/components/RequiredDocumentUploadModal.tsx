@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import {
   FileText, Upload, X, AlertCircle, File,
-  RefreshCw, Save, Loader2, Eye, Clock,
+  Save, Loader2, Eye, CalendarDays, Sparkles,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -17,21 +17,15 @@ import type { UserHRDocumentRow } from "@/lib/types/user-hr-document.types"
 import { getUserDocumentUrl } from "@/lib/modules/user-hr-documents/services/user-hr-documents.service"
 import { addMonths, addYears } from "date-fns"
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 const MAX_SIZE_MB = 25
 
-// Quick-add buttons: label → offset function applied to issuedDate
 const QUICK_OFFSETS = [
-  { label: "+1 month",  apply: (d: Date) => addMonths(d, 1)  },
-  { label: "+6 months", apply: (d: Date) => addMonths(d, 6)  },
-  { label: "+1 year",   apply: (d: Date) => addYears(d, 1)   },
-  { label: "+2 years",  apply: (d: Date) => addYears(d, 2)   },
-  { label: "+3 years",  apply: (d: Date) => addYears(d, 3)   },
-  { label: "+4 years",  apply: (d: Date) => addYears(d, 4)   },
-  { label: "+5 years",  apply: (d: Date) => addYears(d, 5)   },
+  { label: "+1 month",  apply: (d: Date) => addMonths(d, 1) },
+  { label: "+6 months", apply: (d: Date) => addMonths(d, 6) },
+  { label: "+1 year",   apply: (d: Date) => addYears(d, 1)  },
+  { label: "+2 years",  apply: (d: Date) => addYears(d, 2)  },
+  { label: "+3 years",  apply: (d: Date) => addYears(d, 3)  },
+  { label: "+5 years",  apply: (d: Date) => addYears(d, 5)  },
 ]
 
 function detectQuickOffset(issuedDateStr: string, expirationDateStr: string): string | null {
@@ -51,18 +45,12 @@ function detectQuickOffset(issuedDateStr: string, expirationDateStr: string): st
   return null
 }
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface UploadModalFormState {
   issuedDate: string
   expirationDate: string
   comments: string
-  /** Newly selected file (not yet saved) */
   newFile: File | null
   newFileBase64: string | null
-  /** Whether the user explicitly removed the existing server file */
   removeExistingFile: boolean
 }
 
@@ -82,28 +70,17 @@ interface RequiredDocumentUploadModalProps {
   onSave: (data: RequiredDocumentUploadModalSavePayload) => Promise<void>
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => {
       const result = reader.result as string
-      // Strip "data:...;base64," — send only raw base64
       resolve(result.split(",")[1] ?? result)
     }
     reader.onerror = () => reject(new Error("Failed to read file"))
     reader.readAsDataURL(file)
   })
 }
-
-
-
-// ---------------------------------------------------------------------------
-// Sub-component: file zone
-// ---------------------------------------------------------------------------
 
 interface FileZoneProps {
   documentName: string
@@ -148,8 +125,6 @@ function FileZone({
 
   return (
     <div className="space-y-3">
-
-      {/* Existing file row */}
       {hasExisting && !newFile && (
         <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white">
           <div className="w-11 h-11 rounded-lg bg-[#037ECC]/10 flex items-center justify-center flex-shrink-0">
@@ -198,7 +173,6 @@ function FileZone({
         </div>
       )}
 
-      {/* New file selected preview */}
       {newFile && (
         <div className="flex items-center gap-4 p-4 rounded-xl border border-blue-200 bg-blue-50">
           <div className="w-11 h-11 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -228,7 +202,6 @@ function FileZone({
         </div>
       )}
 
-      {/* Drop zone — shown when no existing file OR when upload another was clicked */}
       {!hasExisting && !newFile && (
         <div
           onDragOver={onDragOver}
@@ -275,10 +248,6 @@ function FileZone({
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Main modal component
-// ---------------------------------------------------------------------------
 
 export function RequiredDocumentUploadModal({
   open,
@@ -341,10 +310,6 @@ export function RequiredDocumentUploadModal({
     }
   }, [open, row])
 
-  // ---------------------------------------------------------------------------
-  // File handling
-  // ---------------------------------------------------------------------------
-
   const handleFileChange = useCallback(async (file: File) => {
     setFileError(null)
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
@@ -404,10 +369,6 @@ export function RequiredDocumentUploadModal({
       toast.error(err instanceof Error ? err.message : "Failed to load document")
     }
   }, [row])
-
-  // ---------------------------------------------------------------------------
-  // Quick-date buttons
-  // ---------------------------------------------------------------------------
 
   const handleQuickOffset = useCallback(
     (label: string, applyFn: (d: Date) => Date) => {
@@ -535,29 +496,28 @@ export function RequiredDocumentUploadModal({
           </div>
 
           <div className={cn(
-            "rounded-xl border p-4 transition-all duration-200",
+            "rounded-2xl border p-5 transition-all duration-200",
             form.issuedDate
-              ? "border-slate-200 bg-white"
+              ? "border-slate-200 bg-slate-50/40"
               : "border-dashed border-slate-200 bg-slate-50/60"
           )}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className={cn(
-                "w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors",
-                form.issuedDate ? "bg-blue-100" : "bg-slate-100"
-              )}>
-                <Clock className={cn("w-3.5 h-3.5", form.issuedDate ? "text-blue-600" : "text-slate-400")} />
-              </div>
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className={cn(
+                "w-5 h-5 transition-colors",
+                form.issuedDate ? "text-blue-600" : "text-slate-400"
+              )} />
               <p className={cn(
-                "text-xs font-semibold uppercase tracking-wider transition-colors",
-                form.issuedDate ? "text-slate-600" : "text-slate-400"
+                "text-sm font-bold transition-colors",
+                form.issuedDate ? "text-slate-800" : "text-slate-400"
               )}>
-                Quick expiration
+                Quick Expiration
               </p>
               {!form.issuedDate && (
                 <span className="ml-auto text-xs text-slate-400 italic">Set issued date first</span>
               )}
             </div>
-            <div className="grid grid-cols-4 gap-2">
+
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
               {QUICK_OFFSETS.map(({ label, apply }) => {
                 const isSelected = selectedQuickOffset === label
                 const cleanLabel = label.replace("+", "").trim()
@@ -569,31 +529,24 @@ export function RequiredDocumentUploadModal({
                     onClick={() => handleQuickOffset(label, apply)}
                     disabled={!form.issuedDate}
                     className={cn(
-                      "relative flex flex-col items-center justify-center py-2.5 px-2 rounded-lg",
-                      "border text-center transition-all duration-150 group",
+                      "relative flex flex-col items-center justify-center py-3 px-2 rounded-xl",
+                      "border text-center transition-all duration-150",
                       "disabled:opacity-30 disabled:cursor-not-allowed",
                       isSelected
-                        ? "border-blue-500 bg-blue-500 shadow-sm shadow-blue-200"
+                        ? "border-blue-600 bg-blue-600 shadow-md shadow-blue-200"
                         : "border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/60"
                     )}
                   >
+                    <CalendarDays className={cn(
+                      "w-5 h-5 mb-1.5",
+                      isSelected ? "text-white" : "text-slate-400"
+                    )} />
                     <span className={cn(
-                      "text-base font-bold leading-none",
-                      isSelected ? "text-white" : "text-slate-800"
+                      "text-xs font-bold leading-tight",
+                      isSelected ? "text-white" : "text-slate-700"
                     )}>
-                      {num}
+                      {num} {unit && unit.charAt(0).toUpperCase() + unit.slice(1)}
                     </span>
-                    <span className={cn(
-                      "text-[10px] font-medium mt-0.5 capitalize leading-none",
-                      isSelected ? "text-blue-100" : "text-slate-400"
-                    )}>
-                      {unit}
-                    </span>
-                    {isSelected && (
-                      <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                      </span>
-                    )}
                   </button>
                 )
               })}
@@ -610,7 +563,6 @@ export function RequiredDocumentUploadModal({
           rows={3}
         />
 
-        {/* Action buttons */}
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
           <Button
             variant="secondary"

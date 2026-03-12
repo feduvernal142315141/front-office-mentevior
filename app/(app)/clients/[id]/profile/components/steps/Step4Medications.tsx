@@ -31,6 +31,7 @@ export function Step4Medications({
   onValidationError,
   registerSubmit,
   registerValidation,
+  onDirtyChange,
 }: StepComponentProps) {
   const [isMedicationModalOpen, setIsMedicationModalOpen] = useState(false)
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null)
@@ -146,6 +147,10 @@ export function Step4Medications({
   }, [registerValidation])
 
   useEffect(() => {
+    onDirtyChange?.(isMedicationModalOpen && form.formState.isDirty)
+  }, [isMedicationModalOpen, form.formState.isDirty, onDirtyChange])
+
+  useEffect(() => {
     registerSubmit(async () => {
       onSaveSuccess({ medicationsCount: medications.length })
     })
@@ -159,7 +164,7 @@ export function Step4Medications({
 
     const currentDate = dateToISO(new Date())
 
-    if (currentDate && values.treatmentStartDate > currentDate) {
+    if (currentDate && values.treatmentStartDate && values.treatmentStartDate > currentDate) {
       const message = "Treatment start date is later than the current date"
       form.setError("treatmentStartDate", {
         type: "manual",
@@ -169,22 +174,17 @@ export function Step4Medications({
       return
     }
 
+    const payload = {
+      name: values.name,
+      dosage: values.dosage || "",
+      prescriptionDate: values.prescriptionDate || "",
+      treatmentStartDate: values.treatmentStartDate || "",
+      comments: values.comments || "",
+    }
+
     const result = editingMedication
-      ? await update(editingMedication.id, {
-          name: values.name,
-          dosage: values.dosage,
-          prescriptionDate: values.prescriptionDate,
-          treatmentStartDate: values.treatmentStartDate,
-          comments: values.comments,
-        })
-      : await create({
-          clientId: resolvedClientId,
-          name: values.name,
-          dosage: values.dosage,
-          prescriptionDate: values.prescriptionDate,
-          treatmentStartDate: values.treatmentStartDate,
-          comments: values.comments,
-        })
+      ? await update(editingMedication.id, payload)
+      : await create({ clientId: resolvedClientId, ...payload })
 
     if (!result) {
       return
@@ -315,11 +315,10 @@ export function Step4Medications({
                 <div>
                   <FloatingInput
                     label="Dosage"
-                    value={field.value}
+                    value={field.value || ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     hasError={!!fieldState.error}
-                    required
                   />
                   {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
                 </div>
@@ -332,12 +331,11 @@ export function Step4Medications({
               render={({ field, fieldState }) => (
                 <PremiumDatePicker
                   label="Prescription Date"
-                  value={field.value}
+                  value={field.value || ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
                   errorMessage={fieldState.error?.message}
-                  required
                 />
               )}
             />
@@ -348,12 +346,11 @@ export function Step4Medications({
               render={({ field, fieldState }) => (
                 <PremiumDatePicker
                   label="Treatment Start Date"
-                  value={field.value}
+                  value={field.value || ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
                   errorMessage={fieldState.error?.message}
-                  required
                 />
               )}
             />
@@ -365,12 +362,11 @@ export function Step4Medications({
                 <div className="md:col-span-2">
                   <FloatingTextarea
                     label="Comments"
-                    value={field.value}
+                    value={field.value || ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     hasError={!!fieldState.error}
                     maxLength={500}
-                    required
                   />
                   {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
                 </div>

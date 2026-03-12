@@ -18,6 +18,7 @@ export interface StepComponentProps {
   onValidationError: (errors: Record<string, string>) => void
   registerSubmit: (submitFn: () => Promise<void>) => void
   registerValidation: (isValid: boolean) => void
+  onDirtyChange?: (isDirty: boolean) => void
 }
 
 export interface WizardState {

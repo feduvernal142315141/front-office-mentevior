@@ -17,6 +17,7 @@ import {
 import { WizardStepper } from "@/components/custom/WizardStepper"
 import { WizardHeader } from "@/components/custom/WizardHeader"
 import { WizardFooter } from "@/components/custom/WizardFooter"
+import { ConfirmationModal } from "@/components/custom/ConfirmationModal"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import type { StepComponentProps, StepConfig, StepStatus } from "@/lib/types/wizard.types"
 import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
@@ -56,6 +57,10 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const stepSubmitRef = useRef<(() => Promise<void>) | null>(null)
   const shouldContinueRef = useRef<boolean>(true)
   const didSetInitialStepRef = useRef(false)
+  const [isStepDirty, setIsStepDirty] = useState(false)
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false)
+  const pendingNavigationRef = useRef<(() => void) | null>(null)
+  const pendingNavigationAfterSaveRef = useRef<(() => void) | null>(null)
 
   const checkPersonalInfoComplete = useCallback((clientData: any) => {
     if (!clientData) return false
@@ -203,9 +208,14 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     didSetInitialStepRef.current = true
   }, [steps, isCreateMode, client, resolveInitialStepStatuses])
 
+  const EXCLUDED_FROM_COMPLETION = ["medications"]
+
   const completionPercentage = useMemo(() => {
-    const completedCount = Object.values(stepStatuses).filter(status => status === "COMPLETE").length
-    return Math.round((completedCount / Object.keys(stepStatuses).length) * 100)
+    const countableEntries = Object.entries(stepStatuses).filter(
+      ([key]) => !EXCLUDED_FROM_COMPLETION.includes(key)
+    )
+    const completedCount = countableEntries.filter(([, status]) => status === "COMPLETE").length
+    return Math.round((completedCount / countableEntries.length) * 100)
   }, [stepStatuses])
 
   const profileStatus = useMemo(() => {
@@ -213,23 +223,55 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     return "incomplete"
   }, [completionPercentage])
 
+  const guardNavigation = useCallback((action: () => void) => {
+    if (isStepDirty) {
+      pendingNavigationRef.current = action
+      setShowUnsavedModal(true)
+    } else {
+      action()
+    }
+  }, [isStepDirty])
+
+  const handleUnsavedCancel = useCallback(() => {
+    setShowUnsavedModal(false)
+    pendingNavigationRef.current = null
+  }, [])
+
+  const handleUnsavedSave = useCallback(async () => {
+    if (!stepSubmitRef.current || !pendingNavigationRef.current) {
+      setShowUnsavedModal(false)
+      return
+    }
+
+    pendingNavigationAfterSaveRef.current = pendingNavigationRef.current
+    pendingNavigationRef.current = null
+    setShowUnsavedModal(false)
+    setIsSubmitting(true)
+    shouldContinueRef.current = false
+    await stepSubmitRef.current()
+  }, [])
+
   const handleStepClick = useCallback((index: number) => {
     const targetStep = steps[index]
-    if (!targetStep.isLocked) {
+    if (targetStep.isLocked) return
+
+    guardNavigation(() => {
       if (!isCreateMode && targetStep.id === "personalInfo") {
         void refetch()
       }
       setActiveStepIndex(index)
-    }
-  }, [steps, isCreateMode, refetch])
+    })
+  }, [steps, isCreateMode, refetch, guardNavigation])
 
   const handleBack = useCallback(() => {
-    if (activeStepIndex > 0) {
-      setActiveStepIndex(activeStepIndex - 1)
-    } else {
-      router.push("/clients")
-    }
-  }, [activeStepIndex, router])
+    guardNavigation(() => {
+      if (activeStepIndex > 0) {
+        setActiveStepIndex(activeStepIndex - 1)
+      } else {
+        router.push("/clients")
+      }
+    })
+  }, [activeStepIndex, router, guardNavigation])
 
   const handleSave = useCallback(async () => {
     if (stepSubmitRef.current) {
@@ -249,6 +291,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   const handleSaveSuccess = useCallback((data: any) => {
     const currentStepId = steps[activeStepIndex].id
+    setIsStepDirty(false)
     
     if (isCreateMode && data.clientId) {
       window.history.replaceState(null, '', `/clients/${data.clientId}/profile`)
@@ -262,6 +305,14 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     if (currentStepId === "documents") {
       setIsSubmitting(false)
       router.push("/clients")
+      return
+    }
+
+    if (pendingNavigationAfterSaveRef.current) {
+      const navigate = pendingNavigationAfterSaveRef.current
+      pendingNavigationAfterSaveRef.current = null
+      setIsSubmitting(false)
+      navigate()
       return
     }
 
@@ -285,12 +336,17 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   const handleValidationError = useCallback((errors: Record<string, string>) => {
     const currentStepId = steps[activeStepIndex].id
-    const errorCount = Object.keys(errors).length
 
     setStepStatuses(prev => ({
       ...prev,
       [currentStepId]: "ERROR"
     }))
+
+    if (pendingNavigationAfterSaveRef.current) {
+      pendingNavigationAfterSaveRef.current = null
+      setShowUnsavedModal(false)
+      setActiveStepIndex(0)
+    }
     
     setIsSubmitting(false)
   }, [activeStepIndex, steps])
@@ -339,6 +395,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
               registerValidation={(isValid: boolean) => {
                 setIsStepValid(isValid)
               }}
+              onDirtyChange={setIsStepDirty}
             />
           </div>
         </div>
@@ -352,6 +409,24 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
         onBack={handleBack}
         onSave={handleSave}
         onSaveAndContinue={handleSaveAndContinue}
+      />
+
+      <ConfirmationModal
+        open={showUnsavedModal}
+        onOpenChange={(open) => {
+          setShowUnsavedModal(open)
+          if (!open) {
+            pendingNavigationRef.current = null
+          }
+        }}
+        title="Unsaved Changes"
+        description="Save your changes before moving to another section."
+        confirmText="Save"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={isSubmitting}
+        onCancel={handleUnsavedCancel}
+        onConfirm={handleUnsavedSave}
       />
     </div>
   )

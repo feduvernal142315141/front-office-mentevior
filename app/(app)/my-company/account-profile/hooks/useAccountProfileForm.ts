@@ -51,6 +51,8 @@ export function useAccountProfileForm(): UseAccountProfileFormReturn {
         mpi: accountProfile.mpi,
         taxonomyCode: accountProfile.taxonomyCode,
         logo: accountProfile.logo || "",
+        chartPrefix: accountProfile.chartPrefix || "BA",
+        chartStartNumber: accountProfile.chartStartNumber || 1,
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,6 +78,8 @@ export function useAccountProfileForm(): UseAccountProfileFormReturn {
       mpi: data.mpi,
       taxonomyCode: data.taxonomyCode,
       logo: cleanLogo,
+      chartPrefix: data.chartPrefix,
+      chartStartNumber: data.chartStartNumber,
     }
     
     const result = await update(dto)
@@ -100,6 +104,8 @@ export function useAccountProfileForm(): UseAccountProfileFormReturn {
           mpi: accountProfile.mpi,
           taxonomyCode: accountProfile.taxonomyCode,
           logo: accountProfile.logo || "",
+          chartPrefix: accountProfile.chartPrefix || "BA",
+          chartStartNumber: accountProfile.chartStartNumber || 1,
         })
       }
       router.push("/my-company")

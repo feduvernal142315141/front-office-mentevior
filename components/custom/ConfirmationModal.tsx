@@ -12,6 +12,7 @@ interface ConfirmationModalProps {
   confirmText?: string
   cancelText?: string
   onConfirm: () => void | Promise<void>
+  onCancel?: () => void
   variant?: "danger" | "warning" | "info"
   isLoading?: boolean
 }
@@ -24,6 +25,7 @@ export function ConfirmationModal({
   confirmText = "Confirm",
   cancelText = "Cancel",
   onConfirm,
+  onCancel,
   variant = "info",
   isLoading = false,
 }: ConfirmationModalProps) {
@@ -43,12 +45,20 @@ export function ConfirmationModal({
     info: "bg-blue-600 hover:bg-blue-700 text-white",
   }
 
+  const handleCancel = () => {
+    onOpenChange(false)
+    onCancel?.()
+  }
+
   return (
     <CustomModal
       open={open}
       onOpenChange={onOpenChange}
-      title=""
+      title={title}
       maxWidthClassName="sm:max-w-[420px]"
+      showCloseButton={false}
+      hideHeader
+      contentClassName="border-slate-200"
     >
       <div className="p-6">
         <div className="flex flex-col items-center text-center">
@@ -66,7 +76,7 @@ export function ConfirmationModal({
           <div className="flex items-center gap-3 w-full">
             <Button
               variant="secondary"
-              onClick={() => onOpenChange(false)}
+              onClick={handleCancel}
               disabled={isLoading}
               className="flex-1"
             >

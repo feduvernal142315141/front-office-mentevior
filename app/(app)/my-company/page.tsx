@@ -72,7 +72,7 @@ export default function MyCompanyPage() {
       hasDeepChildren: false,
     },
     {
-      title: "Events",
+      title: "Schedules",
       description: "Manage appointments, service plans and supervision",
       href: "/my-company/events",
       icon: Calendar,

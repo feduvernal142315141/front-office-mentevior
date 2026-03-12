@@ -11,6 +11,7 @@ import { useLanguagesCatalog } from "@/lib/modules/languages/hooks/use-languages
 import { useGenderCatalog } from "@/lib/modules/gender/hooks/use-gender-catalog"
 import { formatPhoneInput } from "@/lib/utils/phone-format"
 import { UserCheck } from "lucide-react"
+import { InfoTooltip } from "@/components/custom/InfoTooltip"
 import { useStep1Form } from "./useStep1Form"
 
 interface Step1PersonalInfoProps {
@@ -21,9 +22,10 @@ interface Step1PersonalInfoProps {
   onValidationError: (errors: Record<string, string>) => void
   registerSubmit: (submitFn: () => Promise<void>) => void
   registerValidation: (isValid: boolean) => void
+  onDirtyChange?: (isDirty: boolean) => void
 }
 
-export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerValidation }: Step1PersonalInfoProps) {
+export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerValidation, onDirtyChange }: Step1PersonalInfoProps) {
   const [isEditingSSN, setIsEditingSSN] = useState(false)
   const { languages, isLoading: isLoadingLanguages } = useLanguagesCatalog()
   const { genders, isLoading: isLoadingGenders } = useGenderCatalog()
@@ -47,6 +49,10 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
   useEffect(() => {
     registerValidation(isValid)
   }, [isValid, registerValidation])
+
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty)
+  }, [form.formState.isDirty, onDirtyChange])
 
   return (
     <div className="max-w-5xl mx-auto p-8">
@@ -278,7 +284,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
             name="chartId"
             control={form.control}
             render={({ field, fieldState }) => (
-              <div>
+              <div className="relative">
                 <FloatingInput
                   label="Chart ID"
                   value={field.value || ""}
@@ -289,6 +295,9 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
                   required
                   disabled
                 />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <InfoTooltip message="To change the Chart ID format, go to My Company → Account Profile" />
+                </div>
                 {fieldState.error && (
                   <p className="text-sm text-red-600 mt-2">
                     {fieldState.error.message}

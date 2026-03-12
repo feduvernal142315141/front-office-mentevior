@@ -74,6 +74,12 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
           errors[key] = error.message as string
         }
       })
+
+      const firstErrorKey = Object.keys(form.formState.errors)[0] as keyof ClientFormValues | undefined
+      if (firstErrorKey) {
+        form.setFocus(firstErrorKey)
+      }
+
       onValidationError(errors)
       return
     }

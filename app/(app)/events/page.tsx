@@ -46,9 +46,9 @@ export default function EventsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-              Events
+              Schedules
             </h1>
-            <p className="text-slate-600 mt-1">Manage company events and scheduling</p>
+            <p className="text-slate-600 mt-1">Manage company schedules and appointments</p>
           </div>
         </div>
 
@@ -83,10 +83,10 @@ export default function EventsPage() {
 
 
         <div className="mt-8 bg-gradient-to-br from-[#037ECC]/5 to-[#079CFB]/5 rounded-2xl border border-[#037ECC]/10 p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">About Events</h3>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">About Schedules</h3>
           <p className="text-slate-600 leading-relaxed">
-            Coordinate all event-related activities including appointments, service planning, and supervision sessions. 
-            Streamline scheduling and ensure efficient event management across your organization.
+            Coordinate all scheduling activities including appointments, service planning, and supervision sessions. 
+            Streamline scheduling and ensure efficient management across your organization.
           </p>
         </div>
       </div>

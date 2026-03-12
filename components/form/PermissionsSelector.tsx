@@ -48,7 +48,7 @@ const DATA_COLLECTION = {
 }
 
 const EVENTS = {
-  label: "Events",
+  label: "Schedules",
   children: [
     { key: PermissionModule.APPOINTMENT, label: "Appointment" },
     { key: PermissionModule.SERVICE_PLAN, label: "Service Plan" },
