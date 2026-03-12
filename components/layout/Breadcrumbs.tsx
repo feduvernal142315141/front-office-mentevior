@@ -125,6 +125,10 @@ export function Breadcrumbs() {
     }
   }
 
+  if (pathname.startsWith("/clients/new/profile")) {
+    filteredSegments = filteredSegments.filter((segment) => segment !== "new")
+  }
+
   const breadcrumbs = filteredSegments.map((segment, index) => {
     let href = ""
     

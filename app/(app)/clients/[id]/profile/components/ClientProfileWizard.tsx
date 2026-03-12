@@ -24,6 +24,7 @@ import { useMedicationsByClient } from "@/lib/modules/medications/hooks/use-medi
 import { useClientPhysicians } from "@/lib/modules/client-physicians/hooks/use-client-physicians"
 import { useDiagnosesByClient } from "@/lib/modules/diagnoses/hooks/use-diagnoses-by-client"
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
+import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import type { StepComponentProps, StepConfig, StepStatus } from "@/lib/types/wizard.types"
 import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
@@ -38,6 +39,10 @@ import { StepPlaceholder } from "./steps/StepPlaceholder"
 interface ClientProfileWizardProps {
   clientId: string
   isCreateMode?: boolean
+}
+
+function isUUID(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
 }
 
 export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientProfileWizardProps) {
@@ -69,7 +74,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   const resolvedClientId = useMemo(() => {
     if (!isCreateMode && clientId !== "new") {
-      return clientId
+      return isUUID(clientId) ? clientId : null
     }
 
     if (typeof window === "undefined") {
@@ -80,7 +85,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     const clientsIndex = segments.findIndex((segment) => segment === "clients")
     const possibleClientId = clientsIndex >= 0 ? segments[clientsIndex + 1] : null
 
-    if (!possibleClientId || possibleClientId === "new") {
+    if (!possibleClientId || !isUUID(possibleClientId)) {
       return null
     }
 
@@ -88,6 +93,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   }, [clientId, isCreateMode])
 
   const { caregivers } = useCaregiversByClient(resolvedClientId)
+  const { addresses } = useClientAddresses(resolvedClientId)
   const { medications } = useMedicationsByClient(resolvedClientId)
   const { physicians } = useClientPhysicians(resolvedClientId)
   const { diagnoses } = useDiagnosesByClient(resolvedClientId)
@@ -141,13 +147,14 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
     setStepStatuses((prev) => ({
       ...prev,
+      addresses: addresses.length > 0 ? "COMPLETE" : "PENDING",
       caregivers: caregivers.length > 0 ? "COMPLETE" : "PENDING",
       medications: medications.length > 0 ? "COMPLETE" : "PENDING",
       physicians: physicians.length > 0 ? "COMPLETE" : "PENDING",
       diagnoses: diagnoses.length > 0 ? "COMPLETE" : "PENDING",
       providers: providers.length > 0 ? "COMPLETE" : "PENDING",
     }))
-  }, [resolvedClientId, caregivers.length, medications.length, physicians.length, diagnoses.length, providers.length])
+  }, [resolvedClientId, addresses.length, caregivers.length, medications.length, physicians.length, diagnoses.length, providers.length])
 
   const steps: StepConfig[] = useMemo(() => [
     {
