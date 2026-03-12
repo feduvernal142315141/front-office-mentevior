@@ -1,5 +1,6 @@
 "use client"
 
+import { cloneElement, isValidElement, type ReactElement } from "react"
 import { cn } from "@/lib/utils"
 import { Check, AlertCircle, Clock } from "lucide-react"
 import type { StepConfig } from "@/lib/types/wizard.types"
@@ -53,10 +54,15 @@ export function WizardStepper({ steps, activeStepIndex, onStepClick }: WizardSte
                     <Check className="w-5 h-5 text-white" />
                   ) : hasError ? (
                     <AlertCircle className="w-5 h-5 text-red-500" />
-                  ) : isActive ? (
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#037ECC] animate-pulse" />
                   ) : (
-                    <Clock className="w-4 h-4 text-slate-400" />
+                    isValidElement(step.icon)
+                      ? cloneElement(step.icon as ReactElement<{ className?: string }>, {
+                        className: cn(
+                          "w-4 h-4",
+                          isActive ? "text-[#037ECC]" : "text-slate-500"
+                        ),
+                      })
+                      : <Clock className="w-4 h-4 text-slate-400" />
                   )}
                 </div>
 

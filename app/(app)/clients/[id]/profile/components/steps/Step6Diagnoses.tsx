@@ -31,6 +31,7 @@ export function Step6Diagnoses({
   onValidationError,
   registerSubmit,
   registerValidation,
+  onStepStatusChange,
 }: StepComponentProps) {
   const [isDiagnosisModalOpen, setIsDiagnosisModalOpen] = useState(false)
   const [editingDiagnosis, setEditingDiagnosis] = useState<Diagnosis | null>(null)
@@ -175,6 +176,10 @@ export function Step6Diagnoses({
       onSaveSuccess({ diagnosesCount: diagnoses.length })
     })
   }, [diagnoses.length, onSaveSuccess, registerSubmit])
+
+  useEffect(() => {
+    onStepStatusChange?.("diagnoses", diagnoses.length > 0 ? "COMPLETE" : "PENDING")
+  }, [diagnoses.length, onStepStatusChange])
 
   const handleSaveDiagnosis = form.handleSubmit(async (values) => {
     if (!resolvedClientId) {

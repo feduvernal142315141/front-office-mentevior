@@ -20,7 +20,7 @@ import { formatPhoneDisplay, formatPhoneInput } from "@/lib/utils/phone-format"
 import { cn } from "@/lib/utils"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 
-export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerValidation }: StepComponentProps) {
+export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerValidation, onStepStatusChange }: StepComponentProps) {
   const [isCaregiverModalOpen, setIsCaregiverModalOpen] = useState(false)
   const [editingCaregiver, setEditingCaregiver] = useState<Caregiver | null>(null)
   const [page, setPage] = useState(1)
@@ -220,6 +220,10 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
       onSaveSuccess({ caregiversCount: caregivers.length })
     })
   }, [caregivers.length, onSaveSuccess, registerSubmit])
+
+  useEffect(() => {
+    onStepStatusChange?.("caregivers", caregivers.length > 0 ? "COMPLETE" : "PENDING")
+  }, [caregivers.length, onStepStatusChange])
 
   const handleSaveCaregiver = form.handleSubmit(async (values) => {
     if (!resolvedClientId) {

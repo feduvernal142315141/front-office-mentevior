@@ -23,6 +23,7 @@ export function Step9Providers({
   onSaveSuccess,
   registerSubmit,
   registerValidation,
+  onStepStatusChange,
 }: StepComponentProps) {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [deletingProvider, setDeletingProvider] = useState<ClientProvider | null>(null)
@@ -125,6 +126,10 @@ export function Step9Providers({
       onSaveSuccess({ providersCount: providers.length })
     })
   }, [providers.length, onSaveSuccess, registerSubmit])
+
+  useEffect(() => {
+    onStepStatusChange?.("providers", providers.length > 0 ? "COMPLETE" : "PENDING")
+  }, [providers.length, onStepStatusChange])
 
   const handleOpenModal = () => {
     setSearchQuery("")

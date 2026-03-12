@@ -19,6 +19,7 @@ export interface StepComponentProps {
   registerSubmit: (submitFn: () => Promise<void>) => void
   registerValidation: (isValid: boolean) => void
   onDirtyChange?: (isDirty: boolean) => void
+  onStepStatusChange?: (stepId: string, status: StepStatus) => void
 }
 
 export interface WizardState {

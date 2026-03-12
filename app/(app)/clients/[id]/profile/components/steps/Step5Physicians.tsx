@@ -35,6 +35,7 @@ export function Step5Physicians({
   onSaveSuccess,
   registerSubmit,
   registerValidation,
+  onStepStatusChange,
 }: StepComponentProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [deletingPhysician, setDeletingPhysician] = useState<ClientPhysician | null>(null)
@@ -87,6 +88,10 @@ export function Step5Physicians({
       onSaveSuccess({ physiciansCount: physicians.length })
     })
   }, [physicians.length, onSaveSuccess, registerSubmit])
+
+  useEffect(() => {
+    onStepStatusChange?.("physicians", physicians.length > 0 ? "COMPLETE" : "PENDING")
+  }, [physicians.length, onStepStatusChange])
 
   const handleOpenModal = () => {
     setIsAddModalOpen(true)

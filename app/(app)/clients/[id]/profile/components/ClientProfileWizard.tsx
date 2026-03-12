@@ -19,6 +19,11 @@ import { WizardHeader } from "@/components/custom/WizardHeader"
 import { WizardFooter } from "@/components/custom/WizardFooter"
 import { ConfirmationModal } from "@/components/custom/ConfirmationModal"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
+import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
+import { useMedicationsByClient } from "@/lib/modules/medications/hooks/use-medications-by-client"
+import { useClientPhysicians } from "@/lib/modules/client-physicians/hooks/use-client-physicians"
+import { useDiagnosesByClient } from "@/lib/modules/diagnoses/hooks/use-diagnoses-by-client"
+import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
 import type { StepComponentProps, StepConfig, StepStatus } from "@/lib/types/wizard.types"
 import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
@@ -62,6 +67,32 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const pendingNavigationRef = useRef<(() => void) | null>(null)
   const pendingNavigationAfterSaveRef = useRef<(() => void) | null>(null)
 
+  const resolvedClientId = useMemo(() => {
+    if (!isCreateMode && clientId !== "new") {
+      return clientId
+    }
+
+    if (typeof window === "undefined") {
+      return null
+    }
+
+    const segments = window.location.pathname.split("/")
+    const clientsIndex = segments.findIndex((segment) => segment === "clients")
+    const possibleClientId = clientsIndex >= 0 ? segments[clientsIndex + 1] : null
+
+    if (!possibleClientId || possibleClientId === "new") {
+      return null
+    }
+
+    return possibleClientId
+  }, [clientId, isCreateMode])
+
+  const { caregivers } = useCaregiversByClient(resolvedClientId)
+  const { medications } = useMedicationsByClient(resolvedClientId)
+  const { physicians } = useClientPhysicians(resolvedClientId)
+  const { diagnoses } = useDiagnosesByClient(resolvedClientId)
+  const { providers } = useProvidersByClient(resolvedClientId)
+
   const checkPersonalInfoComplete = useCallback((clientData: any) => {
     if (!clientData) return false
     
@@ -86,11 +117,10 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   } => {
     const normalizedProgress = Math.min(100, Math.max(0, clientData.progress ?? 0))
     const personalInfoComplete = normalizedProgress >= 10 || checkPersonalInfoComplete(clientData)
-    const documentsComplete = normalizedProgress >= 20
 
     return {
       personalInfo: personalInfoComplete ? "COMPLETE" : "PENDING",
-      documents: documentsComplete ? "COMPLETE" : "PENDING",
+      documents: "PENDING",
     }
   }, [checkPersonalInfoComplete])
 
@@ -105,6 +135,19 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       }))
     }
   }, [client, resolveInitialStepStatuses])
+
+  useEffect(() => {
+    if (!resolvedClientId) return
+
+    setStepStatuses((prev) => ({
+      ...prev,
+      caregivers: caregivers.length > 0 ? "COMPLETE" : "PENDING",
+      medications: medications.length > 0 ? "COMPLETE" : "PENDING",
+      physicians: physicians.length > 0 ? "COMPLETE" : "PENDING",
+      diagnoses: diagnoses.length > 0 ? "COMPLETE" : "PENDING",
+      providers: providers.length > 0 ? "COMPLETE" : "PENDING",
+    }))
+  }, [resolvedClientId, caregivers.length, medications.length, physicians.length, diagnoses.length, providers.length])
 
   const steps: StepConfig[] = useMemo(() => [
     {
@@ -210,13 +253,20 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   const EXCLUDED_FROM_COMPLETION = ["medications"]
 
-  const completionPercentage = useMemo(() => {
+  const localCompletionPercentage = useMemo(() => {
     const countableEntries = Object.entries(stepStatuses).filter(
       ([key]) => !EXCLUDED_FROM_COMPLETION.includes(key)
     )
     const completedCount = countableEntries.filter(([, status]) => status === "COMPLETE").length
     return Math.round((completedCount / countableEntries.length) * 100)
   }, [stepStatuses])
+
+  const completionPercentage = useMemo(() => {
+    if (!isCreateMode && typeof client?.progress === "number") {
+      return Math.min(100, Math.max(0, client.progress))
+    }
+    return localCompletionPercentage
+  }, [client?.progress, isCreateMode, localCompletionPercentage])
 
   const profileStatus = useMemo(() => {
     if (completionPercentage === 100) return "complete"
@@ -297,10 +347,38 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       window.history.replaceState(null, '', `/clients/${data.clientId}/profile`)
     }
     
-    setStepStatuses(prev => ({
-      ...prev,
-      [currentStepId]: "COMPLETE"
-    }))
+    setStepStatuses(prev => {
+      if (currentStepId === "documents") {
+        return prev
+      }
+
+      let nextStatus: StepStatus = "COMPLETE"
+
+      if (currentStepId === "caregivers") {
+        nextStatus = data?.caregiversCount > 0 ? "COMPLETE" : "PENDING"
+      }
+
+      if (currentStepId === "medications") {
+        nextStatus = data?.medicationsCount > 0 ? "COMPLETE" : "PENDING"
+      }
+
+      if (currentStepId === "physicians") {
+        nextStatus = data?.physiciansCount > 0 ? "COMPLETE" : "PENDING"
+      }
+
+      if (currentStepId === "diagnoses") {
+        nextStatus = data?.diagnosesCount > 0 ? "COMPLETE" : "PENDING"
+      }
+
+      if (currentStepId === "providers") {
+        nextStatus = data?.providersCount > 0 ? "COMPLETE" : "PENDING"
+      }
+
+      return {
+        ...prev,
+        [currentStepId]: nextStatus,
+      }
+    })
 
     if (currentStepId === "documents") {
       setIsSubmitting(false)
@@ -332,6 +410,16 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       ...prev,
       documents: count === 0 ? "COMPLETE" : "PENDING",
     }))
+  }, [])
+
+  const handleStepStatusChange = useCallback((stepId: string, status: StepStatus) => {
+    setStepStatuses((prev) => {
+      if (prev[stepId] === status) return prev
+      return {
+        ...prev,
+        [stepId]: status,
+      }
+    })
   }, [])
 
   const handleValidationError = useCallback((errors: Record<string, string>) => {
@@ -396,6 +484,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
                 setIsStepValid(isValid)
               }}
               onDirtyChange={setIsStepDirty}
+              onStepStatusChange={handleStepStatusChange}
             />
           </div>
         </div>

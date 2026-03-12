@@ -32,6 +32,7 @@ export function Step4Medications({
   registerSubmit,
   registerValidation,
   onDirtyChange,
+  onStepStatusChange,
 }: StepComponentProps) {
   const [isMedicationModalOpen, setIsMedicationModalOpen] = useState(false)
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null)
@@ -155,6 +156,10 @@ export function Step4Medications({
       onSaveSuccess({ medicationsCount: medications.length })
     })
   }, [medications.length, onSaveSuccess, registerSubmit])
+
+  useEffect(() => {
+    onStepStatusChange?.("medications", medications.length > 0 ? "COMPLETE" : "PENDING")
+  }, [medications.length, onStepStatusChange])
 
   const handleSaveMedication = form.handleSubmit(async (values) => {
     if (!resolvedClientId) {
