@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import {
   FileText, Upload, X, AlertCircle, File,
-  Plus, RefreshCw, Save, Loader2, Eye,
+  Save, Loader2, Eye,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -23,32 +23,40 @@ import { addMonths, addYears } from "date-fns"
 
 const MAX_SIZE_MB = 25
 
-// Quick-add buttons: label → offset function applied to issuedDate
-const QUICK_OFFSETS = [
-  { label: "+1 month",  apply: (d: Date) => addMonths(d, 1)  },
-  { label: "+6 months", apply: (d: Date) => addMonths(d, 6)  },
-  { label: "+1 year",   apply: (d: Date) => addYears(d, 1)   },
-  { label: "+2 years",  apply: (d: Date) => addYears(d, 2)   },
-  { label: "+3 years",  apply: (d: Date) => addYears(d, 3)   },
-  { label: "+4 years",  apply: (d: Date) => addYears(d, 4)   },
-  { label: "+5 years",  apply: (d: Date) => addYears(d, 5)   },
-]
+type DocumentExpirationPolicy =
+  | { kind: "none" }
+  | { kind: "duration"; unit: "months" | "years"; value: number }
 
-function detectQuickOffset(issuedDateStr: string, expirationDateStr: string): string | null {
+const DOCUMENT_EXPIRATION_POLICY: Record<string, DocumentExpirationPolicy> = {
+  "bip - behavior intervention plan (initial or reassessment)": { kind: "duration", unit: "months", value: 6 },
+  "cde - comprehensive diagnostic evaluation": { kind: "duration", unit: "years", value: 3 },
+  "iep - individualized education plan": { kind: "duration", unit: "years", value: 2 },
+  "insurance card": { kind: "none" },
+  "intake form": { kind: "none" },
+  "medical necessity letter": { kind: "duration", unit: "years", value: 1 },
+  "medical referral": { kind: "duration", unit: "years", value: 1 },
+}
+
+function getDocumentExpirationPolicy(documentName: string): DocumentExpirationPolicy | null {
+  return DOCUMENT_EXPIRATION_POLICY[documentName.trim().toLowerCase()] ?? null
+}
+
+function computeExpirationDate(issuedDateStr: string, policy: DocumentExpirationPolicy | null): string {
   const issuedDate = parseDate(issuedDateStr)
-  const expirationDate = parseDate(expirationDateStr)
-  
-  if (!issuedDate || !expirationDate) return null
-  
-  for (const offset of QUICK_OFFSETS) {
-    const calculatedDate = offset.apply(issuedDate)
-    const calculatedISO = dateToISO(calculatedDate)
-    if (calculatedISO === expirationDateStr) {
-      return offset.label
-    }
-  }
-  
-  return null
+  if (!issuedDate || !policy || policy.kind === "none") return ""
+
+  const expirationDate =
+    policy.unit === "months"
+      ? addMonths(issuedDate, policy.value)
+      : addYears(issuedDate, policy.value)
+
+  return dateToISO(expirationDate) ?? ""
+}
+
+function getExpirationPolicyTerm(policy: DocumentExpirationPolicy | null): string {
+  if (!policy || policy.kind !== "duration") return ""
+  const unit = policy.value === 1 ? policy.unit.slice(0, -1) : policy.unit
+  return `${policy.value} ${unit}`
 }
 
 // ---------------------------------------------------------------------------
@@ -290,7 +298,6 @@ export function RequiredDocumentUploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
-  const [selectedQuickOffset, setSelectedQuickOffset] = useState<string | null>(null)
   const [fetchedFileUrl, setFetchedFileUrl] = useState<string | null>(null)
   const [loadingExistingFile, setLoadingExistingFile] = useState(false)
   const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
@@ -305,11 +312,24 @@ export function RequiredDocumentUploadModal({
   })
 
   const isEditMode = Boolean(row?.clientDocumentId)
+  const expirationPolicy = row ? getDocumentExpirationPolicy(row.documentConfigName) : null
+  const isCatalogPolicyMappedDocument = expirationPolicy !== null
+  const isPolicyManagedExpiration = isCatalogPolicyMappedDocument
+  const isNoExpirationDocument = expirationPolicy?.kind === "none"
+  const expirationPolicyTerm = getExpirationPolicyTerm(expirationPolicy)
+  const computedExpirationDate =
+    form.issuedDate && expirationPolicy && expirationPolicy.kind === "duration"
+      ? computeExpirationDate(form.issuedDate, expirationPolicy)
+      : ""
 
   useEffect(() => {
     if (open && row) {
       const issuedDate = row.issuedDate ?? ""
-      const expirationDate = row.expirationDate ?? ""
+      const policy = getDocumentExpirationPolicy(row.documentConfigName)
+      const expirationDate =
+        policy
+          ? computeExpirationDate(issuedDate, policy)
+          : (row.expirationDate ?? "")
       
       setForm({
         issuedDate,
@@ -320,12 +340,7 @@ export function RequiredDocumentUploadModal({
         removeExistingFile: false,
       })
       setFileError(null)
-      
-      const matchingOffset = issuedDate && expirationDate 
-        ? detectQuickOffset(issuedDate, expirationDate)
-        : null
-      setSelectedQuickOffset(matchingOffset)
-      
+
       setFetchedFileUrl(null)
 
       if (row.clientDocumentId) {
@@ -405,30 +420,19 @@ export function RequiredDocumentUploadModal({
     }
   }, [row])
 
-  // ---------------------------------------------------------------------------
-  // Quick-date buttons
-  // ---------------------------------------------------------------------------
-
-  const handleQuickOffset = useCallback(
-    (label: string, applyFn: (d: Date) => Date) => {
-      const base = parseDate(form.issuedDate) ?? new Date()
-      const result = applyFn(base)
-      const isoDate = dateToISO(result)
-      if (isoDate) {
-        setForm((prev) => ({ ...prev, expirationDate: isoDate }))
-      }
-      setSelectedQuickOffset(label)
-    },
-    [form.issuedDate]
-  )
-
   const handleSave = useCallback(async () => {
     if (!row) return
+    const policy = getDocumentExpirationPolicy(row.documentConfigName)
+    const requiresExpirationDate =
+      policy?.kind === "duration" || (!policy && row.allowExpirationDate)
+    const expirationDate = policy
+      ? computeExpirationDate(form.issuedDate, policy)
+      : form.expirationDate
     
     if (row.allowIssuedDate && !form.issuedDate) {
       return
     }
-    if (row.allowExpirationDate && !form.expirationDate) {
+    if (requiresExpirationDate && !expirationDate) {
       return
     }
     if (row.allowUploadFile && !row.clientDocumentId && !form.newFile) {
@@ -437,7 +441,7 @@ export function RequiredDocumentUploadModal({
     
     await onSave({
       issuedDate: form.issuedDate || null,
-      expirationDate: form.expirationDate || null,
+      expirationDate: expirationDate || null,
       comments: form.comments || null,
       fileBase64: form.newFileBase64,
       fileName: form.newFile?.name ?? null,
@@ -452,10 +456,12 @@ export function RequiredDocumentUploadModal({
 
   const existingFileUrl = form.removeExistingFile ? null : (fetchedFileUrl ?? row.fileUrl ?? null)
   const existingFileName = form.removeExistingFile ? null : (row.fileName ?? null)
+  const requiresExpirationDate =
+    expirationPolicy?.kind === "duration" || (!expirationPolicy && row.allowExpirationDate)
 
   const isMissingRequiredFields = 
     (row.allowIssuedDate && !form.issuedDate) ||
-    (row.allowExpirationDate && !form.expirationDate) ||
+    (requiresExpirationDate && !(isPolicyManagedExpiration ? computedExpirationDate : form.expirationDate)) ||
     (row.allowUploadFile && !row.clientDocumentId && !form.newFile)
 
   if (loadingExistingFile) {
@@ -514,59 +520,39 @@ export function RequiredDocumentUploadModal({
               label="Issued Date"
               value={form.issuedDate}
               onChange={(val) => {
+                if (isPolicyManagedExpiration) {
+                  const nextExpirationDate = computeExpirationDate(val, expirationPolicy)
+                  setForm((prev) => ({ ...prev, issuedDate: val, expirationDate: nextExpirationDate }))
+                  return
+                }
                 setForm((prev) => ({ ...prev, issuedDate: val }))
-                const matchingOffset = val && form.expirationDate
-                  ? detectQuickOffset(val, form.expirationDate)
-                  : null
-                setSelectedQuickOffset(matchingOffset)
               }}
               required={row.allowIssuedDate}
             />
-            <PremiumDatePicker
-              label="Expiration Date"
-              value={form.expirationDate}
-              onChange={(val) => {
-                setForm((prev) => ({ ...prev, expirationDate: val }))
-                const matchingOffset = detectQuickOffset(form.issuedDate, val)
-                setSelectedQuickOffset(matchingOffset)
-              }}
-              required={row.allowExpirationDate}
-            />
+            <div className={cn(isCatalogPolicyMappedDocument && "pointer-events-none opacity-70") }>
+              <PremiumDatePicker
+                label="Expiration Date"
+                value={isCatalogPolicyMappedDocument ? computedExpirationDate : form.expirationDate}
+                onChange={(val) => {
+                  if (isCatalogPolicyMappedDocument) return
+                  setForm((prev) => ({ ...prev, expirationDate: val }))
+                }}
+                required={requiresExpirationDate}
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Quick expiration from issued date
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1 pr-4">
-              {QUICK_OFFSETS.map(({ label, apply }) => {
-                const isSelected = selectedQuickOffset === label
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => handleQuickOffset(label, apply)}
-                    className={cn(
-                      "h-8 px-3 rounded-lg text-xs font-semibold whitespace-nowrap flex-shrink-0",
-                      "border transition-all duration-150",
-                      isSelected
-                        ? "border-[#037ECC] bg-[#037ECC] text-white shadow-md"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-[#037ECC]/50 hover:text-[#037ECC] hover:bg-[#037ECC]/5",
-                      "disabled:opacity-40 disabled:cursor-not-allowed"
-                    )}
-                    disabled={!form.issuedDate}
-                    title={!form.issuedDate ? "Set an issued date first" : `Set expiration to ${label} from issued date`}
-                  >
-                    <Plus className="w-3 h-3 inline mr-1 -mt-0.5" />
-                    {label.replace("+", "")}
-                  </button>
-                )
-              })}
+          {isPolicyManagedExpiration && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+              <p className="text-sm font-medium text-sky-800">
+                {isNoExpirationDocument
+                  ? "No expiration required for this document type."
+                  : form.issuedDate && computedExpirationDate
+                    ? `Expiration policy: ${expirationPolicyTerm} from issued date.`
+                    : `Expiration policy: ${expirationPolicyTerm} from issued date. Select issued date to calculate expiration automatically.`}
+              </p>
             </div>
-            {!form.issuedDate && (
-              <p className="text-xs text-slate-400">Set an issued date to use quick buttons</p>
-            )}
-          </div>
+          )}
         </div>
 
         <FloatingTextarea

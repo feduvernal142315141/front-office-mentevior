@@ -29,6 +29,7 @@ export function Step9Providers({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
+  const [optimisticAssignedUserIds, setOptimisticAssignedUserIds] = useState<Set<string>>(new Set())
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [userPage, setUserPage] = useState(1)
@@ -63,11 +64,29 @@ export function Step9Providers({
     pageSize: userPageSize,
   })
 
-  const assignedUserIds = useMemo(() => new Set(providers.map((p) => p.userId)), [providers])
+  const assignedUserIds = useMemo(
+    () => new Set(providers.map((p) => p.userId).filter((userId) => Boolean(userId))),
+    [providers]
+  )
+
+  useEffect(() => {
+    if (!optimisticAssignedUserIds.size) return
+
+    const pendingIds = Array.from(optimisticAssignedUserIds).filter((userId) => !assignedUserIds.has(userId))
+    if (!pendingIds.length) {
+      setOptimisticAssignedUserIds(new Set())
+    }
+  }, [assignedUserIds, optimisticAssignedUserIds])
+
+  const excludedUserIds = useMemo(() => {
+    const merged = new Set(assignedUserIds)
+    optimisticAssignedUserIds.forEach((userId) => merged.add(userId))
+    return merged
+  }, [assignedUserIds, optimisticAssignedUserIds])
 
   const availableUsers = useMemo(
-    () => users.filter((u) => !u.terminated && !assignedUserIds.has(u.id)),
-    [users, assignedUserIds]
+    () => users.filter((u) => !u.terminated && !excludedUserIds.has(u.id)),
+    [users, excludedUserIds]
   )
 
   const filteredUsers = useMemo(() => {
@@ -152,8 +171,22 @@ export function Step9Providers({
   const handleAssignSelected = async () => {
     if (!resolvedClientId || !selectedCount) return
 
-    const ok = await assignMany(resolvedClientId, Array.from(selectedUserIds))
-    if (!ok) return
+    const selectedIds = Array.from(selectedUserIds)
+    setOptimisticAssignedUserIds((prev) => {
+      const next = new Set(prev)
+      selectedIds.forEach((id) => next.add(id))
+      return next
+    })
+
+    const ok = await assignMany(resolvedClientId, selectedIds)
+    if (!ok) {
+      setOptimisticAssignedUserIds((prev) => {
+        const next = new Set(prev)
+        selectedIds.forEach((id) => next.delete(id))
+        return next
+      })
+      return
+    }
 
     handleCloseModal()
     await refetch()

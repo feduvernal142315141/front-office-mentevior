@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import {
   FileText, Upload, X, AlertCircle, File,
-  Plus, RefreshCw, Save, Loader2, Eye,
+  RefreshCw, Save, Loader2, Eye, Clock,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -534,38 +534,70 @@ export function RequiredDocumentUploadModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Quick expiration from issued date
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1 pr-4">
+          <div className={cn(
+            "rounded-xl border p-4 transition-all duration-200",
+            form.issuedDate
+              ? "border-slate-200 bg-white"
+              : "border-dashed border-slate-200 bg-slate-50/60"
+          )}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className={cn(
+                "w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors",
+                form.issuedDate ? "bg-blue-100" : "bg-slate-100"
+              )}>
+                <Clock className={cn("w-3.5 h-3.5", form.issuedDate ? "text-blue-600" : "text-slate-400")} />
+              </div>
+              <p className={cn(
+                "text-xs font-semibold uppercase tracking-wider transition-colors",
+                form.issuedDate ? "text-slate-600" : "text-slate-400"
+              )}>
+                Quick expiration
+              </p>
+              {!form.issuedDate && (
+                <span className="ml-auto text-xs text-slate-400 italic">Set issued date first</span>
+              )}
+            </div>
+            <div className="grid grid-cols-4 gap-2">
               {QUICK_OFFSETS.map(({ label, apply }) => {
                 const isSelected = selectedQuickOffset === label
+                const cleanLabel = label.replace("+", "").trim()
+                const [num, unit] = cleanLabel.split(" ")
                 return (
                   <button
                     key={label}
                     type="button"
                     onClick={() => handleQuickOffset(label, apply)}
-                    className={cn(
-                      "h-8 px-3 rounded-lg text-xs font-semibold whitespace-nowrap flex-shrink-0",
-                      "border transition-all duration-150",
-                      isSelected
-                        ? "border-[#037ECC] bg-[#037ECC] text-white shadow-md"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-[#037ECC]/50 hover:text-[#037ECC] hover:bg-[#037ECC]/5",
-                      "disabled:opacity-40 disabled:cursor-not-allowed"
-                    )}
                     disabled={!form.issuedDate}
-                    title={!form.issuedDate ? "Set an issued date first" : `Set expiration to ${label} from issued date`}
+                    className={cn(
+                      "relative flex flex-col items-center justify-center py-2.5 px-2 rounded-lg",
+                      "border text-center transition-all duration-150 group",
+                      "disabled:opacity-30 disabled:cursor-not-allowed",
+                      isSelected
+                        ? "border-blue-500 bg-blue-500 shadow-sm shadow-blue-200"
+                        : "border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/60"
+                    )}
                   >
-                    <Plus className="w-3 h-3 inline mr-1 -mt-0.5" />
-                    {label.replace("+", "")}
+                    <span className={cn(
+                      "text-base font-bold leading-none",
+                      isSelected ? "text-white" : "text-slate-800"
+                    )}>
+                      {num}
+                    </span>
+                    <span className={cn(
+                      "text-[10px] font-medium mt-0.5 capitalize leading-none",
+                      isSelected ? "text-blue-100" : "text-slate-400"
+                    )}>
+                      {unit}
+                    </span>
+                    {isSelected && (
+                      <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                      </span>
+                    )}
                   </button>
                 )
               })}
             </div>
-            {!form.issuedDate && (
-              <p className="text-xs text-slate-400">Set an issued date to use quick buttons</p>
-            )}
           </div>
         </div>
 

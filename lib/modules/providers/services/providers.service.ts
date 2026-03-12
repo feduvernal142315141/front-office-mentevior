@@ -7,8 +7,8 @@ type ProviderApiItem = {
   clientProviderId?: string
   providerId?: string
   clientId?: string
-  userId?: string
-  memberUserId?: string
+  userId?: string | string[]
+  memberUserId?: string | string[]
   fullName?: string
   firstName?: string
   lastName?: string
@@ -67,7 +67,12 @@ function buildFullName(item: ProviderApiItem): string {
 }
 
 function normalizeProvider(item: ProviderApiItem): ClientProvider {
-  const userId = item.userId ?? item.memberUserId ?? item.user?.id ?? ""
+  const resolvedUserId = Array.isArray(item.userId)
+    ? item.userId[0]
+    : Array.isArray(item.memberUserId)
+      ? item.memberUserId[0]
+      : item.userId ?? item.memberUserId
+  const userId = resolvedUserId ?? item.user?.id ?? ""
 
   return {
     id: item.id ?? item.clientProviderId ?? item.providerId ?? userId,
