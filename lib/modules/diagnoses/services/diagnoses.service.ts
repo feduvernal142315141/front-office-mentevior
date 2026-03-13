@@ -8,21 +8,53 @@ import type {
 
 type UpdateDiagnosisPayload = UpdateDiagnosisDto & { id: string }
 
+type DiagnosisApiItem = {
+  id?: string
+  clientId?: string
+  code?: string
+  name?: string
+  referralDate?: string
+  treatmentStartDate?: string
+  status?: boolean
+  treatmentEndDate?: string
+  isPrimary?: boolean
+  attachment?: string
+  attachmentFileName?: string
+  createdAt?: string
+}
+
+function normalizeDiagnosis(item: DiagnosisApiItem): Diagnosis {
+  return {
+    id: item.id ?? "",
+    clientId: item.clientId ?? "",
+    code: item.code ?? "",
+    name: item.name ?? "",
+    referralDate: item.referralDate ?? "",
+    treatmentStartDate: item.treatmentStartDate ?? "",
+    status: item.status ?? true,
+    treatmentEndDate: item.treatmentEndDate,
+    isPrimary: item.isPrimary ?? false,
+    attachment: item.attachment,
+    attachmentFileName: item.attachmentFileName,
+    createdAt: item.createdAt,
+  }
+}
+
 function normalizeDiagnosesResponse(data: unknown): Diagnosis[] {
   if (!data) return []
 
   if (Array.isArray(data)) {
-    return data as Diagnosis[]
+    return data.map((item) => normalizeDiagnosis(item as DiagnosisApiItem))
   }
 
   const paginated = data as PaginatedResponse<Diagnosis>
   if (Array.isArray(paginated.entities)) {
-    return paginated.entities
+    return paginated.entities.map((item) => normalizeDiagnosis(item as DiagnosisApiItem))
   }
 
   const wrappedData = data as { data?: unknown }
   if (Array.isArray(wrappedData.data)) {
-    return wrappedData.data as Diagnosis[]
+    return wrappedData.data.map((item) => normalizeDiagnosis(item as DiagnosisApiItem))
   }
 
   return []

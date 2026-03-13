@@ -522,6 +522,7 @@ export function RequiredDocumentUploadModal({
                 const isSelected = selectedQuickOffset === label
                 const cleanLabel = label.replace("+", "").trim()
                 const [num, unit] = cleanLabel.split(" ")
+                const compactUnit = unit ? unit.charAt(0).toUpperCase() : ""
                 return (
                   <button
                     key={label}
@@ -529,7 +530,7 @@ export function RequiredDocumentUploadModal({
                     onClick={() => handleQuickOffset(label, apply)}
                     disabled={!form.issuedDate}
                     className={cn(
-                      "relative flex flex-col items-center justify-center py-3 px-2 rounded-xl",
+                      "relative mx-auto flex h-20 w-20 flex-col items-center justify-center rounded-full p-0",
                       "border text-center transition-all duration-150",
                       "disabled:opacity-30 disabled:cursor-not-allowed",
                       isSelected
@@ -542,10 +543,10 @@ export function RequiredDocumentUploadModal({
                       isSelected ? "text-white" : "text-slate-400"
                     )} />
                     <span className={cn(
-                      "text-xs font-bold leading-tight",
+                      "text-sm font-bold leading-tight",
                       isSelected ? "text-white" : "text-slate-700"
                     )}>
-                      {num} {unit && unit.charAt(0).toUpperCase() + unit.slice(1)}
+                      {num}{compactUnit}
                     </span>
                   </button>
                 )

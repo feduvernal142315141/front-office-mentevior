@@ -1,15 +1,16 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Activity, Edit2 } from "lucide-react"
+import { Activity, Edit2, Upload, X, FileText, File, Eye, AlertCircle } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import {
   diagnosisFormDefaults,
   diagnosisFormSchema,
@@ -24,6 +25,29 @@ import { dateToISO, formatDateDisplay } from "@/lib/utils/date"
 import { isoToLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 
+const MAX_SIZE_MB = 25
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      resolve(result.split(",")[1] ?? result)
+    }
+    reader.onerror = () => reject(new Error("Failed to read file"))
+    reader.readAsDataURL(file)
+  })
+}
+
+function getMimeTypeFromName(fileName: string | null | undefined): string {
+  const ext = (fileName ?? "").split(".").pop()?.toLowerCase() ?? ""
+  if (ext === "pdf") return "application/pdf"
+  if (ext === "png") return "image/png"
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg"
+  if (ext === "webp") return "image/webp"
+  return "application/octet-stream"
+}
+
 export function Step6Diagnoses({
   clientId,
   isCreateMode = false,
@@ -37,6 +61,13 @@ export function Step6Diagnoses({
   const [editingDiagnosis, setEditingDiagnosis] = useState<Diagnosis | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
+  const [attachmentBase64, setAttachmentBase64] = useState<string | null>(null)
+  const [attachmentFileName, setAttachmentFileName] = useState<string | null>(null)
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const resolvedClientId = useMemo(() => {
     if (!isCreateMode && clientId !== "new") {
@@ -131,6 +162,10 @@ export function Step6Diagnoses({
                 isPrimary: Boolean(diagnosis.isPrimary),
               }
               form.reset(resetValues)
+              setAttachmentFile(null)
+              setAttachmentBase64(null)
+              setAttachmentFileName(diagnosis.attachmentFileName ?? null)
+              setAttachmentError(null)
               setIsDiagnosisModalOpen(true)
             }}
             className={cn(
@@ -177,6 +212,40 @@ export function Step6Diagnoses({
     })
   }, [diagnoses.length, onSaveSuccess, registerSubmit])
 
+  const handleAttachmentChange = async (file: File) => {
+    setAttachmentError(null)
+
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setAttachmentError(`File exceeds the ${MAX_SIZE_MB}MB size limit.`)
+      return
+    }
+
+    try {
+      const base64 = await readFileAsBase64(file)
+      setAttachmentFile(file)
+      setAttachmentBase64(base64)
+      setAttachmentFileName(file.name)
+    } catch {
+      setAttachmentError("Failed to process file. Please try again.")
+    }
+  }
+
+  const handleViewAttachment = () => {
+    if (attachmentFile) {
+      const url = URL.createObjectURL(attachmentFile)
+      setViewerDocument({ url, name: attachmentFile.name })
+      return
+    }
+
+    if (editingDiagnosis?.attachment && editingDiagnosis.attachmentFileName) {
+      const mime = getMimeTypeFromName(editingDiagnosis.attachmentFileName)
+      const url = editingDiagnosis.attachment.startsWith("data:")
+        ? editingDiagnosis.attachment
+        : `data:${mime};base64,${editingDiagnosis.attachment}`
+      setViewerDocument({ url, name: editingDiagnosis.attachmentFileName })
+    }
+  }
+
   useEffect(() => {
     onStepStatusChange?.("diagnoses", diagnoses.length > 0 ? "COMPLETE" : "PENDING")
   }, [diagnoses.length, onStepStatusChange])
@@ -207,6 +276,12 @@ export function Step6Diagnoses({
       status: values.status,
       treatmentEndDate: values.treatmentEndDate || undefined,
       isPrimary: values.isPrimary,
+      ...(attachmentBase64 && attachmentFileName
+        ? {
+            attachment: attachmentBase64,
+            attachmentFileName,
+          }
+        : {}),
     }
 
     const ok = editingDiagnosis
@@ -222,6 +297,10 @@ export function Step6Diagnoses({
 
     form.reset(diagnosisFormDefaults)
     setEditingDiagnosis(null)
+    setAttachmentFile(null)
+    setAttachmentBase64(null)
+    setAttachmentFileName(null)
+    setAttachmentError(null)
     setIsDiagnosisModalOpen(false)
     await refetch()
   }, () => {
@@ -246,6 +325,9 @@ export function Step6Diagnoses({
     )
   }
 
+  const hasExistingAttachment = Boolean(editingDiagnosis?.attachment && editingDiagnosis?.attachmentFileName)
+  const hasAnyAttachment = Boolean(attachmentFile || hasExistingAttachment)
+
   return (
     <div className="max-w-5xl mx-auto p-8">
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -259,6 +341,10 @@ export function Step6Diagnoses({
           onClick={() => {
             setEditingDiagnosis(null)
             form.reset(diagnosisFormDefaults)
+            setAttachmentFile(null)
+            setAttachmentBase64(null)
+            setAttachmentFileName(null)
+            setAttachmentError(null)
             setIsDiagnosisModalOpen(true)
           }}
         >
@@ -313,6 +399,10 @@ export function Step6Diagnoses({
           if (!open) {
             setEditingDiagnosis(null)
             form.reset(diagnosisFormDefaults)
+            setAttachmentFile(null)
+            setAttachmentBase64(null)
+            setAttachmentFileName(null)
+            setAttachmentError(null)
           }
         }}
         title={editingDiagnosis ? "Edit diagnosis" : "New diagnosis"}
@@ -418,6 +508,138 @@ export function Step6Diagnoses({
             />
           </div>
 
+          <div className="mt-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-700">Attachment</p>
+              {hasAnyAttachment && (
+                <button
+                  type="button"
+                  onClick={handleViewAttachment}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#0268a8]"
+                >
+                  <Eye className="w-4 h-4" />
+                  View
+                </button>
+              )}
+            </div>
+
+            {hasAnyAttachment && (
+              <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white">
+                <div className="w-11 h-11 rounded-lg bg-[#037ECC]/10 flex items-center justify-center flex-shrink-0">
+                  {attachmentFile ? (
+                    <File className="w-5 h-5 text-[#037ECC]" />
+                  ) : (
+                    <FileText className="w-5 h-5 text-[#037ECC]" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">
+                    {attachmentFileName || editingDiagnosis?.attachmentFileName}
+                  </p>
+                  {attachmentFile && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {(attachmentFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className={cn(
+                      "w-9 h-9 rounded-lg",
+                      "flex items-center justify-center",
+                      "bg-slate-50 hover:bg-slate-100",
+                      "border border-slate-200",
+                      "text-slate-500 hover:text-slate-700",
+                      "transition-all duration-200"
+                    )}
+                    title="Change attachment"
+                  >
+                    <Upload className="w-[18px] h-[18px]" />
+                  </button>
+                  {attachmentFile && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAttachmentFile(null)
+                        setAttachmentBase64(null)
+                        setAttachmentFileName(editingDiagnosis?.attachmentFileName ?? null)
+                        setAttachmentError(null)
+                      }}
+                      className={cn(
+                        "w-9 h-9 rounded-lg",
+                        "flex items-center justify-center",
+                        "bg-slate-50 hover:bg-slate-100",
+                        "border border-slate-200",
+                        "text-slate-400 hover:text-slate-700",
+                        "transition-all duration-200"
+                      )}
+                      title="Remove selected file"
+                    >
+                      <X className="w-[18px] h-[18px]" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!hasAnyAttachment && (
+              <label
+                className={cn(
+                  "flex flex-col items-center justify-center",
+                  "gap-2 p-6 rounded-2xl border-2 border-dashed",
+                  "cursor-pointer transition-all duration-200",
+                  dragOver
+                    ? "border-[#037ECC] bg-[#037ECC]/5"
+                    : "border-slate-200 hover:border-[#037ECC]/50 hover:bg-slate-50/70"
+                )}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setDragOver(true)
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={async (e) => {
+                  e.preventDefault()
+                  setDragOver(false)
+                  const dropped = e.dataTransfer.files?.[0]
+                  if (dropped) {
+                    await handleAttachmentChange(dropped)
+                  }
+                }}
+              >
+                <div className="w-10 h-10 rounded-full bg-[#037ECC]/10 flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-[#037ECC]" />
+                </div>
+                <p className="text-sm font-medium text-slate-700">
+                  Click to upload or drop file here
+                </p>
+                <p className="text-xs text-slate-400">Any format up to {MAX_SIZE_MB}MB</p>
+              </label>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={async (e) => {
+                const selected = e.target.files?.[0]
+                if (selected) {
+                  await handleAttachmentChange(selected)
+                }
+                e.target.value = ""
+              }}
+            />
+
+            {attachmentError && (
+              <div className="flex items-center gap-2 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                {attachmentError}
+              </div>
+            )}
+          </div>
+
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Controller
               name="status"
@@ -460,6 +682,10 @@ export function Step6Diagnoses({
                 setIsDiagnosisModalOpen(false)
                 setEditingDiagnosis(null)
                 form.reset(diagnosisFormDefaults)
+                setAttachmentFile(null)
+                setAttachmentBase64(null)
+                setAttachmentFileName(null)
+                setAttachmentError(null)
               }}
               disabled={isCreating || isUpdating}
             >
@@ -471,6 +697,20 @@ export function Step6Diagnoses({
           </div>
         </form>
       </CustomModal>
+
+      {viewerDocument && (
+        <DocumentViewer
+          open={!!viewerDocument}
+          onClose={() => {
+            if (viewerDocument.url.startsWith("blob:")) {
+              URL.revokeObjectURL(viewerDocument.url)
+            }
+            setViewerDocument(null)
+          }}
+          documentUrl={viewerDocument.url}
+          fileName={viewerDocument.name}
+        />
+      )}
     </div>
   )
 }

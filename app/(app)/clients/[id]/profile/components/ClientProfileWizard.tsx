@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { 
   User, 
   MapPin, 
@@ -47,7 +47,7 @@ function isUUID(value: string): boolean {
 
 export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientProfileWizardProps) {
   const router = useRouter()
-  const { client, isLoading, refetch } = useClientById(isCreateMode ? null : clientId)
+  const pathname = usePathname()
   const [activeStepIndex, setActiveStepIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isStepValid, setIsStepValid] = useState(false)
@@ -77,11 +77,11 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       return isUUID(clientId) ? clientId : null
     }
 
-    if (typeof window === "undefined") {
+    if (!pathname) {
       return null
     }
 
-    const segments = window.location.pathname.split("/")
+    const segments = pathname.split("/")
     const clientsIndex = segments.findIndex((segment) => segment === "clients")
     const possibleClientId = clientsIndex >= 0 ? segments[clientsIndex + 1] : null
 
@@ -90,7 +90,9 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     }
 
     return possibleClientId
-  }, [clientId, isCreateMode])
+  }, [clientId, isCreateMode, pathname])
+
+  const { client, isLoading, refetch } = useClientById(resolvedClientId)
 
   const { caregivers } = useCaregiversByClient(resolvedClientId)
   const { addresses } = useClientAddresses(resolvedClientId)

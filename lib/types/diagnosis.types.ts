@@ -8,6 +8,8 @@ export interface Diagnosis {
   status: boolean
   treatmentEndDate?: string
   isPrimary: boolean
+  attachment?: string
+  attachmentFileName?: string
   createdAt?: string
 }
 
@@ -20,6 +22,8 @@ export interface CreateDiagnosisDto {
   status: boolean
   treatmentEndDate?: string
   isPrimary: boolean
+  attachment?: string
+  attachmentFileName?: string
 }
 
 export interface UpdateDiagnosisDto {
@@ -30,4 +34,6 @@ export interface UpdateDiagnosisDto {
   status: boolean
   treatmentEndDate?: string
   isPrimary: boolean
+  attachment?: string
+  attachmentFileName?: string
 }
