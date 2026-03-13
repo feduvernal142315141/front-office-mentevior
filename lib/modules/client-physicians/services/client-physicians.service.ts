@@ -107,7 +107,7 @@ export async function createManualClientPhysician(
   data: CreateManualClientPhysicianDto
 ): Promise<string> {
   const response = await servicePost<CreateManualClientPhysicianDto, string>(
-    "/client/physician/manual",
+    "/physicians",
     data
   )
 

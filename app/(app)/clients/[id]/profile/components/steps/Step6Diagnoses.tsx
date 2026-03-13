@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Controller, FormProvider, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Activity, Edit2, Upload, X, FileText, File, Eye, AlertCircle, Trash2, Plus, Stethoscope } from "lucide-react"
+import { Activity, Edit2, Upload, X, FileText, File, Eye, AlertCircle, Trash2, Plus, Download } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -24,24 +24,28 @@ import { useDiagnosesByClient } from "@/lib/modules/diagnoses/hooks/use-diagnose
 import { useCreateDiagnosis } from "@/lib/modules/diagnoses/hooks/use-create-diagnosis"
 import { useUpdateDiagnosis } from "@/lib/modules/diagnoses/hooks/use-update-diagnosis"
 import { useRemoveDiagnosis } from "@/lib/modules/diagnoses/hooks/use-remove-diagnosis"
-import { useClientPhysicians } from "@/lib/modules/client-physicians/hooks/use-client-physicians"
-import { useAssignClientPhysician } from "@/lib/modules/client-physicians/hooks/use-assign-client-physician"
-import { useRemoveClientPhysician } from "@/lib/modules/client-physicians/hooks/use-remove-client-physician"
+import { getDiagnosisById } from "@/lib/modules/diagnoses/services/diagnoses.service"
 import { useCreateManualClientPhysician } from "@/lib/modules/client-physicians/hooks/use-create-manual-client-physician"
 import { usePhysicians } from "@/lib/modules/physicians/hooks/use-physicians"
-import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { usePhysicianTypes } from "@/lib/modules/physicians/hooks/use-physician-types"
 import { usePhysicianSpecialties } from "@/lib/modules/physicians/hooks/use-physician-specialties"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import type { Diagnosis } from "@/lib/types/diagnosis.types"
-import type { ClientPhysician, CreateManualClientPhysicianDto } from "@/lib/types/client-physician.types"
-import type { ClientListItem } from "@/lib/types/client.types"
+import type { CreateManualClientPhysicianDto } from "@/lib/types/client-physician.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 import { physicianFormSchema, getPhysicianFormDefaults, type PhysicianFormData } from "@/lib/schemas/physician-form.schema"
 import { dateToISO, formatDateDisplay } from "@/lib/utils/date"
 import { isoToLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
+
+type SelectedReferringPhysician = {
+  physicianId: string
+  fullName: string
+  specialty?: string
+  type?: string
+  source: "agency" | "manual" | "diagnosis"
+}
 
 const MAX_SIZE_MB = 25
 
@@ -64,6 +68,37 @@ function getMimeTypeFromName(fileName: string | null | undefined): string {
   if (ext === "jpg" || ext === "jpeg") return "image/jpeg"
   if (ext === "webp") return "image/webp"
   return "application/octet-stream"
+}
+
+function getFileNameFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+
+  try {
+    const parsed = new URL(url)
+    const segment = parsed.pathname.split("/").pop()
+    return segment ? decodeURIComponent(segment) : null
+  } catch {
+    return null
+  }
+}
+
+function buildDiagnosisPhysician(diagnosis: Diagnosis | null): SelectedReferringPhysician | null {
+  if (!diagnosis?.physicianId) {
+    return null
+  }
+
+  const fullName =
+    diagnosis.physicianName?.trim() ||
+    [diagnosis.physicianFirstName, diagnosis.physicianLastName].filter(Boolean).join(" ") ||
+    "Physician selected"
+
+  return {
+    physicianId: diagnosis.physicianId,
+    fullName,
+    specialty: diagnosis.physicianSpecialty,
+    type: diagnosis.physicianType,
+    source: "diagnosis",
+  }
 }
 
 export function Step6Diagnoses({
@@ -89,7 +124,10 @@ export function Step6Diagnoses({
   const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
   const [isReferringPhysicianModalOpen, setIsReferringPhysicianModalOpen] = useState(false)
   const [referringPhysicianTab, setReferringPhysicianTab] = useState("agency")
+  const [selectedReferringPhysician, setSelectedReferringPhysician] = useState<SelectedReferringPhysician | null>(null)
+  const [editingDiagnosisIdLoading, setEditingDiagnosisIdLoading] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const preventNextDiagnosisCloseRef = useRef(false)
 
   const resolvedClientId = useMemo(() => {
     if (!isCreateMode && clientId !== "new") {
@@ -115,12 +153,14 @@ export function Step6Diagnoses({
   const { create, isLoading: isCreating } = useCreateDiagnosis()
   const { update, isLoading: isUpdating } = useUpdateDiagnosis()
   const { remove, isLoading: isRemoving } = useRemoveDiagnosis()
-  const { physicians: clientPhysicians, refetch: refetchClientPhysicians } = useClientPhysicians(resolvedClientId)
-  const { assign, isLoading: isAssigningPhysician } = useAssignClientPhysician()
-  const { remove: removeClientPhysician, isLoading: isRemovingPhysician } = useRemoveClientPhysician()
   const { createManual, isLoading: isCreatingManualPhysician } = useCreateManualClientPhysician()
-  const { physicians: agencyPhysicians } = usePhysicians({ page: 0, pageSize: 200 })
-  const { clients } = useClients({ page: 0, pageSize: 200 })
+  const {
+    physicians: agencyPhysicians,
+    isLoading: isLoadingAgencyPhysicians,
+  } = usePhysicians(
+    { page: 0, pageSize: 200 },
+    { enabled: isReferringPhysicianModalOpen }
+  )
 
   const form = useForm<DiagnosisFormValues>({
     resolver: zodResolver(diagnosisFormSchema),
@@ -130,10 +170,6 @@ export function Step6Diagnoses({
   })
 
   const [selectedAgencyPhysicianId, setSelectedAgencyPhysicianId] = useState("")
-  const [selectedSourceClientId, setSelectedSourceClientId] = useState("")
-  const [selectedOtherClientPhysicianId, setSelectedOtherClientPhysicianId] = useState("")
-
-  const currentReferringPhysician = clientPhysicians[0] ?? null
 
   const physicianForm = useForm<PhysicianFormData>({
     resolver: zodResolver(physicianFormSchema),
@@ -154,23 +190,8 @@ export function Step6Diagnoses({
   const { states, isLoading: isLoadingStates } = useStates(usaCountry?.id ?? null)
 
   const selectableAgencyPhysicians = useMemo(
-    () => agencyPhysicians.filter((physician) => physician.id !== currentReferringPhysician?.physicianId),
-    [agencyPhysicians, currentReferringPhysician?.physicianId]
-  )
-
-  const otherClients = useMemo(
-    () => clients.filter((clientItem) => clientItem.id !== resolvedClientId),
-    [clients, resolvedClientId]
-  )
-
-  const {
-    physicians: otherClientPhysicians,
-    isLoading: isLoadingOtherClientPhysicians,
-  } = useClientPhysicians(selectedSourceClientId || null)
-
-  const selectableOtherClientPhysicians = useMemo(
-    () => otherClientPhysicians.filter((physician) => physician.physicianId !== currentReferringPhysician?.physicianId),
-    [otherClientPhysicians, currentReferringPhysician?.physicianId]
+    () => agencyPhysicians.filter((physician) => physician.id !== selectedReferringPhysician?.physicianId),
+    [agencyPhysicians, selectedReferringPhysician?.physicianId]
   )
 
   const columns: CustomTableColumn<Diagnosis>[] = [
@@ -223,24 +244,7 @@ export function Step6Diagnoses({
       render: (diagnosis) => (
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => {
-              setEditingDiagnosis(diagnosis)
-              const resetValues = {
-                code: diagnosis.code ?? "",
-                name: diagnosis.name ?? "",
-                referralDate: diagnosis.referralDate ? isoToLocalDate(diagnosis.referralDate) : "",
-                treatmentStartDate: diagnosis.treatmentStartDate ? isoToLocalDate(diagnosis.treatmentStartDate) : "",
-                status: Boolean(diagnosis.status),
-                treatmentEndDate: diagnosis.treatmentEndDate ? isoToLocalDate(diagnosis.treatmentEndDate) : "",
-                isPrimary: Boolean(diagnosis.isPrimary),
-              }
-              form.reset(resetValues)
-              setAttachmentFile(null)
-              setAttachmentBase64(null)
-              setAttachmentFileName(diagnosis.attachmentFileName ?? null)
-              setAttachmentError(null)
-              setIsDiagnosisModalOpen(true)
-            }}
+            onClick={() => void openDiagnosisEditModal(diagnosis)}
             className={cn(
               "group/edit relative h-9 w-9",
               "flex items-center justify-center rounded-xl",
@@ -254,8 +258,13 @@ export function Step6Diagnoses({
             )}
             title="Edit diagnosis"
             aria-label="Edit diagnosis"
+            disabled={editingDiagnosisIdLoading === diagnosis.id}
           >
-            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            {editingDiagnosisIdLoading === diagnosis.id ? (
+              <Activity className="w-4 h-4 text-blue-600 animate-spin" />
+            ) : (
+              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            )}
           </button>
           <button
             onClick={() => {
@@ -336,13 +345,30 @@ export function Step6Diagnoses({
       return
     }
 
-    if (editingDiagnosis?.attachment && editingDiagnosis.attachmentFileName) {
-      const mime = getMimeTypeFromName(editingDiagnosis.attachmentFileName)
+    if (editingDiagnosis?.attachment) {
+      const fileName =
+        editingDiagnosis.attachmentFileName ||
+        getFileNameFromUrl(editingDiagnosis.attachment) ||
+        getFileNameFromUrl(editingDiagnosis.attachmentDownload) ||
+        "Attachment"
+
+      if (editingDiagnosis.attachment.startsWith("http://") || editingDiagnosis.attachment.startsWith("https://")) {
+        setViewerDocument({ url: editingDiagnosis.attachment, name: fileName })
+        return
+      }
+
+      const mime = getMimeTypeFromName(fileName)
       const url = editingDiagnosis.attachment.startsWith("data:")
         ? editingDiagnosis.attachment
         : `data:${mime};base64,${editingDiagnosis.attachment}`
-      setViewerDocument({ url, name: editingDiagnosis.attachmentFileName })
+      setViewerDocument({ url, name: fileName })
     }
+  }
+
+  const handleDownloadAttachment = () => {
+    if (!editingDiagnosis?.attachmentDownload) return
+
+    window.open(editingDiagnosis.attachmentDownload, "_blank", "noopener,noreferrer")
   }
 
   useEffect(() => {
@@ -368,6 +394,7 @@ export function Step6Diagnoses({
     }
 
     const payload = {
+      physicianId: selectedReferringPhysician?.physicianId,
       code: values.code,
       name: values.name,
       referralDate: values.referralDate,
@@ -396,6 +423,7 @@ export function Step6Diagnoses({
 
     form.reset(diagnosisFormDefaults)
     setEditingDiagnosis(null)
+    setSelectedReferringPhysician(null)
     setAttachmentFile(null)
     setAttachmentBase64(null)
     setAttachmentFileName(null)
@@ -421,37 +449,62 @@ export function Step6Diagnoses({
     await refetch()
   }
 
+  const openDiagnosisEditModal = async (diagnosis: Diagnosis) => {
+    setEditingDiagnosisIdLoading(diagnosis.id)
+
+    try {
+      const diagnosisDetail = await getDiagnosisById(diagnosis.id)
+      const sourceDiagnosis = diagnosisDetail ?? diagnosis
+
+      setEditingDiagnosis(sourceDiagnosis)
+      form.reset({
+        code: sourceDiagnosis.code ?? "",
+        name: sourceDiagnosis.name ?? "",
+        referralDate: sourceDiagnosis.referralDate ? isoToLocalDate(sourceDiagnosis.referralDate) : "",
+        treatmentStartDate: sourceDiagnosis.treatmentStartDate ? isoToLocalDate(sourceDiagnosis.treatmentStartDate) : "",
+        status: Boolean(sourceDiagnosis.status),
+        treatmentEndDate: sourceDiagnosis.treatmentEndDate ? isoToLocalDate(sourceDiagnosis.treatmentEndDate) : "",
+        isPrimary: Boolean(sourceDiagnosis.isPrimary),
+      })
+      setSelectedReferringPhysician(buildDiagnosisPhysician(sourceDiagnosis))
+      setAttachmentFile(null)
+      setAttachmentBase64(null)
+      setAttachmentFileName(
+        sourceDiagnosis.attachmentFileName ??
+        getFileNameFromUrl(sourceDiagnosis.attachment) ??
+        getFileNameFromUrl(sourceDiagnosis.attachmentDownload) ??
+        null
+      )
+      setAttachmentError(null)
+      setIsDiagnosisModalOpen(true)
+    } finally {
+      setEditingDiagnosisIdLoading(null)
+    }
+  }
+
   const resetReferringPhysicianModalState = () => {
     setReferringPhysicianTab("agency")
     setSelectedAgencyPhysicianId("")
-    setSelectedSourceClientId("")
-    setSelectedOtherClientPhysicianId("")
     physicianForm.reset(getPhysicianFormDefaults())
   }
 
-  const handleAssignReferringPhysician = async (physicianId: string) => {
-    if (!resolvedClientId || !physicianId) return
+  const handleSelectAgencyPhysician = (physicianId: string) => {
+    const selectedAgencyPhysician = agencyPhysicians.find((physician) => physician.id === physicianId)
+    if (!selectedAgencyPhysician) return
 
-    if (currentReferringPhysician) {
-      const removed = await removeClientPhysician(currentReferringPhysician.id)
-      if (!removed) return
-    }
-
-    const assigned = await assign({ clientId: resolvedClientId, physicianId })
-    if (!assigned) return
-
-    await refetchClientPhysicians()
+    setSelectedReferringPhysician({
+      physicianId: selectedAgencyPhysician.id,
+      fullName: `${selectedAgencyPhysician.firstName} ${selectedAgencyPhysician.lastName}`.trim(),
+      specialty: selectedAgencyPhysician.specialty,
+      type: selectedAgencyPhysician.type,
+      source: "agency",
+    })
     setIsReferringPhysicianModalOpen(false)
     resetReferringPhysicianModalState()
   }
 
   const handleSaveManualReferringPhysician = physicianForm.handleSubmit(async (values) => {
     if (!resolvedClientId) return
-
-    if (currentReferringPhysician) {
-      const removed = await removeClientPhysician(currentReferringPhysician.id)
-      if (!removed) return
-    }
 
     const payload: CreateManualClientPhysicianDto = {
       clientId: resolvedClientId,
@@ -475,10 +528,22 @@ export function Step6Diagnoses({
       stateId: values.stateId || undefined,
     }
 
-    const created = await createManual(payload)
-    if (!created) return
+    const createdPhysicianId = await createManual(payload)
+    if (!createdPhysicianId) return
 
-    await refetchClientPhysicians()
+    const selectedSpecialty = physicianSpecialties.find((item) => item.code === values.specialty)?.name
+    const selectedType = physicianTypes.find((item) => item.code === values.type)?.name
+
+    setSelectedReferringPhysician({
+      physicianId: createdPhysicianId,
+      fullName: `${values.firstName} ${values.lastName}`.trim(),
+      specialty: selectedSpecialty ?? values.specialty,
+      type: selectedType ?? values.type,
+      source: "manual",
+    })
+
+    preventNextDiagnosisCloseRef.current = true
+    setIsDiagnosisModalOpen(true)
     setIsReferringPhysicianModalOpen(false)
     resetReferringPhysicianModalState()
   })
@@ -495,7 +560,7 @@ export function Step6Diagnoses({
     )
   }
 
-  const hasExistingAttachment = Boolean(editingDiagnosis?.attachment && editingDiagnosis?.attachmentFileName)
+  const hasExistingAttachment = Boolean(editingDiagnosis?.attachment || editingDiagnosis?.attachmentDownload)
   const hasAnyAttachment = Boolean(attachmentFile || hasExistingAttachment)
 
   const referringPhysicianTabs: TabItem[] = [
@@ -507,68 +572,21 @@ export function Step6Diagnoses({
           <FloatingSelect
             label="Agency Physician"
             value={selectedAgencyPhysicianId}
-            onChange={setSelectedAgencyPhysicianId}
+            onChange={(physicianId) => {
+              setSelectedAgencyPhysicianId(physicianId)
+              handleSelectAgencyPhysician(physicianId)
+            }}
             options={selectableAgencyPhysicians.map((physician) => ({
               value: physician.id,
               label: `${physician.firstName} ${physician.lastName}`,
             }))}
             searchable
+            disabled={isLoadingAgencyPhysicians}
           />
 
-          <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setIsReferringPhysicianModalOpen(false)
-                resetReferringPhysicianModalState()
-              }}
-              disabled={isAssigningPhysician}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void handleAssignReferringPhysician(selectedAgencyPhysicianId)}
-              disabled={!selectedAgencyPhysicianId || isAssigningPhysician}
-              loading={isAssigningPhysician}
-            >
-              Save physician
-            </Button>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600">
+            Selecting a physician applies it to this diagnosis and closes the modal.
           </div>
-        </div>
-      ),
-    },
-    {
-      id: "other-clients",
-      label: "Other Clients",
-      content: (
-        <div className="space-y-5 pt-4">
-          <FloatingSelect
-            label="Client"
-            value={selectedSourceClientId}
-            onChange={(value) => {
-              setSelectedSourceClientId(value)
-              setSelectedOtherClientPhysicianId("")
-            }}
-            options={otherClients.map((clientItem: ClientListItem) => ({
-              value: clientItem.id,
-              label: `${clientItem.fullName}${clientItem.chartId ? ` (${clientItem.chartId})` : ""}`,
-            }))}
-            searchable
-          />
-
-          <FloatingSelect
-            label="Referring Physician"
-            value={selectedOtherClientPhysicianId}
-            onChange={setSelectedOtherClientPhysicianId}
-            options={selectableOtherClientPhysicians.map((physician) => ({
-              value: physician.physicianId,
-              label: physician.fullName,
-            }))}
-            searchable
-            disabled={!selectedSourceClientId || isLoadingOtherClientPhysicians}
-          />
 
           <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
             <Button
@@ -578,17 +596,8 @@ export function Step6Diagnoses({
                 setIsReferringPhysicianModalOpen(false)
                 resetReferringPhysicianModalState()
               }}
-              disabled={isAssigningPhysician}
             >
               Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void handleAssignReferringPhysician(selectedOtherClientPhysicianId)}
-              disabled={!selectedOtherClientPhysicianId || isAssigningPhysician}
-              loading={isAssigningPhysician}
-            >
-              Save physician
             </Button>
           </div>
         </div>
@@ -599,14 +608,8 @@ export function Step6Diagnoses({
       label: "Manual",
       content: (
         <FormProvider {...physicianForm}>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              void handleSaveManualReferringPhysician()
-            }}
-            className="space-y-4 pt-4"
-          >
-            <div className="max-h-[420px] overflow-y-auto pr-1">
+          <div className="space-y-4 pt-4">
+            <div className="max-h-[420px] overflow-y-auto pt-2 pr-1">
               <PhysicianFormFields
                 isEditing={false}
                 countries={countries.map((country) => ({ id: country.id, name: country.name }))}
@@ -632,11 +635,16 @@ export function Step6Diagnoses({
               >
                 Cancel
               </Button>
-              <Button type="submit" loading={isCreatingManualPhysician} disabled={isCreatingManualPhysician}>
+              <Button
+                type="button"
+                onClick={() => void handleSaveManualReferringPhysician()}
+                loading={isCreatingManualPhysician}
+                disabled={isCreatingManualPhysician}
+              >
                 Save physician
               </Button>
             </div>
-          </form>
+          </div>
         </FormProvider>
       ),
     },
@@ -654,6 +662,7 @@ export function Step6Diagnoses({
           type="button"
           onClick={() => {
             setEditingDiagnosis(null)
+            setSelectedReferringPhysician(null)
             form.reset({
               ...diagnosisFormDefaults,
               isPrimary: !hasPrimaryDiagnosis,
@@ -712,9 +721,15 @@ export function Step6Diagnoses({
       <CustomModal
         open={isDiagnosisModalOpen}
         onOpenChange={(open) => {
+          if (!open && (isReferringPhysicianModalOpen || preventNextDiagnosisCloseRef.current)) {
+            preventNextDiagnosisCloseRef.current = false
+            return
+          }
+
           setIsDiagnosisModalOpen(open)
           if (!open) {
             setEditingDiagnosis(null)
+            setSelectedReferringPhysician(null)
             form.reset(diagnosisFormDefaults)
             setAttachmentFile(null)
             setAttachmentBase64(null)
@@ -829,24 +844,25 @@ export function Step6Diagnoses({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-slate-800">Referring Physician</p>
-                {currentReferringPhysician ? (
-                  <p className="text-sm text-slate-600 mt-1">
-                    {currentReferringPhysician.fullName}
-                  </p>
+                {selectedReferringPhysician ? (
+                  <div className="mt-1 space-y-0.5">
+                    <p className="text-sm text-slate-700 font-medium">{selectedReferringPhysician.fullName}</p>
+                    {(selectedReferringPhysician.specialty || selectedReferringPhysician.type) && (
+                      <p className="text-xs text-slate-500">
+                        {[selectedReferringPhysician.specialty, selectedReferringPhysician.type].filter(Boolean).join(" - ")}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-sm text-slate-500 mt-1">No referring physician selected</p>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                {currentReferringPhysician && (
+                {selectedReferringPhysician && (
                   <button
                     type="button"
-                    onClick={async () => {
-                      const removed = await removeClientPhysician(currentReferringPhysician.id)
-                      if (!removed) return
-                      await refetchClientPhysicians()
-                    }}
+                    onClick={() => setSelectedReferringPhysician(null)}
                     className={cn(
                       "group/delete relative h-9 w-9",
                       "flex items-center justify-center rounded-xl",
@@ -860,7 +876,6 @@ export function Step6Diagnoses({
                     )}
                     title="Remove referring physician"
                     aria-label="Remove referring physician"
-                    disabled={isRemovingPhysician}
                   >
                     <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
                   </button>
@@ -872,7 +887,7 @@ export function Step6Diagnoses({
                   className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
                 >
                   <Plus className="w-4 h-4" />
-                  {currentReferringPhysician ? "Change" : "Add Referring Physicians"}
+                  {selectedReferringPhysician ? "Change" : "Add Referring Physician"}
                 </button>
               </div>
             </div>
@@ -881,16 +896,28 @@ export function Step6Diagnoses({
           <div className="mt-5 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-slate-700">Attachment</p>
-              {hasAnyAttachment && (
-                <button
-                  type="button"
-                  onClick={handleViewAttachment}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#0268a8]"
-                >
-                  <Eye className="w-4 h-4" />
-                  View
-                </button>
-              )}
+              <div className="flex items-center gap-4">
+                {editingDiagnosis?.attachmentDownload && !attachmentFile && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadAttachment}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </button>
+                )}
+                {hasAnyAttachment && (
+                  <button
+                    type="button"
+                    onClick={handleViewAttachment}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#0268a8]"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View
+                  </button>
+                )}
+              </div>
             </div>
 
             {hasAnyAttachment && (
@@ -904,7 +931,7 @@ export function Step6Diagnoses({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-900 truncate">
-                    {attachmentFileName || editingDiagnosis?.attachmentFileName}
+                    {attachmentFileName || editingDiagnosis?.attachmentFileName || getFileNameFromUrl(editingDiagnosis?.attachment) || "Attachment"}
                   </p>
                   {attachmentFile && (
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -1055,6 +1082,7 @@ export function Step6Diagnoses({
               onClick={() => {
                 setIsDiagnosisModalOpen(false)
                 setEditingDiagnosis(null)
+                setSelectedReferringPhysician(null)
                 form.reset(diagnosisFormDefaults)
                 setAttachmentFile(null)
                 setAttachmentBase64(null)
@@ -1081,8 +1109,9 @@ export function Step6Diagnoses({
           }
         }}
         title="Referring Physicians"
-        description="Select one referring physician from catalog, other clients, or create manually"
+        description="Select one referring physician from agency catalog or create manually"
         maxWidthClassName="sm:max-w-[860px]"
+        contentClassName="overflow-visible"
       >
         <div className="pb-2">
           <Tabs

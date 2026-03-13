@@ -11,6 +11,22 @@ type UpdateDiagnosisPayload = UpdateDiagnosisDto & { id: string }
 type DiagnosisApiItem = {
   id?: string
   clientId?: string
+  physicianId?: string
+  physicianName?: string
+  physicianFirstName?: string
+  physicianLastName?: string
+  physicianSpecialty?: string
+  physicianType?: string
+  referringPhysicianName?: string
+  referringPhysicianId?: string
+  physician?: {
+    id?: string
+    firstName?: string
+    lastName?: string
+    fullName?: string
+    specialty?: string
+    type?: string
+  }
   code?: string
   name?: string
   referralDate?: string
@@ -19,14 +35,30 @@ type DiagnosisApiItem = {
   treatmentEndDate?: string
   isPrimary?: boolean
   attachment?: string
+  attachmentDownload?: string
   attachmentFileName?: string
   createdAt?: string
 }
 
 function normalizeDiagnosis(item: DiagnosisApiItem): Diagnosis {
+  const physicianId = item.physicianId ?? item.referringPhysicianId ?? item.physician?.id
+  const physicianFirstName = item.physicianFirstName ?? item.physician?.firstName
+  const physicianLastName = item.physicianLastName ?? item.physician?.lastName
+  const physicianName =
+    item.physicianName ??
+    item.referringPhysicianName ??
+    item.physician?.fullName ??
+    [physicianFirstName, physicianLastName].filter(Boolean).join(" ")
+
   return {
     id: item.id ?? "",
     clientId: item.clientId ?? "",
+    physicianId,
+    physicianName,
+    physicianFirstName,
+    physicianLastName,
+    physicianSpecialty: item.physicianSpecialty ?? item.physician?.specialty,
+    physicianType: item.physicianType ?? item.physician?.type,
     code: item.code ?? "",
     name: item.name ?? "",
     referralDate: item.referralDate ?? "",
@@ -35,6 +67,7 @@ function normalizeDiagnosis(item: DiagnosisApiItem): Diagnosis {
     treatmentEndDate: item.treatmentEndDate,
     isPrimary: item.isPrimary ?? false,
     attachment: item.attachment,
+    attachmentDownload: item.attachmentDownload,
     attachmentFileName: item.attachmentFileName,
     createdAt: item.createdAt,
   }
@@ -72,6 +105,23 @@ export async function getDiagnosesByClientId(clientId: string): Promise<Diagnosi
   }
 
   return normalizeDiagnosesResponse(response.data)
+}
+
+export async function getDiagnosisById(diagnosisId: string): Promise<Diagnosis | null> {
+  const response = await serviceGet<DiagnosisApiItem>(`/client/diagnosis/${diagnosisId}`)
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch diagnosis")
+  }
+
+  const wrapped = response.data as { data?: unknown }
+  const item = (wrapped?.data ?? response.data) as DiagnosisApiItem
+
+  return normalizeDiagnosis(item)
 }
 
 export async function createDiagnosis(data: CreateDiagnosisDto): Promise<string> {

@@ -198,6 +198,7 @@ export function createMockDiagnosis(data: CreateDiagnosisDto): string {
     {
       id,
       clientId: data.clientId,
+      physicianId: data.physicianId,
       code: data.code,
       name: data.name,
       referralDate: data.referralDate,

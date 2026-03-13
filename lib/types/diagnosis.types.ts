@@ -1,6 +1,12 @@
 export interface Diagnosis {
   id: string
   clientId: string
+  physicianId?: string
+  physicianName?: string
+  physicianFirstName?: string
+  physicianLastName?: string
+  physicianSpecialty?: string
+  physicianType?: string
   code: string
   name: string
   referralDate: string
@@ -9,12 +15,14 @@ export interface Diagnosis {
   treatmentEndDate?: string
   isPrimary: boolean
   attachment?: string
+  attachmentDownload?: string
   attachmentFileName?: string
   createdAt?: string
 }
 
 export interface CreateDiagnosisDto {
   clientId: string
+  physicianId?: string
   code: string
   name: string
   referralDate: string
@@ -27,6 +35,7 @@ export interface CreateDiagnosisDto {
 }
 
 export interface UpdateDiagnosisDto {
+  physicianId?: string
   code: string
   name: string
   referralDate: string

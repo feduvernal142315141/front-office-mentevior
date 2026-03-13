@@ -6,7 +6,7 @@ import type { CreateManualClientPhysicianDto } from "@/lib/types/client-physicia
 import { createManualClientPhysician } from "../services/client-physicians.service"
 
 interface UseCreateManualClientPhysicianReturn {
-  createManual: (data: CreateManualClientPhysicianDto) => Promise<boolean>
+  createManual: (data: CreateManualClientPhysicianDto) => Promise<string | null>
   isLoading: boolean
   error: string | null
 }
@@ -15,18 +15,18 @@ export function useCreateManualClientPhysician(): UseCreateManualClientPhysician
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const createManual = async (data: CreateManualClientPhysicianDto): Promise<boolean> => {
+  const createManual = async (data: CreateManualClientPhysicianDto): Promise<string | null> => {
     setIsLoading(true)
     setError(null)
     try {
-      await createManualClientPhysician(data)
+      const createdPhysicianId = await createManualClientPhysician(data)
       toast.success("Physician added successfully")
-      return true
+      return createdPhysicianId
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create physician"
       setError(message)
       toast.error("Error creating physician", { description: message })
-      return false
+      return null
     } finally {
       setIsLoading(false)
     }

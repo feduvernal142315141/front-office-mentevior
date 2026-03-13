@@ -769,7 +769,7 @@ function OtherClientsTab({
 
 interface ManualTabProps {
   resolvedClientId: string
-  createManual: (data: import("@/lib/types/client-physician.types").CreateManualClientPhysicianDto) => Promise<boolean>
+  createManual: (data: import("@/lib/types/client-physician.types").CreateManualClientPhysicianDto) => Promise<string | null>
   isCreatingManual: boolean
   onClose: () => void
   onCreated: () => void

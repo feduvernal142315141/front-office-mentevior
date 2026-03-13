@@ -120,16 +120,18 @@ const addressSourceSchema = z.object({
       })
     }
 
-    if (!value.zipCode?.trim()) {
+    const normalizedZipCode = value.zipCode?.trim() ?? ""
+
+    if (!normalizedZipCode) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Zip code is required",
         path: ["zipCode"],
       })
-    } else if (!/^\d+$/.test(value.zipCode.trim())) {
+    } else if (!/^\d{5}$/.test(normalizedZipCode)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Zip code must be numeric",
+        message: "ZIP Code must be exactly 5 digits",
         path: ["zipCode"],
       })
     }
@@ -705,7 +707,7 @@ export function Step2Addresses({
                   hasError={!!fieldState.error}
                   required
                   inputMode="numeric"
-                  maxLength={10}
+                  maxLength={5}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>

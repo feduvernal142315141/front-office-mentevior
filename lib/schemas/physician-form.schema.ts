@@ -36,7 +36,7 @@ export const physicianFormSchema = z.object({
   email: z
     .string()
     .min(1, "Email is required")
-    .email("Invalid email address"),
+    .email("Invalid email format"),
   
   type: z
     .string()
@@ -97,4 +97,3 @@ export const getPhysicianFormDefaults = (): PhysicianFormData => ({
   country: "United States",
   state: "",
 });
-

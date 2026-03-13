@@ -19,10 +19,18 @@ interface UsePhysiciansReturn {
   refetch: (query?: QueryModel) => Promise<void>
 }
 
-export function usePhysicians(initialQuery?: QueryModel): UsePhysiciansReturn {
+interface UsePhysiciansOptions {
+  enabled?: boolean
+}
+
+export function usePhysicians(
+  initialQuery?: QueryModel,
+  options?: UsePhysiciansOptions
+): UsePhysiciansReturn {
+  const enabled = options?.enabled ?? true
   const [physicians, setPhysicians] = useState<Physician[]>([])
   const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<Error | null>(null)
 
   const fetchPhysicians = async (query?: QueryModel) => {
@@ -42,9 +50,14 @@ export function usePhysicians(initialQuery?: QueryModel): UsePhysiciansReturn {
   }
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      return
+    }
+
     fetchPhysicians(initialQuery)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [enabled])
 
   return {
     physicians,
