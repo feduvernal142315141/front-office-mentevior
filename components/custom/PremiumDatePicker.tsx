@@ -297,7 +297,7 @@ export function PremiumDatePicker({
                 day_button:
                   "h-9 w-9 rounded-full text-sm font-medium text-slate-700 transition-colors hover:bg-[#037ECC]/10 hover:text-slate-900 data-[selected-single=true]:bg-[#037ECC] data-[selected-single=true]:text-white",
                 today:
-                  "text-[#037ECC] data-[selected-single=true]:text-white",
+                  "[&>button]:ring-2 [&>button]:ring-[#037ECC]/25 [&>button]:bg-[#037ECC]/8 [&>button]:text-[#025fa0] [&>button]:font-semibold data-[selected-single=true]:[&>button]:ring-0 data-[selected-single=true]:[&>button]:bg-[#037ECC] data-[selected-single=true]:[&>button]:text-white",
                 month_caption: "hidden",
                 nav: "hidden",
               }}

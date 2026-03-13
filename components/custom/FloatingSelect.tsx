@@ -35,6 +35,7 @@ export function FloatingSelect({
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const containerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   
   const hasValue = value && value !== ""
@@ -49,7 +50,11 @@ export function FloatingSelect({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      const clickedInsideContainer = containerRef.current?.contains(target)
+      const clickedInsideDropdown = dropdownRef.current?.contains(target)
+
+      if (!clickedInsideContainer && !clickedInsideDropdown) {
         setIsOpen(false)
         setSearchQuery("")
         onBlur?.()
@@ -154,20 +159,12 @@ export function FloatingSelect({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div 
+        <div
+          ref={dropdownRef}
           className={cn(
-            `
-            absolute top-full left-0 right-0 mt-2
-            z-[9999]
-            bg-white
-            border border-gray-200
-            rounded-[16px]
-            shadow-[0_8px_30px_rgb(0,0,0,0.12)]
-            overflow-hidden
-            
-            animate-in fade-in-0 zoom-in-95
-            duration-200
-            `
+            "absolute top-full left-0 right-0 mt-2",
+            "z-[9999] bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden",
+            "animate-in fade-in-0 duration-150"
           )}
         >
             {/* Search Input */}

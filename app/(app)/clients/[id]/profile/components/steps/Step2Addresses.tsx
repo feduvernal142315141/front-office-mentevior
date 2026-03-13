@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Edit2, Home, Building2, Users, Plus } from "lucide-react"
+import { Edit2, Home, Building2, Users } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -739,8 +739,7 @@ export function Step2Addresses({
         </div>
 
         <Button type="button" onClick={handleOpenModal}>
-          <Plus className="w-4 h-4 mr-2" />
-          New address
+          Add address
         </Button>
       </div>
 

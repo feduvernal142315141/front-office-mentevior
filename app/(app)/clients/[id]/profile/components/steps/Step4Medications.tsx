@@ -22,7 +22,7 @@ import { useUpdateMedication } from "@/lib/modules/medications/hooks/use-update-
 import { useRemoveMedication } from "@/lib/modules/medications/hooks/use-remove-medication"
 import type { Medication } from "@/lib/types/medication.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
-import { dateToISO, formatDateDisplay } from "@/lib/utils/date"
+import { formatDateDisplay } from "@/lib/utils/date"
 import { isoToLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 
@@ -190,18 +190,6 @@ export function Step4Medications({
   const handleSaveMedication = form.handleSubmit(async (values) => {
     if (!resolvedClientId) {
       onValidationError({ general: "Client not found" })
-      return
-    }
-
-    const currentDate = dateToISO(new Date())
-
-    if (currentDate && values.treatmentStartDate && values.treatmentStartDate > currentDate) {
-      const message = "Treatment start date is later than the current date"
-      form.setError("treatmentStartDate", {
-        type: "manual",
-        message,
-      })
-      onValidationError({ treatmentStartDate: message })
       return
     }
 

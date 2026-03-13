@@ -27,6 +27,14 @@ export const diagnosisFormSchema = z.object({
     .or(z.literal("")),
   isPrimary: z.boolean(),
 }).superRefine((values, ctx) => {
+  if (values.treatmentStartDate < values.referralDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["treatmentStartDate"],
+      message: "Treatment start date must be on or after referral date",
+    })
+  }
+
   if (!values.treatmentEndDate) {
     return
   }

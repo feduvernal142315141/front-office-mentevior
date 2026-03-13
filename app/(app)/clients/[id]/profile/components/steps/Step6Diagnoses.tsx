@@ -35,7 +35,7 @@ import type { Diagnosis } from "@/lib/types/diagnosis.types"
 import type { CreateManualClientPhysicianDto } from "@/lib/types/client-physician.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 import { physicianFormSchema, getPhysicianFormDefaults, type PhysicianFormData } from "@/lib/schemas/physician-form.schema"
-import { dateToISO, formatDateDisplay } from "@/lib/utils/date"
+import { formatDateDisplay } from "@/lib/utils/date"
 import { isoToLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 
@@ -125,6 +125,7 @@ export function Step6Diagnoses({
   const [isReferringPhysicianModalOpen, setIsReferringPhysicianModalOpen] = useState(false)
   const [referringPhysicianTab, setReferringPhysicianTab] = useState("agency")
   const [selectedReferringPhysician, setSelectedReferringPhysician] = useState<SelectedReferringPhysician | null>(null)
+  const [referringPhysicianError, setReferringPhysicianError] = useState<string | null>(null)
   const [editingDiagnosisIdLoading, setEditingDiagnosisIdLoading] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const preventNextDiagnosisCloseRef = useRef(false)
@@ -202,6 +203,14 @@ export function Step6Diagnoses({
     {
       key: "name",
       header: "Name",
+    },
+    {
+      key: "physicianName",
+      header: "Referring Physician",
+      render: (diagnosis) =>
+        diagnosis.physicianName?.trim() ||
+        [diagnosis.physicianFirstName, diagnosis.physicianLastName].filter(Boolean).join(" ") ||
+        "—",
     },
     {
       key: "referralDate",
@@ -381,15 +390,10 @@ export function Step6Diagnoses({
       return
     }
 
-    const currentDate = dateToISO(new Date())
-
-    if (currentDate && values.treatmentStartDate > currentDate) {
-      const message = "Treatment start date is later than the current date"
-      form.setError("treatmentStartDate", {
-        type: "manual",
-        message,
-      })
-      onValidationError({ treatmentStartDate: message })
+    if (!editingDiagnosis && !selectedReferringPhysician?.physicianId) {
+      const message = "Referring physician is required"
+      setReferringPhysicianError(message)
+      onValidationError({ physicianId: message })
       return
     }
 
@@ -424,6 +428,7 @@ export function Step6Diagnoses({
     form.reset(diagnosisFormDefaults)
     setEditingDiagnosis(null)
     setSelectedReferringPhysician(null)
+    setReferringPhysicianError(null)
     setAttachmentFile(null)
     setAttachmentBase64(null)
     setAttachmentFileName(null)
@@ -437,6 +442,13 @@ export function Step6Diagnoses({
         errors[key] = errorItem.message
       }
     })
+
+    if (!editingDiagnosis && !selectedReferringPhysician?.physicianId) {
+      const message = "Referring physician is required"
+      setReferringPhysicianError(message)
+      errors.physicianId = message
+    }
+
     onValidationError(errors)
   })
 
@@ -467,6 +479,7 @@ export function Step6Diagnoses({
         isPrimary: Boolean(sourceDiagnosis.isPrimary),
       })
       setSelectedReferringPhysician(buildDiagnosisPhysician(sourceDiagnosis))
+      setReferringPhysicianError(null)
       setAttachmentFile(null)
       setAttachmentBase64(null)
       setAttachmentFileName(
@@ -499,6 +512,7 @@ export function Step6Diagnoses({
       type: selectedAgencyPhysician.type,
       source: "agency",
     })
+    setReferringPhysicianError(null)
     setIsReferringPhysicianModalOpen(false)
     resetReferringPhysicianModalState()
   }
@@ -541,6 +555,7 @@ export function Step6Diagnoses({
       type: selectedType ?? values.type,
       source: "manual",
     })
+    setReferringPhysicianError(null)
 
     preventNextDiagnosisCloseRef.current = true
     setIsDiagnosisModalOpen(true)
@@ -584,11 +599,7 @@ export function Step6Diagnoses({
             disabled={isLoadingAgencyPhysicians}
           />
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600">
-            Selecting a physician applies it to this diagnosis and closes the modal.
-          </div>
-
-          <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
+          <div className="flex items-center justify-end gap-3 pt-1">
             <Button
               type="button"
               variant="secondary"
@@ -623,7 +634,7 @@ export function Step6Diagnoses({
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
+            <div className="flex items-center justify-end gap-3 pt-2">
               <Button
                 type="button"
                 variant="secondary"
@@ -663,6 +674,7 @@ export function Step6Diagnoses({
           onClick={() => {
             setEditingDiagnosis(null)
             setSelectedReferringPhysician(null)
+            setReferringPhysicianError(null)
             form.reset({
               ...diagnosisFormDefaults,
               isPrimary: !hasPrimaryDiagnosis,
@@ -730,6 +742,7 @@ export function Step6Diagnoses({
           if (!open) {
             setEditingDiagnosis(null)
             setSelectedReferringPhysician(null)
+            setReferringPhysicianError(null)
             form.reset(diagnosisFormDefaults)
             setAttachmentFile(null)
             setAttachmentBase64(null)
@@ -748,11 +761,12 @@ export function Step6Diagnoses({
           }}
           className="px-6 py-6"
         >
-          {Object.keys(form.formState.errors).length > 0 && (
+          {(Object.keys(form.formState.errors).length > 0 || !!referringPhysicianError) && (
             <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {Object.entries(form.formState.errors).map(([key, err]) => (
                 <p key={key}>{String(err?.message ?? key)}</p>
               ))}
+              {referringPhysicianError && <p>{referringPhysicianError}</p>}
             </div>
           )}
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -840,10 +854,28 @@ export function Step6Diagnoses({
             />
           </div>
 
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+          <div
+            className={cn(
+              "mt-4 rounded-xl border bg-slate-50/60 p-4 transition-colors",
+              referringPhysicianError
+                ? "border-red-300"
+                : "border-slate-200 hover:border-[#037ECC]/45"
+            )}
+            role="button"
+            tabIndex={0}
+            onClick={() => setIsReferringPhysicianModalOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                setIsReferringPhysicianModalOpen(true)
+              }
+            }}
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-800">Referring Physician</p>
+                <p className={cn("text-sm font-semibold", referringPhysicianError ? "text-red-600" : "text-slate-800")}>
+                  Referring Physician <span className={cn(referringPhysicianError ? "text-red-600" : "text-[#2563EB]")}>*</span>
+                </p>
                 {selectedReferringPhysician ? (
                   <div className="mt-1 space-y-0.5">
                     <p className="text-sm text-slate-700 font-medium">{selectedReferringPhysician.fullName}</p>
@@ -862,7 +894,10 @@ export function Step6Diagnoses({
                 {selectedReferringPhysician && (
                   <button
                     type="button"
-                    onClick={() => setSelectedReferringPhysician(null)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setSelectedReferringPhysician(null)
+                    }}
                     className={cn(
                       "group/delete relative h-9 w-9",
                       "flex items-center justify-center rounded-xl",
@@ -883,7 +918,10 @@ export function Step6Diagnoses({
 
                 <button
                   type="button"
-                  onClick={() => setIsReferringPhysicianModalOpen(true)}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setIsReferringPhysicianModalOpen(true)
+                  }}
                   className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
                 >
                   <Plus className="w-4 h-4" />
@@ -891,6 +929,9 @@ export function Step6Diagnoses({
                 </button>
               </div>
             </div>
+            {referringPhysicianError && (
+              <p className="mt-3 text-sm text-red-600">{referringPhysicianError}</p>
+            )}
           </div>
 
           <div className="mt-5 space-y-3">
@@ -1083,6 +1124,7 @@ export function Step6Diagnoses({
                 setIsDiagnosisModalOpen(false)
                 setEditingDiagnosis(null)
                 setSelectedReferringPhysician(null)
+                setReferringPhysicianError(null)
                 form.reset(diagnosisFormDefaults)
                 setAttachmentFile(null)
                 setAttachmentBase64(null)

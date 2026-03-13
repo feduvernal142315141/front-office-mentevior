@@ -126,7 +126,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "phoneNumber",
       header: "Phone Number",
-      className: "w-[18%] min-w-[180px]",
+      className: "w-[16%] min-w-[170px]",
       render: (caregiver) => {
         const phoneNumber = caregiver.phone || caregiver.phoneNumber
         return phoneNumber
@@ -138,20 +138,20 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
           : "-"
       },
     },
-    // {
-    //   key: "email",
-    //   header: "Email",
-    //   className: "w-[24%] min-w-[240px]",
-    //   render: (caregiver) => (
-    //     <span className="block min-w-0 truncate whitespace-nowrap" title={caregiver.email || "-"}>
-    //       {caregiver.email || "-"}
-    //     </span>
-    //   ),
-    // },
+    {
+      key: "email",
+      header: "Email",
+      className: "w-[24%] min-w-[220px]",
+      render: (caregiver) => (
+        <span className="block min-w-0 truncate whitespace-nowrap" title={caregiver.email || "-"}>
+          {caregiver.email || "-"}
+        </span>
+      ),
+    },
     {
       key: "status",
       header: "Status",
-      className: "w-[8%] min-w-[120px] whitespace-nowrap",
+      className: "w-[7%] min-w-[110px] whitespace-nowrap",
       render: (caregiver) => (
         <span className={caregiver.status
           ? "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
@@ -165,7 +165,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "isPrimary",
       header: "Type",
-      className: "w-[8%] min-w-[120px] whitespace-nowrap",
+      className: "w-[7%] min-w-[110px] whitespace-nowrap",
       render: (caregiver) => (
         <span className={caregiver.isPrimary
           ? "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-blue-50 text-[#037ECC] border border-blue-200"
@@ -179,7 +179,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "actions",
       header: "Actions",
-      className: "w-[6%] min-w-[90px] whitespace-nowrap",
+      className: "w-[5%] min-w-[90px] whitespace-nowrap",
       align: "right",
       render: (caregiver) => (
         <div className="flex justify-end gap-2">

@@ -32,6 +32,18 @@ export const medicationFormSchema = z.object({
     .max(500, "Comments must be at most 500 characters")
     .optional()
     .or(z.literal("")),
+}).superRefine((values, ctx) => {
+  if (!values.prescriptionDate || !values.treatmentStartDate) {
+    return
+  }
+
+  if (values.treatmentStartDate < values.prescriptionDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["treatmentStartDate"],
+      message: "Treatment start date cannot be earlier than prescription date",
+    })
+  }
 })
 
 export type MedicationFormValues = z.infer<typeof medicationFormSchema>

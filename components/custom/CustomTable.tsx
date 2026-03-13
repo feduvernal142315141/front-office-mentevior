@@ -1,5 +1,5 @@
 
-import { ReactNode, useEffect, useRef, useState } from "react"
+import { type MouseEvent as ReactMouseEvent, ReactNode, useEffect, useRef, useState } from "react"
 import { FileQuestion, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -30,6 +30,7 @@ export interface CustomTableProps<T> {
   }
   className?: string
   getRowKey?: (row: T, index: number) => string
+  onRowClick?: (row: T, index: number) => void
 }
 
 function getNestedValue<T>(obj: T, path: string): unknown {
@@ -58,6 +59,7 @@ export function CustomTable<T>({
   pagination,
   className = "",
   getRowKey,
+  onRowClick,
 }: CustomTableProps<T>) {
   const [pageSizeOpen, setPageSizeOpen] = useState(false)
   const pageSizeRef = useRef<HTMLDivElement>(null)
@@ -79,6 +81,30 @@ export function CustomTable<T>({
     }
     const id = (row as any).id
     return id ? String(id) : `row-${index}`
+  }
+
+  const handleRowClick = (
+    event: ReactMouseEvent<HTMLTableRowElement>,
+    row: T,
+    rowIndex: number
+  ) => {
+    const target = event.target as HTMLElement
+
+    if (target.closest("button, a, input, textarea, select, [role='button'], [data-row-no-click='true']")) {
+      return
+    }
+
+    if (onRowClick) {
+      onRowClick(row, rowIndex)
+      return
+    }
+
+    const rowElement = event.currentTarget
+    const editTrigger = rowElement.querySelector<HTMLElement>(
+      "[data-row-edit-trigger='true'], button[aria-label*='Edit' i], button[title*='Edit' i], a[aria-label*='Edit' i], a[title*='Edit' i]"
+    )
+
+    editTrigger?.click()
   }
 
   if (isLoading) {
@@ -247,6 +273,7 @@ export function CustomTable<T>({
             {data.map((row, rowIndex) => (
               <tr 
                 key={getKey(row, rowIndex)}
+                onClick={(event) => handleRowClick(event, row, rowIndex)}
                 className={cn(
                   "group/row",
                   "border-b border-slate-100/80 last:border-b-0",
@@ -256,7 +283,7 @@ export function CustomTable<T>({
                   "hover:shadow-[inset_3px_0_0_0_#037ECC]",
                   "hover:relative hover:z-10",
                   
-                  "cursor-default"
+                  "cursor-pointer"
                 )}
               >
                 {columns.map((column) => {
