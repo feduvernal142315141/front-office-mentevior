@@ -522,7 +522,13 @@ export function RequiredDocumentUploadModal({
                 const isSelected = selectedQuickOffset === label
                 const cleanLabel = label.replace("+", "").trim()
                 const [num, unit] = cleanLabel.split(" ")
-                const compactUnit = unit ? unit.charAt(0).toUpperCase() : ""
+                const amount = Number(num)
+                const unitLower = (unit || "").toLowerCase()
+                const compactLabel = unitLower.startsWith("month")
+                  ? amount === 1 ? `${num}mo` : `${num}mos`
+                  : unitLower.startsWith("year")
+                    ? amount === 1 ? `${num}yr` : `${num}yrs`
+                    : `${num}${unitLower}`
                 return (
                   <button
                     key={label}
@@ -546,7 +552,7 @@ export function RequiredDocumentUploadModal({
                       "text-sm font-bold leading-tight",
                       isSelected ? "text-white" : "text-slate-700"
                     )}>
-                      {num}{compactUnit}
+                      {compactLabel}
                     </span>
                   </button>
                 )

@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Edit2, Users } from "lucide-react"
+import { Edit2, Trash2, Users } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
@@ -15,6 +16,7 @@ import type { Caregiver } from "@/lib/types/caregiver.types"
 import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
 import { useCreateCaregiver } from "@/lib/modules/caregivers/hooks/use-create-caregiver"
 import { useUpdateCaregiver } from "@/lib/modules/caregivers/hooks/use-update-caregiver"
+import { useRemoveCaregiver } from "@/lib/modules/caregivers/hooks/use-remove-caregiver"
 import { useRelationshipCatalog } from "@/lib/modules/relationships/hooks/use-relationship-catalog"
 import { formatPhoneDisplay, formatPhoneInput } from "@/lib/utils/phone-format"
 import { cn } from "@/lib/utils"
@@ -23,6 +25,8 @@ import type { StepComponentProps } from "@/lib/types/wizard.types"
 export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerValidation, onStepStatusChange }: StepComponentProps) {
   const [isCaregiverModalOpen, setIsCaregiverModalOpen] = useState(false)
   const [editingCaregiver, setEditingCaregiver] = useState<Caregiver | null>(null)
+  const [deletingCaregiver, setDeletingCaregiver] = useState<Caregiver | null>(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const resolvedClientId = useMemo(() => {
@@ -48,6 +52,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
   const { caregivers, isLoading, error, refetch } = useCaregiversByClient(resolvedClientId)
   const { create, isLoading: isCreating } = useCreateCaregiver()
   const { update, isLoading: isUpdating } = useUpdateCaregiver()
+  const { remove, isLoading: isRemoving } = useRemoveCaregiver()
   const { relationships, isLoading: isLoadingRelationships, error: relationshipError } = useRelationshipCatalog()
 
   const form = useForm<CaregiverFormValues>({
@@ -69,6 +74,13 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
   const relationshipIdByName = useMemo(() => new Map(
     relationships.map((relationship) => [relationship.name, relationship.id])
   ), [relationships])
+
+  const hasPrimaryCaregiver = useMemo(
+    () => caregivers.some((caregiver) => caregiver.isPrimary),
+    [caregivers]
+  )
+
+  const isCreatePrimaryLocked = !editingCaregiver && hasPrimaryCaregiver
 
   const getCaregiverFullName = (caregiver: Caregiver) => {
     const fullName = caregiver.fullName?.trim()
@@ -193,6 +205,27 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
           >
             <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
+          <button
+            onClick={() => {
+              setDeletingCaregiver(caregiver)
+              setIsDeleteModalOpen(true)
+            }}
+            className={cn(
+              "group/delete relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
+              "bg-gradient-to-b from-red-50 to-red-100/80",
+              "border border-red-200/60 shadow-sm shadow-red-900/5",
+              "hover:from-red-100 hover:to-red-200/90",
+              "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+              "transition-all duration-200 ease-out",
+              "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+            )}
+            title="Remove caregiver"
+            aria-label="Remove caregiver"
+          >
+            <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
+          </button>
         </div>
       ),
     },
@@ -270,6 +303,15 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     onValidationError(errors)
   })
 
+  const handleConfirmRemove = async () => {
+    if (!deletingCaregiver) return
+    const ok = await remove(deletingCaregiver.id)
+    if (!ok) return
+    setIsDeleteModalOpen(false)
+    setDeletingCaregiver(null)
+    await refetch()
+  }
+
   if (!resolvedClientId) {
     return (
       <div className="max-w-5xl mx-auto p-8">
@@ -294,7 +336,10 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
           type="button"
           onClick={() => {
             setEditingCaregiver(null)
-            form.reset(caregiverFormDefaults)
+            form.reset({
+              ...caregiverFormDefaults,
+              isPrimary: !hasPrimaryCaregiver,
+            })
             setIsCaregiverModalOpen(true)
           }}
         >
@@ -366,6 +411,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
             event.preventDefault()
             void handleSaveCaregiver()
           }}
+          noValidate
           className="px-6 py-6"
         >
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -465,7 +511,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    type="email"
+                    type="text"
                     inputMode="email"
                     hasError={!!fieldState.error}
                     required
@@ -502,7 +548,11 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                     checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
                     label={field.value ? "Primary" : "Secondary"}
-                    description="Set caregiver role priority"
+                    description={isCreatePrimaryLocked
+                      ? "A primary caregiver already exists"
+                      : "Set caregiver role priority"
+                    }
+                    disabled={isCreatePrimaryLocked}
                     variant="default"
                   />
                 </div>
@@ -529,6 +579,19 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
           </div>
         </form>
       </CustomModal>
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setDeletingCaregiver(null)
+        }}
+        onConfirm={() => void handleConfirmRemove()}
+        title="Remove caregiver"
+        message="Are you sure you want to remove this caregiver from the client?"
+        itemName={deletingCaregiver ? getCaregiverFullName(deletingCaregiver) : undefined}
+        isDeleting={isRemoving}
+      />
     </div>
   )
 }

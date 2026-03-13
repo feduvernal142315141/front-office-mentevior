@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import type { CreateMedicationDto, Medication, UpdateMedicationDto } from "@/lib/types/medication.types"
 
@@ -59,4 +59,12 @@ export async function updateMedication(medicationId: string, data: UpdateMedicat
   }
 
   return response.data as string
+}
+
+export async function removeMedication(medicationId: string): Promise<void> {
+  const response = await serviceDelete<void>(`/client/medication/${medicationId}`)
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(response.data?.message || "Failed to remove medication")
+  }
 }

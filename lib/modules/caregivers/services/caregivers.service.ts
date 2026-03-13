@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import type { Caregiver, CreateCaregiverDto, UpdateCaregiverDto } from "@/lib/types/caregiver.types"
 
@@ -130,4 +130,12 @@ export async function updateCaregiver(caregiverId: string, data: UpdateCaregiver
   }
 
   return response.data as string
+}
+
+export async function removeCaregiver(caregiverId: string): Promise<void> {
+  const response = await serviceDelete<void>(`/client/caregiver/${caregiverId}`)
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(response.data?.message || "Failed to remove caregiver")
+  }
 }

@@ -56,8 +56,8 @@ export default function MyCompanyPage() {
       hasDeepChildren: false,
     },
     {
-      title: "Physicians",
-      description: "Manage physician information",
+      title: "Referring Physicians",
+      description: "Manage referring physicians catalog",
       href: "/my-company/physicians",
       icon: Stethoscope,
       canView: canViewPhysicians,

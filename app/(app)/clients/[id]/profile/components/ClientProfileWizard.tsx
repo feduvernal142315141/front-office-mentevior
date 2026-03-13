@@ -2,15 +2,14 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { 
-  User, 
-  MapPin, 
-  Users, 
-  Pill, 
-  Stethoscope, 
-  Activity, 
-  Shield, 
-  FileCheck, 
+import {
+  User,
+  MapPin,
+  Users,
+  Pill,
+  Activity,
+  Shield,
+  FileCheck,
   UserCog,
   FileText
 } from "lucide-react"
@@ -21,7 +20,6 @@ import { ConfirmationModal } from "@/components/custom/ConfirmationModal"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
 import { useMedicationsByClient } from "@/lib/modules/medications/hooks/use-medications-by-client"
-import { useClientPhysicians } from "@/lib/modules/client-physicians/hooks/use-client-physicians"
 import { useDiagnosesByClient } from "@/lib/modules/diagnoses/hooks/use-diagnoses-by-client"
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
@@ -30,7 +28,6 @@ import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
 import { Step3Caregivers } from "./steps/Step3Caregivers"
 import { Step4Medications } from "./steps/Step4Medications"
-import { Step5Physicians } from "./steps/Step5Physicians"
 import { Step6Diagnoses } from "./steps/Step6Diagnoses"
 import { Step10RequiredDocuments } from "./steps/Step10RequiredDocuments"
 import { Step9Providers } from "./steps/Step9Providers"
@@ -56,7 +53,6 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     addresses: "PENDING",
     caregivers: "PENDING",
     medications: "PENDING",
-    physicians: "PENDING",
     diagnoses: "PENDING",
     insurances: "PENDING",
     priorAuth: "PENDING",
@@ -97,7 +93,6 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const { caregivers } = useCaregiversByClient(resolvedClientId)
   const { addresses } = useClientAddresses(resolvedClientId)
   const { medications } = useMedicationsByClient(resolvedClientId)
-  const { physicians } = useClientPhysicians(resolvedClientId)
   const { diagnoses } = useDiagnosesByClient(resolvedClientId)
   const { providers } = useProvidersByClient(resolvedClientId)
 
@@ -152,11 +147,10 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       addresses: addresses.length > 0 ? "COMPLETE" : "PENDING",
       caregivers: caregivers.length > 0 ? "COMPLETE" : "PENDING",
       medications: medications.length > 0 ? "COMPLETE" : "PENDING",
-      physicians: physicians.length > 0 ? "COMPLETE" : "PENDING",
       diagnoses: diagnoses.length > 0 ? "COMPLETE" : "PENDING",
       providers: providers.length > 0 ? "COMPLETE" : "PENDING",
     }))
-  }, [resolvedClientId, addresses.length, caregivers.length, medications.length, physicians.length, diagnoses.length, providers.length])
+  }, [resolvedClientId, addresses.length, caregivers.length, medications.length, diagnoses.length, providers.length])
 
   const steps: StepConfig[] = useMemo(() => [
     {
@@ -190,14 +184,6 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       status: stepStatuses.medications,
       isLocked: false,
       component: Step4Medications,
-    },
-    {
-      id: "physicians",
-      title: "Physicians",
-      icon: <Stethoscope className="w-4 h-4" />,
-      status: stepStatuses.physicians,
-      isLocked: false,
-      component: Step5Physicians,
     },
     {
       id: "diagnoses",
@@ -369,10 +355,6 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
       if (currentStepId === "medications") {
         nextStatus = data?.medicationsCount > 0 ? "COMPLETE" : "PENDING"
-      }
-
-      if (currentStepId === "physicians") {
-        nextStatus = data?.physiciansCount > 0 ? "COMPLETE" : "PENDING"
       }
 
       if (currentStepId === "diagnoses") {

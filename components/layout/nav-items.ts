@@ -114,7 +114,7 @@ export const navItems: NavItem[] = [
         href: "/my-company/credentials",
       },
       {
-        label: "Physicians",
+        label: "Referring Physicians",
         href: "/my-company/physicians",
       },
       {

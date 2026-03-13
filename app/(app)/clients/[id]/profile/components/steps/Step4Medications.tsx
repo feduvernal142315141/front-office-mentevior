@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Edit2 } from "lucide-react"
+import { Edit2, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
@@ -18,6 +19,7 @@ import {
 import { useMedicationsByClient } from "@/lib/modules/medications/hooks/use-medications-by-client"
 import { useCreateMedication } from "@/lib/modules/medications/hooks/use-create-medication"
 import { useUpdateMedication } from "@/lib/modules/medications/hooks/use-update-medication"
+import { useRemoveMedication } from "@/lib/modules/medications/hooks/use-remove-medication"
 import type { Medication } from "@/lib/types/medication.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 import { dateToISO, formatDateDisplay } from "@/lib/utils/date"
@@ -36,6 +38,8 @@ export function Step4Medications({
 }: StepComponentProps) {
   const [isMedicationModalOpen, setIsMedicationModalOpen] = useState(false)
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null)
+  const [deletingMedication, setDeletingMedication] = useState<Medication | null>(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -62,6 +66,7 @@ export function Step4Medications({
   const { medications, isLoading, error, refetch } = useMedicationsByClient(resolvedClientId)
   const { create, isLoading: isCreating } = useCreateMedication()
   const { update, isLoading: isUpdating } = useUpdateMedication()
+  const { remove, isLoading: isRemoving } = useRemoveMedication()
 
   const form = useForm<MedicationFormValues>({
     resolver: zodResolver(medicationFormSchema),
@@ -124,6 +129,27 @@ export function Step4Medications({
             aria-label="Edit medication"
           >
             <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+          </button>
+          <button
+            onClick={() => {
+              setDeletingMedication(medication)
+              setIsDeleteModalOpen(true)
+            }}
+            className={cn(
+              "group/delete relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
+              "bg-gradient-to-b from-red-50 to-red-100/80",
+              "border border-red-200/60 shadow-sm shadow-red-900/5",
+              "hover:from-red-100 hover:to-red-200/90",
+              "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+              "transition-all duration-200 ease-out",
+              "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+            )}
+            title="Remove medication"
+            aria-label="Remove medication"
+          >
+            <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
           </button>
         </div>
       ),
@@ -208,6 +234,15 @@ export function Step4Medications({
     })
     onValidationError(errors)
   })
+
+  const handleConfirmRemove = async () => {
+    if (!deletingMedication) return
+    const ok = await remove(deletingMedication.id)
+    if (!ok) return
+    setIsDeleteModalOpen(false)
+    setDeletingMedication(null)
+    await refetch()
+  }
 
   if (!resolvedClientId) {
     return (
@@ -398,6 +433,19 @@ export function Step4Medications({
           </div>
         </form>
       </CustomModal>
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setDeletingMedication(null)
+        }}
+        onConfirm={() => void handleConfirmRemove()}
+        title="Remove medication"
+        message="Are you sure you want to remove this medication from the client?"
+        itemName={deletingMedication?.name}
+        isDeleting={isRemoving}
+      />
     </div>
   )
 }
