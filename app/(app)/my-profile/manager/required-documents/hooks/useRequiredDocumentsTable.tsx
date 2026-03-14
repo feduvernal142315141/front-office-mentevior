@@ -67,6 +67,7 @@ interface UseRequiredDocumentsTableOptions {
   onDownload?: (row: UserHRDocumentRow) => void
   onView?: (row: UserHRDocumentRow) => void
   loadingDocumentId?: string | null
+  downloadingDocumentId?: string | null
 }
 
 export function useRequiredDocumentsTable({
@@ -74,6 +75,7 @@ export function useRequiredDocumentsTable({
   onDownload,
   onView,
   loadingDocumentId,
+  downloadingDocumentId,
 }: UseRequiredDocumentsTableOptions) {
   const columns: CustomTableColumn<UserHRDocumentRow>[] = useMemo(
     () => [
@@ -190,6 +192,41 @@ export function useRequiredDocumentsTable({
                 </button>
               )}
 
+              {row.userDocumentId && onDownload && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDownload(row)
+                  }}
+                  disabled={downloadingDocumentId === row.userDocumentId}
+                  className={cn(
+                    "group/dl",
+                    "relative h-9 w-9",
+                    "flex items-center justify-center",
+                    "rounded-xl",
+                    "bg-gradient-to-b from-slate-50 to-slate-100/80",
+                    "border border-slate-200/60",
+                    "shadow-sm",
+                    "hover:from-slate-100 hover:to-slate-200/90",
+                    "hover:border-slate-300/80",
+                    "hover:shadow-md",
+                    "hover:-translate-y-0.5",
+                    "active:translate-y-0 active:shadow-sm",
+                    "transition-all duration-200 ease-out",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30 focus-visible:ring-offset-2",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                  title="Download document"
+                  aria-label="Download document"
+                >
+                  {downloadingDocumentId === row.userDocumentId ? (
+                    <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 text-slate-600 group-hover/dl:text-slate-800 transition-colors duration-200" />
+                  )}
+                </button>
+              )}
+
               <button
                 onClick={() => onEdit(row)}
                 className={cn(
@@ -222,7 +259,7 @@ export function useRequiredDocumentsTable({
         },
       },
     ],
-    [onEdit, onDownload, onView, loadingDocumentId]
+    [onEdit, onDownload, onView, loadingDocumentId, downloadingDocumentId]
   )
 
   return { columns }

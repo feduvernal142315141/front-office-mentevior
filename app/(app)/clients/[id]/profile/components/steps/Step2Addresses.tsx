@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Edit2, Home, Building2, Users } from "lucide-react"
+import { Edit2, Home, Building2, Users, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -21,6 +21,8 @@ import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { useCreateClientAddress } from "@/lib/modules/client-addresses/hooks/use-create-client-address"
 import { useUpdateClientAddress } from "@/lib/modules/client-addresses/hooks/use-update-client-address"
+import { useDeleteClientAddress } from "@/lib/modules/client-addresses/hooks/use-delete-client-address"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import type { ClientAddress, CreateClientAddressDto } from "@/lib/types/client-address.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 import { cn } from "@/lib/utils"
@@ -188,6 +190,8 @@ export function Step2Addresses({
 }: StepComponentProps) {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
   const [addressModalStage, setAddressModalStage] = useState<AddressModalStage>("select-source")
+  const [editingAddress, setEditingAddress] = useState<ClientAddress | null>(null)
+  const [deletingAddress, setDeletingAddress] = useState<ClientAddress | null>(null)
 
   const resolvedClientId = useMemo(() => {
     if (!isCreateMode && clientId !== "new") {
@@ -217,6 +221,7 @@ export function Step2Addresses({
   } = useClientAddresses(resolvedClientId)
   const { create, isLoading: isCreating } = useCreateClientAddress()
   const { update, isLoading: isUpdating } = useUpdateClientAddress()
+  const { remove, isLoading: isDeleting } = useDeleteClientAddress()
 
   const {
     addresses: agencyAddresses,
@@ -270,92 +275,33 @@ export function Step2Addresses({
     [clients, resolvedClientId]
   )
 
-  const columns: CustomTableColumn<ClientAddress>[] = [
-    {
-      key: "nickName",
-      header: "Nickname",
-      className: "min-w-[180px]",
-      render: (address) => <span className="font-medium text-slate-900">{address.nickName}</span>,
-    },
-    {
-      key: "placeService",
-      header: "Place of Service",
-      className: "min-w-[180px]",
-      render: (address) => address.placeService || "-",
-    },
-    {
-      key: "location",
-      header: "Address",
-      className: "min-w-[260px]",
-      render: (address) => (
-        <div className="text-sm">
-          <p className="font-medium text-slate-700">{address.addressLine1}</p>
-          <p className="text-slate-500">
-            {address.city}, {address.state} {address.zipCode}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: "isPrimary",
-      header: "Type",
-      className: "w-[140px] whitespace-nowrap",
-      align: "center",
-      render: (address) => (
-        <Badge
-          className={cn(
-            "font-semibold border",
-            address.isPrimary
-              ? "bg-blue-50 text-[#037ECC] border-blue-200"
-              : "bg-slate-100 text-slate-600 border-slate-200"
-          )}
-        >
-          {address.isPrimary ? "Primary" : "Secondary"}
-        </Badge>
-      ),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      className: "w-[100px] whitespace-nowrap",
-      align: "right",
-      render: (address) => (
-        <div className="flex justify-end gap-2">
-          {!address.isPrimary && (
-            <button
-              type="button"
-              onClick={async () => {
-                await update({ id: address.id, isPrimary: true })
-                await refetchClientAddresses()
-              }}
-              className={cn(
-                "group/edit relative h-9 w-9",
-                "flex items-center justify-center rounded-xl",
-                "bg-gradient-to-b from-blue-50 to-blue-100/80",
-                "border border-blue-200/60 shadow-sm shadow-blue-900/5",
-                "hover:from-blue-100 hover:to-blue-200/90",
-                "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
-                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-                "transition-all duration-200 ease-out",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
-              )}
-              title="Set as primary"
-              aria-label="Set as primary"
-            >
-              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
-            </button>
-          )}
-        </div>
-      ),
-    },
-  ]
-
   const handleOpenModal = () => {
     form.reset({
       ...defaultValues,
       isPrimary: !isLoadingClientAddresses && addresses.length === 0,
     })
     setAddressModalStage("select-source")
+    setIsAddressModalOpen(true)
+  }
+
+  const handleOpenEditModal = (address: ClientAddress) => {
+    setEditingAddress(address)
+    form.reset({
+      sourceType: "manual",
+      nickName: address.nickName || "",
+      isPrimary: address.isPrimary,
+      selectedAgencyAddressId: "",
+      selectedClientId: "",
+      selectedClientAddressId: "",
+      placeServiceId: address.placeServiceId || "",
+      addressLine1: address.addressLine1 || "",
+      apartmentSuite: address.apartmentSuite || "",
+      city: address.city || "",
+      stateId: address.stateId || "",
+      zipCode: address.zipCode || "",
+      countryId: address.countryId || "",
+    })
+    setAddressModalStage("edit-form")
     setIsAddressModalOpen(true)
   }
 
@@ -377,7 +323,9 @@ export function Step2Addresses({
     }
 
     const duplicate = addresses.some(
-      (address) => normalizeNickname(address.nickName) === normalizeNickname(values.nickName)
+      (address) =>
+        normalizeNickname(address.nickName) === normalizeNickname(values.nickName) &&
+        address.id !== editingAddress?.id
     )
 
     if (duplicate) {
@@ -386,6 +334,34 @@ export function Step2Addresses({
         message: "Nickname already exists for this client",
       })
       onValidationError({ nickName: "Nickname already exists for this client" })
+      return
+    }
+
+    if (editingAddress) {
+      const selectedState = states.find((state) => state.id === values.stateId)
+      const selectedCountry = countries.find((country) => country.id === values.countryId)
+
+      const result = await update({
+        id: editingAddress.id,
+        nickName: values.nickName,
+        placeServiceId: values.placeServiceId,
+        addressLine1: values.addressLine1?.trim() || "",
+        apartmentSuite: values.apartmentSuite?.trim() || "",
+        city: values.city?.trim() || "",
+        stateId: values.stateId,
+        state: selectedState?.name,
+        zipCode: values.zipCode?.trim() || "",
+        countryId: values.countryId,
+        country: selectedCountry?.name,
+        isPrimary: values.isPrimary,
+      })
+      if (!result) return
+
+      setEditingAddress(null)
+      form.reset(defaultValues)
+      setAddressModalStage("select-source")
+      setIsAddressModalOpen(false)
+      await refetchClientAddresses()
       return
     }
 
@@ -754,6 +730,124 @@ export function Step2Addresses({
     },
   ]
 
+  const columns: CustomTableColumn<ClientAddress>[] = [
+    {
+      key: "nickName",
+      header: "Nickname",
+      className: "min-w-[180px]",
+      render: (address) => <span className="font-medium text-slate-900">{address.nickName}</span>,
+    },
+    {
+      key: "address",
+      header: "Place of Service",
+      className: "min-w-[180px]",
+      render: (address) => address.addressLine1 || "-",
+    },
+    {
+      key: "location",
+      header: "Address",
+      className: "min-w-[260px]",
+      render: (address) => (
+        <div className="text-sm">
+          <p className="font-medium text-slate-700">{address.addressLine1}</p>
+          <p className="text-slate-500">
+            {address.city}, {address.state} {address.zipCode}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "isPrimary",
+      header: "Type",
+      className: "w-[140px] whitespace-nowrap",
+      align: "center",
+      render: (address) => (
+        <Badge
+          className={cn(
+            "font-semibold border",
+            address.isPrimary
+              ? "bg-blue-50 text-[#037ECC] border-blue-200"
+              : "bg-slate-100 text-slate-600 border-slate-200"
+          )}
+        >
+          {address.isPrimary ? "Primary" : "Secondary"}
+        </Badge>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      className: "w-[120px] whitespace-nowrap",
+      align: "right",
+      render: (address) => (
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => handleOpenEditModal(address)}
+            className={cn(
+              "group/pencil relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
+              "bg-gradient-to-b from-slate-50 to-slate-100/80",
+              "border border-slate-200/60 shadow-sm",
+              "hover:from-slate-100 hover:to-slate-200/90",
+              "hover:border-slate-300/80 hover:shadow-md",
+              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+              "transition-all duration-200 ease-out",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30 focus-visible:ring-offset-2"
+            )}
+            title="Edit address"
+            aria-label="Edit address"
+          >
+            <Pencil className="w-4 h-4 text-slate-600 group-hover/pencil:text-slate-800 transition-colors duration-200" />
+          </button>
+          {!address.isPrimary && (
+            <button
+              type="button"
+              onClick={async () => {
+                await update({ id: address.id, isPrimary: true })
+                await refetchClientAddresses()
+              }}
+              className={cn(
+                "group/primary relative h-9 w-9",
+                "flex items-center justify-center rounded-xl",
+                "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                "border border-blue-200/60 shadow-sm shadow-blue-900/5",
+                "hover:from-blue-100 hover:to-blue-200/90",
+                "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
+                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-2"
+              )}
+              title="Set as primary"
+              aria-label="Set as primary"
+            >
+              <Edit2 className="w-4 h-4 text-blue-600 group-hover/primary:text-blue-700 transition-colors duration-200" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setDeletingAddress(address)}
+            className={cn(
+              "group/trash relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
+              "bg-gradient-to-b from-red-50 to-red-100/80",
+              "border border-red-200/60 shadow-sm",
+              "hover:from-red-100 hover:to-red-200/90",
+              "hover:border-red-300/80 hover:shadow-md",
+              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+              "transition-all duration-200 ease-out",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30 focus-visible:ring-offset-2"
+            )}
+            title="Delete address"
+            aria-label="Delete address"
+          >
+            <Trash2 className="w-4 h-4 text-red-500 group-hover/trash:text-red-700 transition-colors duration-200" />
+          </button>
+        </div>
+      ),
+    },
+  ]
+
   const activeSourceType = form.watch("sourceType")
   const activeSourceSection = activeSourceType
     ? sourceSections.find((section) => section.id === activeSourceType)
@@ -814,12 +908,21 @@ export function Step2Addresses({
             setAddressModalStage(hasPrefilledAddressData ? "edit-form" : "select-source")
           } else {
             setAddressModalStage("select-source")
+            setEditingAddress(null)
             form.reset(defaultValues)
           }
         }}
-        title={addressModalStage === "select-source" ? "New Address" : activeSourceSection?.label ?? "New Address"}
+        title={
+          editingAddress
+            ? "Edit Address"
+            : addressModalStage === "select-source"
+            ? "New Address"
+            : activeSourceSection?.label ?? "New Address"
+        }
         description={
-          addressModalStage === "select-source"
+          editingAddress
+            ? "Update the address details"
+            : addressModalStage === "select-source"
             ? "Choose where this address comes from"
             : activeSourceSection?.helper
         }
@@ -937,6 +1040,23 @@ export function Step2Addresses({
           </div>
         </form>
       </CustomModal>
+
+      <DeleteConfirmModal
+        isOpen={!!deletingAddress}
+        onClose={() => setDeletingAddress(null)}
+        onConfirm={async () => {
+          if (!deletingAddress) return
+          const ok = await remove(deletingAddress.id)
+          if (ok) {
+            setDeletingAddress(null)
+            await refetchClientAddresses()
+          }
+        }}
+        title="Delete address"
+        message="Are you sure you want to delete this address? This action cannot be undone."
+        itemName={deletingAddress?.nickName}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }

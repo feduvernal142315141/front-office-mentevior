@@ -154,3 +154,20 @@ export async function getUserDocumentUrl(documentId: string): Promise<string> {
 
   return url
 }
+
+export async function getUserDocumentDownloadUrl(documentId: string): Promise<string> {
+  const response = await serviceGet<{ url: string; urlDownload?: string }>(`/member-users/document/${documentId}`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch document URL")
+  }
+
+  const data = response.data as unknown as { url: string; urlDownload?: string }
+  const downloadUrl = data.urlDownload || data.url
+
+  if (!downloadUrl || downloadUrl.trim() === "") {
+    throw new Error("Document download URL is empty.")
+  }
+
+  return downloadUrl
+}

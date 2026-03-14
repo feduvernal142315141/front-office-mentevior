@@ -761,14 +761,7 @@ export function Step6Diagnoses({
           }}
           className="px-6 py-6"
         >
-          {(Object.keys(form.formState.errors).length > 0 || !!referringPhysicianError) && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {Object.entries(form.formState.errors).map(([key, err]) => (
-                <p key={key}>{String(err?.message ?? key)}</p>
-              ))}
-              {referringPhysicianError && <p>{referringPhysicianError}</p>}
-            </div>
-          )}
+          
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <Controller
               name="code"
@@ -1153,7 +1146,7 @@ export function Step6Diagnoses({
         title="Referring Physicians"
         description="Select one referring physician from agency catalog or create manually"
         maxWidthClassName="sm:max-w-[860px]"
-        contentClassName="overflow-visible"
+        allowSelectOverflow
       >
         <div className="pb-2">
           <Tabs

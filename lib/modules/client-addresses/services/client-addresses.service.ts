@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import type {
   ClientAddress,
@@ -117,4 +117,12 @@ export async function updateClientAddress(data: UpdateClientAddressDto): Promise
   }
 
   return response.data as string
+}
+
+export async function deleteClientAddress(id: string): Promise<void> {
+  const response = await serviceDelete(`/client/address/${id}`)
+
+  if (response.status !== 200 && response.status !== 204) {
+    throw new Error(response.data?.message || "Failed to delete address")
+  }
 }

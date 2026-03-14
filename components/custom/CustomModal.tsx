@@ -12,6 +12,7 @@ interface CustomModalProps {
   children: ReactNode
   maxWidthClassName?: string
   contentClassName?: string
+  allowSelectOverflow?: boolean
   showCloseButton?: boolean
   hideHeader?: boolean
 }
@@ -24,6 +25,7 @@ export function CustomModal({
   children,
   maxWidthClassName = "sm:max-w-[860px]",
   contentClassName,
+  allowSelectOverflow = false,
   showCloseButton = true,
   hideHeader = false,
 }: CustomModalProps) {
@@ -32,12 +34,15 @@ export function CustomModal({
       <DialogContent
         showCloseButton={showCloseButton}
         className={cn(
-          "p-0 gap-0 rounded-2xl border border-slate-200/80 shadow-[0_30px_80px_rgba(2,12,27,0.28)]",
+          "p-0 gap-0 rounded-2xl border border-slate-200/80 shadow-[0_30px_80px_rgba(2,12,27,0.28)] overflow-hidden bg-white",
           maxWidthClassName,
           contentClassName
         )}
       >
-        <div className={cn("rounded-2xl overflow-hidden bg-white/98 backdrop-blur-xl", contentClassName)}>
+        <div className={cn(
+          "rounded-2xl bg-white/98 backdrop-blur-xl",
+          allowSelectOverflow ? "overflow-visible" : "overflow-hidden",
+        )}>
           {hideHeader && (
             <DialogHeader className="sr-only">
               <DialogTitle>{title || "Dialog"}</DialogTitle>

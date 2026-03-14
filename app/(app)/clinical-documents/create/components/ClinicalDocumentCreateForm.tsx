@@ -19,7 +19,8 @@ export function ClinicalDocumentCreateForm({ mode, catalogId, initialDocumentNam
   const router = useRouter()
   const [name, setName] = useState(initialDocumentName || "")
   const [issuedDate, setIssuedDate] = useState(true)
-  const [expirationDate, setExpirationDate] = useState(() => !isNoExpirationClinicalDocument(initialDocumentName || ""))
+  const isExpirationLocked = isNoExpirationClinicalDocument(initialDocumentName || "")
+  const [expirationDate, setExpirationDate] = useState(() => !isExpirationLocked)
   const [status, setStatus] = useState(true)
 
   const createMutation = useCreateClinicalDocument()
@@ -111,6 +112,7 @@ export function ClinicalDocumentCreateForm({ mode, catalogId, initialDocumentNam
                 onCheckedChange={setExpirationDate}
                 label="Expiration Date"
                 description="Allow users to specify when expires"
+                disabled={isExpirationLocked}
               />
             </div>
 

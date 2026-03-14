@@ -9,7 +9,7 @@ import { RequiredDocumentUploadModal } from "./RequiredDocumentUploadModal"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { useUserHRDocuments } from "@/lib/modules/user-hr-documents/hooks/use-user-hr-documents"
 import { useRequiredDocumentsTable } from "../hooks/useRequiredDocumentsTable"
-import { getUserDocumentUrl } from "@/lib/modules/user-hr-documents/services/user-hr-documents.service"
+import { getUserDocumentUrl, getUserDocumentDownloadUrl } from "@/lib/modules/user-hr-documents/services/user-hr-documents.service"
 import type { UserHRDocumentRow, SaveUserHRDocumentDto } from "@/lib/types/user-hr-document.types"
 
 // ---------------------------------------------------------------------------
@@ -114,6 +114,7 @@ export function RequiredDocumentsOverview({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<{ url: string; name: string } | null>(null)
   const [loadingDocumentId, setLoadingDocumentId] = useState<string | null>(null)
+  const [downloadingDocumentId, setDownloadingDocumentId] = useState<string | null>(null)
 
   const { rows, isLoading, isSaving, error, alertCount, save } = useUserHRDocuments(
     memberUserId,
@@ -139,8 +140,33 @@ export function RequiredDocumentsOverview({
     setIsModalOpen(true)
   }, [])
 
-  const handleDownload = useCallback((row: UserHRDocumentRow) => {
-    if (row.fileUrl) window.open(row.fileUrl, "_blank", "noopener,noreferrer")
+  const handleDownload = useCallback(async (row: UserHRDocumentRow) => {
+    if (!row.userDocumentId) return
+    try {
+      setDownloadingDocumentId(row.userDocumentId)
+      const url = await getUserDocumentDownloadUrl(row.userDocumentId)
+
+      let extension = ".pdf"
+      const urlWithoutParams = url.split("?")[0]
+      if (urlWithoutParams.includes(".")) {
+        const parts = urlWithoutParams.split(".")
+        extension = `.${parts[parts.length - 1]}`
+      }
+
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${row.documentConfigName}${extension}`
+      link.style.display = "none"
+      document.body.appendChild(link)
+      link.click()
+      setTimeout(() => document.body.removeChild(link), 100)
+      toast.success("Document downloaded successfully")
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to download document"
+      toast.error(errorMessage)
+    } finally {
+      setDownloadingDocumentId(null)
+    }
   }, [])
 
   const handleViewDocument = useCallback(async (row: UserHRDocumentRow) => {
@@ -201,6 +227,7 @@ export function RequiredDocumentsOverview({
     onDownload: handleDownload,
     onView: handleViewDocument,
     loadingDocumentId,
+    downloadingDocumentId,
   })
 
   // Derived alert counts for the banner

@@ -87,7 +87,7 @@ function ChartIdConfiguration({ control }: { control: ReturnType<typeof useFormC
             "text-sm font-bold font-mono tracking-wider",
             prefix && startNumber ? "text-[#037ECC]" : "text-slate-400"
           )}>
-            {prefix || "BA"}{String(startNumber || 1).padStart(4, "0")}
+            {prefix || "BA"}{String(startNumber || 1)}
           </span>
         </div>
       </div>

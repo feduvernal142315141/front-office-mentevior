@@ -17,9 +17,8 @@ export function ClinicalDocumentEditForm({ document }: ClinicalDocumentEditFormP
   const router = useRouter()
   const [name, setName] = useState(document.name || "")
   const [issuedDate, setIssuedDate] = useState(document.issuedDate)
-  const [expirationDate, setExpirationDate] = useState(
-    isNoExpirationClinicalDocument(document.name) ? false : document.expirationDate
-  )
+  const isExpirationLocked = isNoExpirationClinicalDocument(document.name)
+  const [expirationDate, setExpirationDate] = useState(isExpirationLocked ? false : document.expirationDate)
   const [status, setStatus] = useState(document.status)
 
   const updateMutation = useUpdateClinicalDocument()
@@ -111,6 +110,7 @@ export function ClinicalDocumentEditForm({ document }: ClinicalDocumentEditFormP
                 onCheckedChange={setExpirationDate}
                 label="Expiration Date"
                 description="Allow users to specify when expires"
+                disabled={isExpirationLocked}
               />
             </div>
 

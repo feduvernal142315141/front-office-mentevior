@@ -15,6 +15,7 @@ export interface ClientAddress {
   isPrimary: boolean
   active: boolean
   createdAt?: string
+  address?: string
 }
 
 export interface CreateClientAddressDto {
