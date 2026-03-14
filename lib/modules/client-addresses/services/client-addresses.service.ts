@@ -28,6 +28,7 @@ type ClientAddressApiItem = {
   isPrincipal?: boolean
   active?: boolean
   createdAt?: string
+  placeServiceName?: string
 }
 
 type UpdateClientAddressPayload = Omit<UpdateClientAddressDto, "id"> & { id: string }
@@ -50,6 +51,7 @@ function normalizeClientAddress(item: ClientAddressApiItem): ClientAddress {
     isPrimary: item.isPrimary ?? item.isPrincipal ?? false,
     active: item.active ?? true,
     createdAt: item.createdAt,
+    placeServiceName: item.placeServiceName ?? "",
   }
 }
 
@@ -97,6 +99,18 @@ export async function getClientAddressesByClientId(clientId: string): Promise<Cl
   return normalizeClientAddressesResponse(response.data)
 }
 
+export async function getClientAddressById(id: string): Promise<ClientAddress | null> {
+  const response = await serviceGet<ClientAddressApiItem>(`/client/address/${id}`)
+
+  if (response.status === 404) return null
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch address")
+  }
+
+  return normalizeClientAddress(response.data as ClientAddressApiItem)
+}
+
 export async function createClientAddress(data: CreateClientAddressDto): Promise<string> {
   const payload = toApiPayload(data)
   const response = await servicePost<typeof payload, string>("/client/address", payload)
@@ -122,7 +136,7 @@ export async function updateClientAddress(data: UpdateClientAddressDto): Promise
 export async function deleteClientAddress(id: string): Promise<void> {
   const response = await serviceDelete(`/client/address/${id}`)
 
-  if (response.status !== 200 && response.status !== 204) {
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error(response.data?.message || "Failed to delete address")
   }
 }

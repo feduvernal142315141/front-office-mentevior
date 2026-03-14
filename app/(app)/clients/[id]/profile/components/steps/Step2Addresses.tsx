@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Edit2, Home, Building2, Users, Pencil, Trash2 } from "lucide-react"
+import { Home, Building2, Users, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -16,12 +16,13 @@ import { useAddresses } from "@/lib/modules/addresses/hooks/use-addresses"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
-import { getAddressById } from "@/lib/modules/addresses/services/addresses.service"
+import { getAddressById, getStatesByCountry } from "@/lib/modules/addresses/services/addresses.service"
 import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { useCreateClientAddress } from "@/lib/modules/client-addresses/hooks/use-create-client-address"
 import { useUpdateClientAddress } from "@/lib/modules/client-addresses/hooks/use-update-client-address"
 import { useDeleteClientAddress } from "@/lib/modules/client-addresses/hooks/use-delete-client-address"
+import { getClientAddressById } from "@/lib/modules/client-addresses/services/client-addresses.service"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import type { ClientAddress, CreateClientAddressDto } from "@/lib/types/client-address.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
@@ -284,25 +285,46 @@ export function Step2Addresses({
     setIsAddressModalOpen(true)
   }
 
-  const handleOpenEditModal = (address: ClientAddress) => {
+  const handleOpenEditModal = async (address: ClientAddress) => {
     setEditingAddress(address)
-    form.reset({
-      sourceType: "manual",
-      nickName: address.nickName || "",
-      isPrimary: address.isPrimary,
-      selectedAgencyAddressId: "",
-      selectedClientId: "",
-      selectedClientAddressId: "",
-      placeServiceId: address.placeServiceId || "",
-      addressLine1: address.addressLine1 || "",
-      apartmentSuite: address.apartmentSuite || "",
-      city: address.city || "",
-      stateId: address.stateId || "",
-      zipCode: address.zipCode || "",
-      countryId: address.countryId || "",
-    })
     setAddressModalStage("edit-form")
     setIsAddressModalOpen(true)
+
+    try {
+      const full = await getClientAddressById(address.id)
+      const data = full ?? address
+      form.reset({
+        sourceType: "manual",
+        nickName: data.nickName || "",
+        isPrimary: data.isPrimary,
+        selectedAgencyAddressId: "",
+        selectedClientId: "",
+        selectedClientAddressId: "",
+        placeServiceId: data.placeServiceId || "",
+        addressLine1: data.addressLine1 || "",
+        apartmentSuite: data.apartmentSuite || "",
+        city: data.city || "",
+        stateId: data.stateId || "",
+        zipCode: data.zipCode || "",
+        countryId: data.countryId || "",
+      })
+    } catch {
+      form.reset({
+        sourceType: "manual",
+        nickName: address.nickName || "",
+        isPrimary: address.isPrimary,
+        selectedAgencyAddressId: "",
+        selectedClientId: "",
+        selectedClientAddressId: "",
+        placeServiceId: address.placeServiceId || "",
+        addressLine1: address.addressLine1 || "",
+        apartmentSuite: address.apartmentSuite || "",
+        city: address.city || "",
+        stateId: address.stateId || "",
+        zipCode: address.zipCode || "",
+        countryId: address.countryId || "",
+      })
+    }
   }
 
   const handleSourceTypeChange = (sourceType: AddressSourceType) => {
@@ -420,6 +442,20 @@ export function Step2Addresses({
         return
       }
 
+      const resolvedCountryId =
+        selectedAddress.countryId ||
+        countries.find((c) => c.name === selectedAddress.country)?.id ||
+        undefined
+
+      let resolvedStateId = selectedAddress.stateId
+
+      if (!resolvedStateId && selectedAddress.state && resolvedCountryId) {
+        const statesForCountry = await getStatesByCountry(resolvedCountryId)
+        resolvedStateId = statesForCountry.find(
+          (s) => s.name === selectedAddress.state
+        )?.id
+      }
+
       payload = {
         clientId: resolvedClientId,
         nickName: values.nickName,
@@ -427,10 +463,10 @@ export function Step2Addresses({
         addressLine1: selectedAddress.addressLine1,
         apartmentSuite: selectedAddress.apartmentSuite,
         city: selectedAddress.city,
-        stateId: selectedAddress.stateId,
+        stateId: resolvedStateId,
         state: selectedAddress.state,
         zipCode: selectedAddress.zipCode,
-        countryId: selectedAddress.countryId,
+        countryId: resolvedCountryId,
         country: selectedAddress.country,
         isPrimary: values.isPrimary,
         sourceAddressId: selectedAddress.id,
@@ -591,7 +627,7 @@ export function Step2Addresses({
             name="placeServiceId"
             control={form.control}
             render={({ field, fieldState }) => (
-              <div>
+              <div className="md:col-span-2">
                 <FloatingSelect
                   label="Place of service"
                   value={field.value || ""}
@@ -633,34 +669,20 @@ export function Step2Addresses({
           />
 
           <Controller
-            name="addressLine1"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <div className="md:col-span-2">
-                <FloatingInput
-                  label="Address Line 1"
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  hasError={!!fieldState.error}
-                  required
-                />
-                {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
-              </div>
-            )}
-          />
-
-          <Controller
-            name="apartmentSuite"
+            name="stateId"
             control={form.control}
             render={({ field, fieldState }) => (
               <div>
-                <FloatingInput
-                  label="Apartment/Suite"
+                <FloatingSelect
+                  label="State"
                   value={field.value || ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
+                  options={states.map((state) => ({ value: state.id, label: state.name }))}
+                  disabled={!selectedCountryId || isLoadingStates}
                   hasError={!!fieldState.error}
+                  required
+                  searchable
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -686,27 +708,6 @@ export function Step2Addresses({
           />
 
           <Controller
-            name="stateId"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <div>
-                <FloatingSelect
-                  label="State"
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  options={states.map((state) => ({ value: state.id, label: state.name }))}
-                  disabled={!selectedCountryId || isLoadingStates}
-                  hasError={!!fieldState.error}
-                  required
-                  searchable
-                />
-                {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
-              </div>
-            )}
-          />
-
-          <Controller
             name="zipCode"
             control={form.control}
             render={({ field, fieldState }) => (
@@ -725,6 +726,41 @@ export function Step2Addresses({
               </div>
             )}
           />
+
+          <Controller
+            name="addressLine1"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <div className="md:col-span-2">
+                <FloatingInput
+                  label="Address Line 1"
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  hasError={!!fieldState.error}
+                  required
+                />
+                {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
+              </div>
+            )}
+          />
+
+          <Controller
+            name="apartmentSuite"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <div className="md:col-span-2">
+                <FloatingInput
+                  label="Apartment/Suite"
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  hasError={!!fieldState.error}
+                />
+                {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
+              </div>
+            )}
+          />
         </div>
       ),
     },
@@ -738,10 +774,10 @@ export function Step2Addresses({
       render: (address) => <span className="font-medium text-slate-900">{address.nickName}</span>,
     },
     {
-      key: "address",
+      key: "placeServiceName",
       header: "Place of Service",
       className: "min-w-[180px]",
-      render: (address) => address.addressLine1 || "-",
+      render: (address) => address.placeServiceName || "-",
     },
     {
       key: "location",
@@ -800,49 +836,30 @@ export function Step2Addresses({
           >
             <Pencil className="w-4 h-4 text-slate-600 group-hover/pencil:text-slate-800 transition-colors duration-200" />
           </button>
-          {!address.isPrimary && (
+
+          {!address.isPrimary ? (
             <button
               type="button"
-              onClick={async () => {
-                await update({ id: address.id, isPrimary: true })
-                await refetchClientAddresses()
-              }}
+              onClick={() => setDeletingAddress(address)}
               className={cn(
-                "group/primary relative h-9 w-9",
+                "group/trash relative h-9 w-9",
                 "flex items-center justify-center rounded-xl",
-                "bg-gradient-to-b from-blue-50 to-blue-100/80",
-                "border border-blue-200/60 shadow-sm shadow-blue-900/5",
-                "hover:from-blue-100 hover:to-blue-200/90",
-                "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
+                "bg-gradient-to-b from-red-50 to-red-100/80",
+                "border border-red-200/60 shadow-sm",
+                "hover:from-red-100 hover:to-red-200/90",
+                "hover:border-red-300/80 hover:shadow-md",
                 "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
                 "transition-all duration-200 ease-out",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-2"
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30 focus-visible:ring-offset-2"
               )}
-              title="Set as primary"
-              aria-label="Set as primary"
+              title="Delete address"
+              aria-label="Delete address"
             >
-              <Edit2 className="w-4 h-4 text-blue-600 group-hover/primary:text-blue-700 transition-colors duration-200" />
+              <Trash2 className="w-4 h-4 text-red-500 group-hover/trash:text-red-700 transition-colors duration-200" />
             </button>
+          ) : (
+            <div className="h-9 w-9" />
           )}
-          <button
-            type="button"
-            onClick={() => setDeletingAddress(address)}
-            className={cn(
-              "group/trash relative h-9 w-9",
-              "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-red-50 to-red-100/80",
-              "border border-red-200/60 shadow-sm",
-              "hover:from-red-100 hover:to-red-200/90",
-              "hover:border-red-300/80 hover:shadow-md",
-              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-              "transition-all duration-200 ease-out",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30 focus-visible:ring-offset-2"
-            )}
-            title="Delete address"
-            aria-label="Delete address"
-          >
-            <Trash2 className="w-4 h-4 text-red-500 group-hover/trash:text-red-700 transition-colors duration-200" />
-          </button>
         </div>
       ),
     },

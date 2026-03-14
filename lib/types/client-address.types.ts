@@ -15,7 +15,7 @@ export interface ClientAddress {
   isPrimary: boolean
   active: boolean
   createdAt?: string
-  address?: string
+  placeServiceName?: string
 }
 
 export interface CreateClientAddressDto {
@@ -33,6 +33,7 @@ export interface CreateClientAddressDto {
   isPrimary?: boolean
   sourceAddressId?: string
   sourceClientId?: string
+  placeServiceName?: string
 }
 
 export interface UpdateClientAddressDto {
