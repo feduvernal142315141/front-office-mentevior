@@ -11,8 +11,10 @@ interface ConfirmationModalProps {
   description: string
   confirmText?: string
   cancelText?: string
+  discardText?: string
   onConfirm: () => void | Promise<void>
   onCancel?: () => void
+  onDiscard?: () => void
   variant?: "danger" | "warning" | "info"
   isLoading?: boolean
 }
@@ -24,8 +26,10 @@ export function ConfirmationModal({
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
+  discardText,
   onConfirm,
   onCancel,
+  onDiscard,
   variant = "info",
   isLoading = false,
 }: ConfirmationModalProps) {

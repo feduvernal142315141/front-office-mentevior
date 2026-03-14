@@ -9,6 +9,7 @@ interface WizardFooterProps {
   isSubmitting: boolean
   canContinue: boolean
   onBack: () => void
+  onCancel: () => void
   onSave: () => void
   onSaveAndContinue: () => void
 }
@@ -19,6 +20,7 @@ export function WizardFooter({
   isSubmitting,
   canContinue,
   onBack,
+  onCancel,
   onSave,
   onSaveAndContinue,
 }: WizardFooterProps) {
@@ -29,7 +31,7 @@ export function WizardFooter({
           <Button
             type="button"
             variant="secondary"
-            onClick={onBack}
+            onClick={isFirstStep ? onCancel : onBack}
             disabled={isSubmitting}
             className="h-12 px-8"
           >

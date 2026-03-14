@@ -61,8 +61,10 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   })
 
   const stepSubmitRef = useRef<(() => Promise<void>) | null>(null)
+  const stepResetRef = useRef<(() => void) | null>(null)
   const shouldContinueRef = useRef<boolean>(true)
   const didSetInitialStepRef = useRef(false)
+  const [createdClientId, setCreatedClientId] = useState<string | null>(null)
   const [isStepDirty, setIsStepDirty] = useState(false)
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
   const pendingNavigationRef = useRef<(() => void) | null>(null)
@@ -276,10 +278,18 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     }
   }, [isStepDirty])
 
+  const handleUnsavedDiscard = useCallback(() => {
+    const navigate = pendingNavigationRef.current
+    pendingNavigationRef.current = null
+    setIsStepDirty(false)
+    stepResetRef.current?.()
+    navigate?.()
+  }, [])
+
   const handleUnsavedCancel = useCallback(() => {
     setShowUnsavedModal(false)
-    pendingNavigationRef.current = null
-  }, [])
+    handleUnsavedDiscard()
+  }, [handleUnsavedDiscard])
 
   const handleUnsavedSave = useCallback(async () => {
     if (!stepSubmitRef.current || !pendingNavigationRef.current) {
@@ -317,6 +327,10 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     })
   }, [activeStepIndex, router, guardNavigation])
 
+  const handleCancel = useCallback(() => {
+    router.push("/clients")
+  }, [router])
+
   const handleSave = useCallback(async () => {
     if (stepSubmitRef.current) {
       shouldContinueRef.current = false
@@ -336,9 +350,14 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const handleSaveSuccess = useCallback((data: any) => {
     const currentStepId = steps[activeStepIndex].id
     setIsStepDirty(false)
-    
+
     if (isCreateMode && data.clientId) {
       window.history.replaceState(null, '', `/clients/${data.clientId}/profile`)
+      setCreatedClientId(data.clientId)
+    }
+
+    if (currentStepId === "personalInfo") {
+      void refetch()
     }
     
     setStepStatuses(prev => {
@@ -461,14 +480,17 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-36">
           <div className="max-w-6xl mx-auto py-8">
             <ActiveStepComponent
-              clientId={clientId}
+              clientId={createdClientId ?? clientId}
               client={client}
-              isCreateMode={isCreateMode}
+              isCreateMode={isCreateMode && !createdClientId}
               onSaveSuccess={handleSaveSuccess}
               onValidationError={handleValidationError}
               onDocumentsAlertChange={handleDocumentsAlertChange}
               registerSubmit={(submitFn: () => Promise<void>) => {
                 stepSubmitRef.current = submitFn
+              }}
+              registerReset={(resetFn: () => void) => {
+                stepResetRef.current = resetFn
               }}
               registerValidation={(isValid: boolean) => {
                 setIsStepValid(isValid)
@@ -486,6 +508,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
         isSubmitting={isSubmitting}
         canContinue={canContinue}
         onBack={handleBack}
+        onCancel={handleCancel}
         onSave={handleSave}
         onSaveAndContinue={handleSaveAndContinue}
       />
@@ -494,12 +517,9 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
         open={showUnsavedModal}
         onOpenChange={(open) => {
           setShowUnsavedModal(open)
-          if (!open) {
-            pendingNavigationRef.current = null
-          }
         }}
         title="Unsaved Changes"
-        description="Save your changes before moving to another section."
+        description="You have unsaved changes. Save them before leaving or discard to continue without saving."
         confirmText="Save"
         cancelText="Cancel"
         variant="warning"

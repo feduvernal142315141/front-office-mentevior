@@ -21,11 +21,12 @@ interface Step1PersonalInfoProps {
   onSaveSuccess: (data: unknown) => void
   onValidationError: (errors: Record<string, string>) => void
   registerSubmit: (submitFn: () => Promise<void>) => void
+  registerReset?: (resetFn: () => void) => void
   registerValidation: (isValid: boolean) => void
   onDirtyChange?: (isDirty: boolean) => void
 }
 
-export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerValidation, onDirtyChange }: Step1PersonalInfoProps) {
+export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerReset, registerValidation, onDirtyChange }: Step1PersonalInfoProps) {
   const [isEditingSSN, setIsEditingSSN] = useState(false)
   const { languages, isLoading: isLoadingLanguages } = useLanguagesCatalog()
   const { genders, isLoading: isLoadingGenders } = useGenderCatalog()
@@ -45,6 +46,23 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
   useEffect(() => {
     registerSubmit(handleSubmit)
   }, [handleSubmit, registerSubmit])
+
+  useEffect(() => {
+    registerReset?.(() => {
+      form.reset({
+        firstName: client?.firstName || "",
+        lastName: client?.lastName || "",
+        phoneNumber: client?.phoneNumber || "",
+        chartId: client?.chartId || "",
+        brithDate: client?.brithDate ? client.brithDate : "",
+        languages: client?.languages?.map((l) => l.id) || [],
+        genderId: client?.genderId || "",
+        email: client?.email || "",
+        ssn: client?.ssn || "",
+        active: client?.status ?? true,
+      })
+    })
+  }, [registerReset, form, client])
 
   useEffect(() => {
     registerValidation(isValid)

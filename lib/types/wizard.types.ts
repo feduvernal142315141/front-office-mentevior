@@ -17,6 +17,7 @@ export interface StepComponentProps {
   onSaveSuccess: (data: unknown) => void
   onValidationError: (errors: Record<string, string>) => void
   registerSubmit: (submitFn: () => Promise<void>) => void
+  registerReset?: (resetFn: () => void) => void
   registerValidation: (isValid: boolean) => void
   onDirtyChange?: (isDirty: boolean) => void
   onStepStatusChange?: (stepId: string, status: StepStatus) => void
