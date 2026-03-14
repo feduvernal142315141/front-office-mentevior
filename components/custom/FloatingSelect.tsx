@@ -157,7 +157,6 @@ export function FloatingSelect({
         </label>
       </div>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div
           ref={dropdownRef}
@@ -167,70 +166,69 @@ export function FloatingSelect({
             "animate-in fade-in-0 duration-150"
           )}
         >
-            {/* Search Input */}
-            {searchable && (
-              <div className="p-3 border-b border-gray-200">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
-                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
+          {searchable && (
+            <div className="p-3 border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onClick={(e) => e.stopPropagation()}
+                />
               </div>
-            )}
-
-            <div className="max-h-[280px] overflow-y-auto py-2">
-              {filteredOptions.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                  No results found
-                </div>
-              ) : (
-                filteredOptions.map((option) => {
-                  const isSelected = option.value === value
-                  
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleSelect(option.value)}
-                      className={cn(
-                        `
-                        w-full px-4 py-3
-                        text-left text-[15px]
-                        
-                        transition-all duration-150
-                        
-                        flex items-center justify-between
-                        gap-3
-                        `,
-                        isSelected && `
-                          bg-[#037ECC]/5
-                          text-[#037ECC]
-                          font-medium
-                        `,
-                        !isSelected && `
-                          text-gray-700
-                          hover:bg-gray-50
-                          hover:text-gray-900
-                        `
-                      )}
-                    >
-                      <span>{option.label}</span>
-                      {isSelected && (
-                        <Check className="w-5 h-5 text-[#037ECC] flex-shrink-0" />
-                      )}
-                    </button>
-                  )
-                })
-              )}
             </div>
+          )}
+
+          <div className="max-h-[280px] overflow-y-auto py-2">
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                No results found
+              </div>
+            ) : (
+              filteredOptions.map((option) => {
+                const isSelected = option.value === value
+                
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    className={cn(
+                      `
+                      w-full px-4 py-3
+                      text-left text-[15px]
+                      
+                      transition-all duration-150
+                      
+                      flex items-center justify-between
+                      gap-3
+                      `,
+                      isSelected && `
+                        bg-[#037ECC]/5
+                        text-[#037ECC]
+                        font-medium
+                      `,
+                      !isSelected && `
+                        text-gray-700
+                        hover:bg-gray-50
+                        hover:text-gray-900
+                      `
+                    )}
+                  >
+                    <span>{option.label}</span>
+                    {isSelected && (
+                      <Check className="w-5 h-5 text-[#037ECC] flex-shrink-0" />
+                    )}
+                  </button>
+                )
+              })
+            )}
           </div>
+        </div>
       )}
     </div>
   )

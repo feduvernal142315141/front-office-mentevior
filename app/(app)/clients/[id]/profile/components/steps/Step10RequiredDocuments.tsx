@@ -54,7 +54,7 @@ export function Step10RequiredDocuments({
       <RequiredDocumentsOverview
         isActive={true}
         clientId={clientId}
-        onAlertCountChange={onDocumentsAlertChange}
+        onPendingCountChange={onDocumentsAlertChange}
       />
     </div>
   )

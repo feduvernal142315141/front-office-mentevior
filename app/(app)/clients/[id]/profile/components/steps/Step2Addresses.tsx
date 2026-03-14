@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -11,7 +11,6 @@ import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomT
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
-import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { Badge } from "@/components/ui/badge"
 import { useAddresses } from "@/lib/modules/addresses/hooks/use-addresses"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
@@ -29,7 +28,7 @@ import { cn } from "@/lib/utils"
 const alphanumericWithSpaces = /^[a-zA-Z0-9 ]+$/
 
 const addressSourceSchema = z.object({
-  sourceType: z.enum(["agency", "other-clients", "manual"]),
+  sourceType: z.enum(["agency", "other-clients", "manual"]).optional(),
   nickName: z
     .string()
     .trim()
@@ -48,6 +47,14 @@ const addressSourceSchema = z.object({
   zipCode: z.string().optional(),
   countryId: z.string().optional(),
 }).superRefine((value, ctx) => {
+  if (!value.sourceType) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Choose an address source",
+      path: ["sourceType"],
+    })
+  }
+
   if (value.sourceType === "agency" && !value.selectedAgencyAddressId) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -147,9 +154,11 @@ const addressSourceSchema = z.object({
 })
 
 type AddressSourceFormValues = z.infer<typeof addressSourceSchema>
+type AddressSourceType = NonNullable<AddressSourceFormValues["sourceType"]>
+type AddressModalStage = "select-source" | "edit-form"
 
 const defaultValues: AddressSourceFormValues = {
-  sourceType: "agency",
+  sourceType: undefined,
   nickName: "",
   isPrimary: false,
   selectedAgencyAddressId: "",
@@ -178,6 +187,7 @@ export function Step2Addresses({
   onStepStatusChange,
 }: StepComponentProps) {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
+  const [addressModalStage, setAddressModalStage] = useState<AddressModalStage>("select-source")
 
   const resolvedClientId = useMemo(() => {
     if (!isCreateMode && clientId !== "new") {
@@ -341,15 +351,23 @@ export function Step2Addresses({
   ]
 
   const handleOpenModal = () => {
-    form.reset(defaultValues)
+    form.reset({
+      ...defaultValues,
+      isPrimary: !isLoadingClientAddresses && addresses.length === 0,
+    })
+    setAddressModalStage("select-source")
     setIsAddressModalOpen(true)
   }
 
-  const handleSourceTypeChange = (sourceType: string) => {
-    if (sourceType !== "agency" && sourceType !== "other-clients" && sourceType !== "manual") {
-      return
-    }
+  const handleSourceTypeChange = (sourceType: AddressSourceType) => {
     form.setValue("sourceType", sourceType)
+    setAddressModalStage("edit-form")
+  }
+
+  const handleCloseModal = () => {
+    setIsAddressModalOpen(false)
+    setAddressModalStage("select-source")
+    form.reset(defaultValues)
   }
 
   const handleSaveAddress = form.handleSubmit(async (values) => {
@@ -453,6 +471,7 @@ export function Step2Addresses({
     if (!result) return
 
     form.reset(defaultValues)
+    setAddressModalStage("select-source")
     setIsAddressModalOpen(false)
     await refetchClientAddresses()
   }, () => {
@@ -465,11 +484,22 @@ export function Step2Addresses({
     onValidationError(errors)
   })
 
-  const sourceTabs: TabItem[] = [
+  const sourceSections: {
+    id: AddressSourceType
+    label: string
+    helper: string
+    icon: ReactNode
+    contentTitle: string
+    contentDescription: string
+    content: ReactNode
+  }[] = [
     {
       id: "agency",
       label: "Agency",
+      helper: "Use an existing company address",
       icon: <Building2 className="w-4 h-4" />,
+      contentTitle: "Select an agency address",
+      contentDescription: "Pull address details directly from your company address book.",
       content: (
         <div className="space-y-5">
           <Controller
@@ -507,7 +537,10 @@ export function Step2Addresses({
     {
       id: "other-clients",
       label: "Other clients",
+      helper: "Copy from another client record",
       icon: <Users className="w-4 h-4" />,
+      contentTitle: "Copy from another client",
+      contentDescription: "Choose a client, then select one of their saved addresses.",
       content: (
         <div className="space-y-5">
           <Controller
@@ -572,7 +605,10 @@ export function Step2Addresses({
     {
       id: "manual",
       label: "Manual",
+      helper: "Enter a brand-new address",
       icon: <Home className="w-4 h-4" />,
+      contentTitle: "Enter address manually",
+      contentDescription: "Fill in all required location fields for a new address.",
       content: (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <Controller
@@ -718,6 +754,18 @@ export function Step2Addresses({
     },
   ]
 
+  const activeSourceType = form.watch("sourceType")
+  const activeSourceSection = activeSourceType
+    ? sourceSections.find((section) => section.id === activeSourceType)
+    : undefined
+  const isManualFormActive = addressModalStage === "edit-form" && activeSourceType === "manual"
+  const hasPrefilledAddressData = Boolean(
+    form.getValues("nickName") ||
+      form.getValues("selectedAgencyAddressId") ||
+      form.getValues("selectedClientAddressId") ||
+      form.getValues("addressLine1")
+  )
+
   if (!resolvedClientId) {
     return (
       <div className="max-w-5xl mx-auto p-8">
@@ -762,81 +810,130 @@ export function Step2Addresses({
         open={isAddressModalOpen}
         onOpenChange={(open) => {
           setIsAddressModalOpen(open)
-          if (!open) {
+          if (open) {
+            setAddressModalStage(hasPrefilledAddressData ? "edit-form" : "select-source")
+          } else {
+            setAddressModalStage("select-source")
             form.reset(defaultValues)
           }
         }}
-        title="New Address"
-        description="Choose a source and add an address for this client"
-        maxWidthClassName="sm:max-w-[920px]"
+        title={addressModalStage === "select-source" ? "New Address" : activeSourceSection?.label ?? "New Address"}
+        description={
+          addressModalStage === "select-source"
+            ? "Choose where this address comes from"
+            : activeSourceSection?.helper
+        }
+        maxWidthClassName="sm:max-w-[600px]"
       >
         <form
           onSubmit={(event) => {
             event.preventDefault()
             void handleSaveAddress()
           }}
-          className="pb-6"
+          className="flex flex-col"
         >
-          <div className="px-6 pt-6">
-            <Controller
-              name="nickName"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <div>
-                  <FloatingInput
-                    label="Nickname"
-                    value={field.value || ""}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    hasError={!!fieldState.error}
-                    required
-                  />
-                  {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
-                </div>
-              )}
-            />
+          <div className="px-6 py-5 overflow-visible">
+            {addressModalStage === "select-source" ? (
+              <div className="grid grid-cols-1 gap-3">
+                {sourceSections.map((section) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => handleSourceTypeChange(section.id)}
+                    className={cn(
+                      "group flex items-center gap-4 rounded-2xl border-2 border-gray-200 bg-white p-5 text-left",
+                      "hover:border-[#037ECC] hover:shadow-lg hover:shadow-blue-900/8",
+                      "transition-all duration-200",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/30 focus-visible:ring-offset-2"
+                    )}
+                  >
+                    <span className={cn(
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                      "bg-blue-50 text-[#037ECC]",
+                      "group-hover:bg-[#037ECC] group-hover:text-white",
+                      "transition-colors duration-200"
+                    )}>
+                      {section.icon}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{section.label}</p>
+                      <p className="mt-0.5 text-xs text-gray-500">{section.helper}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <Controller
+                  name="nickName"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <FloatingInput
+                        label="Nickname"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        hasError={!!fieldState.error}
+                        required
+                      />
+                      {fieldState.error && <p className="mt-1.5 text-xs text-red-500">{fieldState.error.message}</p>}
+                    </div>
+                  )}
+                />
+
+                <div className="border-t border-gray-100" />
+
+                <div>{activeSourceSection?.content}</div>
+
+                <div className="border-t border-gray-100" />
+
+                <Controller
+                  name="isPrimary"
+                  control={form.control}
+                  render={({ field }) => (
+                    <PremiumSwitch
+                      checked={Boolean(field.value)}
+                      onCheckedChange={field.onChange}
+                      label={field.value ? "Primary address" : "Secondary address"}
+                      description={
+                        field.value
+                          ? "Used as the default address for this client."
+                          : "Saved as an additional address."
+                      }
+                      variant="default"
+                    />
+                  )}
+                />
+              </div>
+            )}
           </div>
 
-          <Tabs
-            items={sourceTabs}
-            defaultTab={form.getValues("sourceType")}
-            onChange={handleSourceTypeChange}
-            className="mt-2"
-          />
-
-          <div className="px-6 mt-2">
-            <Controller
-              name="isPrimary"
-              control={form.control}
-              render={({ field }) => (
-                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
-                  <PremiumSwitch
-                    checked={Boolean(field.value)}
-                    onCheckedChange={field.onChange}
-                    label={field.value ? "Primary Address" : "Secondary Address"}
-                    description="Mark as the default address for this client"
-                    variant="default"
-                  />
-                </div>
-              )}
-            />
-          </div>
-
-          <div className="mt-8 flex items-center justify-end gap-3 border-t border-slate-200 px-6 pt-5">
+          <div className="flex items-center justify-between gap-3 border-t border-gray-200 bg-white px-6 py-4">
             <Button
               type="button"
               variant="secondary"
               onClick={() => {
-                setIsAddressModalOpen(false)
-                form.reset(defaultValues)
+                if (addressModalStage === "edit-form") {
+                  setAddressModalStage("select-source")
+                  return
+                }
+                handleCloseModal()
               }}
               disabled={isCreating || isUpdating}
             >
-              Cancel
+              {addressModalStage === "edit-form" ? "Back" : "Cancel"}
             </Button>
-            <Button type="submit" loading={isCreating || isUpdating} disabled={isCreating || isUpdating}>
-              Save address
-            </Button>
+
+            {addressModalStage === "edit-form" && (
+              <Button
+                type="submit"
+                loading={isCreating || isUpdating}
+                disabled={isCreating || isUpdating}
+              >
+                Save address
+              </Button>
+            )}
           </div>
         </form>
       </CustomModal>

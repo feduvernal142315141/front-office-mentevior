@@ -371,15 +371,20 @@ export function Step9Providers({
           />
 
           {filteredUsers.length > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-2.5">
+            <div className="flex items-center justify-end gap-2">
+              {selectedCount > 0 && (
+                <span className="text-xs font-semibold text-[#037ECC] bg-[#037ECC]/10 border border-[#037ECC]/20 rounded-full px-2.5 py-0.5">
+                  {selectedCount} selected
+                </span>
+              )}
               <button
                 type="button"
                 onClick={handleToggleAll}
-                className="flex items-center gap-2.5 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900 sm:text-sm"
               >
                 <div
                   className={cn(
-                    "h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all duration-150",
+                    "h-4 w-4 rounded-[5px] border-2 flex items-center justify-center transition-all duration-150",
                     allFilteredSelected
                       ? "bg-[#037ECC] border-[#037ECC]"
                       : someFilteredSelected
@@ -387,19 +392,13 @@ export function Step9Providers({
                         : "bg-white border-slate-300"
                   )}
                 >
-                  {allFilteredSelected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                  {allFilteredSelected && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
                   {someFilteredSelected && !allFilteredSelected && (
-                    <span className="h-0.5 w-2.5 rounded-full bg-[#037ECC]" />
+                    <span className="h-0.5 w-2 rounded-full bg-[#037ECC]" />
                   )}
                 </div>
                 {allFilteredSelected ? "Deselect all" : "Select all"}
               </button>
-
-              {selectedCount > 0 && (
-                <span className="text-xs font-semibold text-[#037ECC] bg-[#037ECC]/10 border border-[#037ECC]/20 rounded-full px-2.5 py-0.5">
-                  {selectedCount} selected
-                </span>
-              )}
             </div>
           )}
 

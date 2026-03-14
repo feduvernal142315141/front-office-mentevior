@@ -37,7 +37,7 @@ export function CustomModal({
           contentClassName
         )}
       >
-        <div className="rounded-2xl overflow-hidden bg-white/98 backdrop-blur-xl">
+        <div className={cn("rounded-2xl overflow-hidden bg-white/98 backdrop-blur-xl", contentClassName)}>
           {hideHeader && (
             <DialogHeader className="sr-only">
               <DialogTitle>{title || "Dialog"}</DialogTitle>

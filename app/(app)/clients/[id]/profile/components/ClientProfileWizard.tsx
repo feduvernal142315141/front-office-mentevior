@@ -134,7 +134,6 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       setStepStatuses(prev => ({
         ...prev,
         personalInfo: initialStatuses.personalInfo,
-        documents: initialStatuses.documents,
       }))
     }
   }, [client, resolveInitialStepStatuses])

@@ -89,12 +89,14 @@ interface RequiredDocumentsOverviewProps {
   isActive: boolean
   clientId: string | null
   onAlertCountChange?: (count: number) => void
+  onPendingCountChange?: (count: number) => void
 }
 
 export function RequiredDocumentsOverview({
   isActive,
   clientId,
   onAlertCountChange,
+  onPendingCountChange,
 }: RequiredDocumentsOverviewProps) {
   const [hasLoaded, setHasLoaded] = useState(false)
   const [editingRow, setEditingRow] = useState<ClientDocumentRow | null>(null)
@@ -108,9 +110,17 @@ export function RequiredDocumentsOverview({
     isActive
   )
 
+  const pendingCount = rows.filter((r) => r.allowStatus && r.status === "PENDING").length
+  const nearExpirationCount = rows.filter((r) => r.allowStatus && r.status === "NEAR_EXPIRATION").length
+  const expiredCount = rows.filter((r) => r.allowStatus && r.status === "EXPIRED").length
+
   useEffect(() => {
     onAlertCountChange?.(alertCount)
   }, [alertCount, onAlertCountChange])
+
+  useEffect(() => {
+    onPendingCountChange?.(pendingCount)
+  }, [pendingCount, onPendingCountChange])
 
   useEffect(() => {
     if (!isActive) {
@@ -226,10 +236,6 @@ export function RequiredDocumentsOverview({
     loadingDocumentId,
     downloadingDocumentId,
   })
-
-  const pendingCount = rows.filter((r) => r.allowStatus && r.status === "PENDING").length
-  const nearExpirationCount = rows.filter((r) => r.allowStatus && r.status === "NEAR_EXPIRATION").length
-  const expiredCount = rows.filter((r) => r.allowStatus && r.status === "EXPIRED").length
 
   if (isActive && !hasLoaded && isLoading) {
     return <RequiredDocumentsSkeleton />

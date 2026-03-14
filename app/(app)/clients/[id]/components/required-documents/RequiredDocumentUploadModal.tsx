@@ -15,6 +15,7 @@ import { Button } from "@/components/custom/Button"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import type { ClientDocumentRow } from "@/lib/types/client-document.types"
 import { getClientDocumentUrl } from "@/lib/modules/client-documents/services/client-documents.service"
+import { isNoExpirationClinicalDocument } from "@/lib/modules/clinical-documents/utils/expiration-policy"
 import { addMonths, addYears } from "date-fns"
 
 // ---------------------------------------------------------------------------
@@ -32,12 +33,16 @@ const DOCUMENT_EXPIRATION_POLICY: Record<string, DocumentExpirationPolicy> = {
   "cde - comprehensive diagnostic evaluation": { kind: "duration", unit: "years", value: 3 },
   "iep - individualized education plan": { kind: "duration", unit: "years", value: 2 },
   "insurance card": { kind: "none" },
+  "admission form": { kind: "none" },
   "intake form": { kind: "none" },
   "medical necessity letter": { kind: "duration", unit: "years", value: 1 },
   "medical referral": { kind: "duration", unit: "years", value: 1 },
 }
 
 function getDocumentExpirationPolicy(documentName: string): DocumentExpirationPolicy | null {
+  if (isNoExpirationClinicalDocument(documentName)) {
+    return { kind: "none" }
+  }
   return DOCUMENT_EXPIRATION_POLICY[documentName.trim().toLowerCase()] ?? null
 }
 
@@ -314,7 +319,7 @@ export function RequiredDocumentUploadModal({
   const isEditMode = Boolean(row?.clientDocumentId)
   const expirationPolicy = row ? getDocumentExpirationPolicy(row.documentConfigName) : null
   const isCatalogPolicyMappedDocument = expirationPolicy !== null
-  const isPolicyManagedExpiration = isCatalogPolicyMappedDocument
+  const isPolicyManagedExpiration = expirationPolicy?.kind === "duration"
   const isNoExpirationDocument = expirationPolicy?.kind === "none"
   const expirationPolicyTerm = getExpirationPolicyTerm(expirationPolicy)
   const computedExpirationDate =
@@ -327,7 +332,7 @@ export function RequiredDocumentUploadModal({
       const issuedDate = row.issuedDate ?? ""
       const policy = getDocumentExpirationPolicy(row.documentConfigName)
       const expirationDate =
-        policy
+        policy?.kind === "duration"
           ? computeExpirationDate(issuedDate, policy)
           : (row.expirationDate ?? "")
       
@@ -425,7 +430,7 @@ export function RequiredDocumentUploadModal({
     const policy = getDocumentExpirationPolicy(row.documentConfigName)
     const requiresExpirationDate =
       policy?.kind === "duration" || (!policy && row.allowExpirationDate)
-    const expirationDate = policy
+    const expirationDate = policy?.kind === "duration"
       ? computeExpirationDate(form.issuedDate, policy)
       : form.expirationDate
     
@@ -470,7 +475,7 @@ export function RequiredDocumentUploadModal({
         open={open}
         onOpenChange={handleClose}
         title={isEditMode ? "Edit Document" : "Upload Document"}
-        description={row.documentConfigName}
+        description={`Required document: ${row.documentConfigName}`}
         maxWidthClassName="sm:max-w-[760px]"
       >
         <div className="p-6 space-y-5">
@@ -490,6 +495,7 @@ export function RequiredDocumentUploadModal({
       open={open}
       onOpenChange={handleClose}
       title={isEditMode ? "Edit Document" : "Upload Document"}
+      description={`Required document: ${row.documentConfigName}`}
       maxWidthClassName="sm:max-w-[760px]"
     >
       <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
@@ -529,12 +535,12 @@ export function RequiredDocumentUploadModal({
               }}
               required={row.allowIssuedDate}
             />
-            <div className={cn(isCatalogPolicyMappedDocument && "pointer-events-none opacity-70") }>
+            <div className={cn(isPolicyManagedExpiration && "pointer-events-none opacity-70") }>
               <PremiumDatePicker
                 label="Expiration Date"
-                value={isCatalogPolicyMappedDocument ? computedExpirationDate : form.expirationDate}
+                value={isPolicyManagedExpiration ? computedExpirationDate : form.expirationDate}
                 onChange={(val) => {
-                  if (isCatalogPolicyMappedDocument) return
+                  if (isPolicyManagedExpiration) return
                   setForm((prev) => ({ ...prev, expirationDate: val }))
                 }}
                 required={requiresExpirationDate}

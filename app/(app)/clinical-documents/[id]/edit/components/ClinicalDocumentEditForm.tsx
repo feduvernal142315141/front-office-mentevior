@@ -6,6 +6,7 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useUpdateClinicalDocument } from "@/lib/modules/clinical-documents/hooks/use-update-clinical-document"
+import { isNoExpirationClinicalDocument } from "@/lib/modules/clinical-documents/utils/expiration-policy"
 import type { ClinicalDocument, UpdateClinicalDocumentDto } from "@/lib/types/clinical-document.types"
 
 interface ClinicalDocumentEditFormProps {
@@ -16,7 +17,9 @@ export function ClinicalDocumentEditForm({ document }: ClinicalDocumentEditFormP
   const router = useRouter()
   const [name, setName] = useState(document.name || "")
   const [issuedDate, setIssuedDate] = useState(document.issuedDate)
-  const [expirationDate, setExpirationDate] = useState(document.expirationDate)
+  const [expirationDate, setExpirationDate] = useState(
+    isNoExpirationClinicalDocument(document.name) ? false : document.expirationDate
+  )
   const [status, setStatus] = useState(document.status)
 
   const updateMutation = useUpdateClinicalDocument()

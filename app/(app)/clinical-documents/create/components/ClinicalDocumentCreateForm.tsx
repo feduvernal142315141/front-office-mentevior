@@ -6,6 +6,7 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useCreateClinicalDocument } from "@/lib/modules/clinical-documents/hooks/use-create-clinical-document"
+import { isNoExpirationClinicalDocument } from "@/lib/modules/clinical-documents/utils/expiration-policy"
 import type { CreateClinicalDocumentDto } from "@/lib/types/clinical-document.types"
 
 interface ClinicalDocumentCreateFormProps {
@@ -18,7 +19,7 @@ export function ClinicalDocumentCreateForm({ mode, catalogId, initialDocumentNam
   const router = useRouter()
   const [name, setName] = useState(initialDocumentName || "")
   const [issuedDate, setIssuedDate] = useState(true)
-  const [expirationDate, setExpirationDate] = useState(true)
+  const [expirationDate, setExpirationDate] = useState(() => !isNoExpirationClinicalDocument(initialDocumentName || ""))
   const [status, setStatus] = useState(true)
 
   const createMutation = useCreateClinicalDocument()

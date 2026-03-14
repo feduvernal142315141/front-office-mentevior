@@ -425,7 +425,7 @@ export function RequiredDocumentUploadModal({
         open={open}
         onOpenChange={handleClose}
         title={isEditMode ? "Edit Document" : "Upload Document"}
-        description={row.documentConfigName}
+        description={`Required document: ${row.documentConfigName}`}
         maxWidthClassName="sm:max-w-[760px]"
       >
         <div className="p-6 space-y-5">
@@ -445,6 +445,7 @@ export function RequiredDocumentUploadModal({
       open={open}
       onOpenChange={handleClose}
       title={isEditMode ? "Edit Document" : "Upload Document"}
+      description={`Required document: ${row.documentConfigName}`}
       maxWidthClassName="sm:max-w-[760px]"
     >
       <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
