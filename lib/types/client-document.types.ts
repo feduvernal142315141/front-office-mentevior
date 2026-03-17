@@ -101,4 +101,5 @@ export interface BackendClientDocument {
   allowStatus: boolean
   createdAt?: string
   updatedAt?: string
+  progress?: number
 }

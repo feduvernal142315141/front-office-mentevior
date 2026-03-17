@@ -44,6 +44,7 @@ function mapBackendDocument(doc: any): BackendClientDocument {
     allowStatus: doc.hasStatus ?? false,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    progress: doc.progress ?? undefined,
   }
 }
 
@@ -66,7 +67,7 @@ export async function getClientDocuments(
 export async function createClientDocument(
   clientId: string,
   data: SaveClientDocumentDto
-): Promise<BackendClientDocument> {
+): Promise<{ progress: number }> {
   const createDto: CreateClientDocumentDto = {
     clientId: clientId,
     documentConfigId: data.documentConfigId,
@@ -86,13 +87,13 @@ export async function createClientDocument(
     throw new Error(response.data?.message || "Failed to create client document")
   }
 
-  return mapBackendDocument(response.data)
+  return { progress: Number(response.data) || 0 }
 }
 
 export async function updateClientDocument(
   clientDocumentId: string,
   data: SaveClientDocumentDto
-): Promise<BackendClientDocument> {
+): Promise<{ progress: number }> {
   const updateDto: UpdateClientDocumentDto = {
     id: clientDocumentId,
     issuedDate: data.issuedDate,
@@ -111,7 +112,7 @@ export async function updateClientDocument(
     throw new Error(response.data?.message || "Failed to update client document")
   }
 
-  return mapBackendDocument(response.data)
+  return { progress: Number(response.data) || 0 }
 }
 
 export async function deleteClientDocument(

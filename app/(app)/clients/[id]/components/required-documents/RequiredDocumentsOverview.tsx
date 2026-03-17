@@ -90,6 +90,7 @@ interface RequiredDocumentsOverviewProps {
   clientId: string | null
   onAlertCountChange?: (count: number) => void
   onPendingCountChange?: (count: number) => void
+  onProgressUpdate?: (progress: number) => void
 }
 
 export function RequiredDocumentsOverview({
@@ -97,6 +98,7 @@ export function RequiredDocumentsOverview({
   clientId,
   onAlertCountChange,
   onPendingCountChange,
+  onProgressUpdate,
 }: RequiredDocumentsOverviewProps) {
   const [hasLoaded, setHasLoaded] = useState(false)
   const [editingRow, setEditingRow] = useState<ClientDocumentRow | null>(null)
@@ -223,10 +225,13 @@ export function RequiredDocumentsOverview({
         dto.fileName = data.fileName
       }
       
-      const success = await save(dto)
-      if (success) setIsModalOpen(false)
+      const progress = await save(dto)
+      if (progress !== null) {
+        onProgressUpdate?.(progress)
+        setIsModalOpen(false)
+      }
     },
-    [editingRow, clientId, save]
+    [editingRow, clientId, save, onProgressUpdate]
   )
 
   const { columns } = useRequiredDocumentsTable({

@@ -15,19 +15,16 @@ export function Step10RequiredDocuments({
   onSaveSuccess,
   registerSubmit,
   registerValidation,
+  onProgressUpdate,
   onDocumentsAlertChange,
 }: Step10RequiredDocumentsProps) {
   
-  // Este step siempre está válido (no tiene validaciones obligatorias)
   useEffect(() => {
     registerValidation(true)
   }, [registerValidation])
 
-  // Registrar función de submit (aunque no hace nada, solo marca como completo)
   useEffect(() => {
     registerSubmit(async () => {
-      // Los documentos se guardan individualmente desde RequiredDocumentsOverview
-      // No hay un "submit" general del step
       onSaveSuccess({})
     })
   }, [registerSubmit, onSaveSuccess])
@@ -55,6 +52,7 @@ export function Step10RequiredDocuments({
         isActive={true}
         clientId={clientId}
         onPendingCountChange={onDocumentsAlertChange}
+        onProgressUpdate={onProgressUpdate}
       />
     </div>
   )

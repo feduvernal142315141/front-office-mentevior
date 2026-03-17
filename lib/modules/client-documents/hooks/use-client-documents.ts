@@ -49,7 +49,7 @@ export interface UseClientDocumentsReturn {
   isSaving: boolean
   error: Error | null
   alertCount: number
-  save: (data: SaveClientDocumentDto) => Promise<boolean>
+  save: (data: SaveClientDocumentDto) => Promise<number | null>
   refetch: () => Promise<void>
 }
 
@@ -125,7 +125,7 @@ export function useClientDocuments(
   }, [fetchAll, enabled])
 
   const save = useCallback(
-    async (data: SaveClientDocumentDto): Promise<boolean> => {
+    async (data: SaveClientDocumentDto): Promise<number | null> => {
       try {
         setIsSaving(true)
         
@@ -136,23 +136,25 @@ export function useClientDocuments(
         const existingDoc = rows.find((r) => r.documentConfigId === data.documentConfigId)
         const isUpdate = Boolean(existingDoc?.clientDocumentId)
         
+        let result: Awaited<ReturnType<typeof createClientDocument>>
+        
         if (isUpdate) {
           if (!existingDoc?.clientDocumentId) {
             throw new Error("Client document ID is required for update")
           }
-          await updateClientDocument(existingDoc.clientDocumentId, data)
+          result = await updateClientDocument(existingDoc.clientDocumentId, data)
           toast.success("Document updated successfully.")
         } else {
-          await createClientDocument(clientId, data)
+          result = await createClientDocument(clientId, data)
           toast.success("Document created successfully.")
         }
         
         await fetchAll()
-        return true
+        return result.progress ?? null
       } catch (err) {
         const errorObj = err instanceof Error ? err : new Error("Failed to save document")
         toast.error(errorObj.message)
-        return false
+        return null
       } finally {
         setIsSaving(false)
       }
