@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -11,6 +11,7 @@ interface PremiumDatePickerProps {
   value: string
   onChange: (value: string) => void
   onBlur?: () => void
+  onClear?: () => void
   label: string
   hasError?: boolean
   errorMessage?: string
@@ -22,6 +23,7 @@ export function PremiumDatePicker({
   value,
   onChange,
   onBlur,
+  onClear,
   label,
   hasError,
   errorMessage,
@@ -153,7 +155,29 @@ export function PremiumDatePicker({
               {label} {required && <span className="text-[#2563EB]">*</span>}
             </label>
             
-            <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            {hasValue && onClear ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClear()
+                }}
+                className={cn(
+                  "absolute right-3 top-1/2 -translate-y-1/2",
+                  "w-6 h-6 flex items-center justify-center rounded-full",
+                  "text-slate-400 hover:text-slate-700",
+                  "hover:bg-slate-100",
+                  "transition-all duration-150",
+                  "z-10"
+                )}
+                title="Clear date"
+                aria-label="Clear date"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            )}
           </div>
         </PopoverTrigger>
         

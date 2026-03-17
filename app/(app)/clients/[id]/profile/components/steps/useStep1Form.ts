@@ -101,10 +101,9 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
 
       const result = await create(createDto)
 
-      if (result && result.id) {
+      if (result) {
         form.reset(data)
-        window.history.replaceState(null, '', `/clients/${result.id}/profile`)
-        onSaveSuccess({ ...data, clientId: result.id })
+        onSaveSuccess({ ...data, progress: result.progress, clientId: result.clientId })
       } else {
         onValidationError({ general: "Failed to create client" })
       }
@@ -134,7 +133,7 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
 
     if (result) {
       form.reset(data)
-      onSaveSuccess(data)
+      onSaveSuccess({ ...data, progress: result.progress })
     } else {
       onValidationError({ general: "Failed to update client" })
     }

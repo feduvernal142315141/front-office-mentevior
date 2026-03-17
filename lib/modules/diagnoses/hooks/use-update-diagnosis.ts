@@ -3,10 +3,11 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import type { UpdateDiagnosisDto } from "@/lib/types/diagnosis.types"
+import type { MutationResult } from "@/lib/types/response.types"
 import { updateDiagnosis } from "../services/diagnoses.service"
 
 interface UseUpdateDiagnosisReturn {
-  update: (diagnosisId: string, data: UpdateDiagnosisDto) => Promise<boolean>
+  update: (diagnosisId: string, data: UpdateDiagnosisDto) => Promise<MutationResult | null>
   isLoading: boolean
   error: string | null
 }
@@ -15,19 +16,19 @@ export function useUpdateDiagnosis(): UseUpdateDiagnosisReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const update = async (diagnosisId: string, data: UpdateDiagnosisDto): Promise<boolean> => {
+  const update = async (diagnosisId: string, data: UpdateDiagnosisDto): Promise<MutationResult | null> => {
     setIsLoading(true)
     setError(null)
 
     try {
-      await updateDiagnosis(diagnosisId, data)
+      const result = await updateDiagnosis(diagnosisId, data)
       toast.success("Diagnosis updated successfully")
-      return true
+      return result
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update diagnosis"
       setError(message)
       toast.error("Error updating diagnosis", { description: message })
-      return false
+      return null
     } finally {
       setIsLoading(false)
     }

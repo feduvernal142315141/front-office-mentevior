@@ -21,6 +21,7 @@ export function Step9Providers({
   clientId,
   isCreateMode = false,
   onSaveSuccess,
+  onProgressUpdate,
   registerSubmit,
   registerValidation,
   onStepStatusChange,
@@ -183,8 +184,8 @@ export function Step9Providers({
       return next
     })
 
-    const ok = await assignMany(resolvedClientId, selectedIds)
-    if (!ok) {
+    const result = await assignMany(resolvedClientId, selectedIds)
+    if (!result) {
       setOptimisticAssignedUserIds((prev) => {
         const next = new Set(prev)
         selectedIds.forEach((id) => next.delete(id))
@@ -193,6 +194,7 @@ export function Step9Providers({
       return
     }
 
+    onProgressUpdate?.(result.progress)
     handleCloseModal()
     await refetch()
   }

@@ -35,9 +35,10 @@ const addressSourceSchema = z.object({
   nickName: z
     .string()
     .trim()
-    .min(1, "Nickname is required")
     .max(100, "Nickname must be less than 100 characters")
-    .regex(alphanumericWithSpaces, "Nickname must be alphanumeric"),
+    .regex(alphanumericWithSpaces, { message: "Nickname must be alphanumeric" })
+    .optional()
+    .or(z.literal("")),
   isPrimary: z.boolean(),
   selectedAgencyAddressId: z.string().optional(),
   selectedClientId: z.string().optional(),
@@ -64,6 +65,16 @@ const addressSourceSchema = z.object({
       message: "Select one agency address",
       path: ["selectedAgencyAddressId"],
     })
+  }
+
+  if (value.sourceType !== "agency") {
+    if (!value.nickName || value.nickName.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nickname is required",
+        path: ["nickName"],
+      })
+    }
   }
 
   if (value.sourceType === "other-clients") {
@@ -185,6 +196,7 @@ export function Step2Addresses({
   isCreateMode = false,
   onSaveSuccess,
   onValidationError,
+  onProgressUpdate,
   registerSubmit,
   registerValidation,
   onStepStatusChange,
@@ -344,9 +356,9 @@ export function Step2Addresses({
       return
     }
 
-    const duplicate = addresses.some(
+    const duplicate = values.sourceType !== "agency" && values.nickName && addresses.some(
       (address) =>
-        normalizeNickname(address.nickName) === normalizeNickname(values.nickName) &&
+        normalizeNickname(address.nickName) === normalizeNickname(values.nickName ?? "") &&
         address.id !== editingAddress?.id
     )
 
@@ -379,6 +391,7 @@ export function Step2Addresses({
       })
       if (!result) return
 
+      onProgressUpdate?.(result.progress)
       setEditingAddress(null)
       form.reset(defaultValues)
       setAddressModalStage("select-source")
@@ -395,7 +408,7 @@ export function Step2Addresses({
 
       payload = {
         clientId: resolvedClientId,
-        nickName: values.nickName,
+        nickName: values.nickName ?? "",
         placeServiceId: values.placeServiceId,
         addressLine1: values.addressLine1?.trim() || "",
         apartmentSuite: values.apartmentSuite?.trim() || "",
@@ -418,7 +431,7 @@ export function Step2Addresses({
 
       payload = {
         clientId: resolvedClientId,
-        nickName: values.nickName,
+        nickName: source.nickName,
         placeServiceId: source.placeServiceId,
         addressLine1: source.address,
         city: source.city,
@@ -458,7 +471,7 @@ export function Step2Addresses({
 
       payload = {
         clientId: resolvedClientId,
-        nickName: values.nickName,
+        nickName: values.nickName ?? "",
         placeServiceId: selectedAddress.placeServiceId,
         addressLine1: selectedAddress.addressLine1,
         apartmentSuite: selectedAddress.apartmentSuite,
@@ -482,6 +495,7 @@ export function Step2Addresses({
     const result = await create(payload)
     if (!result) return
 
+    onProgressUpdate?.(result.progress)
     form.reset(defaultValues)
     setAddressModalStage("select-source")
     setIsAddressModalOpen(false)
@@ -984,23 +998,25 @@ export function Step2Addresses({
               </div>
             ) : (
               <div className="space-y-5">
-                <Controller
-                  name="nickName"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <FloatingInput
-                        label="Nickname"
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        hasError={!!fieldState.error}
-                        required
-                      />
-                      {fieldState.error && <p className="mt-1.5 text-xs text-red-500">{fieldState.error.message}</p>}
-                    </div>
-                  )}
-                />
+                {activeSourceType !== "agency" && (
+                  <Controller
+                    name="nickName"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <div>
+                        <FloatingInput
+                          label="Nickname"
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          hasError={!!fieldState.error}
+                          required
+                        />
+                        {fieldState.error && <p className="mt-1.5 text-xs text-red-500">{fieldState.error.message}</p>}
+                      </div>
+                    )}
+                  />
+                )}
 
                 <div className="border-t border-gray-100" />
 

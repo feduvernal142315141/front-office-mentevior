@@ -31,6 +31,7 @@ export function Step4Medications({
   isCreateMode = false,
   onSaveSuccess,
   onValidationError,
+  onProgressUpdate,
   registerSubmit,
   registerValidation,
   onDirtyChange,
@@ -209,6 +210,7 @@ export function Step4Medications({
       return
     }
 
+    onProgressUpdate?.(result.progress)
     form.reset(medicationFormDefaults)
     setEditingMedication(null)
     setIsMedicationModalOpen(false)

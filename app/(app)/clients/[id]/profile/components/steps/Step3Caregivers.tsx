@@ -22,7 +22,7 @@ import { formatPhoneDisplay, formatPhoneInput } from "@/lib/utils/phone-format"
 import { cn } from "@/lib/utils"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 
-export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerValidation, onStepStatusChange }: StepComponentProps) {
+export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess, onValidationError, onProgressUpdate, registerSubmit, registerValidation, onStepStatusChange }: StepComponentProps) {
   const [isCaregiverModalOpen, setIsCaregiverModalOpen] = useState(false)
   const [editingCaregiver, setEditingCaregiver] = useState<Caregiver | null>(null)
   const [deletingCaregiver, setDeletingCaregiver] = useState<Caregiver | null>(null)
@@ -289,6 +289,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
       return
     }
 
+    onProgressUpdate?.(result.progress)
     form.reset(caregiverFormDefaults)
     setEditingCaregiver(null)
     setIsCaregiverModalOpen(false)

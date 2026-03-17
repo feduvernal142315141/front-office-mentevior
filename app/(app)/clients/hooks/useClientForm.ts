@@ -110,10 +110,10 @@ export function useClientForm({ clientId = null, onSuccess }: UseClientFormProps
       }
       
       const result = await create(dto)
-      
-      if (result && result.id) {
+
+      if (result) {
         if (onSuccess) {
-          onSuccess(result.id)
+          onSuccess("")
         } else {
           setTimeout(() => {
             router.push("/clients")

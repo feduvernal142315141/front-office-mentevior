@@ -7,3 +7,8 @@ export interface PaginatedResponse<T> {
     total: number
   }
 }
+
+export interface MutationResult {
+  progress: number
+  clientId?: string
+}

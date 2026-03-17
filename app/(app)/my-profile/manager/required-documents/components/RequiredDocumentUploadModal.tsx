@@ -492,6 +492,14 @@ export function RequiredDocumentUploadModal({
                 const matchingOffset = detectQuickOffset(form.issuedDate, val)
                 setSelectedQuickOffset(matchingOffset)
               }}
+              onClear={
+                !row.allowExpirationDate && form.expirationDate
+                  ? () => {
+                      setForm((prev) => ({ ...prev, expirationDate: "" }))
+                      setSelectedQuickOffset(null)
+                    }
+                  : undefined
+              }
               required={row.allowExpirationDate}
             />
           </div>

@@ -42,6 +42,8 @@ function isUUID(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
 }
 
+type SubmitIntent = "close" | "continue" | "navigate" | null
+
 export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientProfileWizardProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -62,16 +64,42 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   const stepSubmitRef = useRef<(() => Promise<void>) | null>(null)
   const stepResetRef = useRef<(() => void) | null>(null)
-  const shouldContinueRef = useRef<boolean>(true)
+  const onSaveSuccessRef = useRef<(data: any) => void>(() => {})
+  const onValidationErrorRef = useRef<(errors: Record<string, string>) => void>(() => {})
+
+  const stableOnSaveSuccess = useCallback((data: any) => {
+    onSaveSuccessRef.current(data)
+  }, [])
+
+  const stableOnValidationError = useCallback((errors: Record<string, string>) => {
+    onValidationErrorRef.current(errors)
+  }, [])
   const didSetInitialStepRef = useRef(false)
   const [createdClientId, setCreatedClientId] = useState<string | null>(null)
+  const [serverProgress, setServerProgress] = useState<number | null>(null)
   const [isStepDirty, setIsStepDirty] = useState(false)
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
   const pendingNavigationRef = useRef<(() => void) | null>(null)
   const pendingNavigationAfterSaveRef = useRef<(() => void) | null>(null)
+  const isSubmittingRef = useRef(false)
+  const submitIntentRef = useRef<SubmitIntent>(null)
+  const hasCreatedClientRef = useRef(false)
+  const isInCreateMode = isCreateMode && !createdClientId
+
+  const navigateToClientsTable = useCallback(() => {
+    if (isCreateMode) {
+      window.location.href = "/clients"
+    } else {
+      router.push("/clients")
+    }
+  }, [isCreateMode, router])
 
   const resolvedClientId = useMemo(() => {
-    if (!isCreateMode && clientId !== "new") {
+    if (createdClientId) {
+      return createdClientId
+    }
+
+    if (!isInCreateMode && clientId !== "new") {
       return isUUID(clientId) ? clientId : null
     }
 
@@ -88,7 +116,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     }
 
     return possibleClientId
-  }, [clientId, isCreateMode, pathname])
+  }, [clientId, createdClientId, isInCreateMode, pathname])
 
   const { client, isLoading, refetch } = useClientById(resolvedClientId)
 
@@ -230,7 +258,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   useEffect(() => {
     if (didSetInitialStepRef.current) return
-    if (isCreateMode || !client) return
+    if (isInCreateMode || !client) return
 
     const initialStatuses = resolveInitialStepStatuses(client)
     const resolvedStatuses = steps.map((step) =>
@@ -245,7 +273,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       setActiveStepIndex(firstIncompleteIndex)
     }
     didSetInitialStepRef.current = true
-  }, [steps, isCreateMode, client, resolveInitialStepStatuses])
+  }, [steps, isInCreateMode, client, resolveInitialStepStatuses])
 
   const EXCLUDED_FROM_COMPLETION = ["medications"]
 
@@ -258,11 +286,14 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   }, [stepStatuses])
 
   const completionPercentage = useMemo(() => {
-    if (!isCreateMode && typeof client?.progress === "number") {
+    if (typeof serverProgress === "number") {
+      return Math.min(100, Math.max(0, serverProgress))
+    }
+    if (!isInCreateMode && typeof client?.progress === "number") {
       return Math.min(100, Math.max(0, client.progress))
     }
     return localCompletionPercentage
-  }, [client?.progress, isCreateMode, localCompletionPercentage])
+  }, [serverProgress, client?.progress, isInCreateMode, localCompletionPercentage])
 
   const profileStatus = useMemo(() => {
     if (completionPercentage === 100) return "complete"
@@ -292,7 +323,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   }, [handleUnsavedDiscard])
 
   const handleUnsavedSave = useCallback(async () => {
-    if (!stepSubmitRef.current || !pendingNavigationRef.current) {
+    if (!stepSubmitRef.current || !pendingNavigationRef.current || isSubmittingRef.current) {
       setShowUnsavedModal(false)
       return
     }
@@ -300,8 +331,9 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     pendingNavigationAfterSaveRef.current = pendingNavigationRef.current
     pendingNavigationRef.current = null
     setShowUnsavedModal(false)
+    isSubmittingRef.current = true
+    submitIntentRef.current = "navigate"
     setIsSubmitting(true)
-    shouldContinueRef.current = false
     await stepSubmitRef.current()
   }, [])
 
@@ -310,53 +342,64 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     if (targetStep.isLocked) return
 
     guardNavigation(() => {
-      if (!isCreateMode && targetStep.id === "personalInfo") {
+      if (!isInCreateMode && targetStep.id === "personalInfo") {
         void refetch()
       }
       setActiveStepIndex(index)
     })
-  }, [steps, isCreateMode, refetch, guardNavigation])
+  }, [steps, isInCreateMode, refetch, guardNavigation])
 
   const handleBack = useCallback(() => {
     guardNavigation(() => {
       if (activeStepIndex > 0) {
         setActiveStepIndex(activeStepIndex - 1)
       } else {
-        router.push("/clients")
+        navigateToClientsTable()
       }
     })
-  }, [activeStepIndex, router, guardNavigation])
+  }, [activeStepIndex, guardNavigation, navigateToClientsTable])
 
   const handleCancel = useCallback(() => {
-    router.push("/clients")
-  }, [router])
+    navigateToClientsTable()
+  }, [navigateToClientsTable])
 
   const handleSave = useCallback(async () => {
-    if (stepSubmitRef.current) {
-      shouldContinueRef.current = false
-      setIsSubmitting(true)
-      await stepSubmitRef.current()
+    if (!stepSubmitRef.current || isSubmittingRef.current || (isInCreateMode && hasCreatedClientRef.current)) {
+      return
     }
-  }, [])
+
+    isSubmittingRef.current = true
+    submitIntentRef.current = "close"
+    setIsSubmitting(true)
+    await stepSubmitRef.current()
+  }, [isInCreateMode])
 
   const handleSaveAndContinue = useCallback(async () => {
-    if (stepSubmitRef.current) {
-      shouldContinueRef.current = true
-      setIsSubmitting(true)
-      await stepSubmitRef.current()
+    if (!stepSubmitRef.current || isSubmittingRef.current || (isInCreateMode && hasCreatedClientRef.current)) {
+      return
     }
-  }, [])
+
+    isSubmittingRef.current = true
+    submitIntentRef.current = "continue"
+    setIsSubmitting(true)
+    await stepSubmitRef.current()
+  }, [isInCreateMode])
 
   const handleSaveSuccess = useCallback((data: any) => {
     const currentStepId = steps[activeStepIndex].id
+    const submitIntent = submitIntentRef.current
     setIsStepDirty(false)
 
-    if (isCreateMode && data.clientId) {
-      window.history.replaceState(null, '', `/clients/${data.clientId}/profile`)
+    if (typeof data?.progress === "number") {
+      setServerProgress(data.progress)
+    }
+
+    if (isInCreateMode && data.clientId && submitIntent !== "close") {
+      hasCreatedClientRef.current = true
       setCreatedClientId(data.clientId)
     }
 
-    if (currentStepId === "personalInfo") {
+    if (currentStepId === "personalInfo" && !isInCreateMode) {
       void refetch()
     }
     
@@ -390,29 +433,46 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     })
 
     if (currentStepId === "documents") {
+      isSubmittingRef.current = false
+      submitIntentRef.current = null
       setIsSubmitting(false)
-      router.push("/clients")
+      navigateToClientsTable()
       return
     }
 
     if (pendingNavigationAfterSaveRef.current) {
       const navigate = pendingNavigationAfterSaveRef.current
       pendingNavigationAfterSaveRef.current = null
+      isSubmittingRef.current = false
+      submitIntentRef.current = null
       setIsSubmitting(false)
       navigate()
       return
     }
 
-    if (shouldContinueRef.current) {
+    if (submitIntent === "continue") {
+      if (isInCreateMode && data.clientId) {
+        isSubmittingRef.current = false
+        submitIntentRef.current = null
+        setIsSubmitting(false)
+        router.replace(`/clients/${data.clientId}/profile`)
+        return
+      }
+
       if (activeStepIndex < steps.length - 1) {
         setActiveStepIndex(activeStepIndex + 1)
       }
+      isSubmittingRef.current = false
+      submitIntentRef.current = null
       setIsSubmitting(false)
     } else {
-      router.push("/clients")
+      isSubmittingRef.current = false
+      submitIntentRef.current = null
+      setIsSubmitting(false)
+      navigateToClientsTable()
     }
     
-  }, [activeStepIndex, steps, isCreateMode, router])
+  }, [activeStepIndex, steps, isInCreateMode, refetch, navigateToClientsTable])
 
   const handleDocumentsAlertChange = useCallback((count: number) => {
     setStepStatuses((prev) => ({
@@ -445,10 +505,15 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       setActiveStepIndex(0)
     }
     
+    isSubmittingRef.current = false
+    submitIntentRef.current = null
     setIsSubmitting(false)
   }, [activeStepIndex, steps])
 
-  if (!isCreateMode && (isLoading || !client)) {
+  onSaveSuccessRef.current = handleSaveSuccess
+  onValidationErrorRef.current = handleValidationError
+
+  if (!isInCreateMode && (isLoading || !client)) {
     return (
       <div className="min-h-screen bg-gray-50/50 flex items-center justify-center">
         <div className="animate-pulse text-slate-500">Loading client profile...</div>
@@ -463,7 +528,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     <div className="min-h-screen bg-gray-50/50 flex flex-col"
     >
       <WizardHeader
-        clientName={isCreateMode ? "New Client" : `${client?.firstName || ""} ${client?.lastName || ""}`}
+        clientName={isInCreateMode ? "New Client" : `${client?.firstName || ""} ${client?.lastName || ""}`}
         currentStep={activeStepIndex + 1}
         totalSteps={steps.length}
         completionPercentage={completionPercentage}
@@ -482,9 +547,10 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
             <ActiveStepComponent
               clientId={createdClientId ?? clientId}
               client={client}
-              isCreateMode={isCreateMode && !createdClientId}
-              onSaveSuccess={handleSaveSuccess}
-              onValidationError={handleValidationError}
+              isCreateMode={isInCreateMode}
+              onSaveSuccess={stableOnSaveSuccess}
+              onValidationError={stableOnValidationError}
+              onProgressUpdate={setServerProgress}
               onDocumentsAlertChange={handleDocumentsAlertChange}
               registerSubmit={(submitFn: () => Promise<void>) => {
                 stepSubmitRef.current = submitFn

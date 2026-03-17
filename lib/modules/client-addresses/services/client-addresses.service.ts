@@ -1,5 +1,5 @@
 import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
-import type { PaginatedResponse } from "@/lib/types/response.types"
+import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
 import type {
   ClientAddress,
   CreateClientAddressDto,
@@ -111,26 +111,26 @@ export async function getClientAddressById(id: string): Promise<ClientAddress | 
   return normalizeClientAddress(response.data as ClientAddressApiItem)
 }
 
-export async function createClientAddress(data: CreateClientAddressDto): Promise<string> {
+export async function createClientAddress(data: CreateClientAddressDto): Promise<MutationResult> {
   const payload = toApiPayload(data)
-  const response = await servicePost<typeof payload, string>("/client/address", payload)
+  const response = await servicePost<typeof payload, number>("/client/address", payload)
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to create address")
   }
 
-  return response.data as string
+  return { progress: Number(response.data) || 0 }
 }
 
-export async function updateClientAddress(data: UpdateClientAddressDto): Promise<string> {
+export async function updateClientAddress(data: UpdateClientAddressDto): Promise<MutationResult> {
   const payload = toApiPayload(data) as UpdateClientAddressPayload
-  const response = await servicePut<UpdateClientAddressPayload, string>("/client/address", payload)
+  const response = await servicePut<UpdateClientAddressPayload, number>("/client/address", payload)
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to update address")
   }
 
-  return response.data as string
+  return { progress: Number(response.data) || 0 }
 }
 
 export async function deleteClientAddress(id: string): Promise<void> {

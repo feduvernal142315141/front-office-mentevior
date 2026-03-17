@@ -543,6 +543,11 @@ export function RequiredDocumentUploadModal({
                   if (isPolicyManagedExpiration) return
                   setForm((prev) => ({ ...prev, expirationDate: val }))
                 }}
+                onClear={
+                  !isPolicyManagedExpiration && !requiresExpirationDate && form.expirationDate
+                    ? () => setForm((prev) => ({ ...prev, expirationDate: "" }))
+                    : undefined
+                }
                 required={requiresExpirationDate}
               />
             </div>

@@ -16,6 +16,7 @@ export interface StepComponentProps {
   isCreateMode?: boolean
   onSaveSuccess: (data: unknown) => void
   onValidationError: (errors: Record<string, string>) => void
+  onProgressUpdate?: (progress: number) => void
   registerSubmit: (submitFn: () => Promise<void>) => void
   registerReset?: (resetFn: () => void) => void
   registerValidation: (isValid: boolean) => void

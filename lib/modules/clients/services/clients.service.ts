@@ -7,7 +7,7 @@ import type {
 } from "@/lib/types/client.types"
 import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import { getQueryString } from "@/lib/utils/format"
-import type { PaginatedResponse } from "@/lib/types/response.types"
+import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
 
 export async function getClients(query: QueryModel): Promise<{
   clients: ClientListItem[]
@@ -48,22 +48,26 @@ export async function getClientById(clientId: string): Promise<Client | null> {
   return response.data as unknown as Client
 }
 
-export async function createClient(data: CreateClientDto): Promise<string> {
-  const response = await servicePost<CreateClientDto, string>("/client", data)
+export async function createClient(data: CreateClientDto): Promise<MutationResult & { clientId?: string }> {
+  const response = await servicePost<CreateClientDto, { id?: string; progress?: number } | number>("/client", data)
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to create client")
   }
 
-  return response.data as unknown as string
+  const body = response.data as { id?: string; progress?: number } | number
+  const clientId = typeof body === "object" ? body?.id : undefined
+  const progress = typeof body === "object" ? (body?.progress ?? 0) : Number(body) || 0
+
+  return { progress, clientId }
 }
 
-export async function updateClient(id: string, data: UpdateClientDto): Promise<boolean> {
-  const response = await servicePut<UpdateClientDto, boolean>("/client", { ...data, id })
+export async function updateClient(id: string, data: UpdateClientDto): Promise<MutationResult> {
+  const response = await servicePut<UpdateClientDto, number>("/client", { ...data, id })
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to update client")
   }
 
-  return response.data as unknown as boolean
+  return { progress: Number(response.data) || 0 }
 }

@@ -106,6 +106,7 @@ export function Step6Diagnoses({
   isCreateMode = false,
   onSaveSuccess,
   onValidationError,
+  onProgressUpdate,
   registerSubmit,
   registerValidation,
   onStepStatusChange,
@@ -425,6 +426,7 @@ export function Step6Diagnoses({
       return
     }
 
+    onProgressUpdate?.(ok.progress)
     form.reset(diagnosisFormDefaults)
     setEditingDiagnosis(null)
     setSelectedReferringPhysician(null)
@@ -1146,6 +1148,7 @@ export function Step6Diagnoses({
         title="Referring Physicians"
         description="Select one referring physician from agency catalog or create manually"
         maxWidthClassName="sm:max-w-[860px]"
+        contentClassName="overflow-visible"
         allowSelectOverflow
       >
         <div className="pb-2">

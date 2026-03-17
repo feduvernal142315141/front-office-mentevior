@@ -1,5 +1,5 @@
 import { serviceDelete, serviceGet, servicePost } from "@/lib/services/baseService"
-import type { PaginatedResponse } from "@/lib/types/response.types"
+import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
 import type { AssignProviderDto, ClientProvider } from "@/lib/types/provider.types"
 
 type ProviderApiItem = {
@@ -124,20 +124,20 @@ export async function getProvidersByClientId(clientId: string): Promise<ClientPr
   return normalizeProvidersResponse(response.data)
 }
 
-export async function assignProvider(data: AssignProviderDto): Promise<string | null> {
+export async function assignProvider(data: AssignProviderDto): Promise<MutationResult> {
   const payload: AssignProviderRequest = {
     clientId: data.clientId,
     userId: Array.isArray(data.userId) ? data.userId : [data.userId],
   }
 
-  const response = await servicePost<AssignProviderRequest, unknown>("/client/provider", payload)
+  const response = await servicePost<AssignProviderRequest, number>("/client/provider", payload)
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     const err = response.data as { message?: string } | undefined
     throw new Error(err?.message || "Failed to assign provider")
   }
 
-  return typeof response.data === "string" ? response.data : null
+  return { progress: Number(response.data) || 0 }
 }
 
 export async function removeProvider(providerId: string): Promise<void> {

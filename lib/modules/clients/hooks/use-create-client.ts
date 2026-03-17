@@ -2,46 +2,37 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import type { CreateClientDto, CreateClientResponse } from "@/lib/types/client.types"
+import type { CreateClientDto } from "@/lib/types/client.types"
+import type { MutationResult } from "@/lib/types/response.types"
 import { createClient } from "../services/clients.service"
 
-export function useCreateClient() {
+interface UseCreateClientReturn {
+  create: (data: CreateClientDto) => Promise<MutationResult | null>
+  isLoading: boolean
+  error: string | null
+}
+
+export function useCreateClient(): UseCreateClientReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [response, setResponse] = useState<CreateClientResponse | null>(null)
 
-  const create = async (data: CreateClientDto): Promise<CreateClientResponse | null> => {
+  const create = async (data: CreateClientDto): Promise<MutationResult | null> => {
     setIsLoading(true)
     setError(null)
-    setResponse(null)
 
     try {
       const result = await createClient(data)
-      const res = { id: result }
-      setResponse(res)
-
       toast.success("Client created successfully!")
-
-      return res
+      return { progress: result.progress, clientId: result.clientId }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to create client"
       setError(errorMessage)
-
-      toast.error("Error creating client", {
-        description: errorMessage,
-      })
-
+      toast.error("Error creating client", { description: errorMessage })
       return null
     } finally {
       setIsLoading(false)
     }
   }
 
-  const reset = () => {
-    setError(null)
-    setResponse(null)
-    setIsLoading(false)
-  }
-
-  return { create, isLoading, error, response, reset }
+  return { create, isLoading, error }
 }
