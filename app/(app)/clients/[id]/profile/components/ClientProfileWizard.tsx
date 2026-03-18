@@ -23,6 +23,7 @@ import { useMedicationsByClient } from "@/lib/modules/medications/hooks/use-medi
 import { useDiagnosesByClient } from "@/lib/modules/diagnoses/hooks/use-diagnoses-by-client"
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
+import { useClientDocuments } from "@/lib/modules/client-documents/hooks/use-client-documents"
 import type { StepComponentProps, StepConfig, StepStatus } from "@/lib/types/wizard.types"
 import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
@@ -125,6 +126,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const { medications } = useMedicationsByClient(resolvedClientId)
   const { diagnoses } = useDiagnosesByClient(resolvedClientId)
   const { providers } = useProvidersByClient(resolvedClientId)
+  const { rows: clientDocumentRows, isLoading: isDocumentsLoading } = useClientDocuments(resolvedClientId, !!resolvedClientId)
 
   const checkPersonalInfoComplete = useCallback((clientData: any) => {
     if (!clientData) return false
@@ -148,8 +150,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     personalInfo: StepStatus
     documents: StepStatus
   } => {
-    const normalizedProgress = Math.min(100, Math.max(0, clientData.progress ?? 0))
-    const personalInfoComplete = normalizedProgress >= 10 || checkPersonalInfoComplete(clientData)
+    const personalInfoComplete = checkPersonalInfoComplete(clientData)
 
     return {
       personalInfo: personalInfoComplete ? "COMPLETE" : "PENDING",
@@ -180,6 +181,19 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       providers: providers.length > 0 ? "COMPLETE" : "PENDING",
     }))
   }, [resolvedClientId, addresses.length, caregivers.length, medications.length, diagnoses.length, providers.length])
+
+  useEffect(() => {
+    if (!resolvedClientId || isDocumentsLoading) return
+
+    const allDocumentsUploaded =
+      clientDocumentRows.length > 0 &&
+      clientDocumentRows.every((doc) => doc.clientDocumentId !== null)
+
+    setStepStatuses((prev) => ({
+      ...prev,
+      documents: allDocumentsUploaded ? "COMPLETE" : "PENDING",
+    }))
+  }, [resolvedClientId, isDocumentsLoading, clientDocumentRows])
 
   const steps: StepConfig[] = useMemo(() => [
     {
@@ -392,35 +406,6 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     if (currentStepId === "personalInfo" && !isInCreateMode) {
       void refetch()
     }
-    
-    setStepStatuses(prev => {
-      if (currentStepId === "documents") {
-        return prev
-      }
-
-      let nextStatus: StepStatus = "COMPLETE"
-
-      if (currentStepId === "caregivers") {
-        nextStatus = data?.caregiversCount > 0 ? "COMPLETE" : "PENDING"
-      }
-
-      if (currentStepId === "medications") {
-        nextStatus = data?.medicationsCount > 0 ? "COMPLETE" : "PENDING"
-      }
-
-      if (currentStepId === "diagnoses") {
-        nextStatus = data?.diagnosesCount > 0 ? "COMPLETE" : "PENDING"
-      }
-
-      if (currentStepId === "providers") {
-        nextStatus = data?.providersCount > 0 ? "COMPLETE" : "PENDING"
-      }
-
-      return {
-        ...prev,
-        [currentStepId]: nextStatus,
-      }
-    })
 
     if (currentStepId === "documents") {
       isSubmittingRef.current = false

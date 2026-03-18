@@ -117,12 +117,14 @@ export function RequiredDocumentsOverview({
   const expiredCount = rows.filter((r) => r.allowStatus && r.status === "EXPIRED").length
 
   useEffect(() => {
+    if (isLoading) return
     onAlertCountChange?.(alertCount)
-  }, [alertCount, onAlertCountChange])
+  }, [alertCount, isLoading, onAlertCountChange])
 
   useEffect(() => {
+    if (isLoading) return
     onPendingCountChange?.(pendingCount)
-  }, [pendingCount, onPendingCountChange])
+  }, [pendingCount, isLoading, onPendingCountChange])
 
   useEffect(() => {
     if (!isActive) {
