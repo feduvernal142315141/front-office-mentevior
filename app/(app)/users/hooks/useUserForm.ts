@@ -8,8 +8,9 @@ import { useUpdateUser } from "@/lib/modules/users/hooks/use-update-user"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { userFormSchema, getUserFormDefaults, type UserFormValues } from "@/lib/schemas/user-form.schema"
 import type { CreateMemberUserDto, UpdateMemberUserDto } from "@/lib/types/user.types"
-import {useRoles} from "@/lib/modules/roles/hooks/use-roles"
+import { useRoles } from "@/lib/modules/roles/hooks/use-roles"
 import { isoToLocalDate } from "@/lib/date"
+import { formatPhoneInput } from "@/lib/utils/phone-format"
 
 interface UseUserFormProps {
   userId?: string | null
@@ -56,7 +57,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        cellphone: user.cellphone || "",
+        cellphone: formatPhoneInput(user.cellphone || ""),
         hiringDate: isoToLocalDate(user.hiringDate),
         roleId: user.roleId || user.role?.id || "",
         active: user.active ?? true,

@@ -349,16 +349,6 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     })
   }, [steps, isInCreateMode, refetch, guardNavigation])
 
-  const handleBack = useCallback(() => {
-    guardNavigation(() => {
-      if (activeStepIndex > 0) {
-        setActiveStepIndex(activeStepIndex - 1)
-      } else {
-        navigateToClientsTable()
-      }
-    })
-  }, [activeStepIndex, guardNavigation, navigateToClientsTable])
-
   const handleCancel = useCallback(() => {
     navigateToClientsTable()
   }, [navigateToClientsTable])
@@ -569,11 +559,9 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       </div>
 
       <WizardFooter
-        isFirstStep={activeStepIndex === 0}
         isLastStep={activeStepIndex === steps.length - 1}
         isSubmitting={isSubmitting}
         canContinue={canContinue}
-        onBack={handleBack}
         onCancel={handleCancel}
         onSave={handleSave}
         onSaveAndContinue={handleSaveAndContinue}

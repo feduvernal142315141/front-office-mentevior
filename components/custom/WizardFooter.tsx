@@ -1,25 +1,20 @@
 "use client"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/custom/Button"
 
 interface WizardFooterProps {
-  isFirstStep: boolean
   isLastStep: boolean
   isSubmitting: boolean
   canContinue: boolean
-  onBack: () => void
   onCancel: () => void
   onSave: () => void
   onSaveAndContinue: () => void
 }
 
 export function WizardFooter({
-  isFirstStep,
   isLastStep,
   isSubmitting,
   canContinue,
-  onBack,
   onCancel,
   onSave,
   onSaveAndContinue,
@@ -31,11 +26,11 @@ export function WizardFooter({
           <Button
             type="button"
             variant="secondary"
-            onClick={isFirstStep ? onCancel : onBack}
+            onClick={onCancel}
             disabled={isSubmitting}
             className="h-12 px-8"
           >
-            {isFirstStep ? "Cancel" : "Back"}
+            Cancel
           </Button>
 
           <Button
@@ -46,7 +41,7 @@ export function WizardFooter({
             loading={isSubmitting}
             className="h-12 px-8"
           >
-            Save & Close
+            Save
           </Button>
 
           <Button
@@ -57,7 +52,7 @@ export function WizardFooter({
             loading={isSubmitting}
             className="h-12 px-8 min-w-[180px]"
           >
-            {isLastStep ? "Save & Finish" : "Save & Continue"}
+            {isLastStep ? "Finish" : "Next"}
           </Button>
         </div>
       </div>

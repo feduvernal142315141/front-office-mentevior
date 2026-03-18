@@ -1,8 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import Link from "next/link"
 import { FloatingInput } from "@/components/custom/FloatingInput"
+import { formatPhoneInput } from "@/lib/utils/phone-format"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
@@ -170,26 +172,34 @@ export function UserFormFields({
                 <Controller
                   name="cellphone"
                   control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <FloatingInput
-                        label="Cellphone Number"
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        placeholder=" "
-                        type="tel"
-                        hasError={!!fieldState.error}
-                        autoComplete="tel"
-                        required
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  render={({ field, fieldState }) => {
+                    const [displayValue, setDisplayValue] = useState(formatPhoneInput(field.value || ""))
+
+                    return (
+                      <div>
+                        <FloatingInput
+                          label="Cellphone Number"
+                          value={displayValue}
+                          onChange={(value) => {
+                            const formatted = formatPhoneInput(value, displayValue)
+                            setDisplayValue(formatted)
+                            field.onChange(formatted)
+                          }}
+                          onBlur={field.onBlur}
+                          placeholder="(305) 555-1234"
+                          type="tel"
+                          hasError={!!fieldState.error}
+                          autoComplete="tel"
+                          required
+                        />
+                        {fieldState.error && (
+                          <p className="text-sm text-red-600 mt-2">
+                            {fieldState.error.message}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  }}
                 />
 
                 <Controller

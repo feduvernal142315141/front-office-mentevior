@@ -851,29 +851,25 @@ export function Step2Addresses({
             <Pencil className="w-4 h-4 text-slate-600 group-hover/pencil:text-slate-800 transition-colors duration-200" />
           </button>
 
-          {!address.isPrimary ? (
-            <button
-              type="button"
-              onClick={() => setDeletingAddress(address)}
-              className={cn(
-                "group/trash relative h-9 w-9",
-                "flex items-center justify-center rounded-xl",
-                "bg-gradient-to-b from-red-50 to-red-100/80",
-                "border border-red-200/60 shadow-sm",
-                "hover:from-red-100 hover:to-red-200/90",
-                "hover:border-red-300/80 hover:shadow-md",
-                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-                "transition-all duration-200 ease-out",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30 focus-visible:ring-offset-2"
-              )}
-              title="Delete address"
-              aria-label="Delete address"
-            >
-              <Trash2 className="w-4 h-4 text-red-500 group-hover/trash:text-red-700 transition-colors duration-200" />
-            </button>
-          ) : (
-            <div className="h-9 w-9" />
-          )}
+          <button
+            type="button"
+            onClick={() => setDeletingAddress(address)}
+            className={cn(
+              "group/trash relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
+              "bg-gradient-to-b from-red-50 to-red-100/80",
+              "border border-red-200/60 shadow-sm",
+              "hover:from-red-100 hover:to-red-200/90",
+              "hover:border-red-300/80 hover:shadow-md",
+              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+              "transition-all duration-200 ease-out",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30 focus-visible:ring-offset-2"
+            )}
+            title="Delete address"
+            aria-label="Delete address"
+          >
+            <Trash2 className="w-4 h-4 text-red-500 group-hover/trash:text-red-700 transition-colors duration-200" />
+          </button>
         </div>
       ),
     },
@@ -958,6 +954,8 @@ export function Step2Addresses({
             : activeSourceSection?.helper
         }
         maxWidthClassName="sm:max-w-[600px]"
+        allowSelectOverflow
+        contentClassName="overflow-visible"
       >
         <form
           onSubmit={(event) => {

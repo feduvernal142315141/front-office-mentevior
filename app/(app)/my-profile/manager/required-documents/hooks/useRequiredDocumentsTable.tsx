@@ -204,25 +204,25 @@ export function useRequiredDocumentsTable({
                     "relative h-9 w-9",
                     "flex items-center justify-center",
                     "rounded-xl",
-                    "bg-gradient-to-b from-slate-50 to-slate-100/80",
-                    "border border-slate-200/60",
+                    "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                    "border border-blue-200/60",
                     "shadow-sm",
-                    "hover:from-slate-100 hover:to-slate-200/90",
-                    "hover:border-slate-300/80",
+                    "hover:from-blue-100 hover:to-blue-200/90",
+                    "hover:border-blue-300/80",
                     "hover:shadow-md",
                     "hover:-translate-y-0.5",
                     "active:translate-y-0 active:shadow-sm",
                     "transition-all duration-200 ease-out",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30 focus-visible:ring-offset-2",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/30 focus-visible:ring-offset-2",
                     "disabled:opacity-50 disabled:cursor-not-allowed"
                   )}
                   title="Download document"
                   aria-label="Download document"
                 >
                   {downloadingDocumentId === row.userDocumentId ? (
-                    <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+                    <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                   ) : (
-                    <Download className="w-4 h-4 text-slate-600 group-hover/dl:text-slate-800 transition-colors duration-200" />
+                    <Download className="w-4 h-4 text-blue-600 group-hover/dl:text-blue-700 transition-colors duration-200" />
                   )}
                 </button>
               )}

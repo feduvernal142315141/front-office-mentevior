@@ -1,16 +1,7 @@
-/**
- * USER FORM SCHEMA
- * 
- * Zod validation schema para el formulario de usuarios.
- * Separado para reutilización y testing.
- */
-
 import { z } from "zod"
 import { getTodayLocalDate } from "@/lib/date"
+import { phoneValidation } from "@/lib/schemas/client-form.schema"
 
-/**
- * Schema de validación
- */
 export const userFormSchema = z.object({
   firstName: z
     .string()
@@ -28,10 +19,7 @@ export const userFormSchema = z.object({
     .email("Invalid email format")
     .toLowerCase(),
   
-  cellphone: z
-    .string()
-    .min(1, "Cellphone is required")
-    .regex(/^[\d\s\-\+\(\)]+$/, "Invalid phone format"),
+  cellphone: phoneValidation,
   
   hiringDate: z
     .string()
@@ -41,25 +29,18 @@ export const userFormSchema = z.object({
     .string()
     .min(1, "Role is required"),
   
-  // Solo para edición
   active: z.boolean().optional(),
   terminated: z.boolean().optional(),
 })
 
-/**
- * Tipo inferido del schema
- */
 export type UserFormValues = z.infer<typeof userFormSchema>
 
-/**
- * Valores por defecto del formulario
- */
 export const getUserFormDefaults = (): UserFormValues => ({
   firstName: "",
   lastName: "",
   email: "",
   cellphone: "",
-  hiringDate: getTodayLocalDate(), // Today in local timezone
+  hiringDate: getTodayLocalDate(),
   roleId: "",
   active: true,
   terminated: false,

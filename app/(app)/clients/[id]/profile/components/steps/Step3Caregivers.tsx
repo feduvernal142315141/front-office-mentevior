@@ -110,7 +110,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "fullName",
       header: "Name",
-      className: "w-[28%] min-w-[220px]",
+      className: "min-w-[140px] w-[22%]",
       render: (caregiver) => (
         <span className="block min-w-0 truncate whitespace-nowrap" title={getCaregiverFullName(caregiver)}>
           {getCaregiverFullName(caregiver)}
@@ -120,13 +120,13 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "relationship",
       header: "Relationship",
-      className: "w-[20%] min-w-[160px] whitespace-nowrap",
+      className: "min-w-[110px] w-[15%] whitespace-nowrap",
       render: (caregiver) => caregiver.relationship || relationshipNameById.get(caregiver.relationshipId) || "-",
     },
     {
       key: "phoneNumber",
       header: "Phone Number",
-      className: "w-[16%] min-w-[170px]",
+      className: "min-w-[140px] w-[16%]",
       render: (caregiver) => {
         const phoneNumber = caregiver.phone || caregiver.phoneNumber
         return phoneNumber
@@ -141,7 +141,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "email",
       header: "Email",
-      className: "w-[24%] min-w-[220px]",
+      className: "min-w-[140px] w-[22%]",
       render: (caregiver) => (
         <span className="block min-w-0 truncate whitespace-nowrap" title={caregiver.email || "-"}>
           {caregiver.email || "-"}
@@ -151,7 +151,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "status",
       header: "Status",
-      className: "w-[7%] min-w-[110px] whitespace-nowrap",
+      className: "min-w-[88px] w-[10%] whitespace-nowrap",
       render: (caregiver) => (
         <span className={caregiver.status
           ? "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
@@ -165,7 +165,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "isPrimary",
       header: "Type",
-      className: "w-[7%] min-w-[110px] whitespace-nowrap",
+      className: "min-w-[96px] w-[10%] whitespace-nowrap",
       render: (caregiver) => (
         <span className={caregiver.isPrimary
           ? "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-blue-50 text-[#037ECC] border border-blue-200"
@@ -179,7 +179,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     {
       key: "actions",
       header: "Actions",
-      className: "w-[5%] min-w-[90px] whitespace-nowrap",
+      className: "min-w-[88px] w-[5%] whitespace-nowrap",
       align: "right",
       render: (caregiver) => (
         <div className="flex justify-end gap-2">
@@ -315,7 +315,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
 
   if (!resolvedClientId) {
     return (
-      <div className="max-w-5xl mx-auto p-8">
+    <div className="w-full p-8 overflow-x-auto">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
           <p className="text-amber-700 font-medium">
             Please save the client first before managing caregivers.

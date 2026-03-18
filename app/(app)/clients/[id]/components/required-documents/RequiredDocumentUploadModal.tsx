@@ -24,6 +24,26 @@ import { addMonths, addYears } from "date-fns"
 
 const MAX_SIZE_MB = 25
 
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+])
+
+const ALLOWED_EXTENSIONS = new Set([
+  "jpg", "jpeg", "png", "gif", "webp", "svg",
+  "pdf",
+  "doc", "docx",
+  "xls", "xlsx",
+])
+
 type DocumentExpirationPolicy =
   | { kind: "none" }
   | { kind: "duration"; unit: "months" | "years"; value: number }
@@ -266,7 +286,7 @@ function FileZone({
               <span className="text-[#037ECC] hover:underline">browse</span>
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              All file formats accepted — max {MAX_SIZE_MB}MB
+              Images, PDF, Word, Excel — max {MAX_SIZE_MB}MB
             </p>
           </div>
         </div>
@@ -276,6 +296,7 @@ function FileZone({
         ref={fileInputRef}
         type="file"
         className="hidden"
+        accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx"
         onChange={onFileInputChange}
       />
 
@@ -367,6 +388,11 @@ export function RequiredDocumentUploadModal({
 
   const handleFileChange = useCallback(async (file: File) => {
     setFileError(null)
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
+    if (!ALLOWED_MIME_TYPES.has(file.type) && !ALLOWED_EXTENSIONS.has(ext)) {
+      setFileError("Invalid file format. Allowed: images (JPG, PNG, GIF, WEBP, SVG), PDF, Word (DOC, DOCX), Excel (XLS, XLSX).")
+      return
+    }
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       setFileError(`File exceeds the ${MAX_SIZE_MB}MB size limit.`)
       return
@@ -497,6 +523,7 @@ export function RequiredDocumentUploadModal({
       title={isEditMode ? "Edit Document" : "Upload Document"}
       description={`Required document: ${row.documentConfigName}`}
       maxWidthClassName="sm:max-w-[760px]"
+      onOpenAutoFocus={(e) => e.preventDefault()}
     >
       <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
 
