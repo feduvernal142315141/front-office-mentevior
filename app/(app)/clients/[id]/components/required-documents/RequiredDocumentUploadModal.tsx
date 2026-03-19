@@ -147,6 +147,7 @@ interface FileZoneProps {
   dragOver: boolean
   fileError: string | null
   fileInputRef: React.RefObject<HTMLInputElement | null>
+  initialFocus?: boolean
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void
   onDragLeave: () => void
   onDrop: (e: React.DragEvent<HTMLDivElement>) => void
@@ -167,6 +168,7 @@ function FileZone({
   dragOver,
   fileError,
   fileInputRef,
+  initialFocus = false,
   onDragOver,
   onDragLeave,
   onDrop,
@@ -178,6 +180,15 @@ function FileZone({
   onViewDocument,
 }: FileZoneProps) {
   const hasExisting = Boolean(existingFileUrl) && !removeExistingFile
+  const [highlighted, setHighlighted] = useState(false)
+
+  useEffect(() => {
+    if (!initialFocus || hasExisting || newFile) return
+    // pequeño delay para que el modal termine su animación de entrada
+    const enter = setTimeout(() => setHighlighted(true), 120)
+    const exit = setTimeout(() => setHighlighted(false), 2200)
+    return () => { clearTimeout(enter); clearTimeout(exit) }
+  }, [initialFocus, hasExisting, newFile])
 
   return (
     <div className="space-y-3">
@@ -271,14 +282,26 @@ function FileZone({
           className={cn(
             "flex flex-col items-center justify-center",
             "gap-3 p-8 rounded-2xl border-2 border-dashed",
-            "cursor-pointer transition-all duration-200",
+            "cursor-pointer transition-all duration-300",
             dragOver
               ? "border-[#037ECC] bg-[#037ECC]/5 scale-[1.01]"
-              : "border-slate-200 hover:border-[#037ECC]/50 hover:bg-slate-50/70"
+              : highlighted
+                ? [
+                    "border-[#037ECC] bg-[#037ECC]/5",
+                    "shadow-[0_0_0_4px_rgba(3,126,204,0.12),0_0_20px_rgba(3,126,204,0.15)]",
+                    "scale-[1.005]",
+                  ]
+                : "border-slate-200 hover:border-[#037ECC]/50 hover:bg-slate-50/70"
           )}
         >
-          <div className="w-12 h-12 rounded-full bg-[#037ECC]/10 flex items-center justify-center">
-            <Upload className="w-6 h-6 text-[#037ECC]" />
+          <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300",
+            highlighted ? "bg-[#037ECC]/20 scale-110" : "bg-[#037ECC]/10"
+          )}>
+            <Upload className={cn(
+              "w-6 h-6 text-[#037ECC] transition-all duration-300",
+              highlighted && "scale-110"
+            )} />
           </div>
           <div className="text-center">
             <p className="text-sm font-semibold text-slate-700">
@@ -536,6 +559,7 @@ export function RequiredDocumentUploadModal({
           dragOver={dragOver}
           fileError={fileError}
           fileInputRef={fileInputRef}
+          initialFocus={!existingFileUrl && !form.newFile}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}

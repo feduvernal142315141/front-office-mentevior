@@ -52,7 +52,7 @@ export function WizardFooter({
             loading={isSubmitting}
             className="h-12 px-8 min-w-[180px]"
           >
-            {isLastStep ? "Finish" : "Next"}
+            Next
           </Button>
         </div>
       </div>

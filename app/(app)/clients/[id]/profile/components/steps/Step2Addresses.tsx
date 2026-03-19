@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Home, Building2, Users, Pencil, Trash2 } from "lucide-react"
+import { Home, Building2, Users, Edit2, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -835,20 +835,20 @@ export function Step2Addresses({
             type="button"
             onClick={() => handleOpenEditModal(address)}
             className={cn(
-              "group/pencil relative h-9 w-9",
+              "group/edit relative h-9 w-9",
               "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-slate-50 to-slate-100/80",
-              "border border-slate-200/60 shadow-sm",
-              "hover:from-slate-100 hover:to-slate-200/90",
-              "hover:border-slate-300/80 hover:shadow-md",
+              "bg-gradient-to-b from-blue-50 to-blue-100/80",
+              "border border-blue-200/60 shadow-sm shadow-blue-900/5",
+              "hover:from-blue-100 hover:to-blue-200/90",
+              "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
               "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
               "transition-all duration-200 ease-out",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30 focus-visible:ring-offset-2"
+              "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
             )}
             title="Edit address"
             aria-label="Edit address"
           >
-            <Pencil className="w-4 h-4 text-slate-600 group-hover/pencil:text-slate-800 transition-colors duration-200" />
+            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
 
           <button
