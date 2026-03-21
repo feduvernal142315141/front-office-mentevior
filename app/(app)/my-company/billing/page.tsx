@@ -1,20 +1,36 @@
 "use client"
 
-import { CreditCard, Clock, FileCheck, Code } from "lucide-react"
+import { CreditCard, Clock, FileCheck, Code, Building2 } from "lucide-react"
 import Link from "next/link"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
-import { useMemo } from "react"
+import type { ComponentType } from "react"
 
 export default function BillingPage() {
   const { view } = usePermission()
+
+  type BillingSubModule = {
+    title: string
+    description: string
+    href: string
+    icon: ComponentType<{ className?: string }>
+    alwaysShow?: boolean
+    module?: string
+  }
   
-  const allSubModules = [
+  const allSubModules: BillingSubModule[] = [
     {
       title: "Billing Codes",
       description: "Manage codes for your organization",
       href: "/my-company/billing/billing-codes",
       icon: Code,
+      alwaysShow: true,
+    },
+    {
+      title: "Payers",
+      description: "Manage insurance payers and plan configuration",
+      href: "/my-company/billing/payers",
+      icon: Building2,
       alwaysShow: true,
     },
     {
@@ -33,11 +49,7 @@ export default function BillingPage() {
     },
   ]
   
-  const subModules = useMemo(() => {
-    return allSubModules.filter(module => 
-      (module as any).alwaysShow === true || view((module as any).module)
-    )
-  }, [view])
+  const subModules = allSubModules.filter((module) => module.alwaysShow === true || (module.module ? view(module.module) : false))
 
   return (
     <div className="p-8">

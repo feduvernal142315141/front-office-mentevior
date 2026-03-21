@@ -37,6 +37,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "address": "Address",
   "billing": "Billing",
   "billing-codes": "Billing Codes",
+  "payers": "Payers",
   "services-pending": "Services Pending",
   "billed-claims": "Billed Claims",
   "credentials": "Credentials",
@@ -70,11 +71,14 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   
   // Common actions
   "create": "Create",
+  "fl-medicaid": "FL Medicaid",
   "edit": "Edit",
   "new": "New",
   "view": "View",
   "details": "Details",
 }
+
+const PAYER_CREATE_SOURCE_SEGMENTS = new Set(["manual", "catalog", "fl-medicaid"])
 
 // Helper to get label for a segment
 function getSegmentLabel(segment: string): string {
@@ -127,6 +131,18 @@ export function Breadcrumbs() {
 
   if (pathname.startsWith("/clients/new/profile")) {
     filteredSegments = filteredSegments.filter((segment) => segment !== "new")
+  }
+
+  const isPayerCreateBySourceRoute =
+    filteredSegments.length >= 5 &&
+    filteredSegments[0] === "my-company" &&
+    filteredSegments[1] === "billing" &&
+    filteredSegments[2] === "payers" &&
+    filteredSegments[3] === "create" &&
+    PAYER_CREATE_SOURCE_SEGMENTS.has(filteredSegments[4])
+
+  if (isPayerCreateBySourceRoute) {
+    filteredSegments = filteredSegments.filter((segment, index) => !(segment === "create" && index === 3))
   }
 
   const breadcrumbs = filteredSegments.map((segment, index) => {
