@@ -44,7 +44,7 @@ export class ApiPayersService implements PayersServiceContract {
   }
 
   async delete(id: string): Promise<void> {
-    const response = await serviceDelete(`/payers/${id}`)
+    const response = await serviceDelete<never, { message?: string }>(`/payers/${id}`)
 
     if (response.status !== 200 && response.status !== 204) {
       throw new Error(response.data?.message || "Failed to delete payer")
@@ -52,7 +52,10 @@ export class ApiPayersService implements PayersServiceContract {
   }
 
   async createFromPrivateInsurance(ids: string[]): Promise<void> {
-    const response = await servicePost<{ ids: string[] }, void>("/payers/create-from-private-insurance", { ids })
+    const response = await servicePost<{ ids: string[] }, { message?: string }>(
+      "/payers/create-from-private-insurance",
+      { ids }
+    )
 
     if (response.status !== 200 && response.status !== 201) {
       throw new Error(response.data?.message || "Failed to create payers from catalog")
@@ -60,7 +63,10 @@ export class ApiPayersService implements PayersServiceContract {
   }
 
   async createFromStateInsurance(ids: string[]): Promise<void> {
-    const response = await servicePost<{ ids: string[] }, void>("/payers/create-from-state-insurance", { ids })
+    const response = await servicePost<{ ids: string[] }, { message?: string }>(
+      "/payers/create-from-state-insurance",
+      { ids }
+    )
 
     if (response.status !== 200 && response.status !== 201) {
       throw new Error(response.data?.message || "Failed to create payers from state insurance")
