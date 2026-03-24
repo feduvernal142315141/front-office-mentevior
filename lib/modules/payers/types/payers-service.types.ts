@@ -5,14 +5,16 @@ import type {
   PayerCatalogItem,
   PayerPlanTypeItem,
   UpdatePayerDto,
-  UpdatePayerPlanDto,
 } from "@/lib/types/payer.types"
 
 export interface PayersServiceContract {
   list(query: ListPayersQueryDto): Promise<Payer[]>
+  getById(id: string): Promise<Payer>
   create(data: CreatePayerDto): Promise<Payer>
   update(data: UpdatePayerDto): Promise<Payer>
-  updatePlan(data: UpdatePayerPlanDto): Promise<Payer>
+  delete(id: string): Promise<void>
+  createFromPrivateInsurance(ids: string[]): Promise<void>
+  createFromStateInsurance(ids: string[]): Promise<void>
   getPrivateInsurancesCatalog(): Promise<PayerCatalogItem[]>
   getFlMedicaidCatalog(): Promise<PayerCatalogItem[]>
   getPlanTypeCatalog(): Promise<PayerPlanTypeItem[]>

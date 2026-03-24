@@ -1,72 +1,166 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { useUpdatePayer } from "@/lib/modules/payers/hooks/use-update-payer"
-import type { Payer, PayerBaseFormFields } from "@/lib/types/payer.types"
+import { usePayerById } from "@/lib/modules/payers/hooks/use-payer-by-id"
+import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
+import { useStates } from "@/lib/modules/addresses/hooks/use-states"
+import { usePayerCatalogs } from "@/lib/modules/payers/hooks/use-payer-catalogs"
+import { payerBaseFormSchema, getPayerBaseFormDefaults, type PayerBaseFormValues } from "@/lib/schemas/payer-form.schema"
+import { normalizePhone } from "@/lib/utils/phone-format"
+import type { Payer } from "@/lib/types/payer.types"
 import { PayerBaseForm } from "../shared/PayerBaseForm"
 
 interface EditPayerModalProps {
-  payer: Payer | null
+  payerId: string | null
   open: boolean
   onOpenChange: (nextOpen: boolean) => void
   onSaved: () => void
 }
 
-const EMPTY_FORM: PayerBaseFormFields = {
-  name: "",
-  phone: "",
-  email: "",
-  memberId: "",
-  groupNumber: "",
-  address: {
-    line1: "",
-    city: "",
-    state: "",
-    zipCode: "",
-  },
-}
+export function EditPayerModal({ payerId, open, onOpenChange, onSaved }: EditPayerModalProps) {
+  const { payer, isLoading: isLoadingPayer } = usePayerById(open ? payerId : null)
+  const { update, isLoading: isSaving } = useUpdatePayer()
+  const { countries, isLoading: isLoadingCountries } = useCountries()
+  const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
+  const { states, isLoading: isLoadingStates } = useStates(selectedCountryId)
+  const { planTypes, isLoading: isLoadingPlanTypes } = usePayerCatalogs()
+  const countryInitialized = useRef(false)
+  const isSettingInitialCountry = useRef(false)
 
-export function EditPayerModal({ payer, open, onOpenChange, onSaved }: EditPayerModalProps) {
-  const [formData, setFormData] = useState<PayerBaseFormFields>(EMPTY_FORM)
-  const { update, isLoading } = useUpdatePayer()
+  const form = useForm<PayerBaseFormValues>({
+    resolver: zodResolver(payerBaseFormSchema),
+    defaultValues: getPayerBaseFormDefaults(),
+    mode: "onBlur",
+  })
 
+  // Reset countryInitialized when modal closes
+  useEffect(() => {
+    if (!open) {
+      countryInitialized.current = false
+    }
+  }, [open])
+
+  // Once payer loads, populate all fields except countryId (handled separately)
   useEffect(() => {
     if (payer) {
-      setFormData(payer.form)
+      form.reset({
+        name: payer.name,
+        phone: payer.phone ?? "",
+        email: payer.email ?? "",
+        externalId: payer.externalId ?? "",
+        groupNumber: payer.groupNumber ?? "",
+        addressLine1: payer.addressLine1 ?? "",
+        addressLine2: payer.addressLine2 ?? "",
+        city: payer.city ?? "",
+        countryId: "",
+        stateId: payer.stateId ?? "",
+        zipCode: payer.zipCode ?? "",
+        planTypeId: payer.planTypeId ?? "",
+        planNotes: payer.planNotes ?? "",
+        logo: "",
+      })
+      countryInitialized.current = false
     }
-  }, [payer])
+  }, [payer, form])
 
-  const handleSave = async () => {
-    if (!payer || !formData.name.trim()) {
+  // Once countries load and payer is ready, default to United States
+  useEffect(() => {
+    if (countries.length > 0 && payer && !countryInitialized.current) {
+      const usa = countries.find((c) =>
+        c.name.toLowerCase().includes("united states") || c.name.toUpperCase() === "USA"
+      )
+      if (usa) {
+        countryInitialized.current = true
+        isSettingInitialCountry.current = true
+        form.setValue("countryId", usa.id)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countries, payer])
+
+  // Track country changes — clear stateId only on manual user change, not on initialization
+  const watchCountryId = form.watch("countryId")
+  useEffect(() => {
+    if (!watchCountryId) {
+      setSelectedCountryId(null)
       return
     }
+    setSelectedCountryId(watchCountryId)
+    if (isSettingInitialCountry.current) {
+      isSettingInitialCountry.current = false
+      return
+    }
+    if (countryInitialized.current) {
+      form.setValue("stateId", "")
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchCountryId])
+
+  const handleSave = form.handleSubmit(async (data) => {
+    if (!payer) return
 
     const saved = await update({
-      payerId: payer.id,
-      form: {
-        ...formData,
-        name: formData.name.trim(),
-      },
+      id: payer.id,
+      source: payer.source,
+      sourceReferenceId: payer.sourceReferenceId ?? "",
+      logo: data.logo || payer.logoUrl || "",
+      planTypeId: data.planTypeId ?? payer.planTypeId,
+      planNotes: data.planNotes ?? payer.planNotes,
+      name: data.name.trim(),
+      phone: normalizePhone(data.phone),
+      email: data.email,
+      externalId: data.externalId ?? "",
+      groupNumber: data.groupNumber ?? "",
+      addressLine1: data.addressLine1 ?? "",
+      addressLine2: data.addressLine2 ?? "",
+      city: data.city ?? "",
+      stateId: data.stateId ?? "",
+      zipCode: data.zipCode,
     })
 
     if (saved) {
       onSaved()
       onOpenChange(false)
     }
-  }
+  })
+
+  const nameValue = form.watch("name")
 
   return (
     <CustomModal
       open={open}
       onOpenChange={onOpenChange}
       title="Edit payer"
-      description="Phase 3: base fields shared with manual creation"
+      description="Update contact and address information for this payer"
       maxWidthClassName="sm:max-w-[960px]"
     >
       <div className="p-6 space-y-6">
-        <PayerBaseForm value={formData} onChange={setFormData} />
+        {isLoadingPayer ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-[52px] rounded-[16px] bg-gray-100 animate-pulse ${i < 2 ? "" : i === 2 || i === 3 ? "" : "md:col-span-2"}`}
+              />
+            ))}
+          </div>
+        ) : (
+            <PayerBaseForm
+              form={form}
+              countries={countries}
+              states={states}
+              isLoadingCountries={isLoadingCountries}
+              isLoadingStates={isLoadingStates}
+              planTypes={planTypes}
+              isLoadingPlanTypes={isLoadingPlanTypes}
+              existingLogoUrl={payer?.logoUrl}
+            />
+        )}
 
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
@@ -74,9 +168,9 @@ export function EditPayerModal({ payer, open, onOpenChange, onSaved }: EditPayer
           </Button>
           <Button
             variant="primary"
-            loading={isLoading}
+            loading={isSaving}
             onClick={handleSave}
-            disabled={!formData.name.trim()}
+            disabled={isLoadingPayer || !nameValue?.trim()}
           >
             Save changes
           </Button>

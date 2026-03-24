@@ -13,33 +13,41 @@ export const PLAN_TYPE_STATUS = {
 
 export type PlanTypeStatus = (typeof PLAN_TYPE_STATUS)[keyof typeof PLAN_TYPE_STATUS]
 
-export interface PayerAddress {
-  line1: string
-  city: string
-  state: string
-  zipCode: string
-}
-
 export interface PayerBaseFormFields {
   name: string
   phone: string
   email: string
-  memberId: string
+  externalId: string
   groupNumber: string
-  address: PayerAddress
+  addressLine1: string
+  addressLine2: string
+  city: string
+  stateId: string
+  zipCode: string
 }
 
 export interface Payer {
   id: string
+  name: string
   source: PayerSource
-  sourceLabel: string
-  logoUrl: string
-  createdAt: string
-  updatedAt: string
+  sourceReferenceId?: string
+  logoUrl?: string | null
+  phone: string
+  email: string
+  externalId: string
+  groupNumber: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  stateId: string
+  stateName?: string
+  zipCode: string
   planTypeId: string
-  planTypeName: string
-  notes: string
-  form: PayerBaseFormFields
+  planNotes: string
+  planTypeName?: string
+  active?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface PayerCatalogItem {
@@ -55,20 +63,39 @@ export interface PayerPlanTypeItem {
 }
 
 export interface CreatePayerDto {
-  source: PayerSource
-  sourceReferenceId: string
-  form: PayerBaseFormFields
+  name: string
+  source: string
+  logo: string
+  phone: string
+  email: string
+  externalId: string
+  groupNumber: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  stateId: string
+  zipCode: string
+  planTypeId: string
+  planNotes: string
 }
 
 export interface UpdatePayerDto {
-  payerId: string
-  form: PayerBaseFormFields
-}
-
-export interface UpdatePayerPlanDto {
-  payerId: string
+  id: string
+  name: string
+  source: string
+  sourceReferenceId: string
+  logo: string
+  phone: string
+  email: string
+  externalId: string
+  groupNumber: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  stateId: string
+  zipCode: string
   planTypeId: string
-  notes: string
+  planNotes: string
 }
 
 export interface ListPayersQueryDto {

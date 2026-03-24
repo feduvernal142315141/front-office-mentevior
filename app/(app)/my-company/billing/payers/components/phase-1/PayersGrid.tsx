@@ -1,7 +1,7 @@
 "use client"
 
 import { Pencil, Settings2 } from "lucide-react"
-import type { Payer } from "@/lib/types/payer.types"
+import { PAYER_SOURCE, type Payer, type PayerSource } from "@/lib/types/payer.types"
 
 interface PayersGridProps {
   payers: Payer[]
@@ -10,10 +10,16 @@ interface PayersGridProps {
   onConfigurePlan: (payer: Payer) => void
 }
 
-function PayerAvatar({ logoLabel }: { logoLabel: string }) {
+function getSourceLabel(source: PayerSource): string {
+  if (source === PAYER_SOURCE.CATALOG) return "Private Insurance"
+  if (source === PAYER_SOURCE.FL_MEDICAID) return "FL Medicaid"
+  return "Manual"
+}
+
+function PayerAvatar({ label }: { label: string }) {
   return (
     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white text-sm font-bold tracking-wide flex items-center justify-center shadow-[0_10px_25px_rgba(7,156,251,0.35)]">
-      {logoLabel.slice(0, 2).toUpperCase()}
+      {label.slice(0, 2).toUpperCase()}
     </div>
   )
 }
@@ -47,17 +53,17 @@ export function PayersGrid({ payers, isLoading, onEdit, onConfigurePlan }: Payer
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <PayerAvatar logoLabel={payer.logoUrl} />
+              <PayerAvatar label={payer.logoUrl || payer.name} />
               <div className="min-w-0">
-                <h3 className="font-semibold text-slate-800 truncate">{payer.form.name}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{payer.sourceLabel}</p>
+                <h3 className="font-semibold text-slate-800 truncate">{payer.name}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{getSourceLabel(payer.source)}</p>
               </div>
             </div>
 
             <button
               onClick={() => onConfigurePlan(payer)}
               className="h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:text-[#037ECC] hover:border-[#037ECC]/30 hover:bg-[#037ECC]/5 transition"
-              aria-label={`Configure plan for ${payer.form.name}`}
+              aria-label={`Configure plan for ${payer.name}`}
             >
               <Pencil className="w-4 h-4 mx-auto" />
             </button>

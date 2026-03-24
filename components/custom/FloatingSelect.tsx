@@ -33,10 +33,13 @@ export function FloatingSelect({
   required = false,
 }: FloatingSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [openUpward, setOpenUpward] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const containerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  const DROPDOWN_HEIGHT = 340
   
   const hasValue = value && value !== ""
   const selectedOption = options.find(opt => opt.value === value)
@@ -81,9 +84,13 @@ export function FloatingSelect({
   }
 
   const handleToggle = () => {
-    if (!disabled) {
-      setIsOpen(!isOpen)
+    if (disabled) return
+    if (!isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      setOpenUpward(spaceBelow < DROPDOWN_HEIGHT && rect.top > DROPDOWN_HEIGHT)
     }
+    setIsOpen(!isOpen)
   }
 
   return (
@@ -161,9 +168,10 @@ export function FloatingSelect({
         <div
           ref={dropdownRef}
           className={cn(
-            "absolute top-full left-0 right-0 mt-2",
-            "z-[9999] bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden",
-            "animate-in fade-in-0 duration-150"
+            "absolute left-0 right-0 z-[9999]",
+            "bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden",
+            "animate-in fade-in-0 duration-150",
+            openUpward ? "bottom-full mb-2" : "top-full mt-2"
           )}
         >
           {searchable && (

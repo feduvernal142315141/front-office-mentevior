@@ -1,19 +1,27 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, type FormEvent } from "react"
 import type { LucideIcon } from "lucide-react"
 import { Building2, Landmark, ShieldCheck } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Card } from "@/components/custom/Card"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useCreatePayer } from "@/lib/modules/payers/hooks/use-create-payer"
 import { usePayerCatalogs } from "@/lib/modules/payers/hooks/use-payer-catalogs"
-import { PAYER_SOURCE, type PayerBaseFormFields, type PayerSource } from "@/lib/types/payer.types"
+import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
+import { useStates } from "@/lib/modules/addresses/hooks/use-states"
+import { PAYER_SOURCE, type PayerSource } from "@/lib/types/payer.types"
+import { payerBaseFormSchema, getPayerBaseFormDefaults, type PayerBaseFormValues } from "@/lib/schemas/payer-form.schema"
+import { normalizePhone } from "@/lib/utils/phone-format"
 import { PayerBaseForm } from "../shared/PayerBaseForm"
 
 interface PayerCreatePageProps {
   source: PayerSource
+  initialCatalogId?: string
+  initialName?: string
 }
 
 interface SourcePageContent {
@@ -39,75 +47,81 @@ const SOURCE_PAGE_CONTENT: Record<PayerSource, SourcePageContent> = {
     heading: "Create FL Medicaid Payer",
     description: "Choose one of the official FL Medicaid options and confirm payer details before creating.",
     icon: Landmark,
-    catalogLabel: "FL Medicaid catalog (13)",
+    catalogLabel: "FL Medicaid catalog",
   },
 }
 
-const EMPTY_FORM: PayerBaseFormFields = {
-  name: "",
-  phone: "",
-  email: "",
-  memberId: "",
-  groupNumber: "",
-  address: {
-    line1: "",
-    city: "",
-    state: "",
-    zipCode: "",
-  },
-}
-
-export function PayerCreatePage({ source }: PayerCreatePageProps) {
+export function PayerCreatePage({ source, initialCatalogId, initialName }: PayerCreatePageProps) {
   const router = useRouter()
   const { create, isLoading } = useCreatePayer()
-  const { privateInsurances, flMedicaidInsurances } = usePayerCatalogs()
-  const [selectedCatalogId, setSelectedCatalogId] = useState("")
-  const [formData, setFormData] = useState<PayerBaseFormFields>(EMPTY_FORM)
+  const { privateInsurances, flMedicaidInsurances, planTypes, isLoading: isLoadingPlanTypes } = usePayerCatalogs()
+  const [selectedCatalogId, setSelectedCatalogId] = useState(initialCatalogId ?? "")
+  const { countries, isLoading: isLoadingCountries } = useCountries()
+  const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
+  const { states, isLoading: isLoadingStates } = useStates(selectedCountryId)
+
+  const form = useForm<PayerBaseFormValues>({
+    resolver: zodResolver(payerBaseFormSchema),
+    defaultValues: {
+      ...getPayerBaseFormDefaults(),
+      name: initialName ?? "",
+    },
+    mode: "onBlur",
+  })
+
+  const watchCountryId = form.watch("countryId")
+  useEffect(() => {
+    if (watchCountryId) {
+      setSelectedCountryId(watchCountryId)
+      form.setValue("stateId", "")
+    } else {
+      setSelectedCountryId(null)
+      form.setValue("stateId", "")
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchCountryId])
 
   const content = SOURCE_PAGE_CONTENT[source]
   const Icon = content.icon
   const isCatalogSource = source !== PAYER_SOURCE.MANUAL
+  const isCatalogPreselected = isCatalogSource && Boolean(initialCatalogId)
   const catalogOptions = source === PAYER_SOURCE.CATALOG ? privateInsurances : flMedicaidInsurances
+  const selectOptions = catalogOptions.map((item) => ({ value: item.id, label: item.name }))
 
   const handleCatalogChange = (catalogId: string) => {
     const catalogItem = catalogOptions.find((item) => item.id === catalogId)
-
     setSelectedCatalogId(catalogId)
     if (catalogItem) {
-      setFormData((current) => ({
-        ...current,
-        name: catalogItem.name,
-      }))
+      form.setValue("name", catalogItem.name, { shouldValidate: true })
     }
   }
 
-  const handleCreate = async () => {
-    if (!formData.name.trim()) {
-      return
-    }
-
-    if (isCatalogSource && !selectedCatalogId) {
-      return
-    }
+  const handleCreate = form.handleSubmit(async (data) => {
+    if (isCatalogSource && !selectedCatalogId) return
 
     const created = await create({
+      name: data.name.trim(),
       source,
-      sourceReferenceId: isCatalogSource ? selectedCatalogId : "",
-      form: {
-        ...formData,
-        name: formData.name.trim(),
-      },
+      logo: data.logo ?? "",
+      phone: normalizePhone(data.phone),
+      email: data.email,
+      externalId: data.externalId ?? "",
+      groupNumber: data.groupNumber ?? "",
+      addressLine1: data.addressLine1 ?? "",
+      addressLine2: data.addressLine2 ?? "",
+      city: data.city ?? "",
+      stateId: data.stateId ?? "",
+      zipCode: data.zipCode,
+      planTypeId: data.planTypeId ?? "",
+      planNotes: data.planNotes ?? "",
     })
 
     if (created) {
       router.push("/my-company/billing/payers")
     }
-  }
+  })
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    await handleCreate()
-  }
+  const nameValue = form.watch("name")
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 pb-28">
@@ -124,25 +138,30 @@ export function PayerCreatePage({ source }: PayerCreatePageProps) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleCreate}>
           <Card variant="elevated" padding="lg">
             <div className="space-y-6">
-              {isCatalogSource && content.catalogLabel && (
+              {isCatalogSource && content.catalogLabel && !isCatalogPreselected && (
                 <FloatingSelect
                   label={content.catalogLabel}
                   value={selectedCatalogId}
                   onChange={handleCatalogChange}
-                  options={catalogOptions.map((item) => ({
-                    value: item.id,
-                    label: item.name,
-                  }))}
+                  options={selectOptions}
                   onBlur={() => undefined}
                   required
                   searchable
                 />
               )}
 
-              <PayerBaseForm value={formData} onChange={setFormData} />
+              <PayerBaseForm
+                form={form}
+                countries={countries}
+                states={states}
+                isLoadingCountries={isLoadingCountries}
+                isLoadingStates={isLoadingStates}
+                planTypes={planTypes}
+                isLoadingPlanTypes={isLoadingPlanTypes}
+              />
             </div>
           </Card>
 
@@ -151,7 +170,7 @@ export function PayerCreatePage({ source }: PayerCreatePageProps) {
             onCancel={() => router.push("/my-company/billing/payers")}
             cancelText="Back"
             submitText="Create payer"
-            disabled={!formData.name.trim() || (isCatalogSource && !selectedCatalogId)}
+            disabled={!nameValue?.trim() || (isCatalogSource && !selectedCatalogId)}
           />
         </form>
       </div>
