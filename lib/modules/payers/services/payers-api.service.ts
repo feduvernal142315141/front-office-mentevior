@@ -1,4 +1,6 @@
+import type { QueryModel } from "@/lib/models/queryModel"
 import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
+import { getQueryString } from "@/lib/utils/format"
 import type {
   CreatePayerDto,
   ListPayersQueryDto,
@@ -8,19 +10,27 @@ import type {
   UpdatePayerDto,
 } from "@/lib/types/payer.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
-import type { PayersServiceContract } from "../types/payers-service.types"
+import type { PayersListResult, PayersServiceContract } from "../types/payers-service.types"
 
 export class ApiPayersService implements PayersServiceContract {
-  async list(query: ListPayersQueryDto): Promise<Payer[]> {
-    const params = query.search ? `?search=${encodeURIComponent(query.search)}` : ""
-    const response = await serviceGet<PaginatedResponse<Payer>>(`/payers${params}`)
+  async list(query: ListPayersQueryDto): Promise<PayersListResult> {
+    const model: QueryModel = {
+      page: query.page ?? 0,
+      pageSize: query.pageSize ?? 10,
+      filters: query.filters?.length ? query.filters : undefined,
+    }
+    const qs = getQueryString(model)
+    const response = await serviceGet<PaginatedResponse<Payer>>(`/payers?${qs}`)
 
     if (response.status !== 200 || !response.data) {
       throw new Error(response.data?.message || "Failed to fetch payers")
     }
 
     const paginatedData = response.data as unknown as PaginatedResponse<Payer>
-    return Array.isArray(paginatedData.entities) ? paginatedData.entities : []
+    const entities = Array.isArray(paginatedData.entities) ? paginatedData.entities : []
+    const totalCount = paginatedData.pagination?.total ?? entities.length
+
+    return { payers: entities, totalCount }
   }
 
   async getById(id: string): Promise<Payer> {
@@ -46,7 +56,7 @@ export class ApiPayersService implements PayersServiceContract {
   async delete(id: string): Promise<void> {
     const response = await serviceDelete<never, { message?: string }>(`/payers/${id}`)
 
-    if (response.status !== 200 && response.status !== 204) {
+    if (response.status !== 200 && response.status !== 201) {
       throw new Error(response.data?.message || "Failed to delete payer")
     }
   }

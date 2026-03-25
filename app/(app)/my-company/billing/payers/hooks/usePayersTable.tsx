@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Edit2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
@@ -9,7 +10,6 @@ import { getPayersService } from "@/lib/modules/payers/services/payers.service"
 import { PAYER_SOURCE, type Payer, type PayerSource } from "@/lib/types/payer.types"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
-import { EditPayerModal } from "../components/phase-3/EditPayerModal"
 
 function getSourceLabel(source: PayerSource): string {
   if (source === PAYER_SOURCE.CATALOG) return "Private Insurance"
@@ -18,22 +18,39 @@ function getSourceLabel(source: PayerSource): string {
 }
 
 export function usePayersTable() {
+  const router = useRouter()
   const [inputValue, setInputValue] = useState("")
-  const [searchQuery, setSearchQuery] = useDebouncedState("", 400)
-  const [payerIdToEdit, setPayerIdToEdit] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [payerToDelete, setPayerToDelete] = useState<Payer | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const { payers, isLoading, error, refresh } = usePayers(searchQuery as string)
+  const { payers, totalCount, isLoading, error, refresh } = usePayers(
+    searchQuery as string,
+    page - 1,
+    pageSize,
+  )
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
     setSearchQuery(value)
+    setPage(1)
   }
 
   const clearFilters = () => {
     setInputValue("")
     setSearchQuery("")
+    setPage(1)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+  }
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize)
+    setPage(1)
   }
 
   const handleDeleteConfirm = async () => {
@@ -70,13 +87,6 @@ export function usePayersTable() {
         ),
       },
       {
-        key: "phone",
-        header: "Phone",
-        render: (payer) => (
-          <span className="text-sm text-gray-600">{payer.phone || "—"}</span>
-        ),
-      },
-      {
         key: "planType",
         header: "Plan Type",
         render: (payer) => (
@@ -90,7 +100,7 @@ export function usePayersTable() {
         render: (payer) => (
           <div className="flex justify-end gap-2">
             <button
-              onClick={() => setPayerIdToEdit(payer.id)}
+              onClick={() => router.push(`/my-company/billing/payers/${payer.id}/edit`)}
               className="
                 group/edit relative h-9 w-9
                 flex items-center justify-center rounded-xl
@@ -130,17 +140,11 @@ export function usePayersTable() {
         ),
       },
     ],
-    [],
+    [router],
   )
 
   const modals = (
     <>
-      <EditPayerModal
-        payerId={payerIdToEdit}
-        open={Boolean(payerIdToEdit)}
-        onOpenChange={(next) => { if (!next) setPayerIdToEdit(null) }}
-        onSaved={refresh}
-      />
       <DeleteConfirmModal
         isOpen={Boolean(payerToDelete)}
         onClose={() => setPayerToDelete(null)}
@@ -162,6 +166,14 @@ export function usePayersTable() {
       inputValue,
       searchQuery: searchQuery as string,
       setSearchQuery: handleSearchChange,
+    },
+    pagination: {
+      page,
+      pageSize,
+      total: totalCount,
+      onPageChange: handlePageChange,
+      onPageSizeChange: handlePageSizeChange,
+      pageSizeOptions: [10, 25, 50, 100],
     },
     clearFilters,
     refetch: refresh,

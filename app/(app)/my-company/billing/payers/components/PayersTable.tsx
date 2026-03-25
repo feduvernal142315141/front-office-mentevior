@@ -11,7 +11,8 @@ export interface PayersTableRef {
 }
 
 export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
-  const { data, columns, isLoading, error, filters, clearFilters, refetch, modals } = usePayersTable()
+  const { data, columns, isLoading, error, filters, pagination, clearFilters, refetch, modals } =
+    usePayersTable()
 
   useImperativeHandle(ref, () => ({ refetch }))
 
@@ -34,7 +35,7 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
               <SearchInput
                 value={filters.inputValue}
                 onChange={filters.setSearchQuery}
-                placeholder="Search payers by name..."
+                placeholder="Search by name..."
                 onClear={clearFilters}
               />
             </div>
@@ -46,7 +47,16 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
           data={data}
           isLoading={isLoading}
           emptyMessage="No payers found"
+          emptyContent={
+            filters.searchQuery ? (
+              <div className="text-center py-8">
+                <p className="text-base font-semibold text-gray-800">No payers match your search</p>
+                <p className="mt-1 text-sm text-gray-500">Try adjusting your search or clear the field</p>
+              </div>
+            ) : undefined
+          }
           getRowKey={(payer) => payer.id}
+          pagination={pagination}
         />
       </div>
     </>

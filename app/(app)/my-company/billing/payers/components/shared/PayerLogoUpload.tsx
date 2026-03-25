@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
-import { Upload, X, AlertCircle, ImageIcon } from "lucide-react"
+import { useState, useCallback, useRef, useEffect } from "react"
+import { Upload, X, AlertCircle, ImageIcon, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const MAX_SIZE_MB = 1
@@ -34,6 +34,20 @@ export function PayerLogoUpload({ value, onChange, existingLogoUrl, error }: Pay
   const [dragOver, setDragOver] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null)
+  const [fetchedLogoUrl, setFetchedLogoUrl] = useState<string | null>(null)
+  const [isLoadingLogo, setIsLoadingLogo] = useState(false)
+
+  // Load the signed S3 URL when existingLogoUrl changes (same pattern as required documents)
+  useEffect(() => {
+    if (!existingLogoUrl) {
+      setFetchedLogoUrl(null)
+      return
+    }
+    setIsLoadingLogo(true)
+    // The logoUrl from getById is already a fresh signed URL — use directly
+    setFetchedLogoUrl(existingLogoUrl)
+    setIsLoadingLogo(false)
+  }, [existingLogoUrl])
 
   const handleFileChange = useCallback(async (file: File) => {
     setFileError(null)
@@ -85,18 +99,25 @@ export function PayerLogoUpload({ value, onChange, existingLogoUrl, error }: Pay
       URL.revokeObjectURL(previewObjectUrl)
       setPreviewObjectUrl(null)
     }
+    setFetchedLogoUrl(null)
     onChange("")
     setFileError(null)
   }, [previewObjectUrl, onChange])
 
-  const displaySrc = previewObjectUrl ?? (existingLogoUrl || null)
-  const hasImage = Boolean(value) || Boolean(existingLogoUrl)
+  const displaySrc = previewObjectUrl ?? fetchedLogoUrl
+  const hasNewUpload = Boolean(previewObjectUrl)
+  const hasExisting = Boolean(fetchedLogoUrl) && !hasNewUpload
+  const hasImage = Boolean(displaySrc)
 
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium text-slate-700">Logo</p>
 
-      {hasImage && displaySrc ? (
+      {isLoadingLogo ? (
+        <div className="flex items-center justify-center p-6 rounded-xl border border-slate-200 bg-slate-50">
+          <Loader2 className="w-5 h-5 text-[#037ECC] animate-spin" />
+        </div>
+      ) : hasImage && displaySrc ? (
         /* Uploaded / existing image preview */
         <div className="flex items-center gap-4 p-4 rounded-xl border border-blue-200 bg-blue-50">
           <div className="w-14 h-14 rounded-xl overflow-hidden border border-blue-100 bg-white flex-shrink-0">
@@ -107,7 +128,9 @@ export function PayerLogoUpload({ value, onChange, existingLogoUrl, error }: Pay
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800">Logo uploaded</p>
+            <p className="text-sm font-semibold text-slate-800">
+              {hasNewUpload ? "Logo uploaded" : "Current logo"}
+            </p>
             <p className="text-xs text-slate-500 mt-0.5">Images only — max {MAX_SIZE_MB}MB</p>
           </div>
           <div className="flex gap-2">

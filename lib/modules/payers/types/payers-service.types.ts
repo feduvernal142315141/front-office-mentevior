@@ -7,8 +7,13 @@ import type {
   UpdatePayerDto,
 } from "@/lib/types/payer.types"
 
+export interface PayersListResult {
+  payers: Payer[]
+  totalCount: number
+}
+
 export interface PayersServiceContract {
-  list(query: ListPayersQueryDto): Promise<Payer[]>
+  list(query: ListPayersQueryDto): Promise<PayersListResult>
   getById(id: string): Promise<Payer>
   create(data: CreatePayerDto): Promise<Payer>
   update(data: UpdatePayerDto): Promise<Payer>

@@ -39,6 +39,7 @@ export interface Payer {
   addressLine1: string
   addressLine2?: string
   city: string
+  countryId?: string
   stateId: string
   stateName?: string
   zipCode: string
@@ -99,5 +100,7 @@ export interface UpdatePayerDto {
 }
 
 export interface ListPayersQueryDto {
-  search: string
+  filters?: string[]
+  page?: number
+  pageSize?: number
 }

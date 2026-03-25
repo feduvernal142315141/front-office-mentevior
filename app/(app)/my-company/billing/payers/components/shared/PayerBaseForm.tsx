@@ -1,13 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { Controller, type UseFormReturn } from "react-hook-form"
+import { useWatch, Controller, type UseFormReturn } from "react-hook-form"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
-import { formatPhoneInput } from "@/lib/utils/phone-format"
 import type { PayerBaseFormValues } from "@/lib/schemas/payer-form.schema"
 import { PayerLogoUpload } from "./PayerLogoUpload"
+import { PhoneInputField } from "./PhoneInputField"
 
 interface CatalogItem {
   id: string
@@ -29,6 +28,7 @@ interface PayerBaseFormProps {
   planTypes?: PlanTypeItem[]
   isLoadingPlanTypes?: boolean
   existingLogoUrl?: string | null
+  isCountryDisabled?: boolean
 }
 
 export function PayerBaseForm({
@@ -40,9 +40,10 @@ export function PayerBaseForm({
   planTypes = [],
   isLoadingPlanTypes = false,
   existingLogoUrl,
+  isCountryDisabled = false,
 }: PayerBaseFormProps) {
-  const { control, watch } = form
-  const selectedCountryId = watch("countryId")
+  const { control } = form
+  const selectedCountryId = useWatch({ control, name: "countryId" })
   const isStateDisabled = !selectedCountryId || isLoadingStates
 
   return (
@@ -92,31 +93,15 @@ export function PayerBaseForm({
         <Controller
           name="phone"
           control={control}
-          render={({ field, fieldState }) => {
-            const [displayValue, setDisplayValue] = useState(
-              formatPhoneInput(field.value || "")
-            )
-            return (
-              <div>
-                <FloatingInput
-                  label="Phone"
-                  value={displayValue}
-                  onChange={(value) => {
-                    const formatted = formatPhoneInput(value, displayValue)
-                    setDisplayValue(formatted)
-                    field.onChange(formatted)
-                  }}
-                  onBlur={field.onBlur}
-                  type="tel"
-                  placeholder="(305) 555-0000"
-                  hasError={!!fieldState.error}
-                />
-                {fieldState.error && (
-                  <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
-                )}
-              </div>
-            )
-          }}
+          render={({ field, fieldState }) => (
+            <PhoneInputField
+              value={field.value || ""}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              hasError={!!fieldState.error}
+              errorMessage={fieldState.error?.message}
+            />
+          )}
         />
       </div>
 
@@ -135,6 +120,7 @@ export function PayerBaseForm({
                 type="email"
                 placeholder="payer@insurance.com"
                 hasError={!!fieldState.error}
+                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -158,6 +144,7 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 placeholder="Member ID / External reference"
                 hasError={!!fieldState.error}
+                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -180,6 +167,7 @@ export function PayerBaseForm({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 hasError={!!fieldState.error}
+                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -203,6 +191,7 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 placeholder="Street and number"
                 hasError={!!fieldState.error}
+                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -249,8 +238,8 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 options={countries.map((c) => ({ value: c.id, label: c.name }))}
                 hasError={!!fieldState.error}
-                disabled={isLoadingCountries}
-                searchable
+                disabled={isLoadingCountries || isCountryDisabled}
+                searchable={!isCountryDisabled}
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -276,6 +265,7 @@ export function PayerBaseForm({
                 hasError={!!fieldState.error}
                 disabled={isStateDisabled}
                 searchable
+                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -301,6 +291,7 @@ export function PayerBaseForm({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 hasError={!!fieldState.error}
+                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -325,6 +316,7 @@ export function PayerBaseForm({
                 inputMode="numeric"
                 maxLength={5}
                 hasError={!!fieldState.error}
+                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -353,6 +345,7 @@ export function PayerBaseForm({
                 hasError={!!fieldState.error}
                 disabled={isLoadingPlanTypes}
                 searchable
+                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
