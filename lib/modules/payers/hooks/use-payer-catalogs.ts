@@ -1,20 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { PayerCatalogItem, PayerPlanTypeItem } from "@/lib/types/payer.types"
+import type { PayerCatalogItem, PayerClearingHouseItem } from "@/lib/types/payer.types"
 import { getPayersService } from "../services/payers.service"
 
 interface UsePayerCatalogsReturn {
   privateInsurances: PayerCatalogItem[]
   flMedicaidInsurances: PayerCatalogItem[]
-  planTypes: PayerPlanTypeItem[]
+  clearingHouses: PayerClearingHouseItem[]
   isLoading: boolean
 }
 
 export function usePayerCatalogs(): UsePayerCatalogsReturn {
   const [privateInsurances, setPrivateInsurances] = useState<PayerCatalogItem[]>([])
   const [flMedicaidInsurances, setFlMedicaidInsurances] = useState<PayerCatalogItem[]>([])
-  const [planTypes, setPlanTypes] = useState<PayerPlanTypeItem[]>([])
+  const [clearingHouses, setClearingHouses] = useState<PayerClearingHouseItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -23,10 +23,10 @@ export function usePayerCatalogs(): UsePayerCatalogsReturn {
     const loadCatalogs = async () => {
       try {
         setIsLoading(true)
-        const [privateResponse, medicaidResponse, planTypeResponse] = await Promise.all([
+        const [privateResponse, medicaidResponse, clearingHouseResponse] = await Promise.all([
           getPayersService().getPrivateInsurancesCatalog(),
           getPayersService().getFlMedicaidCatalog(),
-          getPayersService().getPlanTypeCatalog(),
+          getPayersService().getClearingHouseCatalog(),
         ])
 
         if (!isActive) {
@@ -35,7 +35,7 @@ export function usePayerCatalogs(): UsePayerCatalogsReturn {
 
         setPrivateInsurances(privateResponse)
         setFlMedicaidInsurances(medicaidResponse)
-        setPlanTypes(planTypeResponse)
+        setClearingHouses(clearingHouseResponse)
       } finally {
         if (isActive) {
           setIsLoading(false)
@@ -52,7 +52,7 @@ export function usePayerCatalogs(): UsePayerCatalogsReturn {
   return {
     privateInsurances,
     flMedicaidInsurances,
-    planTypes,
+    clearingHouses,
     isLoading,
   }
 }

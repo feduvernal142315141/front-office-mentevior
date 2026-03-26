@@ -1,9 +1,9 @@
 import type {
   CreatePayerDto,
   ListPayersQueryDto,
+  PayerClearingHouseItem,
   Payer,
   PayerCatalogItem,
-  PayerPlanTypeItem,
   UpdatePayerDto,
 } from "@/lib/types/payer.types"
 
@@ -22,6 +22,6 @@ export interface PayersServiceContract {
   createFromStateInsurance(ids: string[]): Promise<void>
   getPrivateInsurancesCatalog(): Promise<PayerCatalogItem[]>
   getFlMedicaidCatalog(): Promise<PayerCatalogItem[]>
-  getPlanTypeCatalog(): Promise<PayerPlanTypeItem[]>
+  getClearingHouseCatalog(): Promise<PayerClearingHouseItem[]>
   refresh(): Promise<void>
 }

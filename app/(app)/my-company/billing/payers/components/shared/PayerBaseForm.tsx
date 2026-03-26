@@ -13,10 +13,9 @@ interface CatalogItem {
   name: string
 }
 
-interface PlanTypeItem {
+interface ClearingHouseItem {
   id: string
   name: string
-  status?: string
 }
 
 interface PayerBaseFormProps {
@@ -25,8 +24,8 @@ interface PayerBaseFormProps {
   states: CatalogItem[]
   isLoadingCountries: boolean
   isLoadingStates: boolean
-  planTypes?: PlanTypeItem[]
-  isLoadingPlanTypes?: boolean
+  clearingHouses?: ClearingHouseItem[]
+  isLoadingClearingHouses?: boolean
   existingLogoUrl?: string | null
   isCountryDisabled?: boolean
 }
@@ -37,8 +36,8 @@ export function PayerBaseForm({
   states,
   isLoadingCountries,
   isLoadingStates,
-  planTypes = [],
-  isLoadingPlanTypes = false,
+  clearingHouses = [],
+  isLoadingClearingHouses = false,
   existingLogoUrl,
   isCountryDisabled = false,
 }: PayerBaseFormProps) {
@@ -326,7 +325,7 @@ export function PayerBaseForm({
         />
       </div>
 
-      {/* Plan Type */}
+      {/* Allow Clearing Houses */}
       <div className="md:col-span-2">
         <Controller
           name="planTypeId"
@@ -334,17 +333,13 @@ export function PayerBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
-                label="Plan Type"
+                label="Allow Clearing Houses"
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                options={planTypes.map((p) => ({
-                  value: p.id,
-                  label: p.status === "DEPRECATED" ? `${p.name} (Deprecated)` : p.name,
-                }))}
+                options={clearingHouses.map((item) => ({ value: item.id, label: item.name }))}
                 hasError={!!fieldState.error}
-                disabled={isLoadingPlanTypes}
-                searchable
+                disabled={isLoadingClearingHouses}
                 required
               />
               {fieldState.error && (

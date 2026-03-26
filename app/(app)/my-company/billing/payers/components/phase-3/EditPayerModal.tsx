@@ -28,7 +28,7 @@ export function EditPayerModal({ payerId, open, onOpenChange, onSaved }: EditPay
   const { countries, isLoading: isLoadingCountries } = useCountries()
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
   const { states, isLoading: isLoadingStates } = useStates(selectedCountryId)
-  const { planTypes, isLoading: isLoadingPlanTypes } = usePayerCatalogs()
+  const { clearingHouses, isLoading: isLoadingClearingHouses } = usePayerCatalogs()
   const form = useForm<PayerBaseFormValues>({
     resolver: zodResolver(payerBaseFormSchema),
     defaultValues: getPayerBaseFormDefaults(),
@@ -57,7 +57,7 @@ export function EditPayerModal({ payerId, open, onOpenChange, onSaved }: EditPay
         countryId,
         stateId: payer.stateId ?? "",
         zipCode: payer.zipCode ?? "",
-        planTypeId: payer.planTypeId ?? "",
+        planTypeId: payer.clearingHouseId ?? payer.planTypeId ?? "",
         planNotes: payer.planNotes ?? "",
         logo: "",
       })
@@ -73,7 +73,7 @@ export function EditPayerModal({ payerId, open, onOpenChange, onSaved }: EditPay
       source: payer.source,
       sourceReferenceId: payer.sourceReferenceId ?? "",
       logo: data.logo || payer.logoUrl || "",
-      planTypeId: data.planTypeId ?? payer.planTypeId,
+      clearingHouseId: data.planTypeId ?? payer.clearingHouseId ?? payer.planTypeId ?? "",
       planNotes: data.planNotes ?? payer.planNotes,
       name: data.name.trim(),
       phone: normalizePhone(data.phone),
@@ -120,8 +120,8 @@ export function EditPayerModal({ payerId, open, onOpenChange, onSaved }: EditPay
               states={states}
               isLoadingCountries={isLoadingCountries}
               isLoadingStates={isLoadingStates}
-              planTypes={planTypes}
-              isLoadingPlanTypes={isLoadingPlanTypes}
+              clearingHouses={clearingHouses}
+              isLoadingClearingHouses={isLoadingClearingHouses}
               existingLogoUrl={payer?.logoUrl}
               isCountryDisabled={Boolean(payer?.countryId)}
             />

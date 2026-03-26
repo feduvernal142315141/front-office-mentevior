@@ -88,9 +88,9 @@ export function usePayersTable() {
       },
       {
         key: "planType",
-        header: "Plan Type",
+        header: "Allow Clearing Houses",
         render: (payer) => (
-          <span className="text-sm text-gray-600">{payer.planTypeName || "Not configured"}</span>
+          <span className="text-sm text-gray-600">{payer.clearingHouseName || payer.planTypeName || "Not configured"}</span>
         ),
       },
       {

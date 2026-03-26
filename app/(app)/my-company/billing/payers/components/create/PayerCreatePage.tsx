@@ -54,7 +54,7 @@ const SOURCE_PAGE_CONTENT: Record<PayerSource, SourcePageContent> = {
 export function PayerCreatePage({ source, initialCatalogId, initialName }: PayerCreatePageProps) {
   const router = useRouter()
   const { create, isLoading } = useCreatePayer()
-  const { privateInsurances, flMedicaidInsurances, planTypes, isLoading: isLoadingPlanTypes } = usePayerCatalogs()
+  const { privateInsurances, flMedicaidInsurances, clearingHouses, isLoading: isLoadingClearingHouses } = usePayerCatalogs()
   const [selectedCatalogId, setSelectedCatalogId] = useState(initialCatalogId ?? "")
   const { countries, isLoading: isLoadingCountries } = useCountries()
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
@@ -112,7 +112,7 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
       city: data.city ?? "",
       stateId: data.stateId ?? "",
       zipCode: data.zipCode,
-      planTypeId: data.planTypeId ?? "",
+      clearingHouseId: data.planTypeId ?? "",
       planNotes: data.planNotes ?? "",
     })
 
@@ -159,8 +159,8 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
                 states={states}
                 isLoadingCountries={isLoadingCountries}
                 isLoadingStates={isLoadingStates}
-                planTypes={planTypes}
-                isLoadingPlanTypes={isLoadingPlanTypes}
+                clearingHouses={clearingHouses}
+                isLoadingClearingHouses={isLoadingClearingHouses}
               />
             </div>
           </Card>

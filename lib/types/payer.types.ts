@@ -6,13 +6,6 @@ export const PAYER_SOURCE = {
 
 export type PayerSource = (typeof PAYER_SOURCE)[keyof typeof PAYER_SOURCE]
 
-export const PLAN_TYPE_STATUS = {
-  VALID: "valid",
-  DEPRECATED: "deprecated",
-} as const
-
-export type PlanTypeStatus = (typeof PLAN_TYPE_STATUS)[keyof typeof PLAN_TYPE_STATUS]
-
 export interface PayerBaseFormFields {
   name: string
   phone: string
@@ -43,8 +36,10 @@ export interface Payer {
   stateId: string
   stateName?: string
   zipCode: string
-  planTypeId: string
+  clearingHouseId?: string
+  planTypeId?: string
   planNotes: string
+  clearingHouseName?: string
   planTypeName?: string
   active?: boolean
   createdAt?: string
@@ -57,10 +52,9 @@ export interface PayerCatalogItem {
   logoUrl: string
 }
 
-export interface PayerPlanTypeItem {
+export interface PayerClearingHouseItem {
   id: string
   name: string
-  status: PlanTypeStatus
 }
 
 export interface CreatePayerDto {
@@ -76,7 +70,7 @@ export interface CreatePayerDto {
   city: string
   stateId: string
   zipCode: string
-  planTypeId: string
+  clearingHouseId: string
   planNotes: string
 }
 
@@ -95,7 +89,7 @@ export interface UpdatePayerDto {
   city: string
   stateId: string
   zipCode: string
-  planTypeId: string
+  clearingHouseId: string
   planNotes: string
 }
 

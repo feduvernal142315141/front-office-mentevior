@@ -71,8 +71,8 @@ export function PayersGrid({ payers, isLoading, onEdit, onConfigurePlan }: Payer
 
           <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
             <div>
-              <p className="text-slate-500">Plan Type</p>
-              <p className="font-semibold text-slate-700 mt-0.5">{payer.planTypeName || "Not configured"}</p>
+              <p className="text-slate-500">Allow Clearing Houses</p>
+              <p className="font-semibold text-slate-700 mt-0.5">{payer.clearingHouseName || payer.planTypeName || "Not configured"}</p>
             </div>
 
             <button

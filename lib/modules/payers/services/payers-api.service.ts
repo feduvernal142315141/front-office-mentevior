@@ -4,9 +4,9 @@ import { getQueryString } from "@/lib/utils/format"
 import type {
   CreatePayerDto,
   ListPayersQueryDto,
+  PayerClearingHouseItem,
   Payer,
   PayerCatalogItem,
-  PayerPlanTypeItem,
   UpdatePayerDto,
 } from "@/lib/types/payer.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
@@ -121,17 +121,17 @@ export class ApiPayersService implements PayersServiceContract {
     return Array.isArray(paginated.entities) ? paginated.entities : []
   }
 
-  async getPlanTypeCatalog(): Promise<PayerPlanTypeItem[]> {
-    const response = await serviceGet<PayerPlanTypeItem[]>("/plan-type/catalog")
+  async getClearingHouseCatalog(): Promise<PayerClearingHouseItem[]> {
+    const response = await serviceGet<PayerClearingHouseItem[]>("/clearing-house/catalog")
 
     if (response.status !== 200 || !response.data) {
-      throw new Error(response.data?.message || "Failed to fetch plan type catalog")
+      throw new Error(response.data?.message || "Failed to fetch clearing house catalog")
     }
 
     const data = response.data as unknown
-    if (Array.isArray(data)) return data as PayerPlanTypeItem[]
+    if (Array.isArray(data)) return data as PayerClearingHouseItem[]
 
-    const paginated = data as { entities?: PayerPlanTypeItem[] }
+    const paginated = data as { entities?: PayerClearingHouseItem[] }
     return Array.isArray(paginated.entities) ? paginated.entities : []
   }
 

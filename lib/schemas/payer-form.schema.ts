@@ -39,7 +39,7 @@ export const payerBaseFormSchema = z.object({
     .min(1, "ZIP Code is required")
     .refine((val) => /^\d{5}$/.test(val), { message: "ZIP Code must be exactly 5 digits" }),
 
-  planTypeId: z.string().min(1, "Plan type is required"),
+  planTypeId: z.string().min(1, "Allow clearing houses is required"),
 
   planNotes: z.string().max(2000).optional().or(z.literal("")),
 })
