@@ -58,7 +58,7 @@ export function PayerEditPage({ payerId }: PayerEditPageProps) {
         zipCode: payer.zipCode ?? "",
         planTypeId: payer.clearingHouseId ?? payer.planTypeId ?? "",
         planNotes: payer.planNotes ?? "",
-        logo: "",
+        logo: payer.logoUrl ?? "",
       })
       if (countryId) setSelectedCountryId(countryId)
     }

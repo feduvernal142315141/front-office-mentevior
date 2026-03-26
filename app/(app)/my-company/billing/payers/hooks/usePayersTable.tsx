@@ -3,18 +3,49 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Edit2, Trash2 } from "lucide-react"
+import { format } from "date-fns"
 import { toast } from "sonner"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { usePayers } from "@/lib/modules/payers/hooks/use-payers"
 import { getPayersService } from "@/lib/modules/payers/services/payers.service"
-import { PAYER_SOURCE, type Payer, type PayerSource } from "@/lib/types/payer.types"
+import type { Payer } from "@/lib/types/payer.types"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { parseLocalDate } from "@/lib/date"
 
-function getSourceLabel(source: PayerSource): string {
-  if (source === PAYER_SOURCE.CATALOG) return "Private Insurance"
-  if (source === PAYER_SOURCE.FL_MEDICAID) return "FL Medicaid"
-  return "Manual"
+function PayerNameCell({ payer }: { payer: Payer }) {
+  const [imageError, setImageError] = useState(false)
+  const showImage = Boolean(payer.logoUrl) && !imageError
+  const initials = (payer.name || "PI")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
+
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 shadow-sm shadow-slate-900/5">
+        {showImage ? (
+          <img
+            src={payer.logoUrl ?? ""}
+            alt={`${payer.name} logo`}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#037ECC]/15 via-[#079CFB]/10 to-[#037ECC]/20 text-xs font-semibold tracking-wide text-[#037ECC]">
+            {initials}
+          </div>
+        )}
+      </div>
+      <div className="min-w-0">
+        <span className="block truncate font-semibold text-slate-900">{payer.name}</span>
+      </div>
+    </div>
+  )
 }
 
 export function usePayersTable() {
@@ -76,14 +107,7 @@ export function usePayersTable() {
         key: "name",
         header: "Name",
         render: (payer) => (
-          <span className="font-medium text-gray-900">{payer.name}</span>
-        ),
-      },
-      {
-        key: "source",
-        header: "Source",
-        render: (payer) => (
-          <span className="text-sm text-gray-600">{getSourceLabel(payer.source)}</span>
+          <PayerNameCell payer={payer} />
         ),
       },
       {
@@ -91,6 +115,15 @@ export function usePayersTable() {
         header: "Allow Clearing Houses",
         render: (payer) => (
           <span className="text-sm text-gray-600">{payer.clearingHouseName || payer.planTypeName || "Not configured"}</span>
+        ),
+      },
+      {
+        key: "createdAt",
+        header: "Created",
+        render: (payer) => (
+          <span className="text-sm text-gray-600">
+            {payer.createdAt ? format(parseLocalDate(payer.createdAt), "MMM dd, yyyy") : "-"}
+          </span>
         ),
       },
       {

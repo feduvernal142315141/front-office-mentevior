@@ -358,7 +358,7 @@ export function PayerBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <FloatingTextarea
-                label="Internal Notes"
+                label="Description"
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
