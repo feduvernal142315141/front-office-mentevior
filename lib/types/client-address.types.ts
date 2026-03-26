@@ -36,6 +36,12 @@ export interface CreateClientAddressDto {
   placeServiceName?: string
 }
 
+export interface CreateClientAddressByCompanyAddressIdDto {
+  clientId: string
+  companyAddressId: string
+  isPrimary: boolean
+}
+
 export interface UpdateClientAddressDto {
   id: string
   nickName?: string

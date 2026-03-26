@@ -2,6 +2,7 @@ import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/servic
 import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
 import type {
   ClientAddress,
+  CreateClientAddressByCompanyAddressIdDto,
   CreateClientAddressDto,
   UpdateClientAddressDto,
 } from "@/lib/types/client-address.types"
@@ -117,6 +118,25 @@ export async function createClientAddress(data: CreateClientAddressDto): Promise
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to create address")
+  }
+
+  return { progress: Number(response.data) || 0 }
+}
+
+export async function createClientAddressByCompanyAddressId(
+  data: CreateClientAddressByCompanyAddressIdDto,
+): Promise<MutationResult> {
+  const response = await servicePost<
+    { clientId: string; companyAddressId: string; isPrimary: boolean },
+    number
+  >("/client/address-by-company-address-id", {
+    clientId: data.clientId,
+    companyAddressId: data.companyAddressId,
+    isPrimary: data.isPrimary,
+  })
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to create address from company address")
   }
 
   return { progress: Number(response.data) || 0 }

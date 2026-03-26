@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Home, Building2, Users, Edit2, Trash2 } from "lucide-react"
+import { Home, Building2, Edit2, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -16,8 +16,6 @@ import { useAddresses } from "@/lib/modules/addresses/hooks/use-addresses"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
-import { getAddressById, getStatesByCountry } from "@/lib/modules/addresses/services/addresses.service"
-import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { useCreateClientAddress } from "@/lib/modules/client-addresses/hooks/use-create-client-address"
 import { useUpdateClientAddress } from "@/lib/modules/client-addresses/hooks/use-update-client-address"
@@ -31,7 +29,7 @@ import { cn } from "@/lib/utils"
 const alphanumericWithSpaces = /^[a-zA-Z0-9 ]+$/
 
 const addressSourceSchema = z.object({
-  sourceType: z.enum(["agency", "other-clients", "manual"]).optional(),
+  sourceType: z.enum(["agency", "manual"]).optional(),
   nickName: z
     .string()
     .trim()
@@ -41,8 +39,6 @@ const addressSourceSchema = z.object({
     .or(z.literal("")),
   isPrimary: z.boolean(),
   selectedAgencyAddressId: z.string().optional(),
-  selectedClientId: z.string().optional(),
-  selectedClientAddressId: z.string().optional(),
   placeServiceId: z.string().optional(),
   addressLine1: z.string().optional(),
   apartmentSuite: z.string().optional(),
@@ -73,23 +69,6 @@ const addressSourceSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "Nickname is required",
         path: ["nickName"],
-      })
-    }
-  }
-
-  if (value.sourceType === "other-clients") {
-    if (!value.selectedClientId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Select a client first",
-        path: ["selectedClientId"],
-      })
-    }
-    if (!value.selectedClientAddressId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Select one address from that client",
-        path: ["selectedClientAddressId"],
       })
     }
   }
@@ -176,8 +155,6 @@ const defaultValues: AddressSourceFormValues = {
   nickName: "",
   isPrimary: false,
   selectedAgencyAddressId: "",
-  selectedClientId: "",
-  selectedClientAddressId: "",
   placeServiceId: "",
   addressLine1: "",
   apartmentSuite: "",
@@ -232,7 +209,7 @@ export function Step2Addresses({
     error: clientAddressesError,
     refetch: refetchClientAddresses,
   } = useClientAddresses(resolvedClientId)
-  const { create, isLoading: isCreating } = useCreateClientAddress()
+  const { create, createFromCompanyAddress, isLoading: isCreating } = useCreateClientAddress()
   const { update, isLoading: isUpdating } = useUpdateClientAddress()
   const { remove, isLoading: isDeleting } = useDeleteClientAddress()
 
@@ -240,7 +217,6 @@ export function Step2Addresses({
     addresses: agencyAddresses,
     isLoading: isLoadingAgencyAddresses,
   } = useAddresses({ page: 0, pageSize: 200 })
-  const { clients, isLoading: isLoadingClients } = useClients({ page: 0, pageSize: 200 })
   const { countries, isLoading: isLoadingCountries } = useCountries()
   const { placesOfService, isLoading: isLoadingPlaces } = usePlacesOfService()
 
@@ -252,12 +228,7 @@ export function Step2Addresses({
   })
 
   const selectedCountryId = form.watch("countryId")
-  const selectedClientId = form.watch("selectedClientId")
   const { states, isLoading: isLoadingStates } = useStates(selectedCountryId || null)
-  const {
-    addresses: selectedClientAddresses,
-    isLoading: isLoadingSelectedClientAddresses,
-  } = useClientAddresses(selectedClientId || null)
 
   useEffect(() => {
     registerValidation(true)
@@ -283,11 +254,6 @@ export function Step2Addresses({
     }
   }, [countries, form])
 
-  const selectableClients = useMemo(
-    () => clients.filter((clientItem) => clientItem.id !== resolvedClientId),
-    [clients, resolvedClientId]
-  )
-
   const handleOpenModal = () => {
     form.reset({
       ...defaultValues,
@@ -310,8 +276,6 @@ export function Step2Addresses({
         nickName: data.nickName || "",
         isPrimary: data.isPrimary,
         selectedAgencyAddressId: "",
-        selectedClientId: "",
-        selectedClientAddressId: "",
         placeServiceId: data.placeServiceId || "",
         addressLine1: data.addressLine1 || "",
         apartmentSuite: data.apartmentSuite || "",
@@ -326,8 +290,6 @@ export function Step2Addresses({
         nickName: address.nickName || "",
         isPrimary: address.isPrimary,
         selectedAgencyAddressId: "",
-        selectedClientId: "",
-        selectedClientAddressId: "",
         placeServiceId: address.placeServiceId || "",
         addressLine1: address.addressLine1 || "",
         apartmentSuite: address.apartmentSuite || "",
@@ -400,6 +362,22 @@ export function Step2Addresses({
       return
     }
 
+    if (values.sourceType === "agency" && values.selectedAgencyAddressId) {
+      const result = await createFromCompanyAddress({
+        clientId: resolvedClientId,
+        companyAddressId: values.selectedAgencyAddressId,
+        isPrimary: values.isPrimary,
+      })
+      if (!result) return
+
+      onProgressUpdate?.(result.progress)
+      form.reset(defaultValues)
+      setAddressModalStage("select-source")
+      setIsAddressModalOpen(false)
+      await refetchClientAddresses()
+      return
+    }
+
     let payload: CreateClientAddressDto | null = null
 
     if (values.sourceType === "manual") {
@@ -419,71 +397,6 @@ export function Step2Addresses({
         countryId: values.countryId,
         country: selectedCountry?.name,
         isPrimary: values.isPrimary,
-      }
-    }
-
-    if (values.sourceType === "agency" && values.selectedAgencyAddressId) {
-      const source = await getAddressById(values.selectedAgencyAddressId)
-      if (!source) {
-        onValidationError({ selectedAgencyAddressId: "Selected agency address no longer exists" })
-        return
-      }
-
-      payload = {
-        clientId: resolvedClientId,
-        nickName: source.nickName,
-        placeServiceId: source.placeServiceId,
-        addressLine1: source.address,
-        city: source.city,
-        stateId: source.stateId,
-        state: source.state,
-        zipCode: source.zipCode,
-        countryId: source.countryId,
-        country: source.country,
-        isPrimary: values.isPrimary,
-        sourceAddressId: source.id,
-      }
-    }
-
-    if (values.sourceType === "other-clients") {
-      const selectedAddress = selectedClientAddresses.find(
-        (address) => address.id === values.selectedClientAddressId
-      )
-
-      if (!selectedAddress) {
-        onValidationError({ selectedClientAddressId: "Select one address from the selected client" })
-        return
-      }
-
-      const resolvedCountryId =
-        selectedAddress.countryId ||
-        countries.find((c) => c.name === selectedAddress.country)?.id ||
-        undefined
-
-      let resolvedStateId = selectedAddress.stateId
-
-      if (!resolvedStateId && selectedAddress.state && resolvedCountryId) {
-        const statesForCountry = await getStatesByCountry(resolvedCountryId)
-        resolvedStateId = statesForCountry.find(
-          (s) => s.name === selectedAddress.state
-        )?.id
-      }
-
-      payload = {
-        clientId: resolvedClientId,
-        nickName: values.nickName ?? "",
-        placeServiceId: selectedAddress.placeServiceId,
-        addressLine1: selectedAddress.addressLine1,
-        apartmentSuite: selectedAddress.apartmentSuite,
-        city: selectedAddress.city,
-        stateId: resolvedStateId,
-        state: selectedAddress.state,
-        zipCode: selectedAddress.zipCode,
-        countryId: resolvedCountryId,
-        country: selectedAddress.country,
-        isPrimary: values.isPrimary,
-        sourceAddressId: selectedAddress.id,
-        sourceClientId: selectedClientId,
       }
     }
 
@@ -536,87 +449,13 @@ export function Step2Addresses({
                 <FloatingSelect
                   label="Agency Address"
                   value={field.value || ""}
-                  onChange={(value) => {
-                    field.onChange(value)
-                    const selected = agencyAddresses.find((address) => address.id === value)
-                    if (selected && !form.getValues("nickName")) {
-                      form.setValue("nickName", selected.nickName)
-                    }
-                  }}
+                  onChange={field.onChange}
                   onBlur={field.onBlur}
                   options={agencyAddresses.map((address) => ({
                     value: address.id,
                     label: `${address.nickName} - ${address.address}, ${address.city}`,
                   }))}
                   disabled={isLoadingAgencyAddresses}
-                  hasError={!!fieldState.error}
-                  required
-                  searchable
-                />
-                {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
-              </div>
-            )}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "other-clients",
-      label: "Other clients",
-      helper: "Copy from another client record",
-      icon: <Users className="w-4 h-4" />,
-      contentTitle: "Copy from another client",
-      contentDescription: "Choose a client, then select one of their saved addresses.",
-      content: (
-        <div className="space-y-5">
-          <Controller
-            name="selectedClientId"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <div>
-                <FloatingSelect
-                  label="Client"
-                  value={field.value || ""}
-                  onChange={(value) => {
-                    field.onChange(value)
-                    form.setValue("selectedClientAddressId", "")
-                  }}
-                  onBlur={field.onBlur}
-                  options={selectableClients.map((clientItem) => ({
-                    value: clientItem.id,
-                    label: `${clientItem.fullName} (${clientItem.chartId})`,
-                  }))}
-                  disabled={isLoadingClients}
-                  hasError={!!fieldState.error}
-                  required
-                  searchable
-                />
-                {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
-              </div>
-            )}
-          />
-
-          <Controller
-            name="selectedClientAddressId"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <div>
-                <FloatingSelect
-                  label="Address"
-                  value={field.value || ""}
-                  onChange={(value) => {
-                    field.onChange(value)
-                    const selected = selectedClientAddresses.find((address) => address.id === value)
-                    if (selected && !form.getValues("nickName")) {
-                      form.setValue("nickName", selected.nickName)
-                    }
-                  }}
-                  onBlur={field.onBlur}
-                  options={selectedClientAddresses.map((address) => ({
-                    value: address.id,
-                    label: `${address.nickName} - ${address.addressLine1}, ${address.city}`,
-                  }))}
-                  disabled={!selectedClientId || isLoadingSelectedClientAddresses}
                   hasError={!!fieldState.error}
                   required
                   searchable
@@ -883,7 +722,6 @@ export function Step2Addresses({
   const hasPrefilledAddressData = Boolean(
     form.getValues("nickName") ||
       form.getValues("selectedAgencyAddressId") ||
-      form.getValues("selectedClientAddressId") ||
       form.getValues("addressLine1")
   )
 
