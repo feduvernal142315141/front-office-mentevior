@@ -27,6 +27,8 @@ export interface Payer {
   logoUrl?: string | null
   phone: string
   email: string
+  /** Optional marketing or portal URL; shown on manage overview when present */
+  website?: string | null
   externalId: string
   groupNumber: string
   addressLine1: string
@@ -38,7 +40,7 @@ export interface Payer {
   zipCode: string
   clearingHouseId?: string
   planTypeId?: string
-  planNotes: string
+  description: string
   clearingHouseName?: string
   planTypeName?: string
   active?: boolean
@@ -71,7 +73,7 @@ export interface CreatePayerDto {
   stateId: string
   zipCode: string
   clearingHouseId: string
-  planNotes: string
+  description: string
 }
 
 export interface UpdatePayerDto {
@@ -90,7 +92,7 @@ export interface UpdatePayerDto {
   stateId: string
   zipCode: string
   clearingHouseId: string
-  planNotes: string
+  description: string
 }
 
 export interface ListPayersQueryDto {

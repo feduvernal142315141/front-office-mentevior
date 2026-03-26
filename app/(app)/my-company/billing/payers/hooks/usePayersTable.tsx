@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Edit2, Trash2 } from "lucide-react"
+import { Edit2, Sliders, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
@@ -12,6 +12,7 @@ import type { Payer } from "@/lib/types/payer.types"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { parseLocalDate } from "@/lib/date"
+import { usePayersPermissionFallback } from "./usePayersPermissionFallback"
 
 function PayerNameCell({ payer }: { payer: Payer }) {
   const [imageError, setImageError] = useState(false)
@@ -62,6 +63,7 @@ export function usePayersTable() {
     page - 1,
     pageSize,
   )
+  const { canEditPayers, canDeletePayers } = usePayersPermissionFallback()
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
@@ -85,7 +87,7 @@ export function usePayersTable() {
   }
 
   const handleDeleteConfirm = async () => {
-    if (!payerToDelete) return
+    if (!payerToDelete || !canDeletePayers) return
 
     setIsDeleting(true)
     try {
@@ -101,8 +103,8 @@ export function usePayersTable() {
     }
   }
 
-  const columns: CustomTableColumn<Payer>[] = useMemo(
-    () => [
+  const columns: CustomTableColumn<Payer>[] = useMemo(() => {
+    const nextColumns: CustomTableColumn<Payer>[] = [
       {
         key: "name",
         header: "Name",
@@ -126,55 +128,85 @@ export function usePayersTable() {
           </span>
         ),
       },
-      {
+    ]
+
+    if (canEditPayers || canDeletePayers) {
+      nextColumns.push({
         key: "actions",
         header: "Actions",
         align: "right" as const,
         render: (payer) => (
           <div className="flex justify-end gap-2">
-            <button
-              onClick={() => router.push(`/my-company/billing/payers/${payer.id}/edit`)}
-              className="
-                group/edit relative h-9 w-9
-                flex items-center justify-center rounded-xl
-                bg-gradient-to-b from-blue-50 to-blue-100/80
-                border border-blue-200/60 shadow-sm shadow-blue-900/5
-                hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80
-                hover:shadow-md hover:shadow-blue-900/10 hover:-translate-y-0.5
-                active:translate-y-0 active:shadow-sm
-                transition-all duration-200 ease-out
-                focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2
-              "
-              title="Edit payer"
-              aria-label="Edit payer"
-            >
-              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
-            </button>
+            {canEditPayers && (
+              <button
+                type="button"
+                onClick={() => router.push(`/my-company/billing/payers/${payer.id}/manage`)}
+                className="
+                  group/manage relative h-9 w-9
+                  flex items-center justify-center rounded-xl
+                  bg-gradient-to-b from-slate-50 to-slate-100/80
+                  border border-slate-200/70 shadow-sm shadow-slate-900/5
+                  hover:from-slate-100 hover:to-slate-200/90 hover:border-slate-300/80
+                  hover:shadow-md hover:shadow-slate-900/10 hover:-translate-y-0.5
+                  active:translate-y-0 active:shadow-sm
+                  transition-all duration-200 ease-out
+                  focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:ring-offset-2
+                "
+                title="Payer management"
+                aria-label="Payer management"
+              >
+                <Sliders className="w-4 h-4 text-slate-600 group-hover/manage:text-[#037ECC] transition-colors duration-200" />
+              </button>
+            )}
 
-            <button
-              onClick={() => setPayerToDelete(payer)}
-              className="
-                group/delete relative h-9 w-9
-                flex items-center justify-center rounded-xl
-                bg-gradient-to-b from-red-50 to-red-100/80
-                border border-red-200/60 shadow-sm shadow-red-900/5
-                hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80
-                hover:shadow-md hover:shadow-red-900/10 hover:-translate-y-0.5
-                active:translate-y-0 active:shadow-sm
-                transition-all duration-200 ease-out
-                focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2
-              "
-              title="Delete payer"
-              aria-label="Delete payer"
-            >
-              <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
-            </button>
+            {canEditPayers && (
+              <button
+                onClick={() => router.push(`/my-company/billing/payers/${payer.id}/edit`)}
+                className="
+                  group/edit relative h-9 w-9
+                  flex items-center justify-center rounded-xl
+                  bg-gradient-to-b from-blue-50 to-blue-100/80
+                  border border-blue-200/60 shadow-sm shadow-blue-900/5
+                  hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80
+                  hover:shadow-md hover:shadow-blue-900/10 hover:-translate-y-0.5
+                  active:translate-y-0 active:shadow-sm
+                  transition-all duration-200 ease-out
+                  focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2
+                "
+                title="Edit payer"
+                aria-label="Edit payer"
+              >
+                <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+              </button>
+            )}
+
+            {canDeletePayers && (
+              <button
+                onClick={() => setPayerToDelete(payer)}
+                className="
+                  group/delete relative h-9 w-9
+                  flex items-center justify-center rounded-xl
+                  bg-gradient-to-b from-red-50 to-red-100/80
+                  border border-red-200/60 shadow-sm shadow-red-900/5
+                  hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80
+                  hover:shadow-md hover:shadow-red-900/10 hover:-translate-y-0.5
+                  active:translate-y-0 active:shadow-sm
+                  transition-all duration-200 ease-out
+                  focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2
+                "
+                title="Delete payer"
+                aria-label="Delete payer"
+              >
+                <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
+              </button>
+            )}
           </div>
         ),
-      },
-    ],
-    [router],
-  )
+      })
+    }
+
+    return nextColumns
+  }, [canDeletePayers, canEditPayers, router])
 
   const modals = (
     <>

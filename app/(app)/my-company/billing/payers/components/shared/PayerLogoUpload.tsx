@@ -27,9 +27,10 @@ interface PayerLogoUploadProps {
   /** Existing logo URL from API (for edit mode display) */
   existingLogoUrl?: string | null
   error?: string
+  readOnly?: boolean
 }
 
-export function PayerLogoUpload({ value, onChange, existingLogoUrl, error }: PayerLogoUploadProps) {
+export function PayerLogoUpload({ value, onChange, existingLogoUrl, error, readOnly }: PayerLogoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
@@ -77,12 +78,13 @@ export function PayerLogoUpload({ value, onChange, existingLogoUrl, error }: Pay
 
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
+      if (readOnly) return
       e.preventDefault()
       setDragOver(false)
       const file = e.dataTransfer.files[0]
       if (file) handleFileChange(file)
     },
-    [handleFileChange]
+    [handleFileChange, readOnly]
   )
 
   const handleInputChange = useCallback(
@@ -118,7 +120,6 @@ export function PayerLogoUpload({ value, onChange, existingLogoUrl, error }: Pay
           <Loader2 className="w-5 h-5 text-[#037ECC] animate-spin" />
         </div>
       ) : hasImage && displaySrc ? (
-        /* Uploaded / existing image preview */
         <div className="flex items-center gap-4 p-4 rounded-xl border border-blue-200 bg-blue-50">
           <div className="w-14 h-14 rounded-xl overflow-hidden border border-blue-100 bg-white flex-shrink-0">
             <img
@@ -131,37 +132,45 @@ export function PayerLogoUpload({ value, onChange, existingLogoUrl, error }: Pay
             <p className="text-sm font-semibold text-slate-800">
               {hasNewUpload ? "Logo uploaded" : "Current logo"}
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">Images only — max {MAX_SIZE_MB}MB</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {readOnly ? "View only" : `Images only — max ${MAX_SIZE_MB}MB`}
+            </p>
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                "w-9 h-9 rounded-lg flex items-center justify-center",
-                "bg-white hover:bg-slate-50 border border-slate-200",
-                "text-slate-500 hover:text-slate-700 transition-all duration-200"
-              )}
-              title="Change logo"
-            >
-              <Upload className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleRemove}
-              className={cn(
-                "w-9 h-9 rounded-lg flex items-center justify-center",
-                "bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200",
-                "text-slate-400 hover:text-red-500 transition-all duration-200"
-              )}
-              title="Remove logo"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          {!readOnly && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "w-9 h-9 rounded-lg flex items-center justify-center",
+                  "bg-white hover:bg-slate-50 border border-slate-200",
+                  "text-slate-500 hover:text-slate-700 transition-all duration-200"
+                )}
+                title="Change logo"
+              >
+                <Upload className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleRemove}
+                className={cn(
+                  "w-9 h-9 rounded-lg flex items-center justify-center",
+                  "bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200",
+                  "text-slate-400 hover:text-red-500 transition-all duration-200"
+                )}
+                title="Remove logo"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : readOnly ? (
+        <div className="flex flex-col items-center justify-center gap-2 p-8 rounded-2xl border border-slate-200 bg-slate-50/80">
+          <ImageIcon className="w-8 h-8 text-slate-400" />
+          <p className="text-sm text-slate-500">No logo on file</p>
         </div>
       ) : (
-        /* Drop zone */
         <div
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
@@ -190,13 +199,15 @@ export function PayerLogoUpload({ value, onChange, existingLogoUrl, error }: Pay
         </div>
       )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        accept=".jpg,.jpeg,.png,.gif,.webp"
-        onChange={handleInputChange}
-      />
+      {!readOnly && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".jpg,.jpeg,.png,.gif,.webp"
+          onChange={handleInputChange}
+        />
+      )}
 
       {(fileError || error) && (
         <div className="flex items-center gap-2 text-sm text-red-600">

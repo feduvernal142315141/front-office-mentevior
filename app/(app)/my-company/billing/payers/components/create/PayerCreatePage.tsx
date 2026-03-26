@@ -16,6 +16,8 @@ import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import { PAYER_SOURCE, type PayerSource } from "@/lib/types/payer.types"
 import { payerBaseFormSchema, getPayerBaseFormDefaults, type PayerBaseFormValues } from "@/lib/schemas/payer-form.schema"
 import { normalizePhone } from "@/lib/utils/phone-format"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { usePayersPermissionFallback } from "../../hooks/usePayersPermissionFallback"
 import { PayerBaseForm } from "../shared/PayerBaseForm"
 
 interface PayerCreatePageProps {
@@ -53,6 +55,8 @@ const SOURCE_PAGE_CONTENT: Record<PayerSource, SourcePageContent> = {
 
 export function PayerCreatePage({ source, initialCatalogId, initialName }: PayerCreatePageProps) {
   const router = useRouter()
+  const { hydrated } = useAuth()
+  const { canCreatePayers } = usePayersPermissionFallback()
   const { create, isLoading } = useCreatePayer()
   const { privateInsurances, flMedicaidInsurances, clearingHouses, isLoading: isLoadingClearingHouses } = usePayerCatalogs()
   const [selectedCatalogId, setSelectedCatalogId] = useState(initialCatalogId ?? "")
@@ -70,6 +74,12 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   })
 
   const watchCountryId = form.watch("countryId")
+  useEffect(() => {
+    if (hydrated && !canCreatePayers) {
+      router.replace("/dashboard")
+    }
+  }, [canCreatePayers, hydrated, router])
+
   useEffect(() => {
     if (watchCountryId) {
       setSelectedCountryId(watchCountryId)
@@ -113,7 +123,7 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
       stateId: data.stateId ?? "",
       zipCode: data.zipCode,
       clearingHouseId: data.planTypeId ?? "",
-      planNotes: data.planNotes ?? "",
+      description: data.description ?? "",
     })
 
     if (created) {
@@ -122,6 +132,10 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   })
 
   const nameValue = form.watch("name")
+
+  if (!hydrated || !canCreatePayers) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 pb-28">

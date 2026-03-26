@@ -33,6 +33,7 @@ export const PERMISSION_IDS: Record<string, string> = {
   "account_profile": "a1a2a3a4-b5b6-47c8-d9e0-f1a2b3c4d5e6",
   "services_pending_billing": "a9b0c1d2-e3f4-45a6-b7c8-d9e0f1a2b3c4",
   "billed_claims": "b0c1d2e3-f4a5-46b7-c8d9-e0f1a2b3c4d5",
+  "payers": "a8b9c0d1-e2f3-44a5-b6c7-d8e9f0a1b2c3",
   "appointment": "c4d5e6f7-a8b9-41c0-d1e2-f3a4b5c6d7e8",
   "service_plan": "d5e6f7a8-b9c0-42d1-e2f3-a4b5c6d7e8f9",
   "supervision": "e6f7a8b9-c0d1-43e2-f3a4-b5c6d7e8f9a0",

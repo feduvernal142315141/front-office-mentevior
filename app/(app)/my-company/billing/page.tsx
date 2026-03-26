@@ -8,6 +8,8 @@ import type { ComponentType } from "react"
 
 export default function BillingPage() {
   const { view } = usePermission()
+  // TODO: remove BILLING fallback when backend ships the final PAYERS permission mapping/id.
+  const canViewPayers = view(PermissionModule.PAYERS) || view(PermissionModule.BILLING)
 
   type BillingSubModule = {
     title: string
@@ -31,7 +33,7 @@ export default function BillingPage() {
       description: "Manage insurance payers and plan configuration",
       href: "/my-company/billing/payers",
       icon: Building2,
-      alwaysShow: true,
+      module: PermissionModule.PAYERS,
     },
     {
       title: "Services Pending Billing",
@@ -49,7 +51,13 @@ export default function BillingPage() {
     },
   ]
   
-  const subModules = allSubModules.filter((module) => module.alwaysShow === true || (module.module ? view(module.module) : false))
+  const subModules = allSubModules.filter((module) => {
+    if (module.module === PermissionModule.PAYERS) {
+      return canViewPayers
+    }
+
+    return module.alwaysShow === true || (module.module ? view(module.module) : false)
+  })
 
   return (
     <div className="p-8">

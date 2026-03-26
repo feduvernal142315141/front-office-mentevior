@@ -14,6 +14,8 @@ import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import { usePayerCatalogs } from "@/lib/modules/payers/hooks/use-payer-catalogs"
 import { payerBaseFormSchema, getPayerBaseFormDefaults, type PayerBaseFormValues } from "@/lib/schemas/payer-form.schema"
 import { normalizePhone } from "@/lib/utils/phone-format"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { usePayersPermissionFallback } from "../../hooks/usePayersPermissionFallback"
 import { PayerBaseForm } from "../shared/PayerBaseForm"
 
 interface PayerEditPageProps {
@@ -22,13 +24,14 @@ interface PayerEditPageProps {
 
 export function PayerEditPage({ payerId }: PayerEditPageProps) {
   const router = useRouter()
+  const { hydrated } = useAuth()
+  const { canEditPayers } = usePayersPermissionFallback()
   const { payer, isLoading: isLoadingPayer } = usePayerById(payerId)
   const { update, isLoading: isSaving } = useUpdatePayer()
   const { countries, isLoading: isLoadingCountries } = useCountries()
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
   const { states, isLoading: isLoadingStates } = useStates(selectedCountryId)
   const { clearingHouses, isLoading: isLoadingClearingHouses } = usePayerCatalogs()
-
   const form = useForm<PayerBaseFormValues>({
     resolver: zodResolver(payerBaseFormSchema),
     defaultValues: getPayerBaseFormDefaults(),
@@ -36,6 +39,12 @@ export function PayerEditPage({ payerId }: PayerEditPageProps) {
   })
 
   const watchCountryId = form.watch("countryId")
+  useEffect(() => {
+    if (hydrated && !canEditPayers) {
+      router.replace("/dashboard")
+    }
+  }, [canEditPayers, hydrated, router])
+
   useEffect(() => {
     setSelectedCountryId(watchCountryId || null)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,7 +66,7 @@ export function PayerEditPage({ payerId }: PayerEditPageProps) {
         stateId: payer.stateId ?? "",
         zipCode: payer.zipCode ?? "",
         planTypeId: payer.clearingHouseId ?? payer.planTypeId ?? "",
-        planNotes: payer.planNotes ?? "",
+        description: payer.description ?? "",
         logo: payer.logoUrl ?? "",
       })
       if (countryId) setSelectedCountryId(countryId)
@@ -73,7 +82,7 @@ export function PayerEditPage({ payerId }: PayerEditPageProps) {
       sourceReferenceId: payer.sourceReferenceId ?? "",
       logo: data.logo || payer.logoUrl || "",
       clearingHouseId: data.planTypeId ?? payer.clearingHouseId ?? payer.planTypeId ?? "",
-      planNotes: data.planNotes ?? payer.planNotes,
+      description: data.description ?? payer.description,
       name: data.name.trim(),
       phone: normalizePhone(data.phone),
       email: data.email,
@@ -90,6 +99,10 @@ export function PayerEditPage({ payerId }: PayerEditPageProps) {
       router.push("/my-company/billing/payers")
     }
   })
+
+  if (!hydrated || !canEditPayers) {
+    return null
+  }
 
   if (isLoadingPayer) {
     return (

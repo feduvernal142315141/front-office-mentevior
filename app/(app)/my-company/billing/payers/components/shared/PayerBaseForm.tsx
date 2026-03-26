@@ -28,6 +28,7 @@ interface PayerBaseFormProps {
   isLoadingClearingHouses?: boolean
   existingLogoUrl?: string | null
   isCountryDisabled?: boolean
+  readOnly?: boolean
 }
 
 export function PayerBaseForm({
@@ -40,10 +41,11 @@ export function PayerBaseForm({
   isLoadingClearingHouses = false,
   existingLogoUrl,
   isCountryDisabled = false,
+  readOnly = false,
 }: PayerBaseFormProps) {
   const { control } = form
   const selectedCountryId = useWatch({ control, name: "countryId" })
-  const isStateDisabled = !selectedCountryId || isLoadingStates
+  const isStateDisabled = readOnly || !selectedCountryId || isLoadingStates
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -58,6 +60,7 @@ export function PayerBaseForm({
               onChange={field.onChange}
               existingLogoUrl={existingLogoUrl}
               error={fieldState.error?.message}
+              readOnly={readOnly}
             />
           )}
         />
@@ -78,8 +81,9 @@ export function PayerBaseForm({
                 placeholder="Insurance name"
                 hasError={!!fieldState.error}
                 required
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -99,6 +103,7 @@ export function PayerBaseForm({
               onBlur={field.onBlur}
               hasError={!!fieldState.error}
               errorMessage={fieldState.error?.message}
+              disabled={readOnly}
             />
           )}
         />
@@ -120,8 +125,9 @@ export function PayerBaseForm({
                 placeholder="payer@insurance.com"
                 hasError={!!fieldState.error}
                 required
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -144,8 +150,9 @@ export function PayerBaseForm({
                 placeholder="Member ID / External reference"
                 hasError={!!fieldState.error}
                 required
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -167,8 +174,9 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 hasError={!!fieldState.error}
                 required
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -191,8 +199,9 @@ export function PayerBaseForm({
                 placeholder="Street and number"
                 hasError={!!fieldState.error}
                 required
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -214,8 +223,9 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 placeholder="Suite, floor, etc. (optional)"
                 hasError={!!fieldState.error}
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -237,10 +247,10 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 options={countries.map((c) => ({ value: c.id, label: c.name }))}
                 hasError={!!fieldState.error}
-                disabled={isLoadingCountries || isCountryDisabled}
-                searchable={!isCountryDisabled}
+                disabled={readOnly || isLoadingCountries || isCountryDisabled}
+                searchable={!readOnly && !isCountryDisabled}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -263,13 +273,13 @@ export function PayerBaseForm({
                 options={states.map((s) => ({ value: s.id, label: s.name }))}
                 hasError={!!fieldState.error}
                 disabled={isStateDisabled}
-                searchable
+                searchable={!readOnly}
                 required
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
-              {isStateDisabled && !selectedCountryId && (
+              {!readOnly && isStateDisabled && !selectedCountryId && (
                 <p className="text-sm text-slate-500 mt-2">Select a country first</p>
               )}
             </div>
@@ -291,8 +301,9 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 hasError={!!fieldState.error}
                 required
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -316,8 +327,9 @@ export function PayerBaseForm({
                 maxLength={5}
                 hasError={!!fieldState.error}
                 required
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -339,10 +351,11 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 options={clearingHouses.map((item) => ({ value: item.id, label: item.name }))}
                 hasError={!!fieldState.error}
-                disabled={isLoadingClearingHouses}
+                disabled={readOnly || isLoadingClearingHouses}
+                searchable={!readOnly}
                 required
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
@@ -350,10 +363,10 @@ export function PayerBaseForm({
         />
       </div>
 
-      {/* Plan Notes */}
+      {/* Description */}
       <div className="md:col-span-2">
         <Controller
-          name="planNotes"
+          name="description"
           control={control}
           render={({ field, fieldState }) => (
             <div>
@@ -364,8 +377,9 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 rows={3}
                 placeholder="Coverage notes and billing caveats"
+                disabled={readOnly}
               />
-              {fieldState.error && (
+              {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>

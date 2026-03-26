@@ -62,6 +62,7 @@ const BILLING = {
     { key: PermissionModule.SERVICES_PENDING_BILLING, label: "Services Pending Billing" },
     { key: PermissionModule.BILLED_CLAIMS, label: "Billed Claims" },
     { key: PermissionModule.BILLING_CODE, label: "Billing Codes" },
+    { key: PermissionModule.PAYERS, label: "Payers" },
   ]
 }
 

@@ -37,6 +37,7 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   // Billing children (real permissions, under My Company)
   "/my-company/billing/services-pending": PermissionModule.SERVICES_PENDING_BILLING,
   "/my-company/billing/billed-claims": PermissionModule.BILLED_CLAIMS,
+  "/my-company/billing/payers": PermissionModule.PAYERS,
   
   "/clinical-documents": PermissionModule.CLINICAL_DOCUMENTS,
   "/hr-documents": PermissionModule.HR_DOCUMENTS,

@@ -58,7 +58,7 @@ export function EditPayerModal({ payerId, open, onOpenChange, onSaved }: EditPay
         stateId: payer.stateId ?? "",
         zipCode: payer.zipCode ?? "",
         planTypeId: payer.clearingHouseId ?? payer.planTypeId ?? "",
-        planNotes: payer.planNotes ?? "",
+        description: payer.description ?? "",
         logo: payer.logoUrl ?? "",
       })
       if (countryId) setSelectedCountryId(countryId)
@@ -74,7 +74,7 @@ export function EditPayerModal({ payerId, open, onOpenChange, onSaved }: EditPay
       sourceReferenceId: payer.sourceReferenceId ?? "",
       logo: data.logo || payer.logoUrl || "",
       clearingHouseId: data.planTypeId ?? payer.clearingHouseId ?? payer.planTypeId ?? "",
-      planNotes: data.planNotes ?? payer.planNotes,
+      description: data.description ?? payer.description,
       name: data.name.trim(),
       phone: normalizePhone(data.phone),
       email: data.email,

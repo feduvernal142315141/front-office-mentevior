@@ -41,7 +41,7 @@ export const payerBaseFormSchema = z.object({
 
   planTypeId: z.string().min(1, "Allow clearing houses is required"),
 
-  planNotes: z.string().max(2000).optional().or(z.literal("")),
+  description: z.string().max(2000).optional().or(z.literal("")),
 })
 
 export type PayerBaseFormValues = z.infer<typeof payerBaseFormSchema>
@@ -60,5 +60,5 @@ export const getPayerBaseFormDefaults = (): PayerBaseFormValues => ({
   stateId: "",
   zipCode: "",
   planTypeId: "",
-  planNotes: "",
+  description: "",
 })
