@@ -28,6 +28,8 @@ type ClientAddressApiItem = {
   isPrimary?: boolean
   isPrincipal?: boolean
   active?: boolean
+  canEdit?: boolean
+  can_edit?: boolean
   createdAt?: string
   placeServiceName?: string
 }
@@ -51,6 +53,7 @@ function normalizeClientAddress(item: ClientAddressApiItem): ClientAddress {
     countryId: item.countryId,
     isPrimary: item.isPrimary ?? item.isPrincipal ?? false,
     active: item.active ?? true,
+    canEdit: item.canEdit === true || item.can_edit === true,
     createdAt: item.createdAt,
     placeServiceName: item.placeServiceName ?? "",
   }

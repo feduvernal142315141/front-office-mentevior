@@ -14,6 +14,7 @@ export interface ClientAddress {
   countryId?: string
   isPrimary: boolean
   active: boolean
+  canEdit?: boolean
   createdAt?: string
   placeServiceName?: string
 }
