@@ -26,8 +26,8 @@ function Field({
 }) {
   return (
     <div className={cn("min-w-0", className)}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">{label}</p>
-      <p className="mt-1.5 break-words text-sm font-medium leading-snug text-slate-800">{children}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-500">{label}</p>
+      <p className="mt-1.5 break-words text-sm font-medium leading-snug text-gray-900">{children}</p>
     </div>
   )
 }

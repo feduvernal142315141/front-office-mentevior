@@ -189,19 +189,23 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
 
   const handleGeneralSubmit = generalForm.handleSubmit(async (data) => {
     if (!payer) return
-    const payload = {
-      planName: data.planName.trim(),
-      planTypeId: data.planTypeId,
-      comments: data.comments ?? "",
-    }
     try {
       if (effectivePlanId) {
-        await updateInsurancePlanGeneral(effectivePlanId, payload)
+        await updateInsurancePlanGeneral(payer.id, {
+          id: effectivePlanId,
+          planName: data.planName.trim(),
+          planTypeId: data.planTypeId,
+          comments: data.comments ?? "",
+        })
         toast.success("Plan details saved")
         onSaved()
         await refreshPlanFromServer()
       } else {
-        const { planId } = await createInsurancePlanGeneral(payer.id, payload)
+        const { planId } = await createInsurancePlanGeneral(payer.id, {
+          planName: data.planName.trim(),
+          planTypeId: data.planTypeId,
+          comments: data.comments ?? "",
+        })
         if (planId) setResolvedPlanId(planId)
         toast.success("Insurance plan created")
         onSaved()

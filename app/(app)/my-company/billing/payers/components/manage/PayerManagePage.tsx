@@ -7,6 +7,7 @@ import { ChevronRight, ImageIcon, Pencil } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { Card } from "@/components/custom/Card"
 import { useInsurancePlansByPayer } from "@/lib/modules/payers/hooks/use-insurance-plans-by-payer"
+import { useRatesByPayerId } from "@/lib/modules/payers/hooks/use-rates-by-payer-id"
 import { usePayerById } from "@/lib/modules/payers/hooks/use-payer-by-id"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
@@ -39,6 +40,12 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
     error: insurancePlansError,
     refetch: refetchInsurancePlans,
   } = useInsurancePlansByPayer(payerId)
+  const {
+    rates: payerRates,
+    isLoading: isLoadingPayerRates,
+    error: payerRatesError,
+    refetch: refetchPayerRates,
+  } = useRatesByPayerId(payerId)
   const [editPlanOpen, setEditPlanOpen] = useState(false)
   const { countries } = useCountries()
   const selectedCountryId = payer?.countryId ?? null
@@ -59,11 +66,11 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50/90 to-white p-6 pb-28">
+      <div className="min-h-screen bg-gray-50/50 p-6 pb-28">
         <div className="mx-auto max-w-6xl space-y-6">
-          <div className="h-10 w-64 rounded-xl bg-slate-200/70 animate-pulse" />
-          <div className="h-48 rounded-2xl bg-slate-100 animate-pulse" />
-          <div className="h-72 rounded-2xl bg-slate-100 animate-pulse" />
+          <div className="h-10 w-64 rounded-xl bg-gray-200 animate-pulse" />
+          <div className="h-48 rounded-xl bg-gray-100 animate-pulse" />
+          <div className="h-72 rounded-xl bg-gray-100 animate-pulse" />
         </div>
       </div>
     )
@@ -71,8 +78,8 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
 
   if (error || !payer) {
     return (
-      <div className="min-h-screen bg-slate-50/80 p-6">
-        <div className="mx-auto max-w-6xl rounded-2xl border border-red-200 bg-red-50 p-6">
+      <div className="min-h-screen bg-gray-50/50 p-6">
+        <div className="mx-auto max-w-6xl rounded-xl border border-red-200 bg-red-50 p-6">
           <p className="font-medium text-red-700">Could not load payer</p>
           <p className="mt-1 text-sm text-red-600">{error?.message ?? "Unknown error"}</p>
           <Button variant="secondary" className="mt-4" onClick={() => router.push("/my-company/billing/payers")}>
@@ -84,24 +91,15 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50/80 via-white to-slate-50/30 pb-28">
-      <div className="border-b border-slate-200/60 bg-white/90 backdrop-blur-md">
+    <div className="min-h-screen bg-gray-50/50 pb-28">
+      <div className="border-b border-gray-200 bg-white">
         <div className="mx-auto max-w-6xl px-6 py-5">
-          <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
-            <Link
-              href="/my-company/billing/payers"
-              className="transition-colors hover:text-[#037ECC]"
-            >
-              Payers
-            </Link>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-            <span className="font-medium text-slate-600">Manage payer</span>
-          </nav>
+          
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-5 min-w-0">
             <div
               className={cn(
-                "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] sm:h-[72px] sm:w-[72px]",
+                "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] sm:h-[72px] sm:w-[72px]",
               )}
             >
               {payer.logoUrl ? (
@@ -116,7 +114,7 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
               <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-3xl">
                 Manage payer: {payer.name}
               </h1>
-              <p className="mt-1 max-w-2xl text-sm leading-snug text-slate-600">
+              <p className="mt-1 max-w-2xl text-sm leading-snug text-gray-600">
                 Review payer profile, clearing house association, and operational context.
               </p>
             </div>
@@ -130,8 +128,8 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
             <div className="flex min-w-0 items-start gap-2.5">
               <span className={SECTION_ACCENT} aria-hidden />
               <div>
-                <h2 className="text-base font-semibold tracking-tight text-slate-900">General information</h2>
-                <p className="mt-0.5 text-xs text-slate-500">Contact, address, and identifiers.</p>
+                <h2 className="text-base font-semibold tracking-tight text-gray-900">General information</h2>
+                <p className="mt-0.5 text-xs text-gray-600">Contact, address, and identifiers.</p>
               </div>
             </div>
             <Button
@@ -144,11 +142,7 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
               Edit details
             </Button>
           </div>
-          <Card
-            variant="outlined"
-            padding="lg"
-            className="rounded-2xl border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
-          >
+          <Card variant="elevated" padding="lg">
             <GeneralInfoOverview payer={payer} countryName={countryName} stateName={stateName} />
           </Card>
         </section>
@@ -158,8 +152,8 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
             <div className="flex min-w-0 items-start gap-2.5">
               <span className={SECTION_ACCENT} aria-hidden />
               <div>
-                <h2 className="text-base font-semibold tracking-tight text-slate-900">Insurance plan</h2>
-                <p className="mt-0.5 text-xs text-slate-500">Clearing house, plan type, and notes.</p>
+                <h2 className="text-base font-semibold tracking-tight text-gray-900">Insurance plan</h2>
+                <p className="mt-0.5 text-xs text-gray-600">Clearing house, plan type, and notes.</p>
               </div>
             </div>
             <Button
@@ -172,15 +166,14 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
               Edit plan
             </Button>
           </div>
-          <Card
-            variant="outlined"
-            padding="lg"
-            className="rounded-2xl border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
-          >
+          <Card variant="elevated" padding="lg">
             <InsurancePlanOverview
               planFromList={insurancePlan}
               isLoadingPlans={isLoadingInsurancePlans}
               plansError={insurancePlansError}
+              ratesRows={payerRates}
+              isLoadingRates={isLoadingPayerRates}
+              ratesError={payerRatesError}
             />
           </Card>
         </section>
@@ -193,6 +186,7 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
         onSaved={() => {
           void refetch()
           void refetchInsurancePlans()
+          void refetchPayerRates()
         }}
       />
     </div>

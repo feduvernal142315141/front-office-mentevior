@@ -3,6 +3,7 @@ import type {
   InsurancePlanCreatePayload,
   InsurancePlanDetailDto,
   InsurancePlanGeneralPayload,
+  InsurancePlanGeneralUpdatePayload,
   InsurancePlanRateDto,
   InsurancePlanRateRow,
 } from "@/lib/types/insurance-plan-rate.types"
@@ -32,6 +33,38 @@ export function mapInsurancePlanDetailToGeneral(d: InsurancePlanDetailDto): Insu
     planTypeId: d.planTypeId ?? "",
     comments: d.comments ?? "",
   }
+}
+
+function normalizeRatesByPayerListPayload(payload: unknown): unknown[] {
+  if (payload == null) return []
+  if (Array.isArray(payload)) return payload
+  if (typeof payload !== "object") return []
+  const o = payload as Record<string, unknown>
+  if (Array.isArray(o.entities)) return o.entities
+  if (Array.isArray(o.data)) return o.data
+  if (Array.isArray(o.content)) return o.content
+  if (Array.isArray(o.items)) return o.items
+  return []
+}
+
+/** GET /rates/by-payer-id/{payerId} */
+export async function getRatesByPayerId(payerId: string): Promise<InsurancePlanRateRow[]> {
+  const response = await serviceGet<unknown>(`/rates/by-payer-id/${payerId}`)
+
+  if (response.status === 404) {
+    return []
+  }
+
+  if (response.status !== 200 || response.data == null) {
+    throw new Error(
+      (response.data as { message?: string } | undefined)?.message || "Failed to load rates",
+    )
+  }
+
+  const raw = normalizeRatesByPayerListPayload(response.data)
+  return raw.map((item) =>
+    normalizeRateRow(item as Partial<InsurancePlanRateDto> & { id?: string }, ""),
+  )
 }
 
 export function mapInsurancePlanDetailToRates(d: InsurancePlanDetailDto): InsurancePlanRateRow[] {
@@ -121,9 +154,15 @@ export async function createInsurancePlanGeneral(
   return { planId }
 }
 
-export async function updateInsurancePlanGeneral(planId: string, payload: InsurancePlanGeneralPayload): Promise<void> {
-  const response = await servicePut<InsurancePlanGeneralPayload, { message?: string }>(
-    `/insurance-plans/${planId}`,
+/**
+ * PUT /insurance-plans/{payerId} — body: { id, planName, planTypeId, comments }.
+ */
+export async function updateInsurancePlanGeneral(
+  payerId: string,
+  payload: InsurancePlanGeneralUpdatePayload,
+): Promise<void> {
+  const response = await servicePut<InsurancePlanGeneralUpdatePayload, { message?: string }>(
+    `/insurance-plans/${payerId}`,
     payload,
   )
 

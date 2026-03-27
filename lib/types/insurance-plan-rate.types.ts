@@ -21,6 +21,11 @@ export interface InsurancePlanGeneralPayload {
   comments: string
 }
 
+/** Body for PUT /insurance-plans/{payerId} */
+export interface InsurancePlanGeneralUpdatePayload extends InsurancePlanGeneralPayload {
+  id: string
+}
+
 /** Body for POST create plan — includes payerId per API contract */
 export interface InsurancePlanCreatePayload extends InsurancePlanGeneralPayload {
   payerId: string
