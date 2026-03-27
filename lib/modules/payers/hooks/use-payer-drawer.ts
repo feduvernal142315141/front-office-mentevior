@@ -48,9 +48,9 @@ export function usePayerDrawer(): UsePayerDrawerReturn {
   const getStepTitle = useCallback(() => {
     switch (currentStep) {
       case "search-catalog":
-        return "Private Insurance Catalog"
+        return "Private Insurances"
       case "search-state-catalog":
-        return "State Insurance Catalog"
+        return "State Insurances"
       default:
         return "Add payer"
     }

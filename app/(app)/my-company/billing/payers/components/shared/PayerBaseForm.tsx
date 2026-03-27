@@ -27,6 +27,9 @@ interface PayerBaseFormProps {
   clearingHouses?: ClearingHouseItem[]
   isLoadingClearingHouses?: boolean
   existingLogoUrl?: string | null
+  existingLogoTitle?: string
+  existingLogoHint?: string
+  onLogoClear?: () => void
   isCountryDisabled?: boolean
   readOnly?: boolean
 }
@@ -40,6 +43,9 @@ export function PayerBaseForm({
   clearingHouses = [],
   isLoadingClearingHouses = false,
   existingLogoUrl,
+  existingLogoTitle,
+  existingLogoHint,
+  onLogoClear,
   isCountryDisabled = false,
   readOnly = false,
 }: PayerBaseFormProps) {
@@ -59,6 +65,9 @@ export function PayerBaseForm({
               value={field.value ?? ""}
               onChange={field.onChange}
               existingLogoUrl={existingLogoUrl}
+              existingTitle={existingLogoTitle}
+              existingHint={existingLogoHint}
+              onClear={onLogoClear}
               error={fieldState.error?.message}
               readOnly={readOnly}
             />

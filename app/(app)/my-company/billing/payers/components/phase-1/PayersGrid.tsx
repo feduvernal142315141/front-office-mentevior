@@ -11,8 +11,8 @@ interface PayersGridProps {
 }
 
 function getSourceLabel(source: PayerSource): string {
-  if (source === PAYER_SOURCE.CATALOG) return "Private Insurance"
-  if (source === PAYER_SOURCE.FL_MEDICAID) return "FL Medicaid"
+  if (source === PAYER_SOURCE.CATALOG) return "Private Insurances"
+  if (source === PAYER_SOURCE.FL_MEDICAID) return "State Insurances"
   return "Manual"
 }
 

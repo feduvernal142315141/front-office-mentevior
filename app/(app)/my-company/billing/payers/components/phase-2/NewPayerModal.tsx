@@ -8,7 +8,6 @@ import {
   DrawerContent,
   DrawerTitle,
 } from "@/components/ui/drawer"
-import { Badge as UiBadge } from "@/components/ui/badge"
 import { usePayerDrawer } from "@/lib/modules/payers/hooks/use-payer-drawer"
 import { useCreateFromPrivateInsurance } from "@/lib/modules/payers/hooks/use-create-from-private-insurance"
 import { useCreateFromStateInsurance } from "@/lib/modules/payers/hooks/use-create-from-state-insurance"
@@ -33,34 +32,32 @@ interface SourceOption {
   iconClasses: string
   cardClasses: string
   checkClasses: string
-  recommended?: boolean
 }
 
 const SOURCE_OPTIONS: SourceOption[] = [
   {
     id: PAYER_SOURCE.CATALOG,
-    title: "Catalog (Private Insurances)",
+    title: "Private Insurances",
     description: "Select from the private insurance catalog and continue with prefilled payer details.",
     icon: ShieldCheck,
     benefits: [
       "Fastest setup with standardized payer naming",
       "Reduces manual entry errors on payer basics",
-      "Ideal for recurring private insurance workflows",
+      "Catalog entries you can reuse across workflows",
     ],
     iconClasses: "bg-blue-600 text-white",
     cardClasses: "border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/10",
     checkClasses: "text-blue-600",
-    recommended: true,
   },
   {
     id: PAYER_SOURCE.FL_MEDICAID,
-    title: "FL Medicaid",
-    description: "Use one of the fixed Florida Medicaid entries with consistent source tracking.",
+    title: "State Insurances",
+    description: "Select from the state insurance catalog and continue with prefilled payer details.",
     icon: Landmark,
     benefits: [
-      "Uses the fixed 13-option Medicaid list",
+      "Standardized catalog entries for state programs",
       "Keeps payer source aligned for reporting",
-      "Works with the same creation flow as catalog",
+      "Same creation flow as private catalog",
     ],
     iconClasses: "bg-emerald-600 text-white",
     cardClasses: "border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/60 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-900/10",
@@ -201,12 +198,7 @@ export function NewPayerModal({ open, onOpenChange, onSuccess }: NewPayerModalPr
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="mb-1 flex items-center gap-2">
-                              <h3 className="text-lg font-semibold text-slate-900">{item.title}</h3>
-                              {item.recommended && (
-                                <UiBadge className="bg-blue-600 text-white hover:bg-blue-700">Recommended</UiBadge>
-                              )}
-                            </div>
+                            <h3 className="mb-1 text-lg font-semibold text-slate-900">{item.title}</h3>
                             <p className="text-sm text-slate-600">{item.description}</p>
                             <div className="mt-4 space-y-1 text-sm text-slate-700">
                               {item.benefits.map((benefit) => (
