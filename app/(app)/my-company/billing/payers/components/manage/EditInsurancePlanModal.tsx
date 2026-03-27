@@ -21,8 +21,8 @@ import {
   createInsurancePlanGeneral,
   createInsurancePlanRate,
   getInsurancePlanForPayer,
+  getRatesByPayerId,
   mapInsurancePlanDetailToGeneral,
-  mapInsurancePlanDetailToRates,
   mapRateRowToFormValues,
   updateInsurancePlanGeneral,
   updateInsurancePlanRate,
@@ -40,12 +40,10 @@ import type { Payer } from "@/lib/types/payer.types"
 import { toast } from "sonner"
 
 const INTERVAL_OPTIONS = [
-  { value: "DAILY", label: "Daily" },
-  { value: "WEEKLY", label: "Weekly" },
-  { value: "BIWEEKLY", label: "Biweekly" },
-  { value: "MONTHLY", label: "Monthly" },
-  { value: "QUARTERLY", label: "Quarterly" },
-  { value: "YEARLY", label: "Yearly" },
+  { value: "EVENT", label: "EVENT" },
+  { value: "UNIT", label: "Unit" },
+  { value: "HOURLY", label: "Hourly" },
+  
 ]
 
 interface EditInsurancePlanModalProps {
@@ -64,6 +62,13 @@ function formatDisplayDate(iso: string) {
   } catch {
     return iso
   }
+}
+
+/** Rates vienen de GET /rates/by-payer-id; filtrar por plan cuando el API envía insurancePlanId */
+function ratesForPlanEntity(rows: InsurancePlanRateRow[], planEntityId: string | null): InsurancePlanRateRow[] {
+  if (!planEntityId?.trim()) return rows
+  const id = planEntityId.trim()
+  return rows.filter((r) => !r.insurancePlanId?.trim() || r.insurancePlanId === id)
 }
 
 export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: EditInsurancePlanModalProps) {
@@ -123,7 +128,10 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
 
   const refreshPlanFromServer = useCallback(async () => {
     if (!payer?.id) return
-    const data = await getInsurancePlanForPayer(payer.id)
+    const [data, ratesList] = await Promise.all([
+      getInsurancePlanForPayer(payer.id),
+      getRatesByPayerId(payer.id),
+    ])
     if (!data) {
       generalForm.reset(getInsurancePlanGeneralEmptyDefaults())
       setRates([])
@@ -131,8 +139,9 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       return
     }
     generalForm.reset(mapInsurancePlanDetailToGeneral(data))
-    setRates(mapInsurancePlanDetailToRates(data))
-    if (data.id) setResolvedPlanId(data.id)
+    const planEntityId = data.id?.trim() ?? null
+    if (planEntityId) setResolvedPlanId(planEntityId)
+    setRates(ratesForPlanEntity(ratesList, planEntityId))
   }, [payer?.id, generalForm])
 
   useEffect(() => {
@@ -161,15 +170,17 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     let cancelled = false
     setIsLoadingDetail(true)
 
-    getInsurancePlanForPayer(payer.id)
-      .then((data) => {
+    Promise.all([getInsurancePlanForPayer(payer.id), getRatesByPayerId(payer.id)])
+      .then(([data, ratesList]) => {
         if (cancelled) return
         if (!data) {
+          setRates([])
           return
         }
         generalForm.reset(mapInsurancePlanDetailToGeneral(data))
-        setRates(mapInsurancePlanDetailToRates(data))
-        if (data.id) setResolvedPlanId(data.id)
+        const planEntityId = data.id?.trim() ?? null
+        if (planEntityId) setResolvedPlanId(planEntityId)
+        setRates(ratesForPlanEntity(ratesList, planEntityId))
       })
       .catch((e: unknown) => {
         if (cancelled) return
@@ -250,6 +261,15 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
 
   const ratesTableColumns: CustomTableColumn<InsurancePlanRateRow>[] = useMemo(
     () => [
+      {
+        key: "alias",
+        header: "Alias",
+        render: (row) => (
+          <span className="max-w-[min(200px,100%)] truncate block" title={row.alias || undefined}>
+            {row.alias?.trim() ? row.alias : "—"}
+          </span>
+        ),
+      },
       {
         key: "billingCodes",
         header: "Billing codes",
@@ -344,7 +364,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         await updateInsurancePlanRate(effectivePlanId, editingRateId, v)
         toast.success("Rate updated")
       } else {
-        await createInsurancePlanRate(effectivePlanId, v)
+        await createInsurancePlanRate(payer.id, effectivePlanId, v)
         toast.success("Rate added")
       }
       setShowRateForm(false)

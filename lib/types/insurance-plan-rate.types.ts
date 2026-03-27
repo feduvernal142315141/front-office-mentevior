@@ -10,6 +10,11 @@ export interface InsurancePlanRateDto {
   billingCodeIds: string[]
 }
 
+/** Body for POST /rates */
+export type InsurancePlanRateCreatePayload = InsurancePlanRateDto & {
+  payerId: string
+}
+
 /** Single rate row as returned/stored by the API */
 export interface InsurancePlanRateRow extends InsurancePlanRateDto {
   id?: string

@@ -4,6 +4,7 @@ import type {
   InsurancePlanDetailDto,
   InsurancePlanGeneralPayload,
   InsurancePlanGeneralUpdatePayload,
+  InsurancePlanRateCreatePayload,
   InsurancePlanRateDto,
   InsurancePlanRateRow,
 } from "@/lib/types/insurance-plan-rate.types"
@@ -162,7 +163,7 @@ export async function updateInsurancePlanGeneral(
   payload: InsurancePlanGeneralUpdatePayload,
 ): Promise<void> {
   const response = await servicePut<InsurancePlanGeneralUpdatePayload, { message?: string }>(
-    `/insurance-plans/${payerId}`,
+    `/insurance-plans`,
     payload,
   )
 
@@ -187,10 +188,25 @@ function toRatePayload(values: InsurancePlanRateRowValues, planId: string): Insu
   }
 }
 
-export async function createInsurancePlanRate(planId: string, values: InsurancePlanRateRowValues): Promise<void> {
-  const response = await servicePost<InsurancePlanRateDto, { message?: string }>(
-    `/insurance-plans/${planId}/rates`,
-    toRatePayload(values, planId),
+function toRateCreatePayload(
+  values: InsurancePlanRateRowValues,
+  planId: string,
+  payerId: string,
+): InsurancePlanRateCreatePayload {
+  return {
+    ...toRatePayload(values, planId),
+    payerId,
+  }
+}
+
+export async function createInsurancePlanRate(
+  payerId: string,
+  planId: string,
+  values: InsurancePlanRateRowValues,
+): Promise<void> {
+  const response = await servicePost<InsurancePlanRateCreatePayload, { message?: string }>(
+    `/rates`,
+    toRateCreatePayload(values, planId, payerId),
   )
 
   if (response.status !== 200 && response.status !== 201) {
