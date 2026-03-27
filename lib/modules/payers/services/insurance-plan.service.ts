@@ -67,10 +67,15 @@ export function mapRateRowToFormValues(row: InsurancePlanRateRow, planId: string
   }
 }
 
-export async function getInsurancePlanById(insurancePlanId: string): Promise<InsurancePlanDetailDto> {
-  const response = await serviceGet<InsurancePlanDetailDto>(`/insurance-plans/${insurancePlanId}`)
+/** GET /insurance-plans/{payerId} — single plan for that payer; 404 when none yet */
+export async function getInsurancePlanForPayer(payerId: string): Promise<InsurancePlanDetailDto | null> {
+  const response = await serviceGet<InsurancePlanDetailDto>(`/insurance-plans/${payerId}`)
 
-  if (response.status !== 200 || !response.data) {
+  if (response.status === 404) {
+    return null
+  }
+
+  if (response.status !== 200 || response.data == null) {
     throw new Error(
       (response.data as { message?: string } | undefined)?.message || "Failed to load insurance plan",
     )
@@ -102,7 +107,7 @@ export async function createInsurancePlanGeneral(
     comments: payload.comments,
   }
   const response = await servicePost<InsurancePlanCreatePayload, Record<string, unknown>>(
-    `/payers/${payerId}/insurance-plan`,
+    `/insurance-plans`,
     body,
   )
 

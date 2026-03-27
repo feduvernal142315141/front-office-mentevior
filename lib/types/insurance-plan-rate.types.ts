@@ -34,12 +34,17 @@ export interface InsurancePlanSavePayload {
   rate: InsurancePlanRateDto
 }
 
-/** Response from GET /insurance-plans/{id} */
+/** Response from GET /insurance-plans/{payerId} (plan for that payer) */
 export interface InsurancePlanDetailDto {
   id?: string
+  payerId?: string
+  /** Display name for the payer on this plan (API field) */
+  payerName?: string
   planName?: string
   planTypeId?: string
+  planTypeName?: string
   comments?: string
+  clearingHouseName?: string
   /** Preferred: list of rates */
   rates?: InsurancePlanRateRow[]
   /** Legacy: single embedded rate */

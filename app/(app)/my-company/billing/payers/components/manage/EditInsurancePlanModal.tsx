@@ -20,7 +20,7 @@ import { usePlanTypeCatalog } from "@/lib/modules/payers/hooks/use-plan-type-cat
 import {
   createInsurancePlanGeneral,
   createInsurancePlanRate,
-  getInsurancePlanById,
+  getInsurancePlanForPayer,
   mapInsurancePlanDetailToGeneral,
   mapInsurancePlanDetailToRates,
   mapRateRowToFormValues,
@@ -121,17 +121,19 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     label: c.code ? `${c.name} (${c.code})` : c.name,
   }))
 
-  const refreshPlanFromServer = useCallback(
-    async (planIdOverride?: string | null) => {
-      const id = (planIdOverride ?? payer?.insurancePlanId?.trim() ?? resolvedPlanId)?.trim()
-      if (!id) return
-      const data = await getInsurancePlanById(id)
-      generalForm.reset(mapInsurancePlanDetailToGeneral(data))
-      setRates(mapInsurancePlanDetailToRates(data))
-      if (data.id) setResolvedPlanId(data.id)
-    },
-    [payer?.insurancePlanId, resolvedPlanId, generalForm],
-  )
+  const refreshPlanFromServer = useCallback(async () => {
+    if (!payer?.id) return
+    const data = await getInsurancePlanForPayer(payer.id)
+    if (!data) {
+      generalForm.reset(getInsurancePlanGeneralEmptyDefaults())
+      setRates([])
+      setResolvedPlanId(null)
+      return
+    }
+    generalForm.reset(mapInsurancePlanDetailToGeneral(data))
+    setRates(mapInsurancePlanDetailToRates(data))
+    if (data.id) setResolvedPlanId(data.id)
+  }, [payer?.id, generalForm])
 
   useEffect(() => {
     if (!open) return
@@ -156,18 +158,15 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     setResolvedPlanId(null)
     rateForm.reset(getInsurancePlanRateEmptyDefaults(""))
 
-    const planId = payer.insurancePlanId?.trim()
-    if (!planId) {
-      setIsLoadingDetail(false)
-      return
-    }
-
     let cancelled = false
     setIsLoadingDetail(true)
 
-    getInsurancePlanById(planId)
+    getInsurancePlanForPayer(payer.id)
       .then((data) => {
         if (cancelled) return
+        if (!data) {
+          return
+        }
         generalForm.reset(mapInsurancePlanDetailToGeneral(data))
         setRates(mapInsurancePlanDetailToRates(data))
         if (data.id) setResolvedPlanId(data.id)
@@ -200,13 +199,13 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         await updateInsurancePlanGeneral(effectivePlanId, payload)
         toast.success("Plan details saved")
         onSaved()
-        await refreshPlanFromServer(effectivePlanId)
+        await refreshPlanFromServer()
       } else {
         const { planId } = await createInsurancePlanGeneral(payer.id, payload)
         if (planId) setResolvedPlanId(planId)
         toast.success("Insurance plan created")
         onSaved()
-        await refreshPlanFromServer(planId ?? null)
+        await refreshPlanFromServer()
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to save"

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ChevronRight, ImageIcon, Pencil } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { Card } from "@/components/custom/Card"
+import { useInsurancePlansByPayer } from "@/lib/modules/payers/hooks/use-insurance-plans-by-payer"
 import { usePayerById } from "@/lib/modules/payers/hooks/use-payer-by-id"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
@@ -32,6 +33,12 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
   const { hydrated } = useAuth()
   const { canManagePayers } = usePayersPermissionFallback()
   const { payer, isLoading, error, refetch } = usePayerById(payerId)
+  const {
+    plan: insurancePlan,
+    isLoading: isLoadingInsurancePlans,
+    error: insurancePlansError,
+    refetch: refetchInsurancePlans,
+  } = useInsurancePlansByPayer(payerId)
   const [editPlanOpen, setEditPlanOpen] = useState(false)
   const { countries } = useCountries()
   const selectedCountryId = payer?.countryId ?? null
@@ -170,7 +177,11 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
             padding="lg"
             className="rounded-2xl border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
           >
-            <InsurancePlanOverview payer={payer} />
+            <InsurancePlanOverview
+              planFromList={insurancePlan}
+              isLoadingPlans={isLoadingInsurancePlans}
+              plansError={insurancePlansError}
+            />
           </Card>
         </section>
       </div>
@@ -179,7 +190,10 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
         payer={payer}
         open={editPlanOpen}
         onOpenChange={setEditPlanOpen}
-        onSaved={() => void refetch()}
+        onSaved={() => {
+          void refetch()
+          void refetchInsurancePlans()
+        }}
       />
     </div>
   )
