@@ -84,7 +84,7 @@ export function Tabs({
         }
       `}</style>
       <div className="relative">
-        <div className="relative border-b border-slate-200">
+        <div>
           <div
             ref={scrollContainerRef}
             className={cn(

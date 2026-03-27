@@ -33,7 +33,7 @@ export const PERMISSION_IDS: Record<string, string> = {
   "account_profile": "a1a2a3a4-b5b6-47c8-d9e0-f1a2b3c4d5e6",
   "services_pending_billing": "a9b0c1d2-e3f4-45a6-b7c8-d9e0f1a2b3c4",
   "billed_claims": "b0c1d2e3-f4a5-46b7-c8d9-e0f1a2b3c4d5",
-  "payers": "a8b9c0d1-e2f3-44a5-b6c7-d8e9f0a1b2c3",
+  "payers": "47f4abe2-daff-4b2d-b554-1cc7801acc1e",
   "appointment": "c4d5e6f7-a8b9-41c0-d1e2-f3a4b5c6d7e8",
   "service_plan": "d5e6f7a8-b9c0-42d1-e2f3-a4b5c6d7e8f9",
   "supervision": "e6f7a8b9-c0d1-43e2-f3a4-b5c6d7e8f9a0",
@@ -68,8 +68,13 @@ export const PERMISSION_IDS: Record<string, string> = {
  * Generado automáticamente a partir de PERMISSION_IDS
  */
 export const PERMISSION_NAMES: Record<string, string> = Object.fromEntries(
-  Object.entries(PERMISSION_IDS).map(([name, id]) => [id, name])
+  Object.entries(PERMISSION_IDS).map(([name, id]) => [id, name]),
 )
+
+/** UUIDs antiguos del backend que deben resolverse al mismo módulo (tokens aún no reemitidos) */
+export const LEGACY_PERMISSION_ID_TO_MODULE: Record<string, string> = {
+  "a8b9c0d1-e2f3-44a5-b6c7-d8e9f0a1b2c3": "payers",
+}
 
 /**
  * Obtiene el ID de un módulo por su nombre

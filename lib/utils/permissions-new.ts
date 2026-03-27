@@ -8,6 +8,8 @@ export enum PermissionAction {
   ALL = 31,
 }
 
+import { getPermissionName, LEGACY_PERMISSION_ID_TO_MODULE } from "@/lib/constants/permissions-map"
+
 export enum PermissionModule {
   USERS_PROVIDERS = "users_providers",
   CLIENTS = "clients",
@@ -57,16 +59,29 @@ export enum PermissionModule {
   ASSESSMENT_CONFIGURATION = "assessment_configuration",
 }
 
+/**
+ * Parses a permission entry: `moduleName-31` or `backend-uuid-31` (JWT often uses UUID prefix).
+ * The numeric suffix is always the last `-<digits>` segment.
+ */
 export function parsePermission(permission: string): { module: string; value: number } | null {
-  const parts = permission.split("-")
-  if (parts.length !== 2) return null
-  
-  const module = parts[0]
-  const value = parseInt(parts[1], 10)
-  
+  const match = permission.match(/^(.+)-(\d+)$/)
+  if (!match) return null
+
+  const prefix = match[1]
+  const value = parseInt(match[2], 10)
   if (isNaN(value)) return null
-  
+
+  const module =
+    getPermissionName(prefix) ?? LEGACY_PERMISSION_ID_TO_MODULE[prefix] ?? prefix
   return { module, value }
+}
+
+function findPermissionForModule(
+  permissions: string[],
+  module: PermissionModule | string,
+): string | undefined {
+  const moduleStr = String(module)
+  return permissions.find((p) => parsePermission(p)?.module === moduleStr)
 }
 
 export function hasModulePermission(
@@ -74,12 +89,12 @@ export function hasModulePermission(
   module: PermissionModule | string,
   action: PermissionAction
 ): boolean {
-  const permission = permissions.find(p => p.startsWith(`${module}-`))
+  const permission = findPermissionForModule(permissions, module)
   if (!permission) return false
-  
+
   const parsed = parsePermission(permission)
   if (!parsed) return false
-  
+
   return (parsed.value & action) === action
 }
 
@@ -109,9 +124,9 @@ export function canView(permissions: string[], module: PermissionModule | string
 }
 
 export function getModulePermissionValue(permissions: string[], module: PermissionModule | string): number {
-  const permission = permissions.find(p => p.startsWith(`${module}-`))
+  const permission = findPermissionForModule(permissions, module)
   if (!permission) return 0
-  
+
   const parsed = parsePermission(permission)
   return parsed?.value ?? 0
 }
@@ -125,12 +140,13 @@ export function setModulePermission(
   module: PermissionModule | string,
   value: number
 ): string[] {
-  const filtered = permissions.filter(p => !p.startsWith(`${module}-`))
-  
+  const moduleStr = String(module)
+  const filtered = permissions.filter((p) => parsePermission(p)?.module !== moduleStr)
+
   if (value > 0) {
     filtered.push(createPermissionString(module, value))
   }
-  
+
   return filtered
 }
 
@@ -167,8 +183,8 @@ export function objectToPermissions(obj: Record<string, number>): string[] {
 
 export function debugPermissions(permissions: string[], module: PermissionModule | string): void {
   console.group(`🔍 Debug Permissions for module: ${module}`)
-  
-  const permission = permissions.find(p => p.startsWith(`${module}-`))
+
+  const permission = findPermissionForModule(permissions, module)
   console.log("📋 All permissions:", permissions)
   console.log(`🎯 Looking for module: "${module}"`)
   console.log(`✅ Found permission:`, permission || "❌ NOT FOUND")

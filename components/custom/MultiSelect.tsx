@@ -21,6 +21,10 @@ interface MultiSelectProps {
   searchable?: boolean
   required?: boolean
   placeholder?: string
+  /** Placeholder for the search field when `searchable` is true (default: "Search...") */
+  searchPlaceholder?: string
+  /** Open the panel above the trigger (e.g. near bottom of a modal) */
+  dropdownPosition?: "top" | "bottom"
 }
 
 export function MultiSelect({
@@ -34,6 +38,8 @@ export function MultiSelect({
   searchable = false,
   required = false,
   placeholder = "Select items",
+  searchPlaceholder = "Search...",
+  dropdownPosition = "bottom",
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -252,18 +258,10 @@ export function MultiSelect({
         {isOpen && (
         <div 
           className={cn(
-            `
-            absolute top-full left-0 right-0 mt-2
-            z-[9999]
-            bg-white
-            border border-gray-200
-            rounded-[16px]
-            shadow-[0_8px_30px_rgb(0,0,0,0.12)]
-            overflow-hidden
-            
-            animate-in fade-in-0 zoom-in-95
-            duration-200
-            `
+            "absolute left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200",
+            dropdownPosition === "top"
+              ? "bottom-full mb-2 origin-bottom"
+              : "top-full mt-2 origin-top"
           )}
         >
             {searchable && (
@@ -275,7 +273,7 @@ export function MultiSelect({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
+                    placeholder={searchPlaceholder}
                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     onClick={(e) => e.stopPropagation()}
                   />

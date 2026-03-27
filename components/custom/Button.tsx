@@ -58,6 +58,7 @@ export function Button({
       disabled={loading || props.disabled}
       className={cn(
         `
+        inline-flex items-center justify-center gap-2
         px-6 h-11 rounded-xl font-medium text-sm 
         transition-all duration-300 
         cursor-pointer 

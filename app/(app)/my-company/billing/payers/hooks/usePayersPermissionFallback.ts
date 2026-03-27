@@ -1,35 +1,48 @@
 "use client"
 
+import { useAuth } from "@/lib/hooks/use-auth"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule, type PermissionAction } from "@/lib/utils/permissions-new"
 
-type PermissionChecker = (module: PermissionModule | string) => boolean
-
-function withBillingFallback(checkPermission: PermissionChecker): boolean {
-  // TODO(front-office-mentevior): Remove BILLING fallback when backend exposes real PAYERS permission id mapping.
-  return checkPermission(PermissionModule.PAYERS) || checkPermission(PermissionModule.BILLING)
+function roleString(role: unknown): string {
+  if (role == null) return ""
+  if (typeof role === "string") return role
+  if (typeof role === "object" && "name" in role && typeof (role as { name: unknown }).name === "string") {
+    return (role as { name: string }).name
+  }
+  return String(role)
 }
 
-function withBillingActionFallback(
-  checkPermission: (module: PermissionModule | string, action: PermissionAction) => boolean,
-  action: PermissionAction,
-): boolean {
-  // TODO(front-office-mentevior): Remove BILLING fallback when backend exposes real PAYERS permission id mapping.
-  return (
-    checkPermission(PermissionModule.PAYERS, action) ||
-    checkPermission(PermissionModule.BILLING, action)
-  )
+function isAdminLikeRole(role: unknown): boolean {
+  const r = roleString(role).replace(/[\s_-]/g, "").toLowerCase()
+  return r.includes("admin") || r.includes("superadmin")
 }
 
+/**
+ * Misma regla que `app/(app)/my-company/billing/page.tsx`: muchos usuarios tienen
+ * `services_pending_billing` (BILLING) pero el JWT aún no trae el permiso `payers` con el UUID nuevo.
+ */
 export function usePayersPermissionFallback() {
+  const { user } = useAuth()
   const { can, view, create, edit, remove } = usePermission()
 
+  const bypass = isAdminLikeRole(user?.role)
+
+  const allow = (check: () => boolean) => bypass || check()
+
+  const viewPayersOrBilling = () => view(PermissionModule.PAYERS) || view(PermissionModule.BILLING)
+  const createPayersOrBilling = () => create(PermissionModule.PAYERS) || create(PermissionModule.BILLING)
+  const editPayersOrBilling = () => edit(PermissionModule.PAYERS) || edit(PermissionModule.BILLING)
+  const removePayersOrBilling = () => remove(PermissionModule.PAYERS) || remove(PermissionModule.BILLING)
+  const canPayersOrBilling = (action: PermissionAction) =>
+    can(PermissionModule.PAYERS, action) || can(PermissionModule.BILLING, action)
+
   return {
-    canViewPayers: withBillingFallback(view),
-    canCreatePayers: withBillingFallback(create),
-    canEditPayers: withBillingFallback(edit),
-    canDeletePayers: withBillingFallback(remove),
-    canManagePayers: withBillingFallback(edit),
-    canPayersAction: (action: PermissionAction) => withBillingActionFallback(can, action),
+    canViewPayers: allow(viewPayersOrBilling),
+    canCreatePayers: allow(createPayersOrBilling),
+    canEditPayers: allow(editPayersOrBilling),
+    canDeletePayers: allow(removePayersOrBilling),
+    canManagePayers: allow(editPayersOrBilling),
+    canPayersAction: (action: PermissionAction) => bypass || canPayersOrBilling(action),
   }
 }

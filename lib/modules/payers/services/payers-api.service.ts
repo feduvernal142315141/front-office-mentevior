@@ -1,6 +1,7 @@
 import type { QueryModel } from "@/lib/models/queryModel"
 import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import { getQueryString } from "@/lib/utils/format"
+import type { PlanTypeCatalogItem } from "@/lib/types/plan-type.types"
 import type {
   CreatePayerDto,
   ListPayersQueryDto,
@@ -132,6 +133,20 @@ export class ApiPayersService implements PayersServiceContract {
     if (Array.isArray(data)) return data as PayerClearingHouseItem[]
 
     const paginated = data as { entities?: PayerClearingHouseItem[] }
+    return Array.isArray(paginated.entities) ? paginated.entities : []
+  }
+
+  async getPlanTypeCatalog(): Promise<PlanTypeCatalogItem[]> {
+    const response = await serviceGet<PlanTypeCatalogItem[]>("/plan-type/catalog")
+
+    if (response.status !== 200 || !response.data) {
+      throw new Error(response.data?.message || "Failed to fetch plan type catalog")
+    }
+
+    const data = response.data as unknown
+    if (Array.isArray(data)) return data as PlanTypeCatalogItem[]
+
+    const paginated = data as { entities?: PlanTypeCatalogItem[] }
     return Array.isArray(paginated.entities) ? paginated.entities : []
   }
 

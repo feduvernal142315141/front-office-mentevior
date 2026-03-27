@@ -43,6 +43,8 @@ export interface Payer {
   description: string
   clearingHouseName?: string
   planTypeName?: string
+  /** When set, payer has an insurance plan — use with GET /insurance-plans/{id} */
+  insurancePlanId?: string | null
   active?: boolean
   createdAt?: string
   updatedAt?: string
