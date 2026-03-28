@@ -17,6 +17,7 @@ import { usePayersPermissionFallback } from "../../hooks/usePayersPermissionFall
 import { EditInsurancePlanModal } from "./EditInsurancePlanModal"
 import { GeneralInfoOverview } from "./GeneralInfoOverview"
 import { InsurancePlanOverview } from "./InsurancePlanOverview"
+import type { InsurancePlanRateRow } from "@/lib/types/insurance-plan-rate.types"
 
 interface PayerManagePageProps {
   payerId: string
@@ -47,12 +48,21 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
     refetch: refetchPayerRates,
   } = useRatesByPayerId(payerId)
   const [editPlanOpen, setEditPlanOpen] = useState(false)
+  const [ratesOverride, setRatesOverride] = useState<InsurancePlanRateRow[] | null>(null)
   const { countries } = useCountries()
   const selectedCountryId = payer?.countryId ?? null
   const { states } = useStates(selectedCountryId)
 
   const countryName = countries.find((country) => country.id === payer?.countryId)?.name
   const stateName = payer?.stateId ? states.find((state) => state.id === payer.stateId)?.name ?? payer.stateName : undefined
+
+  useEffect(() => {
+    if (ratesOverride && payerRates.length > 0) {
+      setRatesOverride(null)
+    }
+  }, [payerRates, ratesOverride])
+
+  const ratesForOverview = ratesOverride ?? payerRates
 
   useEffect(() => {
     if (hydrated && !canManagePayers) {
@@ -171,7 +181,7 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
               planFromList={insurancePlan}
               isLoadingPlans={isLoadingInsurancePlans}
               plansError={insurancePlansError}
-              ratesRows={payerRates}
+              ratesRows={ratesForOverview}
               isLoadingRates={isLoadingPayerRates}
               ratesError={payerRatesError}
             />
@@ -183,7 +193,10 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
         payer={payer}
         open={editPlanOpen}
         onOpenChange={setEditPlanOpen}
-        onSaved={() => {
+        onSaved={(payload) => {
+          if (payload?.rates) {
+            setRatesOverride(payload.rates)
+          }
           void refetch()
           void refetchInsurancePlans()
           void refetchPayerRates()

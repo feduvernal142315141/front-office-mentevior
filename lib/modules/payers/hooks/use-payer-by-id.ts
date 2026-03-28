@@ -16,14 +16,16 @@ export function usePayerById(payerId: string | null): UsePayerByIdReturn {
   const [isLoading, setIsLoading] = useState(!!payerId)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchPayer = async () => {
+  const fetchPayer = async (options?: { silent?: boolean }) => {
     if (!payerId) {
       setIsLoading(false)
       return
     }
 
     try {
-      setIsLoading(true)
+      if (!options?.silent) {
+        setIsLoading(true)
+      }
       setError(null)
       const data = await getPayersService().getById(payerId)
       setPayer(data)
@@ -31,7 +33,9 @@ export function usePayerById(payerId: string | null): UsePayerByIdReturn {
       const errorObj = err instanceof Error ? err : new Error("Failed to fetch payer")
       setError(errorObj)
     } finally {
-      setIsLoading(false)
+      if (!options?.silent) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -44,6 +48,6 @@ export function usePayerById(payerId: string | null): UsePayerByIdReturn {
     payer,
     isLoading,
     error,
-    refetch: fetchPayer,
+    refetch: () => fetchPayer({ silent: true }),
   }
 }

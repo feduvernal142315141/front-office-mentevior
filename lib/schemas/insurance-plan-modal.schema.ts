@@ -2,8 +2,12 @@ import { z } from "zod"
 
 const rateFields = {
   insurancePlanId: z.string(),
-  amount: z.coerce.number().min(0),
-  submitAmount: z.coerce.number().min(0),
+  amount: z.coerce
+    .number({ invalid_type_error: "Amount is required" })
+    .min(0, "Amount is required"),
+  submitAmount: z.coerce
+    .number({ invalid_type_error: "Submit amount is required" })
+    .min(0, "Submit amount is required"),
   intervalType: z.string().min(1, "Interval is required"),
   currencyId: z.string().min(1, "Currency is required"),
   alias: z.string().min(1, "Alias is required").max(200),
@@ -35,8 +39,8 @@ export function getInsurancePlanGeneralEmptyDefaults(): InsurancePlanGeneralValu
 export function getInsurancePlanRateEmptyDefaults(planId: string): InsurancePlanRateRowValues {
   return {
     insurancePlanId: planId,
-    amount: 0,
-    submitAmount: 0,
+    amount: Number.NaN,
+    submitAmount: Number.NaN,
     intervalType: "",
     currencyId: "",
     alias: "",

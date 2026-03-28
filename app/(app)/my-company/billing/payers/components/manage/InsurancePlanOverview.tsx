@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react"
 import { format } from "date-fns"
-import { Shield } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { InsurancePlanDetailDto, InsurancePlanRateRow } from "@/lib/types/insurance-plan-rate.types"
 import { cn } from "@/lib/utils"
@@ -166,32 +165,10 @@ export function InsurancePlanOverview({
     return <PlanSectionSkeleton />
   }
 
-  if (!planFromList) {
-    return (
-      <div className="space-y-4">
-        {plansError ? (
-          <p className="text-xs text-amber-700">
-            Could not load insurance plan ({plansError.message}).
-          </p>
-        ) : null}
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-4 py-8 text-center sm:flex-row sm:justify-start sm:gap-4 sm:text-left">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-            <Shield className="h-5 w-5 text-[#037ECC]" strokeWidth={1.5} />
-          </div>
-          <div className="min-w-0 max-w-md space-y-0.5">
-            <p className="text-sm font-semibold text-gray-900">No insurance plan yet</p>
-            <p className="text-sm text-gray-600">
-              Use <span className="font-medium text-gray-800">Edit plan</span> to configure plan details and rates.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const planName = planFromList.planName
-  const planTypeName = planFromList.planTypeName
-  const comments = planFromList.comments
+  const hasPlan = Boolean(planFromList)
+  const planName = planFromList?.planName
+  const planTypeName = planFromList?.planTypeName
+  const comments = planFromList?.comments
 
   return (
     <div className="space-y-8">

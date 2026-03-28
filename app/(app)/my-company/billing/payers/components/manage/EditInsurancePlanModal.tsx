@@ -14,7 +14,7 @@ import { MultiSelect } from "@/components/custom/MultiSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
-import { useBillingCodesCatalog } from "@/lib/modules/billing-codes/hooks/use-billing-codes-catalog"
+import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
 import { useCurrencyCatalog } from "@/lib/modules/currencies/hooks/use-currency-catalog"
 import { usePlanTypeCatalog } from "@/lib/modules/payers/hooks/use-plan-type-catalog"
 import {
@@ -51,7 +51,7 @@ interface EditInsurancePlanModalProps {
   payer: Payer | null
   open: boolean
   onOpenChange: (next: boolean) => void
-  onSaved: () => void
+  onSaved: (payload?: { rates?: InsurancePlanRateRow[] }) => void
 }
 
 /** Rates vienen de GET /rates/by-payer-id; filtrar por plan cuando el API envía insurancePlanId */
@@ -64,7 +64,7 @@ function ratesForPlanEntity(rows: InsurancePlanRateRow[], planEntityId: string |
 export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: EditInsurancePlanModalProps) {
   const { planTypes, isLoading: isLoadingPlanTypes } = usePlanTypeCatalog()
   const { currencies, isLoading: isLoadingCurrencies } = useCurrencyCatalog()
-  const { catalogCodes, isLoading: isLoadingBillingCodes } = useBillingCodesCatalog()
+  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 1000 })
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [isLoadingRate, setIsLoadingRate] = useState(false)
   const [rates, setRates] = useState<InsurancePlanRateRow[]>([])
@@ -90,7 +90,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   const payerPlanId = payer?.insurancePlanId?.trim() ?? ""
   const effectivePlanId = payerPlanId || resolvedPlanId || ""
 
-  const billingOptions = catalogCodes.map((bc) => ({
+  const billingOptions = billingCodes.map((bc) => ({
     value: bc.id,
     label: `${bc.code} (${bc.type})`,
   }))
@@ -218,6 +218,9 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         onSaved()
         await refreshPlanFromServer()
       }
+      setShowRateForm(false)
+      setEditingRateId(null)
+      setActiveTab("rates")
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to save"
       toast.error(message)
@@ -225,12 +228,6 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   })
 
   const openNewRateForm = () => {
-    if (!effectivePlanId) {
-      toast.info("Save the general plan first", {
-        description: "Create the plan in the General tab before adding rates.",
-      })
-      return
-    }
     setEditingRateId(null)
     rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId))
     setShowRateForm(true)
@@ -238,7 +235,6 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
 
   const openEditRate = useCallback(
     async (row: InsurancePlanRateRow) => {
-      if (!effectivePlanId) return
       if (!row.id) {
         toast.error("This rate cannot be edited until the server returns an id. Refresh after saving.")
         return
@@ -247,7 +243,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       try {
         const rate = await getRateById(row.id)
         setEditingRateId(row.id)
-        rateForm.reset(mapRateRowToFormValues(rate, effectivePlanId))
+        rateForm.reset(mapRateRowToFormValues(rate, row.insurancePlanId || effectivePlanId))
         setShowRateForm(true)
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to load rate"
@@ -342,10 +338,10 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   }
 
   const handleRateSubmit = rateForm.handleSubmit(async (values) => {
-    if (!payer || !effectivePlanId) return
+    if (!payer) return
     const v = {
       ...values,
-      insurancePlanId: effectivePlanId,
+      insurancePlanId: values.insurancePlanId || effectivePlanId,
     }
     try {
       if (editingRateId) {
@@ -362,6 +358,16 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       toast.error(message)
     }
   })
+
+  const handleModalOpenChange = useCallback(
+    (next: boolean) => {
+      if (!next) {
+        onSaved({ rates })
+      }
+      onOpenChange(next)
+    },
+    [onOpenChange, onSaved, rates],
+  )
 
   const rateFormSection = (
     <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 space-y-4">
@@ -392,11 +398,21 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
             <div>
               <FloatingInput
                 label="Amount"
-                value={field.value === 0 || field.value === undefined ? "" : String(field.value)}
-                onChange={(v) => field.onChange(v === "" ? 0 : Number(v))}
+                value={
+                  field.value === undefined ||
+                  field.value === null ||
+                  Number.isNaN(field.value)
+                    ? ""
+                    : String(field.value)
+                }
+                onChange={(v) => {
+                  const digits = v.replace(/\D/g, "")
+                  field.onChange(digits === "" ? Number.NaN : Number(digits))
+                }}
                 onBlur={field.onBlur}
-                type="number"
-                inputMode="decimal"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 hasError={!!fieldState.error}
                 required
                 autoComplete="off"
@@ -412,11 +428,21 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
             <div>
               <FloatingInput
                 label="Submit amount"
-                value={field.value === 0 || field.value === undefined ? "" : String(field.value)}
-                onChange={(v) => field.onChange(v === "" ? 0 : Number(v))}
+                value={
+                  field.value === undefined ||
+                  field.value === null ||
+                  Number.isNaN(field.value)
+                    ? ""
+                    : String(field.value)
+                }
+                onChange={(v) => {
+                  const digits = v.replace(/\D/g, "")
+                  field.onChange(digits === "" ? Number.NaN : Number(digits))
+                }}
                 onBlur={field.onBlur}
-                type="number"
-                inputMode="decimal"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 hasError={!!fieldState.error}
                 required
                 autoComplete="off"
@@ -541,15 +567,13 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-600">
-          {effectivePlanId
-            ? "Add one or more rates for this plan."
-            : "Save the plan in the General tab to enable rates."}
+          Add one or more rates for this plan.
         </p>
         <Button
           type="button"
           variant="secondary"
           onClick={openNewRateForm}
-          disabled={!effectivePlanId || showRateForm}
+          disabled={showRateForm}
         >
           Add rate
         </Button>
@@ -584,6 +608,19 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
             : undefined
         }
       />
+
+      {!showRateForm && (
+        <div className="flex justify-end pt-2 border-t border-slate-200/80">
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => handleModalOpenChange(false)}
+            disabled={rateForm.formState.isSubmitting || isLoadingRate}
+          >
+            Save & close
+          </Button>
+        </div>
+      )}
     </div>
   )
 
@@ -673,7 +710,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   return (
     <CustomModal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleModalOpenChange}
       title="Edit insurance plan"
       description="Update plan details and manage rates"
       maxWidthClassName="sm:max-w-[960px]"
