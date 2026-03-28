@@ -124,8 +124,18 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     setCatalogLogoDismissed(false)
     if (catalogItem) {
       form.setValue("name", catalogItem.name, { shouldValidate: true })
+      form.setValue("logo", catalogItem.logoUrl?.trim() ?? "", { shouldValidate: true })
+      form.clearErrors("logo")
     }
   }
+
+  useEffect(() => {
+    if (!isCatalogSource || catalogLogoDismissed) return
+    const catalogLogo = selectedCatalogItem?.logoUrl?.trim() ?? ""
+    if (!catalogLogo) return
+    form.setValue("logo", catalogLogo, { shouldValidate: true })
+    form.clearErrors("logo")
+  }, [catalogLogoDismissed, form, isCatalogSource, selectedCatalogItem])
 
   const scrollToFirstError = (errors: FieldErrors<PayerBaseFormValues>) => {
     const firstErrorKey = Object.keys(errors)[0] as keyof PayerBaseFormValues | undefined
