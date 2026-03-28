@@ -7,14 +7,15 @@ export const payerBaseFormSchema = z.object({
 
   logo: z.string().min(1, "Logo is required"),
 
-  phone: z.string().refine(
-    (val) => {
-      if (!val.trim()) return true
-      const digits = val.replace(/\D/g, "")
-      return digits.length >= 10 && digits.length <= 11
-    },
-    { message: "Phone must have 10 or 11 digits (including country code if applicable)" }
-  ),
+  phone: z.string()
+    .min(1, "Phone is required")
+    .refine(
+      (val) => {
+        const digits = val.replace(/\D/g, "")
+        return digits.length >= 10 && digits.length <= 11
+      },
+      { message: "Phone must have 10 or 11 digits (including country code if applicable)" }
+    ),
 
   email: z.string()
     .min(1, "Email is required")
@@ -31,7 +32,7 @@ export const payerBaseFormSchema = z.object({
 
   city: z.string().min(1, "City is required").max(100, "City must be less than 100 characters"),
 
-  countryId: z.string().optional().or(z.literal("")),
+  countryId: z.string().min(1, "Country is required"),
 
   stateId: z.string().min(1, "State is required"),
 

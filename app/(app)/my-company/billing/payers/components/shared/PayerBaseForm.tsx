@@ -56,7 +56,7 @@ export function PayerBaseForm({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Logo */}
-      <div className="md:col-span-2">
+      <div className="md:col-span-2" data-form-field="logo">
         <Controller
           name="logo"
           control={control}
@@ -76,7 +76,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Name */}
-      <div className="md:col-span-2">
+      <div className="md:col-span-2" data-form-field="name">
         <Controller
           name="name"
           control={control}
@@ -101,7 +101,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Phone */}
-      <div>
+      <div data-form-field="phone">
         <Controller
           name="phone"
           control={control}
@@ -113,13 +113,14 @@ export function PayerBaseForm({
               hasError={!!fieldState.error}
               errorMessage={fieldState.error?.message}
               disabled={readOnly}
+              required
             />
           )}
         />
       </div>
 
       {/* Email */}
-      <div>
+      <div data-form-field="email">
         <Controller
           name="email"
           control={control}
@@ -145,7 +146,7 @@ export function PayerBaseForm({
       </div>
 
       {/* External ID */}
-      <div>
+      <div data-form-field="externalId">
         <Controller
           name="externalId"
           control={control}
@@ -170,7 +171,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Group Number */}
-      <div>
+      <div data-form-field="groupNumber">
         <Controller
           name="groupNumber"
           control={control}
@@ -194,7 +195,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Address Line 1 */}
-      <div className="md:col-span-2">
+      <div className="md:col-span-2" data-form-field="addressLine1">
         <Controller
           name="addressLine1"
           control={control}
@@ -219,7 +220,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Address Line 2 */}
-      <div className="md:col-span-2">
+      <div className="md:col-span-2" data-form-field="addressLine2">
         <Controller
           name="addressLine2"
           control={control}
@@ -243,7 +244,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Country */}
-      <div>
+      <div data-form-field="countryId">
         <Controller
           name="countryId"
           control={control}
@@ -258,6 +259,7 @@ export function PayerBaseForm({
                 hasError={!!fieldState.error}
                 disabled={readOnly || isLoadingCountries || isCountryDisabled}
                 searchable={!readOnly && !isCountryDisabled}
+                required
               />
               {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -268,7 +270,7 @@ export function PayerBaseForm({
       </div>
 
       {/* State */}
-      <div>
+      <div data-form-field="stateId">
         <Controller
           name="stateId"
           control={control}
@@ -297,7 +299,7 @@ export function PayerBaseForm({
       </div>
 
       {/* City */}
-      <div>
+      <div data-form-field="city">
         <Controller
           name="city"
           control={control}
@@ -321,7 +323,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Zip Code */}
-      <div>
+      <div data-form-field="zipCode">
         <Controller
           name="zipCode"
           control={control}
@@ -347,7 +349,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Allow Clearing Houses */}
-      <div className="md:col-span-2">
+      <div className="md:col-span-2" data-form-field="planTypeId">
         <Controller
           name="planTypeId"
           control={control}
@@ -373,7 +375,7 @@ export function PayerBaseForm({
       </div>
 
       {/* Description */}
-      <div className="md:col-span-2">
+      <div className="md:col-span-2" data-form-field="description">
         <Controller
           name="description"
           control={control}

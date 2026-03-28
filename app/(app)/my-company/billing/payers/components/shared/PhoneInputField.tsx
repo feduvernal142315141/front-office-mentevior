@@ -11,9 +11,10 @@ interface PhoneInputFieldProps {
   hasError: boolean
   errorMessage?: string
   disabled?: boolean
+  required?: boolean
 }
 
-export function PhoneInputField({ value, onChange, onBlur, hasError, errorMessage, disabled }: PhoneInputFieldProps) {
+export function PhoneInputField({ value, onChange, onBlur, hasError, errorMessage, disabled, required = false }: PhoneInputFieldProps) {
   const [displayValue, setDisplayValue] = useState(() => formatPhoneInput(value || ""))
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export function PhoneInputField({ value, onChange, onBlur, hasError, errorMessag
         placeholder="(305) 555-0000"
         hasError={hasError}
         disabled={disabled}
+        required={required}
       />
       {errorMessage && (
         <p className="text-sm text-red-600 mt-2">{errorMessage}</p>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ShieldCheck } from "lucide-react"
 import { Card } from "@/components/custom/Card"
@@ -77,32 +77,55 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     }
   }, [payer, form])
 
-  const handleSave = form.handleSubmit(async (data) => {
-    if (!payer) return
+  const scrollToFirstError = (errors: FieldErrors<PayerBaseFormValues>) => {
+    const firstErrorKey = Object.keys(errors)[0] as keyof PayerBaseFormValues | undefined
+    if (!firstErrorKey) return
 
-    const saved = await update({
-      id: payer.id,
-      source: payer.source,
-      sourceReferenceId: payer.sourceReferenceId ?? "",
-      logo: data.logo || payer.logoUrl || "",
-      clearingHouseId: data.planTypeId ?? payer.clearingHouseId ?? payer.planTypeId ?? "",
-      description: data.description ?? payer.description,
-      name: data.name.trim(),
-      phone: normalizePhone(data.phone),
-      email: data.email,
-      externalId: data.externalId ?? "",
-      groupNumber: data.groupNumber ?? "",
-      addressLine1: data.addressLine1 ?? "",
-      addressLine2: data.addressLine2 ?? "",
-      city: data.city ?? "",
-      stateId: data.stateId ?? "",
-      zipCode: data.zipCode,
-    })
+    const fieldContainer = document.querySelector(`[data-form-field="${firstErrorKey}"]`) as HTMLElement | null
+    if (!fieldContainer) return
 
-    if (saved) {
-      router.push(backPath)
-    }
-  })
+    fieldContainer.scrollIntoView({ behavior: "smooth", block: "center" })
+
+    const focusable = fieldContainer.querySelector(
+      "input, button, textarea, select, [tabindex]:not([tabindex='-1'])",
+    ) as HTMLElement | null
+
+    window.setTimeout(() => {
+      focusable?.focus()
+    }, 120)
+  }
+
+  const handleSave = form.handleSubmit(
+    async (data) => {
+      if (!payer) return
+
+      const saved = await update({
+        id: payer.id,
+        source: payer.source,
+        sourceReferenceId: payer.sourceReferenceId ?? "",
+        logo: data.logo || payer.logoUrl || "",
+        clearingHouseId: data.planTypeId ?? payer.clearingHouseId ?? payer.planTypeId ?? "",
+        description: data.description ?? payer.description,
+        name: data.name.trim(),
+        phone: normalizePhone(data.phone),
+        email: data.email,
+        externalId: data.externalId ?? "",
+        groupNumber: data.groupNumber ?? "",
+        addressLine1: data.addressLine1 ?? "",
+        addressLine2: data.addressLine2 ?? "",
+        city: data.city ?? "",
+        stateId: data.stateId ?? "",
+        zipCode: data.zipCode,
+      })
+
+      if (saved) {
+        router.push(backPath)
+      }
+    },
+    (errors) => {
+      scrollToFirstError(errors)
+    },
+  )
 
   if (!hydrated || !canEditPayers) {
     return null

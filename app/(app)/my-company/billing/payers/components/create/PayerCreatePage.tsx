@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import { Building2, Landmark, ShieldCheck } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Card } from "@/components/custom/Card"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -127,30 +127,53 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     }
   }
 
-  const handleCreate = form.handleSubmit(async (data) => {
-    if (isCatalogSource && !selectedCatalogId) return
+  const scrollToFirstError = (errors: FieldErrors<PayerBaseFormValues>) => {
+    const firstErrorKey = Object.keys(errors)[0] as keyof PayerBaseFormValues | undefined
+    if (!firstErrorKey) return
 
-    const created = await create({
-      name: data.name.trim(),
-      source,
-      logo: data.logo ?? "",
-      phone: normalizePhone(data.phone),
-      email: data.email,
-      externalId: data.externalId ?? "",
-      groupNumber: data.groupNumber ?? "",
-      addressLine1: data.addressLine1 ?? "",
-      addressLine2: data.addressLine2 ?? "",
-      city: data.city ?? "",
-      stateId: data.stateId ?? "",
-      zipCode: data.zipCode,
-      clearingHouseId: data.planTypeId ?? "",
-      description: data.description ?? "",
-    })
+    const fieldContainer = document.querySelector(`[data-form-field="${firstErrorKey}"]`) as HTMLElement | null
+    if (!fieldContainer) return
 
-    if (created) {
-      router.push("/my-company/billing/payers")
-    }
-  })
+    fieldContainer.scrollIntoView({ behavior: "smooth", block: "center" })
+
+    const focusable = fieldContainer.querySelector(
+      "input, button, textarea, select, [tabindex]:not([tabindex='-1'])",
+    ) as HTMLElement | null
+
+    window.setTimeout(() => {
+      focusable?.focus()
+    }, 120)
+  }
+
+  const handleCreate = form.handleSubmit(
+    async (data) => {
+      if (isCatalogSource && !selectedCatalogId) return
+
+      const created = await create({
+        name: data.name.trim(),
+        source,
+        logo: data.logo ?? "",
+        phone: normalizePhone(data.phone),
+        email: data.email,
+        externalId: data.externalId ?? "",
+        groupNumber: data.groupNumber ?? "",
+        addressLine1: data.addressLine1 ?? "",
+        addressLine2: data.addressLine2 ?? "",
+        city: data.city ?? "",
+        stateId: data.stateId ?? "",
+        zipCode: data.zipCode,
+        clearingHouseId: data.planTypeId ?? "",
+        description: data.description ?? "",
+      })
+
+      if (created) {
+        router.push("/my-company/billing/payers")
+      }
+    },
+    (errors) => {
+      scrollToFirstError(errors)
+    },
+  )
 
   const nameValue = form.watch("name")
   const isCatalogDataPending = isCatalogSource && isLoadingCatalogs
