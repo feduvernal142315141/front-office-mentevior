@@ -50,7 +50,7 @@ export function GeneralInfoOverview({ payer, countryName, stateName }: GeneralIn
     .join(" | ")
 
   return (
-    <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
       <Field label="Name">{display(payer.name)}</Field>
       <Field label="Phone number">{display(payer.phone)}</Field>
       <Field label="Email">{display(payer.email)}</Field>
@@ -61,10 +61,10 @@ export function GeneralInfoOverview({ payer, countryName, stateName }: GeneralIn
       <Field label="State / ZIP / Country">{display(stateZipCountry)}</Field>
       <Field label="Group number">{display(payer.groupNumber)}</Field>
 
-      <Field label="Allow clearing houses" className="sm:col-span-2 xl:col-span-1">
+      <Field label="Allow clearing houses" className="sm:col-span-1 lg:col-span-1">
         {display(clearingDisplay)}
       </Field>
-      <Field label="Description" className="sm:col-span-2 xl:col-span-3">
+      <Field label="Description" className="sm:col-span-1 lg:col-span-3">
         <span className="whitespace-pre-wrap">{display(payer.description)}</span>
       </Field>
     </div>

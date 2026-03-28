@@ -136,7 +136,7 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
               type="button"
               variant="ghost"
               className={SECTION_EDIT_BUTTON_CLASS}
-              onClick={() => router.push(`/my-company/billing/payers/${payer.id}/edit`)}
+              onClick={() => router.push(`/my-company/billing/payers/${payer.id}/edit?returnTo=/my-company/billing/payers/${payer.id}/manage`)}
             >
               <Pencil className="h-4 w-4 shrink-0 text-current" />
               Edit details

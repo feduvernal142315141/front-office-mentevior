@@ -1,12 +1,9 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { useMemo } from "react"
 import { format } from "date-fns"
 import { Shield } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useBillingCodesCatalog } from "@/lib/modules/billing-codes/hooks/use-billing-codes-catalog"
-import { useCurrencyCatalog } from "@/lib/modules/currencies/hooks/use-currency-catalog"
 import type { InsurancePlanDetailDto, InsurancePlanRateRow } from "@/lib/types/insurance-plan-rate.types"
 import { cn } from "@/lib/utils"
 
@@ -48,12 +45,12 @@ function formatDisplayDate(iso: string) {
   }
 }
 
-function formatMoney(amount: number, currencyLabel?: string) {
+function formatMoney(amount: number) {
   const text = new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
-  return currencyLabel ? `${text} ${currencyLabel}` : text
+  return text
 }
 
 function Field({
@@ -82,7 +79,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
 }
 
 /** Same breakpoints as GeneralInfoOverview */
-const OVERVIEW_GRID = "grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 xl:grid-cols-4"
+const OVERVIEW_GRID = "grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4"
 
 function RatesSubsectionSkeleton() {
   return (
@@ -103,7 +100,7 @@ function PlanSectionSkeleton() {
       <div className="space-y-4">
         <Skeleton className="h-5 w-24 bg-gray-200" />
         <div className={OVERVIEW_GRID}>
-          <div className="space-y-2 sm:col-span-2 xl:col-span-2">
+          <div className="space-y-2 sm:col-span-2 lg:col-span-2">
             <Skeleton className="h-3 w-24 bg-gray-200" />
             <Skeleton className="h-4 w-full max-w-md bg-gray-100" />
           </div>
@@ -111,7 +108,7 @@ function PlanSectionSkeleton() {
             <Skeleton className="h-3 w-24 bg-gray-200" />
             <Skeleton className="h-4 w-full bg-gray-100" />
           </div>
-          <div className="space-y-2 sm:col-span-2 xl:col-span-4">
+          <div className="space-y-2 sm:col-span-2 lg:col-span-4">
             <Skeleton className="h-3 w-24 bg-gray-200" />
             <Skeleton className="h-16 w-full bg-gray-100" />
           </div>
@@ -132,39 +129,27 @@ function RateFieldsGridAllDashes() {
       <Field label="Amount">{FALLBACK}</Field>
       <Field label="Submit amount">{FALLBACK}</Field>
       <Field label="Interval type">{FALLBACK}</Field>
-      <Field label="Currency">{FALLBACK}</Field>
       <Field label="Start date">{FALLBACK}</Field>
       <Field label="End date">{FALLBACK}</Field>
-      <Field label="Billing codes" className="sm:col-span-2 xl:col-span-4">
-        {FALLBACK}
-      </Field>
     </div>
   )
 }
 
 function RateFieldsGrid({
   row,
-  billingSummary,
-  currencyLabel,
   intervalLabel,
 }: {
   row: InsurancePlanRateRow
-  billingSummary: string
-  currencyLabel: string
   intervalLabel: string
 }) {
   return (
     <div className={OVERVIEW_GRID}>
       <Field label="Alias">{display(row.alias)}</Field>
-      <Field label="Amount">{formatMoney(row.amount, currencyLabel)}</Field>
-      <Field label="Submit amount">{formatMoney(row.submitAmount, currencyLabel)}</Field>
+      <Field label="Amount">{formatMoney(row.amount)}</Field>
+      <Field label="Submit amount">{formatMoney(row.submitAmount)}</Field>
       <Field label="Interval type">{display(intervalLabel)}</Field>
-      <Field label="Currency">{display(currencyLabel)}</Field>
       <Field label="Start date">{formatDisplayDate(row.startDate)}</Field>
       <Field label="End date">{formatDisplayDate(row.endDate)}</Field>
-      <Field label="Billing codes" className="sm:col-span-2 xl:col-span-4">
-        <span className="whitespace-pre-wrap">{display(billingSummary)}</span>
-      </Field>
     </div>
   )
 }
@@ -177,25 +162,6 @@ export function InsurancePlanOverview({
   isLoadingRates = false,
   ratesError,
 }: InsurancePlanOverviewProps) {
-  const { catalogCodes } = useBillingCodesCatalog()
-  const { currencies } = useCurrencyCatalog()
-
-  const billingLabelById = useMemo(() => {
-    const m = new Map<string, string>()
-    for (const bc of catalogCodes) {
-      m.set(bc.id, `${bc.code} (${bc.type})`)
-    }
-    return m
-  }, [catalogCodes])
-
-  const currencyLabelById = useMemo(() => {
-    const m = new Map<string, string>()
-    for (const c of currencies) {
-      m.set(c.id, c.code ? `${c.name} (${c.code})` : c.name)
-    }
-    return m
-  }, [currencies])
-
   if (isLoadingPlans) {
     return <PlanSectionSkeleton />
   }
@@ -238,11 +204,11 @@ export function InsurancePlanOverview({
       <div className="space-y-4">
         <SectionTitle>General</SectionTitle>
         <div className={OVERVIEW_GRID}>
-          <Field label="Plan name" className="sm:col-span-2 xl:col-span-2">
+          <Field label="Plan name" className="sm:col-span-2 lg:col-span-2">
             {display(planName)}
           </Field>
           <Field label="Plan type">{display(planTypeName)}</Field>
-          <Field label="Comments" className="sm:col-span-2 xl:col-span-4">
+          <Field label="Comments" className="sm:col-span-2 lg:col-span-4">
             <span className="whitespace-pre-wrap">{display(comments)}</span>
           </Field>
         </div>
@@ -262,13 +228,8 @@ export function InsurancePlanOverview({
         ) : (
           <div className="space-y-8">
             {ratesRows.map((row, index) => {
-              const currencyLabel = currencyLabelById.get(row.currencyId) ?? ""
               const intervalLabel =
                 INTERVAL_OPTIONS.find((o) => o.value === row.intervalType)?.label ?? row.intervalType
-              const billingSummary =
-                row.billingCodeIds.length === 0
-                  ? ""
-                  : row.billingCodeIds.map((id) => billingLabelById.get(id) ?? id).join(", ")
 
               return (
                 <div key={row.id ?? `rate-${index}`} className="space-y-4">
@@ -280,8 +241,6 @@ export function InsurancePlanOverview({
                   ) : null}
                   <RateFieldsGrid
                     row={row}
-                    billingSummary={billingSummary}
-                    currencyLabel={currencyLabel}
                     intervalLabel={intervalLabel}
                   />
                 </div>

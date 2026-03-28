@@ -20,10 +20,14 @@ import { PayerBaseForm } from "../shared/PayerBaseForm"
 
 interface PayerEditPageProps {
   payerId: string
+  returnTo?: string
 }
 
-export function PayerEditPage({ payerId }: PayerEditPageProps) {
+const PAYERS_LIST = "/my-company/billing/payers"
+
+export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
   const router = useRouter()
+  const backPath = returnTo ?? PAYERS_LIST
   const { hydrated } = useAuth()
   const { canEditPayers } = usePayersPermissionFallback()
   const { payer, isLoading: isLoadingPayer } = usePayerById(payerId)
@@ -96,7 +100,7 @@ export function PayerEditPage({ payerId }: PayerEditPageProps) {
     })
 
     if (saved) {
-      router.push("/my-company/billing/payers")
+      router.push(backPath)
     }
   })
 
@@ -162,7 +166,7 @@ export function PayerEditPage({ payerId }: PayerEditPageProps) {
 
           <FormBottomBar
             isSubmitting={isSaving}
-            onCancel={() => router.push("/my-company/billing/payers")}
+            onCancel={() => router.push(backPath)}
             cancelText="Back"
             submitText="Save changes"
           />

@@ -25,6 +25,7 @@ interface MultiSelectProps {
   searchPlaceholder?: string
   /** Open the panel above the trigger (e.g. near bottom of a modal) */
   dropdownPosition?: "top" | "bottom"
+  tone?: "brand" | "neutral"
 }
 
 export function MultiSelect({
@@ -40,6 +41,7 @@ export function MultiSelect({
   placeholder = "Select items",
   searchPlaceholder = "Search...",
   dropdownPosition = "bottom",
+  tone = "brand",
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -56,6 +58,35 @@ export function MultiSelect({
   const [maxVisibleTags, setMaxVisibleTags] = useState(2)
   const visibleTags = selectedOptions.slice(0, maxVisibleTags)
   const remainingCount = selectedOptions.length - maxVisibleTags
+
+  const selectedTagClass =
+    tone === "neutral"
+      ? "bg-slate-100 text-slate-700"
+      : "bg-blue-50 text-blue-700"
+
+  const removeTagClass =
+    tone === "neutral" ? "hover:bg-slate-200" : "hover:bg-blue-100"
+
+  const activeLabelClass = tone === "neutral" ? "text-slate-600" : "text-[#2563EB]"
+
+  const requiredAsteriskClass = tone === "neutral" ? "text-slate-600" : "text-[#2563EB]"
+
+  const searchFocusClass =
+    tone === "neutral"
+      ? "focus:ring-slate-400 focus:border-transparent"
+      : "focus:ring-blue-500 focus:border-transparent"
+
+  const selectAllClass =
+    tone === "neutral"
+      ? "text-slate-700 hover:bg-slate-100"
+      : "text-blue-600 hover:bg-blue-50"
+
+  const selectedOptionClass =
+    tone === "neutral"
+      ? "bg-slate-100 text-slate-800 font-medium"
+      : "bg-[#037ECC]/5 text-[#037ECC] font-medium"
+
+  const selectedCheckClass = tone === "neutral" ? "text-slate-700" : "text-[#037ECC]"
 
   const filteredOptions = searchable && searchQuery
     ? options.filter(opt => 
@@ -171,9 +202,7 @@ export function MultiSelect({
                   key={option.value}
                   className={cn(
                     "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm whitespace-nowrap flex-shrink-0 max-w-[180px] truncate",
-                    disabled 
-                      ? "bg-gray-100 text-gray-600" 
-                      : "bg-blue-50 text-blue-700"
+                    disabled ? "bg-gray-100 text-gray-600" : selectedTagClass
                   )}
                 >
                   {option.label}
@@ -188,7 +217,7 @@ export function MultiSelect({
                           handleRemove(option.value, e as any)
                         }
                       }}
-                      className="hover:bg-blue-100 rounded-full p-0.5 cursor-pointer"
+                      className={cn("rounded-full p-0.5 cursor-pointer", removeTagClass)}
                     >
                       <X className="w-3 h-3" />
                     </span>
@@ -249,10 +278,10 @@ export function MultiSelect({
               -translate-y-1/2
               text-xs
             `,
-            (isOpen && !disabled) && "text-[#2563EB]"
+            (isOpen && !disabled) && activeLabelClass
           )}
         >
-          {label} {required && <span className="text-[#2563EB]">*</span>}
+          {label} {required && <span className={requiredAsteriskClass}>*</span>}
         </label>
 
         {isOpen && (
@@ -274,7 +303,10 @@ export function MultiSelect({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={searchPlaceholder}
-                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={cn(
+                      "w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2",
+                      searchFocusClass,
+                    )}
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
@@ -285,7 +317,10 @@ export function MultiSelect({
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="w-full px-2 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-left font-medium"
+                className={cn(
+                  "w-full px-2 py-1.5 text-sm rounded-lg transition-colors text-left font-medium",
+                  selectAllClass,
+                )}
               >
                 {value.length === options.length ? "Deselect All" : "Select All"}
               </button>
@@ -315,11 +350,7 @@ export function MultiSelect({
                         flex items-center justify-between
                         gap-3
                         `,
-                        isSelected && `
-                          bg-[#037ECC]/5
-                          text-[#037ECC]
-                          font-medium
-                        `,
+                        isSelected && selectedOptionClass,
                         !isSelected && `
                           text-gray-700
                           hover:bg-gray-50
@@ -329,7 +360,7 @@ export function MultiSelect({
                     >
                       <span>{option.label}</span>
                       {isSelected && (
-                        <Check className="w-5 h-5 text-[#037ECC] flex-shrink-0" />
+                        <Check className={cn("w-5 h-5 flex-shrink-0", selectedCheckClass)} />
                       )}
                     </button>
                   )

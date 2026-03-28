@@ -5,9 +5,11 @@ import { PayerEditPage } from "../../components/edit/PayerEditPage"
 
 interface EditPayerPageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ returnTo?: string }>
 }
 
-export default function EditPayerPage({ params }: EditPayerPageProps) {
+export default function EditPayerPage({ params, searchParams }: EditPayerPageProps) {
   const { id } = use(params)
-  return <PayerEditPage payerId={id} />
+  const { returnTo } = use(searchParams)
+  return <PayerEditPage payerId={id} returnTo={returnTo} />
 }

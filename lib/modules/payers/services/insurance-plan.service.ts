@@ -95,10 +95,22 @@ export function mapRateRowToFormValues(row: InsurancePlanRateRow, planId: string
     intervalType: row.intervalType,
     currencyId: row.currencyId,
     alias: row.alias,
-    startDate: row.startDate,
-    endDate: row.endDate,
+    startDate: row.startDate ? row.startDate.slice(0, 10) : "",
+    endDate: row.endDate ? row.endDate.slice(0, 10) : "",
     billingCodeIds: [...row.billingCodeIds],
   }
+}
+
+export async function getRateById(rateId: string): Promise<InsurancePlanRateRow> {
+  const response = await serviceGet<InsurancePlanRateDto>(`/rates/${rateId}`)
+
+  if (response.status !== 200 || response.data == null) {
+    throw new Error(
+      (response.data as { message?: string } | undefined)?.message || "Failed to load rate",
+    )
+  }
+
+  return normalizeRateRow(response.data as Partial<InsurancePlanRateDto> & { id?: string }, "")
 }
 
 /** GET /insurance-plans/{payerId} — single plan for that payer; 404 when none yet */
@@ -215,13 +227,13 @@ export async function createInsurancePlanRate(
 }
 
 export async function updateInsurancePlanRate(
-  planId: string,
   rateId: string,
   values: InsurancePlanRateRowValues,
 ): Promise<void> {
-  const response = await servicePut<InsurancePlanRateDto, { message?: string }>(
-    `/insurance-plans/${planId}/rates/${rateId}`,
-    toRatePayload(values, planId),
+  const payload = { id: rateId, ...toRatePayload(values, values.insurancePlanId) }
+  const response = await servicePut<typeof payload, { message?: string }>(
+    `/rates`,
+    payload,
   )
 
   if (response.status !== 200 && response.status !== 204) {

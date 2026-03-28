@@ -16,6 +16,7 @@ interface CustomModalProps {
   showCloseButton?: boolean
   hideHeader?: boolean
   onOpenAutoFocus?: (e: Event) => void
+  onInteractOutside?: (e: Event) => void
 }
 
 export function CustomModal({
@@ -30,12 +31,14 @@ export function CustomModal({
   showCloseButton = true,
   hideHeader = false,
   onOpenAutoFocus,
+  onInteractOutside,
 }: CustomModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={showCloseButton}
         onOpenAutoFocus={onOpenAutoFocus}
+        onInteractOutside={onInteractOutside}
         className={cn(
           "p-0 gap-0 rounded-2xl shadow-[0_30px_80px_rgba(2,12,27,0.28)] overflow-hidden bg-transparent",
           maxWidthClassName,

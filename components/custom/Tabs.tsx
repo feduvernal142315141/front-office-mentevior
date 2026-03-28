@@ -15,6 +15,7 @@ export interface TabItem {
 interface TabsProps {
   items: TabItem[]
   defaultTab?: string
+  activeTab?: string
   className?: string
   onChange?: (tabId: string) => void
 }
@@ -22,10 +23,17 @@ interface TabsProps {
 export function Tabs({
   items,
   defaultTab,
+  activeTab: controlledTab,
   className,
   onChange,
 }: TabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultTab || items[0]?.id)
+  const [activeTab, setActiveTab] = useState(controlledTab ?? defaultTab ?? items[0]?.id)
+
+  useEffect(() => {
+    if (controlledTab !== undefined) {
+      setActiveTab(controlledTab)
+    }
+  }, [controlledTab])
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)

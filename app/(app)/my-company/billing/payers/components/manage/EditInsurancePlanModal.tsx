@@ -1,10 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { format } from "date-fns"
-import { Loader2, Pencil } from "lucide-react"
+import { Edit2, Loader2 } from "lucide-react"
+import { formatDate } from "@/lib/utils/date"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -21,6 +21,7 @@ import {
   createInsurancePlanGeneral,
   createInsurancePlanRate,
   getInsurancePlanForPayer,
+  getRateById,
   getRatesByPayerId,
   mapInsurancePlanDetailToGeneral,
   mapRateRowToFormValues,
@@ -40,9 +41,9 @@ import type { Payer } from "@/lib/types/payer.types"
 import { toast } from "sonner"
 
 const INTERVAL_OPTIONS = [
-  { value: "EVENT", label: "EVENT" },
+  { value: "EVENT", label: "Event" },
   { value: "UNIT", label: "Unit" },
-  { value: "HOURLY", label: "Hourly" },
+  { value: "HOUR", label: "Hour" },
   
 ]
 
@@ -51,17 +52,6 @@ interface EditInsurancePlanModalProps {
   open: boolean
   onOpenChange: (next: boolean) => void
   onSaved: () => void
-}
-
-function formatDisplayDate(iso: string) {
-  if (!iso?.trim()) return "—"
-  const [y, m, d] = iso.split("-").map(Number)
-  if (!y || !m || !d) return iso
-  try {
-    return format(new Date(y, m - 1, d), "MM/dd/yyyy")
-  } catch {
-    return iso
-  }
 }
 
 /** Rates vienen de GET /rates/by-payer-id; filtrar por plan cuando el API envía insurancePlanId */
@@ -76,9 +66,10 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   const { currencies, isLoading: isLoadingCurrencies } = useCurrencyCatalog()
   const { catalogCodes, isLoading: isLoadingBillingCodes } = useBillingCodesCatalog()
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
+  const [isLoadingRate, setIsLoadingRate] = useState(false)
   const [rates, setRates] = useState<InsurancePlanRateRow[]>([])
   const [resolvedPlanId, setResolvedPlanId] = useState<string | null>(null)
-  const [tabsKey, setTabsKey] = useState(0)
+  const [activeTab, setActiveTab] = useState("general")
   const [showRateForm, setShowRateForm] = useState(false)
   const [editingRateId, setEditingRateId] = useState<string | null>(null)
   const [ratesPage, setRatesPage] = useState(1)
@@ -104,14 +95,6 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     label: `${bc.code} (${bc.type})`,
   }))
 
-  const billingLabelById = useMemo(() => {
-    const m = new Map<string, string>()
-    for (const bc of catalogCodes) {
-      m.set(bc.id, `${bc.code} (${bc.type})`)
-    }
-    return m
-  }, [catalogCodes])
-
   const currencyLabelById = useMemo(() => {
     const m = new Map<string, string>()
     for (const c of currencies) {
@@ -125,6 +108,13 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     value: c.id,
     label: c.code ? `${c.name} (${c.code})` : c.name,
   }))
+
+  const refreshRatesFromServer = useCallback(async () => {
+    if (!payer?.id) return
+    const ratesList = await getRatesByPayerId(payer.id)
+    const planEntityId = resolvedPlanId ?? payerPlanId ?? null
+    setRates(ratesForPlanEntity(ratesList, planEntityId))
+  }, [payer?.id, resolvedPlanId, payerPlanId])
 
   const refreshPlanFromServer = useCallback(async () => {
     if (!payer?.id) return
@@ -146,7 +136,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
 
   useEffect(() => {
     if (!open) return
-    setTabsKey((k) => k + 1)
+    setActiveTab("general")
     setShowRateForm(false)
     setEditingRateId(null)
     setRatesPage(1)
@@ -159,8 +149,13 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     }
   }, [rates.length, ratesPage, ratesPageSize])
 
+  const payerIdRef = useRef<string | null>(null)
+  if (payer?.id) payerIdRef.current = payer.id
+
   useEffect(() => {
-    if (!open || !payer) return
+    if (!open) return
+    const payerId = payerIdRef.current
+    if (!payerId) return
 
     generalForm.reset(getInsurancePlanGeneralEmptyDefaults())
     setRates([])
@@ -170,7 +165,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     let cancelled = false
     setIsLoadingDetail(true)
 
-    Promise.all([getInsurancePlanForPayer(payer.id), getRatesByPayerId(payer.id)])
+    Promise.all([getInsurancePlanForPayer(payerId), getRatesByPayerId(payerId)])
       .then(([data, ratesList]) => {
         if (cancelled) return
         if (!data) {
@@ -196,7 +191,8 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     return () => {
       cancelled = true
     }
-  }, [open, payer, generalForm, rateForm])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const handleGeneralSubmit = generalForm.handleSubmit(async (data) => {
     if (!payer) return
@@ -241,15 +237,24 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   }
 
   const openEditRate = useCallback(
-    (row: InsurancePlanRateRow) => {
+    async (row: InsurancePlanRateRow) => {
       if (!effectivePlanId) return
       if (!row.id) {
         toast.error("This rate cannot be edited until the server returns an id. Refresh after saving.")
         return
       }
-      setEditingRateId(row.id)
-      rateForm.reset(mapRateRowToFormValues(row, effectivePlanId))
-      setShowRateForm(true)
+      setIsLoadingRate(true)
+      try {
+        const rate = await getRateById(row.id)
+        setEditingRateId(row.id)
+        rateForm.reset(mapRateRowToFormValues(rate, effectivePlanId))
+        setShowRateForm(true)
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to load rate"
+        toast.error(message)
+      } finally {
+        setIsLoadingRate(false)
+      }
     },
     [effectivePlanId, rateForm],
   )
@@ -265,25 +270,10 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         key: "alias",
         header: "Alias",
         render: (row) => (
-          <span className="max-w-[min(200px,100%)] truncate block" title={row.alias || undefined}>
+          <span className="block w-[80px] truncate" title={row.alias || undefined}>
             {row.alias?.trim() ? row.alias : "—"}
           </span>
         ),
-      },
-      {
-        key: "billingCodes",
-        header: "Billing codes",
-        render: (row) => {
-          const codesSummary =
-            row.billingCodeIds.length === 0
-              ? "—"
-              : row.billingCodeIds.map((id) => billingLabelById.get(id) ?? id).join(", ")
-          return (
-            <span className="max-w-[min(280px,100%)] truncate block" title={codesSummary}>
-              {codesSummary}
-            </span>
-          )
-        },
       },
       {
         key: "approvedRate",
@@ -312,12 +302,12 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       {
         key: "startDate",
         header: "Start date",
-        render: (row) => <span>{formatDisplayDate(row.startDate)}</span>,
+        render: (row) => <span>{formatDate(new Date(row.startDate))}</span>,
       },
       {
         key: "endDate",
         header: "End date",
-        render: (row) => <span>{formatDisplayDate(row.endDate)}</span>,
+        render: (row) => <span>{formatDate(new Date(row.endDate))}</span>,
       },
       {
         key: "actions",
@@ -325,24 +315,22 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         align: "right",
         render: (row) => (
           <div className="flex justify-end">
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              className="gap-1.5 text-[#037ECC]"
               data-row-no-click="true"
-              onClick={() => openEditRate(row)}
-              disabled={!row.id}
+              onClick={() => void openEditRate(row)}
+              disabled={!row.id || isLoadingRate}
               title={!row.id ? "Rate id missing from server" : "Edit rate"}
               aria-label="Edit rate"
+              className="group/edit relative h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-b from-blue-50 to-blue-100/80 border border-blue-200/60 shadow-sm shadow-blue-900/5 hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </Button>
+              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            </button>
           </div>
         ),
       },
     ],
-    [billingLabelById, currencyLabelById, openEditRate],
+    [currencyLabelById, openEditRate, isLoadingRate],
   )
 
   const cancelRateForm = () => {
@@ -361,17 +349,14 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     }
     try {
       if (editingRateId) {
-        await updateInsurancePlanRate(effectivePlanId, editingRateId, v)
-        toast.success("Rate updated")
+        await updateInsurancePlanRate(editingRateId, v)
       } else {
         await createInsurancePlanRate(payer.id, effectivePlanId, v)
-        toast.success("Rate added")
       }
       setShowRateForm(false)
       setEditingRateId(null)
       rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId))
-      onSaved()
-      await refreshPlanFromServer()
+      await refreshRatesFromServer()
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to save rate"
       toast.error(message)
@@ -524,6 +509,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
                   disabled={isLoadingBillingCodes}
                   hasError={!!fieldState.error}
                   searchable
+                  tone="neutral"
                   placeholder=""
                   searchPlaceholder=""
                   dropdownPosition="top"
@@ -693,6 +679,8 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       maxWidthClassName="sm:max-w-[960px]"
       contentClassName="overflow-visible"
       allowSelectOverflow
+      onOpenAutoFocus={(e) => e.preventDefault()}
+      onInteractOutside={(e) => e.preventDefault()}
     >
       {isLoadingDetail && (
         <div className="flex flex-col items-center justify-center gap-3 py-12 px-6 text-slate-500">
@@ -702,7 +690,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       )}
       {!isLoadingDetail && (
         <div className="pb-2">
-          <Tabs key={tabsKey} items={tabItems} defaultTab="general" />
+          <Tabs items={tabItems} activeTab={activeTab} onChange={setActiveTab} />
         </div>
       )}
     </CustomModal>
