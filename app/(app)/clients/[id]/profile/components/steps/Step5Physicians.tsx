@@ -209,7 +209,7 @@ export function Step5Physicians({
 
   if (!resolvedClientId) {
     return (
-      <div className="max-w-5xl mx-auto p-8">
+      <div className="w-full px-6 py-8 sm:px-8">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
           <p className="text-amber-700 font-medium">
             Please save the client first before managing physicians.
@@ -220,7 +220,7 @@ export function Step5Physicians({
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-8">
+    <div className="w-full px-6 py-8 sm:px-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Physicians</h2>

@@ -35,6 +35,7 @@ import { StepInsurances } from "./steps/StepInsurances"
 import { Step10RequiredDocuments } from "./steps/Step10RequiredDocuments"
 import { Step9Providers } from "./steps/Step9Providers"
 import { StepPlaceholder } from "./steps/StepPlaceholder"
+import { StepPriorAuthorizations } from "./steps/prior-authorizations"
 
 interface ClientProfileWizardProps {
   clientId: string
@@ -254,7 +255,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <FileCheck className="w-4 h-4" />,
       status: stepStatuses.priorAuth,
       isLocked: false,
-      component: (props: StepComponentProps) => <StepPlaceholder icon={FileCheck} title="Prior Authorizations" scrumId="SCRUM-48" {...props} />,
+      component: StepPriorAuthorizations,
     },
     {
       id: "providers",

@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import type { ClientInsurance, CreateClientInsuranceDto } from "@/lib/types/client-insurance.types"
+import type { CreateClientInsuranceDto } from "@/lib/types/client-insurance.types"
 import { createClientInsurance } from "../services/client-insurances.service"
 
 interface UseCreateClientInsuranceReturn {
-  create: (data: CreateClientInsuranceDto) => Promise<ClientInsurance | null>
+  create: (data: CreateClientInsuranceDto) => Promise<string | null>
   isLoading: boolean
   error: string | null
 }
@@ -15,7 +15,7 @@ export function useCreateClientInsurance(): UseCreateClientInsuranceReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const create = async (data: CreateClientInsuranceDto): Promise<ClientInsurance | null> => {
+  const create = async (data: CreateClientInsuranceDto): Promise<string | null> => {
     setIsLoading(true)
     setError(null)
 

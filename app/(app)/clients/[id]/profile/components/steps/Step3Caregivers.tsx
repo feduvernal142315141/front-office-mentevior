@@ -326,7 +326,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-8">
+    <div className="w-full px-6 py-8 sm:px-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Caregivers</h2>

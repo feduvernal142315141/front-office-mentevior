@@ -150,7 +150,7 @@ export function StepInsurances({
     {
       key: "payerName",
       header: "Payer",
-      className: "min-w-[160px] w-[28%]",
+      className: "whitespace-nowrap",
       render: (insurance) => {
         const payer = payerMap.get(insurance.payerId)
         const name = insurance.payerName || payer?.name || "-"
@@ -164,7 +164,7 @@ export function StepInsurances({
     {
       key: "memberNumber",
       header: "Member / Policy #",
-      className: "min-w-[140px] w-[18%]",
+      className: "whitespace-nowrap",
       render: (insurance) => (
         <span className="inline-block whitespace-nowrap tabular-nums text-slate-700">
           {insurance.memberNumber}
@@ -174,25 +174,25 @@ export function StepInsurances({
     {
       key: "relationship",
       header: "Relationship",
-      className: "min-w-[110px] w-[13%] whitespace-nowrap",
+      className: "whitespace-nowrap",
       render: (insurance) => insurance.relationship,
     },
     {
       key: "effectiveDate",
       header: "Effective date",
-      className: "min-w-[120px] w-[13%] whitespace-nowrap",
+      className: "whitespace-nowrap",
       render: (insurance) => formatDate(insurance.effectiveDate),
     },
     {
       key: "terminationDate",
       header: "Termination date",
-      className: "min-w-[130px] w-[13%] whitespace-nowrap",
+      className: "whitespace-nowrap",
       render: (insurance) => formatDate(insurance.terminationDate),
     },
     {
       key: "status",
       header: "Status",
-      className: "min-w-[96px] w-[10%] whitespace-nowrap",
+      className: "whitespace-nowrap",
       align: "center",
       render: (insurance) => {
         if (insurance.isPrimary && insurance.isActive) {
@@ -219,7 +219,7 @@ export function StepInsurances({
     {
       key: "actions",
       header: "Actions",
-      className: "min-w-[88px] w-[5%] whitespace-nowrap",
+      className: "whitespace-nowrap",
       align: "right",
       render: (insurance) => (
         <div className="flex justify-end gap-2">
@@ -278,8 +278,6 @@ export function StepInsurances({
         return
       }
 
-      const payer = payerMap.get(values.payerId)
-
       if (editingInsurance) {
         const result = await update({
           id: editingInsurance.id,
@@ -295,11 +293,6 @@ export function StepInsurances({
         })
 
         if (!result) return
-
-        if (payer) {
-          result.payerName = payer.name
-          result.payerLogoUrl = payer.logoUrl ?? null
-        }
       } else {
         const result = await create({
           clientId: resolvedClientId,
@@ -315,11 +308,6 @@ export function StepInsurances({
         })
 
         if (!result) return
-
-        if (payer) {
-          result.payerName = payer.name
-          result.payerLogoUrl = payer.logoUrl ?? null
-        }
       }
 
       form.reset(clientInsuranceFormDefaults)
@@ -360,7 +348,7 @@ export function StepInsurances({
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-8">
+    <div className="w-full px-6 py-8 sm:px-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Insurances</h2>
@@ -652,19 +640,8 @@ export function StepInsurances({
             />
           </div>
 
-          <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-5">
-            {!editingInsurance && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => form.reset(clientInsuranceFormDefaults)}
-                disabled={isCreating}
-              >
-                Clear
-              </Button>
-            )}
-
-            <div className={cn("flex items-center gap-3", editingInsurance && "ml-auto")}>
+          <div className="mt-8 flex items-center justify-end border-t border-slate-200 pt-5">
+            <div className="flex items-center gap-3">
               <Button
                 type="button"
                 variant="secondary"

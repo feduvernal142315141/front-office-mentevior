@@ -73,7 +73,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
   }, [form.formState.isDirty, onDirtyChange])
 
   return (
-    <div className="max-w-5xl mx-auto p-8">
+    <div className="w-full px-6 py-8 sm:px-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Controller
           name="firstName"

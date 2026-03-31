@@ -40,7 +40,7 @@ export function Step10RequiredDocuments({
   }
 
   return (
-    <div className="px-8">
+    <div className="w-full px-6 py-8 sm:px-8">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Required Documents</h2>
         <p className="text-slate-600 mt-1">

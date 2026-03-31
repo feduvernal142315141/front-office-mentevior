@@ -1,0 +1,280 @@
+"use client"
+
+import { useEffect } from "react"
+import { Controller, useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { CustomModal } from "@/components/custom/CustomModal"
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { FloatingInput } from "@/components/custom/FloatingInput"
+import { Button } from "@/components/custom/Button"
+import {
+  billingCodeEntryDefaults,
+  billingCodeEntrySchema,
+  UNITS_INTERVAL_OPTIONS,
+  type BillingCodeEntryValues,
+} from "@/lib/schemas/prior-authorization-form.schema"
+import type { PriorAuthBillingCode } from "@/lib/types/prior-authorization.types"
+import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
+import { cn } from "@/lib/utils"
+
+interface BillingCodeModalProps {
+  open: boolean
+  onClose: () => void
+  /** Called with the confirmed entry — no id/remainingUnits, caller assigns them */
+  onConfirm: (values: BillingCodeEntryValues, billingCodeLabel: string) => void
+  /** If provided, modal is in edit mode */
+  editingCode?: PriorAuthBillingCode | null
+  /** All company billing codes for the dropdown */
+  billingCodes: BillingCodeListItem[]
+  /** IDs already used in this PA (to avoid duplicates) */
+  usedBillingCodeIds?: string[]
+}
+
+export function BillingCodeModal({
+  open,
+  onClose,
+  onConfirm,
+  editingCode,
+  billingCodes,
+  usedBillingCodeIds = [],
+}: BillingCodeModalProps) {
+  const form = useForm<BillingCodeEntryValues>({
+    resolver: zodResolver(billingCodeEntrySchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
+    defaultValues: billingCodeEntryDefaults,
+  })
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editingCode) {
+      form.reset({
+        billingCodeId: editingCode.billingCodeId,
+        approvedUnits: editingCode.approvedUnits,
+        usedUnits: editingCode.usedUnits,
+        unitsInterval: editingCode.unitsInterval,
+        maxUnitsPerDay: editingCode.maxUnitsPerDay ?? null,
+        maxUnitsPerWeek: editingCode.maxUnitsPerWeek ?? null,
+        maxUnitsPerMonth: editingCode.maxUnitsPerMonth ?? null,
+        maxCountPerDay: editingCode.maxCountPerDay ?? null,
+        maxCountPerWeek: editingCode.maxCountPerWeek ?? null,
+        maxCountPerMonth: editingCode.maxCountPerMonth ?? null,
+      })
+    } else {
+      form.reset(billingCodeEntryDefaults)
+    }
+  }, [editingCode, open, form])
+
+  const billingCodeOptions = billingCodes
+    .filter(
+      (bc) =>
+        bc.active &&
+        (!usedBillingCodeIds.includes(bc.id) || editingCode?.billingCodeId === bc.id)
+    )
+    .map((bc) => ({
+      value: bc.id,
+      label: `${bc.code}${bc.modifier ? `-${bc.modifier}` : ""} — ${bc.description}`,
+    }))
+
+  const handleSubmit = form.handleSubmit((values) => {
+    const selected = billingCodes.find((bc) => bc.id === values.billingCodeId)
+    const label = selected
+      ? `${selected.code}${selected.modifier ? `-${selected.modifier}` : ""} — ${selected.description}`
+      : values.billingCodeId
+    onConfirm(values, label)
+    form.reset(billingCodeEntryDefaults)
+  })
+
+  const handleClose = () => {
+    form.reset(billingCodeEntryDefaults)
+    onClose()
+  }
+
+  return (
+    <CustomModal
+      open={open}
+      onOpenChange={(o) => { if (!o) handleClose() }}
+      title={editingCode ? "Edit authorization code" : "New authorization code"}
+      maxWidthClassName="sm:max-w-[600px]"
+    >
+      <form
+        onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}
+        noValidate
+        className="px-6 py-5 space-y-5"
+      >
+        {/* Billing Code Select */}
+        <Controller
+          name="billingCodeId"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <div>
+              <FloatingSelect
+                label="Allowed Billing Code"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                options={billingCodeOptions}
+                searchable
+                hasError={!!fieldState.error}
+                required
+                disabled={!!editingCode}
+              />
+              {fieldState.error && (
+                <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
+              )}
+            </div>
+          )}
+        />
+
+        {/* Units row */}
+        <div className="grid grid-cols-3 gap-4">
+          {/* Used units — read-only */}
+          <div>
+            <div className="relative">
+              <div
+                className={cn(
+                  "w-full h-[52px] 2xl:h-[56px] px-4 rounded-[16px] flex items-center",
+                  "bg-slate-50 border border-slate-200 text-slate-500 text-[15px]",
+                  "cursor-not-allowed select-none"
+                )}
+              >
+                {form.watch("usedUnits") ?? 0}
+              </div>
+              <label className="absolute left-4 px-1 top-0 -translate-y-1/2 text-xs text-slate-400 bg-white/80 pointer-events-none">
+                Used Units
+              </label>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">Auto-updated by billing</p>
+          </div>
+
+          {/* Approved units */}
+          <Controller
+            name="approvedUnits"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <div>
+                <FloatingInput
+                  label="Approved Units"
+                  value={field.value === undefined ? "" : String(field.value)}
+                  onChange={(v) => {
+                    const parsed = parseInt(v, 10)
+                    field.onChange(isNaN(parsed) ? undefined : parsed)
+                  }}
+                  onBlur={field.onBlur}
+                  inputMode="numeric"
+                  hasError={!!fieldState.error}
+                  required
+                />
+                {fieldState.error && (
+                  <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </div>
+            )}
+          />
+
+          {/* Units Interval */}
+          <Controller
+            name="unitsInterval"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <div>
+                <FloatingSelect
+                  label="Units Interval"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  options={UNITS_INTERVAL_OPTIONS}
+                  hasError={!!fieldState.error}
+                  required
+                />
+                {fieldState.error && (
+                  <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
+        {/* Max Units per period */}
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            Max Units per Period
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            {(["Day", "Week", "Month"] as const).map((period) => {
+              const key = `maxUnitsPer${period}` as
+                | "maxUnitsPerDay"
+                | "maxUnitsPerWeek"
+                | "maxUnitsPerMonth"
+              return (
+                <Controller
+                  key={key}
+                  name={key}
+                  control={form.control}
+                  render={({ field }) => (
+                    <FloatingInput
+                      label={`Per ${period}`}
+                      value={field.value === null || field.value === undefined ? "" : String(field.value)}
+                      onChange={(v) => {
+                        field.onChange(v === "" ? null : parseInt(v, 10) || null)
+                      }}
+                      onBlur={field.onBlur}
+                      inputMode="numeric"
+                      placeholder="No Restriction"
+                    />
+                  )}
+                />
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Max Count per period */}
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            Max Count per Period
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            {(["Day", "Week", "Month"] as const).map((period) => {
+              const key = `maxCountPer${period}` as
+                | "maxCountPerDay"
+                | "maxCountPerWeek"
+                | "maxCountPerMonth"
+              return (
+                <Controller
+                  key={key}
+                  name={key}
+                  control={form.control}
+                  render={({ field }) => (
+                    <FloatingInput
+                      label={`Per ${period}`}
+                      value={field.value === null || field.value === undefined ? "" : String(field.value)}
+                      onChange={(v) => {
+                        field.onChange(v === "" ? null : parseInt(v, 10) || null)
+                      }}
+                      onBlur={field.onBlur}
+                      inputMode="numeric"
+                      placeholder="No Restriction"
+                    />
+                  )}
+                />
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end border-t border-slate-200 pt-5">
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="secondary" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={form.formState.isSubmitting}>
+              {editingCode ? "Update" : "Add Code"}
+            </Button>
+          </div>
+        </div>
+      </form>
+    </CustomModal>
+  )
+}
