@@ -76,6 +76,7 @@ export function FloatingInput({
             absolute left-4 px-1
             pointer-events-none
             transition-all duration-200 ease-out
+            whitespace-nowrap
 
             bg-white/20
             backdrop-blur-md

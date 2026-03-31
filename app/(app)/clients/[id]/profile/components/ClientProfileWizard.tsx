@@ -19,6 +19,7 @@ import { WizardFooter } from "@/components/custom/WizardFooter"
 import { ConfirmationModal } from "@/components/custom/ConfirmationModal"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
+import { useClientInsurancesByClient } from "@/lib/modules/client-insurances/hooks/use-client-insurances-by-client"
 import { useMedicationsByClient } from "@/lib/modules/medications/hooks/use-medications-by-client"
 import { useDiagnosesByClient } from "@/lib/modules/diagnoses/hooks/use-diagnoses-by-client"
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
@@ -30,6 +31,7 @@ import { Step2Addresses } from "./steps/Step2Addresses"
 import { Step3Caregivers } from "./steps/Step3Caregivers"
 import { Step4Medications } from "./steps/Step4Medications"
 import { Step6Diagnoses } from "./steps/Step6Diagnoses"
+import { StepInsurances } from "./steps/StepInsurances"
 import { Step10RequiredDocuments } from "./steps/Step10RequiredDocuments"
 import { Step9Providers } from "./steps/Step9Providers"
 import { StepPlaceholder } from "./steps/StepPlaceholder"
@@ -123,6 +125,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   const { caregivers } = useCaregiversByClient(resolvedClientId)
   const { addresses } = useClientAddresses(resolvedClientId)
+  const { insurances } = useClientInsurancesByClient(resolvedClientId)
   const { medications } = useMedicationsByClient(resolvedClientId)
   const { diagnoses } = useDiagnosesByClient(resolvedClientId)
   const { providers } = useProvidersByClient(resolvedClientId)
@@ -176,11 +179,12 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       ...prev,
       addresses: addresses.length > 0 ? "COMPLETE" : "PENDING",
       caregivers: caregivers.length > 0 ? "COMPLETE" : "PENDING",
+      insurances: insurances.length > 0 ? "COMPLETE" : "PENDING",
       medications: medications.length > 0 ? "COMPLETE" : "PENDING",
       diagnoses: diagnoses.length > 0 ? "COMPLETE" : "PENDING",
       providers: providers.length > 0 ? "COMPLETE" : "PENDING",
     }))
-  }, [resolvedClientId, addresses.length, caregivers.length, medications.length, diagnoses.length, providers.length])
+  }, [resolvedClientId, addresses.length, caregivers.length, insurances.length, medications.length, diagnoses.length, providers.length])
 
   useEffect(() => {
     if (!resolvedClientId || isDocumentsLoading) return
@@ -242,7 +246,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       icon: <Shield className="w-4 h-4" />,
       status: stepStatuses.insurances,
       isLocked: false,
-      component: (props: StepComponentProps) => <StepPlaceholder icon={Shield} title="Insurances" scrumId="SCRUM-128" {...props} />,
+      component: StepInsurances,
     },
     {
       id: "priorAuth",
