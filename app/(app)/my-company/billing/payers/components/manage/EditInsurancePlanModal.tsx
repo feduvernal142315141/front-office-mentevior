@@ -4,13 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Edit2, Loader2 } from "lucide-react"
-import { formatDate } from "@/lib/utils/date"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
-import { MultiSelect } from "@/components/custom/MultiSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -94,6 +92,11 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     value: bc.id,
     label: `${bc.code} (${bc.type})`,
   }))
+
+  const usdCurrencyId = useMemo(
+    () => currencies.find((c) => c.code?.toUpperCase() === "USD")?.id ?? "",
+    [currencies],
+  )
 
   const currencyLabelById = useMemo(() => {
     const m = new Map<string, string>()
@@ -229,7 +232,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
 
   const openNewRateForm = () => {
     setEditingRateId(null)
-    rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId))
+    rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId, usdCurrencyId))
     setShowRateForm(true)
   }
 
@@ -263,51 +266,48 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   const ratesTableColumns: CustomTableColumn<InsurancePlanRateRow>[] = useMemo(
     () => [
       {
-        key: "alias",
-        header: "Alias",
+        key: "amount",
+        header: "Amount",
+        className: "whitespace-nowrap",
         render: (row) => (
-          <span className="block w-[80px] truncate" title={row.alias || undefined}>
-            {row.alias?.trim() ? row.alias : "—"}
+          <span>
+            {new Intl.NumberFormat(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(row.amount)}
           </span>
         ),
       },
       {
-        key: "approvedRate",
-        header: "Approved rate",
+        key: "intervalType",
+        header: "Interval",
+        className: "whitespace-nowrap",
         render: (row) => {
-          const cur = currencyLabelById.get(row.currencyId)
-          const text = `${new Intl.NumberFormat(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }).format(row.amount)}${cur ? ` ${cur}` : ""}`
-          return <span>{text}</span>
+          const label = INTERVAL_OPTIONS.find((o) => o.value === row.intervalType)?.label ?? row.intervalType
+          return <span>{label || "—"}</span>
         },
       },
       {
-        key: "submitRate",
-        header: "Submit rate",
+        key: "currency",
+        header: "Currency",
+        className: "whitespace-nowrap",
+        render: (row) => <span>{row.currencyCode || currencyLabelById.get(row.currencyId) || "—"}</span>,
+      },
+      {
+        key: "billingCode",
+        header: "Billing code",
+        className: "whitespace-nowrap",
         render: (row) => {
-          const cur = currencyLabelById.get(row.currencyId)
-          const text = `${new Intl.NumberFormat(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }).format(row.submitAmount)}${cur ? ` ${cur}` : ""}`
-          return <span>{text}</span>
+          const codeId = row.billingCodeId
+          if (!codeId) return <span>{"—"}</span>
+          const match = billingCodes.find((bc) => bc.id === codeId)
+          return <span>{match ? `${match.code} (${match.type})` : codeId}</span>
         },
-      },
-      {
-        key: "startDate",
-        header: "Start date",
-        render: (row) => <span>{formatDate(new Date(row.startDate))}</span>,
-      },
-      {
-        key: "endDate",
-        header: "End date",
-        render: (row) => <span>{formatDate(new Date(row.endDate))}</span>,
       },
       {
         key: "actions",
         header: "Actions",
+        className: "whitespace-nowrap",
         align: "right",
         render: (row) => (
           <div className="flex justify-end">
@@ -326,14 +326,14 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         ),
       },
     ],
-    [currencyLabelById, openEditRate, isLoadingRate],
+    [currencyLabelById, billingCodes, openEditRate, isLoadingRate],
   )
 
   const cancelRateForm = () => {
     setShowRateForm(false)
     setEditingRateId(null)
     if (effectivePlanId) {
-      rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId))
+      rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId, usdCurrencyId))
     }
   }
 
@@ -351,7 +351,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       }
       setShowRateForm(false)
       setEditingRateId(null)
-      rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId))
+      rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId, usdCurrencyId))
       await refreshRatesFromServer()
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to save rate"
@@ -379,12 +379,11 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
             <div>
               <FloatingInput
                 label="Alias"
-                value={field.value}
+                value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 placeholder=" "
                 hasError={!!fieldState.error}
-                required
                 autoComplete="off"
               />
               {fieldState.error && <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>}
@@ -444,7 +443,6 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
                 inputMode="numeric"
                 pattern="[0-9]*"
                 hasError={!!fieldState.error}
-                required
                 autoComplete="off"
               />
               {fieldState.error && <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>}
@@ -457,7 +455,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
-                label="Interval type"
+                label="Interval"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
@@ -499,9 +497,9 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
               value={field.value ?? ""}
               onChange={field.onChange}
               onBlur={field.onBlur}
+              onClear={() => field.onChange("")}
               hasError={!!fieldState.error}
               errorMessage={fieldState.error?.message}
-              required
             />
           )}
         />
@@ -514,31 +512,28 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
               value={field.value ?? ""}
               onChange={field.onChange}
               onBlur={field.onBlur}
+              onClear={() => field.onChange("")}
               hasError={!!fieldState.error}
               errorMessage={fieldState.error?.message}
-              required
             />
           )}
         />
         <div className="md:col-span-2">
           <Controller
-            name="billingCodeIds"
+            name="billingCodeId"
             control={rateForm.control}
             render={({ field, fieldState }) => (
               <div>
-                <MultiSelect
-                  label="Billing codes"
-                  value={field.value}
+                <FloatingSelect
+                  label="Billing code"
+                  value={field.value ?? ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   options={billingOptions}
                   disabled={isLoadingBillingCodes}
                   hasError={!!fieldState.error}
                   searchable
-                  tone="neutral"
-                  placeholder=""
-                  searchPlaceholder=""
-                  dropdownPosition="top"
+                  required
                 />
                 {fieldState.error && <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>}
               </div>

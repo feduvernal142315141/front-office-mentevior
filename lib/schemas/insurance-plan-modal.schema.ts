@@ -6,14 +6,16 @@ const rateFields = {
     .number({ invalid_type_error: "Amount is required" })
     .min(0, "Amount is required"),
   submitAmount: z.coerce
-    .number({ invalid_type_error: "Submit amount is required" })
-    .min(0, "Submit amount is required"),
+    .number({ invalid_type_error: "Invalid number" })
+    .min(0, "Must be >= 0")
+    .optional()
+    .or(z.literal(Number.NaN)),
   intervalType: z.string().min(1, "Interval is required"),
   currencyId: z.string().min(1, "Currency is required"),
-  alias: z.string().min(1, "Alias is required").max(200),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().min(1, "End date is required"),
-  billingCodeIds: z.array(z.string()),
+  alias: z.string().max(200).optional().or(z.literal("")),
+  startDate: z.string().optional().or(z.literal("")),
+  endDate: z.string().optional().or(z.literal("")),
+  billingCodeId: z.string().min(1, "Billing code is required"),
 }
 
 export const insurancePlanGeneralSchema = z.object({
@@ -36,16 +38,16 @@ export function getInsurancePlanGeneralEmptyDefaults(): InsurancePlanGeneralValu
   }
 }
 
-export function getInsurancePlanRateEmptyDefaults(planId: string): InsurancePlanRateRowValues {
+export function getInsurancePlanRateEmptyDefaults(planId: string, usdCurrencyId?: string): InsurancePlanRateRowValues {
   return {
     insurancePlanId: planId,
     amount: Number.NaN,
-    submitAmount: Number.NaN,
-    intervalType: "",
-    currencyId: "",
+    submitAmount: undefined,
+    intervalType: "UNIT",
+    currencyId: usdCurrencyId ?? "",
     alias: "",
     startDate: "",
     endDate: "",
-    billingCodeIds: [],
+    billingCodeId: "",
   }
 }

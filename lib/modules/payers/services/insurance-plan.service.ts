@@ -11,7 +11,7 @@ import type {
 import type { InsurancePlanGeneralValues, InsurancePlanRateRowValues } from "@/lib/schemas/insurance-plan-modal.schema"
 
 function normalizeRateRow(
-  r: Partial<InsurancePlanRateDto> & { id?: string },
+  r: Partial<InsurancePlanRateDto> & { id?: string; currencyCode?: string },
   fallbackPlanId: string,
 ): InsurancePlanRateRow {
   return {
@@ -21,10 +21,11 @@ function normalizeRateRow(
     submitAmount: Number(r.submitAmount ?? 0),
     intervalType: r.intervalType ?? "",
     currencyId: r.currencyId ?? "",
+    currencyCode: r.currencyCode ?? "",
     alias: r.alias ?? "",
     startDate: r.startDate ?? "",
     endDate: r.endDate ?? "",
-    billingCodeIds: Array.isArray(r.billingCodeIds) ? r.billingCodeIds : [],
+    billingCodeId: r.billingCodeId ?? "",
   }
 }
 
@@ -79,7 +80,7 @@ export function mapInsurancePlanDetailToRates(d: InsurancePlanDetailDto): Insura
     (legacy.amount != null ||
       legacy.submitAmount != null ||
       (legacy.alias && legacy.alias.length > 0) ||
-      (legacy.billingCodeIds && legacy.billingCodeIds.length > 0) ||
+      (legacy.billingCodeId && legacy.billingCodeId.length > 0) ||
       (legacy.startDate && legacy.startDate.length > 0))
   ) {
     return [normalizeRateRow({ ...legacy, id: legacy.id }, planId)]
@@ -91,13 +92,13 @@ export function mapRateRowToFormValues(row: InsurancePlanRateRow, planId: string
   return {
     insurancePlanId: row.insurancePlanId || planId,
     amount: row.amount,
-    submitAmount: row.submitAmount,
+    submitAmount: row.submitAmount ?? undefined,
     intervalType: row.intervalType,
     currencyId: row.currencyId,
-    alias: row.alias,
+    alias: row.alias ?? "",
     startDate: row.startDate ? row.startDate.slice(0, 10) : "",
     endDate: row.endDate ? row.endDate.slice(0, 10) : "",
-    billingCodeIds: [...row.billingCodeIds],
+    billingCodeId: row.billingCodeId ?? "",
   }
 }
 
@@ -190,13 +191,13 @@ function toRatePayload(values: InsurancePlanRateRowValues, planId: string): Insu
   return {
     insurancePlanId: planId,
     amount: Number(values.amount),
-    submitAmount: Number(values.submitAmount),
+    submitAmount: values.submitAmount != null && !Number.isNaN(values.submitAmount) ? Number(values.submitAmount) : undefined,
     intervalType: values.intervalType,
     currencyId: values.currencyId,
-    alias: values.alias.trim(),
-    startDate: values.startDate,
-    endDate: values.endDate,
-    billingCodeIds: values.billingCodeIds,
+    alias: values.alias?.trim() || undefined,
+    startDate: values.startDate || undefined,
+    endDate: values.endDate || undefined,
+    billingCodeId: values.billingCodeId,
   }
 }
 

@@ -163,7 +163,7 @@ export function PayerManagePage({ payerId }: PayerManagePageProps) {
               <span className={SECTION_ACCENT} aria-hidden />
               <div>
                 <h2 className="text-base font-semibold tracking-tight text-gray-900">Insurance plan</h2>
-                <p className="mt-0.5 text-xs text-gray-600">Clearing house, plan type, and notes.</p>
+                <p className="mt-0.5 text-xs text-gray-600">Plan name, plan type and rates.</p>
               </div>
             </div>
             <Button

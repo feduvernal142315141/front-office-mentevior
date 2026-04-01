@@ -1,8 +1,9 @@
 "use client"
 
-import type { ReactNode } from "react"
-import { format } from "date-fns"
+import { type ReactNode, useMemo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
+import { useCurrencyCatalog } from "@/lib/modules/currencies/hooks/use-currency-catalog"
 import type { InsurancePlanDetailDto, InsurancePlanRateRow } from "@/lib/types/insurance-plan-rate.types"
 import { cn } from "@/lib/utils"
 
@@ -31,17 +32,6 @@ const INTERVAL_OPTIONS = [
 function display(v?: string | null): string {
   const t = v?.trim()
   return t && t.length > 0 ? t : FALLBACK
-}
-
-function formatDisplayDate(iso: string) {
-  if (!iso?.trim()) return FALLBACK
-  const [y, m, d] = iso.split("-").map(Number)
-  if (!y || !m || !d) return iso
-  try {
-    return format(new Date(y, m - 1, d), "MM/dd/yyyy")
-  } catch {
-    return iso
-  }
 }
 
 function formatMoney(amount: number) {
@@ -83,7 +73,7 @@ const OVERVIEW_GRID = "grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-c
 function RatesSubsectionSkeleton() {
   return (
     <div className={OVERVIEW_GRID}>
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="space-y-2">
           <Skeleton className="h-3 w-20 bg-gray-200" />
           <Skeleton className="h-4 w-full bg-gray-100" />
@@ -124,12 +114,10 @@ function PlanSectionSkeleton() {
 function RateFieldsGridAllDashes() {
   return (
     <div className={OVERVIEW_GRID}>
-      <Field label="Alias">{FALLBACK}</Field>
       <Field label="Amount">{FALLBACK}</Field>
-      <Field label="Submit amount">{FALLBACK}</Field>
-      <Field label="Interval type">{FALLBACK}</Field>
-      <Field label="Start date">{FALLBACK}</Field>
-      <Field label="End date">{FALLBACK}</Field>
+      <Field label="Interval">{FALLBACK}</Field>
+      <Field label="Currency">{FALLBACK}</Field>
+      <Field label="Billing code">{FALLBACK}</Field>
     </div>
   )
 }
@@ -137,18 +125,20 @@ function RateFieldsGridAllDashes() {
 function RateFieldsGrid({
   row,
   intervalLabel,
+  currencyLabel,
+  billingCodeLabel,
 }: {
   row: InsurancePlanRateRow
   intervalLabel: string
+  currencyLabel: string
+  billingCodeLabel: string
 }) {
   return (
     <div className={OVERVIEW_GRID}>
-      <Field label="Alias">{display(row.alias)}</Field>
       <Field label="Amount">{formatMoney(row.amount)}</Field>
-      <Field label="Submit amount">{formatMoney(row.submitAmount)}</Field>
-      <Field label="Interval type">{display(intervalLabel)}</Field>
-      <Field label="Start date">{formatDisplayDate(row.startDate)}</Field>
-      <Field label="End date">{formatDisplayDate(row.endDate)}</Field>
+      <Field label="Interval">{display(intervalLabel)}</Field>
+      <Field label="Currency">{display(currencyLabel)}</Field>
+      <Field label="Billing code">{display(billingCodeLabel)}</Field>
     </div>
   )
 }
@@ -161,6 +151,25 @@ export function InsurancePlanOverview({
   isLoadingRates = false,
   ratesError,
 }: InsurancePlanOverviewProps) {
+  const { currencies } = useCurrencyCatalog()
+  const { billingCodes } = useBillingCodes({ page: 0, pageSize: 1000 })
+
+  const currencyLabelById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of currencies) {
+      m.set(c.id, c.code ? `${c.name} (${c.code})` : c.name)
+    }
+    return m
+  }, [currencies])
+
+  const billingCodeLabelById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const bc of billingCodes) {
+      m.set(bc.id, `${bc.code} (${bc.type})`)
+    }
+    return m
+  }, [billingCodes])
+
   if (isLoadingPlans) {
     return <PlanSectionSkeleton />
   }
@@ -207,18 +216,22 @@ export function InsurancePlanOverview({
             {ratesRows.map((row, index) => {
               const intervalLabel =
                 INTERVAL_OPTIONS.find((o) => o.value === row.intervalType)?.label ?? row.intervalType
+              const currencyLabel = row.currencyCode || currencyLabelById.get(row.currencyId) || row.currencyId
+              const codeId = row.billingCodeId
+              const billingCodeLabel = codeId ? (billingCodeLabelById.get(codeId) ?? codeId) : ""
 
               return (
                 <div key={row.id ?? `rate-${index}`} className="space-y-4">
                   {ratesRows.length > 1 ? (
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
                       Rate {index + 1}
-                      {row.alias?.trim() ? ` — ${row.alias.trim()}` : ""}
                     </p>
                   ) : null}
                   <RateFieldsGrid
                     row={row}
                     intervalLabel={intervalLabel}
+                    currencyLabel={currencyLabel}
+                    billingCodeLabel={billingCodeLabel}
                   />
                 </div>
               )

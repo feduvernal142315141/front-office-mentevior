@@ -1,13 +1,13 @@
 export interface InsurancePlanRateDto {
   insurancePlanId: string
   amount: number
-  submitAmount: number
+  submitAmount?: number
   intervalType: string
   currencyId: string
-  alias: string
-  startDate: string
-  endDate: string
-  billingCodeIds: string[]
+  alias?: string
+  startDate?: string
+  endDate?: string
+  billingCodeId: string
 }
 
 /** Body for POST /rates */
@@ -18,6 +18,8 @@ export type InsurancePlanRateCreatePayload = InsurancePlanRateDto & {
 /** Single rate row as returned/stored by the API */
 export interface InsurancePlanRateRow extends InsurancePlanRateDto {
   id?: string
+  /** Resolved by the backend on GET responses (e.g. "USD", "MXN") */
+  currencyCode?: string
 }
 
 export interface InsurancePlanGeneralPayload {

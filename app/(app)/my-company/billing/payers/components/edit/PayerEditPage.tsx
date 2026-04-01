@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ShieldCheck } from "lucide-react"
+import { ArrowRight, ShieldCheck, Sliders } from "lucide-react"
+import Link from "next/link"
 import { Card } from "@/components/custom/Card"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { usePayerById } from "@/lib/modules/payers/hooks/use-payer-by-id"
@@ -186,6 +187,34 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
               isCountryDisabled={Boolean(payer?.countryId)}
             />
           </Card>
+
+          <Link href={`/my-company/billing/payers/${payerId}/manage`} className="block mt-4">
+            <div className="group relative overflow-hidden cursor-pointer rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm hover:border-[#037ECC]/40 hover:shadow-lg hover:shadow-[#037ECC]/10 transition-all duration-300 min-h-[80px] flex items-center">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#037ECC]/0 via-[#079CFB]/0 to-[#037ECC]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              <div className="relative px-5 py-4 w-full">
+                <div className="flex items-start gap-3.5">
+                  <div className="flex-shrink-0 p-2.5 rounded-xl bg-[#037ECC]/10 text-[#037ECC] ring-1 ring-inset ring-[#037ECC]/20 group-hover:bg-[#037ECC]/15 transition-colors">
+                    <Sliders className="w-5 h-5" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <h4 className="text-sm font-semibold text-slate-900 group-hover:text-[#037ECC] transition-colors leading-tight">
+                        Payer Management
+                      </h4>
+                      <ArrowRight className="w-4 h-4 text-[#037ECC] group-hover:text-[#079CFB] group-hover:translate-x-0.5 transition-all duration-300 flex-shrink-0 mt-0.5" />
+                    </div>
+                    <p className="text-xs text-slate-600 leading-snug">
+                      Advanced configuration for this payer
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700" />
+            </div>
+          </Link>
 
           <FormBottomBar
             isSubmitting={isSaving}
