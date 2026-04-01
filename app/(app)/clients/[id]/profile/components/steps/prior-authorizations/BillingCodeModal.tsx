@@ -20,14 +20,11 @@ import { cn } from "@/lib/utils"
 interface BillingCodeModalProps {
   open: boolean
   onClose: () => void
-  /** Called with the confirmed entry — no id/remainingUnits, caller assigns them */
-  onConfirm: (values: BillingCodeEntryValues, billingCodeLabel: string) => void
-  /** If provided, modal is in edit mode */
+  onConfirm: (values: BillingCodeEntryValues, billingCodeLabel: string) => void | Promise<void>
   editingCode?: PriorAuthBillingCode | null
-  /** All company billing codes for the dropdown */
   billingCodes: BillingCodeListItem[]
-  /** IDs already used in this PA (to avoid duplicates) */
   usedBillingCodeIds?: string[]
+  isLoading?: boolean
 }
 
 export function BillingCodeModal({
@@ -37,6 +34,7 @@ export function BillingCodeModal({
   editingCode,
   billingCodes,
   usedBillingCodeIds = [],
+  isLoading = false,
 }: BillingCodeModalProps) {
   const form = useForm<BillingCodeEntryValues>({
     resolver: zodResolver(billingCodeEntrySchema),
@@ -266,10 +264,10 @@ export function BillingCodeModal({
         {/* Actions */}
         <div className="flex items-center justify-end border-t border-slate-200 pt-5">
           <div className="flex items-center gap-3">
-            <Button type="button" variant="secondary" onClick={handleClose}>
+            <Button type="button" variant="secondary" onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit" loading={form.formState.isSubmitting}>
+            <Button type="submit" loading={isLoading} disabled={isLoading}>
               {editingCode ? "Update" : "Add Code"}
             </Button>
           </div>

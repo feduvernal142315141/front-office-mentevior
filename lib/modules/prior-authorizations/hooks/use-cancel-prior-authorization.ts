@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import { cancelPriorAuthorization } from "../services/prior-authorizations.service"
+import { deletePriorAuthorization } from "../services/prior-authorizations.service"
 
 interface UseCancelPriorAuthorizationReturn {
   cancel: (paId: string) => Promise<boolean>
@@ -19,14 +19,14 @@ export function useCancelPriorAuthorization(): UseCancelPriorAuthorizationReturn
     setError(null)
 
     try {
-      await cancelPriorAuthorization(paId)
-      toast.success("Prior Authorization cancelled successfully")
+      await deletePriorAuthorization(paId)
+      toast.success("Prior Authorization deleted successfully")
       return true
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to cancel prior authorization"
+        err instanceof Error ? err.message : "Failed to delete prior authorization"
       setError(message)
-      toast.error("Error cancelling Prior Authorization", { description: message })
+      toast.error("Error deleting Prior Authorization", { description: message })
       return false
     } finally {
       setIsLoading(false)

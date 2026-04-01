@@ -60,9 +60,8 @@ export function calculateDuration(
 
     const days = differenceInDays(end, start)
 
-    if (interval === "days") return days
-    if (interval === "weeks") return Math.round((days / 7) * 100) / 100
-    // months
+    if (interval === "DAYS") return days
+    if (interval === "WEEKS") return Math.round((days / 7) * 100) / 100
     return Math.round(differenceInCalendarMonths(end, start) * 100) / 100
   } catch {
     return 0
@@ -105,7 +104,7 @@ export function calculateEstimatedUsage(
   startDate: string,
   endDate: string
 ): string {
-  const totalDays = calculateDuration(startDate, endDate, "days")
+  const totalDays = calculateDuration(startDate, endDate, "DAYS")
   return formatUsageRate(approvedUnits, totalDays)
 }
 

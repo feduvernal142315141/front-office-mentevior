@@ -1,7 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useRef } from "react"
 import { Controller, type Control, type FieldErrors } from "react-hook-form"
+import { Upload, X, FileText } from "lucide-react"
+import { toast } from "sonner"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
@@ -13,12 +15,13 @@ import type { ClientInsurance } from "@/lib/types/client-insurance.types"
 import { calculateDuration } from "@/lib/utils/prior-auth-utils"
 import { cn } from "@/lib/utils"
 
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
 interface TabGeneralProps {
   control: Control<PriorAuthFormValues>
   errors: FieldErrors<PriorAuthFormValues>
   watch: (field: keyof PriorAuthFormValues) => string
   setValue: (field: keyof PriorAuthFormValues, value: string) => void
-  /** Active insurances for the client — only active ones shown */
   insurances: ClientInsurance[]
   isEditMode: boolean
 }
@@ -27,23 +30,52 @@ export function TabGeneral({
   control,
   errors,
   watch,
+  setValue,
   insurances,
   isEditMode,
 }: TabGeneralProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
   const startDate = watch("startDate")
   const endDate = watch("endDate")
   const interval = watch("durationInterval")
+  const attachmentName = watch("attachmentName")
 
-  const duration = calculateDuration(startDate, endDate, interval as "days" | "weeks" | "months")
+  const duration = calculateDuration(
+    startDate,
+    endDate,
+    interval as "DAYS" | "WEEKS" | "MONTHS"
+  )
   const durationDisplay = duration > 0 ? String(duration) : ""
 
   const insuranceOptions = insurances
     .filter((ins) => ins.isActive)
     .map((ins) => ({ value: ins.id, label: ins.payerName }))
 
+  const handleFileChange = (file: File | null) => {
+    if (!file) return
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast.error(`File "${file.name}" exceeds the 25 MB limit.`)
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const result = e.target?.result as string
+      const base64 = result.split(",")[1] ?? result
+      setValue("attachment", base64)
+      setValue("attachmentName", file.name)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveAttachment = () => {
+    setValue("attachment", "")
+    setValue("attachmentName", "")
+    if (inputRef.current) inputRef.current.value = ""
+  }
+
   return (
     <div className="space-y-5">
-      {/* Auth Number + Insurance + Diagnosis */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <Controller
           name="authNumber"
@@ -93,7 +125,6 @@ export function TabGeneral({
           )}
         />
 
-        {/* Primary Diagnosis — placeholder, will be wired to client diagnoses */}
         <Controller
           name="primaryDiagnosisId"
           control={control}
@@ -107,7 +138,6 @@ export function TabGeneral({
                 placeholder="e.g. F84.0"
               />
               <p className="mt-1 text-xs text-slate-400">
-                {/* TODO (backend): wire to client diagnoses list */}
                 From client&apos;s diagnosis records
               </p>
             </div>
@@ -115,7 +145,6 @@ export function TabGeneral({
         />
       </div>
 
-      {/* Dates */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <Controller
           name="startDate"
@@ -156,9 +185,7 @@ export function TabGeneral({
         />
       </div>
 
-      {/* Duration row */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        {/* Duration — read only, auto-calculated */}
         <div>
           <div className="relative">
             <div
@@ -197,7 +224,6 @@ export function TabGeneral({
           )}
         />
 
-        {/* Status — read-only, shown only in edit mode */}
         {isEditMode && (
           <div>
             <div className="relative">
@@ -223,7 +249,6 @@ export function TabGeneral({
         )}
       </div>
 
-      {/* Request / Response dates */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <Controller
           name="requestDate"
@@ -262,7 +287,6 @@ export function TabGeneral({
         />
       </div>
 
-      {/* Comments */}
       <Controller
         name="comments"
         control={control}
@@ -303,6 +327,67 @@ export function TabGeneral({
           </div>
         )}
       />
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Attachment
+        </label>
+
+        {attachmentName ? (
+          <div
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-4 py-3",
+              "border border-slate-200 bg-white shadow-sm"
+            )}
+          >
+            <div className="h-9 w-9 rounded-lg bg-[#037ECC]/10 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-4 h-4 text-[#037ECC]" />
+            </div>
+            <p className="flex-1 text-sm font-medium text-slate-800 truncate" title={attachmentName}>
+              {attachmentName}
+            </p>
+            <button
+              type="button"
+              onClick={handleRemoveAttachment}
+              className={cn(
+                "h-7 w-7 flex items-center justify-center rounded-lg flex-shrink-0",
+                "text-slate-400 hover:text-red-500 hover:bg-red-50",
+                "transition-colors duration-150"
+              )}
+              title="Remove attachment"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div
+            onClick={() => inputRef.current?.click()}
+            className={cn(
+              "group relative cursor-pointer rounded-2xl border-2 border-dashed",
+              "border-slate-300 bg-slate-50/60",
+              "hover:border-[#037ECC]/50 hover:bg-[#037ECC]/5",
+              "transition-all duration-200",
+              "flex flex-col items-center justify-center gap-2 py-6"
+            )}
+          >
+            <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center group-hover:border-[#037ECC]/30 transition-colors">
+              <Upload className="w-5 h-5 text-slate-400 group-hover:text-[#037ECC]/70 transition-colors" />
+            </div>
+            <p className="text-sm font-medium text-slate-700">
+              Click to upload{" "}
+              <span className="text-[#037ECC] font-semibold">authorization document</span>
+            </p>
+            <p className="text-xs text-slate-400">Any document file up to 25 MB</p>
+          </div>
+        )}
+
+        <input
+          ref={inputRef}
+          type="file"
+          className="hidden"
+          onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+        />
+      </div>
     </div>
   )
 }

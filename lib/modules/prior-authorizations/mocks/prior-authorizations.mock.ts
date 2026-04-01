@@ -1,23 +1,10 @@
-// ─── Prior Authorizations — In-Memory Mock DB ─────────────────────────────────
-// TODO (backend integration): Delete this entire file once the real API is wired.
-// Swap USE_MOCK = false in prior-authorizations.service.ts to disable.
-//
-// Business rules enforced here (mirrors what the backend must validate):
-//  - RN-PA-02: Only ONE Approved/Expiring PA per clientId + insuranceId combo
-//  - No hard-delete: PAs are never removed from history (only soft-cancel)
-//  - usedUnits is read-only from UI — incremented by billing engine on backend
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { calculatePAStatus } from "@/lib/utils/prior-auth-utils"
 import type {
   PriorAuthorization,
   PriorAuthBillingCode,
-  CreatePriorAuthorizationDto,
-  UpdatePriorAuthorizationDto,
 } from "@/lib/types/prior-authorization.types"
 
 const DEFAULT_CLIENT_ID = "mock-client-1"
-// These insurance IDs match the mock client-insurances seed
 const ACTIVE_INSURANCE_ID = "ins-2"
 const ACTIVE_INSURANCE_NAME = "Children's Medical Services Health Plan"
 const MEMBER_ID = "9556927841"
@@ -49,10 +36,7 @@ function makeBillingCodes(
   }))
 }
 
-// ─── Seed Data ────────────────────────────────────────────────────────────────
-
 const MOCK_PA_SEED: PriorAuthorization[] = [
-  // pa-1: Approved — active, multi-code, mirrors the reference screenshot
   {
     id: "pa-1",
     clientId: DEFAULT_CLIENT_ID,
@@ -64,10 +48,12 @@ const MOCK_PA_SEED: PriorAuthorization[] = [
     primaryDiagnosisCode: "F84.0",
     startDate: "2026-01-01",
     endDate: "2026-12-31",
-    durationInterval: "weeks",
+    durationInterval: "WEEKS",
     requestDate: "2025-12-01",
     responseDate: "2025-12-10",
     comments: "Annual authorization approved by Carelon. All services confirmed.",
+    attachment: null,
+    attachmentName: null,
     status: "Approved",
     billingCodes: makeBillingCodes([
       {
@@ -99,12 +85,10 @@ const MOCK_PA_SEED: PriorAuthorization[] = [
         usedUnits: 0,
       },
     ]),
-    files: [],
     createdAt: "2025-12-10T10:00:00.000Z",
     updatedAt: "2026-01-05T09:30:00.000Z",
   },
 
-  // pa-2: Expiring — vence en ~40 días desde la fecha de escritura (2026-03-31)
   {
     id: "pa-2",
     clientId: DEFAULT_CLIENT_ID,
@@ -116,10 +100,12 @@ const MOCK_PA_SEED: PriorAuthorization[] = [
     primaryDiagnosisCode: "F84.0",
     startDate: "2025-06-09",
     endDate: "2026-05-09",
-    durationInterval: "weeks",
+    durationInterval: "WEEKS",
     requestDate: "2025-05-15",
     responseDate: "2025-06-01",
     comments: null,
+    attachment: null,
+    attachmentName: null,
     status: "Expiring",
     billingCodes: makeBillingCodes([
       {
@@ -151,12 +137,10 @@ const MOCK_PA_SEED: PriorAuthorization[] = [
         usedUnits: 2842,
       },
     ]),
-    files: [],
     createdAt: "2025-06-01T08:00:00.000Z",
     updatedAt: "2026-01-10T11:00:00.000Z",
   },
 
-  // pa-3: Expired — histórico
   {
     id: "pa-3",
     clientId: DEFAULT_CLIENT_ID,
@@ -168,10 +152,12 @@ const MOCK_PA_SEED: PriorAuthorization[] = [
     primaryDiagnosisCode: null,
     startDate: "2025-06-01",
     endDate: "2025-06-08",
-    durationInterval: "days",
+    durationInterval: "DAYS",
     requestDate: null,
     responseDate: null,
     comments: null,
+    attachment: null,
+    attachmentName: null,
     status: "Expired",
     billingCodes: makeBillingCodes([
       {
@@ -182,21 +168,15 @@ const MOCK_PA_SEED: PriorAuthorization[] = [
         usedUnits: 24,
       },
     ]),
-    files: [],
     createdAt: "2025-06-01T07:00:00.000Z",
     updatedAt: "2025-06-08T18:00:00.000Z",
   },
 ]
 
-// ─── Mutable in-memory DB ─────────────────────────────────────────────────────
-
 let mockPADb: PriorAuthorization[] = [...MOCK_PA_SEED]
-
-// ─── CRUD Functions ───────────────────────────────────────────────────────────
 
 export function getMockPAsByClientId(clientId: string): PriorAuthorization[] {
   const results = mockPADb.filter((pa) => pa.clientId === clientId)
-  // Recalculate status on every read to keep it fresh
   return results.map((pa) => ({
     ...pa,
     status: calculatePAStatus(pa.startDate, pa.endDate),
@@ -207,117 +187,9 @@ export function getMockPAsByClientId(clientId: string): PriorAuthorization[] {
   }))
 }
 
-export function createMockPA(data: CreatePriorAuthorizationDto): PriorAuthorization {
-  // RN-PA-02: Enforce only one active PA per client + insurance
-  const existingActive = mockPADb.find(
-    (pa) =>
-      pa.clientId === data.clientId &&
-      pa.insuranceId === data.insuranceId &&
-      calculatePAStatus(pa.startDate, pa.endDate) !== "Expired"
-  )
-
-  if (existingActive) {
-    throw new Error(
-      `An active Prior Authorization (${existingActive.authNumber}) already exists for this insurance. ` +
-      `Only one active authorization is allowed per insurance at a time.`
-    )
-  }
-
-  const now = new Date().toISOString()
-  const id = makeId("pa")
-
-  const newPA: PriorAuthorization = {
-    id,
-    clientId: data.clientId,
-    authNumber: data.authNumber,
-    insuranceId: data.insuranceId,
-    insuranceName: "", // denormalized — will be filled by hook from insurance list
-    memberInsuranceId: "", // denormalized — filled by hook
-    primaryDiagnosisId: data.primaryDiagnosisId ?? null,
-    primaryDiagnosisCode: null, // filled by hook
-    startDate: data.startDate,
-    endDate: data.endDate,
-    durationInterval: data.durationInterval,
-    requestDate: data.requestDate ?? null,
-    responseDate: data.responseDate ?? null,
-    comments: data.comments ?? null,
-    status: calculatePAStatus(data.startDate, data.endDate),
-    billingCodes: data.billingCodes.map((bc, index) => ({
-      ...bc,
-      id: makeId(`bc-entry-new-${index}`),
-      billingCodeLabel: "", // filled by hook from billing codes list
-      remainingUnits: bc.approvedUnits - bc.usedUnits,
-    })),
-    files: data.files.map((f) => ({
-      ...f,
-      id: makeId("file"),
-    })),
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  mockPADb = [newPA, ...mockPADb]
-  return newPA
-}
-
-export function updateMockPA(data: UpdatePriorAuthorizationDto): PriorAuthorization {
-  const existing = mockPADb.find((pa) => pa.id === data.id)
-
-  if (!existing) {
-    throw new Error("Prior Authorization not found")
-  }
-
-  // RN-PA-02: check for conflicts excluding self
-  const conflicting = mockPADb.find(
-    (pa) =>
-      pa.id !== data.id &&
-      pa.clientId === data.clientId &&
-      pa.insuranceId === data.insuranceId &&
-      calculatePAStatus(pa.startDate, pa.endDate) !== "Expired"
-  )
-
-  if (conflicting) {
-    throw new Error(
-      `An active Prior Authorization (${conflicting.authNumber}) already exists for this insurance.`
-    )
-  }
-
-  const updated: PriorAuthorization = {
-    ...existing,
-    authNumber: data.authNumber,
-    insuranceId: data.insuranceId,
-    primaryDiagnosisId: data.primaryDiagnosisId ?? null,
-    startDate: data.startDate,
-    endDate: data.endDate,
-    durationInterval: data.durationInterval,
-    requestDate: data.requestDate ?? null,
-    responseDate: data.responseDate ?? null,
-    comments: data.comments ?? null,
-    status: calculatePAStatus(data.startDate, data.endDate),
-    billingCodes: data.billingCodes.map((bc, index) => ({
-      ...bc,
-      id: makeId(`bc-entry-upd-${index}`),
-      billingCodeLabel: existing.billingCodes.find((e) => e.billingCodeId === bc.billingCodeId)
-        ?.billingCodeLabel ?? "",
-      remainingUnits: bc.approvedUnits - bc.usedUnits,
-    })),
-    files: data.files.map((f) => ({
-      ...f,
-      id: ("id" in f ? (f as PriorAuthorization["files"][0]).id : null) ?? makeId("file"),
-    })),
-    updatedAt: new Date().toISOString(),
-  }
-
-  mockPADb = mockPADb.map((pa) => (pa.id === data.id ? updated : pa))
-  return updated
-}
-
-// NOTE: PAs are never hard-deleted — this is kept as a "cancel" stub for future use.
-// TODO (backend): Expose a PATCH /prior-authorizations/:id/cancel endpoint instead.
 export function cancelMockPA(paId: string): void {
   const existing = mockPADb.find((pa) => pa.id === paId)
   if (!existing) throw new Error("Prior Authorization not found")
-  // In mock: just mark as expired by setting endDate to yesterday
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
   mockPADb = mockPADb.map((pa) =>
@@ -325,9 +197,13 @@ export function cancelMockPA(paId: string): void {
       ? {
           ...pa,
           endDate: yesterday.toISOString().split("T")[0],
-          status: "Expired",
+          status: "Expired" as const,
           updatedAt: new Date().toISOString(),
         }
       : pa
   )
+}
+
+export function makeNewPAId(): string {
+  return makeId("pa")
 }
