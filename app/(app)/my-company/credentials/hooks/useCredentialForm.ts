@@ -43,7 +43,7 @@ export function useCredentialForm({ credentialId = null }: UseCredentialFormProp
   
   const { billingCodes: allBillingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({
     page: 0,
-    pageSize: 1000,
+    pageSize: 100,
     filters: [],
   })
   

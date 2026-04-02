@@ -62,7 +62,7 @@ function ratesForPlanEntity(rows: InsurancePlanRateRow[], planEntityId: string |
 export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: EditInsurancePlanModalProps) {
   const { planTypes, isLoading: isLoadingPlanTypes } = usePlanTypeCatalog()
   const { currencies, isLoading: isLoadingCurrencies } = useCurrencyCatalog()
-  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 1000 })
+  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [isLoadingRate, setIsLoadingRate] = useState(false)
   const [rates, setRates] = useState<InsurancePlanRateRow[]>([])

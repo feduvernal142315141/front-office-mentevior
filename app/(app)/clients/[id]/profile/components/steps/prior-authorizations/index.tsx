@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ChevronDown, ChevronRight, FileCheck } from "lucide-react"
+import { ChevronDown, ChevronRight, Edit2, FileCheck } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { PriorAuthModal } from "./PriorAuthModal"
@@ -9,6 +9,7 @@ import { LinkedEventsModal } from "./LinkedEventsModal"
 import { usePriorAuthorizationsByClient } from "@/lib/modules/prior-authorizations/hooks/use-prior-authorizations-by-client"
 import { useClientInsurancesByClient } from "@/lib/modules/client-insurances/hooks/use-client-insurances-by-client"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
+import { getAuthorizationBillingCodesByPriorAuthId } from "@/lib/modules/authorization-billing-codes/services/authorization-billing-codes-api.service"
 import {
   calculatePAStatus,
   getPAStatusBadgeClasses,
@@ -42,6 +43,8 @@ export function StepPriorAuthorizations({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingPA, setEditingPA] = useState<PriorAuthorization | null>(null)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [billingCodesMap, setBillingCodesMap] = useState<Record<string, PriorAuthBillingCode[]>>({})
+  const [loadingBCIds, setLoadingBCIds] = useState<Set<string>>(new Set())
   const [linkedEventsPA, setLinkedEventsPA] = useState<PriorAuthorization | null>(null)
   const [linkedEventsCode, setLinkedEventsCode] = useState<PriorAuthBillingCode | null>(null)
   const [isLinkedEventsOpen, setIsLinkedEventsOpen] = useState(false)
@@ -62,7 +65,7 @@ export function StepPriorAuthorizations({
 
   const { pas, isLoading, error, refetch } = usePriorAuthorizationsByClient(resolvedClientId)
   const { insurances } = useClientInsurancesByClient(resolvedClientId)
-  const { billingCodes: availableBillingCodes } = useBillingCodes({ pageSize: 300 })
+  const { billingCodes: availableBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
 
   // Wizard integration
   useEffect(() => {
@@ -82,8 +85,21 @@ export function StepPriorAuthorizations({
   const toggleExpanded = (id: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+        if (!(id in billingCodesMap)) {
+          setLoadingBCIds((s) => new Set(s).add(id))
+          void getAuthorizationBillingCodesByPriorAuthId(id)
+            .then((codes) => {
+              setBillingCodesMap((m) => ({ ...m, [id]: codes }))
+            })
+            .finally(() => {
+              setLoadingBCIds((s) => { const n = new Set(s); n.delete(id); return n })
+            })
+        }
+      }
       return next
     })
   }
@@ -184,7 +200,7 @@ export function StepPriorAuthorizations({
       {!isLoading && enrichedPAs.length > 0 && (
         <div className="rounded-xl border border-slate-200 overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[36px_1fr_1fr_1fr_110px_110px_90px_80px] gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
+          <div className="grid grid-cols-[36px_1fr_1fr_1fr_110px_110px_90px_48px] gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
             {["", "PA Number", "Insurance", "Recipient ID", "Start Date", "End Date", "Status", "Actions"].map(
               (h) => (
                 <span
@@ -209,7 +225,7 @@ export function StepPriorAuthorizations({
                 )}
               >
                 {/* Main row */}
-                <div className="grid grid-cols-[36px_1fr_1fr_1fr_110px_110px_90px_80px] gap-3 px-4 py-3.5 items-center hover:bg-slate-50/80 transition-colors">
+                <div className="grid grid-cols-[36px_1fr_1fr_1fr_110px_110px_90px_48px] gap-3 px-4 py-3.5 items-center hover:bg-slate-50/80 transition-colors">
                   {/* Expand toggle */}
                   <button
                     type="button"
@@ -257,7 +273,6 @@ export function StepPriorAuthorizations({
                     {pa.status}
                   </span>
 
-                  {/* Edit button */}
                   <div className="flex justify-end">
                     <button
                       type="button"
@@ -266,14 +281,20 @@ export function StepPriorAuthorizations({
                         setIsModalOpen(true)
                       }}
                       className={cn(
-                        "h-8 px-3 flex items-center gap-1.5 rounded-lg text-xs font-medium",
+                        "group/edit relative h-9 w-9",
+                        "flex items-center justify-center rounded-xl",
                         "bg-gradient-to-b from-blue-50 to-blue-100/80",
-                        "border border-blue-200/60 text-blue-600",
-                        "hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300",
-                        "transition-all duration-150"
+                        "border border-blue-200/60 shadow-sm shadow-blue-900/5",
+                        "hover:from-blue-100 hover:to-blue-200/90",
+                        "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
+                        "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                        "transition-all duration-200 ease-out",
+                        "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
                       )}
+                      title="Edit prior authorization"
+                      aria-label="Edit prior authorization"
                     >
-                      Edit
+                      <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
                     </button>
                   </div>
                 </div>
@@ -281,7 +302,13 @@ export function StepPriorAuthorizations({
                 {/* Expanded billing codes */}
                 {isExpanded && (
                   <div className="px-4 pb-4 bg-slate-50/60 border-t border-slate-100">
-                    {pa.billingCodes.length === 0 ? (
+                    {loadingBCIds.has(pa.id) ? (
+                      <div className="space-y-2 mt-3">
+                        {[1, 2].map((i) => (
+                          <div key={i} className="h-10 rounded-lg bg-slate-200 animate-pulse" />
+                        ))}
+                      </div>
+                    ) : (billingCodesMap[pa.id] ?? []).length === 0 ? (
                       <p className="py-4 text-sm text-slate-400 italic text-center">
                         No billing codes assigned to this authorization.
                       </p>
@@ -307,7 +334,8 @@ export function StepPriorAuthorizations({
                         </div>
 
                         {/* Sub-table rows */}
-                        {pa.billingCodes.map((bc, bcIdx) => {
+                        {(billingCodesMap[pa.id] ?? []).map((bc, bcIdx) => {
+                          const paBillingCodes = billingCodesMap[pa.id] ?? []
                           const estimated = calculateEstimatedUsage(
                             bc.approvedUnits,
                             pa.startDate,
@@ -323,12 +351,12 @@ export function StepPriorAuthorizations({
                               key={bc.id}
                               className={cn(
                                 "grid grid-cols-[2fr_1fr_1fr_1fr_2fr_2fr] gap-3 px-4 py-3 items-center",
-                                bcIdx < pa.billingCodes.length - 1 &&
+                                bcIdx < paBillingCodes.length - 1 &&
                                   "border-b border-slate-100"
                               )}
                             >
                               <span className="text-sm font-medium text-[#037ECC] truncate" title={bc.billingCodeLabel}>
-                                {bc.billingCodeLabel.split(" — ")[0]}
+                                {bc.billingCodeLabel}
                               </span>
                               <span className="text-sm tabular-nums text-slate-700">
                                 {bc.approvedUnits.toLocaleString()}
@@ -376,6 +404,13 @@ export function StepPriorAuthorizations({
         availableBillingCodes={availableBillingCodes}
         onSaved={async () => {
           setIsModalOpen(false)
+          if (editingPA) {
+            setBillingCodesMap((m) => {
+              const next = { ...m }
+              delete next[editingPA.id]
+              return next
+            })
+          }
           setEditingPA(null)
           await refetch()
         }}

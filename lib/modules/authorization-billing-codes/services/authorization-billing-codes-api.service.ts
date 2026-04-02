@@ -5,11 +5,15 @@ import type {
   UpdateAuthorizationBillingCodeDto,
 } from "@/lib/types/prior-authorization.types"
 
+function buildBillingCodeLabel(raw: Record<string, unknown>): string {
+  return (raw.billingCodeCode as string) ?? ""
+}
+
 function normalizeBC(raw: Record<string, unknown>): PriorAuthBillingCode {
   return {
     id: raw.id as string,
     billingCodeId: (raw.billingCodeId as string) ?? "",
-    billingCodeLabel: (raw.billingCodeLabel as string) ?? "",
+    billingCodeLabel: buildBillingCodeLabel(raw),
     approvedUnits: (raw.approvedUnits as number) ?? 0,
     usedUnits: (raw.usedUnits as number) ?? 0,
     remainingUnits:

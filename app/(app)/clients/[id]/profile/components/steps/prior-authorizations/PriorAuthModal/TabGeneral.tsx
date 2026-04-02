@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { Controller, type Control, type FieldErrors } from "react-hook-form"
 import { Upload, X, FileText } from "lucide-react"
 import { toast } from "sonner"
@@ -12,6 +12,7 @@ import {
   type PriorAuthFormValues,
 } from "@/lib/schemas/prior-authorization-form.schema"
 import type { ClientInsurance } from "@/lib/types/client-insurance.types"
+import { useDiagnosesByClient } from "@/lib/modules/diagnoses/hooks/use-diagnoses-by-client"
 import { calculateDuration } from "@/lib/utils/prior-auth-utils"
 import { cn } from "@/lib/utils"
 
@@ -23,7 +24,7 @@ interface TabGeneralProps {
   watch: (field: keyof PriorAuthFormValues) => string
   setValue: (field: keyof PriorAuthFormValues, value: string) => void
   insurances: ClientInsurance[]
-  isEditMode: boolean
+  clientId: string
 }
 
 export function TabGeneral({
@@ -32,7 +33,7 @@ export function TabGeneral({
   watch,
   setValue,
   insurances,
-  isEditMode,
+  clientId,
 }: TabGeneralProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -40,6 +41,29 @@ export function TabGeneral({
   const endDate = watch("endDate")
   const interval = watch("durationInterval")
   const attachmentName = watch("attachmentName")
+  const primaryDiagnosisId = watch("primaryDiagnosisId")
+  const insuranceId = watch("insuranceId")
+
+  const { diagnoses, isLoading: isLoadingDiagnoses } = useDiagnosesByClient(clientId)
+
+  const diagnosisOptions = diagnoses.map((d) => ({
+    value: d.id,
+    label: `${d.code} — ${d.name}`,
+  }))
+
+  const activeInsurances = insurances.filter((ins) => ins.isActive)
+
+  useEffect(() => {
+    if (diagnoses.length === 1 && !primaryDiagnosisId) {
+      setValue("primaryDiagnosisId", diagnoses[0].id)
+    }
+  }, [diagnoses, primaryDiagnosisId, setValue])
+
+  useEffect(() => {
+    if (activeInsurances.length === 1 && !insuranceId) {
+      setValue("insuranceId", activeInsurances[0].id)
+    }
+  }, [activeInsurances.length, insuranceId, setValue])
 
   const duration = calculateDuration(
     startDate,
@@ -48,9 +72,10 @@ export function TabGeneral({
   )
   const durationDisplay = duration > 0 ? String(duration) : ""
 
-  const insuranceOptions = insurances
-    .filter((ins) => ins.isActive)
-    .map((ins) => ({ value: ins.id, label: ins.payerName }))
+  const insuranceOptions = activeInsurances.map((ins) => ({
+    value: ins.id,
+    label: ins.payerName,
+  }))
 
   const handleFileChange = (file: File | null) => {
     if (!file) return
@@ -128,18 +153,26 @@ export function TabGeneral({
         <Controller
           name="primaryDiagnosisId"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <div>
-              <FloatingInput
+              <FloatingSelect
                 label="Primary Diagnosis"
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                placeholder="e.g. F84.0"
+                options={diagnosisOptions}
+                hasError={!!fieldState.error}
+                searchable={diagnosisOptions.length > 5}
+                disabled={isLoadingDiagnoses}
               />
-              <p className="mt-1 text-xs text-slate-400">
-                From client&apos;s diagnosis records
-              </p>
+              {fieldState.error && (
+                <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
+              )}
+              {!isLoadingDiagnoses && diagnosisOptions.length === 0 && (
+                <p className="mt-1 text-xs text-amber-600">
+                  No diagnoses found for this client.
+                </p>
+              )}
             </div>
           )}
         />
@@ -224,29 +257,7 @@ export function TabGeneral({
           )}
         />
 
-        {isEditMode && (
-          <div>
-            <div className="relative">
-              <div
-                className={cn(
-                  "w-full h-[52px] 2xl:h-[56px] px-4 rounded-[16px] flex items-center",
-                  "bg-slate-50 border border-slate-200 text-[15px]",
-                  "cursor-not-allowed select-none"
-                )}
-              >
-                <span className="text-slate-500 text-sm italic">
-                  Calculated automatically
-                </span>
-              </div>
-              <label className="absolute left-4 px-1 top-0 -translate-y-1/2 text-xs text-slate-400 bg-white/80 pointer-events-none">
-                Status <span className="text-slate-300">(read-only)</span>
-              </label>
-            </div>
-            <p className="mt-1 text-xs text-slate-400">
-              Approved → Expiring (2mo before expiry) → Expired
-            </p>
-          </div>
-        )}
+
       </div>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">

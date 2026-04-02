@@ -218,7 +218,7 @@ export function PriorAuthModal({
                 watch={(field) => form.watch(field) as string}
                 setValue={(field, value) => form.setValue(field, value)}
                 insurances={insurances}
-                isEditMode={isEditMode}
+                clientId={clientId}
               />
             )}
 

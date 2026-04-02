@@ -83,16 +83,6 @@ export function TabAuthorizations({
     if (ok) await refetch()
   }
 
-  if (!paId) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 gap-3 text-slate-500">
-        <p className="text-sm font-medium text-center">
-          Save the prior authorization first to manage billing codes.
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div>
       {isLoading ? (

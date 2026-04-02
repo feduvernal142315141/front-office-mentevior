@@ -152,7 +152,7 @@ export function InsurancePlanOverview({
   ratesError,
 }: InsurancePlanOverviewProps) {
   const { currencies } = useCurrencyCatalog()
-  const { billingCodes } = useBillingCodes({ page: 0, pageSize: 1000 })
+  const { billingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
 
   const currencyLabelById = useMemo(() => {
     const m = new Map<string, string>()

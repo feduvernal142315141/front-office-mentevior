@@ -50,7 +50,7 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
   
   const { billingCodes: allBillingCodes, isLoading: isLoadingParents } = useBillingCodes({
     page: 0,
-    pageSize: 1000,
+    pageSize: 100,
     filters: [],
   })
   
