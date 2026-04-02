@@ -17,6 +17,8 @@ interface CustomModalProps {
   hideHeader?: boolean
   onOpenAutoFocus?: (e: Event) => void
   onInteractOutside?: (e: Event) => void
+  onPointerDownOutside?: (e: Event) => void
+  onEscapeKeyDown?: (e: KeyboardEvent) => void
 }
 
 export function CustomModal({
@@ -32,6 +34,8 @@ export function CustomModal({
   hideHeader = false,
   onOpenAutoFocus,
   onInteractOutside,
+  onPointerDownOutside,
+  onEscapeKeyDown,
 }: CustomModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -39,6 +43,8 @@ export function CustomModal({
         showCloseButton={showCloseButton}
         onOpenAutoFocus={onOpenAutoFocus}
         onInteractOutside={onInteractOutside}
+        onPointerDownOutside={onPointerDownOutside}
+        onEscapeKeyDown={onEscapeKeyDown}
         className={cn(
           "p-0 gap-0 rounded-2xl shadow-[0_30px_80px_rgba(2,12,27,0.28)] overflow-hidden bg-transparent",
           maxWidthClassName,

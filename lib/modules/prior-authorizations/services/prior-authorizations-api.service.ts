@@ -56,6 +56,22 @@ function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
   }
 }
 
+export async function getPriorAuthorizationById(
+  paId: string
+): Promise<PriorAuthorization> {
+  const response = await serviceGet<Record<string, unknown>>(
+    `/prior-authorizations/${paId}`
+  )
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(
+      (response.data as { message?: string })?.message || "Failed to fetch prior authorization"
+    )
+  }
+
+  return normalizePA(response.data as Record<string, unknown>)
+}
+
 export async function getPriorAuthorizationsByClientId(
   clientId: string
 ): Promise<PriorAuthorization[]> {

@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Controller, type Control, type FieldErrors } from "react-hook-form"
-import { Upload, X, FileText } from "lucide-react"
+import { Upload, X, FileText, Eye } from "lucide-react"
 import { toast } from "sonner"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import {
   DURATION_INTERVAL_OPTIONS,
   type PriorAuthFormValues,
@@ -25,6 +26,21 @@ interface TabGeneralProps {
   setValue: (field: keyof PriorAuthFormValues, value: string) => void
   insurances: ClientInsurance[]
   clientId: string
+  /** URL de S3 del attachment ya guardado en el servidor (no base64) */
+  existingAttachmentUrl?: string | null
+  /** Callback para limpiar la URL existente cuando se sube un archivo nuevo */
+  onClearExistingAttachment?: () => void
+}
+
+function getFileNameFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    const segment = parsed.pathname.split("/").pop()
+    return segment ? decodeURIComponent(segment) : null
+  } catch {
+    return null
+  }
 }
 
 export function TabGeneral({
@@ -34,8 +50,11 @@ export function TabGeneral({
   setValue,
   insurances,
   clientId,
+  existingAttachmentUrl,
+  onClearExistingAttachment,
 }: TabGeneralProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
 
   const startDate = watch("startDate")
   const endDate = watch("endDate")
@@ -87,6 +106,8 @@ export function TabGeneral({
     reader.onload = (e) => {
       const result = e.target?.result as string
       const base64 = result.split(",")[1] ?? result
+      // al subir un archivo nuevo, la URL existente del servidor queda reemplazada
+      onClearExistingAttachment?.()
       setValue("attachment", base64)
       setValue("attachmentName", file.name)
     }
@@ -94,9 +115,19 @@ export function TabGeneral({
   }
 
   const handleRemoveAttachment = () => {
+    onClearExistingAttachment?.()
     setValue("attachment", "")
     setValue("attachmentName", "")
     if (inputRef.current) inputRef.current.value = ""
+  }
+
+  const handleViewExisting = () => {
+    if (existingAttachmentUrl) {
+      setViewerDocument({
+        url: existingAttachmentUrl,
+        name: getFileNameFromUrl(existingAttachmentUrl) ?? "Attachment",
+      })
+    }
   }
 
   return (
@@ -344,7 +375,8 @@ export function TabGeneral({
           Attachment
         </label>
 
-        {attachmentName ? (
+        {/* Archivo nuevo subido en esta sesión */}
+        {attachmentName && !existingAttachmentUrl ? (
           <div
             className={cn(
               "flex items-center gap-3 rounded-xl px-4 py-3",
@@ -370,7 +402,48 @@ export function TabGeneral({
               <X className="w-4 h-4" />
             </button>
           </div>
+        ) : existingAttachmentUrl ? (
+          /* Archivo existente en S3 */
+          <div
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-4 py-3",
+              "border border-slate-200 bg-white shadow-sm"
+            )}
+          >
+            <div className="h-9 w-9 rounded-lg bg-[#037ECC]/10 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-4 h-4 text-[#037ECC]" />
+            </div>
+            <p className="flex-1 text-sm font-medium text-slate-800 truncate"
+               title={getFileNameFromUrl(existingAttachmentUrl) ?? "Attachment"}>
+              {getFileNameFromUrl(existingAttachmentUrl) ?? "Attachment"}
+            </p>
+            <button
+              type="button"
+              onClick={handleViewExisting}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]",
+                "transition-colors duration-150"
+              )}
+              title="View attachment"
+            >
+              <Eye className="w-4 h-4" />
+              View
+            </button>
+            <button
+              type="button"
+              onClick={handleRemoveAttachment}
+              className={cn(
+                "h-7 w-7 flex items-center justify-center rounded-lg flex-shrink-0",
+                "text-slate-400 hover:text-red-500 hover:bg-red-50",
+                "transition-colors duration-150"
+              )}
+              title="Remove attachment"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         ) : (
+          /* Sin archivo — zona de upload */
           <div
             onClick={() => inputRef.current?.click()}
             className={cn(
@@ -399,6 +472,15 @@ export function TabGeneral({
           onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
         />
       </div>
+
+      {viewerDocument && (
+        <DocumentViewer
+          open={!!viewerDocument}
+          onClose={() => setViewerDocument(null)}
+          documentUrl={viewerDocument.url}
+          fileName={viewerDocument.name}
+        />
+      )}
     </div>
   )
 }

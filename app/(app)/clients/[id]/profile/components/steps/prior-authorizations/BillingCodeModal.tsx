@@ -71,16 +71,13 @@ export function BillingCodeModal({
     )
     .map((bc) => ({
       value: bc.id,
-      label: `${bc.code}${bc.modifier ? `-${bc.modifier}` : ""} — ${bc.type}`,
+      label: bc.code,
     }))
 
   const handleSubmit = form.handleSubmit((values) => {
     const selected = billingCodes.find((bc) => bc.id === values.billingCodeId)
-    const label = selected
-      ? `${selected.code}${selected.modifier ? `-${selected.modifier}` : ""} — ${selected.type}`
-      : values.billingCodeId
+    const label = selected?.code ?? values.billingCodeId
     onConfirm(values, label)
-    form.reset(billingCodeEntryDefaults)
   })
 
   const handleClose = () => {

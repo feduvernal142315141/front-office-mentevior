@@ -1,20 +1,20 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ChevronDown, ChevronRight, Edit2, FileCheck } from "lucide-react"
+import { ChevronDown, ChevronRight, Edit2, FileCheck, Calendar, Shield, Hash, Trash2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { PriorAuthModal } from "./PriorAuthModal"
 import { LinkedEventsModal } from "./LinkedEventsModal"
 import { usePriorAuthorizationsByClient } from "@/lib/modules/prior-authorizations/hooks/use-prior-authorizations-by-client"
+import { useCancelPriorAuthorization } from "@/lib/modules/prior-authorizations/hooks/use-cancel-prior-authorization"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { useClientInsurancesByClient } from "@/lib/modules/client-insurances/hooks/use-client-insurances-by-client"
-import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
+import { useAvailableBillingCodesForAuth } from "@/lib/modules/billing-codes/hooks/use-available-billing-codes-for-auth"
 import { getAuthorizationBillingCodesByPriorAuthId } from "@/lib/modules/authorization-billing-codes/services/authorization-billing-codes-api.service"
 import {
   calculatePAStatus,
   getPAStatusBadgeClasses,
-  calculateEstimatedUsage,
-  calculateRemainingUsage,
 } from "@/lib/utils/prior-auth-utils"
 import type {
   PriorAuthorization,
@@ -48,6 +48,9 @@ export function StepPriorAuthorizations({
   const [linkedEventsPA, setLinkedEventsPA] = useState<PriorAuthorization | null>(null)
   const [linkedEventsCode, setLinkedEventsCode] = useState<PriorAuthBillingCode | null>(null)
   const [isLinkedEventsOpen, setIsLinkedEventsOpen] = useState(false)
+  const [deletingPA, setDeletingPA] = useState<PriorAuthorization | null>(null)
+
+  const { cancel, isLoading: isDeleting } = useCancelPriorAuthorization()
 
   // Resolve clientId — same pattern as StepInsurances
   const resolvedClientId = useMemo(() => {
@@ -65,7 +68,7 @@ export function StepPriorAuthorizations({
 
   const { pas, isLoading, error, refetch } = usePriorAuthorizationsByClient(resolvedClientId)
   const { insurances } = useClientInsurancesByClient(resolvedClientId)
-  const { billingCodes: availableBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
+  const { billingCodes: availableBillingCodes } = useAvailableBillingCodesForAuth(resolvedClientId ?? undefined)
 
   // Wizard integration
   useEffect(() => {
@@ -196,84 +199,117 @@ export function StepPriorAuthorizations({
         </div>
       )}
 
-      {/* PA Table */}
+      {/* PA Cards */}
       {!isLoading && enrichedPAs.length > 0 && (
-        <div className="rounded-xl border border-slate-200 overflow-hidden">
-          {/* Table header */}
-          <div className="grid grid-cols-[36px_1fr_1fr_1fr_110px_110px_90px_48px] gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
-            {["", "PA Number", "Insurance", "Recipient ID", "Start Date", "End Date", "Status", "Actions"].map(
-              (h) => (
-                <span
-                  key={h}
-                  className="text-xs font-semibold text-slate-500 uppercase tracking-wider"
-                >
-                  {h}
-                </span>
-              )
-            )}
+        <div className="space-y-3">
+          {/* Column labels — same flex structure as card rows */}
+          <div className="flex items-center gap-4 px-5 pb-1">
+            <div className="w-8 flex-shrink-0" />
+            <div className="flex items-center gap-2 min-w-[120px]">
+              <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">PA Number</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Insurance</span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0 mr-6">
+              <div className="w-3.5" />
+              <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Period</span>
+              <span className="invisible">→</span>
+              <span className="invisible">00/00/0000</span>
+            </div>
+            <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider flex-shrink-0 mr-2">
+              Status
+            </span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="w-8 text-center text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Actions</span>
+              <div className="w-8" />
+            </div>
           </div>
 
-          {/* PA rows */}
-          {enrichedPAs.map((pa, idx) => {
+          {enrichedPAs.map((pa) => {
             const isExpanded = expandedIds.has(pa.id)
+            const codes = billingCodesMap[pa.id] ?? []
 
             return (
               <div
                 key={pa.id}
-                className={cn(
-                  idx < enrichedPAs.length - 1 && "border-b border-slate-200"
-                )}
+                className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-shadow hover:shadow-md"
               >
-                {/* Main row */}
-                <div className="grid grid-cols-[36px_1fr_1fr_1fr_110px_110px_90px_48px] gap-3 px-4 py-3.5 items-center hover:bg-slate-50/80 transition-colors">
+                {/* Card header */}
+                <div className="flex items-center gap-4 px-5 py-4">
                   {/* Expand toggle */}
                   <button
                     type="button"
                     onClick={() => toggleExpanded(pa.id)}
-                    className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-200 transition-colors"
+                    className={cn(
+                      "h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-xl",
+                      "bg-slate-100 hover:bg-slate-200 transition-colors duration-150"
+                    )}
                     aria-label={isExpanded ? "Collapse" : "Expand"}
                   >
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-slate-500" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-slate-500" />
-                    )}
+                    <ChevronDown
+                      className={cn(
+                        "w-4 h-4 text-slate-500 transition-transform duration-200",
+                        isExpanded ? "rotate-0" : "-rotate-90"
+                      )}
+                    />
                   </button>
 
-                  <span className="text-sm font-semibold text-slate-800 tabular-nums">
-                    {pa.authNumber}
-                  </span>
-
-                  <span
-                    className="text-sm text-slate-700 truncate"
-                    title={pa.insuranceName}
-                  >
-                    {pa.insuranceName || "—"}
-                  </span>
-
-                  <span className="text-sm tabular-nums text-slate-600">
-                    {pa.memberInsuranceId || "—"}
-                  </span>
-
-                  <div>
-                    <span className="text-sm text-slate-700">{formatDate(pa.startDate)}</span>
+                  {/* PA Number */}
+                  <div className="flex items-center gap-2 min-w-[120px]">
+                    <Hash className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <span className="text-sm font-bold text-slate-800 tabular-nums">
+                      {pa.authNumber}
+                    </span>
                   </div>
 
-                  <div>
-                    <span className="text-sm text-slate-700">{formatDate(pa.endDate)}</span>
+                  {/* Insurance */}
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Shield className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <span className="text-sm text-slate-600 truncate" title={pa.insuranceName}>
+                      {pa.insuranceName || "—"}
+                    </span>
+                  </div>
+
+                  {/* Date range */}
+                  <div className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 flex-shrink-0 mr-6">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{formatDate(pa.startDate)}</span>
+                    <span className="text-slate-300">→</span>
+                    <span>{formatDate(pa.endDate)}</span>
                   </div>
 
                   {/* Status badge */}
                   <span
                     className={cn(
-                      "inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-bold uppercase",
+                      "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase flex-shrink-0 mr-2",
                       getPAStatusBadgeClasses(pa.status)
                     )}
                   >
                     {pa.status}
                   </span>
 
-                  <div className="flex justify-end">
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setDeletingPA(pa)}
+                      className={cn(
+                        "group/del h-8 w-8",
+                        "flex items-center justify-center rounded-xl",
+                        "bg-gradient-to-b from-red-50 to-red-100/80",
+                        "border border-red-200/60 shadow-sm",
+                        "hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80",
+                        "hover:-translate-y-0.5 active:translate-y-0",
+                        "transition-all duration-200 ease-out",
+                        "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+                      )}
+                      title="Delete prior authorization"
+                      aria-label="Delete prior authorization"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-500 group-hover/del:text-red-700 transition-colors" />
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -281,103 +317,82 @@ export function StepPriorAuthorizations({
                         setIsModalOpen(true)
                       }}
                       className={cn(
-                        "group/edit relative h-9 w-9",
+                        "group/edit h-8 w-8",
                         "flex items-center justify-center rounded-xl",
                         "bg-gradient-to-b from-blue-50 to-blue-100/80",
-                        "border border-blue-200/60 shadow-sm shadow-blue-900/5",
-                        "hover:from-blue-100 hover:to-blue-200/90",
-                        "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
-                        "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                        "border border-blue-200/60 shadow-sm",
+                        "hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80",
+                        "hover:-translate-y-0.5 active:translate-y-0",
                         "transition-all duration-200 ease-out",
                         "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
                       )}
                       title="Edit prior authorization"
                       aria-label="Edit prior authorization"
                     >
-                      <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+                      <Edit2 className="w-3.5 h-3.5 text-blue-600 group-hover/edit:text-blue-700 transition-colors" />
                     </button>
                   </div>
                 </div>
 
-                {/* Expanded billing codes */}
+                {/* Expanded — billing codes */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 bg-slate-50/60 border-t border-slate-100">
+                  <div className="border-t border-slate-100 bg-slate-50/60 px-5 pb-4 pt-3">
+                    {/* Recipient ID pill */}
+                    {pa.memberInsuranceId && (
+                      <p className="mb-3 text-xs text-slate-400">
+                        Recipient ID: <span className="font-medium text-slate-600">{pa.memberInsuranceId}</span>
+                      </p>
+                    )}
+
                     {loadingBCIds.has(pa.id) ? (
-                      <div className="space-y-2 mt-3">
+                      <div className="space-y-2">
                         {[1, 2].map((i) => (
-                          <div key={i} className="h-10 rounded-lg bg-slate-200 animate-pulse" />
+                          <div key={i} className="h-10 rounded-xl bg-slate-200 animate-pulse" />
                         ))}
                       </div>
-                    ) : (billingCodesMap[pa.id] ?? []).length === 0 ? (
-                      <p className="py-4 text-sm text-slate-400 italic text-center">
-                        No billing codes assigned to this authorization.
+                    ) : codes.length === 0 ? (
+                      <p className="py-3 text-center text-sm text-slate-400 italic">
+                        No billing codes assigned.
                       </p>
                     ) : (
-                      <div className="mt-3 rounded-xl border border-slate-200 overflow-hidden bg-white">
-                        {/* Sub-table header */}
-                        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr_2fr] gap-3 px-4 py-2.5 bg-slate-100 border-b border-slate-200">
-                          {[
-                            "Allowed Billing Codes",
-                            "Max Units",
-                            "Used Units",
-                            "Remaining Units",
-                            "Estimated Usage",
-                            "Remaining Usage",
-                          ].map((h) => (
-                            <span
-                              key={h}
-                              className="text-xs font-semibold text-slate-500 uppercase tracking-wider"
-                            >
+                      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                        {/* Sub-header */}
+                        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-4 py-2 bg-slate-100/80 border-b border-slate-200">
+                          {["Billing Code", "Approved", "Used", "Remaining"].map((h) => (
+                            <span key={h} className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
                               {h}
                             </span>
                           ))}
                         </div>
 
-                        {/* Sub-table rows */}
-                        {(billingCodesMap[pa.id] ?? []).map((bc, bcIdx) => {
-                          const paBillingCodes = billingCodesMap[pa.id] ?? []
-                          const estimated = calculateEstimatedUsage(
-                            bc.approvedUnits,
-                            pa.startDate,
-                            pa.endDate
-                          )
-                          const remaining = calculateRemainingUsage(
-                            bc.remainingUnits,
-                            pa.endDate
-                          )
+                        {codes.map((bc, bcIdx) => {
+                          const isLow = bc.remainingUnits === 0
+                          const isWarning = !isLow && bc.remainingUnits < bc.approvedUnits * 0.1
 
                           return (
                             <div
                               key={bc.id}
                               className={cn(
-                                "grid grid-cols-[2fr_1fr_1fr_1fr_2fr_2fr] gap-3 px-4 py-3 items-center",
-                                bcIdx < paBillingCodes.length - 1 &&
-                                  "border-b border-slate-100"
+                                "grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-4 py-3 items-center",
+                                bcIdx < codes.length - 1 && "border-b border-slate-100"
                               )}
                             >
-                              <span className="text-sm font-medium text-[#037ECC] truncate" title={bc.billingCodeLabel}>
+                              <span className="block text-sm font-semibold text-[#037ECC] truncate min-w-0" title={bc.billingCodeLabel}>
                                 {bc.billingCodeLabel}
                               </span>
-                              <span className="text-sm tabular-nums text-slate-700">
+
+                              <span className="text-sm tabular-nums text-slate-600">
                                 {bc.approvedUnits.toLocaleString()}
                               </span>
-                              <span className="text-sm tabular-nums text-slate-700">
+                              <span className="text-sm tabular-nums text-slate-600">
                                 {bc.usedUnits.toLocaleString()}
                               </span>
-                              <span
-                                className={cn(
-                                  "text-sm tabular-nums font-semibold",
-                                  bc.remainingUnits === 0
-                                    ? "text-red-500"
-                                    : bc.remainingUnits < bc.approvedUnits * 0.1
-                                    ? "text-amber-600"
-                                    : "text-emerald-600"
-                                )}
-                              >
+                              <span className={cn(
+                                "text-sm tabular-nums font-bold",
+                                isLow ? "text-red-500" : isWarning ? "text-amber-600" : "text-emerald-600"
+                              )}>
                                 {bc.remainingUnits.toLocaleString()}
                               </span>
-                              <span className="text-xs text-slate-500">{estimated}</span>
-                              <span className="text-xs text-slate-500">{remaining}</span>
                             </div>
                           )
                         })}
@@ -402,12 +417,18 @@ export function StepPriorAuthorizations({
         clientId={resolvedClientId}
         insurances={insurances}
         availableBillingCodes={availableBillingCodes}
+        onRefresh={async () => { await refetch() }}
         onSaved={async () => {
           setIsModalOpen(false)
           if (editingPA) {
             setBillingCodesMap((m) => {
               const next = { ...m }
               delete next[editingPA.id]
+              return next
+            })
+            setExpandedIds((prev) => {
+              const next = new Set(prev)
+              next.delete(editingPA.id)
               return next
             })
           }
@@ -427,6 +448,26 @@ export function StepPriorAuthorizations({
         }}
         billingCode={linkedEventsCode}
         paNumber={linkedEventsPA?.authNumber ?? ""}
+      />
+
+      {/* Delete Confirm Modal */}
+      <DeleteConfirmModal
+        isOpen={!!deletingPA}
+        onClose={() => setDeletingPA(null)}
+        onConfirm={async () => {
+          if (!deletingPA) return
+          const ok = await cancel(deletingPA.id)
+          if (ok) {
+            setBillingCodesMap((m) => { const n = { ...m }; delete n[deletingPA.id]; return n })
+            setExpandedIds((prev) => { const n = new Set(prev); n.delete(deletingPA.id); return n })
+            setDeletingPA(null)
+            await refetch()
+          }
+        }}
+        title="Delete Prior Authorization"
+        message="Are you sure you want to delete this prior authorization? This action cannot be undone."
+        itemName={deletingPA ? `PA #${deletingPA.authNumber} — ${deletingPA.insuranceName}` : undefined}
+        isDeleting={isDeleting}
       />
     </div>
   )

@@ -12,7 +12,7 @@ import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
-import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
+import { useAvailableBillingCodesForRate } from "@/lib/modules/billing-codes/hooks/use-available-billing-codes-for-rate"
 import { useCurrencyCatalog } from "@/lib/modules/currencies/hooks/use-currency-catalog"
 import { usePlanTypeCatalog } from "@/lib/modules/payers/hooks/use-plan-type-catalog"
 import {
@@ -62,7 +62,7 @@ function ratesForPlanEntity(rows: InsurancePlanRateRow[], planEntityId: string |
 export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: EditInsurancePlanModalProps) {
   const { planTypes, isLoading: isLoadingPlanTypes } = usePlanTypeCatalog()
   const { currencies, isLoading: isLoadingCurrencies } = useCurrencyCatalog()
-  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
+  const { billingCodes, isLoading: isLoadingBillingCodes } = useAvailableBillingCodesForRate()
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [isLoadingRate, setIsLoadingRate] = useState(false)
   const [rates, setRates] = useState<InsurancePlanRateRow[]>([])
@@ -90,7 +90,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
 
   const billingOptions = billingCodes.map((bc) => ({
     value: bc.id,
-    label: `${bc.code} (${bc.type})`,
+    label: bc.code,
   }))
 
   const usdCurrencyId = useMemo(
@@ -266,17 +266,16 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   const ratesTableColumns: CustomTableColumn<InsurancePlanRateRow>[] = useMemo(
     () => [
       {
-        key: "amount",
-        header: "Amount",
+        key: "billingCode",
+        header: "Billing code",
         className: "whitespace-nowrap",
-        render: (row) => (
-          <span>
-            {new Intl.NumberFormat(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }).format(row.amount)}
-          </span>
-        ),
+        render: (row) => {
+          if (row.billingCodeName) return <span>{row.billingCodeName}</span>
+          const codeId = row.billingCodeId
+          if (!codeId) return <span>{"—"}</span>
+          const match = billingCodes.find((bc) => bc.id === codeId)
+          return <span>{match ? `${match.code} (${match.type})` : codeId}</span>
+        },
       },
       {
         key: "intervalType",
@@ -294,15 +293,17 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         render: (row) => <span>{row.currencyCode || currencyLabelById.get(row.currencyId) || "—"}</span>,
       },
       {
-        key: "billingCode",
-        header: "Billing code",
+        key: "amount",
+        header: "Amount",
         className: "whitespace-nowrap",
-        render: (row) => {
-          const codeId = row.billingCodeId
-          if (!codeId) return <span>{"—"}</span>
-          const match = billingCodes.find((bc) => bc.id === codeId)
-          return <span>{match ? `${match.code} (${match.type})` : codeId}</span>
-        },
+        render: (row) => (
+          <span>
+            {new Intl.NumberFormat(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(row.amount)}
+          </span>
+        ),
       },
       {
         key: "actions",
@@ -580,41 +581,42 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         </form>
       )}
 
-      <CustomTable<InsurancePlanRateRow>
-        columns={ratesTableColumns}
-        data={paginatedRates}
-        isLoading={false}
-        compactEmpty
-        emptyMessage='No rates yet. Use "Add rate" to create one.'
-        getRowKey={(row, index) => row.id ?? `rate-${(ratesPage - 1) * ratesPageSize + index}`}
-        pagination={
-          rates.length > 0
-            ? {
-                page: ratesPage,
-                pageSize: ratesPageSize,
-                total: rates.length,
-                onPageChange: setRatesPage,
-                onPageSizeChange: (size) => {
-                  setRatesPageSize(size)
-                  setRatesPage(1)
-                },
-                pageSizeOptions: [10, 25, 50],
-              }
-            : undefined
-        }
-      />
-
       {!showRateForm && (
-        <div className="flex justify-end pt-2 border-t border-slate-200/80">
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() => handleModalOpenChange(false)}
-            disabled={rateForm.formState.isSubmitting || isLoadingRate}
-          >
-            Save & close
-          </Button>
-        </div>
+        <>
+          <CustomTable<InsurancePlanRateRow>
+            columns={ratesTableColumns}
+            data={paginatedRates}
+            isLoading={false}
+            compactEmpty
+            emptyMessage='No rates yet. Use "Add rate" to create one.'
+            getRowKey={(row, index) => row.id ?? `rate-${(ratesPage - 1) * ratesPageSize + index}`}
+            pagination={
+              rates.length > 0
+                ? {
+                    page: ratesPage,
+                    pageSize: ratesPageSize,
+                    total: rates.length,
+                    onPageChange: setRatesPage,
+                    onPageSizeChange: (size) => {
+                      setRatesPageSize(size)
+                      setRatesPage(1)
+                    },
+                    pageSizeOptions: [10, 25, 50],
+                  }
+                : undefined
+            }
+          />
+          <div className="flex justify-end pt-2 border-t border-slate-200/80">
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => handleModalOpenChange(false)}
+              disabled={rateForm.formState.isSubmitting || isLoadingRate}
+            >
+              Save & close
+            </Button>
+          </div>
+        </>
       )}
     </div>
   )

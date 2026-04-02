@@ -117,6 +117,52 @@ export async function bulkCreateBillingCodes(catalogIds: string[]): Promise<bool
   return response.data as unknown as boolean
 }
 
+export async function getAvailableBillingCodesForRate(): Promise<BillingCodeListItem[]> {
+  const response = await serviceGet<BillingCodeListItem[]>(
+    `/billing-code/get-available-for-rate`
+  )
+
+  if (response.status === 404) return []
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(
+      (response.data as { message?: string })?.message || "Failed to fetch available billing codes for rate"
+    )
+  }
+
+  const data = response.data as unknown
+  const items: BillingCodeListItem[] = Array.isArray(data)
+    ? data
+    : Array.isArray((data as { entities?: unknown[] }).entities)
+      ? (data as { entities: BillingCodeListItem[] }).entities
+      : []
+
+  return items
+}
+
+export async function getAvailableBillingCodesForAuth(clientId: string): Promise<BillingCodeListItem[]> {
+  const response = await serviceGet<BillingCodeListItem[]>(
+    `/billing-code/get-available-for-authorization-billing-code/${clientId}`
+  )
+
+  if (response.status === 404) return []
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(
+      (response.data as { message?: string })?.message || "Failed to fetch available billing codes"
+    )
+  }
+
+  const data = response.data as unknown
+  const items: BillingCodeListItem[] = Array.isArray(data)
+    ? data
+    : Array.isArray((data as { entities?: unknown[] }).entities)
+      ? (data as { entities: BillingCodeListItem[] }).entities
+      : []
+
+  return items
+}
+
 export async function deleteBillingCode(id: string): Promise<boolean> {
   const response = await serviceDelete<boolean>(`/billing-code/${id}`)
 

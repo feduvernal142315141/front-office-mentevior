@@ -17,6 +17,7 @@ export function RolesTable() {
     totalCount,
     filteredCount,
     clearFilters,
+    deleteModal,
   } = useRolesTable()
 
   if (error) {
@@ -61,6 +62,8 @@ export function RolesTable() {
           getRowKey={(role) => role.id}
         />
       </Card>
+
+      {deleteModal}
     </div>
   )
 }

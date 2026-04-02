@@ -885,44 +885,17 @@ export function Step6Diagnoses({
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                {selectedReferringPhysician && (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      setSelectedReferringPhysician(null)
-                    }}
-                    className={cn(
-                      "group/delete relative h-9 w-9",
-                      "flex items-center justify-center rounded-xl",
-                      "bg-gradient-to-b from-red-50 to-red-100/80",
-                      "border border-red-200/60 shadow-sm shadow-red-900/5",
-                      "hover:from-red-100 hover:to-red-200/90",
-                      "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
-                      "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-                      "transition-all duration-200 ease-out",
-                      "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
-                    )}
-                    title="Remove referring physician"
-                    aria-label="Remove referring physician"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    setIsReferringPhysicianModalOpen(true)
-                  }}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
-                >
-                  <Plus className="w-4 h-4" />
-                  {selectedReferringPhysician ? "Change" : "Add Referring Physician"}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setIsReferringPhysicianModalOpen(true)
+                }}
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
+              >
+                <Plus className="w-4 h-4" />
+                {selectedReferringPhysician ? "Change" : "Add Referring Physician"}
+              </button>
             </div>
             {referringPhysicianError && (
               <p className="mt-3 text-sm text-red-600">{referringPhysicianError}</p>

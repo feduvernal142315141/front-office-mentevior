@@ -218,7 +218,7 @@ export function InsurancePlanOverview({
                 INTERVAL_OPTIONS.find((o) => o.value === row.intervalType)?.label ?? row.intervalType
               const currencyLabel = row.currencyCode || currencyLabelById.get(row.currencyId) || row.currencyId
               const codeId = row.billingCodeId
-              const billingCodeLabel = codeId ? (billingCodeLabelById.get(codeId) ?? codeId) : ""
+              const billingCodeLabel = row.billingCodeName || (codeId ? (billingCodeLabelById.get(codeId) ?? codeId) : "")
 
               return (
                 <div key={row.id ?? `rate-${index}`} className="space-y-4">

@@ -86,8 +86,6 @@ export function StepInsurances({
     defaultValues: clientInsuranceFormDefaults,
   })
 
-  const watchIsActive = form.watch("isActive")
-
   const payerOptions = useMemo(
     () => payers.map((payer) => ({ value: payer.id, label: payer.name })),
     [payers]
@@ -101,11 +99,6 @@ export function StepInsurances({
   const relationshipOptions = useMemo(
     () => INSURANCE_RELATIONSHIPS.map((rel) => ({ value: rel, label: rel })),
     []
-  )
-
-  const hasActivePrimary = useMemo(
-    () => insurances.some((ins) => ins.isPrimary && ins.isActive),
-    [insurances]
   )
 
   const totalCount = insurances.length
@@ -195,23 +188,16 @@ export function StepInsurances({
       className: "whitespace-nowrap",
       align: "center",
       render: (insurance) => {
-        if (insurance.isPrimary && insurance.isActive) {
+        if (insurance.isActive) {
           return (
             <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Primary
-            </span>
-          )
-        }
-        if (!insurance.isActive) {
-          return (
-            <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-              Inactive
+              Active
             </span>
           )
         }
         return (
-          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-blue-50 text-[#037ECC] border border-blue-200">
-            Active
+          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+            Inactive
           </span>
         )
       },
@@ -361,7 +347,8 @@ export function StepInsurances({
             setEditingInsurance(null)
             form.reset({
               ...clientInsuranceFormDefaults,
-              isPrimary: !hasActivePrimary,
+              isActive: insurances.length === 0,
+              isPrimary: insurances.length === 0,
             })
             setIsModalOpen(true)
           }}
@@ -561,12 +548,12 @@ export function StepInsurances({
             />
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="mt-6">
             <Controller
               name="isActive"
               control={form.control}
               render={({ field }) => (
-                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 max-w-sm">
                   <PremiumSwitch
                     checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
@@ -577,24 +564,6 @@ export function StepInsurances({
                 </div>
               )}
             />
-
-            {watchIsActive && (
-              <Controller
-                name="isPrimary"
-                control={form.control}
-                render={({ field }) => (
-                  <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
-                    <PremiumSwitch
-                      checked={Boolean(field.value)}
-                      onCheckedChange={field.onChange}
-                      label={field.value ? "Primary" : "Secondary"}
-                      description="Set as the primary insurance for this client"
-                      variant="default"
-                    />
-                  </div>
-                )}
-              />
-            )}
           </div>
 
           <div className="mt-5">

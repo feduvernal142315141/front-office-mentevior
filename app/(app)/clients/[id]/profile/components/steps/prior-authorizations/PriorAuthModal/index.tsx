@@ -1,12 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { Loader2, X } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { Button } from "@/components/custom/Button"
 import { TabGeneral } from "./TabGeneral"
-import { TabAuthorizations } from "./TabAuthorizations"
+import { TabAuthorizations, type TabAuthorizationsHandle } from "./TabAuthorizations"
+import { BillingCodeModal } from "../BillingCodeModal"
 import {
   priorAuthFormDefaults,
   priorAuthFormSchema,
@@ -23,6 +25,7 @@ import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import { calculatePAStatus, getPAStatusBadgeClasses } from "@/lib/utils/prior-auth-utils"
 import { useCreatePriorAuthorization } from "@/lib/modules/prior-authorizations/hooks/use-create-prior-authorization"
 import { useUpdatePriorAuthorization } from "@/lib/modules/prior-authorizations/hooks/use-update-prior-authorization"
+import { getPriorAuthorizationById } from "@/lib/modules/prior-authorizations/services/prior-authorizations-api.service"
 import { cn } from "@/lib/utils"
 
 type ModalTab = "general" | "authorizations"
@@ -35,6 +38,7 @@ interface PriorAuthModalProps {
   insurances: ClientInsurance[]
   availableBillingCodes: BillingCodeListItem[]
   onSaved: () => Promise<void>
+  onRefresh?: () => Promise<void>
   onViewLinkedEvents?: (pa: PriorAuthorization, code: PriorAuthBillingCode) => void
 }
 
@@ -43,6 +47,7 @@ export function PriorAuthModal({
   onClose,
   editingPA,
   clientId,
+  onRefresh,
   insurances,
   availableBillingCodes,
   onSaved,
@@ -52,6 +57,12 @@ export function PriorAuthModal({
 
   const [activeTab, setActiveTab] = useState<ModalTab>("general")
   const [createdPaId, setCreatedPaId] = useState<string | undefined>(undefined)
+  const [isFetchingPA, setIsFetchingPA] = useState(false)
+  const [existingAttachmentUrl, setExistingAttachmentUrl] = useState<string | null>(null)
+  const [isBCModalOpen, setIsBCModalOpen] = useState(false)
+  const [bcEditingCode, setBcEditingCode] = useState<PriorAuthBillingCode | null>(null)
+  const tabAuthRef = useRef<TabAuthorizationsHandle>(null)
+
 
   const { create, isLoading: isCreating } = useCreatePriorAuthorization()
   const { update, isLoading: isUpdating } = useUpdatePriorAuthorization()
@@ -67,25 +78,52 @@ export function PriorAuthModal({
     if (!open) return
 
     if (editingPA) {
-      form.reset({
-        authNumber: editingPA.authNumber,
-        insuranceId: editingPA.insuranceId,
-        primaryDiagnosisId: editingPA.primaryDiagnosisId ?? "",
-        startDate: editingPA.startDate,
-        endDate: editingPA.endDate,
-        durationInterval: editingPA.durationInterval,
-        requestDate: editingPA.requestDate ?? "",
-        responseDate: editingPA.responseDate ?? "",
-        comments: editingPA.comments ?? "",
-        attachment: editingPA.attachment ?? "",
-        attachmentName: editingPA.attachmentName ?? "",
-      })
+      setActiveTab("general")
+      setExistingAttachmentUrl(null)
+      setIsFetchingPA(true)
+      getPriorAuthorizationById(editingPA.id)
+        .then((fresh) => {
+          const isUrl = fresh.attachment?.startsWith("http://") || fresh.attachment?.startsWith("https://")
+          setExistingAttachmentUrl(isUrl ? (fresh.attachment ?? null) : null)
+          form.reset({
+            authNumber: fresh.authNumber,
+            insuranceId: fresh.insuranceId,
+            primaryDiagnosisId: fresh.primaryDiagnosisId ?? "",
+            startDate: fresh.startDate,
+            endDate: fresh.endDate,
+            durationInterval: fresh.durationInterval,
+            requestDate: fresh.requestDate ?? "",
+            responseDate: fresh.responseDate ?? "",
+            comments: fresh.comments ?? "",
+            // solo base64 nuevo va en el form; URL existente va en existingAttachmentUrl
+            attachment: isUrl ? "" : (fresh.attachment ?? ""),
+            attachmentName: fresh.attachmentName ?? "",
+          })
+        })
+        .catch(() => {
+          // fallback a los datos en memoria
+          form.reset({
+            authNumber: editingPA.authNumber,
+            insuranceId: editingPA.insuranceId,
+            primaryDiagnosisId: editingPA.primaryDiagnosisId ?? "",
+            startDate: editingPA.startDate,
+            endDate: editingPA.endDate,
+            durationInterval: editingPA.durationInterval,
+            requestDate: editingPA.requestDate ?? "",
+            responseDate: editingPA.responseDate ?? "",
+            comments: editingPA.comments ?? "",
+            attachment: "",
+            attachmentName: editingPA.attachmentName ?? "",
+          })
+          setExistingAttachmentUrl(null)
+        })
+        .finally(() => setIsFetchingPA(false))
     } else {
       form.reset(priorAuthFormDefaults)
       setCreatedPaId(undefined)
+      setExistingAttachmentUrl(null)
+      setActiveTab("general")
     }
-
-    setActiveTab("general")
   }, [open, editingPA, form])
 
   const handleClose = async () => {
@@ -135,6 +173,7 @@ export function PriorAuthModal({
       if (!result) return
       setCreatedPaId(result.id)
       setActiveTab("authorizations")
+      await onRefresh?.()
     }
   })
 
@@ -150,9 +189,14 @@ export function PriorAuthModal({
   ]
 
   return (
+    <>
     <CustomModal
       open={open}
-      onOpenChange={(o) => { if (!o) void handleClose() }}
+      onOpenChange={() => { /* close only via explicit Cancel/Close buttons */ }}
+      onInteractOutside={(e) => e.preventDefault()}
+      onPointerDownOutside={(e) => e.preventDefault()}
+      onEscapeKeyDown={(e) => e.preventDefault()}
+      showCloseButton={false}
       title={
         isEditMode
           ? `Edit PA — ${editingPA?.authNumber}`
@@ -166,6 +210,26 @@ export function PriorAuthModal({
       maxWidthClassName="sm:max-w-[820px]"
     >
       <div>
+        {/* Close button positioned over the modal header */}
+        <button
+          type="button"
+          onClick={() => void handleClose()}
+          className={cn(
+            "absolute top-5 right-5 z-10",
+            "w-9 h-9 rounded-xl",
+            "flex items-center justify-center",
+            "bg-slate-50 hover:bg-slate-100",
+            "border border-slate-200/60",
+            "text-slate-400 hover:text-slate-700",
+            "transition-all duration-200",
+            "hover:scale-105 active:scale-95",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30 focus-visible:ring-offset-2"
+          )}
+        >
+          <X className="w-[18px] h-[18px]" />
+          <span className="sr-only">Close</span>
+        </button>
+
         {isEditMode && editingStatus && (
           <div className="px-6 pt-4 pb-0 flex items-center gap-2">
             <span className="text-xs font-medium text-slate-500">Status:</span>
@@ -183,7 +247,9 @@ export function PriorAuthModal({
         <div className="px-6 pt-4 border-b border-slate-200">
           <div className="flex gap-1">
             {tabs.map((tab) => {
-              const isDisabled = tab.id === "authorizations" && !authorizationsTabEnabled
+              const isDisabled =
+                (tab.id === "authorizations" && !authorizationsTabEnabled) ||
+                (tab.id === "general" && !!createdPaId && !isEditMode)
               return (
                 <button
                   key={tab.id}
@@ -206,9 +272,17 @@ export function PriorAuthModal({
           </div>
         </div>
 
+        {isFetchingPA && (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 px-6 text-slate-500">
+            <Loader2 className="h-8 w-8 animate-spin text-[#037ECC]" />
+            <p className="text-sm font-medium">Loading authorization…</p>
+          </div>
+        )}
+
         <form
           onSubmit={(e) => { e.preventDefault(); void handleSaveGeneral() }}
           noValidate
+          className={isFetchingPA ? "hidden" : ""}
         >
           <div className="px-6 py-5">
             {activeTab === "general" && (
@@ -219,13 +293,20 @@ export function PriorAuthModal({
                 setValue={(field, value) => form.setValue(field, value)}
                 insurances={insurances}
                 clientId={clientId}
+                existingAttachmentUrl={existingAttachmentUrl}
+                onClearExistingAttachment={() => setExistingAttachmentUrl(null)}
               />
             )}
 
             {activeTab === "authorizations" && (
               <TabAuthorizations
+                ref={tabAuthRef}
                 availableBillingCodes={availableBillingCodes}
                 paId={activePaId}
+                onOpenBCModal={(code) => {
+                  setBcEditingCode(code)
+                  setIsBCModalOpen(true)
+                }}
                 onViewLinkedEvents={
                   onViewLinkedEvents && editingPA
                     ? (code) => onViewLinkedEvents(editingPA, code)
@@ -259,5 +340,23 @@ export function PriorAuthModal({
         </form>
       </div>
     </CustomModal>
+
+      <BillingCodeModal
+        open={isBCModalOpen}
+        onClose={() => {
+          setIsBCModalOpen(false)
+          setBcEditingCode(null)
+        }}
+        onConfirm={async (values, label) => {
+          await tabAuthRef.current?.handleConfirm(values, label)
+          setIsBCModalOpen(false)
+          setBcEditingCode(null)
+        }}
+        editingCode={bcEditingCode}
+        billingCodes={availableBillingCodes}
+        usedBillingCodeIds={tabAuthRef.current?.usedBillingCodeIds ?? []}
+        isLoading={tabAuthRef.current?.isConfirming ?? false}
+      />
+    </>
   )
 }

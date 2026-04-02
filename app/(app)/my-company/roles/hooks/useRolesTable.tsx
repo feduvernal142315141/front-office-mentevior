@@ -1,15 +1,18 @@
 
-import { useMemo, useState} from "react"
+import { useMemo, useState } from "react"
 import { useRoles } from "@/lib/modules/roles/hooks/use-roles"
+import { useDeleteRole } from "@/lib/modules/roles/hooks/use-delete-role"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { CustomTableColumn } from "@/components/custom/CustomTable"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { Role } from "@/lib/types/role.types"
 import { Badge } from "@/components/ui/badge"
-import { Edit2, Shield } from "lucide-react"
+import { Edit2, Shield, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import {useDebouncedState} from "@/lib/hooks/use-debounced-state";
-import {buildFilters} from "@/lib/utils/query-filters";
+import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
+import { buildFilters } from "@/lib/utils/query-filters"
+import { cn } from "@/lib/utils"
 
 interface UseRolesTableReturn {
   data: Role[]
@@ -45,6 +48,8 @@ interface UseRolesTableReturn {
     canEdit: boolean
     canDelete: boolean
   }
+
+  deleteModal: React.ReactNode
 }
 
 export function useRolesTable(): UseRolesTableReturn {
@@ -52,6 +57,9 @@ export function useRolesTable(): UseRolesTableReturn {
 
   const [page, setPage] = useState(1) 
   const [pageSize, setPageSize] = useState(10)
+  const [deletingRole, setDeletingRole] = useState<Role | null>(null)
+
+  const { remove: removeRole, isLoading: isDeleting } = useDeleteRole()
   
 
   const [inputValue, setInputValue] = useState("")
@@ -145,66 +153,53 @@ export function useRolesTable(): UseRolesTableReturn {
       },
     ]
 
-    if (permissions.canEdit) {
+    if (permissions.canEdit || permissions.canDelete) {
       cols.push({
         key: "actions",
         header: "Actions",
         align: "right",
         render: (role) => (
           <div className="flex items-center justify-end gap-2">
-            <button
-              onClick={() => router.push(`/my-company/roles/${role.id}/edit`)}
-              className="
-                group/edit
-                relative
-                h-9 w-9
-                flex items-center justify-center
-                rounded-xl
-                
-                /* Background gradient */
-                bg-gradient-to-b from-blue-50 to-blue-100/80
-                
-                /* Border */
-                border border-blue-200/60
-                
-                /* Shadow */
-                shadow-sm
-                shadow-blue-900/5
-                
-                /* Hover */
-                hover:from-blue-100
-                hover:to-blue-200/90
-                hover:border-blue-300/80
-                hover:shadow-md
-                hover:shadow-blue-900/10
-                hover:-translate-y-0.5
-                
-                /* Active */
-                active:translate-y-0
-                active:shadow-sm
-                
-                /* Transitions */
-                transition-all
-                duration-200
-                ease-out
-                
-                /* Focus */
-                focus:outline-none
-                focus:ring-2
-                focus:ring-blue-500/30
-                focus:ring-offset-2
-              "
-              title="Edit role"
-              aria-label="Edit role"
-            >
-              <Edit2 className="
-                w-4 h-4
-                text-blue-600
-                group-hover/edit:text-blue-700
-                transition-colors
-                duration-200
-              " />
-            </button>
+            {permissions.canEdit && (
+              <button
+                onClick={() => router.push(`/my-company/roles/${role.id}/edit`)}
+                className={cn(
+                  "group/edit relative h-9 w-9",
+                  "flex items-center justify-center rounded-xl",
+                  "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                  "border border-blue-200/60 shadow-sm shadow-blue-900/5",
+                  "hover:from-blue-100 hover:to-blue-200/90",
+                  "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
+                  "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                  "transition-all duration-200 ease-out",
+                  "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+                )}
+                title="Edit role"
+                aria-label="Edit role"
+              >
+                <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+              </button>
+            )}
+            {permissions.canDelete && (
+              <button
+                onClick={() => setDeletingRole(role)}
+                className={cn(
+                  "group/delete relative h-9 w-9",
+                  "flex items-center justify-center rounded-xl",
+                  "bg-gradient-to-b from-red-50 to-red-100/80",
+                  "border border-red-200/60 shadow-sm shadow-red-900/5",
+                  "hover:from-red-100 hover:to-red-200/90",
+                  "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+                  "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                  "transition-all duration-200 ease-out",
+                  "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+                )}
+                title="Delete role"
+                aria-label="Delete role"
+              >
+                <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
+              </button>
+            )}
           </div>
         ),
       })
@@ -252,5 +247,23 @@ export function useRolesTable(): UseRolesTableReturn {
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
     permissions,
+    deleteModal: (
+      <DeleteConfirmModal
+        isOpen={!!deletingRole}
+        onClose={() => setDeletingRole(null)}
+        onConfirm={async () => {
+          if (!deletingRole) return
+          const ok = await removeRole(deletingRole.id)
+          if (ok) {
+            setDeletingRole(null)
+            refetch({ page: page - 1, pageSize, filters: filtersArray })
+          }
+        }}
+        title="Delete Role"
+        message="Are you sure you want to delete this role? This action cannot be undone."
+        itemName={deletingRole?.name}
+        isDeleting={isDeleting}
+      />
+    ),
   }
 }

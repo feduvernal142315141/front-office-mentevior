@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Edit2, Plus, ExternalLink, Trash2 } from "lucide-react"
+import { useImperativeHandle, useState, forwardRef } from "react"
+import { Edit2, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
-import { BillingCodeModal } from "../BillingCodeModal"
 import { useAuthorizationBillingCodes } from "@/lib/modules/authorization-billing-codes/hooks/use-authorization-billing-codes"
 import { useCreateAuthorizationBillingCode } from "@/lib/modules/authorization-billing-codes/hooks/use-create-authorization-billing-code"
 import { useUpdateAuthorizationBillingCode } from "@/lib/modules/authorization-billing-codes/hooks/use-update-authorization-billing-code"
@@ -16,15 +15,22 @@ import { cn } from "@/lib/utils"
 interface TabAuthorizationsProps {
   availableBillingCodes: BillingCodeListItem[]
   paId?: string
+  onOpenBCModal: (editingCode: PriorAuthBillingCode | null) => void
   onViewLinkedEvents?: (code: PriorAuthBillingCode) => void
 }
 
-export function TabAuthorizations({
+export interface TabAuthorizationsHandle {
+  handleConfirm: (values: BillingCodeEntryValues, label: string) => Promise<void>
+  isConfirming: boolean
+  usedBillingCodeIds: string[]
+}
+
+export const TabAuthorizations = forwardRef<TabAuthorizationsHandle, TabAuthorizationsProps>(function TabAuthorizations({
   availableBillingCodes,
   paId,
+  onOpenBCModal,
   onViewLinkedEvents,
-}: TabAuthorizationsProps) {
-  const [isBCModalOpen, setIsBCModalOpen] = useState(false)
+}, ref) {
   const [editingCode, setEditingCode] = useState<PriorAuthBillingCode | null>(null)
 
   const { billingCodes, isLoading, refetch } = useAuthorizationBillingCodes(paId)
@@ -34,6 +40,12 @@ export function TabAuthorizations({
 
   const usedBillingCodeIds = billingCodes.map((bc) => bc.billingCodeId)
   const isBusy = isCreating || isUpdating || isDeleting
+
+  useImperativeHandle(ref, () => ({
+    handleConfirm,
+    isConfirming: isCreating || isUpdating,
+    usedBillingCodeIds,
+  }))
 
   const handleConfirm = async (values: BillingCodeEntryValues, label: string) => {
     if (!paId) return
@@ -73,7 +85,6 @@ export function TabAuthorizations({
 
     await refetch()
     setEditingCode(null)
-    setIsBCModalOpen(false)
 
     void label
   }
@@ -107,13 +118,13 @@ export function TabAuthorizations({
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Billing Code
             </span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
               Approved
             </span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
               Used
             </span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
               Remaining
             </span>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
@@ -135,30 +146,21 @@ export function TabAuthorizations({
                 </span>
                 <span className="text-xs text-slate-400 capitalize">{bc.unitsInterval}</span>
               </div>
-              <span className="text-sm tabular-nums text-slate-700 text-right">
+              <span className="text-sm tabular-nums text-slate-700 text-center">
                 {bc.approvedUnits.toLocaleString()}
               </span>
-              <span className="text-sm tabular-nums text-slate-700 text-right">
+              <span className="text-sm tabular-nums text-slate-700 text-center">
                 {bc.usedUnits.toLocaleString()}
               </span>
-              <span
-                className={cn(
-                  "text-sm tabular-nums font-medium text-right",
-                  bc.remainingUnits === 0
-                    ? "text-red-500"
-                    : bc.remainingUnits < bc.approvedUnits * 0.1
-                    ? "text-amber-600"
-                    : "text-emerald-600"
-                )}
-              >
+              <span className="text-sm tabular-nums text-slate-700 text-center">
                 {bc.remainingUnits.toLocaleString()}
               </span>
               <div className="flex items-center justify-end gap-1.5">
                 <button
                   type="button"
-                  onClick={() => {
+                   onClick={() => {
                     setEditingCode(bc)
-                    setIsBCModalOpen(true)
+                    onOpenBCModal(bc)
                   }}
                   disabled={isBusy}
                   className={cn(
@@ -187,23 +189,7 @@ export function TabAuthorizations({
                 >
                   <Trash2 className="w-3.5 h-3.5 text-red-500" />
                 </button>
-                {onViewLinkedEvents && (
-                  <button
-                    type="button"
-                    onClick={() => onViewLinkedEvents(bc)}
-                    disabled={isBusy}
-                    className={cn(
-                      "h-8 w-8 flex items-center justify-center rounded-lg",
-                      "bg-slate-50 border border-slate-200",
-                      "hover:bg-slate-100 hover:border-slate-300",
-                      "transition-colors duration-150",
-                      "disabled:opacity-50 disabled:cursor-not-allowed"
-                    )}
-                    title="View linked events"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                  </button>
-                )}
+
               </div>
             </div>
           ))}
@@ -216,7 +202,7 @@ export function TabAuthorizations({
             type="button"
             onClick={() => {
               setEditingCode(null)
-              setIsBCModalOpen(true)
+              onOpenBCModal(null)
             }}
             disabled={isBusy}
           >
@@ -226,18 +212,6 @@ export function TabAuthorizations({
         </div>
       )}
 
-      <BillingCodeModal
-        open={isBCModalOpen}
-        onClose={() => {
-          setIsBCModalOpen(false)
-          setEditingCode(null)
-        }}
-        onConfirm={handleConfirm}
-        editingCode={editingCode}
-        billingCodes={availableBillingCodes}
-        usedBillingCodeIds={usedBillingCodeIds}
-        isLoading={isCreating || isUpdating}
-      />
     </div>
   )
-}
+})

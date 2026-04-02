@@ -1,5 +1,5 @@
 
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import type { 
   Role, 
   CreateRoleDto, 
@@ -127,4 +127,14 @@ export async function updateRole(roleId: string, data: UpdateRoleDto): Promise<R
   
   const roleBackend = extractRolePayload(response.data)
   return normalizeRole(roleBackend)
+}
+
+export async function deleteRole(roleId: string): Promise<void> {
+  const response = await serviceDelete<void>(`/roles/${roleId}`)
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(
+      (response.data as { message?: string })?.message || "Failed to delete role"
+    )
+  }
 }
