@@ -114,10 +114,10 @@ function PlanSectionSkeleton() {
 function RateFieldsGridAllDashes() {
   return (
     <div className={OVERVIEW_GRID}>
-      <Field label="Amount">{FALLBACK}</Field>
+      <Field label="Billing code">{FALLBACK}</Field>
       <Field label="Interval">{FALLBACK}</Field>
       <Field label="Currency">{FALLBACK}</Field>
-      <Field label="Billing code">{FALLBACK}</Field>
+      <Field label="Amount">{FALLBACK}</Field>
     </div>
   )
 }
@@ -135,10 +135,10 @@ function RateFieldsGrid({
 }) {
   return (
     <div className={OVERVIEW_GRID}>
-      <Field label="Amount">{formatMoney(row.amount)}</Field>
+      <Field label="Billing code">{display(billingCodeLabel)}</Field>
       <Field label="Interval">{display(intervalLabel)}</Field>
       <Field label="Currency">{display(currencyLabel)}</Field>
-      <Field label="Billing code">{display(billingCodeLabel)}</Field>
+      <Field label="Amount">{formatMoney(row.amount)}</Field>
     </div>
   )
 }
@@ -222,11 +222,6 @@ export function InsurancePlanOverview({
 
               return (
                 <div key={row.id ?? `rate-${index}`} className="space-y-4">
-                  {ratesRows.length > 1 ? (
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Rate {index + 1}
-                    </p>
-                  ) : null}
                   <RateFieldsGrid
                     row={row}
                     intervalLabel={intervalLabel}

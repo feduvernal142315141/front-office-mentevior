@@ -11,19 +11,25 @@ interface UseAvailableBillingCodesForAuthReturn {
   refetch: () => Promise<void>
 }
 
+interface UseAvailableBillingCodesForAuthOptions {
+  autoFetch?: boolean
+}
+
 export function useAvailableBillingCodesForAuth(
-  clientId: string | undefined
+  priorAuthorizationId: string | undefined,
+  options?: UseAvailableBillingCodesForAuthOptions
 ): UseAvailableBillingCodesForAuthReturn {
+  const autoFetch = options?.autoFetch ?? true
   const [billingCodes, setBillingCodes] = useState<BillingCodeListItem[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(autoFetch)
   const [error, setError] = useState<Error | null>(null)
 
   const fetch = useCallback(async () => {
-    if (!clientId) return
+    if (!priorAuthorizationId) return
     try {
       setIsLoading(true)
       setError(null)
-      const data = await getAvailableBillingCodesForAuth(clientId)
+      const data = await getAvailableBillingCodesForAuth(priorAuthorizationId)
       setBillingCodes(data)
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to fetch available billing codes"))
@@ -31,11 +37,12 @@ export function useAvailableBillingCodesForAuth(
     } finally {
       setIsLoading(false)
     }
-  }, [clientId])
+  }, [priorAuthorizationId])
 
   useEffect(() => {
+    if (!autoFetch) return
     void fetch()
-  }, [fetch])
+  }, [fetch, autoFetch])
 
   return {
     billingCodes,

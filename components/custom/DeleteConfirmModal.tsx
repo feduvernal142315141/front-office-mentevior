@@ -1,5 +1,6 @@
 "use client"
 
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { Button } from "./Button"
 
@@ -24,16 +25,16 @@ export function DeleteConfirmModal({
 }: DeleteConfirmModalProps) {
   if (!isOpen) return null
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80] animate-in fade-in duration-200"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md animate-in zoom-in-95 fade-in duration-200">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] w-full max-w-md animate-in zoom-in-95 fade-in duration-200">
         <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -83,6 +84,7 @@ export function DeleteConfirmModal({
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }

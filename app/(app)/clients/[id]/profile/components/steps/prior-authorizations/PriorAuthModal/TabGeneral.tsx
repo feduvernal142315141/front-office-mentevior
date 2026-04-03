@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Controller, type Control, type FieldErrors } from "react-hook-form"
-import { Upload, X, FileText, Eye } from "lucide-react"
+import { Upload, X, FileText, Eye, Download } from "lucide-react"
 import { toast } from "sonner"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -41,6 +41,13 @@ function getFileNameFromUrl(url: string | null | undefined): string | null {
   } catch {
     return null
   }
+}
+
+function truncateFileName(name: string | null | undefined, max = 52): string {
+  if (!name) return "Attachment"
+  const cleaned = name.trim()
+  if (cleaned.length <= max) return cleaned
+  return `${cleaned.slice(0, max)}...`
 }
 
 export function TabGeneral({
@@ -127,6 +134,12 @@ export function TabGeneral({
         url: existingAttachmentUrl,
         name: getFileNameFromUrl(existingAttachmentUrl) ?? "Attachment",
       })
+    }
+  }
+
+  const handleDownloadExisting = () => {
+    if (existingAttachmentUrl) {
+      window.open(existingAttachmentUrl, "_blank", "noopener,noreferrer")
     }
   }
 
@@ -413,21 +426,41 @@ export function TabGeneral({
             <div className="h-9 w-9 rounded-lg bg-[#037ECC]/10 flex items-center justify-center flex-shrink-0">
               <FileText className="w-4 h-4 text-[#037ECC]" />
             </div>
-            <p className="flex-1 text-sm font-medium text-slate-800 truncate"
-               title={getFileNameFromUrl(existingAttachmentUrl) ?? "Attachment"}>
-              {getFileNameFromUrl(existingAttachmentUrl) ?? "Attachment"}
+            <p
+              className="flex-1 text-sm font-medium text-slate-800 truncate"
+              title={getFileNameFromUrl(existingAttachmentUrl) ?? "Attachment"}
+            >
+              {truncateFileName(getFileNameFromUrl(existingAttachmentUrl), 52)}
             </p>
             <button
               type="button"
               onClick={handleViewExisting}
               className={cn(
-                "inline-flex items-center gap-1.5 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]",
-                "transition-colors duration-150"
+                "w-9 h-9 rounded-lg",
+                "flex items-center justify-center",
+                "bg-slate-50 hover:bg-slate-100",
+                "border border-slate-200",
+                "text-slate-600 hover:text-slate-900",
+                "transition-all duration-200"
               )}
               title="View attachment"
             >
-              <Eye className="w-4 h-4" />
-              View
+              <Eye className="w-[18px] h-[18px]" />
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadExisting}
+              className={cn(
+                "w-9 h-9 rounded-lg",
+                "flex items-center justify-center",
+                "bg-slate-50 hover:bg-slate-100",
+                "border border-slate-200",
+                "text-slate-600 hover:text-slate-900",
+                "transition-all duration-200"
+              )}
+              title="Download attachment"
+            >
+              <Download className="w-[18px] h-[18px]" />
             </button>
             <button
               type="button"

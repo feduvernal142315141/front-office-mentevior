@@ -117,9 +117,9 @@ export async function bulkCreateBillingCodes(catalogIds: string[]): Promise<bool
   return response.data as unknown as boolean
 }
 
-export async function getAvailableBillingCodesForRate(): Promise<BillingCodeListItem[]> {
+export async function getAvailableBillingCodesForRate(payerId: string): Promise<BillingCodeListItem[]> {
   const response = await serviceGet<BillingCodeListItem[]>(
-    `/billing-code/get-available-for-rate`
+    `/billing-code/get-available-for-rate/${payerId}`
   )
 
   if (response.status === 404) return []

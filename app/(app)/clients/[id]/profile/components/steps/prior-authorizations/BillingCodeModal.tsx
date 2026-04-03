@@ -25,6 +25,7 @@ interface BillingCodeModalProps {
   billingCodes: BillingCodeListItem[]
   usedBillingCodeIds?: string[]
   isLoading?: boolean
+  isLoadingCatalog?: boolean
 }
 
 export function BillingCodeModal({
@@ -35,6 +36,7 @@ export function BillingCodeModal({
   billingCodes,
   usedBillingCodeIds = [],
   isLoading = false,
+  isLoadingCatalog = false,
 }: BillingCodeModalProps) {
   const form = useForm<BillingCodeEntryValues>({
     resolver: zodResolver(billingCodeEntrySchema),
@@ -112,10 +114,15 @@ export function BillingCodeModal({
                 searchable
                 hasError={!!fieldState.error}
                 required
-                disabled={!!editingCode}
+                disabled={!!editingCode || isLoadingCatalog}
               />
               {fieldState.error && (
                 <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
+              )}
+              {!editingCode && !isLoadingCatalog && billingCodeOptions.length === 0 && (
+                <p className="mt-1.5 text-sm text-amber-600">
+                  No billing codes available. Please create billing codes first in My Company → Billing → Billing Codes.
+                </p>
               )}
             </div>
           )}
@@ -150,10 +157,14 @@ export function BillingCodeModal({
               <div>
                 <FloatingInput
                   label="Approved Units"
-                  value={field.value === undefined ? "" : String(field.value)}
+                  value={field.value === null || field.value === undefined ? "" : String(field.value)}
                   onChange={(v) => {
+                    if (v === "") {
+                      field.onChange(null as unknown as number)
+                      return
+                    }
                     const parsed = parseInt(v, 10)
-                    field.onChange(isNaN(parsed) ? undefined : parsed)
+                    if (!isNaN(parsed)) field.onChange(parsed)
                   }}
                   onBlur={field.onBlur}
                   inputMode="numeric"
@@ -264,7 +275,11 @@ export function BillingCodeModal({
             <Button type="button" variant="secondary" onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit" loading={isLoading} disabled={isLoading}>
+            <Button
+              type="submit"
+              loading={isLoading}
+              disabled={isLoading || isLoadingCatalog || (!editingCode && billingCodeOptions.length === 0)}
+            >
               {editingCode ? "Update" : "Add Code"}
             </Button>
           </div>

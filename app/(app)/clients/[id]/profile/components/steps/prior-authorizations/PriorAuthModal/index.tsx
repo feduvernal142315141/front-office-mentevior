@@ -21,7 +21,7 @@ import type {
   UpdatePriorAuthorizationDto,
 } from "@/lib/types/prior-authorization.types"
 import type { ClientInsurance } from "@/lib/types/client-insurance.types"
-import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
+import { useAvailableBillingCodesForAuth } from "@/lib/modules/billing-codes/hooks/use-available-billing-codes-for-auth"
 import { calculatePAStatus, getPAStatusBadgeClasses } from "@/lib/utils/prior-auth-utils"
 import { useCreatePriorAuthorization } from "@/lib/modules/prior-authorizations/hooks/use-create-prior-authorization"
 import { useUpdatePriorAuthorization } from "@/lib/modules/prior-authorizations/hooks/use-update-prior-authorization"
@@ -36,7 +36,6 @@ interface PriorAuthModalProps {
   editingPA: PriorAuthorization | null
   clientId: string
   insurances: ClientInsurance[]
-  availableBillingCodes: BillingCodeListItem[]
   onSaved: () => Promise<void>
   onRefresh?: () => Promise<void>
   onViewLinkedEvents?: (pa: PriorAuthorization, code: PriorAuthBillingCode) => void
@@ -49,7 +48,6 @@ export function PriorAuthModal({
   clientId,
   onRefresh,
   insurances,
-  availableBillingCodes,
   onSaved,
   onViewLinkedEvents,
 }: PriorAuthModalProps) {
@@ -62,6 +60,13 @@ export function PriorAuthModal({
   const [isBCModalOpen, setIsBCModalOpen] = useState(false)
   const [bcEditingCode, setBcEditingCode] = useState<PriorAuthBillingCode | null>(null)
   const tabAuthRef = useRef<TabAuthorizationsHandle>(null)
+
+  const activePaId = isEditMode ? editingPA?.id : createdPaId
+  const {
+    billingCodes: availableBillingCodes,
+    isLoading: isLoadingAvailableBillingCodes,
+    refetch: refetchAvailableBillingCodes,
+  } = useAvailableBillingCodesForAuth(activePaId ?? undefined, { autoFetch: false })
 
 
   const { create, isLoading: isCreating } = useCreatePriorAuthorization()
@@ -180,7 +185,6 @@ export function PriorAuthModal({
   const editingStatus =
     editingPA ? calculatePAStatus(editingPA.startDate, editingPA.endDate) : null
 
-  const activePaId = isEditMode ? editingPA?.id : createdPaId
   const authorizationsTabEnabled = isEditMode || !!createdPaId
 
   const tabs: { id: ModalTab; label: string }[] = [
@@ -303,7 +307,8 @@ export function PriorAuthModal({
                 ref={tabAuthRef}
                 availableBillingCodes={availableBillingCodes}
                 paId={activePaId}
-                onOpenBCModal={(code) => {
+                onOpenBCModal={async (code) => {
+                  await refetchAvailableBillingCodes()
                   setBcEditingCode(code)
                   setIsBCModalOpen(true)
                 }}
@@ -356,6 +361,7 @@ export function PriorAuthModal({
         billingCodes={availableBillingCodes}
         usedBillingCodeIds={tabAuthRef.current?.usedBillingCodeIds ?? []}
         isLoading={tabAuthRef.current?.isConfirming ?? false}
+        isLoadingCatalog={isLoadingAvailableBillingCodes}
       />
     </>
   )

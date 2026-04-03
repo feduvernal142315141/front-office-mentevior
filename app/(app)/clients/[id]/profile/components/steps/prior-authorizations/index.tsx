@@ -10,7 +10,6 @@ import { usePriorAuthorizationsByClient } from "@/lib/modules/prior-authorizatio
 import { useCancelPriorAuthorization } from "@/lib/modules/prior-authorizations/hooks/use-cancel-prior-authorization"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { useClientInsurancesByClient } from "@/lib/modules/client-insurances/hooks/use-client-insurances-by-client"
-import { useAvailableBillingCodesForAuth } from "@/lib/modules/billing-codes/hooks/use-available-billing-codes-for-auth"
 import { getAuthorizationBillingCodesByPriorAuthId } from "@/lib/modules/authorization-billing-codes/services/authorization-billing-codes-api.service"
 import {
   calculatePAStatus,
@@ -68,7 +67,6 @@ export function StepPriorAuthorizations({
 
   const { pas, isLoading, error, refetch } = usePriorAuthorizationsByClient(resolvedClientId)
   const { insurances } = useClientInsurancesByClient(resolvedClientId)
-  const { billingCodes: availableBillingCodes } = useAvailableBillingCodesForAuth(resolvedClientId ?? undefined)
 
   // Wizard integration
   useEffect(() => {
@@ -202,28 +200,14 @@ export function StepPriorAuthorizations({
       {/* PA Cards */}
       {!isLoading && enrichedPAs.length > 0 && (
         <div className="space-y-3">
-          {/* Column labels — same flex structure as card rows */}
-          <div className="flex items-center gap-4 px-5 pb-1">
-            <div className="w-8 flex-shrink-0" />
-            <div className="flex items-center gap-2 min-w-[120px]">
-              <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">PA Number</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Insurance</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0 mr-6">
-              <div className="w-3.5" />
-              <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Period</span>
-              <span className="invisible">→</span>
-              <span className="invisible">00/00/0000</span>
-            </div>
-            <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider flex-shrink-0 mr-2">
-              Status
-            </span>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="w-8 text-center text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Actions</span>
-              <div className="w-8" />
-            </div>
+          {/* Column labels */}
+          <div className="hidden xl:grid grid-cols-[32px_120px_minmax(140px,1fr)_230px_90px_72px] items-center gap-3 px-5 pb-1">
+            <div />
+            <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">PA Number</span>
+            <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Insurance</span>
+            <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider text-center">Period</span>
+            <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider text-center">Status</span>
+            <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider text-center">Actions</span>
           </div>
 
           {enrichedPAs.map((pa) => {
@@ -236,7 +220,7 @@ export function StepPriorAuthorizations({
                 className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-shadow hover:shadow-md"
               >
                 {/* Card header */}
-                <div className="flex items-center gap-4 px-5 py-4">
+                <div className="grid grid-cols-[32px_120px_minmax(120px,1fr)_90px_72px] xl:grid-cols-[32px_120px_minmax(140px,1fr)_230px_90px_72px] items-center gap-3 px-5 py-4">
                   {/* Expand toggle */}
                   <button
                     type="button"
@@ -272,7 +256,7 @@ export function StepPriorAuthorizations({
                   </div>
 
                   {/* Date range */}
-                  <div className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 flex-shrink-0 mr-6">
+                  <div className="hidden xl:flex items-center justify-center gap-1.5 text-sm text-slate-500">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>{formatDate(pa.startDate)}</span>
                     <span className="text-slate-300">→</span>
@@ -282,7 +266,7 @@ export function StepPriorAuthorizations({
                   {/* Status badge */}
                   <span
                     className={cn(
-                      "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase flex-shrink-0 mr-2",
+                      "inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase justify-self-center",
                       getPAStatusBadgeClasses(pa.status)
                     )}
                   >
@@ -290,7 +274,7 @@ export function StepPriorAuthorizations({
                   </span>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="w-[72px] flex items-center justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => setDeletingPA(pa)}
@@ -416,7 +400,6 @@ export function StepPriorAuthorizations({
         editingPA={editingPA}
         clientId={resolvedClientId}
         insurances={insurances}
-        availableBillingCodes={availableBillingCodes}
         onRefresh={async () => { await refetch() }}
         onSaved={async () => {
           setIsModalOpen(false)

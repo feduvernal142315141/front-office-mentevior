@@ -9,11 +9,16 @@ import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import { getQueryString } from "@/lib/utils/format"
 import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
 
+interface ClientListBackend extends ClientListItem {
+  diagnosisCode?: string
+  insurancePayer?: string
+}
+
 export async function getClients(query: QueryModel): Promise<{
   clients: ClientListItem[]
   totalCount: number
 }> {
-  const response = await serviceGet<PaginatedResponse<ClientListItem>>(`/client${
+  const response = await serviceGet<PaginatedResponse<ClientListBackend>>(`/client${
     query ? `?${getQueryString(query)}` : ''
   }`)
   
@@ -21,7 +26,7 @@ export async function getClients(query: QueryModel): Promise<{
     throw new Error(response.data?.message || "Failed to fetch clients")
   }
   
-  const paginatedData = response.data as unknown as PaginatedResponse<ClientListItem>
+  const paginatedData = response.data as unknown as PaginatedResponse<ClientListBackend>
   
   if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
     console.error("Invalid backend response:", response.data)
@@ -29,7 +34,11 @@ export async function getClients(query: QueryModel): Promise<{
   }
   
   return {
-    clients: paginatedData.entities,
+    clients: paginatedData.entities.map((client) => ({
+      ...client,
+      diagnosis: client.diagnosis ?? client.diagnosisCode ?? "",
+      insurance: client.insurance ?? client.insurancePayer ?? "",
+    })),
     totalCount: paginatedData.pagination?.total || 0
   }
 }

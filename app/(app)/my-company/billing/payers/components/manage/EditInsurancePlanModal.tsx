@@ -62,7 +62,11 @@ function ratesForPlanEntity(rows: InsurancePlanRateRow[], planEntityId: string |
 export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: EditInsurancePlanModalProps) {
   const { planTypes, isLoading: isLoadingPlanTypes } = usePlanTypeCatalog()
   const { currencies, isLoading: isLoadingCurrencies } = useCurrencyCatalog()
-  const { billingCodes, isLoading: isLoadingBillingCodes } = useAvailableBillingCodesForRate()
+  const {
+    billingCodes,
+    isLoading: isLoadingBillingCodes,
+    refetch: refetchBillingCodes,
+  } = useAvailableBillingCodesForRate(payer?.id, { autoFetch: false })
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [isLoadingRate, setIsLoadingRate] = useState(false)
   const [rates, setRates] = useState<InsurancePlanRateRow[]>([])
@@ -230,7 +234,8 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
     }
   })
 
-  const openNewRateForm = () => {
+  const openNewRateForm = async () => {
+    await refetchBillingCodes()
     setEditingRateId(null)
     rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId, usdCurrencyId))
     setShowRateForm(true)
@@ -244,6 +249,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       }
       setIsLoadingRate(true)
       try {
+        await refetchBillingCodes()
         const rate = await getRateById(row.id)
         setEditingRateId(row.id)
         rateForm.reset(mapRateRowToFormValues(rate, row.insurancePlanId || effectivePlanId))
@@ -255,7 +261,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         setIsLoadingRate(false)
       }
     },
-    [effectivePlanId, rateForm],
+    [effectivePlanId, rateForm, refetchBillingCodes],
   )
 
   const paginatedRates = useMemo(() => {
@@ -568,7 +574,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
         <Button
           type="button"
           variant="secondary"
-          onClick={openNewRateForm}
+          onClick={() => void openNewRateForm()}
           disabled={showRateForm}
         >
           Add rate
