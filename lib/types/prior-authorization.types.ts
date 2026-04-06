@@ -37,6 +37,7 @@ export interface PriorAuthorization {
   comments?: string | null
   attachment?: string | null
   attachmentName?: string | null
+  attachmentDownload?: string | null
   status: PriorAuthStatus
   billingCodes: PriorAuthBillingCode[]
   createdAt: string

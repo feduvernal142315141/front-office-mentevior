@@ -26,10 +26,16 @@ interface TabGeneralProps {
   setValue: (field: keyof PriorAuthFormValues, value: string) => void
   insurances: ClientInsurance[]
   clientId: string
-  /** URL de S3 del attachment ya guardado en el servidor (no base64) */
+  /** URL de S3 del attachment ya guardado en el servidor (para visualizar) */
   existingAttachmentUrl?: string | null
-  /** Callback para limpiar la URL existente cuando se sube un archivo nuevo */
+  /** URL de S3 con header Content-Disposition: attachment (para descargar) */
+  existingAttachmentDownloadUrl?: string | null
+  /** Callback para limpiar las URLs existentes cuando se sube un archivo nuevo */
   onClearExistingAttachment?: () => void
+  /** En modo edit: el insuranceId original del PA (puede estar desactivado) */
+  editingInsuranceId?: string | null
+  /** En modo edit: el insuranceName original del PA para mostrar aunque esté desactivado */
+  editingInsuranceName?: string | null
 }
 
 function getFileNameFromUrl(url: string | null | undefined): string | null {
@@ -58,7 +64,10 @@ export function TabGeneral({
   insurances,
   clientId,
   existingAttachmentUrl,
+  existingAttachmentDownloadUrl,
   onClearExistingAttachment,
+  editingInsuranceId,
+  editingInsuranceName,
 }: TabGeneralProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
@@ -98,10 +107,27 @@ export function TabGeneral({
   )
   const durationDisplay = duration > 0 ? String(duration) : ""
 
-  const insuranceOptions = activeInsurances.map((ins) => ({
-    value: ins.id,
-    label: ins.payerName,
-  }))
+  const insuranceOptions = (() => {
+    const options = activeInsurances.map((ins) => ({
+      value: ins.id,
+      label: ins.payerName,
+    }))
+
+    // En modo edit, si el insurance original no está entre los activos
+    // (fue desactivado), lo inyectamos como opción para que el select no quede vacío
+    if (
+      editingInsuranceId &&
+      editingInsuranceName &&
+      !options.some((o) => o.value === editingInsuranceId)
+    ) {
+      options.unshift({
+        value: editingInsuranceId,
+        label: `${editingInsuranceName} (inactive)`,
+      })
+    }
+
+    return options
+  })()
 
   const handleFileChange = (file: File | null) => {
     if (!file) return
@@ -138,9 +164,27 @@ export function TabGeneral({
   }
 
   const handleDownloadExisting = () => {
-    if (existingAttachmentUrl) {
-      window.open(existingAttachmentUrl, "_blank", "noopener,noreferrer")
+    const downloadUrl = existingAttachmentDownloadUrl ?? existingAttachmentUrl
+    if (!downloadUrl) return
+
+    const urlWithoutParams = downloadUrl.split("?")[0]
+    let extension = ""
+    if (urlWithoutParams.includes(".")) {
+      const parts = urlWithoutParams.split(".")
+      extension = `.${parts[parts.length - 1]}`
     }
+
+    const fileName = attachmentName
+      ? attachmentName
+      : `authorization-document${extension}`
+
+    const link = document.createElement("a")
+    link.href = downloadUrl
+    link.download = fileName
+    link.style.display = "none"
+    document.body.appendChild(link)
+    link.click()
+    setTimeout(() => document.body.removeChild(link), 100)
   }
 
   return (
@@ -188,6 +232,11 @@ export function TabGeneral({
               {insuranceOptions.length === 0 && (
                 <p className="mt-1.5 text-xs text-amber-600">
                   No active insurances found for this client.
+                </p>
+              )}
+              {insuranceOptions.length > 0 && editingInsuranceId && editingInsuranceName && !activeInsurances.some((ins) => ins.id === editingInsuranceId) && (
+                <p className="mt-1.5 text-xs text-amber-600">
+                  The original insurance is inactive. You can reassign it to an active one.
                 </p>
               )}
             </div>

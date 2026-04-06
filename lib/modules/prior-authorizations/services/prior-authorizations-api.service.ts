@@ -29,6 +29,7 @@ function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
     comments: (raw.comments as string) ?? null,
     attachment: (raw.attachment as string) ?? null,
     attachmentName: (raw.attachmentName as string) ?? null,
+    attachmentDownload: (raw.attachmentDownload as string) ?? null,
     status: calculatePAStatus(
       normalizeDate(raw.startDate as string),
       normalizeDate(raw.endDate as string)

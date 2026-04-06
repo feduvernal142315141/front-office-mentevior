@@ -57,6 +57,7 @@ export function PriorAuthModal({
   const [createdPaId, setCreatedPaId] = useState<string | undefined>(undefined)
   const [isFetchingPA, setIsFetchingPA] = useState(false)
   const [existingAttachmentUrl, setExistingAttachmentUrl] = useState<string | null>(null)
+  const [existingAttachmentDownloadUrl, setExistingAttachmentDownloadUrl] = useState<string | null>(null)
   const [isBCModalOpen, setIsBCModalOpen] = useState(false)
   const [bcEditingCode, setBcEditingCode] = useState<PriorAuthBillingCode | null>(null)
   const tabAuthRef = useRef<TabAuthorizationsHandle>(null)
@@ -85,11 +86,13 @@ export function PriorAuthModal({
     if (editingPA) {
       setActiveTab("general")
       setExistingAttachmentUrl(null)
+      setExistingAttachmentDownloadUrl(null)
       setIsFetchingPA(true)
       getPriorAuthorizationById(editingPA.id)
         .then((fresh) => {
           const isUrl = fresh.attachment?.startsWith("http://") || fresh.attachment?.startsWith("https://")
           setExistingAttachmentUrl(isUrl ? (fresh.attachment ?? null) : null)
+          setExistingAttachmentDownloadUrl(fresh.attachmentDownload ?? null)
           form.reset({
             authNumber: fresh.authNumber,
             insuranceId: fresh.insuranceId,
@@ -121,12 +124,14 @@ export function PriorAuthModal({
             attachmentName: editingPA.attachmentName ?? "",
           })
           setExistingAttachmentUrl(null)
+          setExistingAttachmentDownloadUrl(null)
         })
         .finally(() => setIsFetchingPA(false))
     } else {
       form.reset(priorAuthFormDefaults)
       setCreatedPaId(undefined)
       setExistingAttachmentUrl(null)
+      setExistingAttachmentDownloadUrl(null)
       setActiveTab("general")
     }
   }, [open, editingPA, form])
@@ -298,7 +303,13 @@ export function PriorAuthModal({
                 insurances={insurances}
                 clientId={clientId}
                 existingAttachmentUrl={existingAttachmentUrl}
-                onClearExistingAttachment={() => setExistingAttachmentUrl(null)}
+                existingAttachmentDownloadUrl={existingAttachmentDownloadUrl}
+                onClearExistingAttachment={() => {
+                  setExistingAttachmentUrl(null)
+                  setExistingAttachmentDownloadUrl(null)
+                }}
+                editingInsuranceId={isEditMode ? (editingPA?.insuranceId ?? null) : null}
+                editingInsuranceName={isEditMode ? (editingPA?.insuranceName ?? null) : null}
               />
             )}
 
