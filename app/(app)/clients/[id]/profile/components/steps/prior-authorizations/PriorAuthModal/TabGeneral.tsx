@@ -122,7 +122,7 @@ export function TabGeneral({
     ) {
       options.unshift({
         value: editingInsuranceId,
-        label: `${editingInsuranceName} (inactive)`,
+        label: editingInsuranceName,
       })
     }
 
@@ -234,11 +234,7 @@ export function TabGeneral({
                   No active insurances found for this client.
                 </p>
               )}
-              {insuranceOptions.length > 0 && editingInsuranceId && editingInsuranceName && !activeInsurances.some((ins) => ins.id === editingInsuranceId) && (
-                <p className="mt-1.5 text-xs text-amber-600">
-                  The original insurance is inactive. You can reassign it to an active one.
-                </p>
-              )}
+
             </div>
           )}
         />
