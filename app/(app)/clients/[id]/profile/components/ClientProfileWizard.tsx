@@ -25,6 +25,7 @@ import { useDiagnosesByClient } from "@/lib/modules/diagnoses/hooks/use-diagnose
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { useClientDocuments } from "@/lib/modules/client-documents/hooks/use-client-documents"
+import { usePriorAuthorizationsByClient } from "@/lib/modules/prior-authorizations/hooks/use-prior-authorizations-by-client"
 import type { StepComponentProps, StepConfig, StepStatus } from "@/lib/types/wizard.types"
 import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
@@ -131,6 +132,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const { diagnoses } = useDiagnosesByClient(resolvedClientId)
   const { providers } = useProvidersByClient(resolvedClientId)
   const { rows: clientDocumentRows, isLoading: isDocumentsLoading } = useClientDocuments(resolvedClientId, !!resolvedClientId)
+  const { pas } = usePriorAuthorizationsByClient(resolvedClientId)
 
   const checkPersonalInfoComplete = useCallback((clientData: any) => {
     if (!clientData) return false
@@ -184,8 +186,9 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       medications: medications.length > 0 ? "COMPLETE" : "PENDING",
       diagnoses: diagnoses.length > 0 ? "COMPLETE" : "PENDING",
       providers: providers.length > 0 ? "COMPLETE" : "PENDING",
+      priorAuth: pas.length > 0 ? "COMPLETE" : "PENDING",
     }))
-  }, [resolvedClientId, addresses.length, caregivers.length, insurances.length, medications.length, diagnoses.length, providers.length])
+  }, [resolvedClientId, addresses.length, caregivers.length, insurances.length, medications.length, diagnoses.length, providers.length, pas.length])
 
   useEffect(() => {
     if (!resolvedClientId || isDocumentsLoading) return

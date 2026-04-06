@@ -70,6 +70,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [isLoadingRate, setIsLoadingRate] = useState(false)
   const [rates, setRates] = useState<InsurancePlanRateRow[]>([])
+  const [editingRateBillingCode, setEditingRateBillingCode] = useState<{ value: string; label: string } | null>(null)
   const [resolvedPlanId, setResolvedPlanId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("general")
   const [showRateForm, setShowRateForm] = useState(false)
@@ -92,10 +93,16 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   const payerPlanId = payer?.insurancePlanId?.trim() ?? ""
   const effectivePlanId = payerPlanId || resolvedPlanId || ""
 
-  const billingOptions = billingCodes.map((bc) => ({
-    value: bc.id,
-    label: bc.code,
-  }))
+  const billingOptions = useMemo(() => {
+    const options = billingCodes.map((bc) => ({ value: bc.id, label: bc.code }))
+    if (
+      editingRateBillingCode &&
+      !options.some((o) => o.value === editingRateBillingCode.value)
+    ) {
+      options.unshift(editingRateBillingCode)
+    }
+    return options
+  }, [billingCodes, editingRateBillingCode])
 
   const usdCurrencyId = useMemo(
     () => currencies.find((c) => c.code?.toUpperCase() === "USD")?.id ?? "",
@@ -237,6 +244,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   const openNewRateForm = async () => {
     await refetchBillingCodes()
     setEditingRateId(null)
+    setEditingRateBillingCode(null)
     rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId, usdCurrencyId))
     setShowRateForm(true)
   }
@@ -251,6 +259,18 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       try {
         await refetchBillingCodes()
         const rate = await getRateById(row.id)
+
+        // El endpoint get-available-for-rate excluye billing codes ya asignados.
+        // Si el billing code del rate no está en la lista de disponibles, lo inyectamos
+        // para que el select no aparezca vacío al editar.
+        const currentBillingCodeId = rate.billingCodeId || row.billingCodeId
+        const currentBillingCodeName = rate.billingCodeName || row.billingCodeName || currentBillingCodeId
+        if (currentBillingCodeId) {
+          setEditingRateBillingCode({ value: currentBillingCodeId, label: currentBillingCodeName })
+        } else {
+          setEditingRateBillingCode(null)
+        }
+
         setEditingRateId(row.id)
         rateForm.reset(mapRateRowToFormValues(rate, row.insurancePlanId || effectivePlanId))
         setShowRateForm(true)
@@ -339,6 +359,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
   const cancelRateForm = () => {
     setShowRateForm(false)
     setEditingRateId(null)
+    setEditingRateBillingCode(null)
     if (effectivePlanId) {
       rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId, usdCurrencyId))
     }
@@ -358,6 +379,7 @@ export function EditInsurancePlanModal({ payer, open, onOpenChange, onSaved }: E
       }
       setShowRateForm(false)
       setEditingRateId(null)
+      setEditingRateBillingCode(null)
       rateForm.reset(getInsurancePlanRateEmptyDefaults(effectivePlanId, usdCurrencyId))
       await refreshRatesFromServer()
     } catch (e) {
