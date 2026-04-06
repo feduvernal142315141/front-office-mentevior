@@ -1,5 +1,6 @@
 "use client"
 
+import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,84 +102,90 @@ export function AlertModal({ alert, onClose, onConfirm }: AlertModalProps) {
     <AlertDialog open={alert.isOpen} onOpenChange={onClose}>
       <AlertDialogPortal>
         <AlertDialogOverlay className="z-[90] bg-[hsl(var(--foreground)/0.08)] backdrop-blur-[7px]" />
-        <AnimatePresence>
-          {alert.isOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: initialScale, y: 6 }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-                y: 0,
-              }}
-              exit={{ opacity: 0, scale: initialScale, y: 6 }}
-              transition={{ duration: animationDuration, ease: [0.22, 1, 0.36, 1] }}
-              className={containerClassName}
-              role="alertdialog"
-              aria-modal="true"
-            >
-              <div className={`relative z-10 flex flex-col items-center text-center ${isError ? "gap-3.5" : "gap-4"}`}>
-                <div className="flex w-full justify-center">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.88 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.05, duration: 0.18 }}
-                    className={`relative flex h-10 w-10 items-center justify-center rounded-full border ${iconBg} ${iconBorder}`}
-                  >
-                    {isError && (
-                      <span className="pointer-events-none absolute inset-[2px] rounded-full border border-[hsl(var(--destructive)/0.25)]" />
+        <AlertDialogPrimitive.Content
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          className="fixed inset-0 z-[100] pointer-events-none outline-none"
+        >
+          <AnimatePresence>
+            {alert.isOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: initialScale, y: 6 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  y: 0,
+                }}
+                exit={{ opacity: 0, scale: initialScale, y: 6 }}
+                transition={{ duration: animationDuration, ease: [0.22, 1, 0.36, 1] }}
+                className={containerClassName}
+                style={{ pointerEvents: "all" }}
+              >
+                <div className={`relative z-10 flex flex-col items-center text-center ${isError ? "gap-3.5" : "gap-4"}`}>
+                  <div className="flex w-full justify-center">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.88 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.05, duration: 0.18 }}
+                      className={`relative flex h-10 w-10 items-center justify-center rounded-full border ${iconBg} ${iconBorder}`}
+                    >
+                      {isError && (
+                        <span className="pointer-events-none absolute inset-[2px] rounded-full border border-[hsl(var(--destructive)/0.25)]" />
+                      )}
+                      <Icon className={`h-[18px] w-[18px] ${iconColor}`} strokeWidth={2.3} />
+                    </motion.div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <AlertDialogTitle className={titleClassName}>
+                      {alert.title}
+                    </AlertDialogTitle>
+
+                    {alert.description && (
+                      <AlertDialogDescription className={bodyClassName}>
+                        {alert.description}
+                      </AlertDialogDescription>
                     )}
-                    <Icon className={`h-[18px] w-[18px] ${iconColor}`} strokeWidth={2.3} />
-                  </motion.div>
-                </div>
+                  </div>
 
-                <div className="min-w-0">
-                  <AlertDialogTitle className={titleClassName}>
-                    {alert.title}
-                  </AlertDialogTitle>
-
-                  {alert.description && (
-                    <AlertDialogDescription className={bodyClassName}>
-                      {alert.description}
-                    </AlertDialogDescription>
-                  )}
+                  <div className="flex w-full items-center justify-end gap-3">
+                    {alert.type === "confirm" ? (
+                      <>
+                        <AlertDialogCancel asChild>
+                          <Button variant="ghost" className="min-w-[120px]">
+                            {alert.cancelText ?? "Cancel"}
+                          </Button>
+                        </AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                          <Button
+                            variant={primaryActionVariant}
+                            className={primaryButtonClassName}
+                            disabled={alert.isConfirming}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              onConfirm()
+                            }}
+                          >
+                            {alert.isConfirming ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              alert.confirmText ?? "Confirm"
+                            )}
+                          </Button>
+                        </AlertDialogAction>
+                      </>
+                    ) : (
+                      <Button variant={primaryActionVariant} onClick={onClose} className={primaryButtonClassName}>
+                        OK
+                      </Button>
+                    )}
+                  </div>
                 </div>
-
-                <div className="flex w-full items-center justify-end gap-3">
-                  {alert.type === "confirm" ? (
-                    <>
-                      <AlertDialogCancel asChild>
-                        <Button variant="ghost" className="min-w-[120px]">
-                          {alert.cancelText ?? "Cancel"}
-                        </Button>
-                      </AlertDialogCancel>
-                      <AlertDialogAction asChild>
-                        <Button
-                          variant={primaryActionVariant}
-                          className={primaryButtonClassName}
-                          disabled={alert.isConfirming}
-                          onClick={(e) => {
-                            e.preventDefault()
-                            onConfirm()
-                          }}
-                        >
-                          {alert.isConfirming ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            alert.confirmText ?? "Confirm"
-                          )}
-                        </Button>
-                      </AlertDialogAction>
-                    </>
-                  ) : (
-                    <Button variant={primaryActionVariant} onClick={onClose} className={primaryButtonClassName}>
-                      OK
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </AlertDialogPrimitive.Content>
       </AlertDialogPortal>
     </AlertDialog>
   )

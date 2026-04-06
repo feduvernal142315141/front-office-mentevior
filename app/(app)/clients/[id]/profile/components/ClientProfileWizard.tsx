@@ -282,20 +282,9 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     if (didSetInitialStepRef.current) return
     if (isInCreateMode || !client) return
 
-    const initialStatuses = resolveInitialStepStatuses(client)
-    const resolvedStatuses = steps.map((step) =>
-      step.id === "personalInfo"
-        ? initialStatuses.personalInfo
-        : step.id === "documents"
-          ? initialStatuses.documents
-        : step.status
-    )
-    const firstIncompleteIndex = resolvedStatuses.findIndex((status) => status !== "COMPLETE")
-    if (firstIncompleteIndex >= 0) {
-      setActiveStepIndex(firstIncompleteIndex)
-    }
+    setActiveStepIndex(0)
     didSetInitialStepRef.current = true
-  }, [steps, isInCreateMode, client, resolveInitialStepStatuses])
+  }, [isInCreateMode, client])
 
   const EXCLUDED_FROM_COMPLETION = ["medications"]
 
