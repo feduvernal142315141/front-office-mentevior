@@ -4,8 +4,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowRight, ShieldCheck, Sliders } from "lucide-react"
-import Link from "next/link"
+import { Building2, ChevronDown, ShieldCheck } from "lucide-react"
+import { toast } from "sonner"
 import { Card } from "@/components/custom/Card"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { usePayerById } from "@/lib/modules/payers/hooks/use-payer-by-id"
@@ -13,11 +13,27 @@ import { useUpdatePayer } from "@/lib/modules/payers/hooks/use-update-payer"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import { usePayerCatalogs } from "@/lib/modules/payers/hooks/use-payer-catalogs"
-import { payerBaseFormSchema, getPayerBaseFormDefaults, type PayerBaseFormValues } from "@/lib/schemas/payer-form.schema"
+import { payerFullFormSchema, getPayerBaseFormDefaults, type PayerFullFormValues } from "@/lib/schemas/payer-form.schema"
 import { normalizePhone } from "@/lib/utils/phone-format"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { usePayersPermissionFallback } from "../../hooks/usePayersPermissionFallback"
 import { PayerBaseForm } from "../shared/PayerBaseForm"
+import { PlanSection } from "../shared/PlanSection"
+import { RateModal, type RateFormValues } from "../shared/RateModal"
+import { usePlanTypeCatalog } from "@/lib/modules/payers/hooks/use-plan-type-catalog"
+import { useCurrencyCatalog } from "@/lib/modules/currencies/hooks/use-currency-catalog"
+import { getBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
+import {
+  createInsurancePlanGeneral,
+  updateInsurancePlanGeneral,
+  createInsurancePlanRate,
+  updateInsurancePlanRate,
+  getInsurancePlanForPayer,
+  getRatesByPayerId,
+} from "@/lib/modules/payers/services/insurance-plan.service"
+import type { LocalInsurancePlanRate } from "@/lib/types/payer.types"
+import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
+import { cn } from "@/lib/utils"
 
 interface PayerEditPageProps {
   payerId: string
@@ -37,8 +53,32 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
   const { states, isLoading: isLoadingStates } = useStates(selectedCountryId)
   const { clearingHouses, isLoading: isLoadingClearingHouses } = usePayerCatalogs()
-  const form = useForm<PayerBaseFormValues>({
-    resolver: zodResolver(payerBaseFormSchema),
+
+  // Plan + Rates state
+  const [rates, setRates] = useState<LocalInsurancePlanRate[]>([])
+  const [isRateModalOpen, setIsRateModalOpen] = useState(false)
+  const [editingRate, setEditingRate] = useState<LocalInsurancePlanRate | null>(null)
+  const [generalExpanded, setGeneralExpanded] = useState(true)
+  const [existingPlanId, setExistingPlanId] = useState<string | null>(null)
+
+  // Plan & Rate catalogs
+  const { planTypes, isLoading: isLoadingPlanTypes } = usePlanTypeCatalog()
+  const { currencies, isLoading: isLoadingCurrencies } = useCurrencyCatalog()
+  const [catalogBillingCodes, setCatalogBillingCodes] = useState<BillingCodeListItem[]>([])
+  const [isLoadingBillingCodes, setIsLoadingBillingCodes] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setIsLoadingBillingCodes(true)
+    getBillingCodes({ page: 0, pageSize: 100 })
+      .then((result) => { if (active) setCatalogBillingCodes(result.billingCodes ?? []) })
+      .catch(() => {})
+      .finally(() => { if (active) setIsLoadingBillingCodes(false) })
+    return () => { active = false }
+  }, [])
+
+  const form = useForm<PayerFullFormValues>({
+    resolver: zodResolver(payerFullFormSchema),
     defaultValues: getPayerBaseFormDefaults(),
     mode: "onBlur",
   })
@@ -55,6 +95,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchCountryId])
 
+  // Populate form with existing payer data
   useEffect(() => {
     if (payer) {
       const countryId = payer.countryId ?? ""
@@ -73,13 +114,83 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         planTypeId: payer.clearingHouseId ?? payer.planTypeId ?? "",
         description: payer.description ?? "",
         logo: payer.logoUrl ?? "",
+        planName: "",
+        insurancePlanTypeId: "",
+        planComments: "",
       })
       if (countryId) setSelectedCountryId(countryId)
     }
   }, [payer, form])
 
-  const scrollToFirstError = (errors: FieldErrors<PayerBaseFormValues>) => {
-    const firstErrorKey = Object.keys(errors)[0] as keyof PayerBaseFormValues | undefined
+  // Load existing plan + rates
+  useEffect(() => {
+    if (!payer) return
+    let active = true
+
+    // Load plan
+    getInsurancePlanForPayer(payerId).then((plan) => {
+      if (!active || !plan) return
+      setExistingPlanId(plan.id || null)
+      form.reset({
+        ...form.getValues(),
+        planName: plan.planName || "",
+        insurancePlanTypeId: plan.planTypeId || "",
+        planComments: plan.comments || "",
+      })
+    }).catch(() => {})
+
+    // Load rates
+    getRatesByPayerId(payerId).then((serverRates) => {
+      if (!active) return
+      setRates(serverRates.map((r) => ({
+        _tempId: crypto.randomUUID(),
+        id: r.id,
+        billingCodeId: r.billingCodeId,
+        billingCodeLabel: r.billingCodeName || r.billingCodeId,
+        amount: r.amount,
+        submitAmount: r.submitAmount,
+        intervalType: r.intervalType,
+        currencyId: r.currencyId,
+        currencyLabel: r.currencyCode || r.currencyId,
+        alias: r.alias,
+        startDate: r.startDate,
+        endDate: r.endDate,
+      })))
+    }).catch(() => {})
+
+    return () => { active = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payer])
+
+  // Rate handlers
+  const usedBillingCodeIds = rates.map((r) => r.billingCodeId)
+
+  const handleAddRate = () => { setEditingRate(null); setIsRateModalOpen(true) }
+  const handleEditRate = (entry: LocalInsurancePlanRate) => { setEditingRate(entry); setIsRateModalOpen(true) }
+  const handleDeleteRate = (entry: LocalInsurancePlanRate) => {
+    setRates((prev) => prev.filter((r) => r._tempId !== entry._tempId))
+  }
+  const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string) => {
+    if (editingRate) {
+      setRates((prev) => prev.map((r) =>
+        r._tempId === editingRate._tempId
+          ? { ...r, ...values, billingCodeLabel, currencyLabel } as LocalInsurancePlanRate
+          : r
+      ))
+    } else {
+      setRates((prev) => [...prev, {
+        _tempId: crypto.randomUUID(),
+        ...values,
+        billingCodeLabel,
+        currencyLabel,
+      } as LocalInsurancePlanRate])
+    }
+    setIsRateModalOpen(false)
+    setEditingRate(null)
+  }
+
+  const scrollToFirstError = (errors: FieldErrors<PayerFullFormValues>) => {
+    const firstErrorKey = Object.keys(errors)[0] as keyof PayerFullFormValues | undefined
     if (!firstErrorKey) return
 
     const fieldContainer = document.querySelector(`[data-form-field="${firstErrorKey}"]`) as HTMLElement | null
@@ -100,6 +211,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     async (data) => {
       if (!payer) return
 
+      // 1. Update payer
       const saved = await update({
         id: payer.id,
         source: payer.source,
@@ -119,9 +231,67 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         zipCode: data.zipCode,
       })
 
-      if (saved) {
-        router.push(backPath)
+      if (!saved) return
+
+      // 2. Create/update plan
+      const hasPlanData = data.planName?.trim()
+      if (hasPlanData) {
+        try {
+          let planId = existingPlanId
+          if (planId) {
+            await updateInsurancePlanGeneral(payer.id, {
+              id: planId,
+              planName: data.planName!.trim(),
+              planTypeId: data.insurancePlanTypeId || "",
+              comments: data.planComments || "",
+            })
+          } else {
+            const newPlan = await createInsurancePlanGeneral(payer.id, {
+              planName: data.planName!.trim(),
+              planTypeId: data.insurancePlanTypeId || "",
+              comments: data.planComments || "",
+            })
+            planId = newPlan?.planId || null
+          }
+
+          // 3. Handle rates
+          if (planId) {
+            const newRates = rates.filter((r) => !r.id)
+            const existingRates = rates.filter((r) => !!r.id)
+
+            await Promise.all([
+              ...newRates.map((r) => createInsurancePlanRate(payer.id, planId!, {
+                insurancePlanId: planId!,
+                billingCodeId: r.billingCodeId,
+                amount: r.amount,
+                submitAmount: r.submitAmount,
+                intervalType: r.intervalType,
+                currencyId: r.currencyId,
+                alias: r.alias || "",
+                startDate: r.startDate || "",
+                endDate: r.endDate || "",
+              })),
+              ...existingRates.map((r) => updateInsurancePlanRate(r.id!, {
+                insurancePlanId: planId!,
+                billingCodeId: r.billingCodeId,
+                amount: r.amount,
+                submitAmount: r.submitAmount,
+                intervalType: r.intervalType,
+                currencyId: r.currencyId,
+                alias: r.alias || "",
+                startDate: r.startDate || "",
+                endDate: r.endDate || "",
+              })),
+            ])
+          }
+        } catch {
+          toast.error("Payer saved but plan/rates failed", {
+            description: "Try editing again to complete the plan setup.",
+          })
+        }
       }
+
+      router.push(backPath)
     },
     (errors) => {
       scrollToFirstError(errors)
@@ -174,47 +344,54 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         </div>
 
         <form onSubmit={handleSave}>
+          {/* General Information */}
           <Card variant="elevated" padding="lg">
-            <PayerBaseForm
-              form={form}
-              countries={countries}
-              states={states}
-              isLoadingCountries={isLoadingCountries}
-              isLoadingStates={isLoadingStates}
-              clearingHouses={clearingHouses}
-              isLoadingClearingHouses={isLoadingClearingHouses}
-              existingLogoUrl={payer?.logoUrl}
-              isCountryDisabled={Boolean(payer?.countryId)}
-            />
-          </Card>
-
-          <Link href={`/my-company/billing/payers/${payerId}/manage`} className="block mt-4">
-            <div className="group relative overflow-hidden cursor-pointer rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm hover:border-[#037ECC]/40 hover:shadow-lg hover:shadow-[#037ECC]/10 transition-all duration-300 min-h-[80px] flex items-center">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#037ECC]/0 via-[#079CFB]/0 to-[#037ECC]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-              <div className="relative px-5 py-4 w-full">
-                <div className="flex items-start gap-3.5">
-                  <div className="flex-shrink-0 p-2.5 rounded-xl bg-[#037ECC]/10 text-[#037ECC] ring-1 ring-inset ring-[#037ECC]/20 group-hover:bg-[#037ECC]/15 transition-colors">
-                    <Sliders className="w-5 h-5" />
+            <div>
+              <button
+                type="button"
+                onClick={() => setGeneralExpanded(!generalExpanded)}
+                className="w-full flex items-center justify-between mb-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Building2 className="w-5 h-5 text-blue-700" />
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <h4 className="text-sm font-semibold text-slate-900 group-hover:text-[#037ECC] transition-colors leading-tight">
-                        Payer Management
-                      </h4>
-                      <ArrowRight className="w-4 h-4 text-[#037ECC] group-hover:text-[#079CFB] group-hover:translate-x-0.5 transition-all duration-300 flex-shrink-0 mt-0.5" />
-                    </div>
-                    <p className="text-xs text-slate-600 leading-snug">
-                      Advanced configuration for this payer
-                    </p>
+                  <div className="text-left">
+                    <h3 className="text-base font-semibold text-gray-900">General Information</h3>
+                    <p className="text-sm text-gray-500">Payer contact and address details</p>
                   </div>
                 </div>
-              </div>
-
-              <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700" />
+                <ChevronDown className={cn("w-5 h-5 text-slate-400 transition-transform", generalExpanded && "rotate-180")} />
+              </button>
+              {generalExpanded && (
+                <PayerBaseForm
+                  form={form}
+                  countries={countries}
+                  states={states}
+                  isLoadingCountries={isLoadingCountries}
+                  isLoadingStates={isLoadingStates}
+                  clearingHouses={clearingHouses}
+                  isLoadingClearingHouses={isLoadingClearingHouses}
+                  existingLogoUrl={payer?.logoUrl}
+                  isCountryDisabled={Boolean(payer?.countryId)}
+                />
+              )}
             </div>
-          </Link>
+          </Card>
+
+          {/* Insurance Plan */}
+          <Card variant="elevated" padding="lg" className="mt-4">
+            <PlanSection
+              form={form}
+              rates={rates}
+              onAddRate={handleAddRate}
+              onEditRate={handleEditRate}
+              onDeleteRate={handleDeleteRate}
+              planTypes={planTypes}
+              isLoadingPlanTypes={isLoadingPlanTypes}
+              defaultExpanded
+            />
+          </Card>
 
           <FormBottomBar
             isSubmitting={isSaving}
@@ -223,6 +400,18 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
             submitText="Save changes"
           />
         </form>
+
+        <RateModal
+          open={isRateModalOpen}
+          onClose={() => { setIsRateModalOpen(false); setEditingRate(null) }}
+          onConfirm={handleRateConfirm}
+          editingRate={editingRate}
+          billingCodes={catalogBillingCodes}
+          usedBillingCodeIds={usedBillingCodeIds}
+          currencies={currencies}
+          isLoadingBillingCodes={isLoadingBillingCodes}
+          isLoadingCurrencies={isLoadingCurrencies}
+        />
       </div>
     </div>
   )

@@ -47,7 +47,19 @@ export const payerBaseFormSchema = z.object({
 
 export type PayerBaseFormValues = z.infer<typeof payerBaseFormSchema>
 
-export const getPayerBaseFormDefaults = (): PayerBaseFormValues => ({
+export const payerPlanSchema = z.object({
+  planName: z.string().max(200).optional().or(z.literal("")),
+  insurancePlanTypeId: z.string().optional().or(z.literal("")),
+  planComments: z.string().max(2000).optional().or(z.literal("")),
+})
+
+export type PayerPlanFormValues = z.infer<typeof payerPlanSchema>
+
+export const payerFullFormSchema = payerBaseFormSchema.merge(payerPlanSchema)
+
+export type PayerFullFormValues = z.infer<typeof payerFullFormSchema>
+
+export const getPayerBaseFormDefaults = (): PayerFullFormValues => ({
   name: "",
   logo: "",
   phone: "",
@@ -62,4 +74,7 @@ export const getPayerBaseFormDefaults = (): PayerBaseFormValues => ({
   zipCode: "",
   planTypeId: "",
   description: "",
+  planName: "",
+  insurancePlanTypeId: "",
+  planComments: "",
 })

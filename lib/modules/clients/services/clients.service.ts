@@ -12,6 +12,7 @@ import type { MutationResult, PaginatedResponse } from "@/lib/types/response.typ
 interface ClientListBackend extends ClientListItem {
   diagnosisCode?: string
   insurancePayer?: string
+  rbtName?: string
 }
 
 export async function getClients(query: QueryModel): Promise<{
@@ -38,6 +39,7 @@ export async function getClients(query: QueryModel): Promise<{
       ...client,
       diagnosis: client.diagnosis ?? client.diagnosisCode ?? "",
       insurance: client.insurance ?? client.insurancePayer ?? "",
+      rbt: client.rbt ?? client.rbtName ?? "",
     })),
     totalCount: paginatedData.pagination?.total || 0
   }

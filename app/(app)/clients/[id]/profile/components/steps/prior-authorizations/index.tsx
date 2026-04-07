@@ -95,16 +95,18 @@ export function StepPriorAuthorizations({
         next.delete(id)
       } else {
         next.add(id)
-        if (!(id in billingCodesMap)) {
-          setLoadingBCIds((s) => new Set(s).add(id))
-          void getPriorAuthorizationById(id)
-            .then((pa) => {
-              setBillingCodesMap((m) => ({ ...m, [id]: pa.billingCodes }))
+        setLoadingBCIds((s) => new Set(s).add(id))
+        void getPriorAuthorizationById(id)
+          .then((pa) => {
+            setBillingCodesMap((m) => ({ ...m, [id]: pa.billingCodes }))
+          })
+          .finally(() => {
+            setLoadingBCIds((s) => {
+              const n = new Set(s)
+              n.delete(id)
+              return n
             })
-            .finally(() => {
-              setLoadingBCIds((s) => { const n = new Set(s); n.delete(id); return n })
-            })
-        }
+          })
       }
       return next
     })

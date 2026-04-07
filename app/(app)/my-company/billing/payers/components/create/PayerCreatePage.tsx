@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { Building2, Landmark, ShieldCheck } from "lucide-react"
+import { Building2, ChevronDown, Landmark, ShieldCheck } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { toast } from "sonner"
 import { Card } from "@/components/custom/Card"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
@@ -14,12 +15,20 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { usePayerCatalogs } from "@/lib/modules/payers/hooks/use-payer-catalogs"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
-import { PAYER_SOURCE, type PayerSource } from "@/lib/types/payer.types"
-import { payerBaseFormSchema, getPayerBaseFormDefaults, type PayerBaseFormValues } from "@/lib/schemas/payer-form.schema"
+import { PAYER_SOURCE, type PayerSource, type LocalInsurancePlanRate } from "@/lib/types/payer.types"
+import { payerFullFormSchema, getPayerBaseFormDefaults, type PayerFullFormValues } from "@/lib/schemas/payer-form.schema"
 import { normalizePhone } from "@/lib/utils/phone-format"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { usePayersPermissionFallback } from "../../hooks/usePayersPermissionFallback"
 import { PayerBaseForm } from "../shared/PayerBaseForm"
+import { PlanSection } from "../shared/PlanSection"
+import { RateModal, type RateFormValues } from "../shared/RateModal"
+import { usePlanTypeCatalog } from "@/lib/modules/payers/hooks/use-plan-type-catalog"
+import { useCurrencyCatalog } from "@/lib/modules/currencies/hooks/use-currency-catalog"
+import { getBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
+import { createInsurancePlanGeneral, createInsurancePlanRate } from "@/lib/modules/payers/services/insurance-plan.service"
+import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
+import { cn } from "@/lib/utils"
 
 interface PayerCreatePageProps {
   source: PayerSource
@@ -72,8 +81,30 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
   const { states, isLoading: isLoadingStates } = useStates(selectedCountryId)
 
-  const form = useForm<PayerBaseFormValues>({
-    resolver: zodResolver(payerBaseFormSchema),
+  // Plan + Rates state
+  const [rates, setRates] = useState<LocalInsurancePlanRate[]>([])
+  const [isRateModalOpen, setIsRateModalOpen] = useState(false)
+  const [editingRate, setEditingRate] = useState<LocalInsurancePlanRate | null>(null)
+  const [generalExpanded, setGeneralExpanded] = useState(true)
+
+  // Plan & Rate catalogs
+  const { planTypes, isLoading: isLoadingPlanTypes } = usePlanTypeCatalog()
+  const { currencies, isLoading: isLoadingCurrencies } = useCurrencyCatalog()
+  const [catalogBillingCodes, setCatalogBillingCodes] = useState<BillingCodeListItem[]>([])
+  const [isLoadingBillingCodes, setIsLoadingBillingCodes] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setIsLoadingBillingCodes(true)
+    getBillingCodes({ page: 0, pageSize: 100 })
+      .then((result) => { if (active) setCatalogBillingCodes(result.billingCodes ?? []) })
+      .catch(() => {})
+      .finally(() => { if (active) setIsLoadingBillingCodes(false) })
+    return () => { active = false }
+  }, [])
+
+  const form = useForm<PayerFullFormValues>({
+    resolver: zodResolver(payerFullFormSchema),
     defaultValues: {
       ...getPayerBaseFormDefaults(),
       name: initialName ?? "",
@@ -137,8 +168,35 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     form.clearErrors("logo")
   }, [catalogLogoDismissed, form, isCatalogSource, selectedCatalogItem])
 
-  const scrollToFirstError = (errors: FieldErrors<PayerBaseFormValues>) => {
-    const firstErrorKey = Object.keys(errors)[0] as keyof PayerBaseFormValues | undefined
+  // Rate handlers
+  const usedBillingCodeIds = rates.map((r) => r.billingCodeId)
+
+  const handleAddRate = () => { setEditingRate(null); setIsRateModalOpen(true) }
+  const handleEditRate = (entry: LocalInsurancePlanRate) => { setEditingRate(entry); setIsRateModalOpen(true) }
+  const handleDeleteRate = (entry: LocalInsurancePlanRate) => {
+    setRates((prev) => prev.filter((r) => r._tempId !== entry._tempId))
+  }
+  const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string) => {
+    if (editingRate) {
+      setRates((prev) => prev.map((r) =>
+        r._tempId === editingRate._tempId
+          ? { ...r, ...values, billingCodeLabel, currencyLabel } as LocalInsurancePlanRate
+          : r
+      ))
+    } else {
+      setRates((prev) => [...prev, {
+        _tempId: crypto.randomUUID(),
+        ...values,
+        billingCodeLabel,
+        currencyLabel,
+      } as LocalInsurancePlanRate])
+    }
+    setIsRateModalOpen(false)
+    setEditingRate(null)
+  }
+
+  const scrollToFirstError = (errors: FieldErrors<PayerFullFormValues>) => {
+    const firstErrorKey = Object.keys(errors)[0] as keyof PayerFullFormValues | undefined
     if (!firstErrorKey) return
 
     const fieldContainer = document.querySelector(`[data-form-field="${firstErrorKey}"]`) as HTMLElement | null
@@ -176,9 +234,42 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
         description: data.description ?? "",
       })
 
-      if (created) {
-        router.push("/my-company/billing/payers")
+      if (!created) return
+
+      // Create insurance plan if plan fields are filled
+      const hasPlanData = data.planName?.trim()
+      if (hasPlanData) {
+        try {
+          const result = await createInsurancePlanGeneral(created.id, {
+            planName: data.planName!.trim(),
+            planTypeId: data.insurancePlanTypeId || "",
+            comments: data.planComments || "",
+          })
+
+          // Create rates if any
+          if (result?.planId && rates.length > 0) {
+            await Promise.all(rates.map((rate) =>
+              createInsurancePlanRate(created.id, result.planId!, {
+                insurancePlanId: result.planId!,
+                billingCodeId: rate.billingCodeId,
+                amount: rate.amount,
+                submitAmount: rate.submitAmount,
+                intervalType: rate.intervalType,
+                currencyId: rate.currencyId,
+                alias: rate.alias || "",
+                startDate: rate.startDate || "",
+                endDate: rate.endDate || "",
+              })
+            ))
+          }
+        } catch {
+          toast.error("Payer created but plan/rates failed", {
+            description: "Edit the payer to complete the plan setup.",
+          })
+        }
       }
+
+      router.push("/my-company/billing/payers")
     },
     (errors) => {
       scrollToFirstError(errors)
@@ -241,38 +332,73 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div>
                 {isCatalogSource && content.catalogLabel && !isCatalogPreselected && (
-                  <FloatingSelect
-                    label={content.catalogLabel}
-                    value={selectedCatalogId}
-                    onChange={handleCatalogChange}
-                    options={selectOptions}
-                    onBlur={() => undefined}
-                    required
-                    searchable
-                  />
+                  <div className="mb-6">
+                    <FloatingSelect
+                      label={content.catalogLabel}
+                      value={selectedCatalogId}
+                      onChange={handleCatalogChange}
+                      options={selectOptions}
+                      onBlur={() => undefined}
+                      required
+                      searchable
+                    />
+                  </div>
                 )}
 
-                <PayerBaseForm
-                  form={form}
-                  countries={countries}
-                  states={states}
-                  isLoadingCountries={isLoadingCountries}
-                  isLoadingStates={isLoadingStates}
-                  clearingHouses={clearingHouses}
-                  isLoadingClearingHouses={isLoadingCatalogs}
-                  existingLogoUrl={catalogPreviewLogoUrl}
-                  existingLogoTitle={catalogPreviewLogoUrl ? "Catalog logo" : undefined}
-                  existingLogoHint={
-                    catalogPreviewLogoUrl
-                      ? "From catalog — replace with your own file or remove below"
-                      : undefined
-                  }
-                  onLogoClear={() => setCatalogLogoDismissed(true)}
-                />
+                {/* General Information — collapsible */}
+                <button
+                  type="button"
+                  onClick={() => setGeneralExpanded(!generalExpanded)}
+                  className="w-full flex items-center justify-between mb-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <Building2 className="w-5 h-5 text-blue-700" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-base font-semibold text-gray-900">General Information</h3>
+                      <p className="text-sm text-gray-500">Payer contact and address details</p>
+                    </div>
+                  </div>
+                  <ChevronDown className={cn("w-5 h-5 text-slate-400 transition-transform", generalExpanded && "rotate-180")} />
+                </button>
+                {generalExpanded && (
+                  <PayerBaseForm
+                    form={form}
+                    countries={countries}
+                    states={states}
+                    isLoadingCountries={isLoadingCountries}
+                    isLoadingStates={isLoadingStates}
+                    clearingHouses={clearingHouses}
+                    isLoadingClearingHouses={isLoadingCatalogs}
+                    existingLogoUrl={catalogPreviewLogoUrl}
+                    existingLogoTitle={catalogPreviewLogoUrl ? "Catalog logo" : undefined}
+                    existingLogoHint={
+                      catalogPreviewLogoUrl
+                        ? "From catalog — replace with your own file or remove below"
+                        : undefined
+                    }
+                    onLogoClear={() => setCatalogLogoDismissed(true)}
+                  />
+                )}
               </div>
             )}
+          </Card>
+
+          {/* Insurance Plan — separate card */}
+          <Card variant="elevated" padding="lg" className="mt-4">
+            <PlanSection
+              form={form}
+              rates={rates}
+              onAddRate={handleAddRate}
+              onEditRate={handleEditRate}
+              onDeleteRate={handleDeleteRate}
+              planTypes={planTypes}
+              isLoadingPlanTypes={isLoadingPlanTypes}
+              defaultExpanded
+            />
           </Card>
 
           <FormBottomBar
@@ -287,6 +413,18 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
             }
           />
         </form>
+
+        <RateModal
+          open={isRateModalOpen}
+          onClose={() => { setIsRateModalOpen(false); setEditingRate(null) }}
+          onConfirm={handleRateConfirm}
+          editingRate={editingRate}
+          billingCodes={catalogBillingCodes}
+          usedBillingCodeIds={usedBillingCodeIds}
+          currencies={currencies}
+          isLoadingBillingCodes={isLoadingBillingCodes}
+          isLoadingCurrencies={isLoadingCurrencies}
+        />
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import { useWatch, Controller, type UseFormReturn } from "react-hook-form"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
-import type { PayerBaseFormValues } from "@/lib/schemas/payer-form.schema"
+import type { PayerFullFormValues } from "@/lib/schemas/payer-form.schema"
 import { PayerLogoUpload } from "./PayerLogoUpload"
 import { PhoneInputField } from "./PhoneInputField"
 
@@ -19,7 +19,7 @@ interface ClearingHouseItem {
 }
 
 interface PayerBaseFormProps {
-  form: UseFormReturn<PayerBaseFormValues>
+  form: UseFormReturn<PayerFullFormValues>
   countries: CatalogItem[]
   states: CatalogItem[]
   isLoadingCountries: boolean

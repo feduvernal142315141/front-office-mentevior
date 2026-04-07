@@ -102,3 +102,20 @@ export interface ListPayersQueryDto {
   page?: number
   pageSize?: number
 }
+
+/** In-memory rate entry for local state management on create/edit pages */
+export interface LocalInsurancePlanRate {
+  _tempId: string
+  /** Present only for existing rates from backend */
+  id?: string
+  billingCodeId: string
+  billingCodeLabel: string
+  amount: number
+  submitAmount?: number
+  intervalType: string
+  currencyId: string
+  currencyLabel: string
+  alias?: string
+  startDate?: string
+  endDate?: string
+}
