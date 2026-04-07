@@ -7,9 +7,8 @@ import { ChevronDown, ChevronLeft, ChevronRight, Edit2, ShieldCheck, Trash2 } fr
 import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
-import { getRatesByPayerId } from "@/lib/modules/payers/services/insurance-plan.service"
-import type { InsurancePlanRateRow } from "@/lib/types/insurance-plan-rate.types"
-import type { Payer } from "@/lib/types/payer.types"
+import { getPayersService } from "@/lib/modules/payers/services/payers.service"
+import type { Payer, PayerRateEmbed } from "@/lib/types/payer.types"
 import { cn } from "@/lib/utils"
 import { parseLocalDate } from "@/lib/date"
 import { usePayersTable } from "../hooks/usePayersTable"
@@ -66,9 +65,8 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
     deleteState,
   } = usePayersTable()
 
-  // Expand state
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
-  const [ratesMap, setRatesMap] = useState<Record<string, InsurancePlanRateRow[]>>({})
+  const [ratesMap, setRatesMap] = useState<Record<string, PayerRateEmbed[]>>({})
   const [loadingRateIds, setLoadingRateIds] = useState<Set<string>>(new Set())
 
   useImperativeHandle(ref, () => ({ refetch }))
@@ -82,15 +80,18 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
         next.add(id)
         if (!(id in ratesMap)) {
           setLoadingRateIds((s) => new Set(s).add(id))
-          void getRatesByPayerId(id)
-            .then((rates) => setRatesMap((m) => ({ ...m, [id]: rates })))
-            .finally(() =>
+          void getPayersService()
+            .getById(id)
+            .then((payer) => {
+              setRatesMap((m) => ({ ...m, [id]: payer.payerRates ?? [] }))
+            })
+            .finally(() => {
               setLoadingRateIds((s) => {
                 const n = new Set(s)
                 n.delete(id)
                 return n
-              }),
-            )
+              })
+            })
         }
       }
       return next
@@ -223,7 +224,7 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
             {/* Card rows */}
             {payers.map((payer) => {
               const isExpanded = expandedIds.has(payer.id)
-              const rates = ratesMap[payer.id] ?? []
+              const rates: PayerRateEmbed[] = ratesMap[payer.id] ?? []
 
               return (
                 <div
@@ -335,16 +336,12 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                     )}
                   </div>
 
-                  {/* Expanded section — rates */}
                   {isExpanded && (
                     <div className="border-t border-slate-100 bg-slate-50/60 px-5 pb-4 pt-3">
                       {loadingRateIds.has(payer.id) ? (
                         <div className="space-y-2">
                           {[1, 2].map((i) => (
-                            <div
-                              key={i}
-                              className="h-10 animate-pulse rounded-xl bg-slate-200"
-                            />
+                            <div key={i} className="h-10 animate-pulse rounded-xl bg-slate-200" />
                           ))}
                         </div>
                       ) : rates.length === 0 ? (
@@ -375,7 +372,7 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                               )}
                             >
                               <span className="text-sm font-medium text-[#037ECC]">
-                                {rate.billingCodeName || rate.billingCodeId}
+                                {rate.billingCode ?? rate.billingCodeId}
                               </span>
                               <span className="text-sm tabular-nums text-slate-700">
                                 {rate.amount}

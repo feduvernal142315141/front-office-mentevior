@@ -6,7 +6,6 @@ import { Building2, ChevronDown, Landmark, ShieldCheck } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { toast } from "sonner"
 import { Card } from "@/components/custom/Card"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
@@ -26,7 +25,6 @@ import { RateModal, type RateFormValues } from "../shared/RateModal"
 import { usePlanTypeCatalog } from "@/lib/modules/payers/hooks/use-plan-type-catalog"
 import { useCurrencyCatalog } from "@/lib/modules/currencies/hooks/use-currency-catalog"
 import { getBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
-import { createInsurancePlanGeneral, createInsurancePlanRate } from "@/lib/modules/payers/services/insurance-plan.service"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import { cn } from "@/lib/utils"
 
@@ -217,6 +215,8 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     async (data) => {
       if (isCatalogSource && !selectedCatalogId) return
 
+      const hasPlanData = Boolean(data.planName?.trim())
+
       const created = await create({
         name: data.name.trim(),
         source,
@@ -232,42 +232,26 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
         zipCode: data.zipCode,
         clearingHouseId: data.planTypeId ?? "",
         description: data.description ?? "",
-      })
-
-      if (!created) return
-
-      // Create insurance plan if plan fields are filled
-      const hasPlanData = data.planName?.trim()
-      if (hasPlanData) {
-        try {
-          const result = await createInsurancePlanGeneral(created.id, {
+        ...(hasPlanData && {
+          payerPlan: {
             planName: data.planName!.trim(),
             planTypeId: data.insurancePlanTypeId || "",
             comments: data.planComments || "",
-          })
+          },
+          payerRates: rates.map((r) => ({
+            billingCodeId: r.billingCodeId,
+            amount: r.amount,
+            submitAmount: r.submitAmount,
+            intervalType: r.intervalType,
+            currencyId: r.currencyId,
+            alias: r.alias || undefined,
+            startDate: r.startDate || undefined,
+            endDate: r.endDate || undefined,
+          })),
+        }),
+      })
 
-          // Create rates if any
-          if (result?.planId && rates.length > 0) {
-            await Promise.all(rates.map((rate) =>
-              createInsurancePlanRate(created.id, result.planId!, {
-                insurancePlanId: result.planId!,
-                billingCodeId: rate.billingCodeId,
-                amount: rate.amount,
-                submitAmount: rate.submitAmount,
-                intervalType: rate.intervalType,
-                currencyId: rate.currencyId,
-                alias: rate.alias || "",
-                startDate: rate.startDate || "",
-                endDate: rate.endDate || "",
-              })
-            ))
-          }
-        } catch {
-          toast.error("Payer created but plan/rates failed", {
-            description: "Edit the payer to complete the plan setup.",
-          })
-        }
-      }
+      if (!created) return
 
       router.push("/my-company/billing/payers")
     },

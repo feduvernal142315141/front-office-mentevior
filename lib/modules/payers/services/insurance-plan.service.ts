@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import type {
   InsurancePlanCreatePayload,
   InsurancePlanDetailDto,
@@ -240,5 +240,13 @@ export async function updateInsurancePlanRate(
 
   if (response.status !== 200 && response.status !== 204) {
     throw new Error((response.data as { message?: string } | undefined)?.message || "Failed to update rate")
+  }
+}
+
+export async function deleteInsurancePlanRate(rateId: string): Promise<void> {
+  const response = await serviceDelete<never, { message?: string }>(`/rates/${rateId}`)
+
+  if (response.status !== 200 && response.status !== 204) {
+    throw new Error((response.data as { message?: string } | undefined)?.message || "Failed to delete rate")
   }
 }

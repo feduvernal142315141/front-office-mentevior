@@ -91,9 +91,10 @@ export function RateModal({
         endDate: editingRate.endDate ?? "",
       })
     } else {
-      form.reset(emptyDefaults)
+      const usdCurrency = currencies.find((c) => c.code === "USD")
+      form.reset({ ...emptyDefaults, currencyId: usdCurrency?.id ?? "" })
     }
-  }, [editingRate, open, form])
+  }, [editingRate, open, form, currencies])
 
   const billingCodeOptions = billingCodes
     .filter(

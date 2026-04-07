@@ -19,6 +19,34 @@ export interface PayerBaseFormFields {
   zipCode: string
 }
 
+/** Embedded plan returned by GET /payers/{id} */
+export interface PayerPlanEmbed {
+  id: string
+  planName: string
+  planTypeId: string
+  planTypeName?: string
+  comments?: string
+  active?: boolean
+}
+
+/** Embedded rate returned by GET /payers/{id} */
+export interface PayerRateEmbed {
+  id: string
+  payerId: string
+  amount: number
+  submitAmount?: number | null
+  intervalType: string
+  currencyId: string
+  currencyCode?: string
+  currencyName?: string
+  alias?: string
+  startDate?: string | null
+  endDate?: string | null
+  billingCodeId: string
+  billingCode?: string
+  active?: boolean
+}
+
 export interface Payer {
   id: string
   name: string
@@ -48,6 +76,10 @@ export interface Payer {
   active?: boolean
   createdAt?: string
   updatedAt?: string
+  /** Embedded plan — present only on GET /payers/{id} */
+  payerPlan?: PayerPlanEmbed | null
+  /** Embedded rates — present only on GET /payers/{id} */
+  payerRates?: PayerRateEmbed[]
 }
 
 export interface PayerCatalogItem {
@@ -59,6 +91,25 @@ export interface PayerCatalogItem {
 export interface PayerClearingHouseItem {
   id: string
   name: string
+}
+
+export interface PayerPlanPayload {
+  id?: string
+  planName: string
+  planTypeId: string
+  comments: string
+}
+
+export interface PayerRatePayload {
+  id?: string
+  billingCodeId: string
+  amount: number
+  submitAmount?: number
+  intervalType: string
+  currencyId: string
+  alias?: string
+  startDate?: string
+  endDate?: string
 }
 
 export interface CreatePayerDto {
@@ -76,6 +127,8 @@ export interface CreatePayerDto {
   zipCode: string
   clearingHouseId: string
   description: string
+  payerPlan?: PayerPlanPayload
+  payerRates?: PayerRatePayload[]
 }
 
 export interface UpdatePayerDto {
@@ -95,6 +148,8 @@ export interface UpdatePayerDto {
   zipCode: string
   clearingHouseId: string
   description: string
+  payerPlan?: PayerPlanPayload
+  payerRates?: PayerRatePayload[]
 }
 
 export interface ListPayersQueryDto {

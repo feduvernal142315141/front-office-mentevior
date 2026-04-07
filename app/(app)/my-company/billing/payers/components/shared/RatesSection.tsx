@@ -1,7 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { Edit2, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import type { LocalInsurancePlanRate } from "@/lib/types/payer.types"
 import { cn } from "@/lib/utils"
 
@@ -10,6 +12,7 @@ interface RatesSectionProps {
   onAdd: () => void
   onEdit: (entry: LocalInsurancePlanRate) => void
   onDelete: (entry: LocalInsurancePlanRate) => void
+  isDeleting?: boolean
 }
 
 export function RatesSection({
@@ -17,7 +20,9 @@ export function RatesSection({
   onAdd,
   onEdit,
   onDelete,
+  isDeleting = false,
 }: RatesSectionProps) {
+  const [pendingDelete, setPendingDelete] = useState<LocalInsurancePlanRate | null>(null)
   return (
     <div>
       {entries.length === 0 ? (
@@ -97,7 +102,7 @@ export function RatesSection({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onDelete(entry)}
+                  onClick={() => setPendingDelete(entry)}
                   className={cn(
                     "h-8 w-8 flex items-center justify-center rounded-lg",
                     "bg-red-50 border border-red-200/60",
@@ -120,6 +125,19 @@ export function RatesSection({
           Add Rate
         </Button>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={Boolean(pendingDelete)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) onDelete(pendingDelete)
+          setPendingDelete(null)
+        }}
+        title="Delete Rate"
+        message="Are you sure you want to delete this rate? This action cannot be undone."
+        itemName={pendingDelete?.billingCodeLabel}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }

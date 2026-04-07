@@ -110,10 +110,12 @@ export function NewPayerModal({ open, onOpenChange, onSuccess }: NewPayerModalPr
     }
   }
 
-  const handleCatalogItemSelect = (item: PayerCatalogItem) => {
-    handleClose()
-    const params = new URLSearchParams({ catalogId: item.id, name: item.name })
-    router.push(`/my-company/billing/payers/create/catalog?${params.toString()}`)
+  const handleCatalogItemSelect = async (item: PayerCatalogItem) => {
+    const ok = await createFromPrivate([item.id])
+    if (ok) {
+      handleClose()
+      onSuccess?.()
+    }
   }
 
   const handlePrivateBulkCreate = async (ids: string[]) => {
@@ -132,10 +134,12 @@ export function NewPayerModal({ open, onOpenChange, onSuccess }: NewPayerModalPr
     }
   }
 
-  const handleStateCatalogItemSelect = (item: PayerCatalogItem) => {
-    handleClose()
-    const params = new URLSearchParams({ catalogId: item.id, name: item.name })
-    router.push(`/my-company/billing/payers/create/fl-medicaid?${params.toString()}`)
+  const handleStateCatalogItemSelect = async (item: PayerCatalogItem) => {
+    const ok = await createFromState([item.id])
+    if (ok) {
+      handleClose()
+      onSuccess?.()
+    }
   }
 
   return (

@@ -23,14 +23,7 @@ import { RateModal, type RateFormValues } from "../shared/RateModal"
 import { usePlanTypeCatalog } from "@/lib/modules/payers/hooks/use-plan-type-catalog"
 import { useCurrencyCatalog } from "@/lib/modules/currencies/hooks/use-currency-catalog"
 import { getBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
-import {
-  createInsurancePlanGeneral,
-  updateInsurancePlanGeneral,
-  createInsurancePlanRate,
-  updateInsurancePlanRate,
-  getInsurancePlanForPayer,
-  getRatesByPayerId,
-} from "@/lib/modules/payers/services/insurance-plan.service"
+import { deleteInsurancePlanRate } from "@/lib/modules/payers/services/insurance-plan.service"
 import type { LocalInsurancePlanRate } from "@/lib/types/payer.types"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import { cn } from "@/lib/utils"
@@ -59,7 +52,6 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
   const [isRateModalOpen, setIsRateModalOpen] = useState(false)
   const [editingRate, setEditingRate] = useState<LocalInsurancePlanRate | null>(null)
   const [generalExpanded, setGeneralExpanded] = useState(true)
-  const [existingPlanId, setExistingPlanId] = useState<string | null>(null)
 
   // Plan & Rate catalogs
   const { planTypes, isLoading: isLoadingPlanTypes } = usePlanTypeCatalog()
@@ -122,43 +114,37 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     }
   }, [payer, form])
 
-  // Load existing plan + rates
+  // Load existing plan + rates from embedded fields (no extra fetch needed)
   useEffect(() => {
     if (!payer) return
-    let active = true
 
-    // Load plan
-    getInsurancePlanForPayer(payerId).then((plan) => {
-      if (!active || !plan) return
-      setExistingPlanId(plan.id || null)
+    // Map embedded plan
+    const plan = payer.payerPlan
+    if (plan) {
       form.reset({
         ...form.getValues(),
         planName: plan.planName || "",
         insurancePlanTypeId: plan.planTypeId || "",
         planComments: plan.comments || "",
       })
-    }).catch(() => {})
+    }
 
-    // Load rates
-    getRatesByPayerId(payerId).then((serverRates) => {
-      if (!active) return
-      setRates(serverRates.map((r) => ({
-        _tempId: crypto.randomUUID(),
-        id: r.id,
-        billingCodeId: r.billingCodeId,
-        billingCodeLabel: r.billingCodeName || r.billingCodeId,
-        amount: r.amount,
-        submitAmount: r.submitAmount,
-        intervalType: r.intervalType,
-        currencyId: r.currencyId,
-        currencyLabel: r.currencyCode || r.currencyId,
-        alias: r.alias,
-        startDate: r.startDate,
-        endDate: r.endDate,
-      })))
-    }).catch(() => {})
-
-    return () => { active = false }
+    // Map embedded rates
+    const embeddedRates = payer.payerRates ?? []
+    setRates(embeddedRates.map((r) => ({
+      _tempId: crypto.randomUUID(),
+      id: r.id,
+      billingCodeId: r.billingCodeId,
+      billingCodeLabel: r.billingCode ?? r.billingCodeId,
+      amount: r.amount,
+      submitAmount: r.submitAmount ?? undefined,
+      intervalType: r.intervalType,
+      currencyId: r.currencyId,
+      currencyLabel: r.currencyCode || r.currencyId,
+      alias: r.alias,
+      startDate: r.startDate ?? undefined,
+      endDate: r.endDate ?? undefined,
+    })))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [payer])
 
@@ -167,7 +153,15 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
 
   const handleAddRate = () => { setEditingRate(null); setIsRateModalOpen(true) }
   const handleEditRate = (entry: LocalInsurancePlanRate) => { setEditingRate(entry); setIsRateModalOpen(true) }
-  const handleDeleteRate = (entry: LocalInsurancePlanRate) => {
+  const handleDeleteRate = async (entry: LocalInsurancePlanRate) => {
+    if (entry.id) {
+      try {
+        await deleteInsurancePlanRate(entry.id)
+      } catch {
+        toast.error("Failed to delete rate")
+        return
+      }
+    }
     setRates((prev) => prev.filter((r) => r._tempId !== entry._tempId))
   }
   const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string) => {
@@ -211,7 +205,8 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     async (data) => {
       if (!payer) return
 
-      // 1. Update payer
+      const hasPlanData = Boolean(data.planName?.trim())
+
       const saved = await update({
         id: payer.id,
         source: payer.source,
@@ -229,67 +224,28 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         city: data.city ?? "",
         stateId: data.stateId ?? "",
         zipCode: data.zipCode,
+        ...(hasPlanData && {
+          payerPlan: {
+            id: payer.payerPlan?.id,
+            planName: data.planName!.trim(),
+            planTypeId: data.insurancePlanTypeId || "",
+            comments: data.planComments || "",
+          },
+          payerRates: rates.map((r) => ({
+            id: r.id,
+            billingCodeId: r.billingCodeId,
+            amount: r.amount,
+            submitAmount: r.submitAmount,
+            intervalType: r.intervalType,
+            currencyId: r.currencyId,
+            alias: r.alias || undefined,
+            startDate: r.startDate || undefined,
+            endDate: r.endDate || undefined,
+          })),
+        }),
       })
 
       if (!saved) return
-
-      // 2. Create/update plan
-      const hasPlanData = data.planName?.trim()
-      if (hasPlanData) {
-        try {
-          let planId = existingPlanId
-          if (planId) {
-            await updateInsurancePlanGeneral(payer.id, {
-              id: planId,
-              planName: data.planName!.trim(),
-              planTypeId: data.insurancePlanTypeId || "",
-              comments: data.planComments || "",
-            })
-          } else {
-            const newPlan = await createInsurancePlanGeneral(payer.id, {
-              planName: data.planName!.trim(),
-              planTypeId: data.insurancePlanTypeId || "",
-              comments: data.planComments || "",
-            })
-            planId = newPlan?.planId || null
-          }
-
-          // 3. Handle rates
-          if (planId) {
-            const newRates = rates.filter((r) => !r.id)
-            const existingRates = rates.filter((r) => !!r.id)
-
-            await Promise.all([
-              ...newRates.map((r) => createInsurancePlanRate(payer.id, planId!, {
-                insurancePlanId: planId!,
-                billingCodeId: r.billingCodeId,
-                amount: r.amount,
-                submitAmount: r.submitAmount,
-                intervalType: r.intervalType,
-                currencyId: r.currencyId,
-                alias: r.alias || "",
-                startDate: r.startDate || "",
-                endDate: r.endDate || "",
-              })),
-              ...existingRates.map((r) => updateInsurancePlanRate(r.id!, {
-                insurancePlanId: planId!,
-                billingCodeId: r.billingCodeId,
-                amount: r.amount,
-                submitAmount: r.submitAmount,
-                intervalType: r.intervalType,
-                currencyId: r.currencyId,
-                alias: r.alias || "",
-                startDate: r.startDate || "",
-                endDate: r.endDate || "",
-              })),
-            ])
-          }
-        } catch {
-          toast.error("Payer saved but plan/rates failed", {
-            description: "Try editing again to complete the plan setup.",
-          })
-        }
-      }
 
       router.push(backPath)
     },
