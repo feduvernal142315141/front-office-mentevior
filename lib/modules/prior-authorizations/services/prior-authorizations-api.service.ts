@@ -11,6 +11,24 @@ function normalizeDate(isoDate: string | undefined | null): string {
   return isoDate.split("T")[0]
 }
 
+function normalizeBillingCodeLabel({
+  label,
+  code,
+  modifier,
+}: {
+  label?: string
+  code: string
+  modifier?: string
+}): string {
+  const trimmedLabel = (label ?? "").trim()
+  const trimmedModifier = (modifier ?? "").trim()
+
+  const sanitizedLabel = trimmedLabel.replace(/\s*\(\s*\)\s*$/, "").trim()
+  if (sanitizedLabel) return sanitizedLabel
+
+  return trimmedModifier ? `${code} (${trimmedModifier})` : code
+}
+
 function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
   return {
     id: raw.id as string,
@@ -40,7 +58,11 @@ function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
       return rawBCs.map((bc) => {
         const code = (bc.billingCodeCode as string) ?? ""
         const modifier = (bc.billingCodeModifier as string) ?? ""
-        const label = (bc.billingCodeLabel as string) || (modifier ? `${code} (${modifier})` : code)
+        const label = normalizeBillingCodeLabel({
+          label: bc.billingCodeLabel as string,
+          code,
+          modifier,
+        })
         return {
           id: bc.id as string,
           billingCodeId: (bc.billingCodeId as string) ?? "",

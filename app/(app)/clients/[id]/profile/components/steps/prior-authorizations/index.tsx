@@ -112,6 +112,43 @@ export function StepPriorAuthorizations({
     })
   }
 
+  const refreshExpandedBillingCodes = async () => {
+    const expandedPaIds = Array.from(expandedIds)
+    if (expandedPaIds.length === 0) return
+
+    setLoadingBCIds((prev) => {
+      const next = new Set(prev)
+      expandedPaIds.forEach((id) => next.add(id))
+      return next
+    })
+
+    const refreshed = await Promise.all(
+      expandedPaIds.map(async (id) => {
+        try {
+          const pa = await getPriorAuthorizationById(id)
+          return { id, billingCodes: pa.billingCodes }
+        } catch {
+          return null
+        }
+      })
+    )
+
+    setBillingCodesMap((prev) => {
+      const next = { ...prev }
+      refreshed.forEach((item) => {
+        if (!item) return
+        next[item.id] = item.billingCodes
+      })
+      return next
+    })
+
+    setLoadingBCIds((prev) => {
+      const next = new Set(prev)
+      expandedPaIds.forEach((id) => next.delete(id))
+      return next
+    })
+  }
+
   // Enrich PAs with computed status and denormalized insurance name
   const enrichedPAs = useMemo(() => {
     return pas.map((pa) => ({
@@ -148,7 +185,10 @@ export function StepPriorAuthorizations({
           clientId={resolvedClientId}
           insurances={insurances}
           onBack={() => setCurrentView({ mode: "list" })}
-          onSaved={async () => { await refetch() }}
+          onSaved={async () => {
+            await refetch()
+            await refreshExpandedBillingCodes()
+          }}
         />
       </div>
     )
@@ -162,7 +202,10 @@ export function StepPriorAuthorizations({
           editingPA={currentView.pa}
           insurances={insurances}
           onBack={() => setCurrentView({ mode: "list" })}
-          onSaved={async () => { await refetch() }}
+          onSaved={async () => {
+            await refetch()
+            await refreshExpandedBillingCodes()
+          }}
         />
       </div>
     )
