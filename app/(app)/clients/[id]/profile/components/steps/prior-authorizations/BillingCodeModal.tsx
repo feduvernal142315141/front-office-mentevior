@@ -13,7 +13,7 @@ import {
   UNITS_INTERVAL_OPTIONS,
   type BillingCodeEntryValues,
 } from "@/lib/schemas/prior-authorization-form.schema"
-import type { PriorAuthBillingCode } from "@/lib/types/prior-authorization.types"
+import type { LocalBillingCodeEntry } from "@/lib/types/prior-authorization.types"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import { cn } from "@/lib/utils"
 
@@ -21,7 +21,7 @@ interface BillingCodeModalProps {
   open: boolean
   onClose: () => void
   onConfirm: (values: BillingCodeEntryValues, billingCodeLabel: string) => void | Promise<void>
-  editingCode?: PriorAuthBillingCode | null
+  editingCode?: LocalBillingCodeEntry | null
   billingCodes: BillingCodeListItem[]
   usedBillingCodeIds?: string[]
   isLoading?: boolean

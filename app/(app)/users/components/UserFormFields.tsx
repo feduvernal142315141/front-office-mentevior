@@ -6,6 +6,7 @@ import Link from "next/link"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { formatPhoneInput } from "@/lib/utils/phone-format"
 import { FilterSelect } from "@/components/custom/FilterSelect"
+import { MultiSelect } from "@/components/custom/MultiSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
@@ -24,6 +25,8 @@ interface UserFormFieldsProps {
   onCancel: () => void
   currentUser: any
   editingUser: any
+  memberUserTypeOptions: Array<{ id: string; name: string }>
+  isLoadingMemberUserTypes: boolean
 }
 
 export function UserFormFields({
@@ -34,6 +37,8 @@ export function UserFormFields({
   onCancel,
   currentUser,
   editingUser,
+  memberUserTypeOptions,
+  isLoadingMemberUserTypes,
 }: UserFormFieldsProps) {
   const { control, setValue } = useFormContext()
 
@@ -65,6 +70,11 @@ export function UserFormFields({
      currentUser.email?.toLowerCase() === editingUser.email?.toLowerCase())
 
   const canEditRole = isSuperAdmin && !isEditingSelf
+
+  const memberUserTypeSelectOptions = memberUserTypeOptions.map((t) => ({
+    value: t.id,
+    label: t.name,
+  }))
 
   return (
     <>
@@ -294,6 +304,31 @@ export function UserFormFields({
                     </div>
                   </Link>
                 )}
+              </div>
+
+              <div className="mt-6">
+                <Controller
+                  name="memberUserTypeIds"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <MultiSelect
+                        label="Member User Types"
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        options={memberUserTypeSelectOptions}
+                        disabled={isLoadingMemberUserTypes}
+                        hasError={!!fieldState.error}
+                        searchable
+                        tone="neutral"
+                      />
+                      {fieldState.error && (
+                        <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
+                      )}
+                    </div>
+                  )}
+                />
               </div>
             </div>
 

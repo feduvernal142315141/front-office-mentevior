@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Controller, type Control, type FieldErrors } from "react-hook-form"
+import { Controller, type UseFormReturn } from "react-hook-form"
 import { Upload, X, FileText, Eye, Download } from "lucide-react"
 import { toast } from "sonner"
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -19,22 +19,14 @@ import { cn } from "@/lib/utils"
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
 
-interface TabGeneralProps {
-  control: Control<PriorAuthFormValues>
-  errors: FieldErrors<PriorAuthFormValues>
-  watch: (field: keyof PriorAuthFormValues) => string
-  setValue: (field: keyof PriorAuthFormValues, value: string) => void
+interface PriorAuthBaseFormProps {
+  form: UseFormReturn<PriorAuthFormValues>
   insurances: ClientInsurance[]
   clientId: string
-  /** URL de S3 del attachment ya guardado en el servidor (para visualizar) */
   existingAttachmentUrl?: string | null
-  /** URL de S3 con header Content-Disposition: attachment (para descargar) */
   existingAttachmentDownloadUrl?: string | null
-  /** Callback para limpiar las URLs existentes cuando se sube un archivo nuevo */
   onClearExistingAttachment?: () => void
-  /** En modo edit: el insuranceId original del PA (puede estar desactivado) */
   editingInsuranceId?: string | null
-  /** En modo edit: el insuranceName original del PA para mostrar aunque esté desactivado */
   editingInsuranceName?: string | null
 }
 
@@ -56,11 +48,8 @@ function truncateFileName(name: string | null | undefined, max = 52): string {
   return `${cleaned.slice(0, max)}...`
 }
 
-export function TabGeneral({
-  control,
-  errors,
-  watch,
-  setValue,
+export function PriorAuthBaseForm({
+  form,
   insurances,
   clientId,
   existingAttachmentUrl,
@@ -68,16 +57,16 @@ export function TabGeneral({
   onClearExistingAttachment,
   editingInsuranceId,
   editingInsuranceName,
-}: TabGeneralProps) {
+}: PriorAuthBaseFormProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
 
-  const startDate = watch("startDate")
-  const endDate = watch("endDate")
-  const interval = watch("durationInterval")
-  const attachmentName = watch("attachmentName")
-  const primaryDiagnosisId = watch("primaryDiagnosisId")
-  const insuranceId = watch("insuranceId")
+  const startDate = form.watch("startDate")
+  const endDate = form.watch("endDate")
+  const interval = form.watch("durationInterval")
+  const attachmentName = form.watch("attachmentName")
+  const primaryDiagnosisId = form.watch("primaryDiagnosisId")
+  const insuranceId = form.watch("insuranceId")
 
   const { diagnoses, isLoading: isLoadingDiagnoses } = useDiagnosesByClient(clientId)
 
@@ -90,15 +79,15 @@ export function TabGeneral({
 
   useEffect(() => {
     if (diagnoses.length === 1 && !primaryDiagnosisId) {
-      setValue("primaryDiagnosisId", diagnoses[0].id)
+      form.setValue("primaryDiagnosisId", diagnoses[0].id)
     }
-  }, [diagnoses, primaryDiagnosisId, setValue])
+  }, [diagnoses, primaryDiagnosisId, form])
 
   useEffect(() => {
     if (activeInsurances.length === 1 && !insuranceId) {
-      setValue("insuranceId", activeInsurances[0].id)
+      form.setValue("insuranceId", activeInsurances[0].id)
     }
-  }, [activeInsurances.length, insuranceId, setValue])
+  }, [activeInsurances.length, insuranceId, form])
 
   const duration = calculateDuration(
     startDate,
@@ -141,16 +130,16 @@ export function TabGeneral({
       const base64 = result.split(",")[1] ?? result
       // al subir un archivo nuevo, la URL existente del servidor queda reemplazada
       onClearExistingAttachment?.()
-      setValue("attachment", base64)
-      setValue("attachmentName", file.name)
+      form.setValue("attachment", base64)
+      form.setValue("attachmentName", file.name)
     }
     reader.readAsDataURL(file)
   }
 
   const handleRemoveAttachment = () => {
     onClearExistingAttachment?.()
-    setValue("attachment", "")
-    setValue("attachmentName", "")
+    form.setValue("attachment", "")
+    form.setValue("attachmentName", "")
     if (inputRef.current) inputRef.current.value = ""
   }
 
@@ -192,7 +181,7 @@ export function TabGeneral({
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <Controller
           name="authNumber"
-          control={control}
+          control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <FloatingInput
@@ -213,7 +202,7 @@ export function TabGeneral({
 
         <Controller
           name="insuranceId"
-          control={control}
+          control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
@@ -241,7 +230,7 @@ export function TabGeneral({
 
         <Controller
           name="primaryDiagnosisId"
-          control={control}
+          control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
@@ -270,7 +259,7 @@ export function TabGeneral({
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <Controller
           name="startDate"
-          control={control}
+          control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
@@ -289,7 +278,7 @@ export function TabGeneral({
 
         <Controller
           name="endDate"
-          control={control}
+          control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
@@ -327,7 +316,7 @@ export function TabGeneral({
 
         <Controller
           name="durationInterval"
-          control={control}
+          control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
@@ -352,7 +341,7 @@ export function TabGeneral({
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <Controller
           name="requestDate"
-          control={control}
+          control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
@@ -370,7 +359,7 @@ export function TabGeneral({
 
         <Controller
           name="responseDate"
-          control={control}
+          control={form.control}
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
@@ -389,7 +378,7 @@ export function TabGeneral({
 
       <Controller
         name="comments"
-        control={control}
+        control={form.control}
         render={({ field, fieldState }) => (
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">

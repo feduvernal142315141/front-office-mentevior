@@ -49,6 +49,40 @@ export type CreatePriorAuthBillingCodeDto = Omit<
   "id" | "remainingUnits" | "billingCodeLabel"
 >
 
+/** Billing code entry sent inside the PA create/update payload */
+export interface AuthorizationBillingCodePayload {
+  /** Present only for existing BCs (edit mode) — backend updates. Absent = backend creates new */
+  id?: string
+  billingCodeId: string
+  approvedUnits: number
+  usedUnits: number
+  unitsInterval: UnitsInterval
+  maxUnitsPerDay?: number | null
+  maxUnitsPerWeek?: number | null
+  maxUnitsPerMonth?: number | null
+  maxCountPerDay?: number | null
+  maxCountPerWeek?: number | null
+  maxCountPerMonth?: number | null
+}
+
+/** In-memory billing code entry for local state management on create/edit pages */
+export interface LocalBillingCodeEntry {
+  _tempId: string
+  id?: string
+  billingCodeId: string
+  billingCodeLabel: string
+  approvedUnits: number
+  usedUnits: number
+  remainingUnits: number
+  unitsInterval: UnitsInterval
+  maxUnitsPerDay?: number | null
+  maxUnitsPerWeek?: number | null
+  maxUnitsPerMonth?: number | null
+  maxCountPerDay?: number | null
+  maxCountPerWeek?: number | null
+  maxCountPerMonth?: number | null
+}
+
 export interface CreatePriorAuthorizationDto {
   clientId: string
   insuranceId: string
@@ -62,6 +96,7 @@ export interface CreatePriorAuthorizationDto {
   comments?: string | null
   attachment?: string | null
   attachmentName?: string | null
+  authorizationBillingCodes: AuthorizationBillingCodePayload[]
 }
 
 export interface UpdatePriorAuthorizationDto {
@@ -77,6 +112,7 @@ export interface UpdatePriorAuthorizationDto {
   comments?: string | null
   attachment?: string | null
   attachmentName?: string | null
+  authorizationBillingCodes: AuthorizationBillingCodePayload[]
 }
 
 export interface CreateAuthorizationBillingCodeDto {

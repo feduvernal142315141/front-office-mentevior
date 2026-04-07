@@ -1,16 +1,17 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ChevronDown, ChevronRight, Edit2, FileCheck, Calendar, Shield, Hash, Trash2 } from "lucide-react"
+import { ChevronDown, Edit2, FileCheck, Calendar, Shield, Hash, Trash2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
-import { PriorAuthModal } from "./PriorAuthModal"
 import { LinkedEventsModal } from "./LinkedEventsModal"
+import { PriorAuthCreateView } from "./PriorAuthCreateView"
+import { PriorAuthEditView } from "./PriorAuthEditView"
 import { usePriorAuthorizationsByClient } from "@/lib/modules/prior-authorizations/hooks/use-prior-authorizations-by-client"
 import { useCancelPriorAuthorization } from "@/lib/modules/prior-authorizations/hooks/use-cancel-prior-authorization"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { useClientInsurancesByClient } from "@/lib/modules/client-insurances/hooks/use-client-insurances-by-client"
-import { getAuthorizationBillingCodesByPriorAuthId } from "@/lib/modules/authorization-billing-codes/services/authorization-billing-codes-api.service"
+import { getPriorAuthorizationById } from "@/lib/modules/prior-authorizations/services/prior-authorizations-api.service"
 import {
   calculatePAStatus,
   getPAStatusBadgeClasses,
@@ -21,6 +22,11 @@ import type {
 } from "@/lib/types/prior-authorization.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 import { cn } from "@/lib/utils"
+
+type StepView =
+  | { mode: "list" }
+  | { mode: "create" }
+  | { mode: "edit"; pa: PriorAuthorization }
 
 function formatDate(dateStr: string | undefined | null): string {
   if (!dateStr) return "—"
@@ -39,8 +45,7 @@ export function StepPriorAuthorizations({
   registerValidation,
   onStepStatusChange,
 }: StepComponentProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingPA, setEditingPA] = useState<PriorAuthorization | null>(null)
+  const [currentView, setCurrentView] = useState<StepView>({ mode: "list" })
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [billingCodesMap, setBillingCodesMap] = useState<Record<string, PriorAuthBillingCode[]>>({})
   const [loadingBCIds, setLoadingBCIds] = useState<Set<string>>(new Set())
@@ -92,9 +97,9 @@ export function StepPriorAuthorizations({
         next.add(id)
         if (!(id in billingCodesMap)) {
           setLoadingBCIds((s) => new Set(s).add(id))
-          void getAuthorizationBillingCodesByPriorAuthId(id)
-            .then((codes) => {
-              setBillingCodesMap((m) => ({ ...m, [id]: codes }))
+          void getPriorAuthorizationById(id)
+            .then((pa) => {
+              setBillingCodesMap((m) => ({ ...m, [id]: pa.billingCodes }))
             })
             .finally(() => {
               setLoadingBCIds((s) => { const n = new Set(s); n.delete(id); return n })
@@ -103,12 +108,6 @@ export function StepPriorAuthorizations({
       }
       return next
     })
-  }
-
-  const handleViewLinkedEvents = (pa: PriorAuthorization, code: PriorAuthBillingCode) => {
-    setLinkedEventsPA(pa)
-    setLinkedEventsCode(code)
-    setIsLinkedEventsOpen(true)
   }
 
   // Enrich PAs with computed status and denormalized insurance name
@@ -139,6 +138,35 @@ export function StepPriorAuthorizations({
     )
   }
 
+  // ── View switching ──────────────────────────────────────────────
+  if (currentView.mode === "create") {
+    return (
+      <div className="w-full px-6 py-8 sm:px-8">
+        <PriorAuthCreateView
+          clientId={resolvedClientId}
+          insurances={insurances}
+          onBack={() => setCurrentView({ mode: "list" })}
+          onSaved={async () => { await refetch() }}
+        />
+      </div>
+    )
+  }
+
+  if (currentView.mode === "edit") {
+    return (
+      <div className="w-full px-6 py-8 sm:px-8">
+        <PriorAuthEditView
+          clientId={resolvedClientId}
+          editingPA={currentView.pa}
+          insurances={insurances}
+          onBack={() => setCurrentView({ mode: "list" })}
+          onSaved={async () => { await refetch() }}
+        />
+      </div>
+    )
+  }
+
+  // ── List view (default) ─────────────────────────────────────────
   return (
     <div className="w-full px-6 py-8 sm:px-8">
       {/* Header */}
@@ -151,10 +179,7 @@ export function StepPriorAuthorizations({
         </div>
         <Button
           type="button"
-          onClick={() => {
-            setEditingPA(null)
-            setIsModalOpen(true)
-          }}
+          onClick={() => setCurrentView({ mode: "create" })}
         >
           New prior authorization
         </Button>
@@ -296,10 +321,7 @@ export function StepPriorAuthorizations({
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditingPA(pa)
-                        setIsModalOpen(true)
-                      }}
+                      onClick={() => setCurrentView({ mode: "edit", pa })}
                       className={cn(
                         "group/edit h-8 w-8",
                         "flex items-center justify-center rounded-xl",
@@ -321,13 +343,6 @@ export function StepPriorAuthorizations({
                 {/* Expanded — billing codes */}
                 {isExpanded && (
                   <div className="border-t border-slate-100 bg-slate-50/60 px-5 pb-4 pt-3">
-                    {/* Recipient ID pill */}
-                    {pa.memberInsuranceId && (
-                      <p className="mb-3 text-xs text-slate-400">
-                        Recipient ID: <span className="font-medium text-slate-600">{pa.memberInsuranceId}</span>
-                      </p>
-                    )}
-
                     {loadingBCIds.has(pa.id) ? (
                       <div className="space-y-2">
                         {[1, 2].map((i) => (
@@ -389,37 +404,6 @@ export function StepPriorAuthorizations({
           })}
         </div>
       )}
-
-      {/* PA Modal */}
-      <PriorAuthModal
-        open={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setEditingPA(null)
-        }}
-        editingPA={editingPA}
-        clientId={resolvedClientId}
-        insurances={insurances}
-        onRefresh={async () => { await refetch() }}
-        onSaved={async () => {
-          setIsModalOpen(false)
-          if (editingPA) {
-            setBillingCodesMap((m) => {
-              const next = { ...m }
-              delete next[editingPA.id]
-              return next
-            })
-            setExpandedIds((prev) => {
-              const next = new Set(prev)
-              next.delete(editingPA.id)
-              return next
-            })
-          }
-          setEditingPA(null)
-          await refetch()
-        }}
-        onViewLinkedEvents={handleViewLinkedEvents}
-      />
 
       {/* Linked Events Modal */}
       <LinkedEventsModal

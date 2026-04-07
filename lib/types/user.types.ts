@@ -11,6 +11,9 @@ export interface MemberUser {
   credentialsSignature?: boolean
   active: boolean
   terminated?: boolean
+  memberUserTypeIds?: string[]
+  /** Backend response uses this field name */
+  memberUserTypesIds?: string[]
 }
 
 export interface CreateMemberUserDto {
@@ -20,6 +23,7 @@ export interface CreateMemberUserDto {
   cellphone: string
   hiringDate: string
   roleId: string
+  memberUserTypeIds?: string[]
 }
 
 export interface UpdateMemberUserDto {
@@ -32,6 +36,7 @@ export interface UpdateMemberUserDto {
   roleId?: string
   active?: boolean
   terminated?: boolean
+  memberUserTypeIds?: string[]
 }
 
 export interface CreateMemberUserResponse {
@@ -50,6 +55,11 @@ export interface MemberUserListItem {
 }
 
 interface RoleMemberUser{
+  id: string
+  name: string
+}
+
+export interface MemberUserTypeCatalogItem {
   id: string
   name: string
 }

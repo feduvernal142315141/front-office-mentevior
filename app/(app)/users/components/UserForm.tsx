@@ -27,6 +27,8 @@ export function UserForm({ userId = null }: UserFormProps) {
     isSubmitting,
     actions,
     user,
+    memberUserTypes,
+    isLoadingMemberUserTypes,
   } = useUserForm({ userId })
 
   if (isEditing && isLoadingUser) {
@@ -49,6 +51,8 @@ export function UserForm({ userId = null }: UserFormProps) {
           onCancel={actions.goToList}
           currentUser={currentUser}
           editingUser={user}
+          memberUserTypeOptions={memberUserTypes}
+          isLoadingMemberUserTypes={isLoadingMemberUserTypes}
         />
       </form>
     </FormProvider>

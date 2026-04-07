@@ -544,9 +544,11 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
         isLastStep={activeStepIndex === steps.length - 1}
         isSubmitting={isSubmitting}
         canContinue={canContinue}
+        isPersonalInfoStep={activeStepIndex === 0}
         onCancel={handleCancel}
         onSave={handleSave}
         onSaveAndContinue={handleSaveAndContinue}
+        onClose={navigateToClientsTable}
       />
 
       <ConfirmationModal

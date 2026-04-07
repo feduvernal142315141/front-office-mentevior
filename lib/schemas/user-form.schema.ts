@@ -31,6 +31,7 @@ export const userFormSchema = z.object({
   
   active: z.boolean().optional(),
   terminated: z.boolean().optional(),
+  memberUserTypeIds: z.array(z.string()).optional().default([]),
 })
 
 export type UserFormValues = z.infer<typeof userFormSchema>
@@ -44,4 +45,5 @@ export const getUserFormDefaults = (): UserFormValues => ({
   roleId: "",
   active: true,
   terminated: false,
+  memberUserTypeIds: [],
 })

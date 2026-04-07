@@ -34,11 +34,17 @@ function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
       normalizeDate(raw.startDate as string),
       normalizeDate(raw.endDate as string)
     ),
-    billingCodes: Array.isArray(raw.billingCodes)
-      ? (raw.billingCodes as Record<string, unknown>[]).map((bc) => ({
+    billingCodes: (() => {
+      const rawBCs = (raw.authorizationBillingCodes ?? raw.billingCodes) as Record<string, unknown>[] | undefined
+      if (!Array.isArray(rawBCs)) return []
+      return rawBCs.map((bc) => {
+        const code = (bc.billingCodeCode as string) ?? ""
+        const modifier = (bc.billingCodeModifier as string) ?? ""
+        const label = (bc.billingCodeLabel as string) || (modifier ? `${code} (${modifier})` : code)
+        return {
           id: bc.id as string,
           billingCodeId: (bc.billingCodeId as string) ?? "",
-          billingCodeLabel: (bc.billingCodeLabel as string) ?? "",
+          billingCodeLabel: label,
           approvedUnits: (bc.approvedUnits as number) ?? 0,
           usedUnits: (bc.usedUnits as number) ?? 0,
           remainingUnits:
@@ -50,8 +56,9 @@ function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
           maxCountPerDay: (bc.maxCountPerDay as number) ?? null,
           maxCountPerWeek: (bc.maxCountPerWeek as number) ?? null,
           maxCountPerMonth: (bc.maxCountPerMonth as number) ?? null,
-        }))
-      : [],
+        }
+      })
+    })(),
     createdAt: (raw.createdAt as string) ?? "",
     updatedAt: (raw.updatedAt as string) ?? "",
   }

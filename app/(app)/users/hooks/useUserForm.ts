@@ -9,6 +9,7 @@ import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { userFormSchema, getUserFormDefaults, type UserFormValues } from "@/lib/schemas/user-form.schema"
 import type { CreateMemberUserDto, UpdateMemberUserDto } from "@/lib/types/user.types"
 import { useRoles } from "@/lib/modules/roles/hooks/use-roles"
+import { useMemberUserTypeCatalog } from "@/lib/modules/member-user-types/hooks/use-member-user-type-catalog"
 import { isoToLocalDate } from "@/lib/date"
 import { formatPhoneInput } from "@/lib/utils/phone-format"
 
@@ -25,6 +26,8 @@ interface UseUserFormReturn {
   isLoadingRoles: boolean
   isLoadingUser: boolean
   user: any
+  memberUserTypes: Array<{ id: string; name: string }>
+  isLoadingMemberUserTypes: boolean
   
   onSubmit: (data: UserFormValues) => Promise<void>
   isSubmitting: boolean
@@ -43,6 +46,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
   const { update, isLoading: isUpdating } = useUpdateUser()
   const { user, isLoading: isLoadingUser } = useUserById(userId)
   const { roles, isLoading: isLoadingRoles } = useRoles()
+  const { memberUserTypes, isLoading: isLoadingMemberUserTypes } = useMemberUserTypeCatalog()
   
   const isSubmitting = isCreating || isUpdating
 
@@ -62,6 +66,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         roleId: user.roleId || user.role?.id || "",
         active: user.active ?? true,
         terminated: user.terminated ?? false,
+        memberUserTypeIds: user.memberUserTypesIds || user.memberUserTypeIds || [],
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,6 +84,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         roleId: data.roleId,
         active: data.active,
         terminated: data.terminated,
+        memberUserTypeIds: data.memberUserTypeIds,
       }
       
       const result = await update(dto)
@@ -96,6 +102,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         cellphone: data.cellphone,
         hiringDate: data.hiringDate,
         roleId: data.roleId,
+        memberUserTypeIds: data.memberUserTypeIds || [],
       }
       
       const result = await create(dto)
@@ -122,6 +129,8 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
     isLoadingRoles,
     isLoadingUser,
     user,
+    memberUserTypes,
+    isLoadingMemberUserTypes,
     onSubmit,
     isSubmitting,
     actions,
