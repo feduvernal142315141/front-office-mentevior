@@ -15,6 +15,7 @@ import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import type { ClientProvider } from "@/lib/types/provider.types"
 import type { MemberUserListItem } from "@/lib/types/user.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
+import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 
 export function Step9Providers({
@@ -31,6 +32,7 @@ export function Step9Providers({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
+  const [primaryUserId, setPrimaryUserId] = useState<string | null>(null)
   const [optimisticAssignedUserIds, setOptimisticAssignedUserIds] = useState<Set<string>>(new Set())
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -135,6 +137,7 @@ export function Step9Providers({
   const handleOpenModal = () => {
     setSearchQuery("")
     setSelectedUserIds(new Set())
+    setPrimaryUserId(null)
     setUserPage(1)
     void refetchUsers({ page: 0, pageSize: userPageSize })
     setIsAssignModalOpen(true)
@@ -144,6 +147,7 @@ export function Step9Providers({
     setIsAssignModalOpen(false)
     setSearchQuery("")
     setSelectedUserIds(new Set())
+    setPrimaryUserId(null)
   }
 
   const handleToggleUser = (userId: string) => {
@@ -151,6 +155,7 @@ export function Step9Providers({
       const next = new Set(prev)
       if (next.has(userId)) {
         next.delete(userId)
+        if (primaryUserId === userId) setPrimaryUserId(null)
       } else {
         next.add(userId)
       }
@@ -165,6 +170,9 @@ export function Step9Providers({
         filteredUsers.forEach((u) => next.delete(u.id))
         return next
       })
+      if (primaryUserId && filteredUsers.some((u) => u.id === primaryUserId)) {
+        setPrimaryUserId(null)
+      }
     } else {
       setSelectedUserIds((prev) => {
         const next = new Set(prev)
@@ -178,13 +186,18 @@ export function Step9Providers({
     if (!resolvedClientId || !selectedCount) return
 
     const selectedIds = Array.from(selectedUserIds)
+    const providerAssignments = selectedIds.map((id) => ({
+      id,
+      isPrimary: primaryUserId === id,
+    }))
+
     setOptimisticAssignedUserIds((prev) => {
       const next = new Set(prev)
       selectedIds.forEach((id) => next.add(id))
       return next
     })
 
-    const result = await assignMany(resolvedClientId, selectedIds)
+    const result = await assignMany(resolvedClientId, providerAssignments)
     if (!result) {
       setOptimisticAssignedUserIds((prev) => {
         const next = new Set(prev)
@@ -420,11 +433,13 @@ export function Step9Providers({
                   const isSelected = selectedUserIds.has(user.id)
                   return (
                     <li key={user.id}>
-                      <button
-                        type="button"
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleToggleUser(user.id)}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleToggleUser(user.id) } }}
                         className={cn(
-                          "w-full flex items-center gap-3 px-4 py-3 text-left",
+                          "w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer",
                           "transition-colors duration-150",
                           isSelected
                             ? "bg-[#037ECC]/5 hover:bg-[#037ECC]/10"
@@ -454,8 +469,33 @@ export function Step9Providers({
                           )}
                         </div>
 
+                        {isSelected && (
+                          <div
+                            className="flex items-center gap-2 flex-shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            role="presentation"
+                          >
+                            <span className={cn(
+                              "text-xs transition-colors duration-150",
+                              primaryUserId === user.id
+                                ? "text-[#037ECC] font-semibold"
+                                : "text-slate-400"
+                            )}>
+                              Primary
+                            </span>
+                            <Switch
+                              checked={primaryUserId === user.id}
+                              onCheckedChange={(checked) => {
+                                setPrimaryUserId(checked ? user.id : null)
+                              }}
+                              className="data-[state=checked]:bg-[#037ECC] scale-75 origin-right"
+                            />
+                          </div>
+                        )}
+
                         <StatusPill user={user} />
-                      </button>
+                      </div>
                     </li>
                   )
                 })}

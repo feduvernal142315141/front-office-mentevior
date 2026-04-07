@@ -35,7 +35,7 @@ type ProviderApiItem = {
 
 type AssignProviderRequest = {
   clientId: string
-  userId: string[]
+  userId: { id: string; isPrimary: boolean }[]
 }
 
 function toBoolean(value: unknown, fallback: boolean): boolean {
@@ -127,7 +127,7 @@ export async function getProvidersByClientId(clientId: string): Promise<ClientPr
 export async function assignProvider(data: AssignProviderDto): Promise<MutationResult> {
   const payload: AssignProviderRequest = {
     clientId: data.clientId,
-    userId: Array.isArray(data.userId) ? data.userId : [data.userId],
+    userId: data.userId,
   }
 
   const response = await servicePost<AssignProviderRequest, number>("/client/provider", payload)

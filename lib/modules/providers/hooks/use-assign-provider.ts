@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import type { AssignProviderDto } from "@/lib/types/provider.types"
+import type { AssignProviderDto, ProviderAssignment } from "@/lib/types/provider.types"
 import type { MutationResult } from "@/lib/types/response.types"
 import { assignProvider } from "../services/providers.service"
 
 interface UseAssignProviderReturn {
   assign: (data: AssignProviderDto) => Promise<MutationResult | null>
-  assignMany: (clientId: string, userIds: string[]) => Promise<MutationResult | null>
+  assignMany: (clientId: string, providers: ProviderAssignment[]) => Promise<MutationResult | null>
   isLoading: boolean
   error: string | null
 }
@@ -35,18 +35,18 @@ export function useAssignProvider(): UseAssignProviderReturn {
     }
   }
 
-  const assignMany = async (clientId: string, userIds: string[]): Promise<MutationResult | null> => {
-    if (!userIds.length) return null
+  const assignMany = async (clientId: string, providers: ProviderAssignment[]): Promise<MutationResult | null> => {
+    if (!providers.length) return null
 
     setIsLoading(true)
     setError(null)
 
     try {
-      const result = await assignProvider({ clientId, userId: userIds })
+      const result = await assignProvider({ clientId, userId: providers })
       toast.success(
-        userIds.length === 1
+        providers.length === 1
           ? "Provider assigned successfully"
-          : `${userIds.length} providers assigned successfully`
+          : `${providers.length} providers assigned successfully`
       )
       return result
     } catch (err) {

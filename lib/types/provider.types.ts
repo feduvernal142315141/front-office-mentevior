@@ -9,7 +9,12 @@ export interface ClientProvider {
   createdAt?: string
 }
 
+export interface ProviderAssignment {
+  id: string
+  isPrimary: boolean
+}
+
 export interface AssignProviderDto {
   clientId: string
-  userId: string | string[]
+  userId: ProviderAssignment[]
 }
