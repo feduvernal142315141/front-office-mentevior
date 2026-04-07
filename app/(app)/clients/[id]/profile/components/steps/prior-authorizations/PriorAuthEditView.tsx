@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { PriorAuthBaseForm } from "./PriorAuthBaseForm"
 import { BillingCodesSection } from "./BillingCodesSection"
 import { BillingCodeModal } from "./BillingCodeModal"
@@ -24,6 +25,7 @@ import type {
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import type { ClientInsurance } from "@/lib/types/client-insurance.types"
 import { useUpdatePriorAuthorization } from "@/lib/modules/prior-authorizations/hooks/use-update-prior-authorization"
+import { useDeleteAuthorizationBillingCode } from "@/lib/modules/authorization-billing-codes/hooks/use-delete-authorization-billing-code"
 import { getPriorAuthorizationById } from "@/lib/modules/prior-authorizations/services/prior-authorizations-api.service"
 import { getBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
 
@@ -49,6 +51,7 @@ export function PriorAuthEditView({
   })
 
   const { update, isLoading: isUpdating } = useUpdatePriorAuthorization()
+  const { remove, isLoading: isDeletingBillingCode } = useDeleteAuthorizationBillingCode()
 
   // PA data loaded from backend (fresh fetch for attachment URLs etc.)
   const [pa, setPa] = useState<PriorAuthorization | null>(null)
@@ -64,6 +67,7 @@ export function PriorAuthEditView({
   // BC modal state
   const [isBCModalOpen, setIsBCModalOpen] = useState(false)
   const [editingBC, setEditingBC] = useState<LocalBillingCodeEntry | null>(null)
+  const [deletingBC, setDeletingBC] = useState<LocalBillingCodeEntry | null>(null)
 
   // Billing code catalog
   const [catalogBillingCodes, setCatalogBillingCodes] = useState<BillingCodeListItem[]>([])
@@ -165,6 +169,11 @@ export function PriorAuthEditView({
   }
 
   const handleDeleteBillingCode = (entry: LocalBillingCodeEntry) => {
+    if (entry.id) {
+      setDeletingBC(entry)
+      return
+    }
+
     setBillingCodes((prev) => prev.filter((bc) => bc._tempId !== entry._tempId))
   }
 
@@ -372,6 +381,25 @@ export function PriorAuthEditView({
         billingCodes={catalogBillingCodes}
         usedBillingCodeIds={usedBillingCodeIds}
         isLoadingCatalog={isLoadingCatalog}
+      />
+
+      <DeleteConfirmModal
+        isOpen={!!deletingBC}
+        onClose={() => setDeletingBC(null)}
+        onConfirm={async () => {
+          const target = deletingBC
+          if (!target?.id) return
+
+          const deleted = await remove(target.id)
+          if (!deleted) return
+
+          setBillingCodes((prev) => prev.filter((bc) => bc._tempId !== target._tempId))
+          setDeletingBC(null)
+        }}
+        title="Delete Billing Code"
+        message="Are you sure you want to delete this billing code from the authorization? This action cannot be undone."
+        itemName={deletingBC?.billingCodeLabel}
+        isDeleting={isDeletingBillingCode}
       />
     </>
   )
