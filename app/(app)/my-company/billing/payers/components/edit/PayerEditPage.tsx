@@ -136,6 +136,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
       id: r.id,
       billingCodeId: r.billingCodeId,
       billingCodeLabel: r.billingCode ?? r.billingCodeId,
+      billingModifier: r.billingModifier?.trim() || undefined,
       amount: r.amount,
       submitAmount: r.submitAmount ?? undefined,
       intervalType: r.intervalType,
@@ -164,11 +165,11 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     }
     setRates((prev) => prev.filter((r) => r._tempId !== entry._tempId))
   }
-  const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string) => {
+  const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string, billingModifier?: string) => {
     if (editingRate) {
       setRates((prev) => prev.map((r) =>
         r._tempId === editingRate._tempId
-          ? { ...r, ...values, billingCodeLabel, currencyLabel } as LocalInsurancePlanRate
+          ? { ...r, ...values, billingCodeLabel, currencyLabel, billingModifier } as LocalInsurancePlanRate
           : r
       ))
     } else {
@@ -177,6 +178,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         ...values,
         billingCodeLabel,
         currencyLabel,
+        billingModifier,
       } as LocalInsurancePlanRate])
     }
     setIsRateModalOpen(false)

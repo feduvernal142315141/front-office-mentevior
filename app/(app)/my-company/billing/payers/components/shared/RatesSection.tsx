@@ -66,9 +66,12 @@ export function RatesSection({
               <div className="min-w-0">
                 <span
                   className="text-sm font-medium text-slate-800 truncate block"
-                  title={entry.billingCodeLabel}
+                  title={entry.billingModifier ? `${entry.billingCodeLabel} (${entry.billingModifier})` : entry.billingCodeLabel}
                 >
                   {entry.billingCodeLabel}
+                  {entry.billingModifier && (
+                    <span> ({entry.billingModifier})</span>
+                  )}
                 </span>
                 {entry.alias && (
                   <span className="text-xs text-slate-400">{entry.alias}</span>

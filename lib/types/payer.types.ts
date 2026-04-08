@@ -44,6 +44,7 @@ export interface PayerRateEmbed {
   endDate?: string | null
   billingCodeId: string
   billingCode?: string
+  billingModifier?: string
   active?: boolean
 }
 
@@ -165,6 +166,7 @@ export interface LocalInsurancePlanRate {
   id?: string
   billingCodeId: string
   billingCodeLabel: string
+  billingModifier?: string
   amount: number
   submitAmount?: number
   intervalType: string

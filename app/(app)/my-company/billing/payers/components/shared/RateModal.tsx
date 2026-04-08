@@ -51,7 +51,7 @@ const emptyDefaults: RateFormValues = {
 interface RateModalProps {
   open: boolean
   onClose: () => void
-  onConfirm: (values: RateFormValues, billingCodeLabel: string, currencyLabel: string) => void | Promise<void>
+  onConfirm: (values: RateFormValues, billingCodeLabel: string, currencyLabel: string, billingModifier?: string) => void | Promise<void>
   editingRate: LocalInsurancePlanRate | null
   billingCodes: BillingCodeListItem[]
   usedBillingCodeIds: string[]
@@ -115,6 +115,7 @@ export function RateModal({
   const handleSubmit = form.handleSubmit((values) => {
     const selectedBC = billingCodes.find((bc) => bc.id === values.billingCodeId)
     const billingCodeLabel = selectedBC?.code ?? values.billingCodeId
+    const billingModifier = selectedBC?.modifier?.trim() || undefined
 
     const selectedCurrency = currencies.find((c) => c.id === values.currencyId)
     const currencyLabel = selectedCurrency
@@ -123,7 +124,7 @@ export function RateModal({
         : selectedCurrency.name
       : values.currencyId
 
-    onConfirm(values, billingCodeLabel, currencyLabel)
+    onConfirm(values, billingCodeLabel, currencyLabel, billingModifier)
   })
 
   const handleClose = () => {

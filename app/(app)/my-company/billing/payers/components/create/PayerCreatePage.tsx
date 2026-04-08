@@ -174,11 +174,11 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   const handleDeleteRate = (entry: LocalInsurancePlanRate) => {
     setRates((prev) => prev.filter((r) => r._tempId !== entry._tempId))
   }
-  const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string) => {
+  const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string, billingModifier?: string) => {
     if (editingRate) {
       setRates((prev) => prev.map((r) =>
         r._tempId === editingRate._tempId
-          ? { ...r, ...values, billingCodeLabel, currencyLabel } as LocalInsurancePlanRate
+          ? { ...r, ...values, billingCodeLabel, currencyLabel, billingModifier } as LocalInsurancePlanRate
           : r
       ))
     } else {
@@ -187,6 +187,7 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
         ...values,
         billingCodeLabel,
         currencyLabel,
+        billingModifier,
       } as LocalInsurancePlanRate])
     }
     setIsRateModalOpen(false)

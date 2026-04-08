@@ -352,10 +352,13 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                           {/* Sub-header */}
                           <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 border-b border-slate-200 bg-slate-100/80 px-4 py-2">
-                            {["Billing Code", "Amount", "Currency", "Interval"].map((h) => (
+                            {["Billing Code", "Amount", "Currency", "Interval"].map((h, i) => (
                               <span
                                 key={h}
-                                className="text-[10px] font-semibold uppercase tracking-widest text-slate-400"
+                                className={cn(
+                                  "text-[10px] font-semibold uppercase tracking-widest text-slate-400",
+                                  i > 0 && "text-center"
+                                )}
                               >
                                 {h}
                               </span>
@@ -373,14 +376,17 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                             >
                               <span className="text-sm font-medium text-[#037ECC]">
                                 {rate.billingCode ?? rate.billingCodeId}
+                                {rate.billingModifier?.trim() && (
+                                  <span> ({rate.billingModifier})</span>
+                                )}
                               </span>
-                              <span className="text-sm tabular-nums text-slate-700">
+                              <span className="text-sm tabular-nums text-slate-700 text-center">
                                 {rate.amount}
                               </span>
-                              <span className="text-sm text-slate-500">
+                              <span className="text-sm text-slate-500 text-center">
                                 {rate.currencyCode || "—"}
                               </span>
-                              <span className="text-sm text-slate-500">
+                              <span className="text-sm text-slate-500 text-center">
                                 {rate.intervalType || "—"}
                               </span>
                             </div>
