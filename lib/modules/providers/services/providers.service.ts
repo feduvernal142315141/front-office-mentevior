@@ -1,6 +1,6 @@
-import { serviceDelete, serviceGet, servicePost } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
-import type { AssignProviderDto, ClientProvider } from "@/lib/types/provider.types"
+import type { AssignProviderDto, ClientProvider, UpdateProviderDto } from "@/lib/types/provider.types"
 
 type ProviderApiItem = {
   id?: string
@@ -18,6 +18,7 @@ type ProviderApiItem = {
   }
   active?: boolean
   terminated?: boolean
+  isPrimary?: boolean
   user?: {
     id?: string
     fullName?: string
@@ -82,6 +83,7 @@ function normalizeProvider(item: ProviderApiItem): ClientProvider {
     roleName: item.roleName ?? item.role?.name ?? item.user?.roleName ?? item.user?.role?.name ?? "",
     active: toBoolean(item.active ?? item.user?.active, true),
     terminated: toBoolean(item.terminated ?? item.user?.terminated, false),
+    isPrimary: toBoolean(item.isPrimary, false),
     createdAt: item.createdAt,
   }
 }
@@ -145,5 +147,14 @@ export async function removeProvider(providerId: string): Promise<void> {
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error(response.data?.message || "Failed to remove provider")
+  }
+}
+
+export async function updateProvider(data: UpdateProviderDto): Promise<void> {
+  const response = await servicePut<UpdateProviderDto, void>("/client/provider", data)
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    const err = response.data as { message?: string } | undefined
+    throw new Error(err?.message || "Failed to update provider")
   }
 }

@@ -6,7 +6,13 @@ export interface ClientProvider {
   roleName: string
   active: boolean
   terminated: boolean
+  isPrimary: boolean
   createdAt?: string
+}
+
+export interface UpdateProviderDto {
+  id: string
+  isPrimary: boolean
 }
 
 export interface ProviderAssignment {

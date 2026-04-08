@@ -11,6 +11,7 @@ import { SearchInput } from "@/components/custom/SearchInput"
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
 import { useAssignProvider } from "@/lib/modules/providers/hooks/use-assign-provider"
 import { useRemoveProvider } from "@/lib/modules/providers/hooks/use-remove-provider"
+import { useUpdateProvider } from "@/lib/modules/providers/hooks/use-update-provider"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import type { ClientProvider } from "@/lib/types/provider.types"
 import type { MemberUserListItem } from "@/lib/types/user.types"
@@ -62,6 +63,7 @@ export function Step9Providers({
   const { providers, isLoading, error, refetch } = useProvidersByClient(resolvedClientId)
   const { assignMany, isLoading: isAssigning } = useAssignProvider()
   const { remove, isLoading: isRemoving } = useRemoveProvider()
+  const { update: updateProvider, isLoading: isUpdating } = useUpdateProvider()
 
   const { users, isLoading: isLoadingUsers, totalCount: usersTotalCount, refetch: refetchUsers } = useUsers({
     page: userPage - 1,
@@ -223,6 +225,12 @@ export function Step9Providers({
     await refetch()
   }
 
+  const handleTogglePrimary = async (providerId: string, isPrimary: boolean) => {
+    const ok = await updateProvider({ id: providerId, isPrimary })
+    if (!ok) return
+    await refetch()
+  }
+
   const getStatusBadge = (active: boolean, terminated: boolean) => {
     if (terminated) {
       return (
@@ -270,6 +278,22 @@ export function Step9Providers({
       align: "center",
       className: "w-[130px] whitespace-nowrap",
       render: (provider) => getStatusBadge(provider.active, provider.terminated),
+    },
+    {
+      key: "isPrimary",
+      header: "Primary",
+      align: "center",
+      className: "w-[100px] whitespace-nowrap",
+      render: (provider) => (
+        <div className="flex items-center justify-center">
+          <Switch
+            checked={provider.isPrimary}
+            onCheckedChange={(checked) => void handleTogglePrimary(provider.id, checked)}
+            disabled={isUpdating}
+            className="data-[state=checked]:bg-[#037ECC] scale-90"
+          />
+        </div>
+      ),
     },
     {
       key: "actions",
