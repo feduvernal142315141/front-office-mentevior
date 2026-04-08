@@ -33,6 +33,7 @@ export function Step5Physicians({
   clientId,
   isCreateMode = false,
   onSaveSuccess,
+  onProgressUpdate,
   registerSubmit,
   registerValidation,
   onStepStatusChange,
@@ -104,9 +105,10 @@ export function Step5Physicians({
   const handleConfirmRemove = async () => {
     if (!deletingPhysician) return
 
-    const ok = await remove(deletingPhysician.id)
-    if (!ok) return
+    const progress = await remove(deletingPhysician.id)
+    if (progress === null) return
 
+    onProgressUpdate?.(progress)
     setIsDeleteModalOpen(false)
     setDeletingPhysician(null)
     await refetch()

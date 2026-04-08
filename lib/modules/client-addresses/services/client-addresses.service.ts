@@ -156,10 +156,12 @@ export async function updateClientAddress(data: UpdateClientAddressDto): Promise
   return { progress: Number(response.data) || 0 }
 }
 
-export async function deleteClientAddress(id: string): Promise<void> {
-  const response = await serviceDelete(`/client/address/${id}`)
+export async function deleteClientAddress(id: string): Promise<number> {
+  const response = await serviceDelete<number>(`/client/address/${id}`)
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error(response.data?.message || "Failed to delete address")
   }
+
+  return Number(response.data) || 0
 }

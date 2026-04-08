@@ -42,6 +42,7 @@ export function StepInsurances({
   isCreateMode = false,
   onSaveSuccess,
   onValidationError,
+  onProgressUpdate,
   registerSubmit,
   registerValidation,
   onStepStatusChange,
@@ -314,8 +315,9 @@ export function StepInsurances({
 
   const handleConfirmDelete = async () => {
     if (!deletingInsurance) return
-    const ok = await remove(deletingInsurance.id)
-    if (!ok) return
+    const progress = await remove(deletingInsurance.id)
+    if (progress === null) return
+    onProgressUpdate?.(progress)
     setIsDeleteModalOpen(false)
     setDeletingInsurance(null)
     await refetch()

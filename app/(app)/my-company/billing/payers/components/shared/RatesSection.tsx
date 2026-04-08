@@ -37,7 +37,7 @@ export function RatesSection({
         </div>
       ) : (
         <div className="rounded-xl border border-slate-200 overflow-hidden mb-4">
-          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_90px] gap-4 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Billing Code
             </span>
@@ -50,7 +50,7 @@ export function RatesSection({
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
               Interval
             </span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
               Actions
             </span>
           </div>
@@ -59,7 +59,7 @@ export function RatesSection({
             <div
               key={entry._tempId}
               className={cn(
-                "grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-4 py-3 items-center",
+                "grid grid-cols-[2fr_1fr_1fr_1fr_90px] gap-4 px-4 py-3 items-center",
                 idx < entries.length - 1 && "border-b border-slate-100"
               )}
             >
@@ -86,7 +86,7 @@ export function RatesSection({
               <span className="text-sm text-slate-700 text-center capitalize">
                 {entry.intervalType.toLowerCase()}
               </span>
-              <div className="flex items-center justify-end gap-1.5">
+              <div className="flex items-center justify-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => onEdit(entry)}

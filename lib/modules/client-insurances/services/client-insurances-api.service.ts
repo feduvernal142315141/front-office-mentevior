@@ -87,10 +87,12 @@ export async function updateClientInsurance(data: UpdateClientInsuranceDto): Pro
   return response.data as unknown as string
 }
 
-export async function deleteClientInsurance(insuranceId: string): Promise<void> {
-  const response = await serviceDelete<void>(`/insurances/${insuranceId}`)
+export async function deleteClientInsurance(insuranceId: string): Promise<number> {
+  const response = await serviceDelete<number>(`/insurances/${insuranceId}`)
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error(response.data?.message || "Failed to delete insurance")
   }
+
+  return Number(response.data) || 0
 }

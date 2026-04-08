@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { deleteClientInsurance } from "../services/client-insurances.service"
 
 interface UseDeleteClientInsuranceReturn {
-  remove: (insuranceId: string) => Promise<boolean>
+  remove: (insuranceId: string) => Promise<number | null>
   isLoading: boolean
   error: string | null
 }
@@ -14,19 +14,19 @@ export function useDeleteClientInsurance(): UseDeleteClientInsuranceReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const remove = async (insuranceId: string): Promise<boolean> => {
+  const remove = async (insuranceId: string): Promise<number | null> => {
     setIsLoading(true)
     setError(null)
 
     try {
-      await deleteClientInsurance(insuranceId)
+      const progress = await deleteClientInsurance(insuranceId)
       toast.success("Insurance removed successfully")
-      return true
+      return progress
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to remove insurance"
       setError(message)
       toast.error("Error removing insurance", { description: message })
-      return false
+      return null
     } finally {
       setIsLoading(false)
     }

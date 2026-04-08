@@ -919,8 +919,9 @@ export function Step2Addresses({
         onClose={() => setDeletingAddress(null)}
         onConfirm={async () => {
           if (!deletingAddress) return
-          const ok = await remove(deletingAddress.id)
-          if (ok) {
+          const progress = await remove(deletingAddress.id)
+          if (progress !== null) {
+            onProgressUpdate?.(progress)
             setDeletingAddress(null)
             await refetchClientAddresses()
           }

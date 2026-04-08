@@ -61,10 +61,12 @@ export async function updateMedication(medicationId: string, data: UpdateMedicat
   return { progress: Number(response.data) || 0 }
 }
 
-export async function removeMedication(medicationId: string): Promise<void> {
-  const response = await serviceDelete<void>(`/client/medication/${medicationId}`)
+export async function removeMedication(medicationId: string): Promise<number> {
+  const response = await serviceDelete<number>(`/client/medication/${medicationId}`)
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error(response.data?.message || "Failed to remove medication")
   }
+
+  return Number(response.data) || 0
 }

@@ -118,8 +118,8 @@ export async function createManualClientPhysician(
   return response.data as string
 }
 
-export async function removeClientPhysician(clientPhysicianId: string): Promise<void> {
-  const response = await serviceDelete<void>(`/client/physician/${clientPhysicianId}`)
+export async function removeClientPhysician(clientPhysicianId: string): Promise<number> {
+  const response = await serviceDelete<number>(`/client/physician/${clientPhysicianId}`)
 
   if (
     response.status !== 200 &&
@@ -128,4 +128,6 @@ export async function removeClientPhysician(clientPhysicianId: string): Promise<
   ) {
     throw new Error(response.data?.message || "Failed to remove physician")
   }
+
+  return Number(response.data) || 0
 }

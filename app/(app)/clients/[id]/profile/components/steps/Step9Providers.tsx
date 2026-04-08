@@ -217,9 +217,10 @@ export function Step9Providers({
   const handleConfirmRemove = async () => {
     if (!deletingProvider) return
 
-    const ok = await remove(deletingProvider.id)
-    if (!ok) return
+    const progress = await remove(deletingProvider.id)
+    if (progress === null) return
 
+    onProgressUpdate?.(progress)
     setIsDeleteModalOpen(false)
     setDeletingProvider(null)
     await refetch()
@@ -463,7 +464,7 @@ export function Step9Providers({
                         onClick={() => handleToggleUser(user.id)}
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleToggleUser(user.id) } }}
                         className={cn(
-                          "w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer",
+                          "w-full grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-3 text-left cursor-pointer",
                           "transition-colors duration-150",
                           isSelected
                             ? "bg-[#037ECC]/5 hover:bg-[#037ECC]/10"
@@ -472,7 +473,7 @@ export function Step9Providers({
                       >
                         <div
                           className={cn(
-                            "flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all duration-150",
+                            "h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all duration-150",
                             isSelected
                               ? "bg-[#037ECC] border-[#037ECC]"
                               : "bg-white border-slate-300"
@@ -481,7 +482,7 @@ export function Step9Providers({
                           {isSelected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                         </div>
 
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0">
                           <p className={cn(
                             "text-sm font-medium truncate",
                             isSelected ? "text-[#037ECC]" : "text-slate-800"
@@ -493,32 +494,35 @@ export function Step9Providers({
                           )}
                         </div>
 
-                        {isSelected && (
-                          <div
-                            className="flex items-center gap-2 flex-shrink-0"
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            role="presentation"
-                          >
-                            <span className={cn(
-                              "text-xs transition-colors duration-150",
-                              primaryUserId === user.id
-                                ? "text-[#037ECC] font-semibold"
-                                : "text-slate-400"
-                            )}>
-                              Primary
-                            </span>
-                            <Switch
-                              checked={primaryUserId === user.id}
-                              onCheckedChange={(checked) => {
-                                setPrimaryUserId(checked ? user.id : null)
-                              }}
-                              className="data-[state=checked]:bg-[#037ECC] scale-75 origin-right"
-                            />
-                          </div>
-                        )}
+                        <div
+                          className={cn(
+                            "flex items-center justify-center gap-2 w-[110px]",
+                            isSelected ? "visible" : "invisible"
+                          )}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          role="presentation"
+                        >
+                          <span className={cn(
+                            "text-xs transition-colors duration-150",
+                            primaryUserId === user.id
+                              ? "text-[#037ECC] font-semibold"
+                              : "text-slate-400"
+                          )}>
+                            Primary
+                          </span>
+                          <Switch
+                            checked={primaryUserId === user.id}
+                            onCheckedChange={(checked) => {
+                              setPrimaryUserId(checked ? user.id : null)
+                            }}
+                            className="data-[state=checked]:bg-[#037ECC] scale-75 origin-right"
+                          />
+                        </div>
 
-                        <StatusPill user={user} />
+                        <div className="w-[80px] flex justify-center">
+                          <StatusPill user={user} />
+                        </div>
                       </div>
                     </li>
                   )

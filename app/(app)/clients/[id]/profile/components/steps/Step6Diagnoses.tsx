@@ -456,8 +456,9 @@ export function Step6Diagnoses({
 
   const handleConfirmRemove = async () => {
     if (!deletingDiagnosis) return
-    const ok = await remove(deletingDiagnosis.id)
-    if (!ok) return
+    const progress = await remove(deletingDiagnosis.id)
+    if (progress === null) return
+    onProgressUpdate?.(progress)
     setIsDeleteModalOpen(false)
     setDeletingDiagnosis(null)
     await refetch()

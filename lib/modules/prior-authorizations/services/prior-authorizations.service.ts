@@ -28,6 +28,6 @@ export async function updatePriorAuthorization(
   return apiUpdate(data)
 }
 
-export async function deletePriorAuthorization(paId: string): Promise<void> {
+export async function deletePriorAuthorization(paId: string): Promise<number> {
   return apiDelete(paId)
 }

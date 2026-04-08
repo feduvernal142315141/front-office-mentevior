@@ -41,6 +41,7 @@ export function StepPriorAuthorizations({
   clientId,
   isCreateMode = false,
   onSaveSuccess,
+  onProgressUpdate,
   registerSubmit,
   registerValidation,
   onStepStatusChange,
@@ -468,8 +469,9 @@ export function StepPriorAuthorizations({
         onClose={() => setDeletingPA(null)}
         onConfirm={async () => {
           if (!deletingPA) return
-          const ok = await cancel(deletingPA.id)
-          if (ok) {
+          const progress = await cancel(deletingPA.id)
+          if (progress !== null) {
+            onProgressUpdate?.(progress)
             setBillingCodesMap((m) => { const n = { ...m }; delete n[deletingPA.id]; return n })
             setExpandedIds((prev) => { const n = new Set(prev); n.delete(deletingPA.id); return n })
             setDeletingPA(null)

@@ -306,8 +306,9 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
 
   const handleConfirmRemove = async () => {
     if (!deletingCaregiver) return
-    const ok = await remove(deletingCaregiver.id)
-    if (!ok) return
+    const progress = await remove(deletingCaregiver.id)
+    if (progress === null) return
+    onProgressUpdate?.(progress)
     setIsDeleteModalOpen(false)
     setDeletingCaregiver(null)
     await refetch()

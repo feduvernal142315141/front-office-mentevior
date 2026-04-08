@@ -132,10 +132,12 @@ export async function updateCaregiver(caregiverId: string, data: UpdateCaregiver
   return { progress: Number(response.data) || 0 }
 }
 
-export async function removeCaregiver(caregiverId: string): Promise<void> {
-  const response = await serviceDelete<void>(`/client/caregiver/${caregiverId}`)
+export async function removeCaregiver(caregiverId: string): Promise<number> {
+  const response = await serviceDelete<number>(`/client/caregiver/${caregiverId}`)
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error(response.data?.message || "Failed to remove caregiver")
   }
+
+  return Number(response.data) || 0
 }

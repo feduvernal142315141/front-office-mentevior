@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { deletePriorAuthorization } from "../services/prior-authorizations.service"
 
 interface UseCancelPriorAuthorizationReturn {
-  cancel: (paId: string) => Promise<boolean>
+  cancel: (paId: string) => Promise<number | null>
   isLoading: boolean
   error: string | null
 }
@@ -14,20 +14,20 @@ export function useCancelPriorAuthorization(): UseCancelPriorAuthorizationReturn
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const cancel = async (paId: string): Promise<boolean> => {
+  const cancel = async (paId: string): Promise<number | null> => {
     setIsLoading(true)
     setError(null)
 
     try {
-      await deletePriorAuthorization(paId)
+      const progress = await deletePriorAuthorization(paId)
       toast.success("Prior Authorization deleted successfully")
-      return true
+      return progress
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to delete prior authorization"
       setError(message)
       toast.error("Error deleting Prior Authorization", { description: message })
-      return false
+      return null
     } finally {
       setIsLoading(false)
     }

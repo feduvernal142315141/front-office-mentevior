@@ -159,12 +159,14 @@ export async function updatePriorAuthorization(
   return normalizePA(response.data as Record<string, unknown>)
 }
 
-export async function deletePriorAuthorization(paId: string): Promise<void> {
-  const response = await serviceDelete<void>(`/prior-authorizations/${paId}`)
+export async function deletePriorAuthorization(paId: string): Promise<number> {
+  const response = await serviceDelete<number>(`/prior-authorizations/${paId}`)
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error(
       (response.data as { message?: string })?.message || "Failed to delete prior authorization"
     )
   }
+
+  return Number(response.data) || 0
 }

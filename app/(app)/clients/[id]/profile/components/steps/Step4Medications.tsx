@@ -227,8 +227,9 @@ export function Step4Medications({
 
   const handleConfirmRemove = async () => {
     if (!deletingMedication) return
-    const ok = await remove(deletingMedication.id)
-    if (!ok) return
+    const progress = await remove(deletingMedication.id)
+    if (progress === null) return
+    onProgressUpdate?.(progress)
     setIsDeleteModalOpen(false)
     setDeletingMedication(null)
     await refetch()
