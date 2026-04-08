@@ -190,6 +190,7 @@ export function StepPriorAuthorizations({
             await refetch()
             await refreshExpandedBillingCodes()
           }}
+          onProgressUpdate={onProgressUpdate}
         />
       </div>
     )
@@ -207,6 +208,7 @@ export function StepPriorAuthorizations({
             await refetch()
             await refreshExpandedBillingCodes()
           }}
+          onProgressUpdate={onProgressUpdate}
         />
       </div>
     )
@@ -272,7 +274,7 @@ export function StepPriorAuthorizations({
       {!isLoading && enrichedPAs.length > 0 && (
         <div className="space-y-3">
           {/* Column labels */}
-          <div className="hidden xl:grid grid-cols-[32px_120px_minmax(140px,1fr)_230px_90px_72px] items-center gap-3 px-5 pb-1">
+          <div className="hidden xl:grid grid-cols-[32px_100px_minmax(100px,1fr)_200px_80px_72px] items-center gap-2 px-5 pb-1">
             <div />
             <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">PA Number</span>
             <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Insurance</span>
@@ -291,7 +293,7 @@ export function StepPriorAuthorizations({
                 className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-shadow hover:shadow-md"
               >
                 {/* Card header */}
-                <div className="grid grid-cols-[32px_120px_minmax(120px,1fr)_90px_72px] xl:grid-cols-[32px_120px_minmax(140px,1fr)_230px_90px_72px] items-center gap-3 px-5 py-4">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 sm:px-5 xl:grid xl:grid-cols-[32px_100px_minmax(100px,1fr)_200px_80px_72px] xl:gap-2">
                   {/* Expand toggle */}
                   <button
                     type="button"
@@ -311,7 +313,7 @@ export function StepPriorAuthorizations({
                   </button>
 
                   {/* PA Number */}
-                  <div className="flex items-center gap-2 min-w-[120px]">
+                  <div className="flex items-center gap-1.5 min-w-0 shrink-0">
                     <Hash className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                     <span className="text-sm font-bold text-slate-800 tabular-nums">
                       {pa.authNumber}
@@ -319,7 +321,7 @@ export function StepPriorAuthorizations({
                   </div>
 
                   {/* Insurance */}
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <Shield className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                     <span className="text-sm text-slate-600 truncate" title={pa.insuranceName}>
                       {pa.insuranceName || "—"}
@@ -329,15 +331,16 @@ export function StepPriorAuthorizations({
                   {/* Date range */}
                   <div className="hidden xl:flex items-center justify-center gap-1.5 text-sm text-slate-500">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{formatDate(pa.startDate)}</span>
+                    <span className="whitespace-nowrap">{formatDate(pa.startDate)}</span>
                     <span className="text-slate-300">→</span>
-                    <span>{formatDate(pa.endDate)}</span>
+                    <span className="whitespace-nowrap">{formatDate(pa.endDate)}</span>
                   </div>
 
                   {/* Status badge */}
                   <span
                     className={cn(
-                      "inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase justify-self-center",
+                      "inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase whitespace-nowrap",
+                      "xl:justify-self-center",
                       getPAStatusBadgeClasses(pa.status)
                     )}
                   >
@@ -345,7 +348,7 @@ export function StepPriorAuthorizations({
                   </span>
 
                   {/* Actions */}
-                  <div className="w-[72px] flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-2 ml-auto xl:ml-0 xl:w-[72px]">
                     <button
                       type="button"
                       onClick={() => setDeletingPA(pa)}

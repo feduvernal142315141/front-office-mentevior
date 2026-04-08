@@ -4,6 +4,7 @@ import type {
   CreatePriorAuthorizationDto,
   UpdatePriorAuthorizationDto,
 } from "@/lib/types/prior-authorization.types"
+import type { MutationResult } from "@/lib/types/response.types"
 import { calculatePAStatus } from "@/lib/utils/prior-auth-utils"
 
 function normalizeDate(isoDate: string | undefined | null): string {
@@ -127,36 +128,36 @@ export async function getPriorAuthorizationsByClientId(
 
 export async function createPriorAuthorization(
   data: CreatePriorAuthorizationDto
-): Promise<PriorAuthorization> {
-  const response = await servicePost<CreatePriorAuthorizationDto, Record<string, unknown>>(
+): Promise<MutationResult> {
+  const response = await servicePost<CreatePriorAuthorizationDto, number>(
     "/prior-authorizations",
     data
   )
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(
-      (response.data as { message?: string })?.message || "Failed to create prior authorization"
+      (response.data as unknown as { message?: string })?.message || "Failed to create prior authorization"
     )
   }
 
-  return normalizePA(response.data as Record<string, unknown>)
+  return { progress: Number(response.data) || 0 }
 }
 
 export async function updatePriorAuthorization(
   data: UpdatePriorAuthorizationDto
-): Promise<PriorAuthorization> {
-  const response = await servicePut<UpdatePriorAuthorizationDto, Record<string, unknown>>(
+): Promise<MutationResult> {
+  const response = await servicePut<UpdatePriorAuthorizationDto, number>(
     "/prior-authorizations",
     data
   )
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(
-      (response.data as { message?: string })?.message || "Failed to update prior authorization"
+      (response.data as unknown as { message?: string })?.message || "Failed to update prior authorization"
     )
   }
 
-  return normalizePA(response.data as Record<string, unknown>)
+  return { progress: Number(response.data) || 0 }
 }
 
 export async function deletePriorAuthorization(paId: string): Promise<number> {

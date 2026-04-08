@@ -30,6 +30,7 @@ interface PriorAuthCreateViewProps {
   insurances: ClientInsurance[]
   onBack: () => void
   onSaved: () => Promise<void>
+  onProgressUpdate?: (progress: number) => void
 }
 
 export function PriorAuthCreateView({
@@ -37,11 +38,12 @@ export function PriorAuthCreateView({
   insurances,
   onBack,
   onSaved,
+  onProgressUpdate,
 }: PriorAuthCreateViewProps) {
   const form = useForm<PriorAuthFormValues>({
     resolver: zodResolver(priorAuthFormSchema),
     defaultValues: priorAuthFormDefaults,
-    mode: "onBlur",
+    mode: "onChange",
   })
 
   const { create, isLoading: isCreating } = useCreatePriorAuthorization()
@@ -177,6 +179,7 @@ export function PriorAuthCreateView({
 
     const result = await create(dto)
     if (result) {
+      onProgressUpdate?.(result.progress)
       await onSaved()
       onBack()
     }

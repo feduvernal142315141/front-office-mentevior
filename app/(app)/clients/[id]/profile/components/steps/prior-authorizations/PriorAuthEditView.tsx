@@ -35,6 +35,7 @@ interface PriorAuthEditViewProps {
   insurances: ClientInsurance[]
   onBack: () => void
   onSaved: () => Promise<void>
+  onProgressUpdate?: (progress: number) => void
 }
 
 export function PriorAuthEditView({
@@ -43,11 +44,12 @@ export function PriorAuthEditView({
   insurances,
   onBack,
   onSaved,
+  onProgressUpdate,
 }: PriorAuthEditViewProps) {
   const form = useForm<PriorAuthFormValues>({
     resolver: zodResolver(priorAuthFormSchema),
     defaultValues: priorAuthFormDefaults,
-    mode: "onBlur",
+    mode: "onChange",
   })
 
   const { update, isLoading: isUpdating } = useUpdatePriorAuthorization()
@@ -267,6 +269,7 @@ export function PriorAuthEditView({
 
     const result = await update(dto)
     if (result) {
+      onProgressUpdate?.(result.progress)
       await onSaved()
       onBack()
     }

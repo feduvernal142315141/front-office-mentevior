@@ -4,6 +4,7 @@ import type {
   CreateClientInsuranceDto,
   UpdateClientInsuranceDto,
 } from "@/lib/types/client-insurance.types"
+import type { MutationResult } from "@/lib/types/response.types"
 
 /**
  * Normalizes an ISO datetime string (e.g. "2026-03-31T00:00:00.000+00:00")
@@ -61,8 +62,8 @@ export async function getClientInsurancesByClientId(clientId: string): Promise<C
   return raw.map(normalizeInsurance)
 }
 
-export async function createClientInsurance(data: CreateClientInsuranceDto): Promise<string> {
-  const response = await servicePost<CreateClientInsuranceDto, string>(
+export async function createClientInsurance(data: CreateClientInsuranceDto): Promise<MutationResult> {
+  const response = await servicePost<CreateClientInsuranceDto, number>(
     "/insurances",
     data
   )
@@ -71,11 +72,11 @@ export async function createClientInsurance(data: CreateClientInsuranceDto): Pro
     throw new Error(response.data?.message || "Failed to create insurance")
   }
 
-  return response.data as unknown as string
+  return { progress: Number(response.data) || 0 }
 }
 
-export async function updateClientInsurance(data: UpdateClientInsuranceDto): Promise<string> {
-  const response = await servicePut<UpdateClientInsuranceDto, string>(
+export async function updateClientInsurance(data: UpdateClientInsuranceDto): Promise<MutationResult> {
+  const response = await servicePut<UpdateClientInsuranceDto, number>(
     "/insurances",
     data
   )
@@ -84,7 +85,7 @@ export async function updateClientInsurance(data: UpdateClientInsuranceDto): Pro
     throw new Error(response.data?.message || "Failed to update insurance")
   }
 
-  return response.data as unknown as string
+  return { progress: Number(response.data) || 0 }
 }
 
 export async function deleteClientInsurance(insuranceId: string): Promise<number> {
