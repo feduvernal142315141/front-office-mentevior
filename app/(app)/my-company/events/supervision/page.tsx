@@ -1,34 +1,33 @@
 "use client"
 
-import { Users } from "lucide-react"
+import { Eye } from "lucide-react"
+import { useSupervisionConfig } from "@/lib/modules/supervision-config/hooks/use-supervision-config"
+import { SupervisionConfigForm } from "./components/SupervisionConfigForm"
+import { SupervisionConfigSkeleton } from "./components/SupervisionConfigSkeleton"
 
 export default function SupervisionPage() {
+  const { config, isLoading } = useSupervisionConfig()
+
+  if (isLoading) {
+    return <SupervisionConfigSkeleton />
+  }
+
   return (
-    <div className="p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
-            <Users className="h-8 w-8 text-[#037ECC]" />
+    <div className="bg-gray-50/50 p-6 pb-28">
+      <div className="mx-auto max-w-5xl xl:max-w-6xl">
+        <div className="mb-6 flex items-center gap-4">
+          <div className="rounded-xl border border-[#037ECC]/20 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 p-3">
+            <Eye className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
               Supervision
             </h1>
-            <p className="text-slate-600 mt-1">Coordinate supervision sessions</p>
+            <p className="mt-1 text-slate-600">Configure supervision event settings</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12">
-          <div className="text-center max-w-md mx-auto">
-            <div className="inline-flex p-4 rounded-full bg-slate-100 mb-4">
-              <Users className="h-12 w-12 text-slate-400" />
-            </div>
-            <h2 className="text-xl font-semibold text-slate-800 mb-2">Coming Soon</h2>
-            <p className="text-slate-600">
-              Supervision coordination features will be available here soon.
-            </p>
-          </div>
-        </div>
+        <SupervisionConfigForm config={config} />
       </div>
     </div>
   )
