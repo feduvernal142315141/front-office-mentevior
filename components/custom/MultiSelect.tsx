@@ -26,6 +26,8 @@ interface MultiSelectProps {
   /** Open the panel above the trigger (e.g. near bottom of a modal) */
   dropdownPosition?: "top" | "bottom"
   tone?: "brand" | "neutral"
+  /** Override the responsive maxVisibleTags calculation (e.g. when the field is narrower than full-width) */
+  maxVisibleTags?: number
 }
 
 export function MultiSelect({
@@ -42,6 +44,7 @@ export function MultiSelect({
   searchPlaceholder = "Search...",
   dropdownPosition = "bottom",
   tone = "brand",
+  maxVisibleTags: maxVisibleTagsProp,
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -55,7 +58,8 @@ export function MultiSelect({
     ? `${selectedOptions.length} selected` 
     : placeholder
   
-  const [maxVisibleTags, setMaxVisibleTags] = useState(2)
+  const [maxVisibleTagsResponsive, setMaxVisibleTagsResponsive] = useState(2)
+  const maxVisibleTags = maxVisibleTagsProp ?? maxVisibleTagsResponsive
   const visibleTags = selectedOptions.slice(0, maxVisibleTags)
   const remainingCount = selectedOptions.length - maxVisibleTags
 
@@ -113,18 +117,18 @@ export function MultiSelect({
     const updateMaxVisibleTags = () => {
       const width = window.innerWidth
       if (width >= 1280) {
-        setMaxVisibleTags(5)
+        setMaxVisibleTagsResponsive(5)
         return
       }
       if (width >= 1000) {
-        setMaxVisibleTags(3)
+        setMaxVisibleTagsResponsive(3)
         return
       }
       if (width >= 768) {
-        setMaxVisibleTags(2)
+        setMaxVisibleTagsResponsive(2)
         return
       }
-      setMaxVisibleTags(1)
+      setMaxVisibleTagsResponsive(1)
     }
 
     updateMaxVisibleTags()
@@ -193,9 +197,7 @@ export function MultiSelect({
             disabled && "!cursor-not-allowed"
           )}
         >
-          {!hasValue ? (
-            <span className="text-gray-400">{displayText}</span>
-          ) : (
+          {hasValue && (
             <div className="flex items-center gap-2 py-1 overflow-hidden flex-nowrap md:flex-wrap min-w-0">
               {visibleTags.map((option) => (
                 <span
@@ -259,16 +261,12 @@ export function MultiSelect({
             absolute left-4 px-1
             pointer-events-none
             transition-all duration-200 ease-out
-
-            bg-white/20
-            backdrop-blur-md
-            
             text-sm
             text-[var(--color-login-text-muted)]
           `,
 
             !hasValue && !isOpen && `
-              top-[28] -translate-y-1/2
+              top-[28px] -translate-y-1/2
               text-sm
               text-[var(--color-login-text-muted)]
             `,
@@ -277,6 +275,7 @@ export function MultiSelect({
               top-0
               -translate-y-1/2
               text-xs
+              bg-white
             `,
             (isOpen && !disabled) && activeLabelClass
           )}
