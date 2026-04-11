@@ -349,7 +349,6 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
 
                   {/* Color picker — 1/3 */}
                   <div className="flex flex-col gap-2">
-                    <p className="text-xs font-medium text-slate-500">Event color</p>
                     <FloatingColorPicker
                       label="Color"
                       value={w.color ?? ""}

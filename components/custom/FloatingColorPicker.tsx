@@ -138,13 +138,8 @@ export function FloatingColorPicker({
               {label} {required && <span className="text-[#2563EB]">*</span>}
             </label>
 
-            {/* Ícono derecha */}
-            {hasValue ? (
-              <span
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full shadow-sm ring-1 ring-black/10 pointer-events-none"
-                style={{ backgroundColor: value }}
-              />
-            ) : (
+            {/* Ícono derecha — solo cuando no hay valor */}
+            {!hasValue && (
               <Pipette
                 className={cn(
                   "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none transition-colors",
