@@ -1,8 +1,8 @@
 /** Respuesta del GET /appointment_config */
 export interface AppointmentConfig {
   id: string
-  name: string
-  description: string
+  appointmentName: string
+  appointmentDescription: string
   maxNumberLocations: number
   requiredBillingCode: boolean
   requiredSignature: boolean
@@ -24,8 +24,8 @@ export interface AppointmentConfig {
 /** PUT /appointment_config — id opcional: sin id = create, con id = update */
 export interface UpsertAppointmentConfigDto {
   id?: string
-  name: string
-  description: string
+  appointmentName: string
+  appointmentDescription: string
   maxNumberLocations: number
   requiredBillingCode: boolean
   requiredSignature: boolean

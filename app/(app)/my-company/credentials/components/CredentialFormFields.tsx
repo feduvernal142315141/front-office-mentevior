@@ -10,7 +10,7 @@ interface CredentialFormFieldsProps {
   isEditing: boolean
   isSubmitting: boolean
   onCancel: () => void
-  billingCodeOptions: { id: string; code: string; type: string }[]
+  billingCodeOptions: { id: string; code: string; modifier?: string }[]
   isLoadingBillingCodes: boolean
 }
 
@@ -186,11 +186,13 @@ export function CredentialFormFields({
                         onChange={field.onChange}
                         options={billingCodeOptions.map(bc => ({
                           value: bc.id,
-                          label: `${bc.code} (${bc.type})`
+                          label: bc.modifier?.trim() ? `${bc.code} (${bc.modifier.trim()})` : bc.code
                         }))}
                         placeholder="Select billing codes"
                         disabled={isLoadingBillingCodes}
                         hasError={!!fieldState.error}
+                        tone="neutral"
+                        dropdownPosition="top"
                         required
                       />
                       {fieldState.error && (

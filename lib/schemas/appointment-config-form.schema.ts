@@ -1,8 +1,8 @@
 import { z } from "zod"
 
 export const appointmentConfigSchema = z.object({
-  name: z.string().min(1, "Name is required").max(200, "Name must be less than 200 characters"),
-  description: z.string().max(500).optional().or(z.literal("")),
+  appointmentName: z.string().min(1, "Name is required").max(200, "Name must be less than 200 characters"),
+  appointmentDescription: z.string().max(500).optional().or(z.literal("")),
   maxNumberLocations: z.string().min(1, "Max number of locations is required"),
   requiredBillingCode: z.boolean(),
   requiredSignature: z.boolean(),
@@ -24,8 +24,8 @@ export const appointmentConfigSchema = z.object({
 export type AppointmentConfigFormValues = z.infer<typeof appointmentConfigSchema>
 
 export const getAppointmentConfigDefaults = (): AppointmentConfigFormValues => ({
-  name: "",
-  description: "",
+  appointmentName: "",
+  appointmentDescription: "",
   maxNumberLocations: "",
   requiredBillingCode: false,
   requiredSignature: false,

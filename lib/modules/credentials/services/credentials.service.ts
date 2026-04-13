@@ -98,6 +98,20 @@ export async function bulkCreateCredentials(catalogIds: string[]): Promise<boole
   return response.data as unknown as boolean
 }
 
+export async function getCredentialsByBillingCodes(billingCodeIds: string[]): Promise<CredentialCatalogItem[]> {
+  const params = new URLSearchParams()
+  billingCodeIds.forEach((id) => params.append("billingCodes", id))
+
+  const response = await serviceGet<PaginatedResponse<CredentialCatalogItem>>(`/credential/by-billing-codes?${params.toString()}`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch credentials by billing codes")
+  }
+
+  const data = response.data as unknown as PaginatedResponse<CredentialCatalogItem>
+  return Array.isArray(data.entities) ? data.entities : []
+}
+
 export async function deleteCredential(id: string): Promise<boolean> {
   const response = await serviceDelete<boolean>(`/credential/${id}`)
 

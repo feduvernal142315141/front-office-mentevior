@@ -1,43 +1,41 @@
 export interface SupervisionConfig {
   id: string
-  name: string
-  description: string
-  isSubevent: boolean
-  credentialIds: string[]
-  requirePriorAuthorization: boolean
+  supervisionName: string
+  supervisionDescription: string
+  requiredBillingCode: boolean
+  requiredPriorAuthorization: boolean
   billable: boolean
-  requireBillingCodes: boolean
-  billingCodeIds: string[]
   showEventInfo: boolean
   allowOverlapping: boolean
   startTime: string
   endTime: string
-  maxDurationPerDayClient: number
-  maxDurationPerDayProvider: number
-  maxDurationPerWeekProvider: number
+  maxDurationPerClient: number
+  maxDurationPerProvider: number
   maxDurationPerWeekClient: number
+  maxDurationPerWeekProvider: number
   showPreviewInCalendar: boolean
   color: string
+  billingCodes: string[]
+  credentials: string[]
 }
 
 export interface UpsertSupervisionConfigDto {
   id?: string
-  name: string
-  description: string
-  isSubevent: boolean
-  credentialIds: string[]
-  requirePriorAuthorization: boolean
+  supervisionName: string
+  supervisionDescription: string
+  requiredBillingCode: boolean
+  requiredPriorAuthorization: boolean
   billable: boolean
-  requireBillingCodes: boolean
-  billingCodeIds: string[]
   showEventInfo: boolean
   allowOverlapping: boolean
   startTime: string
   endTime: string
-  maxDurationPerDayClient: number
-  maxDurationPerDayProvider: number
-  maxDurationPerWeekProvider: number
+  maxDurationPerClient: number
+  maxDurationPerProvider: number
   maxDurationPerWeekClient: number
+  maxDurationPerWeekProvider: number
   showPreviewInCalendar: boolean
   color: string
+  billingCodes: string[]
+  credentials: string[]
 }

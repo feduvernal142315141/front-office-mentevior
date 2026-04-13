@@ -15,7 +15,7 @@ import { FloatingColorPicker } from "@/components/custom/FloatingColorPicker"
 import { MultiSelect } from "@/components/custom/MultiSelect"
 import { useUpsertSupervisionConfig } from "@/lib/modules/supervision-config/hooks/use-upsert-supervision-config"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
-import { useCredentialsCatalog } from "@/lib/modules/credentials/hooks/use-credentials-catalog"
+import { useCredentialsByBillingCodes } from "@/lib/modules/credentials/hooks/use-credentials-by-billing-codes"
 import {
   supervisionConfigSchema,
   getSupervisionConfigDefaults,
@@ -26,16 +26,15 @@ import { cn } from "@/lib/utils"
 
 const EVENTS_PATH = "/my-company/events"
 
-type SwitchField = "isSubevent" | "requirePriorAuthorization" | "billable" | "requireBillingCodes" | "showEventInfo" | "allowOverlapping" | "showPreviewInCalendar"
+type SwitchField = "requiredBillingCode" | "requiredPriorAuthorization" | "billable" | "showEventInfo" | "allowOverlapping" | "showPreviewInCalendar"
 
 const SWITCH_ITEMS: { label: string; description?: string; field: SwitchField }[] = [
-  { label: "This is a subevent of other events", field: "isSubevent" },
-  { label: "Require prior authorization",        field: "requirePriorAuthorization" },
-  { label: "Billable",                           field: "billable" },
-  { label: "Require billing codes",              field: "requireBillingCodes" },
-  { label: "Show event info",                    field: "showEventInfo" },
-  { label: "Allow overlapping",                  field: "allowOverlapping" },
-  { label: "Show preview in calendar",           field: "showPreviewInCalendar" },
+  { label: "Require prior authorization", field: "requiredPriorAuthorization" },
+  { label: "Billable",                    field: "billable" },
+  { label: "Require billing code",        field: "requiredBillingCode" },
+  { label: "Show event info",             field: "showEventInfo" },
+  { label: "Allow overlapping",           field: "allowOverlapping" },
+  { label: "Show preview in calendar",    field: "showPreviewInCalendar" },
 ]
 
 interface SupervisionConfigFormProps {
@@ -46,12 +45,10 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
   const router = useRouter()
   const { upsert, isLoading: isSaving } = useUpsertSupervisionConfig()
   const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
-  const { catalogCredentials, isLoading: isLoadingCredentials } = useCredentialsCatalog()
   const [generalExpanded, setGeneralExpanded] = useState(true)
-  const [configExpanded, setConfigExpanded] = useState(true)
+  const [configExpanded, setConfigExpanded]   = useState(true)
 
   const billingCodeOptions = billingCodes.map((bc) => ({ value: bc.id, label: bc.code }))
-  const credentialOptions  = catalogCredentials.map((c)  => ({ value: c.id,   label: c.name }))
 
   const form = useForm<SupervisionConfigFormValues>({
     resolver: zodResolver(supervisionConfigSchema),
@@ -61,51 +58,58 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
 
   const { handleSubmit, watch, setValue, formState: { errors } } = form
 
+  const { credentials: credentialsByBillingCodes, isLoading: isLoadingCredentials, fetchCredentials, reset: resetCredentials } =
+    useCredentialsByBillingCodes()
+
+  const credentialOptions = credentialsByBillingCodes.map((c) => ({ value: c.id, label: c.name }))
+
   useEffect(() => {
     if (!config) return
     form.reset({
-      name:                       config.name ?? "",
-      description:                config.description ?? "",
-      isSubevent:                 config.isSubevent ? "yes" : "no",
-      credentialIds:              config.credentialIds,
-      requirePriorAuthorization:  config.requirePriorAuthorization ? "yes" : "no",
+      supervisionName:            config.supervisionName ?? "",
+      supervisionDescription:     config.supervisionDescription ?? "",
+      credentials:                config.credentials ?? [],
+      billingCodes:               config.billingCodes ?? [],
+      requiredBillingCode:        config.requiredBillingCode ? "yes" : "no",
+      requiredPriorAuthorization: config.requiredPriorAuthorization ? "yes" : "no",
       billable:                   config.billable ? "yes" : "no",
-      requireBillingCodes:        config.requireBillingCodes ? "yes" : "no",
-      billingCodeIds:             config.billingCodeIds,
       showEventInfo:              config.showEventInfo ? "yes" : "no",
       allowOverlapping:           config.allowOverlapping ? "yes" : "no",
       startTime:                  config.startTime,
       endTime:                    config.endTime,
-      maxDurationPerDayClient:    String(config.maxDurationPerDayClient),
-      maxDurationPerDayProvider:  String(config.maxDurationPerDayProvider),
-      maxDurationPerWeekProvider: String(config.maxDurationPerWeekProvider),
+      maxDurationPerClient:       String(config.maxDurationPerClient),
+      maxDurationPerProvider:     String(config.maxDurationPerProvider),
       maxDurationPerWeekClient:   String(config.maxDurationPerWeekClient),
+      maxDurationPerWeekProvider: String(config.maxDurationPerWeekProvider),
       showPreviewInCalendar:      config.showPreviewInCalendar ? "yes" : "no",
       color:                      config.color ?? "",
     })
-  }, [config, form])
+    // pre-load credential options if config already has billing codes selected
+    if (config.billingCodes?.length) {
+      fetchCredentials(config.billingCodes)
+    }
+  }, [config, form, fetchCredentials])
 
   const w = watch()
 
   const onSubmit = handleSubmit(async (data) => {
     const result = await upsert({
       ...(config?.id ? { id: config.id } : {}),
-      name:                       data.name.trim(),
-      description:                data.description ?? "",
-      isSubevent:                 data.isSubevent === "yes",
-      credentialIds:              data.credentialIds,
-      requirePriorAuthorization:  data.requirePriorAuthorization === "yes",
+      supervisionName:            data.supervisionName.trim(),
+      supervisionDescription:     data.supervisionDescription ?? "",
+      credentials:                data.credentials,
+      billingCodes:               data.billingCodes,
+      requiredBillingCode:        data.requiredBillingCode === "yes",
+      requiredPriorAuthorization: data.requiredPriorAuthorization === "yes",
       billable:                   data.billable === "yes",
-      requireBillingCodes:        data.requireBillingCodes === "yes",
-      billingCodeIds:             data.billingCodeIds,
       showEventInfo:              data.showEventInfo === "yes",
       allowOverlapping:           data.allowOverlapping === "yes",
       startTime:                  data.startTime,
       endTime:                    data.endTime,
-      maxDurationPerDayClient:    Number(data.maxDurationPerDayClient),
-      maxDurationPerDayProvider:  Number(data.maxDurationPerDayProvider),
-      maxDurationPerWeekProvider: Number(data.maxDurationPerWeekProvider),
+      maxDurationPerClient:       Number(data.maxDurationPerClient),
+      maxDurationPerProvider:     Number(data.maxDurationPerProvider),
       maxDurationPerWeekClient:   Number(data.maxDurationPerWeekClient),
+      maxDurationPerWeekProvider: Number(data.maxDurationPerWeekProvider),
       showPreviewInCalendar:      data.showPreviewInCalendar === "yes",
       color:                      data.color ?? "",
     })
@@ -139,18 +143,18 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
             <div className="flex flex-col gap-4">
               <FloatingInput
                 label="Name"
-                value={w.name}
-                onChange={(v) => setValue("name", v)}
-                onBlur={() => form.trigger("name")}
-                hasError={!!errors.name}
+                value={w.supervisionName}
+                onChange={(v) => setValue("supervisionName", v)}
+                onBlur={() => form.trigger("supervisionName")}
+                hasError={!!errors.supervisionName}
                 required
               />
               <FloatingTextarea
                 label="Description"
-                value={w.description ?? ""}
-                onChange={(v) => setValue("description", v)}
-                onBlur={() => form.trigger("description")}
-                hasError={!!errors.description}
+                value={w.supervisionDescription ?? ""}
+                onChange={(v) => setValue("supervisionDescription", v)}
+                onBlur={() => form.trigger("supervisionDescription")}
+                hasError={!!errors.supervisionDescription}
                 maxLength={500}
                 rows={3}
               />
@@ -181,30 +185,43 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
 
           {configExpanded && (
             <div className="space-y-6">
-              {/* Row 1: Credentials + Billing codes */}
+              {/* Row 1: Billing codes → Credentials (credentials depends on billing codes) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <MultiSelect
-                  label="Allowed credentials"
-                  value={w.credentialIds}
-                  onChange={(v) => setValue("credentialIds", v)}
-                  onBlur={() => form.trigger("credentialIds")}
-                  options={credentialOptions}
-                  searchable
-                  disabled={isLoadingCredentials}
-                  tone="neutral"
-                  maxVisibleTags={2}
-                />
-                <MultiSelect
                   label="Allowed billing codes"
-                  value={w.billingCodeIds}
-                  onChange={(v) => setValue("billingCodeIds", v)}
-                  onBlur={() => form.trigger("billingCodeIds")}
+                  value={w.billingCodes}
+                    onChange={(v) => {
+                      setValue("billingCodes", v)
+                      // reset credentials when billing codes change to avoid orphan IDs
+                      setValue("credentials", [])
+                      resetCredentials()
+                    }}
+                  onBlur={() => form.trigger("billingCodes")}
                   options={billingCodeOptions}
                   searchable
                   disabled={isLoadingBillingCodes}
                   tone="neutral"
                   maxVisibleTags={2}
                 />
+                <div className="flex flex-col gap-1">
+                  <MultiSelect
+                    label="Allowed credentials"
+                    value={w.credentials}
+                    onChange={(v) => setValue("credentials", v)}
+                    onBlur={() => form.trigger("credentials")}
+                    options={credentialOptions}
+                    searchable
+                    disabled={!w.billingCodes.length || isLoadingCredentials}
+                    onOpen={() => fetchCredentials(w.billingCodes)}
+                    tone="neutral"
+                    maxVisibleTags={1}
+                />
+                  {!w.billingCodes.length && (
+                    <p className="text-xs text-slate-400 pl-1">
+                      Select billing codes first to load available credentials
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Row 2: Time window + Duration limits */}
@@ -227,19 +244,19 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
                 />
                 <FloatingInput
                   label="Max duration / day client (h)"
-                  value={w.maxDurationPerDayClient}
-                  onChange={(v) => setValue("maxDurationPerDayClient", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationPerDayClient")}
-                  hasError={!!errors.maxDurationPerDayClient}
+                  value={w.maxDurationPerClient}
+                  onChange={(v) => setValue("maxDurationPerClient", v.replace(/\D/g, ""))}
+                  onBlur={() => form.trigger("maxDurationPerClient")}
+                  hasError={!!errors.maxDurationPerClient}
                   inputMode="numeric"
                   required
                 />
                 <FloatingInput
                   label="Max duration / day provider (h)"
-                  value={w.maxDurationPerDayProvider}
-                  onChange={(v) => setValue("maxDurationPerDayProvider", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationPerDayProvider")}
-                  hasError={!!errors.maxDurationPerDayProvider}
+                  value={w.maxDurationPerProvider}
+                  onChange={(v) => setValue("maxDurationPerProvider", v.replace(/\D/g, ""))}
+                  onBlur={() => form.trigger("maxDurationPerProvider")}
+                  hasError={!!errors.maxDurationPerProvider}
                   inputMode="numeric"
                   required
                 />

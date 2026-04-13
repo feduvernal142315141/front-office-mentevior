@@ -11,11 +11,10 @@ import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { FloatingColorPicker } from "@/components/custom/FloatingColorPicker"
-import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MultiSelect } from "@/components/custom/MultiSelect"
 import { useUpsertServicePlanConfig } from "@/lib/modules/service-plan-config/hooks/use-upsert-service-plan-config"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
-import { useCredentialsCatalog } from "@/lib/modules/credentials/hooks/use-credentials-catalog"
+import { useCredentialsByBillingCodes } from "@/lib/modules/credentials/hooks/use-credentials-by-billing-codes"
 import {
   servicePlanConfigSchema,
   getServicePlanConfigDefaults,
@@ -26,19 +25,12 @@ import { cn } from "@/lib/utils"
 
 const EVENTS_PATH = "/my-company/events"
 
-const YES_NO_OPTIONS = [
-  { value: "yes", label: "Yes" },
-  { value: "no", label: "No" },
-]
+type SwitchField = "requiredBillingCode" | "billable" | "requiredPriorAuthorization"
 
-const SWITCH_ITEMS: {
-  label: string
-  description?: string
-  field: "requireBillingCode" | "billable" | "requirePriorAuthorization"
-}[] = [
-  { label: "Require billing code", field: "requireBillingCode" },
-  { label: "Billable", field: "billable" },
-  { label: "Require prior authorization", field: "requirePriorAuthorization" },
+const SWITCH_ITEMS: { label: string; description?: string; field: SwitchField }[] = [
+  { label: "Require billing code",        field: "requiredBillingCode" },
+  { label: "Billable",                    field: "billable" },
+  { label: "Require prior authorization", field: "requiredPriorAuthorization" },
 ]
 
 interface ServicePlanConfigFormProps {
@@ -49,19 +41,10 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
   const router = useRouter()
   const { upsert, isLoading: isSaving } = useUpsertServicePlanConfig()
   const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
-  const { catalogCredentials, isLoading: isLoadingCredentials } = useCredentialsCatalog()
   const [generalExpanded, setGeneralExpanded] = useState(true)
-  const [configExpanded, setConfigExpanded] = useState(true)
+  const [configExpanded, setConfigExpanded]   = useState(true)
 
-  const billingCodeOptions = billingCodes.map((bc) => ({
-    value: bc.id,
-    label: bc.code,
-  }))
-
-  const credentialOptions = catalogCredentials.map((c) => ({
-    value: c.id,
-    label: c.name,
-  }))
+  const billingCodeOptions = billingCodes.map((bc) => ({ value: bc.id, label: bc.code }))
 
   const form = useForm<ServicePlanConfigFormValues>({
     resolver: zodResolver(servicePlanConfigSchema),
@@ -71,35 +54,44 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
 
   const { handleSubmit, watch, setValue, formState: { errors } } = form
 
+  const { credentials: credentialsByBillingCodes, isLoading: isLoadingCredentials, fetchCredentials, reset: resetCredentials } =
+    useCredentialsByBillingCodes()
+
+  const credentialOptions = credentialsByBillingCodes.map((c) => ({ value: c.id, label: c.name }))
+
   useEffect(() => {
     if (!config) return
     form.reset({
-      name:                     config.name ?? "",
-      description:              config.description ?? "",
-      billingCodeIds:           config.billingCodeIds,
-      requireBillingCode:       config.requireBillingCode ? "yes" : "no",
-      credentialIds:            config.credentialIds,
-      billable:                 config.billable ? "yes" : "no",
-      requirePriorAuthorization: config.requirePriorAuthorization ? "yes" : "no",
-      maxBillingCodes:          String(config.maxBillingCodes),
-      color:                    config.color ?? "",
+      servicePlanName:            config.servicePlanName ?? "",
+      servicePlanDescription:     config.servicePlanDescription ?? "",
+      billingCodes:               config.billingCodes ?? [],
+      requiredBillingCode:        config.requiredBillingCode ? "yes" : "no",
+      credentials:                config.credentials ?? [],
+      billable:                   config.billable ? "yes" : "no",
+      requiredPriorAuthorization: config.requiredPriorAuthorization ? "yes" : "no",
+      maxBillingCode:             config.maxBillingCode != null ? String(config.maxBillingCode) : "",
+      color:                      config.color ?? "",
     })
-  }, [config, form])
+    // pre-load credential options if config already has billing codes selected
+    if (config.billingCodes?.length) {
+      fetchCredentials(config.billingCodes)
+    }
+  }, [config, form, fetchCredentials])
 
   const w = watch()
 
   const onSubmit = handleSubmit(async (data) => {
     const result = await upsert({
       ...(config?.id ? { id: config.id } : {}),
-      name:                      data.name.trim(),
-      description:               data.description ?? "",
-      billingCodeIds:            data.billingCodeIds,
-      requireBillingCode:        data.requireBillingCode === "yes",
-      credentialIds:             data.credentialIds,
-      billable:                  data.billable === "yes",
-      requirePriorAuthorization: data.requirePriorAuthorization === "yes",
-      maxBillingCodes:           Number(data.maxBillingCodes),
-      color:                     data.color ?? "",
+      servicePlanName:            data.servicePlanName.trim(),
+      servicePlanDescription:     data.servicePlanDescription ?? "",
+      billingCodes:               data.billingCodes,
+      requiredBillingCode:        data.requiredBillingCode === "yes",
+      credentials:                data.credentials,
+      billable:                   data.billable === "yes",
+      requiredPriorAuthorization: data.requiredPriorAuthorization === "yes",
+      maxBillingCode:             Number(data.maxBillingCode),
+      color:                      data.color ?? "",
     })
 
     if (result) router.push(EVENTS_PATH)
@@ -131,18 +123,18 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
             <div className="flex flex-col gap-4">
               <FloatingInput
                 label="Name"
-                value={w.name}
-                onChange={(v) => setValue("name", v)}
-                onBlur={() => form.trigger("name")}
-                hasError={!!errors.name}
+                value={w.servicePlanName}
+                onChange={(v) => setValue("servicePlanName", v)}
+                onBlur={() => form.trigger("servicePlanName")}
+                hasError={!!errors.servicePlanName}
                 required
               />
               <FloatingTextarea
                 label="Description"
-                value={w.description ?? ""}
-                onChange={(v) => setValue("description", v)}
-                onBlur={() => form.trigger("description")}
-                hasError={!!errors.description}
+                value={w.servicePlanDescription ?? ""}
+                onChange={(v) => setValue("servicePlanDescription", v)}
+                onBlur={() => form.trigger("servicePlanDescription")}
+                hasError={!!errors.servicePlanDescription}
                 maxLength={500}
                 rows={3}
               />
@@ -173,14 +165,18 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
 
           {configExpanded && (
             <div className="space-y-6">
-              {/* Row 1: Billing codes + Max billing codes */}
+              {/* Row 1: Billing codes + Max billing code */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-3">
                   <MultiSelect
                     label="Allowed billing codes"
-                    value={w.billingCodeIds}
-                    onChange={(v) => setValue("billingCodeIds", v)}
-                    onBlur={() => form.trigger("billingCodeIds")}
+                    value={w.billingCodes}
+                    onChange={(v) => {
+                      setValue("billingCodes", v)
+                      setValue("credentials", [])
+                      resetCredentials()
+                    }}
+                    onBlur={() => form.trigger("billingCodes")}
                     options={billingCodeOptions}
                     searchable
                     disabled={isLoadingBillingCodes}
@@ -190,28 +186,34 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
                 </div>
                 <FloatingInput
                   label="Max billing codes"
-                  value={w.maxBillingCodes}
-                  onChange={(v) => setValue("maxBillingCodes", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxBillingCodes")}
-                  hasError={!!errors.maxBillingCodes}
+                  value={w.maxBillingCode}
+                  onChange={(v) => setValue("maxBillingCode", v.replace(/\D/g, ""))}
+                  onBlur={() => form.trigger("maxBillingCode")}
+                  hasError={!!errors.maxBillingCode}
                   inputMode="numeric"
                   required
                 />
               </div>
 
-              {/* Row 2: Credentials */}
-              <div className="grid grid-cols-1 gap-4">
+              {/* Row 2: Credentials (depends on billing codes) */}
+              <div className="flex flex-col gap-1">
                 <MultiSelect
                   label="Allowed credentials"
-                  value={w.credentialIds}
-                  onChange={(v) => setValue("credentialIds", v)}
-                  onBlur={() => form.trigger("credentialIds")}
+                  value={w.credentials}
+                  onChange={(v) => setValue("credentials", v)}
+                  onBlur={() => form.trigger("credentials")}
                   options={credentialOptions}
                   searchable
-                  disabled={isLoadingCredentials}
+                  disabled={!(w.billingCodes?.length) || isLoadingCredentials}
+                  onOpen={() => fetchCredentials(w.billingCodes ?? [])}
                   tone="neutral"
                   maxVisibleTags={4}
                 />
+                {!w.billingCodes?.length && (
+                  <p className="text-xs text-slate-400 pl-1">
+                    Select billing codes first to load available credentials
+                  </p>
+                )}
               </div>
 
               {/* Row 3: Rules & Color */}

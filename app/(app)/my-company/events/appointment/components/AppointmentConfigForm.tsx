@@ -79,8 +79,8 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
   useEffect(() => {
     if (!config) return
     form.reset({
-      name:                   config.name ?? "",
-      description:            config.description ?? "",
+      appointmentName:        config.appointmentName ?? "",
+      appointmentDescription: config.appointmentDescription ?? "",
       maxNumberLocations:     String(config.maxNumberLocations),
       requiredBillingCode:    config.requiredBillingCode,
       requiredSignature:      config.requiredSignature,
@@ -105,8 +105,8 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
   const onSubmit = handleSubmit(async (data) => {
     const result = await update({
       ...(config?.id ? { id: config.id } : {}),
-      name:                     data.name.trim(),
-      description:              data.description ?? "",
+      appointmentName:          data.appointmentName.trim(),
+      appointmentDescription:   data.appointmentDescription ?? "",
       maxNumberLocations:       Number(data.maxNumberLocations),
       requiredBillingCode:      data.requiredBillingCode,
       requiredSignature:        data.requiredSignature,
@@ -154,18 +154,18 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
             <div className="flex flex-col gap-4">
               <FloatingInput
                 label="Name"
-                value={w.name}
-                onChange={(v) => setValue("name", v)}
-                onBlur={() => form.trigger("name")}
-                hasError={!!errors.name}
+                value={w.appointmentName}
+                onChange={(v) => setValue("appointmentName", v)}
+                onBlur={() => form.trigger("appointmentName")}
+                hasError={!!errors.appointmentName}
                 required
               />
               <FloatingTextarea
                 label="Description"
-                value={w.description ?? ""}
-                onChange={(v) => setValue("description", v)}
-                onBlur={() => form.trigger("description")}
-                hasError={!!errors.description}
+                value={w.appointmentDescription ?? ""}
+                onChange={(v) => setValue("appointmentDescription", v)}
+                onBlur={() => form.trigger("appointmentDescription")}
+                hasError={!!errors.appointmentDescription}
                 maxLength={500}
                 rows={3}
               />

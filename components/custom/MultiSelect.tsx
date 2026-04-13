@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { ChevronDown, Check, Search, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -15,6 +15,8 @@ interface MultiSelectProps {
   value: string[]
   onChange: (value: string[]) => void
   onBlur?: () => void
+  /** Called once when the dropdown opens — use for lazy data fetching */
+  onOpen?: () => void
   options: Option[]
   hasError?: boolean
   disabled?: boolean
@@ -35,6 +37,7 @@ export function MultiSelect({
   value,
   onChange,
   onBlur,
+  onOpen,
   options,
   hasError = false,
   disabled = false,
@@ -48,6 +51,7 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -154,8 +158,29 @@ export function MultiSelect({
     onChange(value.filter(v => v !== optionValue))
   }
 
+  const computeDropdownStyle = useCallback(() => {
+    if (dropdownPosition !== "top" || !buttonRef.current) return
+    const rect = buttonRef.current.getBoundingClientRect()
+    const available = rect.top - 8
+    const maxH = Math.min(available, 480)
+    setDropdownStyle({
+      position: "fixed",
+      bottom: window.innerHeight - rect.top + 8,
+      left: rect.left,
+      width: rect.width,
+      maxHeight: maxH,
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+    })
+  }, [dropdownPosition])
+
   const handleToggle = () => {
     if (!disabled) {
+      if (!isOpen) {
+        onOpen?.()
+        computeDropdownStyle()
+      }
       setIsOpen(!isOpen)
     }
   }
@@ -233,7 +258,7 @@ export function MultiSelect({
                       +{remainingCount} more
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-slate-900 text-white max-w-xs">
+                  <TooltipContent side="top" sideOffset={6} className="bg-slate-900 text-white max-w-xs z-[9999]">
                     <div className="flex flex-col gap-1">
                       {selectedOptions.slice(maxVisibleTags).map((opt) => (
                         <span key={opt.value}>{opt.label}</span>
@@ -284,16 +309,17 @@ export function MultiSelect({
         </label>
 
         {isOpen && (
-        <div 
+        <div
           className={cn(
-            "absolute left-0 right-0 z-[9999] bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200",
+            "z-[9999] bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in fade-in-0 zoom-in-95 duration-200",
             dropdownPosition === "top"
-              ? "bottom-full mb-2 origin-bottom"
-              : "top-full mt-2 origin-top"
+              ? "origin-bottom"
+              : "absolute left-0 right-0 top-full mt-2 origin-top overflow-hidden flex flex-col max-h-[360px]"
           )}
+          style={dropdownPosition === "top" ? dropdownStyle : undefined}
         >
             {searchable && (
-              <div className="p-3 border-b border-gray-200">
+              <div className="p-3 border-b border-gray-200 flex-shrink-0">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -312,7 +338,7 @@ export function MultiSelect({
               </div>
             )}
 
-            <div className="px-3 py-2 border-b border-gray-200">
+            <div className="px-3 py-2 border-b border-gray-200 flex-shrink-0">
               <button
                 type="button"
                 onClick={handleSelectAll}
@@ -325,7 +351,7 @@ export function MultiSelect({
               </button>
             </div>
 
-            <div className="max-h-[280px] overflow-y-auto py-2">
+            <div className={cn("overflow-y-auto py-2", dropdownPosition === "top" ? "flex-1 min-h-0" : "max-h-[280px]")}>
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 text-center">
                   No results found

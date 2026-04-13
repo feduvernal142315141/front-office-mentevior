@@ -1,25 +1,25 @@
 export interface ServicePlanConfig {
   id: string
-  name: string
-  description: string
-  billingCodeIds: string[]
-  requireBillingCode: boolean
-  credentialIds: string[]
+  servicePlanName: string
+  servicePlanDescription: string
+  requiredBillingCode: boolean
+  requiredPriorAuthorization: boolean
   billable: boolean
-  requirePriorAuthorization: boolean
-  maxBillingCodes: number
+  maxBillingCode: number
   color: string
+  billingCodes: string[]
+  credentials: string[]
 }
 
 export interface UpsertServicePlanConfigDto {
   id?: string
-  name: string
-  description: string
-  billingCodeIds: string[]
-  requireBillingCode: boolean
-  credentialIds: string[]
+  servicePlanName: string
+  servicePlanDescription: string
+  requiredBillingCode: boolean
+  requiredPriorAuthorization: boolean
   billable: boolean
-  requirePriorAuthorization: boolean
-  maxBillingCodes: number
+  maxBillingCode: number
   color: string
+  billingCodes: string[]
+  credentials: string[]
 }
