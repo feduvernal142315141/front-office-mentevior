@@ -19,7 +19,7 @@ export interface Physician {
   mpi: string;
   phone: string;
   fax: string;
-  email: string;
+  email?: string;
   type: string;
   active: boolean;
   isDefault: boolean;
@@ -44,7 +44,7 @@ export interface CreatePhysicianRequest {
   mpi: string;
   phone: string;
   fax?: string;
-  email: string;
+  email?: string;
   type: string;
   active: boolean;
   isDefault: boolean;

@@ -811,7 +811,7 @@ function ManualTab({
       mpi: values.mpi,
       phone: values.phone,
       fax: values.fax || undefined,
-      email: values.email,
+      email: values.email || undefined,
       type: values.type,
       active: values.active,
       companyName: values.companyName || undefined,

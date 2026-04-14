@@ -13,7 +13,7 @@ export interface ClientPhysician {
   mpi: string
   phone: string
   fax?: string
-  email: string
+  email?: string
   active: boolean
   isManual?: boolean
   createdAt?: string
@@ -33,7 +33,7 @@ export interface CreateManualClientPhysicianDto {
   mpi: string
   phone: string
   fax?: string
-  email: string
+  email?: string
   type: string
   active: boolean
   companyName?: string
