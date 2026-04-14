@@ -330,7 +330,6 @@ export function PhysicianFormFields({
                   onBlur={field.onBlur}
                   placeholder=" "
                   hasError={!!fieldState.error}
-                  required={true}
                 />
                 {fieldState.error && (
                   <p className="text-sm text-red-600 mt-2">
