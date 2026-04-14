@@ -135,7 +135,7 @@ export function FloatingColorPicker({
                   : "text-[var(--color-login-text-muted)]"
               )}
             >
-              {label} {required && <span className="text-[#2563EB]">*</span>}
+              {label} {required && <span className="text-[#037ECC]">*</span>}
             </label>
 
             {/* Ícono derecha — solo cuando no hay valor */}

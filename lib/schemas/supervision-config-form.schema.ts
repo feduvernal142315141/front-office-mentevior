@@ -17,7 +17,7 @@ export const supervisionConfigSchema = z.object({
   maxDurationConsecutiveDaysProvider: z.string().min(1, "Required"),
 
   // ── Billing ──────────────────────────────────────────────────────────────────
-  billingCodes: z.array(z.string()),
+  billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),
 
   // ── Booleans (switches) ──────────────────────────────────────────────────────
   requiredBillingCode:        z.boolean(),

@@ -263,6 +263,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
                     disabled={isLoadingBillingCodes}
                     tone="neutral"
                     maxVisibleTags={billingCodesVisibleTags}
+                    required
                   />
                 </div>
               </div>

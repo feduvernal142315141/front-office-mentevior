@@ -263,6 +263,7 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
                     disabled={isLoadingBillingCodes}
                     tone="neutral"
                     maxVisibleTags={billingCodesVisibleTags}
+                    required
                   />
                 </div>
               </div>

@@ -117,7 +117,7 @@ export function FloatingTimePicker({
                   : "text-[var(--color-login-text-muted)]"
               )}
             >
-              {label} {required && <span className="text-[#2563EB]">*</span>}
+              {label} {required && <span className="text-[#037ECC]">*</span>}
             </label>
 
             {!hasValue && (

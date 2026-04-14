@@ -77,7 +77,7 @@ export function MultiSelect({
 
   const activeLabelClass = tone === "neutral" ? "text-slate-600" : "text-[#2563EB]"
 
-  const requiredAsteriskClass = tone === "neutral" ? "text-slate-600" : "text-[#2563EB]"
+  const requiredAsteriskClass = "text-[#037ECC]"
 
   const searchFocusClass =
     tone === "neutral"

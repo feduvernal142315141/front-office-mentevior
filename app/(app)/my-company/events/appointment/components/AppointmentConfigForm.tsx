@@ -299,6 +299,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   onBlur={() => form.trigger("allowedSubEvents")}
                   options={SUBEVENT_OPTIONS}
                   hasError={!!errors.allowedSubEvents}
+                  required
                 />
                 <div className="md:col-span-2">
                   <MultiSelect
@@ -311,6 +312,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                     disabled={isLoadingBillingCodes}
                     tone="neutral"
                     maxVisibleTags={billingCodesVisibleTags}
+                    required
                   />
                 </div>
               </div>

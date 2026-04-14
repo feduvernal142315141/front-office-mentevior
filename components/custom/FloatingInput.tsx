@@ -102,7 +102,7 @@ export function FloatingInput({
           `
           )}
         >
-          {label} {required && <span className="text-[#2563EB]">*</span>}
+          {label} {required && <span className="text-[#037ECC]">*</span>}
         </label>
       </div>
     </div>

@@ -160,7 +160,7 @@ export function FloatingSelect({
             (isOpen && !disabled) && "text-[#2563EB]"
           )}
         >
-          {label} {required && <span className="text-[#2563EB]">*</span>}
+          {label} {required && <span className="text-[#037ECC]">*</span>}
         </label>
       </div>
 
