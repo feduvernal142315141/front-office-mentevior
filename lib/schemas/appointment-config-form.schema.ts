@@ -1,45 +1,97 @@
 import { z } from "zod"
 
 export const appointmentConfigSchema = z.object({
-  appointmentName: z.string().min(1, "Name is required").max(200, "Name must be less than 200 characters"),
-  appointmentDescription: z.string().max(500).optional().or(z.literal("")),
-  maxNumberLocations: z.string().min(1, "Max number of locations is required"),
-  requiredBillingCode: z.boolean(),
-  requiredSignature: z.boolean(),
-  allowSubEvents: z.string().min(1, "Allow subevents is required"),
-  requiredPriorAuthorization: z.boolean(),
-  leadTimeId: z.string().min(1, "Lead time is required"),
-  lagTimeId: z.string().min(1, "Lag time is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  allowOverlapping: z.boolean(),
+  // ── Scheduling ──────────────────────────────────────────────────────────────
+  leadTimeId:   z.string().min(1, "Lead time is required"),
+  lagTimeId:    z.string().min(1, "Lag time is required"),
+  startTime:    z.string().min(1, "Start time is required"),
+  endTime:      z.string().min(1, "End time is required"),
+  allowedDays:  z.string(),
+  allowedSubEvents: z.string(),
+
+  // ── Numeric limits ───────────────────────────────────────────────────────────
+  maxNumberLocations:               z.string().min(1, "Required"),
+  minDuration:                      z.string().min(1, "Required"),
+  maxDurationEvent:                 z.string().min(1, "Required"),
+  maxDurationPerDayClient:          z.string().min(1, "Required"),
+  maxDurationPerDayProvider:        z.string().min(1, "Required"),
+  maxDurationPerWeekClient:         z.string().min(1, "Required"),
+  maxDurationPerWeekProvider:       z.string().min(1, "Required"),
+  maxDurationConsecutiveDaysClient:   z.string().min(1, "Required"),
+  maxDurationConsecutiveDaysProvider: z.string().min(1, "Required"),
+
+  // ── Billing ──────────────────────────────────────────────────────────────────
   billingCodes: z.array(z.string()),
-  maxDurationPerProvider: z.string().min(1, "Max duration per provider is required"),
-  maxDurationPerClient: z.string().min(1, "Max duration per client is required"),
-  maxDurationRBTAndAnalyst: z.string().min(1, "Max duration RBT and analyst is required"),
-  maxConsecutiveDaysOfWork: z.string().min(1, "Max consecutive days of work is required"),
+
+  // ── Booleans (switches) ──────────────────────────────────────────────────────
+  requiredBillingCode:       z.boolean(),
+  requiredSignature:         z.boolean(),
+  requiredPriorAuthorization: z.boolean(),
+  requiredDataCollection:    z.boolean(),
+  requiredLocation:          z.boolean(),
+  requiredUser:              z.boolean(),
+  allowOverlapping:          z.boolean(),
+  allowSignature:            z.boolean(),
+  allowChangeUser:           z.boolean(),
+  allowCreateByUser:         z.boolean(),
+  allowEditByUser:           z.boolean(),
+  allowNewLocation:          z.boolean(),
+  allowedCredentials:        z.boolean(),
+  billable:                  z.boolean(),
+  invoiceable:               z.boolean(),
+  showEventInfo:             z.boolean(),
+  showPreview:               z.boolean(),
+  active:                    z.boolean(),
+
+  // ── Appearance ───────────────────────────────────────────────────────────────
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").or(z.literal("")),
 })
 
 export type AppointmentConfigFormValues = z.infer<typeof appointmentConfigSchema>
 
 export const getAppointmentConfigDefaults = (): AppointmentConfigFormValues => ({
-  appointmentName: "",
-  appointmentDescription: "",
-  maxNumberLocations: "",
-  requiredBillingCode: false,
-  requiredSignature: false,
-  allowSubEvents: "",
-  requiredPriorAuthorization: false,
-  leadTimeId: "",
-  lagTimeId: "",
-  startTime: "",
-  endTime: "",
-  allowOverlapping: false,
+  // Scheduling
+  leadTimeId:      "",
+  lagTimeId:       "",
+  startTime:       "",
+  endTime:         "",
+  allowedDays:     "",
+  allowedSubEvents: "",
+
+  // Numeric limits
+  maxNumberLocations:               "1",
+  minDuration:                      "0",
+  maxDurationEvent:                 "0",
+  maxDurationPerDayClient:          "0",
+  maxDurationPerDayProvider:        "0",
+  maxDurationPerWeekClient:         "0",
+  maxDurationPerWeekProvider:       "0",
+  maxDurationConsecutiveDaysClient:   "0",
+  maxDurationConsecutiveDaysProvider: "0",
+
+  // Billing
   billingCodes: [],
-  maxDurationPerProvider: "16",
-  maxDurationPerClient: "6",
-  maxDurationRBTAndAnalyst: "8",
-  maxConsecutiveDaysOfWork: "6",
+
+  // Switches
+  requiredBillingCode:        false,
+  requiredSignature:          false,
+  requiredPriorAuthorization: false,
+  requiredDataCollection:     false,
+  requiredLocation:           false,
+  requiredUser:               false,
+  allowOverlapping:           false,
+  allowSignature:             false,
+  allowChangeUser:            false,
+  allowCreateByUser:          false,
+  allowEditByUser:            false,
+  allowNewLocation:           false,
+  allowedCredentials:         false,
+  billable:                   false,
+  invoiceable:                false,
+  showEventInfo:              false,
+  showPreview:                false,
+  active:                     true,
+
+  // Appearance
   color: "",
 })

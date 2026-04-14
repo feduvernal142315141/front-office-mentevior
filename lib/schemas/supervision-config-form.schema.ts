@@ -1,47 +1,87 @@
 import { z } from "zod"
 
-const yesNo = z.enum(["yes", "no"])
-
 export const supervisionConfigSchema = z.object({
-  // General
-  supervisionName: z.string().min(1, "Name is required").max(200),
-  supervisionDescription: z.string().max(500).optional().or(z.literal("")),
-  // Configuration
-  credentials: z.array(z.string()),
-  billingCodes: z.array(z.string()),
-  requiredBillingCode: yesNo,
-  requiredPriorAuthorization: yesNo,
-  billable: yesNo,
-  showEventInfo: yesNo,
-  allowOverlapping: yesNo,
+  // ── Scheduling ───────────────────────────────────────────────────────────────
   startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  maxDurationPerClient: z.string().min(1, "Required"),
-  maxDurationPerProvider: z.string().min(1, "Required"),
-  maxDurationPerWeekClient: z.string().min(1, "Required"),
-  maxDurationPerWeekProvider: z.string().min(1, "Required"),
-  showPreviewInCalendar: yesNo,
+  endTime:   z.string().min(1, "End time is required"),
+
+  // ── Numeric limits ───────────────────────────────────────────────────────────
+  maxNumberLocations:               z.string().min(1, "Required"),
+  minDuration:                      z.string().min(1, "Required"),
+  maxDurationEvent:                 z.string().min(1, "Required"),
+  maxDurationPerDayClient:          z.string().min(1, "Required"),
+  maxDurationPerDayProvider:        z.string().min(1, "Required"),
+  maxDurationPerWeekClient:         z.string().min(1, "Required"),
+  maxDurationPerWeekProvider:       z.string().min(1, "Required"),
+  maxDurationConsecutiveDaysClient:   z.string().min(1, "Required"),
+  maxDurationConsecutiveDaysProvider: z.string().min(1, "Required"),
+
+  // ── Billing ──────────────────────────────────────────────────────────────────
+  billingCodes: z.array(z.string()),
+
+  // ── Booleans (switches) ──────────────────────────────────────────────────────
+  requiredBillingCode:        z.boolean(),
+  requiredSignature:          z.boolean(),
+  requiredPriorAuthorization: z.boolean(),
+  requiredLocation:           z.boolean(),
+  requiredUser:               z.boolean(),
+  allowOverlapping:           z.boolean(),
+  allowSignature:             z.boolean(),
+  allowChangeUser:            z.boolean(),
+  allowCreateByUser:          z.boolean(),
+  allowEditByUser:            z.boolean(),
+  allowNewLocation:           z.boolean(),
+  allowedCredentials:         z.boolean(),
+  billable:                   z.boolean(),
+  invoiceable:                z.boolean(),
+  showEventInfo:              z.boolean(),
+  showPreview:                z.boolean(),
+  active:                     z.boolean(),
+
+  // ── Appearance ───────────────────────────────────────────────────────────────
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").or(z.literal("")),
 })
 
 export type SupervisionConfigFormValues = z.infer<typeof supervisionConfigSchema>
 
 export const getSupervisionConfigDefaults = (): SupervisionConfigFormValues => ({
-  supervisionName: "",
-  supervisionDescription: "",
-  credentials: [],
-  billingCodes: [],
-  requiredBillingCode: "no",
-  requiredPriorAuthorization: "no",
-  billable: "no",
-  showEventInfo: "no",
-  allowOverlapping: "no",
+  // Scheduling
   startTime: "",
-  endTime: "",
-  maxDurationPerClient: "10",
-  maxDurationPerProvider: "10",
-  maxDurationPerWeekClient: "40",
-  maxDurationPerWeekProvider: "60",
-  showPreviewInCalendar: "no",
+  endTime:   "",
+
+  // Numeric limits
+  maxNumberLocations:               "1",
+  minDuration:                      "0",
+  maxDurationEvent:                 "0",
+  maxDurationPerDayClient:          "0",
+  maxDurationPerDayProvider:        "0",
+  maxDurationPerWeekClient:         "0",
+  maxDurationPerWeekProvider:       "0",
+  maxDurationConsecutiveDaysClient:   "0",
+  maxDurationConsecutiveDaysProvider: "0",
+
+  // Billing
+  billingCodes: [],
+
+  // Switches
+  requiredBillingCode:        false,
+  requiredSignature:          false,
+  requiredPriorAuthorization: false,
+  requiredLocation:           false,
+  requiredUser:               false,
+  allowOverlapping:           false,
+  allowSignature:             false,
+  allowChangeUser:            false,
+  allowCreateByUser:          false,
+  allowEditByUser:            false,
+  allowNewLocation:           false,
+  allowedCredentials:         false,
+  billable:                   false,
+  invoiceable:                false,
+  showEventInfo:              false,
+  showPreview:                false,
+  active:                     true,
+
+  // Appearance
   color: "",
 })

@@ -1,41 +1,73 @@
+/** Respuesta del GET /supervision-config */
 export interface SupervisionConfig {
   id: string
   supervisionName: string
   supervisionDescription: string
-  requiredBillingCode: boolean
-  requiredPriorAuthorization: boolean
+  allowChangeUser: boolean
+  allowCreateByUser: boolean
+  allowEditByUser: boolean
+  allowNewLocation: boolean
+  allowSignature: boolean
+  allowedCredentials: boolean
   billable: boolean
-  showEventInfo: boolean
-  allowOverlapping: boolean
+  color: string
+  maxNumberLocations: number
+  requiredBillingCode: boolean
+  requiredSignature: boolean
+  requiredPriorAuthorization: boolean
+  requiredLocation: boolean
+  requiredUser: boolean
+  invoiceable: boolean
   startTime: string
   endTime: string
-  maxDurationPerClient: number
-  maxDurationPerProvider: number
+  allowOverlapping: boolean
+  maxDurationConsecutiveDaysClient: number
+  maxDurationConsecutiveDaysProvider: number
+  maxDurationEvent: number
+  maxDurationPerDayProvider: number
+  maxDurationPerDayClient: number
   maxDurationPerWeekClient: number
   maxDurationPerWeekProvider: number
-  showPreviewInCalendar: boolean
-  color: string
+  minDuration: number
+  showEventInfo: boolean
+  showPreview: boolean
   billingCodes: string[]
-  credentials: string[]
+  active: boolean
 }
 
+/** PUT /supervision-config — id opcional: sin id = create, con id = update */
 export interface UpsertSupervisionConfigDto {
   id?: string
   supervisionName: string
   supervisionDescription: string
-  requiredBillingCode: boolean
-  requiredPriorAuthorization: boolean
+  allowChangeUser: boolean
+  allowCreateByUser: boolean
+  allowEditByUser: boolean
+  allowNewLocation: boolean
+  allowSignature: boolean
+  allowedCredentials: boolean
   billable: boolean
-  showEventInfo: boolean
-  allowOverlapping: boolean
+  color: string
+  maxNumberLocations: number
+  requiredBillingCode: boolean
+  requiredSignature: boolean
+  requiredPriorAuthorization: boolean
+  requiredLocation: boolean
+  requiredUser: boolean
+  invoiceable: boolean
   startTime: string
   endTime: string
-  maxDurationPerClient: number
-  maxDurationPerProvider: number
+  allowOverlapping: boolean
+  maxDurationConsecutiveDaysClient: number
+  maxDurationConsecutiveDaysProvider: number
+  maxDurationEvent: number
+  maxDurationPerDayProvider: number
+  maxDurationPerDayClient: number
   maxDurationPerWeekClient: number
   maxDurationPerWeekProvider: number
-  showPreviewInCalendar: boolean
-  color: string
+  minDuration: number
+  showEventInfo: boolean
+  showPreview: boolean
   billingCodes: string[]
-  credentials: string[]
+  active: boolean
 }
