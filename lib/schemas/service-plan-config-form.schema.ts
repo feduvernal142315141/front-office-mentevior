@@ -1,20 +1,27 @@
 import { z } from "zod"
 
+const requiredPositiveNumber = (field: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${field} is required`)
+    .refine((value) => Number(value) > 0, `${field} must be greater than 0`)
+
 export const servicePlanConfigSchema = z.object({
   // ── Scheduling ───────────────────────────────────────────────────────────────
   startTime: z.string().min(1, "Start time is required"),
   endTime:   z.string().min(1, "End time is required"),
 
   // ── Numeric limits ───────────────────────────────────────────────────────────
-  maxNumberLocations:               z.string().min(1, "Required"),
-  minDuration:                      z.string().min(1, "Required"),
-  maxDurationEvent:                 z.string().min(1, "Required"),
-  maxDurationPerDayClient:          z.string().min(1, "Required"),
-  maxDurationPerDayProvider:        z.string().min(1, "Required"),
-  maxDurationPerWeekClient:         z.string().min(1, "Required"),
-  maxDurationPerWeekProvider:       z.string().min(1, "Required"),
-  maxDurationConsecutiveDaysClient:   z.string().min(1, "Required"),
-  maxDurationConsecutiveDaysProvider: z.string().min(1, "Required"),
+  maxNumberLocations:                 requiredPositiveNumber("Max locations"),
+  minDuration:                        requiredPositiveNumber("Min duration event (h)"),
+  maxDurationEvent:                   requiredPositiveNumber("Max duration event (h)"),
+  maxDurationPerDayClient:            requiredPositiveNumber("Max duration / day client (h)"),
+  maxDurationPerDayProvider:          requiredPositiveNumber("Max duration / day provider (h)"),
+  maxDurationPerWeekClient:           requiredPositiveNumber("Max duration / week client (h)"),
+  maxDurationPerWeekProvider:         requiredPositiveNumber("Max duration / week provider (h)"),
+  maxDurationConsecutiveDaysClient:   requiredPositiveNumber("Max consecutive days client"),
+  maxDurationConsecutiveDaysProvider: requiredPositiveNumber("Max consecutive days provider"),
 
   // ── Billing ──────────────────────────────────────────────────────────────────
   billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),

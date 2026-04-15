@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useEffect, useState } from "react"
-import { CalendarClock, ChevronDown, Settings } from "lucide-react"
+import { useEffect } from "react"
+import { CalendarClock, Settings } from "lucide-react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 import { Card } from "@/components/custom/Card"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
@@ -78,7 +78,6 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
   const { upsert, isLoading: isSaving } = useUpsertServicePlanConfig()
   const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
   const billingCodesVisibleTags = useBillingCodesVisibleTagsWide()
-  const [configExpanded, setConfigExpanded] = useState(true)
 
   const billingCodeOptions = billingCodes.map((bc) => ({ value: bc.id, label: bc.code }))
 
@@ -135,6 +134,17 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
   }, [config, form])
 
   const w = watch()
+  const renderFieldError = (message?: string) =>
+    message ? <p className="mt-1 text-xs text-red-600">{message}</p> : null
+  const sanitizeDecimalInput = (value: string) => {
+    const cleaned = value.replace(/[^\d.]/g, "")
+    const [integerPart, ...decimalParts] = cleaned.split(".")
+    const normalized = decimalParts.length > 0
+      ? `${integerPart}.${decimalParts.join("")}`
+      : integerPart
+
+    return normalized.startsWith(".") ? `0${normalized}` : normalized
+  }
 
   const onSubmit = handleSubmit(async (data) => {
     const result = await upsert({
@@ -200,11 +210,7 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
       {/* ── Configuration ──────────────────────────────────────────────────── */}
       <Card variant="elevated" padding="lg">
         <div>
-          <button
-            type="button"
-            onClick={() => setConfigExpanded(!configExpanded)}
-            className="w-full flex items-center justify-between mb-4"
-          >
+          <div className="w-full flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 rounded-lg">
                 <Settings className="w-5 h-5 text-blue-700" />
@@ -214,11 +220,9 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
                 <p className="text-sm text-gray-500">Rules and constraints for service plan events</p>
               </div>
             </div>
-            <ChevronDown className={cn("w-5 h-5 text-slate-400 transition-transform", configExpanded && "rotate-180")} />
-          </button>
+          </div>
 
-          {configExpanded && (
-            <div className="space-y-6">
+          <div className="space-y-6">
 
               {/* Row 1: Time window */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -242,15 +246,19 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
 
               {/* Row 2: Locations + Billing codes */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <FloatingInput
-                  label="Max locations"
-                  value={w.maxNumberLocations}
-                  onChange={(v) => setValue("maxNumberLocations", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxNumberLocations")}
-                  hasError={!!errors.maxNumberLocations}
-                  inputMode="numeric"
-                  required
-                />
+                <div className="w-full">
+                  <FloatingInput
+                    label="Max locations"
+                    value={w.maxNumberLocations}
+                    onChange={(v) => setValue("maxNumberLocations", v.replace(/\D/g, ""))}
+                    onBlur={() => form.trigger("maxNumberLocations")}
+                    hasError={!!errors.maxNumberLocations}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.maxNumberLocations?.message)}
+                </div>
                 <div className="md:col-span-3">
                   <MultiSelect
                     label="Billing codes"
@@ -258,35 +266,47 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
                     onChange={(v) => setValue("billingCodes", v)}
                     onBlur={() => form.trigger("billingCodes")}
                     options={billingCodeOptions}
+                    hasError={!!errors.billingCodes}
                     searchable
                     disabled={isLoadingBillingCodes}
                     tone="neutral"
                     maxVisibleTags={billingCodesVisibleTags}
                     required
                   />
+                  {errors.billingCodes?.message && (
+                    <p className="mt-1 text-xs text-red-600">{errors.billingCodes.message}</p>
+                  )}
                 </div>
               </div>
 
               {/* Row 3: Duration — event level + Color */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-                <FloatingInput
-                  label="Min duration (h)"
-                  value={w.minDuration}
-                  onChange={(v) => setValue("minDuration", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("minDuration")}
-                  hasError={!!errors.minDuration}
-                  inputMode="numeric"
-                  required
-                />
-                <FloatingInput
-                  label="Max duration event (h)"
-                  value={w.maxDurationEvent}
-                  onChange={(v) => setValue("maxDurationEvent", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationEvent")}
-                  hasError={!!errors.maxDurationEvent}
-                  inputMode="numeric"
-                  required
-                />
+                <div className="w-full">
+                  <FloatingInput
+                    label="Min duration event (h)"
+                    value={w.minDuration}
+                    onChange={(v) => setValue("minDuration", sanitizeDecimalInput(v))}
+                    onBlur={() => form.trigger("minDuration")}
+                    hasError={!!errors.minDuration}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.minDuration?.message)}
+                </div>
+                <div className="w-full">
+                  <FloatingInput
+                    label="Max duration event (h)"
+                    value={w.maxDurationEvent}
+                    onChange={(v) => setValue("maxDurationEvent", sanitizeDecimalInput(v))}
+                    onBlur={() => form.trigger("maxDurationEvent")}
+                    hasError={!!errors.maxDurationEvent}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.maxDurationEvent?.message)}
+                </div>
                 <div className="self-start">
                   <FloatingColorPicker
                     label="Color"
@@ -300,64 +320,88 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
 
               {/* Row 4: Duration — per day */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <FloatingInput
-                  label="Max duration / day client (h)"
-                  value={w.maxDurationPerDayClient}
-                  onChange={(v) => setValue("maxDurationPerDayClient", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationPerDayClient")}
-                  hasError={!!errors.maxDurationPerDayClient}
-                  inputMode="numeric"
-                  required
-                />
-                <FloatingInput
-                  label="Max duration / day provider (h)"
-                  value={w.maxDurationPerDayProvider}
-                  onChange={(v) => setValue("maxDurationPerDayProvider", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationPerDayProvider")}
-                  hasError={!!errors.maxDurationPerDayProvider}
-                  inputMode="numeric"
-                  required
-                />
-                <FloatingInput
-                  label="Max duration / week client (h)"
-                  value={w.maxDurationPerWeekClient}
-                  onChange={(v) => setValue("maxDurationPerWeekClient", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationPerWeekClient")}
-                  hasError={!!errors.maxDurationPerWeekClient}
-                  inputMode="numeric"
-                  required
-                />
-                <FloatingInput
-                  label="Max duration / week provider (h)"
-                  value={w.maxDurationPerWeekProvider}
-                  onChange={(v) => setValue("maxDurationPerWeekProvider", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationPerWeekProvider")}
-                  hasError={!!errors.maxDurationPerWeekProvider}
-                  inputMode="numeric"
-                  required
-                />
+                <div className="w-full">
+                  <FloatingInput
+                    label="Max duration / day client (h)"
+                    value={w.maxDurationPerDayClient}
+                    onChange={(v) => setValue("maxDurationPerDayClient", sanitizeDecimalInput(v))}
+                    onBlur={() => form.trigger("maxDurationPerDayClient")}
+                    hasError={!!errors.maxDurationPerDayClient}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.maxDurationPerDayClient?.message)}
+                </div>
+                <div className="w-full">
+                  <FloatingInput
+                    label="Max duration / day provider (h)"
+                    value={w.maxDurationPerDayProvider}
+                    onChange={(v) => setValue("maxDurationPerDayProvider", sanitizeDecimalInput(v))}
+                    onBlur={() => form.trigger("maxDurationPerDayProvider")}
+                    hasError={!!errors.maxDurationPerDayProvider}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.maxDurationPerDayProvider?.message)}
+                </div>
+                <div className="w-full">
+                  <FloatingInput
+                    label="Max duration / week client (h)"
+                    value={w.maxDurationPerWeekClient}
+                    onChange={(v) => setValue("maxDurationPerWeekClient", sanitizeDecimalInput(v))}
+                    onBlur={() => form.trigger("maxDurationPerWeekClient")}
+                    hasError={!!errors.maxDurationPerWeekClient}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.maxDurationPerWeekClient?.message)}
+                </div>
+                <div className="w-full">
+                  <FloatingInput
+                    label="Max duration / week provider (h)"
+                    value={w.maxDurationPerWeekProvider}
+                    onChange={(v) => setValue("maxDurationPerWeekProvider", sanitizeDecimalInput(v))}
+                    onBlur={() => form.trigger("maxDurationPerWeekProvider")}
+                    hasError={!!errors.maxDurationPerWeekProvider}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.maxDurationPerWeekProvider?.message)}
+                </div>
               </div>
 
               {/* Row 5: Consecutive days + Rounding */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <FloatingInput
-                  label="Max consecutive days client"
-                  value={w.maxDurationConsecutiveDaysClient}
-                  onChange={(v) => setValue("maxDurationConsecutiveDaysClient", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationConsecutiveDaysClient")}
-                  hasError={!!errors.maxDurationConsecutiveDaysClient}
-                  inputMode="numeric"
-                  required
-                />
-                <FloatingInput
-                  label="Max consecutive days provider"
-                  value={w.maxDurationConsecutiveDaysProvider}
-                  onChange={(v) => setValue("maxDurationConsecutiveDaysProvider", v.replace(/\D/g, ""))}
-                  onBlur={() => form.trigger("maxDurationConsecutiveDaysProvider")}
-                  hasError={!!errors.maxDurationConsecutiveDaysProvider}
-                  inputMode="numeric"
-                  required
-                />
+                <div className="w-full">
+                  <FloatingInput
+                    label="Max consecutive days client"
+                    value={w.maxDurationConsecutiveDaysClient}
+                    onChange={(v) => setValue("maxDurationConsecutiveDaysClient", v.replace(/\D/g, ""))}
+                    onBlur={() => form.trigger("maxDurationConsecutiveDaysClient")}
+                    hasError={!!errors.maxDurationConsecutiveDaysClient}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.maxDurationConsecutiveDaysClient?.message)}
+                </div>
+                <div className="w-full">
+                  <FloatingInput
+                    label="Max consecutive days provider"
+                    value={w.maxDurationConsecutiveDaysProvider}
+                    onChange={(v) => setValue("maxDurationConsecutiveDaysProvider", v.replace(/\D/g, ""))}
+                    onBlur={() => form.trigger("maxDurationConsecutiveDaysProvider")}
+                    hasError={!!errors.maxDurationConsecutiveDaysProvider}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    required
+                  />
+                  {renderFieldError(errors.maxDurationConsecutiveDaysProvider?.message)}
+                </div>
                 <FloatingSelect
                   label="Rounding function"
                   value={w.roundingFunction}
@@ -409,8 +453,7 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
                 </div>
               </div>
 
-            </div>
-          )}
+          </div>
         </div>
       </Card>
 
