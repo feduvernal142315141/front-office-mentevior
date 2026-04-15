@@ -190,6 +190,9 @@ export function MultiSelect({
       onChange([])
     } else {
       onChange(options.map(opt => opt.value))
+      setIsOpen(false)
+      setSearchQuery("")
+      onBlur?.()
     }
   }
 

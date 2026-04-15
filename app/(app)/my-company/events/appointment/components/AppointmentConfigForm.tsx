@@ -27,19 +27,24 @@ import { cn } from "@/lib/utils"
 
 const EVENTS_PATH = "/my-company/events"
 
+const ROUNDING_OPTIONS = [
+  { value: "Round", label: "Round" },
+  { value: "Floor", label: "Floor" },
+  { value: "Ceil",  label: "Ceil" },
+]
+
 const SUBEVENT_OPTIONS = [
+  { value: "", label: "None" },
   { value: "supervision", label: "Supervisión" },
 ]
 
 type SwitchField = keyof Pick<
   AppointmentConfigFormValues,
-  | "requiredBillingCode"
   | "requiredSignature"
   | "requiredPriorAuthorization"
   | "requiredDataCollection"
   | "requiredLocation"
   | "requiredUser"
-  | "allowOverlapping"
   | "allowSignature"
   | "allowChangeUser"
   | "allowCreateByUser"
@@ -54,28 +59,22 @@ type SwitchField = keyof Pick<
 >
 
 const SWITCH_ITEMS: { label: string; description?: string; field: SwitchField }[] = [
-  // ── Required ─────────────────────────────────────────────────────────────
-  { label: "Require billing code",         field: "requiredBillingCode" },
-  { label: "Require signature",            field: "requiredSignature" },
-  { label: "Require prior authorization",  field: "requiredPriorAuthorization" },
-  { label: "Require data collection",      field: "requiredDataCollection" },
-  { label: "Require location",             field: "requiredLocation" },
-  { label: "Require user",                 field: "requiredUser" },
-  // ── Allow ─────────────────────────────────────────────────────────────────
-  { label: "Allow overlapping",            field: "allowOverlapping"},
-  { label: "Allow signature",              field: "allowSignature" },
+  { label: "Active",                       field: "active" },
   { label: "Allow change user",            field: "allowChangeUser" },
   { label: "Allow create by user",         field: "allowCreateByUser" },
+  { label: "Allow credentials",            field: "allowedCredentials" },
   { label: "Allow edit by user",           field: "allowEditByUser" },
   { label: "Allow new location",           field: "allowNewLocation" },
-  { label: "Allow credentials",            field: "allowedCredentials" },
-  // ── Billing ───────────────────────────────────────────────────────────────
+  { label: "Allow signature",              field: "allowSignature" },
   { label: "Billable",                     field: "billable" },
   { label: "Invoiceable",                  field: "invoiceable" },
-  // ── Display ───────────────────────────────────────────────────────────────
+  { label: "Require data collection",      field: "requiredDataCollection" },
+  { label: "Require location",             field: "requiredLocation" },
+  { label: "Require prior authorization",  field: "requiredPriorAuthorization" },
+  { label: "Require signature",            field: "requiredSignature" },
+  { label: "Require user",                 field: "requiredUser" },
   { label: "Show event info",              field: "showEventInfo" },
   { label: "Show preview in calendar",     field: "showPreview" },
-  { label: "Active",                       field: "active" },
 ]
 
 interface AppointmentConfigFormProps {
@@ -127,13 +126,11 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       billingCodes: config.billingCodes,
 
       // Switches
-      requiredBillingCode:        config.requiredBillingCode,
       requiredSignature:          config.requiredSignature,
       requiredPriorAuthorization: config.requiredPriorAuthorization,
       requiredDataCollection:     config.requiredDataCollection,
       requiredLocation:           config.requiredLocation,
       requiredUser:               config.requiredUser,
-      allowOverlapping:           config.allowOverlapping,
       allowSignature:             config.allowSignature,
       allowChangeUser:            config.allowChangeUser,
       allowCreateByUser:          config.allowCreateByUser,
@@ -148,6 +145,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
 
       // Appearance
       color: config.color ?? "",
+      roundingFunction: config.roundingFunction ?? "Round",
     })
   }, [config, form])
 
@@ -183,14 +181,14 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       // Billing
       billingCodes: data.billingCodes,
 
-      // Switches
-      requiredBillingCode:        data.requiredBillingCode,
+      // Switches — requiredBillingCode y allowOverlapping sin UI, se envían false
+      requiredBillingCode:        false,
       requiredSignature:          data.requiredSignature,
       requiredPriorAuthorization: data.requiredPriorAuthorization,
       requiredDataCollection:     data.requiredDataCollection,
       requiredLocation:           data.requiredLocation,
       requiredUser:               data.requiredUser,
-      allowOverlapping:           data.allowOverlapping,
+      allowOverlapping:           false,
       allowSignature:             data.allowSignature,
       allowChangeUser:            data.allowChangeUser,
       allowCreateByUser:          data.allowCreateByUser,
@@ -205,6 +203,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
 
       // Appearance
       color: data.color ?? "",
+      roundingFunction: data.roundingFunction,
     })
 
     if (result) router.push(EVENTS_PATH)
@@ -298,8 +297,6 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   onChange={(v) => setValue("allowedSubEvents", v)}
                   onBlur={() => form.trigger("allowedSubEvents")}
                   options={SUBEVENT_OPTIONS}
-                  hasError={!!errors.allowedSubEvents}
-                  required
                 />
                 <div className="md:col-span-2">
                   <MultiSelect
@@ -388,7 +385,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 />
               </div>
 
-              {/* Row 5: Consecutive days */}
+              {/* Row 5: Consecutive days + Rounding */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <FloatingInput
                   label="Max consecutive days client"
@@ -408,6 +405,15 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   inputMode="numeric"
                   required
                 />
+                <FloatingSelect
+                  label="Rounding function"
+                  value={w.roundingFunction}
+                  onChange={(v) => setValue("roundingFunction", v as "Round" | "Floor" | "Ceil")}
+                  onBlur={() => form.trigger("roundingFunction")}
+                  options={ROUNDING_OPTIONS}
+                  hasError={!!errors.roundingFunction}
+                  required
+                />
               </div>
 
               {/* Row 6: Rules & Restrictions ─────────────────────────────── */}
@@ -416,32 +422,36 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   <CalendarClock className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium text-gray-700">Rules & Restrictions</span>
                 </div>
-                {/* 2 columnas al 50% */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-24">
-                  {SWITCH_ITEMS.map((item) => (
-                    <label
-                      key={item.field}
-                      className="flex items-start justify-between gap-4 px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50/60 transition-colors cursor-pointer"
-                    >
-                      <div className="flex-1">
-                        <span className="text-sm font-medium text-slate-900">{item.label}</span>
-                        {item.description && (
-                          <p className="text-xs text-gray-500 mt-1">{item.description}</p>
-                        )}
-                      </div>
-                      <SwitchPrimitives.Root
-                        checked={w[item.field]}
-                        onCheckedChange={(v: boolean) => setValue(item.field, v)}
-                        className={cn(
-                          "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors shadow-sm",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                          "disabled:cursor-not-allowed disabled:opacity-50",
-                          w[item.field] ? "bg-[#037ECC] hover:bg-[#026fb8]" : "bg-gray-200 hover:bg-gray-300"
-                        )}
-                      >
-                        <SwitchPrimitives.Thumb className="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
-                      </SwitchPrimitives.Root>
-                    </label>
+                {/* 2 columnas al 50% — orden alfabético continuo izq→der */}
+                <div className="flex flex-col md:flex-row gap-x-24">
+                  {[SWITCH_ITEMS.slice(0, Math.ceil(SWITCH_ITEMS.length / 2)), SWITCH_ITEMS.slice(Math.ceil(SWITCH_ITEMS.length / 2))].map((col, colIdx) => (
+                    <div key={colIdx} className="flex-1">
+                      {col.map((item) => (
+                        <label
+                          key={item.field}
+                          className="flex items-start justify-between gap-4 px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50/60 transition-colors cursor-pointer"
+                        >
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-slate-900">{item.label}</span>
+                            {item.description && (
+                              <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+                            )}
+                          </div>
+                          <SwitchPrimitives.Root
+                            checked={w[item.field]}
+                            onCheckedChange={(v: boolean) => setValue(item.field, v)}
+                            className={cn(
+                              "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors shadow-sm",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                              "disabled:cursor-not-allowed disabled:opacity-50",
+                              w[item.field] ? "bg-[#037ECC] hover:bg-[#026fb8]" : "bg-gray-200 hover:bg-gray-300"
+                            )}
+                          >
+                            <SwitchPrimitives.Thumb className="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+                          </SwitchPrimitives.Root>
+                        </label>
+                      ))}
+                    </div>
                   ))}
                 </div>
               </div>

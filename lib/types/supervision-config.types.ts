@@ -33,6 +33,7 @@ export interface SupervisionConfig {
   showPreview: boolean
   billingCodes: string[]
   active: boolean
+  roundingFunction: "Round" | "Floor" | "Ceil"
 }
 
 /** PUT /supervision-config — id opcional: sin id = create, con id = update */
@@ -70,4 +71,5 @@ export interface UpsertSupervisionConfigDto {
   showPreview: boolean
   billingCodes: string[]
   active: boolean
+  roundingFunction: "Round" | "Floor" | "Ceil"
 }

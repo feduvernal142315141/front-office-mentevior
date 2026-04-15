@@ -20,12 +20,10 @@ export const servicePlanConfigSchema = z.object({
   billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),
 
   // ── Booleans (switches) ──────────────────────────────────────────────────────
-  requiredBillingCode:        z.boolean(),
   requiredSignature:          z.boolean(),
   requiredPriorAuthorization: z.boolean(),
   requiredLocation:           z.boolean(),
   requiredUser:               z.boolean(),
-  allowOverlapping:           z.boolean(),
   allowSignature:             z.boolean(),
   allowChangeUser:            z.boolean(),
   allowCreateByUser:          z.boolean(),
@@ -37,6 +35,9 @@ export const servicePlanConfigSchema = z.object({
   showEventInfo:              z.boolean(),
   showPreview:                z.boolean(),
   active:                     z.boolean(),
+
+  // ── Rounding ─────────────────────────────────────────────────────────────────
+  roundingFunction: z.enum(["Round", "Floor", "Ceil"]),
 
   // ── Appearance ───────────────────────────────────────────────────────────────
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").or(z.literal("")),
@@ -64,12 +65,10 @@ export const getServicePlanConfigDefaults = (): ServicePlanConfigFormValues => (
   billingCodes: [],
 
   // Switches
-  requiredBillingCode:        false,
   requiredSignature:          false,
   requiredPriorAuthorization: false,
   requiredLocation:           false,
   requiredUser:               false,
-  allowOverlapping:           false,
   allowSignature:             false,
   allowChangeUser:            false,
   allowCreateByUser:          false,
@@ -81,6 +80,9 @@ export const getServicePlanConfigDefaults = (): ServicePlanConfigFormValues => (
   showEventInfo:              false,
   showPreview:                false,
   active:                     true,
+
+  // Rounding
+  roundingFunction: "Round",
 
   // Appearance
   color: "",

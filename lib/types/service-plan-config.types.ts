@@ -33,6 +33,7 @@ export interface ServicePlanConfig {
   showPreview: boolean
   billingCodes: string[]
   active: boolean
+  roundingFunction: "Round" | "Floor" | "Ceil"
 }
 
 /** PUT /service-plan-config — id opcional: sin id = create, con id = update */
@@ -70,4 +71,5 @@ export interface UpsertServicePlanConfigDto {
   showPreview: boolean
   billingCodes: string[]
   active: boolean
+  roundingFunction: "Round" | "Floor" | "Ceil"
 }

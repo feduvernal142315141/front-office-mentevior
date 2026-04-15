@@ -37,6 +37,7 @@ export interface AppointmentConfig {
   showEventInfo: boolean
   showPreview: boolean
   active: boolean
+  roundingFunction: "Round" | "Floor" | "Ceil"
   billingCodes: string[]
 }
 
@@ -79,5 +80,6 @@ export interface UpsertAppointmentConfigDto {
   showEventInfo: boolean
   showPreview: boolean
   active: boolean
+  roundingFunction: "Round" | "Floor" | "Ceil"
   billingCodes: string[]
 }
