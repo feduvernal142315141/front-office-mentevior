@@ -32,7 +32,7 @@ const EVENTS_PATH = "/my-company/events"
 
 const SUBEVENT_OPTIONS = [
   { value: "", label: "None" },
-  { value: "supervision", label: "Supervisión" },
+  { value: "supervision", label: "Supervision" },
 ]
 
 type SwitchField = keyof Pick<
@@ -124,8 +124,8 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
     { key: "maxDurationPerDayProvider",       ref: refDayProvider },
     { key: "maxDurationPerWeekClient",        ref: refWeekClient },
     { key: "maxDurationPerWeekProvider",      ref: refWeekProvider },
-    { key: "maxDurationConsecutiveDaysClient",   ref: refConsecClient },
-    { key: "maxDurationConsecutiveDaysProvider", ref: refConsecProvider },
+    { key: "maxAllowedDaysClient",   ref: refConsecClient },
+    { key: "maxAllowedDaysProvider", ref: refConsecProvider },
   ])
 
   useEffect(() => {
@@ -147,8 +147,8 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       maxDurationPerDayProvider:        String(config.maxDurationPerDayProvider),
       maxDurationPerWeekClient:         String(config.maxDurationPerWeekClient),
       maxDurationPerWeekProvider:       String(config.maxDurationPerWeekProvider),
-      maxDurationConsecutiveDaysClient:   String(config.maxDurationConsecutiveDaysClient),
-      maxDurationConsecutiveDaysProvider: String(config.maxDurationConsecutiveDaysProvider),
+      maxAllowedDaysClient:   String(config.maxAllowedDaysClient),
+      maxAllowedDaysProvider: String(config.maxAllowedDaysProvider),
 
       // Billing
       billingCodes: config.billingCodes,
@@ -214,8 +214,8 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       maxDurationPerDayProvider:        Number(data.maxDurationPerDayProvider),
       maxDurationPerWeekClient:         Number(data.maxDurationPerWeekClient),
       maxDurationPerWeekProvider:       Number(data.maxDurationPerWeekProvider),
-      maxDurationConsecutiveDaysClient:   Number(data.maxDurationConsecutiveDaysClient),
-      maxDurationConsecutiveDaysProvider: Number(data.maxDurationConsecutiveDaysProvider),
+      maxAllowedDaysClient:   Number(data.maxAllowedDaysClient),
+      maxAllowedDaysProvider: Number(data.maxAllowedDaysProvider),
 
       // Billing
       billingCodes: data.billingCodes,
@@ -287,7 +287,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                     disabled={isLoadingTimings}
                     required
                   />
-                  <p className="mt-1 px-1 text-xs text-gray-500">Tiempo de anterioridad con el que se puede hacer un evento.</p>
+                  <p className="mt-1 px-1 text-xs text-gray-500">Minimum advance time required to schedule an event.</p>
                 </div>
                 <div>
                   <FloatingSelect
@@ -301,7 +301,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                     disabled={isLoadingTimings}
                     required
                   />
-                  <p className="mt-1 px-1 text-xs text-gray-500">Tiempo de retraso con el que se puede hacer un evento.</p>
+                  <p className="mt-1 px-1 text-xs text-gray-500">Maximum delay allowed after the scheduled time.</p>
                 </div>
                 <div>
                   <FloatingTimePicker
@@ -314,7 +314,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                     allowManualInput
                     required
                   />
-                  <p className="mt-1 px-1 text-xs text-gray-500">Ingreso manual y selector AM/PM.</p>
+                  <p className="mt-1 px-1 text-xs text-gray-500">Type hh:mm and pick AM/PM.</p>
                   {renderFieldError(errors.startTime?.message)}
                 </div>
                 <div>
@@ -328,7 +328,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                     allowManualInput
                     required
                   />
-                  <p className="mt-1 px-1 text-xs text-gray-500">Ingreso manual y selector AM/PM.</p>
+                  <p className="mt-1 px-1 text-xs text-gray-500">Type hh:mm and pick AM/PM.</p>
                   {renderFieldError(errors.endTime?.message)}
                 </div>
               </div>
@@ -483,30 +483,30 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 <div className="w-full">
                   <FloatingInput
                     ref={refConsecClient}
-                    label="Max consecutive days client"
-                    value={w.maxDurationConsecutiveDaysClient}
-                    onChange={(v) => setValue("maxDurationConsecutiveDaysClient", v.replace(/\D/g, ""))}
-                    onBlur={() => form.trigger("maxDurationConsecutiveDaysClient")}
-                    hasError={!!errors.maxDurationConsecutiveDaysClient}
+                    label="Max allowed days client"
+                    value={w.maxAllowedDaysClient}
+                    onChange={(v) => setValue("maxAllowedDaysClient", v.replace(/\D/g, ""))}
+                    onBlur={() => form.trigger("maxAllowedDaysClient")}
+                    hasError={!!errors.maxAllowedDaysClient}
                     inputMode="numeric"
                     autoComplete="off"
                     required
                   />
-                  {renderFieldError(errors.maxDurationConsecutiveDaysClient?.message)}
+                  {renderFieldError(errors.maxAllowedDaysClient?.message)}
                 </div>
                 <div className="w-full">
                   <FloatingInput
                     ref={refConsecProvider}
-                    label="Max consecutive days provider"
-                    value={w.maxDurationConsecutiveDaysProvider}
-                    onChange={(v) => setValue("maxDurationConsecutiveDaysProvider", v.replace(/\D/g, ""))}
-                    onBlur={() => form.trigger("maxDurationConsecutiveDaysProvider")}
-                    hasError={!!errors.maxDurationConsecutiveDaysProvider}
+                    label="Max allowed days provider"
+                    value={w.maxAllowedDaysProvider}
+                    onChange={(v) => setValue("maxAllowedDaysProvider", v.replace(/\D/g, ""))}
+                    onBlur={() => form.trigger("maxAllowedDaysProvider")}
+                    hasError={!!errors.maxAllowedDaysProvider}
                     inputMode="numeric"
                     autoComplete="off"
                     required
                   />
-                  {renderFieldError(errors.maxDurationConsecutiveDaysProvider?.message)}
+                  {renderFieldError(errors.maxAllowedDaysProvider?.message)}
                 </div>
               </div>
 

@@ -6,6 +6,49 @@ import { forwardRef, useEffect, useRef, useState, type ForwardedRef } from "reac
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { formatTimeTo12h, formatTimeTo24h } from "@/lib/utils/time-format"
 
+/**
+ * Formatea dígitos crudos en "hh:mm" a medida que el usuario escribe.
+ *  - Máx 4 dígitos (hh + mm).
+ *  - A partir del 3er dígito inserta ":" automáticamente.
+ */
+function formatDigitsWhileTyping(digits: string): string {
+  const d = digits.replace(/\D/g, "").slice(0, 4)
+  if (d.length <= 2) return d
+  return `${d.slice(0, 2)}:${d.slice(2)}`
+}
+
+/**
+ * Normaliza en blur: rellena con ceros a la izquierda, valida rango 12h.
+ *  - Hora: si es 0 → 12. Si es > 12 → 12.
+ *  - Minutos: si son > 59 → 59.
+ *  - Si no hay minutos, se rellena con "00".
+ */
+function normalizeOnBlur(raw: string): string {
+  const digits = raw.replace(/\D/g, "")
+  if (digits.length === 0) return ""
+
+  let hourStr = ""
+  let minStr = ""
+
+  if (digits.length <= 2) {
+    hourStr = digits
+    minStr = "00"
+  } else {
+    hourStr = digits.slice(0, 2)
+    minStr = digits.slice(2).padEnd(2, "0")
+  }
+
+  let hour = Number(hourStr)
+  let min = Number(minStr)
+
+  if (Number.isNaN(hour) || hour === 0) hour = 12
+  if (hour > 12) hour = 12
+  if (Number.isNaN(min) || min < 0) min = 0
+  if (min > 59) min = 59
+
+  return `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`
+}
+
 interface FloatingTimePickerProps {
   value: string
   onChange: (value: string) => void
@@ -113,42 +156,84 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
   if (allowManualInput) {
     return (
       <div className="w-full">
-        <div className="relative">
+        <div className="relative w-full">
+          {/* Invisible peer input drives the floating-label CSS */}
+          <input
+            aria-hidden
+            readOnly
+            tabIndex={-1}
+            value={manualValue}
+            placeholder=" "
+            className="sr-only peer"
+          />
+
+          {/* Visible container — mirrors premium-input look */}
           <div
             className={cn(
-              "w-full h-[52px] 2xl:h-[56px] px-4 rounded-[16px]",
+              "w-full h-[52px] 2xl:h-[56px] rounded-[16px]",
+              "flex items-center gap-0",
               "bg-gradient-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
               "border transition-all duration-200 ease-out",
               hasError
                 ? "border-2 border-red-500/70"
-                : "border-[hsl(240_20%_88%/0.6)]",
-              "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(15,23,42,0.04)]",
-              "focus-within:border-[hsl(var(--primary))]",
-              "focus-within:bg-gradient-to-b focus-within:from-white focus-within:to-[hsl(240_20%_99%)]",
-              "focus-within:shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_0_0_4px_hsl(var(--primary)/0.12),0_6px_14px_hsl(var(--primary)/0.18)]",
-              "focus-within:-translate-y-[1px]",
-              disabled && "opacity-50"
+                : isFocused
+                  ? "border-[hsl(var(--primary))] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_0_0_4px_hsl(var(--primary)/0.12),0_6px_14px_hsl(var(--primary)/0.18)] -translate-y-[1px] bg-gradient-to-b from-white to-[hsl(240_20%_99%)]"
+                  : "border-[hsl(240_20%_88%/0.6)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(15,23,42,0.04)] hover:border-[hsl(240_35%_75%/0.6)]",
+              disabled && "opacity-50 cursor-not-allowed"
             )}
           >
-            <div className="flex h-full items-center gap-2 pt-4">
-              <Clock className="w-4 h-4 text-[#037ECC] shrink-0" />
-              <input
-                ref={(node) => setForwardedRef(ref, node)}
-                type="text"
-                value={manualValue}
-                onChange={(event) => setManualValue(event.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => {
-                  setIsFocused(false)
-                  commitManualTime(manualValue, period)
-                  onBlur?.()
-                }}
-                placeholder="hh:mm"
-                disabled={disabled}
-                inputMode="numeric"
-                className="flex-1 bg-transparent text-[15px] 2xl:text-[16px] text-[var(--color-login-text-primary)] outline-none placeholder:text-gray-400"
-              />
-              <div className="flex items-center gap-1">
+            {/* Clock icon — left decoration */}
+            <div className="pl-4 pr-2 flex items-center pointer-events-none">
+              <Clock className={cn(
+                "w-4 h-4 transition-colors",
+                isFocused ? "text-[#037ECC]" : "text-slate-400"
+              )} />
+            </div>
+
+            {/* Time text input — digits-only with auto "hh:mm" formatting */}
+            <input
+              ref={(node) => setForwardedRef(ref, node)}
+              type="text"
+              value={manualValue}
+              onChange={(e) => {
+                const formatted = formatDigitsWhileTyping(e.target.value)
+                setManualValue(formatted)
+              }}
+              onKeyDown={(e) => {
+                // Permitir navegación, borrado, copiar/pegar, Tab/Enter
+                const allowed = [
+                  "Backspace", "Delete", "ArrowLeft", "ArrowRight",
+                  "Home", "End", "Tab", "Enter",
+                ]
+                if (allowed.includes(e.key)) return
+                if (e.metaKey || e.ctrlKey) return
+                // Bloquear todo lo que no sea dígito
+                if (!/^\d$/.test(e.key)) e.preventDefault()
+              }}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text")
+                e.preventDefault()
+                setManualValue(formatDigitsWhileTyping(text))
+              }}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => {
+                setIsFocused(false)
+                const normalized = normalizeOnBlur(manualValue)
+                setManualValue(normalized)
+                commitManualTime(normalized, period)
+                onBlur?.()
+              }}
+              placeholder={isFocused ? "hh:mm" : ""}
+              disabled={disabled}
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={5}
+              className="flex-1 min-w-0 bg-transparent text-[15px] 2xl:text-[16px] font-medium tabular-nums tracking-wide text-[var(--color-login-text-primary)] outline-none placeholder:text-slate-300 placeholder:font-normal"
+            />
+
+            {/* AM / PM toggle — pill style */}
+            <div className="flex items-center gap-0.5 pr-3">
+              <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
                 <button
                   type="button"
                   disabled={disabled}
@@ -157,10 +242,10 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
                     commitManualTime(manualValue, "AM")
                   }}
                   className={cn(
-                    "h-7 px-2 rounded-md text-xs font-semibold transition-colors",
+                    "h-7 w-9 rounded-md text-[11px] font-bold tracking-wide transition-all duration-150",
                     period === "AM"
-                      ? "bg-[#037ECC] text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      ? "bg-[#037ECC] text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
                   )}
                 >
                   AM
@@ -173,10 +258,10 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
                     commitManualTime(manualValue, "PM")
                   }}
                   className={cn(
-                    "h-7 px-2 rounded-md text-xs font-semibold transition-colors",
+                    "h-7 w-9 rounded-md text-[11px] font-bold tracking-wide transition-all duration-150",
                     period === "PM"
-                      ? "bg-[#037ECC] text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      ? "bg-[#037ECC] text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
                   )}
                 >
                   PM
@@ -185,11 +270,13 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
             </div>
           </div>
 
+          {/* Floating label — same technique as FloatingInput */}
           <label
             className={cn(
-              "absolute left-10 px-1 pointer-events-none transition-all duration-200 ease-out",
+              "absolute left-4 px-1 pointer-events-none transition-all duration-200 ease-out",
+              "bg-white/20 backdrop-blur-md",
               isFocused || hasValue
-                ? "top-0 -translate-y-1/2 text-xs bg-white"
+                ? "top-0 -translate-y-1/2 text-xs"
                 : "top-1/2 -translate-y-1/2 text-sm",
               isFocused
                 ? "text-[#2563EB]"

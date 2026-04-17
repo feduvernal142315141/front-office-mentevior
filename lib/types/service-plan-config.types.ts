@@ -21,8 +21,8 @@ export interface ServicePlanConfig {
   startTime: string
   endTime: string
   allowOverlapping: boolean
-  maxDurationConsecutiveDaysClient: number
-  maxDurationConsecutiveDaysProvider: number
+  maxAllowedDaysClient: number
+  maxAllowedDaysProvider: number
   maxDurationEvent: number
   maxDurationPerDayProvider: number
   maxDurationPerDayClient: number
@@ -59,8 +59,8 @@ export interface UpsertServicePlanConfigDto {
   startTime: string
   endTime: string
   allowOverlapping: boolean
-  maxDurationConsecutiveDaysClient: number
-  maxDurationConsecutiveDaysProvider: number
+  maxAllowedDaysClient: number
+  maxAllowedDaysProvider: number
   maxDurationEvent: number
   maxDurationPerDayProvider: number
   maxDurationPerDayClient: number

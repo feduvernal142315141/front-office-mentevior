@@ -25,8 +25,8 @@ export const appointmentConfigSchema = z.object({
   maxDurationPerDayProvider:          requiredPositiveNumber("Max duration / day provider (h)"),
   maxDurationPerWeekClient:           requiredPositiveNumber("Max duration / week client (h)"),
   maxDurationPerWeekProvider:         requiredPositiveNumber("Max duration / week provider (h)"),
-  maxDurationConsecutiveDaysClient:   requiredPositiveNumber("Max consecutive days client"),
-  maxDurationConsecutiveDaysProvider: requiredPositiveNumber("Max consecutive days provider"),
+  maxAllowedDaysClient:   requiredPositiveNumber("Max allowed days client"),
+  maxAllowedDaysProvider: requiredPositiveNumber("Max allowed days provider"),
 
   // ── Billing ──────────────────────────────────────────────────────────────────
   billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),
@@ -70,8 +70,8 @@ export const getAppointmentConfigDefaults = (): AppointmentConfigFormValues => (
   maxDurationPerDayProvider:        "0",
   maxDurationPerWeekClient:         "0",
   maxDurationPerWeekProvider:       "0",
-  maxDurationConsecutiveDaysClient:   "0",
-  maxDurationConsecutiveDaysProvider: "0",
+  maxAllowedDaysClient:   "0",
+  maxAllowedDaysProvider: "0",
 
   // Billing
   billingCodes: [],

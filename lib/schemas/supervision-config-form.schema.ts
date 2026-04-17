@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { formatTimeTo24h } from "@/lib/utils/time-format"
 
 const requiredPositiveNumber = (field: string) =>
   z
@@ -9,8 +10,8 @@ const requiredPositiveNumber = (field: string) =>
 
 export const supervisionConfigSchema = z.object({
   // ── Scheduling ───────────────────────────────────────────────────────────────
-  startTime: z.string().min(1, "Start time is required"),
-  endTime:   z.string().min(1, "End time is required"),
+  startTime: z.string().min(1, "Start time is required").refine((v) => formatTimeTo24h(v) !== null, "Start time must be valid (e.g. 09:30 AM)"),
+  endTime:   z.string().min(1, "End time is required").refine((v) => formatTimeTo24h(v) !== null, "End time must be valid (e.g. 05:00 PM)"),
 
   // ── Numeric limits ───────────────────────────────────────────────────────────
   maxNumberLocations:                 requiredPositiveNumber("Max locations"),
@@ -20,8 +21,8 @@ export const supervisionConfigSchema = z.object({
   maxDurationPerDayProvider:          requiredPositiveNumber("Max duration / day provider (h)"),
   maxDurationPerWeekClient:           requiredPositiveNumber("Max duration / week client (h)"),
   maxDurationPerWeekProvider:         requiredPositiveNumber("Max duration / week provider (h)"),
-  maxDurationConsecutiveDaysClient:   requiredPositiveNumber("Max consecutive days client"),
-  maxDurationConsecutiveDaysProvider: requiredPositiveNumber("Max consecutive days provider"),
+  maxAllowedDaysClient:   requiredPositiveNumber("Max allowed days client"),
+  maxAllowedDaysProvider: requiredPositiveNumber("Max allowed days provider"),
 
   // ── Billing ──────────────────────────────────────────────────────────────────
   billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),
@@ -65,8 +66,8 @@ export const getSupervisionConfigDefaults = (): SupervisionConfigFormValues => (
   maxDurationPerDayProvider:        "0",
   maxDurationPerWeekClient:         "0",
   maxDurationPerWeekProvider:       "0",
-  maxDurationConsecutiveDaysClient:   "0",
-  maxDurationConsecutiveDaysProvider: "0",
+  maxAllowedDaysClient:   "0",
+  maxAllowedDaysProvider: "0",
 
   // Billing
   billingCodes: [],
