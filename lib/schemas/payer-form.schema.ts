@@ -48,8 +48,8 @@ export const payerBaseFormSchema = z.object({
 export type PayerBaseFormValues = z.infer<typeof payerBaseFormSchema>
 
 export const payerPlanSchema = z.object({
-  planName: z.string().max(200).optional().or(z.literal("")),
-  insurancePlanTypeId: z.string().optional().or(z.literal("")),
+  planName: z.string().min(1, "Plan Name is required").max(200, "Plan Name must be less than 200 characters"),
+  insurancePlanTypeId: z.string().min(1, "Plan Type is required"),
   planComments: z.string().max(2000).optional().or(z.literal("")),
 })
 

@@ -2,8 +2,9 @@
 
 import { cn } from "@/lib/utils"
 import { Clock } from "lucide-react"
-import { forwardRef, useEffect, useRef, useState } from "react"
+import { forwardRef, useEffect, useRef, useState, type ForwardedRef } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { formatTimeTo12h, formatTimeTo24h } from "@/lib/utils/time-format"
 
 interface FloatingTimePickerProps {
   value: string
@@ -13,12 +14,24 @@ interface FloatingTimePickerProps {
   hasError?: boolean
   required?: boolean
   disabled?: boolean
+  allowManualInput?: boolean
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
 const MINUTES = ["00", "15", "30", "45"]
 
-export const FloatingTimePicker = forwardRef<HTMLButtonElement, FloatingTimePickerProps>(function FloatingTimePicker({
+function setForwardedRef<T>(ref: ForwardedRef<T>, value: T | null) {
+  if (typeof ref === "function") {
+    ref(value)
+    return
+  }
+
+  if (ref) {
+    ref.current = value
+  }
+}
+
+export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProps>(function FloatingTimePicker({
   value,
   onChange,
   onBlur,
@@ -26,14 +39,37 @@ export const FloatingTimePicker = forwardRef<HTMLButtonElement, FloatingTimePick
   hasError,
   required,
   disabled,
+  allowManualInput = false,
 }, ref) {
   const [isOpen, setIsOpen] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const hourRef = useRef<HTMLDivElement>(null)
   const minuteRef = useRef<HTMLDivElement>(null)
+  const [manualValue, setManualValue] = useState("")
+  const [period, setPeriod] = useState<"AM" | "PM">("AM")
 
   const [selectedHour, selectedMinute] = value ? value.split(":") : ["", ""]
-  const hasValue = Boolean(value)
+  const hasValue = allowManualInput ? manualValue.length > 0 : Boolean(value)
+
+  useEffect(() => {
+    if (!allowManualInput) return
+
+    if (!value) {
+      setManualValue("")
+      setPeriod("AM")
+      return
+    }
+
+    const formatted12h = formatTimeTo12h(value)
+    if (!formatted12h) {
+      setManualValue(value)
+      return
+    }
+
+    const [timePart, parsedPeriod] = formatted12h.split(" ")
+    setManualValue(timePart)
+    setPeriod(parsedPeriod === "PM" ? "PM" : "AM")
+  }, [allowManualInput, value])
 
   // Scroll to selected hour/minute when dropdown opens
   useEffect(() => {
@@ -54,7 +90,118 @@ export const FloatingTimePicker = forwardRef<HTMLButtonElement, FloatingTimePick
     onChange(`${hour}:${minute}`)
   }
 
+  const commitManualTime = (input: string, selectedPeriod: "AM" | "PM") => {
+    const trimmed = input.trim()
+
+    if (!trimmed) {
+      onChange("")
+      return
+    }
+
+    const withPeriod = /\b(am|pm)$/i.test(trimmed)
+      ? trimmed
+      : `${trimmed} ${selectedPeriod}`
+    const normalized = formatTimeTo24h(withPeriod)
+
+    if (normalized) {
+      onChange(normalized)
+    }
+  }
+
   const displayValue = hasValue ? `${selectedHour} : ${selectedMinute}` : ""
+
+  if (allowManualInput) {
+    return (
+      <div className="w-full">
+        <div className="relative">
+          <div
+            className={cn(
+              "w-full h-[52px] 2xl:h-[56px] px-4 rounded-[16px]",
+              "bg-gradient-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
+              "border transition-all duration-200 ease-out",
+              hasError
+                ? "border-2 border-red-500/70"
+                : "border-[hsl(240_20%_88%/0.6)]",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(15,23,42,0.04)]",
+              "focus-within:border-[hsl(var(--primary))]",
+              "focus-within:bg-gradient-to-b focus-within:from-white focus-within:to-[hsl(240_20%_99%)]",
+              "focus-within:shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_0_0_4px_hsl(var(--primary)/0.12),0_6px_14px_hsl(var(--primary)/0.18)]",
+              "focus-within:-translate-y-[1px]",
+              disabled && "opacity-50"
+            )}
+          >
+            <div className="flex h-full items-center gap-2 pt-4">
+              <Clock className="w-4 h-4 text-[#037ECC] shrink-0" />
+              <input
+                ref={(node) => setForwardedRef(ref, node)}
+                type="text"
+                value={manualValue}
+                onChange={(event) => setManualValue(event.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => {
+                  setIsFocused(false)
+                  commitManualTime(manualValue, period)
+                  onBlur?.()
+                }}
+                placeholder="hh:mm"
+                disabled={disabled}
+                inputMode="numeric"
+                className="flex-1 bg-transparent text-[15px] 2xl:text-[16px] text-[var(--color-login-text-primary)] outline-none placeholder:text-gray-400"
+              />
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    setPeriod("AM")
+                    commitManualTime(manualValue, "AM")
+                  }}
+                  className={cn(
+                    "h-7 px-2 rounded-md text-xs font-semibold transition-colors",
+                    period === "AM"
+                      ? "bg-[#037ECC] text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  )}
+                >
+                  AM
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    setPeriod("PM")
+                    commitManualTime(manualValue, "PM")
+                  }}
+                  className={cn(
+                    "h-7 px-2 rounded-md text-xs font-semibold transition-colors",
+                    period === "PM"
+                      ? "bg-[#037ECC] text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  )}
+                >
+                  PM
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <label
+            className={cn(
+              "absolute left-10 px-1 pointer-events-none transition-all duration-200 ease-out",
+              isFocused || hasValue
+                ? "top-0 -translate-y-1/2 text-xs bg-white"
+                : "top-1/2 -translate-y-1/2 text-sm",
+              isFocused
+                ? "text-[#2563EB]"
+                : "text-[var(--color-login-text-muted)]"
+            )}
+          >
+            {label} {required && <span className="text-[#037ECC]">*</span>}
+          </label>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full">
@@ -68,7 +215,7 @@ export const FloatingTimePicker = forwardRef<HTMLButtonElement, FloatingTimePick
         <PopoverTrigger asChild disabled={disabled}>
           <div className="relative">
             <button
-              ref={ref}
+              ref={(node) => setForwardedRef(ref, node)}
               type="button"
               disabled={disabled}
               onFocus={() => setIsFocused(true)}

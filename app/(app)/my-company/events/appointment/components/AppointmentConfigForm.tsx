@@ -26,14 +26,9 @@ import {
 import type { AppointmentConfig } from "@/lib/types/appointment-config.types"
 import { cn } from "@/lib/utils"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
+import { formatTimeTo24h } from "@/lib/utils/time-format"
 
 const EVENTS_PATH = "/my-company/events"
-
-const ROUNDING_OPTIONS = [
-  { value: "Round", label: "Round" },
-  { value: "Floor", label: "Floor" },
-  { value: "Ceil",  label: "Ceil" },
-]
 
 const SUBEVENT_OPTIONS = [
   { value: "", label: "None" },
@@ -53,10 +48,8 @@ type SwitchField = keyof Pick<
   | "allowEditByUser"
   | "allowNewLocation"
   | "allowedCredentials"
-  | "billable"
   | "invoiceable"
   | "showEventInfo"
-  | "showPreview"
   | "active"
 >
 
@@ -68,7 +61,6 @@ const SWITCH_ITEMS: { label: string; description?: string; field: SwitchField }[
   { label: "Allow edit by user",           field: "allowEditByUser" },
   { label: "Allow new location",           field: "allowNewLocation" },
   { label: "Allow signature",              field: "allowSignature" },
-  { label: "Billable",                     field: "billable" },
   { label: "Invoiceable",                  field: "invoiceable" },
   { label: "Require data collection",      field: "requiredDataCollection" },
   { label: "Require location",             field: "requiredLocation" },
@@ -76,7 +68,6 @@ const SWITCH_ITEMS: { label: string; description?: string; field: SwitchField }[
   { label: "Require signature",            field: "requiredSignature" },
   { label: "Require user",                 field: "requiredUser" },
   { label: "Show event info",              field: "showEventInfo" },
-  { label: "Show preview in calendar",     field: "showPreview" },
 ]
 
 interface AppointmentConfigFormProps {
@@ -107,8 +98,8 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
 
   const refLeadTime        = useRef<HTMLButtonElement>(null)
   const refLagTime         = useRef<HTMLButtonElement>(null)
-  const refStartTime       = useRef<HTMLButtonElement>(null)
-  const refEndTime         = useRef<HTMLButtonElement>(null)
+  const refStartTime       = useRef<HTMLInputElement>(null)
+  const refEndTime         = useRef<HTMLInputElement>(null)
   const refMaxLocations    = useRef<HTMLInputElement>(null)
   const refBillingCodes    = useRef<HTMLButtonElement>(null)
   const refMinDuration     = useRef<HTMLInputElement>(null)
@@ -174,15 +165,12 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       allowEditByUser:            config.allowEditByUser,
       allowNewLocation:           config.allowNewLocation,
       allowedCredentials:         config.allowedCredentials,
-      billable:                   config.billable,
       invoiceable:                config.invoiceable,
       showEventInfo:              config.showEventInfo,
-      showPreview:                config.showPreview,
       active:                     config.active,
 
       // Appearance
       color: config.color ?? "",
-      roundingFunction: config.roundingFunction ?? "Round",
     })
   }, [config, form])
 
@@ -200,6 +188,9 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
   }
 
   const onSubmit = handleSubmit(async (data) => {
+    const normalizedStartTime = formatTimeTo24h(data.startTime)
+    const normalizedEndTime = formatTimeTo24h(data.endTime)
+
     const result = await upsert({
       ...(config?.id ? { id: config.id } : {}),
 
@@ -210,8 +201,8 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       // Scheduling
       leadTimeId:      data.leadTimeId,
       lagTimeId:       data.lagTimeId,
-      startTime:       data.startTime,
-      endTime:         data.endTime,
+      startTime:       normalizedStartTime ?? data.startTime,
+      endTime:         normalizedEndTime ?? data.endTime,
       allowedDays:     data.allowedDays,
       allowedSubEvents: data.allowedSubEvents,
 
@@ -243,15 +234,15 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       allowEditByUser:            data.allowEditByUser,
       allowNewLocation:           data.allowNewLocation,
       allowedCredentials:         data.allowedCredentials,
-      billable:                   data.billable,
+      billable:                   config?.billable ?? false,
       invoiceable:                data.invoiceable,
       showEventInfo:              data.showEventInfo,
-      showPreview:                data.showPreview,
+      showPreview:                config?.showPreview ?? false,
       active:                     data.active,
 
       // Appearance
       color: data.color ?? "",
-      roundingFunction: data.roundingFunction,
+      roundingFunction: config?.roundingFunction ?? "Round",
     })
 
     if (result) router.push(EVENTS_PATH)
@@ -284,46 +275,62 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
 
               {/* Row 1: Scheduling — Lead/Lag + SubEvents */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <FloatingSelect
-                  ref={refLeadTime}
-                  label="Lead time"
-                  value={w.leadTimeId}
-                  onChange={(v) => setValue("leadTimeId", v)}
-                  onBlur={() => form.trigger("leadTimeId")}
-                  options={timingOptions}
-                  hasError={!!errors.leadTimeId}
-                  disabled={isLoadingTimings}
-                  required
-                />
-                <FloatingSelect
-                  ref={refLagTime}
-                  label="Lag time"
-                  value={w.lagTimeId}
-                  onChange={(v) => setValue("lagTimeId", v)}
-                  onBlur={() => form.trigger("lagTimeId")}
-                  options={timingOptions}
-                  hasError={!!errors.lagTimeId}
-                  disabled={isLoadingTimings}
-                  required
-                />
-                <FloatingTimePicker
-                  ref={refStartTime}
-                  label="Start time"
-                  value={w.startTime}
-                  onChange={(v) => setValue("startTime", v)}
-                  onBlur={() => form.trigger("startTime")}
-                  hasError={!!errors.startTime}
-                  required
-                />
-                <FloatingTimePicker
-                  ref={refEndTime}
-                  label="End time"
-                  value={w.endTime}
-                  onChange={(v) => setValue("endTime", v)}
-                  onBlur={() => form.trigger("endTime")}
-                  hasError={!!errors.endTime}
-                  required
-                />
+                <div>
+                  <FloatingSelect
+                    ref={refLeadTime}
+                    label="Lead time"
+                    value={w.leadTimeId}
+                    onChange={(v) => setValue("leadTimeId", v)}
+                    onBlur={() => form.trigger("leadTimeId")}
+                    options={timingOptions}
+                    hasError={!!errors.leadTimeId}
+                    disabled={isLoadingTimings}
+                    required
+                  />
+                  <p className="mt-1 px-1 text-xs text-gray-500">Tiempo de anterioridad con el que se puede hacer un evento.</p>
+                </div>
+                <div>
+                  <FloatingSelect
+                    ref={refLagTime}
+                    label="Lag time"
+                    value={w.lagTimeId}
+                    onChange={(v) => setValue("lagTimeId", v)}
+                    onBlur={() => form.trigger("lagTimeId")}
+                    options={timingOptions}
+                    hasError={!!errors.lagTimeId}
+                    disabled={isLoadingTimings}
+                    required
+                  />
+                  <p className="mt-1 px-1 text-xs text-gray-500">Tiempo de retraso con el que se puede hacer un evento.</p>
+                </div>
+                <div>
+                  <FloatingTimePicker
+                    ref={refStartTime}
+                    label="Start time"
+                    value={w.startTime}
+                    onChange={(v) => setValue("startTime", v)}
+                    onBlur={() => form.trigger("startTime")}
+                    hasError={!!errors.startTime}
+                    allowManualInput
+                    required
+                  />
+                  <p className="mt-1 px-1 text-xs text-gray-500">Ingreso manual y selector AM/PM.</p>
+                  {renderFieldError(errors.startTime?.message)}
+                </div>
+                <div>
+                  <FloatingTimePicker
+                    ref={refEndTime}
+                    label="End time"
+                    value={w.endTime}
+                    onChange={(v) => setValue("endTime", v)}
+                    onBlur={() => form.trigger("endTime")}
+                    hasError={!!errors.endTime}
+                    allowManualInput
+                    required
+                  />
+                  <p className="mt-1 px-1 text-xs text-gray-500">Ingreso manual y selector AM/PM.</p>
+                  {renderFieldError(errors.endTime?.message)}
+                </div>
               </div>
 
               {/* Row 2: Locations + SubEvents + Billing codes */}
@@ -471,8 +478,8 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 </div>
               </div>
 
-              {/* Row 5: Consecutive days + Rounding */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Row 5: Consecutive days */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="w-full">
                   <FloatingInput
                     ref={refConsecClient}
@@ -501,15 +508,6 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   />
                   {renderFieldError(errors.maxDurationConsecutiveDaysProvider?.message)}
                 </div>
-                <FloatingSelect
-                  label="Rounding function"
-                  value={w.roundingFunction}
-                  onChange={(v) => setValue("roundingFunction", v as "Round" | "Floor" | "Ceil")}
-                  onBlur={() => form.trigger("roundingFunction")}
-                  options={ROUNDING_OPTIONS}
-                  hasError={!!errors.roundingFunction}
-                  required
-                />
               </div>
 
               {/* Row 6: Rules & Restrictions ─────────────────────────────── */}

@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { formatTimeTo24h } from "@/lib/utils/time-format"
 
 const requiredPositiveNumber = (field: string) =>
   z
@@ -11,8 +12,8 @@ export const appointmentConfigSchema = z.object({
   // ── Scheduling ──────────────────────────────────────────────────────────────
   leadTimeId:       z.string().min(1, "Lead time is required"),
   lagTimeId:        z.string().min(1, "Lag time is required"),
-  startTime:        z.string().min(1, "Start time is required"),
-  endTime:          z.string().min(1, "End time is required"),
+  startTime:        z.string().min(1, "Start time is required").refine((value) => formatTimeTo24h(value) !== null, "Start time must be valid (e.g. 09:30 AM)"),
+  endTime:          z.string().min(1, "End time is required").refine((value) => formatTimeTo24h(value) !== null, "End time must be valid (e.g. 05:00 PM)"),
   allowedDays:      z.string(),
   allowedSubEvents: z.string(),
 
@@ -42,14 +43,9 @@ export const appointmentConfigSchema = z.object({
   allowEditByUser:            z.boolean(),
   allowNewLocation:           z.boolean(),
   allowedCredentials:         z.boolean(),
-  billable:                   z.boolean(),
   invoiceable:                z.boolean(),
   showEventInfo:              z.boolean(),
-  showPreview:                z.boolean(),
   active:                     z.boolean(),
-
-  // ── Rounding ─────────────────────────────────────────────────────────────────
-  roundingFunction: z.enum(["Round", "Floor", "Ceil"]),
 
   // ── Appearance ───────────────────────────────────────────────────────────────
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").or(z.literal("")),
@@ -92,14 +88,9 @@ export const getAppointmentConfigDefaults = (): AppointmentConfigFormValues => (
   allowEditByUser:            false,
   allowNewLocation:           false,
   allowedCredentials:         false,
-  billable:                   false,
   invoiceable:                false,
   showEventInfo:              false,
-  showPreview:                false,
   active:                     true,
-
-  // Rounding
-  roundingFunction: "Round",
 
   // Appearance
   color: "",

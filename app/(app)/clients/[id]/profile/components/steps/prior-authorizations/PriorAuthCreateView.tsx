@@ -74,6 +74,12 @@ export function PriorAuthCreateView({
   // In-memory billing codes
   const [billingCodes, setBillingCodes] = useState<LocalBillingCodeEntry[]>([])
   const [billingCodesError, setBillingCodesError] = useState(false)
+  const billingCodesSectionRef = useRef<HTMLDivElement>(null)
+
+  // Auto-clear error as soon as there is at least one billing code
+  useEffect(() => {
+    if (billingCodes.length > 0) setBillingCodesError(false)
+  }, [billingCodes.length])
 
   // BC modal state
   const [isBCModalOpen, setIsBCModalOpen] = useState(false)
@@ -85,7 +91,7 @@ export function PriorAuthCreateView({
 
   useEffect(() => {
     onPrimaryActionLabelChange?.("Create Authorization")
-    onRegisterSubmit?.(() => handleSubmitForm({ preventDefault: () => {} } as React.FormEvent))
+    onRegisterSubmit?.(() => submitHandlerRef.current({ preventDefault: () => {} } as React.FormEvent))
     return () => {
       onDirtyChange?.(false)
       onPrimaryActionLabelChange?.(undefined)
@@ -184,14 +190,25 @@ export function PriorAuthCreateView({
   }
 
   // ── Save ────────────────────────────────────────────────────────
+  // Mark the billing codes error but always delegate to handleSave so that
+  // form field validation (and useFocusFirstError) runs first. The scroll to
+  // the billing codes section only happens inside the onValid callback, i.e.
+  // after all form fields pass — preserving the top-to-bottom focus order.
   const handleSubmitForm = (e: React.FormEvent) => {
     if (billingCodes.length === 0) setBillingCodesError(true)
     else setBillingCodesError(false)
     handleSave(e)
   }
 
+  // Ref so the registered callback always calls the latest handleSubmitForm (avoids stale closure)
+  const submitHandlerRef = useRef(handleSubmitForm)
+  submitHandlerRef.current = handleSubmitForm
+
   const handleSave = form.handleSubmit(async (values) => {
     if (billingCodes.length === 0) {
+      setTimeout(() => {
+        billingCodesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      }, 0)
       return
     }
 
@@ -258,7 +275,7 @@ export function PriorAuthCreateView({
             <div className="border-t border-slate-200" />
 
             {/* Billing Codes Section */}
-            <div>
+            <div ref={billingCodesSectionRef}>
               <h3 className="mb-4 text-lg font-semibold text-slate-800">
                 Authorization Billing Codes <span className="text-[#037ECC]">*</span>
               </h3>
@@ -269,6 +286,9 @@ export function PriorAuthCreateView({
                 onDelete={handleDeleteBillingCode}
                 hasError={billingCodesError}
               />
+              {billingCodesError && (
+                <p className="mt-2 text-sm text-red-600">At least one billing code is required</p>
+              )}
             </div>
           </div>
         </Card>

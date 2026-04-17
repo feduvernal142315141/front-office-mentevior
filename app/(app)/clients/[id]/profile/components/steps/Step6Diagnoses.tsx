@@ -9,6 +9,7 @@ import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
+import { DiagnosisCodeCombobox } from "@/components/custom/DiagnosisCodeCombobox"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
@@ -32,6 +33,7 @@ import { usePhysicianSpecialties } from "@/lib/modules/physicians/hooks/use-phys
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import type { Diagnosis } from "@/lib/types/diagnosis.types"
+import type { DiagnosisCatalogItem } from "@/lib/types/diagnosis-catalog.types"
 import type { CreateManualClientPhysicianDto } from "@/lib/types/client-physician.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 import { physicianFormSchema, getPhysicianFormDefaults, type PhysicianFormData } from "@/lib/schemas/physician-form.schema"
@@ -758,6 +760,8 @@ export function Step6Diagnoses({
         title={editingDiagnosis ? "Edit diagnosis" : "New diagnosis"}
         description={editingDiagnosis ? "Update diagnosis details" : "Add diagnosis details"}
         maxWidthClassName="sm:max-w-[760px]"
+        allowSelectOverflow
+        contentClassName="overflow-visible"
       >
         <form
           onSubmit={(event) => {
@@ -773,11 +777,18 @@ export function Step6Diagnoses({
               control={form.control}
               render={({ field, fieldState }) => (
                 <div>
-                  <FloatingInput
-                    label="Code"
+                  <DiagnosisCodeCombobox
+                    key={editingDiagnosis?.id ?? "new"}
                     value={field.value}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
+                    onCatalogPick={(item: DiagnosisCatalogItem) => {
+                      form.setValue("code", item.code, { shouldValidate: true, shouldDirty: true })
+                      form.setValue("name", item.longDescription || item.shortDescription, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
+                    }}
                     hasError={!!fieldState.error}
                     required
                   />

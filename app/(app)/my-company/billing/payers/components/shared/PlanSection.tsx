@@ -79,6 +79,7 @@ export function PlanSection({
                     onBlur={field.onBlur}
                     hasError={!!fieldState.error}
                     autoComplete="off"
+                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -102,6 +103,7 @@ export function PlanSection({
                     hasError={!!fieldState.error}
                     disabled={isLoadingPlanTypes}
                     searchable
+                    required
                   />
                   {fieldState.error && (
                     <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
