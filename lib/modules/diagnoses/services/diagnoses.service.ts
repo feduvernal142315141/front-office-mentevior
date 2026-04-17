@@ -1,5 +1,6 @@
 import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
-import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
+import { parseProgressOrNull, parseProgressOrZero } from "@/lib/utils/progress"
+import type { MutationResult, PaginatedResponse, UpdateMutationResult } from "@/lib/types/response.types"
 import type {
   CreateDiagnosisDto,
   Diagnosis,
@@ -131,10 +132,10 @@ export async function createDiagnosis(data: CreateDiagnosisDto): Promise<Mutatio
     throw new Error(response.data?.message || "Failed to create diagnosis")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrZero(response.data) }
 }
 
-export async function updateDiagnosis(diagnosisId: string, data: UpdateDiagnosisDto): Promise<MutationResult> {
+export async function updateDiagnosis(diagnosisId: string, data: UpdateDiagnosisDto): Promise<UpdateMutationResult> {
   const response = await servicePut<UpdateDiagnosisPayload, number>("/client/diagnosis", {
     id: diagnosisId,
     ...data,
@@ -144,7 +145,7 @@ export async function updateDiagnosis(diagnosisId: string, data: UpdateDiagnosis
     throw new Error(response.data?.message || "Failed to update diagnosis")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrNull(response.data) }
 }
 
 export async function removeDiagnosis(diagnosisId: string): Promise<number> {
@@ -154,5 +155,5 @@ export async function removeDiagnosis(diagnosisId: string): Promise<number> {
     throw new Error(response.data?.message || "Failed to remove diagnosis")
   }
 
-  return Number(response.data) || 0
+  return parseProgressOrZero(response.data)
 }

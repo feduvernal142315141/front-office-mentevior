@@ -22,6 +22,8 @@ export interface StepComponentProps {
   registerValidation: (isValid: boolean) => void
   onDirtyChange?: (isDirty: boolean) => void
   onStepStatusChange?: (stepId: string, status: StepStatus) => void
+  onPrimaryActionLabelChange?: (label: string | undefined) => void
+  registerPrimarySubmit?: (fn: () => void) => void
 }
 
 export interface WizardState {

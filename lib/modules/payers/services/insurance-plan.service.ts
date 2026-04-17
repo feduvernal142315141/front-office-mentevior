@@ -11,7 +11,17 @@ import type {
 import type { InsurancePlanGeneralValues, InsurancePlanRateRowValues } from "@/lib/schemas/insurance-plan-modal.schema"
 
 function normalizeRateRow(
-  r: Partial<InsurancePlanRateDto> & { id?: string; currencyCode?: string; billingCodeName?: string },
+  r: Partial<InsurancePlanRateDto> & {
+    id?: string
+    currencyCode?: string
+    billingCodeName?: string
+    billingCode?: string
+    billingModifier?: string
+    modifier?: string
+    billingCodeType?: string
+    billingCodeTypeName?: string
+    billingCodeTypeCode?: string
+  },
   fallbackPlanId: string,
 ): InsurancePlanRateRow {
   return {
@@ -27,6 +37,11 @@ function normalizeRateRow(
     endDate: r.endDate ?? "",
     billingCodeId: r.billingCodeId ?? "",
     billingCodeName: r.billingCodeName ?? "",
+    billingCode: r.billingCode ?? r.billingCodeName ?? "",
+    billingModifier: r.billingModifier ?? r.modifier ?? "",
+    billingCodeType: r.billingCodeType ?? "",
+    billingCodeTypeName: r.billingCodeTypeName ?? "",
+    billingCodeTypeCode: r.billingCodeTypeCode ?? "",
   }
 }
 

@@ -209,7 +209,9 @@ export function Step9Providers({
       return
     }
 
-    onProgressUpdate?.(result.progress)
+    if (typeof result.progress === "number") {
+      onProgressUpdate?.(result.progress)
+    }
     handleCloseModal()
     await refetch()
   }

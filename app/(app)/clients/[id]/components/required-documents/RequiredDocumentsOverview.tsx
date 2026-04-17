@@ -228,10 +228,11 @@ export function RequiredDocumentsOverview({
       }
       
       const progress = await save(dto)
-      if (progress !== null) {
+      if (typeof progress === "number") {
         onProgressUpdate?.(progress)
-        setIsModalOpen(false)
       }
+
+      setIsModalOpen(false)
     },
     [editingRow, clientId, save, onProgressUpdate]
   )

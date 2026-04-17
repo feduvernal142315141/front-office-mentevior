@@ -5,12 +5,13 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { MultiSelect } from "@/components/custom/MultiSelect"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 interface CredentialFormFieldsProps {
   isEditing: boolean
   isSubmitting: boolean
   onCancel: () => void
-  billingCodeOptions: { id: string; code: string; modifier?: string }[]
+  billingCodeOptions: { id: string; type: string; code: string; modifier?: string }[]
   isLoadingBillingCodes: boolean
 }
 
@@ -186,7 +187,11 @@ export function CredentialFormFields({
                         onChange={field.onChange}
                         options={billingCodeOptions.map(bc => ({
                           value: bc.id,
-                          label: bc.modifier?.trim() ? `${bc.code} (${bc.modifier.trim()})` : bc.code
+                          label: formatBillingCodeDisplay({
+                            type: bc.type,
+                            code: bc.code,
+                            modifier: bc.modifier,
+                          })
                         }))}
                         placeholder="Select billing codes"
                         disabled={isLoadingBillingCodes}

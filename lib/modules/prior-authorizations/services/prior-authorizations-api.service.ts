@@ -4,8 +4,10 @@ import type {
   CreatePriorAuthorizationDto,
   UpdatePriorAuthorizationDto,
 } from "@/lib/types/prior-authorization.types"
-import type { MutationResult } from "@/lib/types/response.types"
+import { parseProgressOrNull, parseProgressOrZero } from "@/lib/utils/progress"
+import type { MutationResult, UpdateMutationResult } from "@/lib/types/response.types"
 import { calculatePAStatus } from "@/lib/utils/prior-auth-utils"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 function normalizeDate(isoDate: string | undefined | null): string {
   if (!isoDate) return ""
@@ -13,21 +15,15 @@ function normalizeDate(isoDate: string | undefined | null): string {
 }
 
 function normalizeBillingCodeLabel({
-  label,
+  type,
   code,
   modifier,
 }: {
-  label?: string
+  type?: string
   code: string
   modifier?: string
 }): string {
-  const trimmedLabel = (label ?? "").trim()
-  const trimmedModifier = (modifier ?? "").trim()
-
-  const sanitizedLabel = trimmedLabel.replace(/\s*\(\s*\)\s*$/, "").trim()
-  if (sanitizedLabel) return sanitizedLabel
-
-  return trimmedModifier ? `${code} (${trimmedModifier})` : code
+  return formatBillingCodeDisplay({ type, code, modifier })
 }
 
 function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
@@ -57,17 +53,23 @@ function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
       const rawBCs = (raw.authorizationBillingCodes ?? raw.billingCodes) as Record<string, unknown>[] | undefined
       if (!Array.isArray(rawBCs)) return []
       return rawBCs.map((bc) => {
+        const type =
+          ((bc.billingCodeType as string) ??
+            (bc.billingCodeTypeCode as string) ??
+            (bc.billingCodeTypeName as string) ??
+            "")
         const code = (bc.billingCodeCode as string) ?? ""
         const modifier = (bc.billingCodeModifier as string) ?? ""
         const label = normalizeBillingCodeLabel({
-          label: bc.billingCodeLabel as string,
+          type,
           code,
           modifier,
         })
+        const fallbackLabel = (bc.billingCodeLabel as string) ?? ""
         return {
           id: bc.id as string,
           billingCodeId: (bc.billingCodeId as string) ?? "",
-          billingCodeLabel: label,
+          billingCodeLabel: label || fallbackLabel,
           approvedUnits: (bc.approvedUnits as number) ?? 0,
           usedUnits: (bc.usedUnits as number) ?? 0,
           remainingUnits:
@@ -140,12 +142,12 @@ export async function createPriorAuthorization(
     )
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrZero(response.data) }
 }
 
 export async function updatePriorAuthorization(
   data: UpdatePriorAuthorizationDto
-): Promise<MutationResult> {
+): Promise<UpdateMutationResult> {
   const response = await servicePut<UpdatePriorAuthorizationDto, number>(
     "/prior-authorizations",
     data
@@ -157,7 +159,7 @@ export async function updatePriorAuthorization(
     )
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrNull(response.data) }
 }
 
 export async function deletePriorAuthorization(paId: string): Promise<number> {
@@ -169,5 +171,5 @@ export async function deletePriorAuthorization(paId: string): Promise<number> {
     )
   }
 
-  return Number(response.data) || 0
+  return parseProgressOrZero(response.data)
 }

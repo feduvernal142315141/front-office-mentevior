@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { CalendarClock, Settings } from "lucide-react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 import { Card } from "@/components/custom/Card"
@@ -14,6 +14,7 @@ import { FloatingColorPicker } from "@/components/custom/FloatingColorPicker"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MultiSelect } from "@/components/custom/MultiSelect"
 import { useUpsertAppointmentConfig } from "@/lib/modules/appointment-config/hooks/use-upsert-appointment-config"
+import { useFocusFirstError } from "@/lib/hooks/use-focus-first-error"
 import { useTimingCatalog } from "@/lib/modules/timing/hooks/use-timing-catalog"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
 import { useBillingCodesVisibleTags } from "@/lib/hooks/use-billing-codes-visible-tags"
@@ -24,6 +25,7 @@ import {
 } from "@/lib/schemas/appointment-config-form.schema"
 import type { AppointmentConfig } from "@/lib/types/appointment-config.types"
 import { cn } from "@/lib/utils"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 const EVENTS_PATH = "/my-company/events"
 
@@ -88,7 +90,11 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
   const { timings, isLoading: isLoadingTimings } = useTimingCatalog()
   const billingCodesVisibleTags = useBillingCodesVisibleTags()
 
-  const billingCodeOptions = billingCodes.map((bc) => ({ value: bc.id, label: bc.code }))
+  const billingCodeOptions = billingCodes.map((bc) => ({
+    value: bc.id,
+    label: formatBillingCodeDisplay({ type: bc.type, code: bc.code, modifier: bc.modifier }),
+    tagLabel: bc.code,
+  }))
   const timingOptions      = timings.map((t) => ({ value: t.id, label: t.name }))
 
   const form = useForm<AppointmentConfigFormValues>({
@@ -97,7 +103,39 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
     mode: "onBlur",
   })
 
-  const { handleSubmit, watch, setValue, formState: { errors } } = form
+  const { handleSubmit, watch, setValue, formState: { errors, submitCount } } = form
+
+  const refLeadTime        = useRef<HTMLButtonElement>(null)
+  const refLagTime         = useRef<HTMLButtonElement>(null)
+  const refStartTime       = useRef<HTMLButtonElement>(null)
+  const refEndTime         = useRef<HTMLButtonElement>(null)
+  const refMaxLocations    = useRef<HTMLInputElement>(null)
+  const refBillingCodes    = useRef<HTMLButtonElement>(null)
+  const refMinDuration     = useRef<HTMLInputElement>(null)
+  const refMaxDuration     = useRef<HTMLInputElement>(null)
+  const refDayClient       = useRef<HTMLInputElement>(null)
+  const refDayProvider     = useRef<HTMLInputElement>(null)
+  const refWeekClient      = useRef<HTMLInputElement>(null)
+  const refWeekProvider    = useRef<HTMLInputElement>(null)
+  const refConsecClient    = useRef<HTMLInputElement>(null)
+  const refConsecProvider  = useRef<HTMLInputElement>(null)
+
+  useFocusFirstError(errors, submitCount, [
+    { key: "leadTimeId",                      ref: refLeadTime },
+    { key: "lagTimeId",                       ref: refLagTime },
+    { key: "startTime",                       ref: refStartTime },
+    { key: "endTime",                         ref: refEndTime },
+    { key: "maxNumberLocations",              ref: refMaxLocations },
+    { key: "billingCodes",                    ref: refBillingCodes },
+    { key: "minDuration",                     ref: refMinDuration },
+    { key: "maxDurationEvent",                ref: refMaxDuration },
+    { key: "maxDurationPerDayClient",         ref: refDayClient },
+    { key: "maxDurationPerDayProvider",       ref: refDayProvider },
+    { key: "maxDurationPerWeekClient",        ref: refWeekClient },
+    { key: "maxDurationPerWeekProvider",      ref: refWeekProvider },
+    { key: "maxDurationConsecutiveDaysClient",   ref: refConsecClient },
+    { key: "maxDurationConsecutiveDaysProvider", ref: refConsecProvider },
+  ])
 
   useEffect(() => {
     if (!config) return
@@ -247,6 +285,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
               {/* Row 1: Scheduling — Lead/Lag + SubEvents */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <FloatingSelect
+                  ref={refLeadTime}
                   label="Lead time"
                   value={w.leadTimeId}
                   onChange={(v) => setValue("leadTimeId", v)}
@@ -257,6 +296,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   required
                 />
                 <FloatingSelect
+                  ref={refLagTime}
                   label="Lag time"
                   value={w.lagTimeId}
                   onChange={(v) => setValue("lagTimeId", v)}
@@ -267,6 +307,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   required
                 />
                 <FloatingTimePicker
+                  ref={refStartTime}
                   label="Start time"
                   value={w.startTime}
                   onChange={(v) => setValue("startTime", v)}
@@ -275,6 +316,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   required
                 />
                 <FloatingTimePicker
+                  ref={refEndTime}
                   label="End time"
                   value={w.endTime}
                   onChange={(v) => setValue("endTime", v)}
@@ -288,6 +330,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="w-full">
                   <FloatingInput
+                    ref={refMaxLocations}
                     label="Max locations"
                     value={w.maxNumberLocations}
                     onChange={(v) => setValue("maxNumberLocations", v.replace(/\D/g, ""))}
@@ -308,6 +351,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 />
                 <div className="md:col-span-2">
                   <MultiSelect
+                    ref={refBillingCodes}
                     label="Billing codes"
                     value={w.billingCodes}
                     onChange={(v) => setValue("billingCodes", v)}
@@ -330,6 +374,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
                 <div className="w-full">
                   <FloatingInput
+                    ref={refMinDuration}
                     label="Min duration event (h)"
                     value={w.minDuration}
                     onChange={(v) => setValue("minDuration", sanitizeDecimalInput(v))}
@@ -343,6 +388,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 </div>
                 <div className="w-full">
                   <FloatingInput
+                    ref={refMaxDuration}
                     label="Max duration event (h)"
                     value={w.maxDurationEvent}
                     onChange={(v) => setValue("maxDurationEvent", sanitizeDecimalInput(v))}
@@ -369,6 +415,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="w-full">
                   <FloatingInput
+                    ref={refDayClient}
                     label="Max duration / day client (h)"
                     value={w.maxDurationPerDayClient}
                     onChange={(v) => setValue("maxDurationPerDayClient", sanitizeDecimalInput(v))}
@@ -382,6 +429,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 </div>
                 <div className="w-full">
                   <FloatingInput
+                    ref={refDayProvider}
                     label="Max duration / day provider (h)"
                     value={w.maxDurationPerDayProvider}
                     onChange={(v) => setValue("maxDurationPerDayProvider", sanitizeDecimalInput(v))}
@@ -395,6 +443,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 </div>
                 <div className="w-full">
                   <FloatingInput
+                    ref={refWeekClient}
                     label="Max duration / week client (h)"
                     value={w.maxDurationPerWeekClient}
                     onChange={(v) => setValue("maxDurationPerWeekClient", sanitizeDecimalInput(v))}
@@ -408,6 +457,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 </div>
                 <div className="w-full">
                   <FloatingInput
+                    ref={refWeekProvider}
                     label="Max duration / week provider (h)"
                     value={w.maxDurationPerWeekProvider}
                     onChange={(v) => setValue("maxDurationPerWeekProvider", sanitizeDecimalInput(v))}
@@ -425,6 +475,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="w-full">
                   <FloatingInput
+                    ref={refConsecClient}
                     label="Max consecutive days client"
                     value={w.maxDurationConsecutiveDaysClient}
                     onChange={(v) => setValue("maxDurationConsecutiveDaysClient", v.replace(/\D/g, ""))}
@@ -438,6 +489,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 </div>
                 <div className="w-full">
                   <FloatingInput
+                    ref={refConsecProvider}
                     label="Max consecutive days provider"
                     value={w.maxDurationConsecutiveDaysProvider}
                     onChange={(v) => setValue("maxDurationConsecutiveDaysProvider", v.replace(/\D/g, ""))}

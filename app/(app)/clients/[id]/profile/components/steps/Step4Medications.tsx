@@ -210,7 +210,9 @@ export function Step4Medications({
       return
     }
 
-    onProgressUpdate?.(result.progress)
+    if (typeof result.progress === "number") {
+      onProgressUpdate?.(result.progress)
+    }
     form.reset(medicationFormDefaults)
     setEditingMedication(null)
     setIsMedicationModalOpen(false)

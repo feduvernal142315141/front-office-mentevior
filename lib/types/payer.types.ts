@@ -45,6 +45,9 @@ export interface PayerRateEmbed {
   billingCodeId: string
   billingCode?: string
   billingModifier?: string
+  billingCodeType?: string
+  billingCodeTypeName?: string
+  billingCodeTypeCode?: string
   active?: boolean
 }
 

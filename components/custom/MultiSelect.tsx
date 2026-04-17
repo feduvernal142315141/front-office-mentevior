@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, forwardRef } from "react"
 import { ChevronDown, Check, Search, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -8,6 +8,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 interface Option {
   value: string
   label: string
+  tagLabel?: string
 }
 
 interface MultiSelectProps {
@@ -32,7 +33,7 @@ interface MultiSelectProps {
   maxVisibleTags?: number
 }
 
-export function MultiSelect({
+export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(function MultiSelect({
   label,
   value,
   onChange,
@@ -48,7 +49,7 @@ export function MultiSelect({
   dropdownPosition = "bottom",
   tone = "brand",
   maxVisibleTags: maxVisibleTagsProp,
-}: MultiSelectProps) {
+}, ref) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
@@ -200,7 +201,11 @@ export function MultiSelect({
     <div className="w-full" ref={containerRef}>
       <div className="relative w-full">
         <button
-          ref={buttonRef}
+          ref={(node) => {
+            buttonRef.current = node
+            if (typeof ref === "function") ref(node)
+            else if (ref) ref.current = node
+          }}
           type="button"
           onClick={handleToggle}
           disabled={disabled}
@@ -235,7 +240,7 @@ export function MultiSelect({
                     disabled ? "bg-gray-100 text-gray-600" : selectedTagClass
                   )}
                 >
-                  {option.label}
+                  {option.tagLabel ?? option.label}
                   {!disabled && (
                     <span
                       role="button"
@@ -264,7 +269,7 @@ export function MultiSelect({
                   <TooltipContent side="top" sideOffset={6} className="bg-slate-900 text-white max-w-xs z-[9999]">
                     <div className="flex flex-col gap-1">
                       {selectedOptions.slice(maxVisibleTags).map((opt) => (
-                        <span key={opt.value}>{opt.label}</span>
+                        <span key={opt.value}>{opt.tagLabel ?? opt.label}</span>
                       ))}
                     </div>
                   </TooltipContent>
@@ -400,4 +405,4 @@ export function MultiSelect({
       </div>
     </div>
   )
-}
+})

@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import type { UpdateClientAddressDto } from "@/lib/types/client-address.types"
-import type { MutationResult } from "@/lib/types/response.types"
+import type { UpdateMutationResult } from "@/lib/types/response.types"
 import { updateClientAddress } from "../services/client-addresses.service"
 
 interface UseUpdateClientAddressReturn {
-  update: (data: UpdateClientAddressDto) => Promise<MutationResult | null>
+  update: (data: UpdateClientAddressDto) => Promise<UpdateMutationResult | null>
   isLoading: boolean
   error: string | null
 }
@@ -16,7 +16,7 @@ export function useUpdateClientAddress(): UseUpdateClientAddressReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const update = async (data: UpdateClientAddressDto): Promise<MutationResult | null> => {
+  const update = async (data: UpdateClientAddressDto): Promise<UpdateMutationResult | null> => {
     setIsLoading(true)
     setError(null)
 

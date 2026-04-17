@@ -28,7 +28,7 @@ interface UseBillingCodeFormReturn {
   placesOfService: { id: string; name: string }[]
   isLoadingPlaces: boolean
 
-  parentOptions: { id: string; code: string; description: string }[]
+  parentOptions: { id: string; type: string; code: string; modifier?: string; description: string }[]
   isLoadingParents: boolean
 
   actions: {
@@ -61,7 +61,9 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
       .filter(bc => bc.id !== billingCodeId) 
       .map(bc => ({
         id: bc.id,
+        type: bc.type,
         code: bc.code,
+        modifier: bc.modifier,
         description: bc.description || "", 
       }))
   }, [allBillingCodes, billingCodeId])

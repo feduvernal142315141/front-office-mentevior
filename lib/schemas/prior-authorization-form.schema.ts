@@ -81,7 +81,7 @@ export type BillingCodeEntryValues = z.infer<typeof billingCodeEntrySchema>
 
 export const billingCodeEntryDefaults: BillingCodeEntryValues = {
   billingCodeId: "",
-  approvedUnits: 1,
+  approvedUnits: null as unknown as number,
   usedUnits: 0,
   unitsInterval: "UNIT",
   maxUnitsPerDay: null,

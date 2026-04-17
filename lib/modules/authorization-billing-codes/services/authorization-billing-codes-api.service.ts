@@ -4,9 +4,19 @@ import type {
   CreateAuthorizationBillingCodeDto,
   UpdateAuthorizationBillingCodeDto,
 } from "@/lib/types/prior-authorization.types"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 function buildBillingCodeLabel(raw: Record<string, unknown>): string {
-  return (raw.billingCodeCode as string) ?? ""
+  const type =
+    ((raw.billingCodeType as string) ??
+      (raw.billingCodeTypeCode as string) ??
+      (raw.billingCodeTypeName as string) ??
+      "")
+  const code = (raw.billingCodeCode as string) ?? ""
+  const modifier = (raw.billingCodeModifier as string) ?? ""
+  const display = formatBillingCodeDisplay({ type, code, modifier })
+
+  return display || ((raw.billingCodeLabel as string) ?? "")
 }
 
 function normalizeBC(raw: Record<string, unknown>): PriorAuthBillingCode {

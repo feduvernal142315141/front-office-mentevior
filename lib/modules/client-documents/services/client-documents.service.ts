@@ -1,5 +1,6 @@
 import { serviceGet, servicePut, serviceDelete, servicePost } from "@/lib/services/baseService"
 import { parseDateFromBackend, dateToISO } from "@/lib/utils/date"
+import { parseProgressOrNull, parseProgressOrZero } from "@/lib/utils/progress"
 import type {
   BackendClientDocument,
   SaveClientDocumentDto,
@@ -87,13 +88,13 @@ export async function createClientDocument(
     throw new Error(response.data?.message || "Failed to create client document")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrZero(response.data) }
 }
 
 export async function updateClientDocument(
   clientDocumentId: string,
   data: SaveClientDocumentDto
-): Promise<{ progress: number }> {
+): Promise<{ progress: number | null }> {
   const updateDto: UpdateClientDocumentDto = {
     id: clientDocumentId,
     issuedDate: data.issuedDate,
@@ -112,7 +113,7 @@ export async function updateClientDocument(
     throw new Error(response.data?.message || "Failed to update client document")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrNull(response.data) }
 }
 
 export async function deleteClientDocument(

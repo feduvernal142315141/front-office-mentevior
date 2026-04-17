@@ -426,7 +426,9 @@ export function Step6Diagnoses({
       return
     }
 
-    onProgressUpdate?.(ok.progress)
+    if (typeof ok.progress === "number") {
+      onProgressUpdate?.(ok.progress)
+    }
     form.reset(diagnosisFormDefaults)
     setEditingDiagnosis(null)
     setSelectedReferringPhysician(null)

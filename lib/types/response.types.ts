@@ -12,3 +12,8 @@ export interface MutationResult {
   progress: number
   clientId?: string
 }
+
+export interface UpdateMutationResult {
+  progress: number | null
+  clientId?: string
+}

@@ -27,6 +27,7 @@ import { deleteInsurancePlanRate } from "@/lib/modules/payers/services/insurance
 import type { LocalInsurancePlanRate } from "@/lib/types/payer.types"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import { cn } from "@/lib/utils"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 interface PayerEditPageProps {
   payerId: string
@@ -135,7 +136,10 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
       _tempId: crypto.randomUUID(),
       id: r.id,
       billingCodeId: r.billingCodeId,
-      billingCodeLabel: r.billingCode ?? r.billingCodeId,
+      billingCodeLabel: formatBillingCodeDisplay({
+        type: r.billingCodeType || r.billingCodeTypeName || r.billingCodeTypeCode || "",
+        code: r.billingCode ?? r.billingCodeId,
+      }),
       billingModifier: r.billingModifier?.trim() || undefined,
       amount: r.amount,
       submitAmount: r.submitAmount ?? undefined,

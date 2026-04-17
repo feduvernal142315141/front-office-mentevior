@@ -11,6 +11,7 @@ import { useBillingCodeTypes } from "@/lib/modules/billing-codes/hooks/use-billi
 import { bulkCreateBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
 import type { BillingCodeCatalogItem } from "@/lib/types/billing-code.types"
 import { toast } from "sonner"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 interface SearchCatalogStepProps {
   onSelectCode: (code: BillingCodeCatalogItem) => void
@@ -271,7 +272,11 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-lg font-semibold ${isSelected ? "text-blue-700" : "text-gray-900"}`}>
-                          {code.modifier !=="" && code.modifier !==" " ? `${code.code}-${code.modifier}` : code.code}
+                          {formatBillingCodeDisplay({
+                            type: code.type,
+                            code: code.code,
+                            modifier: code.modifier,
+                          })}
                         </span>
                         <Badge 
                           variant="outline"

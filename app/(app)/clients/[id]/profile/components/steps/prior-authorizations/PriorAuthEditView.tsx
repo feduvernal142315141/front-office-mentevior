@@ -1,14 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 import { Card } from "@/components/custom/Card"
-import { Button } from "@/components/custom/Button"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
-import { PriorAuthBaseForm } from "./PriorAuthBaseForm"
+import { PriorAuthBaseForm, type PriorAuthBaseFormRefs } from "./PriorAuthBaseForm"
+import { useFocusFirstError } from "@/lib/hooks/use-focus-first-error"
 import { BillingCodesSection } from "./BillingCodesSection"
 import { BillingCodeModal } from "./BillingCodeModal"
 import {
@@ -36,6 +36,9 @@ interface PriorAuthEditViewProps {
   onBack: () => void
   onSaved: () => Promise<void>
   onProgressUpdate?: (progress: number) => void
+  onRegisterSubmit?: (fn: () => void) => void
+  onDirtyChange?: (isDirty: boolean) => void
+  onPrimaryActionLabelChange?: (label: string | undefined) => void
 }
 
 export function PriorAuthEditView({
@@ -45,6 +48,9 @@ export function PriorAuthEditView({
   onBack,
   onSaved,
   onProgressUpdate,
+  onRegisterSubmit,
+  onDirtyChange,
+  onPrimaryActionLabelChange,
 }: PriorAuthEditViewProps) {
   const form = useForm<PriorAuthFormValues>({
     resolver: zodResolver(priorAuthFormSchema),
@@ -52,8 +58,40 @@ export function PriorAuthEditView({
     mode: "onChange",
   })
 
+  const { formState: { errors, submitCount } } = form
   const { update, isLoading: isUpdating } = useUpdatePriorAuthorization()
   const { remove, isLoading: isDeletingBillingCode } = useDeleteAuthorizationBillingCode()
+
+  const fieldRefs: PriorAuthBaseFormRefs = {
+    authNumber:       useRef<HTMLInputElement>(null),
+    insuranceId:      useRef<HTMLButtonElement>(null),
+    startDate:        useRef<HTMLButtonElement>(null),
+    endDate:          useRef<HTMLButtonElement>(null),
+    durationInterval: useRef<HTMLButtonElement>(null),
+  }
+
+  useFocusFirstError(errors, submitCount, [
+    { key: "authNumber",       ref: fieldRefs.authNumber },
+    { key: "insuranceId",      ref: fieldRefs.insuranceId },
+    { key: "startDate",        ref: fieldRefs.startDate },
+    { key: "endDate",          ref: fieldRefs.endDate },
+    { key: "durationInterval", ref: fieldRefs.durationInterval },
+  ])
+
+  useEffect(() => {
+    onPrimaryActionLabelChange?.("Update Authorization")
+    onRegisterSubmit?.(() => handleSubmitForm({ preventDefault: () => {} } as React.FormEvent))
+    return () => {
+      onDirtyChange?.(false)
+      onPrimaryActionLabelChange?.(undefined)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const { isDirty } = form.formState
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
 
   // PA data loaded from backend (fresh fetch for attachment URLs etc.)
   const [pa, setPa] = useState<PriorAuthorization | null>(null)
@@ -65,6 +103,7 @@ export function PriorAuthEditView({
 
   // In-memory billing codes
   const [billingCodes, setBillingCodes] = useState<LocalBillingCodeEntry[]>([])
+  const [billingCodesError, setBillingCodesError] = useState(false)
 
   // BC modal state
   const [isBCModalOpen, setIsBCModalOpen] = useState(false)
@@ -221,6 +260,7 @@ export function PriorAuthEditView({
         maxCountPerMonth: values.maxCountPerMonth ?? null,
       }
       setBillingCodes((prev) => [...prev, newEntry])
+      setBillingCodesError(false)
     }
 
     setIsBCModalOpen(false)
@@ -233,9 +273,14 @@ export function PriorAuthEditView({
   }
 
   // ── Save ────────────────────────────────────────────────────────
+  const handleSubmitForm = (e: React.FormEvent) => {
+    if (billingCodes.length === 0) setBillingCodesError(true)
+    else setBillingCodesError(false)
+    handleSave(e)
+  }
+
   const handleSave = form.handleSubmit(async (values) => {
     if (billingCodes.length === 0) {
-      toast.error("At least one billing code is required")
       return
     }
 
@@ -269,7 +314,9 @@ export function PriorAuthEditView({
 
     const result = await update(dto)
     if (result) {
-      onProgressUpdate?.(result.progress)
+      if (typeof result.progress === "number") {
+        onProgressUpdate?.(result.progress)
+      }
       await onSaved()
       onBack()
     }
@@ -330,7 +377,7 @@ export function PriorAuthEditView({
         </div>
       </div>
 
-      <form onSubmit={handleSave}>
+      <form onSubmit={handleSubmitForm}>
         <Card variant="elevated" padding="lg">
           <div className="space-y-8">
             <PriorAuthBaseForm
@@ -342,6 +389,7 @@ export function PriorAuthEditView({
               onClearExistingAttachment={handleClearExistingAttachment}
               editingInsuranceId={pa?.insuranceId}
               editingInsuranceName={pa?.insuranceName}
+              fieldRefs={fieldRefs}
             />
 
             {/* Divider */}
@@ -350,27 +398,19 @@ export function PriorAuthEditView({
             {/* Billing Codes Section */}
             <div>
               <h3 className="mb-4 text-lg font-semibold text-slate-800">
-                Authorization Billing Codes
+                Authorization Billing Codes <span className="text-[#037ECC]">*</span>
               </h3>
               <BillingCodesSection
                 entries={billingCodes}
                 onAdd={handleAddBillingCode}
                 onEdit={handleEditBillingCode}
                 onDelete={handleDeleteBillingCode}
+                hasError={billingCodesError}
               />
             </div>
           </div>
         </Card>
 
-        {/* Inline footer buttons */}
-        <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-200 mt-6">
-          <Button type="button" variant="secondary" onClick={onBack} disabled={isUpdating}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={isUpdating} disabled={isUpdating}>
-            Update Authorization
-          </Button>
-        </div>
       </form>
 
       <BillingCodeModal

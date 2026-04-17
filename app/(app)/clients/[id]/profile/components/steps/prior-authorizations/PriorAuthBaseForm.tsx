@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type RefObject } from "react"
 import { Controller, type UseFormReturn } from "react-hook-form"
 import { Upload, X, FileText, Eye, Download } from "lucide-react"
 import { toast } from "sonner"
@@ -19,6 +19,14 @@ import { cn } from "@/lib/utils"
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
 
+export interface PriorAuthBaseFormRefs {
+  authNumber: RefObject<HTMLInputElement | null>
+  insuranceId: RefObject<HTMLButtonElement | null>
+  startDate: RefObject<HTMLButtonElement | null>
+  endDate: RefObject<HTMLButtonElement | null>
+  durationInterval: RefObject<HTMLButtonElement | null>
+}
+
 interface PriorAuthBaseFormProps {
   form: UseFormReturn<PriorAuthFormValues>
   insurances: ClientInsurance[]
@@ -28,6 +36,7 @@ interface PriorAuthBaseFormProps {
   onClearExistingAttachment?: () => void
   editingInsuranceId?: string | null
   editingInsuranceName?: string | null
+  fieldRefs?: PriorAuthBaseFormRefs
 }
 
 function getFileNameFromUrl(url: string | null | undefined): string | null {
@@ -57,6 +66,7 @@ export function PriorAuthBaseForm({
   onClearExistingAttachment,
   editingInsuranceId,
   editingInsuranceName,
+  fieldRefs,
 }: PriorAuthBaseFormProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
@@ -79,13 +89,13 @@ export function PriorAuthBaseForm({
 
   useEffect(() => {
     if (diagnoses.length === 1 && !primaryDiagnosisId) {
-      form.setValue("primaryDiagnosisId", diagnoses[0].id)
+      form.setValue("primaryDiagnosisId", diagnoses[0].id, { shouldDirty: false })
     }
   }, [diagnoses, primaryDiagnosisId, form])
 
   useEffect(() => {
     if (activeInsurances.length === 1 && !insuranceId) {
-      form.setValue("insuranceId", activeInsurances[0].id)
+      form.setValue("insuranceId", activeInsurances[0].id, { shouldDirty: false })
     }
   }, [activeInsurances.length, insuranceId, form])
 
@@ -185,6 +195,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <FloatingInput
+                ref={fieldRefs?.authNumber}
                 label="Authorization Number"
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -206,6 +217,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
+                ref={fieldRefs?.insuranceId}
                 label="Insurance / Payer"
                 value={field.value}
                 onChange={field.onChange}
@@ -263,6 +275,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
+                ref={fieldRefs?.startDate}
                 label="Start Date"
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -282,6 +295,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
+                ref={fieldRefs?.endDate}
                 label="End Date"
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -320,6 +334,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
+                ref={fieldRefs?.durationInterval}
                 label="Interval"
                 value={field.value}
                 onChange={field.onChange}

@@ -289,7 +289,9 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
       return
     }
 
-    onProgressUpdate?.(result.progress)
+    if (typeof result.progress === "number") {
+      onProgressUpdate?.(result.progress)
+    }
     form.reset(caregiverFormDefaults)
     setEditingCaregiver(null)
     setIsCaregiverModalOpen(false)

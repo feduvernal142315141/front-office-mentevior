@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ChevronDown, Edit2, FileCheck, Calendar, Shield, Hash, Trash2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
@@ -45,8 +45,12 @@ export function StepPriorAuthorizations({
   registerSubmit,
   registerValidation,
   onStepStatusChange,
+  onDirtyChange,
+  onPrimaryActionLabelChange,
+  registerPrimarySubmit,
 }: StepComponentProps) {
   const [currentView, setCurrentView] = useState<StepView>({ mode: "list" })
+  const paSubmitRef = useRef<(() => void) | null>(null)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [billingCodesMap, setBillingCodesMap] = useState<Record<string, PriorAuthBillingCode[]>>({})
   const [loadingBCIds, setLoadingBCIds] = useState<Set<string>>(new Set())
@@ -178,6 +182,14 @@ export function StepPriorAuthorizations({
     )
   }
 
+  const handleBackToList = () => {
+    onDirtyChange?.(false)
+    onPrimaryActionLabelChange?.(undefined)
+    registerPrimarySubmit?.(null as unknown as () => void)
+    registerSubmit(async () => { onSaveSuccess({ priorAuthsCount: pas.length }) })
+    setCurrentView({ mode: "list" })
+  }
+
   // ── View switching ──────────────────────────────────────────────
   if (currentView.mode === "create") {
     return (
@@ -185,12 +197,19 @@ export function StepPriorAuthorizations({
         <PriorAuthCreateView
           clientId={resolvedClientId}
           insurances={insurances}
-          onBack={() => setCurrentView({ mode: "list" })}
+          onBack={handleBackToList}
           onSaved={async () => {
             await refetch()
             await refreshExpandedBillingCodes()
+            handleBackToList()
           }}
           onProgressUpdate={onProgressUpdate}
+          onRegisterSubmit={(fn) => {
+            paSubmitRef.current = fn
+            registerPrimarySubmit?.(fn)
+          }}
+          onDirtyChange={onDirtyChange}
+          onPrimaryActionLabelChange={onPrimaryActionLabelChange}
         />
       </div>
     )
@@ -203,12 +222,19 @@ export function StepPriorAuthorizations({
           clientId={resolvedClientId}
           editingPA={currentView.pa}
           insurances={insurances}
-          onBack={() => setCurrentView({ mode: "list" })}
+          onBack={handleBackToList}
           onSaved={async () => {
             await refetch()
             await refreshExpandedBillingCodes()
+            handleBackToList()
           }}
           onProgressUpdate={onProgressUpdate}
+          onRegisterSubmit={(fn) => {
+            paSubmitRef.current = fn
+            registerPrimarySubmit?.(fn)
+          }}
+          onDirtyChange={onDirtyChange}
+          onPrimaryActionLabelChange={onPrimaryActionLabelChange}
         />
       </div>
     )

@@ -136,7 +136,7 @@ export function useClientDocuments(
         const existingDoc = rows.find((r) => r.documentConfigId === data.documentConfigId)
         const isUpdate = Boolean(existingDoc?.clientDocumentId)
         
-        let result: Awaited<ReturnType<typeof createClientDocument>>
+        let result: { progress: number | null }
         
         if (isUpdate) {
           if (!existingDoc?.clientDocumentId) {

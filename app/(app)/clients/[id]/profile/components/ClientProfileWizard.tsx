@@ -69,6 +69,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
 
   const stepSubmitRef = useRef<(() => Promise<void>) | null>(null)
   const stepResetRef = useRef<(() => void) | null>(null)
+  const primarySubmitRef = useRef<(() => void) | null>(null)
   const onSaveSuccessRef = useRef<(data: any) => void>(() => {})
   const onValidationErrorRef = useRef<(errors: Record<string, string>) => void>(() => {})
 
@@ -84,6 +85,11 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const [serverProgress, setServerProgress] = useState<number | null>(null)
   const [isStepDirty, setIsStepDirty] = useState(false)
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
+  const [primaryActionLabel, setPrimaryActionLabel] = useState<string | undefined>(undefined)
+
+  const handlePrimaryAction = useCallback(() => {
+    primarySubmitRef.current?.()
+  }, [])
   const pendingNavigationRef = useRef<(() => void) | null>(null)
   const pendingNavigationAfterSaveRef = useRef<(() => void) | null>(null)
   const isSubmittingRef = useRef(false)
@@ -334,19 +340,30 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   }, [handleUnsavedDiscard])
 
   const handleUnsavedSave = useCallback(async () => {
-    if (!stepSubmitRef.current || !pendingNavigationRef.current || isSubmittingRef.current) {
+    if (isSubmittingRef.current) {
       setShowUnsavedModal(false)
       return
     }
 
+    setShowUnsavedModal(false)
+
+    if (primaryActionLabel) {
+      // Step owns its submit lifecycle (e.g. PA create/edit).
+      // Just fire the submit. Step handles navigation on success; on failure we stay.
+      pendingNavigationRef.current = null
+      primarySubmitRef.current?.()
+      return
+    }
+
+    if (!stepSubmitRef.current || !pendingNavigationRef.current) return
+
     pendingNavigationAfterSaveRef.current = pendingNavigationRef.current
     pendingNavigationRef.current = null
-    setShowUnsavedModal(false)
     isSubmittingRef.current = true
     submitIntentRef.current = "navigate"
     setIsSubmitting(true)
     await stepSubmitRef.current()
-  }, [])
+  }, [primaryActionLabel])
 
   const handleStepClick = useCallback((index: number) => {
     const targetStep = steps[index]
@@ -356,6 +373,8 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
       if (!isInCreateMode && targetStep.id === "personalInfo") {
         void refetch()
       }
+      setPrimaryActionLabel(undefined)
+      primarySubmitRef.current = null
       setActiveStepIndex(index)
     })
   }, [steps, isInCreateMode, refetch, guardNavigation])
@@ -535,6 +554,8 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
               }}
               onDirtyChange={setIsStepDirty}
               onStepStatusChange={handleStepStatusChange}
+              onPrimaryActionLabelChange={setPrimaryActionLabel}
+              registerPrimarySubmit={(fn: () => void) => { primarySubmitRef.current = fn }}
             />
           </div>
         </div>
@@ -545,8 +566,9 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
         isSubmitting={isSubmitting}
         canContinue={canContinue}
         isPersonalInfoStep={activeStepIndex === 0}
+        primaryActionLabel={primaryActionLabel}
         onCancel={handleCancel}
-        onSave={handleSave}
+        onSave={primaryActionLabel ? handlePrimaryAction : handleSave}
         onSaveAndContinue={handleSaveAndContinue}
         onClose={navigateToClientsTable}
       />

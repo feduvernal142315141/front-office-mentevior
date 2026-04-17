@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, forwardRef } from "react"
 import { ChevronDown, Check, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -19,9 +19,10 @@ interface FloatingSelectProps {
   disabled?: boolean
   searchable?: boolean
   required?: boolean
+  dropdownPosition?: "top" | "bottom"
 }
 
-export function FloatingSelect({
+export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>(function FloatingSelect({
   label,
   value,
   onChange,
@@ -31,7 +32,8 @@ export function FloatingSelect({
   disabled = false,
   searchable = false,
   required = false,
-}: FloatingSelectProps) {
+  dropdownPosition,
+}, ref) {
   const [isOpen, setIsOpen] = useState(false)
   const [openUpward, setOpenUpward] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -86,9 +88,15 @@ export function FloatingSelect({
   const handleToggle = () => {
     if (disabled) return
     if (!isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      const spaceBelow = window.innerHeight - rect.bottom
-      setOpenUpward(spaceBelow < DROPDOWN_HEIGHT && rect.top > DROPDOWN_HEIGHT)
+      if (dropdownPosition === "top") {
+        setOpenUpward(true)
+      } else if (dropdownPosition === "bottom") {
+        setOpenUpward(false)
+      } else {
+        const rect = containerRef.current.getBoundingClientRect()
+        const spaceBelow = window.innerHeight - rect.bottom
+        setOpenUpward(spaceBelow < DROPDOWN_HEIGHT && rect.top > DROPDOWN_HEIGHT)
+      }
     }
     setIsOpen(!isOpen)
   }
@@ -97,6 +105,7 @@ export function FloatingSelect({
     <div className="w-full relative" ref={containerRef}>
       <div className="relative w-full">
         <button
+          ref={ref}
           type="button"
           onClick={handleToggle}
           disabled={disabled}
@@ -240,4 +249,4 @@ export function FloatingSelect({
       )}
     </div>
   )
-}
+})

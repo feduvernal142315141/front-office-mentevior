@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import type { UpdateClientDto } from "@/lib/types/client.types"
-import type { MutationResult } from "@/lib/types/response.types"
+import type { UpdateMutationResult } from "@/lib/types/response.types"
 import { updateClient } from "../services/clients.service"
 
 interface UseUpdateClientReturn {
-  update: (id: string, data: UpdateClientDto) => Promise<MutationResult | null>
+  update: (id: string, data: UpdateClientDto) => Promise<UpdateMutationResult | null>
   isLoading: boolean
   error: Error | null
 }
@@ -16,7 +16,7 @@ export function useUpdateClient(): UseUpdateClientReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const update = async (id: string, data: UpdateClientDto): Promise<MutationResult | null> => {
+  const update = async (id: string, data: UpdateClientDto): Promise<UpdateMutationResult | null> => {
     try {
       setIsLoading(true)
       setError(null)

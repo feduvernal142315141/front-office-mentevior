@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { Clock } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { forwardRef, useEffect, useRef, useState } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface FloatingTimePickerProps {
@@ -18,7 +18,7 @@ interface FloatingTimePickerProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
 const MINUTES = ["00", "15", "30", "45"]
 
-export function FloatingTimePicker({
+export const FloatingTimePicker = forwardRef<HTMLButtonElement, FloatingTimePickerProps>(function FloatingTimePicker({
   value,
   onChange,
   onBlur,
@@ -26,7 +26,7 @@ export function FloatingTimePicker({
   hasError,
   required,
   disabled,
-}: FloatingTimePickerProps) {
+}, ref) {
   const [isOpen, setIsOpen] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const hourRef = useRef<HTMLDivElement>(null)
@@ -68,6 +68,7 @@ export function FloatingTimePicker({
         <PopoverTrigger asChild disabled={disabled}>
           <div className="relative">
             <button
+              ref={ref}
               type="button"
               disabled={disabled}
               onFocus={() => setIsFocused(true)}
@@ -222,4 +223,4 @@ export function FloatingTimePicker({
       </Popover>
     </div>
   )
-}
+})

@@ -3,7 +3,7 @@ import type {
   CreatePriorAuthorizationDto,
   UpdatePriorAuthorizationDto,
 } from "@/lib/types/prior-authorization.types"
-import type { MutationResult } from "@/lib/types/response.types"
+import type { MutationResult, UpdateMutationResult } from "@/lib/types/response.types"
 import {
   getPriorAuthorizationsByClientId as apiGetByClientId,
   createPriorAuthorization as apiCreate,
@@ -25,7 +25,7 @@ export async function createPriorAuthorization(
 
 export async function updatePriorAuthorization(
   data: UpdatePriorAuthorizationDto
-): Promise<MutationResult> {
+): Promise<UpdateMutationResult> {
   return apiUpdate(data)
 }
 

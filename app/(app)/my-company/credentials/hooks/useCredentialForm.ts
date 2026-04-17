@@ -23,7 +23,7 @@ interface UseCredentialFormReturn {
   onSubmit: (data: CredentialFormValues) => Promise<void>
   isSubmitting: boolean
 
-  billingCodeOptions: { id: string; code: string; modifier?: string }[]
+  billingCodeOptions: { id: string; type: string; code: string; modifier?: string }[]
   isLoadingBillingCodes: boolean
 
   actions: {
@@ -52,6 +52,7 @@ export function useCredentialForm({ credentialId = null }: UseCredentialFormProp
     
     return allBillingCodes.map(bc => ({
       id: bc.id,
+      type: bc.type,
       code: bc.code,
       modifier: bc.modifier,
     }))

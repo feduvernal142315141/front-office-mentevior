@@ -1,5 +1,6 @@
 import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
-import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
+import { parseProgressOrNull, parseProgressOrZero } from "@/lib/utils/progress"
+import type { MutationResult, PaginatedResponse, UpdateMutationResult } from "@/lib/types/response.types"
 import type {
   ClientAddress,
   CreateClientAddressByCompanyAddressIdDto,
@@ -123,7 +124,7 @@ export async function createClientAddress(data: CreateClientAddressDto): Promise
     throw new Error(response.data?.message || "Failed to create address")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrZero(response.data) }
 }
 
 export async function createClientAddressByCompanyAddressId(
@@ -142,10 +143,10 @@ export async function createClientAddressByCompanyAddressId(
     throw new Error(response.data?.message || "Failed to create address from company address")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrZero(response.data) }
 }
 
-export async function updateClientAddress(data: UpdateClientAddressDto): Promise<MutationResult> {
+export async function updateClientAddress(data: UpdateClientAddressDto): Promise<UpdateMutationResult> {
   const payload = toApiPayload(data) as UpdateClientAddressPayload
   const response = await servicePut<UpdateClientAddressPayload, number>("/client/address", payload)
 
@@ -153,7 +154,7 @@ export async function updateClientAddress(data: UpdateClientAddressDto): Promise
     throw new Error(response.data?.message || "Failed to update address")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrNull(response.data) }
 }
 
 export async function deleteClientAddress(id: string): Promise<number> {
@@ -163,5 +164,5 @@ export async function deleteClientAddress(id: string): Promise<number> {
     throw new Error(response.data?.message || "Failed to delete address")
   }
 
-  return Number(response.data) || 0
+  return parseProgressOrZero(response.data)
 }

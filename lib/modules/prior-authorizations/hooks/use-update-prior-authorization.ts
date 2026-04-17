@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import type { UpdatePriorAuthorizationDto } from "@/lib/types/prior-authorization.types"
-import type { MutationResult } from "@/lib/types/response.types"
+import type { UpdateMutationResult } from "@/lib/types/response.types"
 import { updatePriorAuthorization } from "../services/prior-authorizations.service"
 
 interface UseUpdatePriorAuthorizationReturn {
-  update: (data: UpdatePriorAuthorizationDto) => Promise<MutationResult | null>
+  update: (data: UpdatePriorAuthorizationDto) => Promise<UpdateMutationResult | null>
   isLoading: boolean
   error: string | null
 }
@@ -18,7 +18,7 @@ export function useUpdatePriorAuthorization(): UseUpdatePriorAuthorizationReturn
 
   const update = async (
     data: UpdatePriorAuthorizationDto
-  ): Promise<MutationResult | null> => {
+  ): Promise<UpdateMutationResult | null> => {
     setIsLoading(true)
     setError(null)
 

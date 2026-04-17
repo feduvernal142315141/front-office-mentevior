@@ -11,6 +11,7 @@ import { getPayersService } from "@/lib/modules/payers/services/payers.service"
 import type { Payer, PayerRateEmbed } from "@/lib/types/payer.types"
 import { cn } from "@/lib/utils"
 import { parseLocalDate } from "@/lib/date"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 import { usePayersTable } from "../hooks/usePayersTable"
 
 export interface PayersTableRef {
@@ -366,7 +367,14 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                           </div>
 
                           {/* Rate rows */}
-                          {rates.map((rate, idx) => (
+                          {rates.map((rate, idx) => {
+                            const billingCodeDisplay = formatBillingCodeDisplay({
+                              type: rate.billingCodeType || rate.billingCodeTypeName || rate.billingCodeTypeCode || "",
+                              code: rate.billingCode ?? rate.billingCodeId,
+                              modifier: rate.billingModifier,
+                            })
+
+                            return (
                             <div
                               key={rate.id ?? idx}
                               className={cn(
@@ -375,10 +383,7 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                               )}
                             >
                               <span className="text-sm font-medium text-[#037ECC]">
-                                {rate.billingCode ?? rate.billingCodeId}
-                                {rate.billingModifier?.trim() && (
-                                  <span> ({rate.billingModifier})</span>
-                                )}
+                                {billingCodeDisplay}
                               </span>
                               <span className="text-sm tabular-nums text-slate-700 text-center">
                                 {rate.amount}
@@ -390,7 +395,8 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                                 {rate.intervalType || "—"}
                               </span>
                             </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { forwardRef } from "react"
 import { cn } from "@/lib/utils"
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
   name?: string
 }
 
-export function FloatingInput({
+export const FloatingInput = forwardRef<HTMLInputElement, Props>(function FloatingInput({
   label,
   value,
   onChange,
@@ -36,11 +37,12 @@ export function FloatingInput({
   disabled,
   required,
   name,
-}: Props) {
+}, ref) {
   return (
     <div className="w-full">
       <div className="relative w-full">
         <input
+          ref={ref}
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -107,4 +109,4 @@ export function FloatingInput({
       </div>
     </div>
   )
-}
+})

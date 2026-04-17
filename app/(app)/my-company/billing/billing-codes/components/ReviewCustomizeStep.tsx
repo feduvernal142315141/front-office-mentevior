@@ -10,6 +10,7 @@ import { Lock, Loader2 } from "lucide-react"
 import { billingCodeFormSchema, getBillingCodeFormFromCatalog, type BillingCodeFormValues } from "@/lib/schemas/billing-code-form.schema"
 import type { BillingCodeCatalogItem } from "@/lib/types/billing-code.types"
 import { useCreateBillingCode } from "@/lib/modules/billing-codes/hooks/use-create-billing-code"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 interface ReviewCustomizeStepProps {
   catalogCode: BillingCodeCatalogItem
@@ -82,7 +83,13 @@ export function ReviewCustomizeStep({ catalogCode, onSuccess, onCancel }: Review
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Code</label>
-              <div className="text-2xl font-bold text-gray-900">{catalogCode.code}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {formatBillingCodeDisplay({
+                  type: catalogCode.type,
+                  code: catalogCode.code,
+                  modifier: catalogCode.modifier,
+                })}
+              </div>
             </div>
 
             <div>

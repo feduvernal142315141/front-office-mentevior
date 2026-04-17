@@ -22,6 +22,11 @@ export interface InsurancePlanRateRow extends InsurancePlanRateDto {
   currencyCode?: string
   /** Resolved by the backend on GET responses (e.g. "H2019") */
   billingCodeName?: string
+  billingCode?: string
+  billingModifier?: string
+  billingCodeType?: string
+  billingCodeTypeName?: string
+  billingCodeTypeCode?: string
 }
 
 export interface InsurancePlanGeneralPayload {

@@ -4,7 +4,8 @@ import type {
   CreateClientInsuranceDto,
   UpdateClientInsuranceDto,
 } from "@/lib/types/client-insurance.types"
-import type { MutationResult } from "@/lib/types/response.types"
+import { parseProgressOrNull, parseProgressOrZero } from "@/lib/utils/progress"
+import type { MutationResult, UpdateMutationResult } from "@/lib/types/response.types"
 
 /**
  * Normalizes an ISO datetime string (e.g. "2026-03-31T00:00:00.000+00:00")
@@ -72,10 +73,10 @@ export async function createClientInsurance(data: CreateClientInsuranceDto): Pro
     throw new Error(response.data?.message || "Failed to create insurance")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrZero(response.data) }
 }
 
-export async function updateClientInsurance(data: UpdateClientInsuranceDto): Promise<MutationResult> {
+export async function updateClientInsurance(data: UpdateClientInsuranceDto): Promise<UpdateMutationResult> {
   const response = await servicePut<UpdateClientInsuranceDto, number>(
     "/insurances",
     data
@@ -85,7 +86,7 @@ export async function updateClientInsurance(data: UpdateClientInsuranceDto): Pro
     throw new Error(response.data?.message || "Failed to update insurance")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrNull(response.data) }
 }
 
 export async function deleteClientInsurance(insuranceId: string): Promise<number> {
@@ -95,5 +96,5 @@ export async function deleteClientInsurance(insuranceId: string): Promise<number
     throw new Error(response.data?.message || "Failed to delete insurance")
   }
 
-  return Number(response.data) || 0
+  return parseProgressOrZero(response.data)
 }

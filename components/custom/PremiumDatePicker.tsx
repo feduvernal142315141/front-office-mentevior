@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
@@ -19,7 +19,7 @@ interface PremiumDatePickerProps {
   required?: boolean
 }
 
-export function PremiumDatePicker({
+export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePickerProps>(function PremiumDatePicker({
   value,
   onChange,
   onBlur,
@@ -29,7 +29,7 @@ export function PremiumDatePicker({
   errorMessage,
   description,
   required = false,
-}: PremiumDatePickerProps) {
+}, ref) {
   const [isFocused, setIsFocused] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const currentYear = new Date().getFullYear()
@@ -106,6 +106,7 @@ export function PremiumDatePicker({
         <PopoverTrigger asChild>
           <div className="relative">
             <button
+              ref={ref}
               type="button"
               onFocus={() => setIsFocused(true)}
               onBlur={() => {
@@ -341,4 +342,4 @@ export function PremiumDatePicker({
       )}
     </div>
   )
-}
+})

@@ -355,7 +355,9 @@ export function Step2Addresses({
       })
       if (!result) return
 
-      onProgressUpdate?.(result.progress)
+      if (typeof result.progress === "number") {
+        onProgressUpdate?.(result.progress)
+      }
       setEditingAddress(null)
       form.reset(defaultValues)
       setAddressModalStage("select-source")
@@ -372,7 +374,9 @@ export function Step2Addresses({
       })
       if (!result) return
 
-      onProgressUpdate?.(result.progress)
+      if (typeof result.progress === "number") {
+        onProgressUpdate?.(result.progress)
+      }
       form.reset(defaultValues)
       setAddressModalStage("select-source")
       setIsAddressModalOpen(false)
@@ -410,7 +414,9 @@ export function Step2Addresses({
     const result = await create(payload)
     if (!result) return
 
-    onProgressUpdate?.(result.progress)
+    if (typeof result.progress === "number") {
+      onProgressUpdate?.(result.progress)
+    }
     form.reset(defaultValues)
     setAddressModalStage("select-source")
     setIsAddressModalOpen(false)

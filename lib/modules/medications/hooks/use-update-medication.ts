@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import type { UpdateMedicationDto } from "@/lib/types/medication.types"
-import type { MutationResult } from "@/lib/types/response.types"
+import type { UpdateMutationResult } from "@/lib/types/response.types"
 import { updateMedication } from "../services/medications.service"
 
 interface UseUpdateMedicationReturn {
-  update: (medicationId: string, data: UpdateMedicationDto) => Promise<MutationResult | null>
+  update: (medicationId: string, data: UpdateMedicationDto) => Promise<UpdateMutationResult | null>
   isLoading: boolean
   error: string | null
 }
@@ -16,7 +16,7 @@ export function useUpdateMedication(): UseUpdateMedicationReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const update = async (medicationId: string, data: UpdateMedicationDto): Promise<MutationResult | null> => {
+  const update = async (medicationId: string, data: UpdateMedicationDto): Promise<UpdateMutationResult | null> => {
     setIsLoading(true)
     setError(null)
 

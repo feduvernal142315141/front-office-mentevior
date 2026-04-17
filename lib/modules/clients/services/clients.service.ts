@@ -7,7 +7,8 @@ import type {
 } from "@/lib/types/client.types"
 import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import { getQueryString } from "@/lib/utils/format"
-import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
+import { parseProgressOrNull, parseProgressOrZero } from "@/lib/utils/progress"
+import type { MutationResult, PaginatedResponse, UpdateMutationResult } from "@/lib/types/response.types"
 
 interface ClientListBackend extends ClientListItem {
   diagnosisCode?: string
@@ -68,17 +69,17 @@ export async function createClient(data: CreateClientDto): Promise<MutationResul
 
   const body = response.data as { id?: string; progress?: number } | number
   const clientId = typeof body === "object" ? body?.id : undefined
-  const progress = typeof body === "object" ? (body?.progress ?? 0) : Number(body) || 0
+  const progress = typeof body === "object" ? parseProgressOrZero(body?.progress) : parseProgressOrZero(body)
 
   return { progress, clientId }
 }
 
-export async function updateClient(id: string, data: UpdateClientDto): Promise<MutationResult> {
+export async function updateClient(id: string, data: UpdateClientDto): Promise<UpdateMutationResult> {
   const response = await servicePut<UpdateClientDto, number>("/client", { ...data, id })
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to update client")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrNull(response.data) }
 }

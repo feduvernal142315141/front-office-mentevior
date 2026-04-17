@@ -280,7 +280,9 @@ export function StepInsurances({
         })
 
         if (!result) return
-        onProgressUpdate?.(result.progress)
+        if (typeof result.progress === "number") {
+          onProgressUpdate?.(result.progress)
+        }
       } else {
         const result = await create({
           clientId: resolvedClientId,
@@ -296,7 +298,9 @@ export function StepInsurances({
         })
 
         if (!result) return
-        onProgressUpdate?.(result.progress)
+        if (typeof result.progress === "number") {
+          onProgressUpdate?.(result.progress)
+        }
       }
 
       form.reset(clientInsuranceFormDefaults)

@@ -6,6 +6,7 @@ import { Button } from "@/components/custom/Button"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import type { LocalInsurancePlanRate } from "@/lib/types/payer.types"
 import { cn } from "@/lib/utils"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 interface RatesSectionProps {
   entries: LocalInsurancePlanRate[]
@@ -55,7 +56,13 @@ export function RatesSection({
             </span>
           </div>
 
-          {entries.map((entry, idx) => (
+          {entries.map((entry, idx) => {
+            const billingCodeDisplay = formatBillingCodeDisplay({
+              code: entry.billingCodeLabel,
+              modifier: entry.billingModifier,
+            })
+
+            return (
             <div
               key={entry._tempId}
               className={cn(
@@ -66,12 +73,9 @@ export function RatesSection({
               <div className="min-w-0">
                 <span
                   className="text-sm font-medium text-slate-800 truncate block"
-                  title={entry.billingModifier ? `${entry.billingCodeLabel} (${entry.billingModifier})` : entry.billingCodeLabel}
+                  title={billingCodeDisplay}
                 >
-                  {entry.billingCodeLabel}
-                  {entry.billingModifier && (
-                    <span> ({entry.billingModifier})</span>
-                  )}
+                  {billingCodeDisplay}
                 </span>
                 {entry.alias && (
                   <span className="text-xs text-slate-400">{entry.alias}</span>
@@ -118,7 +122,8 @@ export function RatesSection({
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -138,7 +143,7 @@ export function RatesSection({
         }}
         title="Delete Rate"
         message="Are you sure you want to delete this rate? This action cannot be undone."
-        itemName={pendingDelete?.billingCodeLabel}
+        itemName={pendingDelete ? formatBillingCodeDisplay({ code: pendingDelete.billingCodeLabel, modifier: pendingDelete.billingModifier }) : undefined}
         isDeleting={isDeleting}
       />
     </div>

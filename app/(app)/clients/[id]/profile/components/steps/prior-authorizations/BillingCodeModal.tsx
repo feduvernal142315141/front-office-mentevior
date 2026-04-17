@@ -16,6 +16,8 @@ import {
 import type { LocalBillingCodeEntry } from "@/lib/types/prior-authorization.types"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import { cn } from "@/lib/utils"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
+import { BILLING_CODE_AUTO_UNITS } from "@/lib/constants/billing-code-rules"
 
 interface BillingCodeModalProps {
   open: boolean
@@ -73,12 +75,18 @@ export function BillingCodeModal({
     )
     .map((bc) => ({
       value: bc.id,
-      label: bc.code,
+      label: formatBillingCodeDisplay({ type: bc.type, code: bc.code, modifier: bc.modifier }),
     }))
 
   const handleSubmit = form.handleSubmit((values) => {
     const selected = billingCodes.find((bc) => bc.id === values.billingCodeId)
-    const label = selected?.code ?? values.billingCodeId
+    const label = selected
+      ? formatBillingCodeDisplay({
+          type: selected.type,
+          code: selected.code,
+          modifier: selected.modifier,
+        })
+      : values.billingCodeId
     onConfirm(values, label)
   })
 
@@ -93,6 +101,8 @@ export function BillingCodeModal({
       onOpenChange={(o) => { if (!o) handleClose() }}
       title={editingCode ? "Edit authorization code" : "New authorization code"}
       maxWidthClassName="sm:max-w-[600px]"
+      allowSelectOverflow
+      contentClassName="overflow-visible"
     >
       <form
         onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}
@@ -108,7 +118,14 @@ export function BillingCodeModal({
               <FloatingSelect
                 label="Allowed Billing Code"
                 value={field.value}
-                onChange={field.onChange}
+                onChange={(id) => {
+                  field.onChange(id)
+                  const autoUnits = BILLING_CODE_AUTO_UNITS[id]
+                  form.setValue(
+                    "approvedUnits",
+                    autoUnits !== undefined ? autoUnits : (null as unknown as number),
+                  )
+                }}
                 onBlur={field.onBlur}
                 options={billingCodeOptions}
                 searchable
@@ -202,72 +219,8 @@ export function BillingCodeModal({
         </div>
 
         {/* Max Units per period */}
-        <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            Max Units per Period
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            {(["Day", "Week", "Month"] as const).map((period) => {
-              const key = `maxUnitsPer${period}` as
-                | "maxUnitsPerDay"
-                | "maxUnitsPerWeek"
-                | "maxUnitsPerMonth"
-              return (
-                <Controller
-                  key={key}
-                  name={key}
-                  control={form.control}
-                  render={({ field }) => (
-                    <FloatingInput
-                      label={`Per ${period}`}
-                      value={field.value === null || field.value === undefined ? "" : String(field.value)}
-                      onChange={(v) => {
-                        field.onChange(v === "" ? null : parseInt(v, 10) || null)
-                      }}
-                      onBlur={field.onBlur}
-                      inputMode="numeric"
-                      placeholder="No Restriction"
-                    />
-                  )}
-                />
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Max Count per period */}
-        <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            Max Count per Period
-          </p>
-          <div className="grid grid-cols-3 gap-4">
-            {(["Day", "Week", "Month"] as const).map((period) => {
-              const key = `maxCountPer${period}` as
-                | "maxCountPerDay"
-                | "maxCountPerWeek"
-                | "maxCountPerMonth"
-              return (
-                <Controller
-                  key={key}
-                  name={key}
-                  control={form.control}
-                  render={({ field }) => (
-                    <FloatingInput
-                      label={`Per ${period}`}
-                      value={field.value === null || field.value === undefined ? "" : String(field.value)}
-                      onChange={(v) => {
-                        field.onChange(v === "" ? null : parseInt(v, 10) || null)
-                      }}
-                      onBlur={field.onBlur}
-                      inputMode="numeric"
-                      placeholder="No Restriction"
-                    />
-                  )}
-                />
-              )
-            })}
-          </div>
-        </div>
+        
+     
 
         {/* Actions */}
         <div className="flex items-center justify-end border-t border-slate-200 pt-5">

@@ -1,5 +1,6 @@
 import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
-import type { MutationResult, PaginatedResponse } from "@/lib/types/response.types"
+import { parseProgressOrNull, parseProgressOrZero } from "@/lib/utils/progress"
+import type { MutationResult, PaginatedResponse, UpdateMutationResult } from "@/lib/types/response.types"
 import type { Caregiver, CreateCaregiverDto, UpdateCaregiverDto } from "@/lib/types/caregiver.types"
 
 type UpdateCaregiverPayload = UpdateCaregiverDto & { id: string }
@@ -116,10 +117,10 @@ export async function createCaregiver(data: CreateCaregiverDto): Promise<Mutatio
     throw new Error(response.data?.message || "Failed to create caregiver")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrZero(response.data) }
 }
 
-export async function updateCaregiver(caregiverId: string, data: UpdateCaregiverDto): Promise<MutationResult> {
+export async function updateCaregiver(caregiverId: string, data: UpdateCaregiverDto): Promise<UpdateMutationResult> {
   const response = await servicePut<UpdateCaregiverPayload, number>("/client/caregiver", {
     id: caregiverId,
     ...data,
@@ -129,7 +130,7 @@ export async function updateCaregiver(caregiverId: string, data: UpdateCaregiver
     throw new Error(response.data?.message || "Failed to update caregiver")
   }
 
-  return { progress: Number(response.data) || 0 }
+  return { progress: parseProgressOrNull(response.data) }
 }
 
 export async function removeCaregiver(caregiverId: string): Promise<number> {
@@ -139,5 +140,5 @@ export async function removeCaregiver(caregiverId: string): Promise<number> {
     throw new Error(response.data?.message || "Failed to remove caregiver")
   }
 
-  return Number(response.data) || 0
+  return parseProgressOrZero(response.data)
 }

@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 import { Card } from "@/components/custom/Card"
-import { Button } from "@/components/custom/Button"
-import { PriorAuthBaseForm } from "./PriorAuthBaseForm"
+import { PriorAuthBaseForm, type PriorAuthBaseFormRefs } from "./PriorAuthBaseForm"
+import { useFocusFirstError } from "@/lib/hooks/use-focus-first-error"
 import { BillingCodesSection } from "./BillingCodesSection"
 import { BillingCodeModal } from "./BillingCodeModal"
 import {
@@ -31,6 +31,9 @@ interface PriorAuthCreateViewProps {
   onBack: () => void
   onSaved: () => Promise<void>
   onProgressUpdate?: (progress: number) => void
+  onRegisterSubmit?: (fn: () => void) => void
+  onDirtyChange?: (isDirty: boolean) => void
+  onPrimaryActionLabelChange?: (label: string | undefined) => void
 }
 
 export function PriorAuthCreateView({
@@ -39,6 +42,9 @@ export function PriorAuthCreateView({
   onBack,
   onSaved,
   onProgressUpdate,
+  onRegisterSubmit,
+  onDirtyChange,
+  onPrimaryActionLabelChange,
 }: PriorAuthCreateViewProps) {
   const form = useForm<PriorAuthFormValues>({
     resolver: zodResolver(priorAuthFormSchema),
@@ -46,10 +52,28 @@ export function PriorAuthCreateView({
     mode: "onChange",
   })
 
+  const { formState: { errors, submitCount } } = form
   const { create, isLoading: isCreating } = useCreatePriorAuthorization()
+
+  const fieldRefs: PriorAuthBaseFormRefs = {
+    authNumber:       useRef<HTMLInputElement>(null),
+    insuranceId:      useRef<HTMLButtonElement>(null),
+    startDate:        useRef<HTMLButtonElement>(null),
+    endDate:          useRef<HTMLButtonElement>(null),
+    durationInterval: useRef<HTMLButtonElement>(null),
+  }
+
+  useFocusFirstError(errors, submitCount, [
+    { key: "authNumber",       ref: fieldRefs.authNumber },
+    { key: "insuranceId",      ref: fieldRefs.insuranceId },
+    { key: "startDate",        ref: fieldRefs.startDate },
+    { key: "endDate",          ref: fieldRefs.endDate },
+    { key: "durationInterval", ref: fieldRefs.durationInterval },
+  ])
 
   // In-memory billing codes
   const [billingCodes, setBillingCodes] = useState<LocalBillingCodeEntry[]>([])
+  const [billingCodesError, setBillingCodesError] = useState(false)
 
   // BC modal state
   const [isBCModalOpen, setIsBCModalOpen] = useState(false)
@@ -58,6 +82,21 @@ export function PriorAuthCreateView({
   // Billing code catalog
   const [catalogBillingCodes, setCatalogBillingCodes] = useState<BillingCodeListItem[]>([])
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(false)
+
+  useEffect(() => {
+    onPrimaryActionLabelChange?.("Create Authorization")
+    onRegisterSubmit?.(() => handleSubmitForm({ preventDefault: () => {} } as React.FormEvent))
+    return () => {
+      onDirtyChange?.(false)
+      onPrimaryActionLabelChange?.(undefined)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const { isDirty } = form.formState
+  useEffect(() => {
+    onDirtyChange?.(isDirty || billingCodes.length > 0)
+  }, [isDirty, billingCodes.length, onDirtyChange])
 
   useEffect(() => {
     let cancelled = false
@@ -137,6 +176,7 @@ export function PriorAuthCreateView({
         maxCountPerMonth: values.maxCountPerMonth ?? null,
       }
       setBillingCodes((prev) => [...prev, newEntry])
+      setBillingCodesError(false)
     }
 
     setIsBCModalOpen(false)
@@ -144,9 +184,14 @@ export function PriorAuthCreateView({
   }
 
   // ── Save ────────────────────────────────────────────────────────
+  const handleSubmitForm = (e: React.FormEvent) => {
+    if (billingCodes.length === 0) setBillingCodesError(true)
+    else setBillingCodesError(false)
+    handleSave(e)
+  }
+
   const handleSave = form.handleSubmit(async (values) => {
     if (billingCodes.length === 0) {
-      toast.error("At least one billing code is required")
       return
     }
 
@@ -179,7 +224,9 @@ export function PriorAuthCreateView({
 
     const result = await create(dto)
     if (result) {
-      onProgressUpdate?.(result.progress)
+      if (typeof result.progress === "number") {
+        onProgressUpdate?.(result.progress)
+      }
       await onSaved()
       onBack()
     }
@@ -202,10 +249,10 @@ export function PriorAuthCreateView({
         </div>
       </div>
 
-      <form onSubmit={handleSave}>
+      <form onSubmit={handleSubmitForm}>
         <Card variant="elevated" padding="lg">
           <div className="space-y-8">
-            <PriorAuthBaseForm form={form} insurances={insurances} clientId={clientId} />
+            <PriorAuthBaseForm form={form} insurances={insurances} clientId={clientId} fieldRefs={fieldRefs} />
 
             {/* Divider */}
             <div className="border-t border-slate-200" />
@@ -213,27 +260,19 @@ export function PriorAuthCreateView({
             {/* Billing Codes Section */}
             <div>
               <h3 className="mb-4 text-lg font-semibold text-slate-800">
-                Authorization Billing Codes
+                Authorization Billing Codes <span className="text-[#037ECC]">*</span>
               </h3>
               <BillingCodesSection
                 entries={billingCodes}
                 onAdd={handleAddBillingCode}
                 onEdit={handleEditBillingCode}
                 onDelete={handleDeleteBillingCode}
+                hasError={billingCodesError}
               />
             </div>
           </div>
         </Card>
 
-        {/* Inline footer buttons */}
-        <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-200 mt-6">
-          <Button type="button" variant="secondary" onClick={onBack} disabled={isCreating}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={isCreating} disabled={isCreating}>
-            Create Authorization
-          </Button>
-        </div>
       </form>
 
       <BillingCodeModal

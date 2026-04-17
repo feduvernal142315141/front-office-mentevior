@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import type { UpdateCaregiverDto } from "@/lib/types/caregiver.types"
-import type { MutationResult } from "@/lib/types/response.types"
+import type { UpdateMutationResult } from "@/lib/types/response.types"
 import { updateCaregiver } from "../services/caregivers.service"
 
 interface UseUpdateCaregiverReturn {
-  update: (caregiverId: string, data: UpdateCaregiverDto) => Promise<MutationResult | null>
+  update: (caregiverId: string, data: UpdateCaregiverDto) => Promise<UpdateMutationResult | null>
   isLoading: boolean
   error: string | null
 }
@@ -16,7 +16,7 @@ export function useUpdateCaregiver(): UseUpdateCaregiverReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const update = async (caregiverId: string, data: UpdateCaregiverDto): Promise<MutationResult | null> => {
+  const update = async (caregiverId: string, data: UpdateCaregiverDto): Promise<UpdateMutationResult | null> => {
     setIsLoading(true)
     setError(null)
 

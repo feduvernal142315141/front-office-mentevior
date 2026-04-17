@@ -14,6 +14,7 @@ import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { deleteBillingCode } from "@/lib/modules/billing-codes/services/billing-codes.service"
 import { toast } from "sonner"
 import { FilterOperator } from "@/lib/models/filterOperator"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 type StatusFilter = "all" | "active" | "inactive"
 type TypeFilter = "all" | "CPT" | "HCPCS"
@@ -155,7 +156,9 @@ export function useBillingCodesTable() {
       key: "code",
       header: "Code",
       render: (item: BillingCodeListItem) => (
-        <span className="text-sm text-gray-900">{item.modifier !=="" && item.modifier !==" " ? `${item.code}-${item.modifier}` : item.code}</span>
+        <span className="text-sm text-gray-900">
+          {formatBillingCodeDisplay({ type: item.type, code: item.code, modifier: item.modifier })}
+        </span>
       ),
     },
     {
@@ -273,7 +276,15 @@ export function useBillingCodesTable() {
         onConfirm={handleDeleteConfirm}
         title="Delete Billing Code"
         message="Are you sure you want to delete this billing code? This action cannot be undone."
-        itemName={codeToDelete ? `${codeToDelete.code} - ${codeToDelete.type}` : undefined}
+        itemName={
+          codeToDelete
+            ? formatBillingCodeDisplay({
+                type: codeToDelete.type,
+                code: codeToDelete.code,
+                modifier: codeToDelete.modifier,
+              })
+            : undefined
+        }
         isDeleting={isDeleting}
       />
     ),

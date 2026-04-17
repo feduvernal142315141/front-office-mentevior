@@ -5,6 +5,7 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useBillingCodeTypes } from "@/lib/modules/billing-codes/hooks/use-billing-code-types"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 interface BillingCodeFormFieldsProps {
   isEditing: boolean
@@ -12,7 +13,7 @@ interface BillingCodeFormFieldsProps {
   onCancel: () => void
   placesOfService: { id: string; name: string }[]
   isLoadingPlaces: boolean
-  parentOptions: { id: string; code: string; description: string }[]
+  parentOptions: { id: string; type: string; code: string; modifier?: string; description: string }[]
   isLoadingParents: boolean
 }
 
@@ -151,13 +152,17 @@ export function BillingCodeFormFields({
                       value={field.value || ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
-                      options={[
-                        { value: "", label: "None" },
-                        ...parentOptions.map(p => ({ 
-                          value: p.id, 
-                          label: p.code
-                        }))
-                      ]}
+                        options={[
+                          { value: "", label: "None" },
+                          ...parentOptions.map(p => ({ 
+                            value: p.id, 
+                            label: formatBillingCodeDisplay({
+                              type: p.type,
+                              code: p.code,
+                              modifier: p.modifier,
+                            })
+                          }))
+                        ]}
                       hasError={!!fieldState.error}
                       disabled={isLoadingParents}
                     />

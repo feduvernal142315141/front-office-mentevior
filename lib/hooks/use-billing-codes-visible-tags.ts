@@ -20,7 +20,7 @@ export function useBillingCodesVisibleTags(): number {
     const w = window.innerWidth
     if (w >= 1400) return 4
     if (w >= 1207) return 3
-    if (w >= 1207)  return 2
+    if (w >= 900)  return 2
     return 1
   }
 

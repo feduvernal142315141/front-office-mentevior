@@ -11,6 +11,7 @@ import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Button } from "@/components/custom/Button"
 import type { LocalInsurancePlanRate } from "@/lib/types/payer.types"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 
 const INTERVAL_OPTIONS = [
   { value: "EVENT", label: "Event" },
@@ -104,7 +105,7 @@ export function RateModal({
     )
     .map((bc) => ({
       value: bc.id,
-      label: bc.code,
+      label: formatBillingCodeDisplay({ type: bc.type, code: bc.code, modifier: bc.modifier }),
     }))
 
   const currencyOptions = currencies.map((c) => ({
@@ -114,7 +115,9 @@ export function RateModal({
 
   const handleSubmit = form.handleSubmit((values) => {
     const selectedBC = billingCodes.find((bc) => bc.id === values.billingCodeId)
-    const billingCodeLabel = selectedBC?.code ?? values.billingCodeId
+    const billingCodeLabel = selectedBC
+      ? formatBillingCodeDisplay({ type: selectedBC.type, code: selectedBC.code })
+      : values.billingCodeId
     const billingModifier = selectedBC?.modifier?.trim() || undefined
 
     const selectedCurrency = currencies.find((c) => c.id === values.currencyId)
