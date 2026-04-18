@@ -27,6 +27,29 @@ import type { AppointmentConfig } from "@/lib/types/appointment-config.types"
 import { cn } from "@/lib/utils"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 import { formatTimeTo24h } from "@/lib/utils/time-format"
+import type { EventTimeField } from "@/lib/types/appointment-config.types"
+
+/**
+ * 24h string "17:45" → EventTimeField { code:"PM", value:"05:45" }
+ * The FloatingTimePicker always commits 24h strings via onChange.
+ */
+function toTimeField(raw24h: string): EventTimeField {
+  const [hStr = "0", mStr = "00"] = raw24h.split(":")
+  const h24 = Number(hStr)
+  const code: "AM" | "PM" = h24 >= 12 ? "PM" : "AM"
+  const h12 = h24 % 12 || 12
+  return { code, value: `${String(h12).padStart(2, "0")}:${mStr}` }
+}
+
+/**
+ * EventTimeField { code:"PM", value:"05:45" } → 24h string "17:45"
+ * so FloatingTimePicker can render it correctly.
+ */
+function fromTimeField(field: EventTimeField | string | undefined): string {
+  if (!field) return ""
+  if (typeof field === "string") return field
+  return formatTimeTo24h(`${field.value} ${field.code}`) ?? ""
+}
 
 const EVENTS_PATH = "/my-company/events"
 
@@ -48,7 +71,6 @@ type SwitchField = keyof Pick<
   | "allowEditByUser"
   | "allowNewLocation"
   | "allowedCredentials"
-  | "invoiceable"
   | "showEventInfo"
   | "active"
 >
@@ -61,7 +83,6 @@ const SWITCH_ITEMS: { label: string; description?: string; field: SwitchField }[
   { label: "Allow edit by user",           field: "allowEditByUser" },
   { label: "Allow new location",           field: "allowNewLocation" },
   { label: "Allow signature",              field: "allowSignature" },
-  { label: "Invoiceable",                  field: "invoiceable" },
   { label: "Require data collection",      field: "requiredDataCollection" },
   { label: "Require location",             field: "requiredLocation" },
   { label: "Require prior authorization",  field: "requiredPriorAuthorization" },
@@ -91,10 +112,13 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
   const form = useForm<AppointmentConfigFormValues>({
     resolver: zodResolver(appointmentConfigSchema),
     defaultValues: getAppointmentConfigDefaults(),
-    mode: "onBlur",
+    mode: "onChange",
   })
 
-  const { handleSubmit, watch, setValue, formState: { errors, submitCount } } = form
+  const { handleSubmit, watch, setValue: baseSetValue, formState: { errors, submitCount } } = form
+  // Wrapper so every programmatic change re-runs validation (true onChange UX).
+  const setValue: typeof baseSetValue = (name, value, options) =>
+    baseSetValue(name, value, { shouldValidate: true, shouldDirty: true, ...options })
 
   const refLeadTime        = useRef<HTMLButtonElement>(null)
   const refLagTime         = useRef<HTMLButtonElement>(null)
@@ -134,10 +158,9 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       // Scheduling
       leadTimeId:      config.leadTimeId,
       lagTimeId:       config.lagTimeId,
-      startTime:       config.startTime,
-      endTime:         config.endTime,
-      allowedDays:     config.allowedDays,
-      allowedSubEvents: config.allowedSubEvents,
+      startTime:       fromTimeField(config.startTime),
+      endTime:         fromTimeField(config.endTime),
+      allowedSubEvents: config.allowedSubEvents ?? "",
 
       // Numeric limits
       maxNumberLocations:               String(config.maxNumberLocations),
@@ -165,7 +188,6 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       allowEditByUser:            config.allowEditByUser,
       allowNewLocation:           config.allowNewLocation,
       allowedCredentials:         config.allowedCredentials,
-      invoiceable:                config.invoiceable,
       showEventInfo:              config.showEventInfo,
       active:                     config.active,
 
@@ -188,9 +210,6 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
   }
 
   const onSubmit = handleSubmit(async (data) => {
-    const normalizedStartTime = formatTimeTo24h(data.startTime)
-    const normalizedEndTime = formatTimeTo24h(data.endTime)
-
     const result = await upsert({
       ...(config?.id ? { id: config.id } : {}),
 
@@ -201,10 +220,9 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       // Scheduling
       leadTimeId:      data.leadTimeId,
       lagTimeId:       data.lagTimeId,
-      startTime:       normalizedStartTime ?? data.startTime,
-      endTime:         normalizedEndTime ?? data.endTime,
-      allowedDays:     data.allowedDays,
-      allowedSubEvents: data.allowedSubEvents,
+      startTime:       toTimeField(data.startTime),
+      endTime:         toTimeField(data.endTime),
+      allowedSubEvents: data.allowedSubEvents || null,
 
       // Numeric limits
       maxNumberLocations:               Number(data.maxNumberLocations),
@@ -234,18 +252,18 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       allowEditByUser:            data.allowEditByUser,
       allowNewLocation:           data.allowNewLocation,
       allowedCredentials:         data.allowedCredentials,
-      billable:                   config?.billable ?? false,
-      invoiceable:                data.invoiceable,
       showEventInfo:              data.showEventInfo,
       showPreview:                config?.showPreview ?? false,
       active:                     data.active,
 
       // Appearance
       color: data.color ?? "",
-      roundingFunction: config?.roundingFunction ?? "Round",
     })
 
     if (result) router.push(EVENTS_PATH)
+  }, (formErrors) => {
+    // eslint-disable-next-line no-console
+    console.warn("[AppointmentConfigForm] validation failed:", formErrors)
   })
 
   return (
@@ -483,7 +501,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 <div className="w-full">
                   <FloatingInput
                     ref={refConsecClient}
-                    label="Max allowed days client"
+                    label="Max days allowed per client"
                     value={w.maxAllowedDaysClient}
                     onChange={(v) => setValue("maxAllowedDaysClient", v.replace(/\D/g, ""))}
                     onBlur={() => form.trigger("maxAllowedDaysClient")}
@@ -497,7 +515,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                 <div className="w-full">
                   <FloatingInput
                     ref={refConsecProvider}
-                    label="Max allowed days provider"
+                    label="Max days allowed per provider"
                     value={w.maxAllowedDaysProvider}
                     onChange={(v) => setValue("maxAllowedDaysProvider", v.replace(/\D/g, ""))}
                     onBlur={() => form.trigger("maxAllowedDaysProvider")}

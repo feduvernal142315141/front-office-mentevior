@@ -8,12 +8,13 @@ import { formatTimeTo12h, formatTimeTo24h } from "@/lib/utils/time-format"
 
 /**
  * Formatea dígitos crudos en "hh:mm" a medida que el usuario escribe.
+ *  - Al completar el 2do dígito inserta ":" automáticamente.
  *  - Máx 4 dígitos (hh + mm).
- *  - A partir del 3er dígito inserta ":" automáticamente.
  */
 function formatDigitsWhileTyping(digits: string): string {
   const d = digits.replace(/\D/g, "").slice(0, 4)
-  if (d.length <= 2) return d
+  if (d.length < 2) return d
+  if (d.length === 2) return `${d}:`
   return `${d.slice(0, 2)}:${d.slice(2)}`
 }
 
@@ -90,6 +91,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
   const minuteRef = useRef<HTMLDivElement>(null)
   const [manualValue, setManualValue] = useState("")
   const [period, setPeriod] = useState<"AM" | "PM">("AM")
+  const prevManualValueRef = useRef("")
 
   const [selectedHour, selectedMinute] = value ? value.split(":") : ["", ""]
   const hasValue = allowManualInput ? manualValue.length > 0 : Boolean(value)
@@ -111,6 +113,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
 
     const [timePart, parsedPeriod] = formatted12h.split(" ")
     setManualValue(timePart)
+    prevManualValueRef.current = timePart
     setPeriod(parsedPeriod === "PM" ? "PM" : "AM")
   }, [allowManualInput, value])
 
@@ -196,7 +199,26 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
               type="text"
               value={manualValue}
               onChange={(e) => {
-                const formatted = formatDigitsWhileTyping(e.target.value)
+                const newRaw = e.target.value
+                const newDigits = newRaw.replace(/\D/g, "")
+                const prevValue = prevManualValueRef.current
+                const prevDigits = prevValue.replace(/\D/g, "")
+
+                let formatted: string
+                // Detect backspace over the auto-inserted colon:
+                // same digit count + prev ended with ":" + new raw has no ":"
+                if (
+                  newDigits.length === prevDigits.length &&
+                  newDigits.length === 2 &&
+                  !newRaw.includes(":") &&
+                  prevValue.endsWith(":")
+                ) {
+                  formatted = newDigits.slice(0, 1)
+                } else {
+                  formatted = formatDigitsWhileTyping(newRaw)
+                }
+
+                prevManualValueRef.current = formatted
                 setManualValue(formatted)
               }}
               onKeyDown={(e) => {

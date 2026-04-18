@@ -1,3 +1,8 @@
+export interface EventTimeField {
+  code: "AM" | "PM"
+  value: string
+}
+
 /** Respuesta del GET /appointment-config */
 export interface AppointmentConfig {
   id: string
@@ -9,9 +14,7 @@ export interface AppointmentConfig {
   allowNewLocation: boolean
   allowSignature: boolean
   allowedCredentials: boolean
-  allowedDays: string
-  allowedSubEvents: string
-  billable: boolean
+  allowedSubEvents: string | null
   color: string
   maxNumberLocations: number
   requiredBillingCode: boolean
@@ -20,11 +23,10 @@ export interface AppointmentConfig {
   requiredDataCollection: boolean
   requiredLocation: boolean
   requiredUser: boolean
-  invoiceable: boolean
   leadTimeId: string
   lagTimeId: string
-  startTime: string
-  endTime: string
+  startTime: EventTimeField
+  endTime: EventTimeField
   allowOverlapping: boolean
   maxAllowedDaysClient: number
   maxAllowedDaysProvider: number
@@ -37,7 +39,6 @@ export interface AppointmentConfig {
   showEventInfo: boolean
   showPreview: boolean
   active: boolean
-  roundingFunction: "Round" | "Floor" | "Ceil"
   billingCodes: string[]
 }
 
@@ -52,9 +53,7 @@ export interface UpsertAppointmentConfigDto {
   allowNewLocation: boolean
   allowSignature: boolean
   allowedCredentials: boolean
-  allowedDays: string
-  allowedSubEvents: string
-  billable: boolean
+  allowedSubEvents: string | null
   color: string
   maxNumberLocations: number
   requiredBillingCode: boolean
@@ -63,11 +62,10 @@ export interface UpsertAppointmentConfigDto {
   requiredDataCollection: boolean
   requiredLocation: boolean
   requiredUser: boolean
-  invoiceable: boolean
   leadTimeId: string
   lagTimeId: string
-  startTime: string
-  endTime: string
+  startTime: EventTimeField
+  endTime: EventTimeField
   allowOverlapping: boolean
   maxAllowedDaysClient: number
   maxAllowedDaysProvider: number
@@ -80,6 +78,5 @@ export interface UpsertAppointmentConfigDto {
   showEventInfo: boolean
   showPreview: boolean
   active: boolean
-  roundingFunction: "Round" | "Floor" | "Ceil"
   billingCodes: string[]
 }

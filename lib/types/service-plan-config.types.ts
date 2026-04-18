@@ -1,3 +1,5 @@
+import type { EventTimeField } from "./appointment-config.types"
+
 /** Respuesta del GET /service-plan-config */
 export interface ServicePlanConfig {
   id: string
@@ -9,7 +11,6 @@ export interface ServicePlanConfig {
   allowNewLocation: boolean
   allowSignature: boolean
   allowedCredentials: boolean
-  billable: boolean
   color: string
   maxNumberLocations: number
   requiredBillingCode: boolean
@@ -17,9 +18,8 @@ export interface ServicePlanConfig {
   requiredPriorAuthorization: boolean
   requiredLocation: boolean
   requiredUser: boolean
-  invoiceable: boolean
-  startTime: string
-  endTime: string
+  startTime: EventTimeField
+  endTime: EventTimeField
   allowOverlapping: boolean
   maxAllowedDaysClient: number
   maxAllowedDaysProvider: number
@@ -33,7 +33,6 @@ export interface ServicePlanConfig {
   showPreview: boolean
   billingCodes: string[]
   active: boolean
-  roundingFunction: "Round" | "Floor" | "Ceil"
 }
 
 /** PUT /service-plan-config — id opcional: sin id = create, con id = update */
@@ -47,7 +46,6 @@ export interface UpsertServicePlanConfigDto {
   allowNewLocation: boolean
   allowSignature: boolean
   allowedCredentials: boolean
-  billable: boolean
   color: string
   maxNumberLocations: number
   requiredBillingCode: boolean
@@ -55,9 +53,8 @@ export interface UpsertServicePlanConfigDto {
   requiredPriorAuthorization: boolean
   requiredLocation: boolean
   requiredUser: boolean
-  invoiceable: boolean
-  startTime: string
-  endTime: string
+  startTime: EventTimeField
+  endTime: EventTimeField
   allowOverlapping: boolean
   maxAllowedDaysClient: number
   maxAllowedDaysProvider: number
@@ -71,5 +68,4 @@ export interface UpsertServicePlanConfigDto {
   showPreview: boolean
   billingCodes: string[]
   active: boolean
-  roundingFunction: "Round" | "Floor" | "Ceil"
 }

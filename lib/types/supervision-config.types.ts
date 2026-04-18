@@ -1,3 +1,5 @@
+import type { EventTimeField } from "./appointment-config.types"
+
 /** Respuesta del GET /supervision-config */
 export interface SupervisionConfig {
   id: string
@@ -9,7 +11,6 @@ export interface SupervisionConfig {
   allowNewLocation: boolean
   allowSignature: boolean
   allowedCredentials: boolean
-  billable: boolean
   color: string
   maxNumberLocations: number
   requiredBillingCode: boolean
@@ -17,9 +18,8 @@ export interface SupervisionConfig {
   requiredPriorAuthorization: boolean
   requiredLocation: boolean
   requiredUser: boolean
-  invoiceable: boolean
-  startTime: string
-  endTime: string
+  startTime: EventTimeField
+  endTime: EventTimeField
   allowOverlapping: boolean
   maxAllowedDaysClient: number
   maxAllowedDaysProvider: number
@@ -33,7 +33,6 @@ export interface SupervisionConfig {
   showPreview: boolean
   billingCodes: string[]
   active: boolean
-  roundingFunction: "Round" | "Floor" | "Ceil"
 }
 
 /** PUT /supervision-config — id opcional: sin id = create, con id = update */
@@ -47,7 +46,6 @@ export interface UpsertSupervisionConfigDto {
   allowNewLocation: boolean
   allowSignature: boolean
   allowedCredentials: boolean
-  billable: boolean
   color: string
   maxNumberLocations: number
   requiredBillingCode: boolean
@@ -55,9 +53,8 @@ export interface UpsertSupervisionConfigDto {
   requiredPriorAuthorization: boolean
   requiredLocation: boolean
   requiredUser: boolean
-  invoiceable: boolean
-  startTime: string
-  endTime: string
+  startTime: EventTimeField
+  endTime: EventTimeField
   allowOverlapping: boolean
   maxAllowedDaysClient: number
   maxAllowedDaysProvider: number
@@ -71,5 +68,4 @@ export interface UpsertSupervisionConfigDto {
   showPreview: boolean
   billingCodes: string[]
   active: boolean
-  roundingFunction: "Round" | "Floor" | "Ceil"
 }

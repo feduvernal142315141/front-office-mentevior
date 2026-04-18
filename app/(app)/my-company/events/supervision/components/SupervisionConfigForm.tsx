@@ -25,14 +25,24 @@ import {
 import type { SupervisionConfig } from "@/lib/types/supervision-config.types"
 import { cn } from "@/lib/utils"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
+import { formatTimeTo24h } from "@/lib/utils/time-format"
+import type { EventTimeField } from "@/lib/types/appointment-config.types"
+
+function toTimeField(raw24h: string): EventTimeField {
+  const [hStr = "0", mStr = "00"] = raw24h.split(":")
+  const h24 = Number(hStr)
+  const code: "AM" | "PM" = h24 >= 12 ? "PM" : "AM"
+  const h12 = h24 % 12 || 12
+  return { code, value: `${String(h12).padStart(2, "0")}:${mStr}` }
+}
+
+function fromTimeField(field: EventTimeField | string | undefined): string {
+  if (!field) return ""
+  if (typeof field === "string") return field
+  return formatTimeTo24h(`${field.value} ${field.code}`) ?? ""
+}
 
 const EVENTS_PATH = "/my-company/events"
-
-const ROUNDING_OPTIONS = [
-  { value: "Round", label: "Round" },
-  { value: "Floor", label: "Floor" },
-  { value: "Ceil",  label: "Ceil" },
-]
 
 type SwitchField = keyof Pick<
   SupervisionConfigFormValues,
@@ -46,8 +56,6 @@ type SwitchField = keyof Pick<
   | "allowEditByUser"
   | "allowNewLocation"
   | "allowedCredentials"
-  | "billable"
-  | "invoiceable"
   | "showEventInfo"
   | "showPreview"
   | "active"
@@ -61,8 +69,6 @@ const SWITCH_ITEMS: { label: string; description?: string; field: SwitchField }[
   { label: "Allow edit by user",          field: "allowEditByUser" },
   { label: "Allow new location",          field: "allowNewLocation" },
   { label: "Allow signature",             field: "allowSignature" },
-  { label: "Billable",                    field: "billable" },
-  { label: "Invoiceable",                 field: "invoiceable" },
   { label: "Require location",            field: "requiredLocation" },
   { label: "Require prior authorization", field: "requiredPriorAuthorization" },
   { label: "Require signature",           field: "requiredSignature" },
@@ -90,10 +96,13 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
   const form = useForm<SupervisionConfigFormValues>({
     resolver: zodResolver(supervisionConfigSchema),
     defaultValues: getSupervisionConfigDefaults(),
-    mode: "onBlur",
+    mode: "onChange",
   })
 
-  const { handleSubmit, watch, setValue, formState: { errors, submitCount } } = form
+  const { handleSubmit, watch, setValue: baseSetValue, formState: { errors, submitCount } } = form
+  // Wrapper so every programmatic change re-runs validation (true onChange UX).
+  const setValue: typeof baseSetValue = (name, value, options) =>
+    baseSetValue(name, value, { shouldValidate: true, shouldDirty: true, ...options })
 
   const refStartTime      = useRef<HTMLButtonElement>(null)
   const refEndTime        = useRef<HTMLButtonElement>(null)
@@ -127,8 +136,8 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
     if (!config) return
     form.reset({
       // Scheduling
-      startTime: config.startTime,
-      endTime:   config.endTime,
+      startTime: fromTimeField(config.startTime),
+      endTime:   fromTimeField(config.endTime),
 
       // Numeric limits
       maxNumberLocations:               String(config.maxNumberLocations),
@@ -155,15 +164,12 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
       allowEditByUser:            config.allowEditByUser,
       allowNewLocation:           config.allowNewLocation,
       allowedCredentials:         config.allowedCredentials,
-      billable:                   config.billable,
-      invoiceable:                config.invoiceable,
       showEventInfo:              config.showEventInfo,
       showPreview:                config.showPreview,
       active:                     config.active,
 
       // Appearance
       color: config.color ?? "",
-      roundingFunction: config.roundingFunction ?? "Round",
     })
   }, [config, form])
 
@@ -189,8 +195,8 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
       supervisionDescription: config?.supervisionDescription ?? "",
 
       // Scheduling
-      startTime: data.startTime,
-      endTime:   data.endTime,
+      startTime: toTimeField(data.startTime),
+      endTime:   toTimeField(data.endTime),
 
       // Numeric limits
       maxNumberLocations:               Number(data.maxNumberLocations),
@@ -219,15 +225,12 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
       allowEditByUser:            data.allowEditByUser,
       allowNewLocation:           data.allowNewLocation,
       allowedCredentials:         data.allowedCredentials,
-      billable:                   data.billable,
-      invoiceable:                data.invoiceable,
       showEventInfo:              data.showEventInfo,
       showPreview:                data.showPreview,
       active:                     data.active,
 
       // Appearance
       color: data.color ?? "",
-      roundingFunction: data.roundingFunction,
     })
 
     if (result) router.push(EVENTS_PATH)
@@ -433,7 +436,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
                 <div className="w-full">
                   <FloatingInput
                     ref={refConsecClient}
-                    label="Max allowed days client"
+                    label="Max days allowed per client"
                     value={w.maxAllowedDaysClient}
                     onChange={(v) => setValue("maxAllowedDaysClient", v.replace(/\D/g, ""))}
                     onBlur={() => form.trigger("maxAllowedDaysClient")}
@@ -447,7 +450,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
                 <div className="w-full">
                   <FloatingInput
                     ref={refConsecProvider}
-                    label="Max allowed days provider"
+                    label="Max days allowed per provider"
                     value={w.maxAllowedDaysProvider}
                     onChange={(v) => setValue("maxAllowedDaysProvider", v.replace(/\D/g, ""))}
                     onBlur={() => form.trigger("maxAllowedDaysProvider")}
@@ -458,15 +461,6 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
                   />
                   {renderFieldError(errors.maxAllowedDaysProvider?.message)}
                 </div>
-                <FloatingSelect
-                  label="Rounding function"
-                  value={w.roundingFunction}
-                  onChange={(v) => setValue("roundingFunction", v as "Round" | "Floor" | "Ceil")}
-                  onBlur={() => form.trigger("roundingFunction")}
-                  options={ROUNDING_OPTIONS}
-                  hasError={!!errors.roundingFunction}
-                  required
-                />
               </div>
 
               {/* Row 6: Rules & Restrictions ─────────────────────────────── */}

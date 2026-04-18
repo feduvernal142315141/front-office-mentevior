@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -31,6 +31,9 @@ export function DiagnosisCodeCombobox({
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState(value)
   const { items, totalCount, isLoading, termForFetch } = useDiagnosisCatalogSearch(inputValue, open)
+  // Tracks whether the latest mousedown came from the input itself, so we can
+  // prevent Radix from closing the popover when the user clicks back on it.
+  const clickedInputRef = useRef(false)
 
   useEffect(() => {
     setInputValue(value)
@@ -57,14 +60,28 @@ export function DiagnosisCodeCombobox({
   const showEmptySearch = open && isSearchMode && !isLoading && items.length === 0
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        // When Radix wants to close because of an "outside" click, but the
+        // click actually came from our own input, keep the popover open.
+        if (!next && clickedInputRef.current) {
+          clickedInputRef.current = false
+          return
+        }
+        clickedInputRef.current = false
+        setOpen(next)
+      }}
+      modal={false}
+    >
       <PopoverAnchor asChild>
         <div className="relative w-full">
           <input
             type="text"
             value={inputValue}
             onChange={(e) => handleInputChange(e.target.value)}
-            onFocus={() => {
+            onMouseDown={() => {
+              clickedInputRef.current = true
               setOpen(true)
             }}
             onBlur={() => {

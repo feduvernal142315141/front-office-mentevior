@@ -8,25 +8,35 @@ const requiredPositiveNumber = (field: string) =>
     .min(1, `${field} is required`)
     .refine((value) => Number(value) > 0, `${field} must be greater than 0`)
 
+const requiredNumberInRange = (field: string, min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${field} is required`)
+    .refine((value) => {
+      const n = Number(value)
+      if (isNaN(n)) return false
+      return n >= min && n <= max
+    }, `${field} must be between ${min} and ${max}`)
+
 export const appointmentConfigSchema = z.object({
   // ── Scheduling ──────────────────────────────────────────────────────────────
   leadTimeId:       z.string().min(1, "Lead time is required"),
   lagTimeId:        z.string().min(1, "Lag time is required"),
   startTime:        z.string().min(1, "Start time is required").refine((value) => formatTimeTo24h(value) !== null, "Start time must be valid (e.g. 09:30 AM)"),
   endTime:          z.string().min(1, "End time is required").refine((value) => formatTimeTo24h(value) !== null, "End time must be valid (e.g. 05:00 PM)"),
-  allowedDays:      z.string(),
-  allowedSubEvents: z.string(),
+  allowedSubEvents: z.string().nullish().transform((v) => v ?? ""),
 
   // ── Numeric limits ───────────────────────────────────────────────────────────
   maxNumberLocations:                 requiredPositiveNumber("Max locations"),
-  minDuration:                        requiredPositiveNumber("Min duration event (h)"),
-  maxDurationEvent:                   requiredPositiveNumber("Max duration event (h)"),
-  maxDurationPerDayClient:            requiredPositiveNumber("Max duration / day client (h)"),
-  maxDurationPerDayProvider:          requiredPositiveNumber("Max duration / day provider (h)"),
-  maxDurationPerWeekClient:           requiredPositiveNumber("Max duration / week client (h)"),
-  maxDurationPerWeekProvider:         requiredPositiveNumber("Max duration / week provider (h)"),
-  maxAllowedDaysClient:   requiredPositiveNumber("Max allowed days client"),
-  maxAllowedDaysProvider: requiredPositiveNumber("Max allowed days provider"),
+  minDuration:                        requiredNumberInRange("Min duration event (h)", 0.25, 8),
+  maxDurationEvent:                   requiredNumberInRange("Max duration event (h)", 0.25, 8),
+  maxDurationPerDayClient:            requiredNumberInRange("Max duration / day client (h)", 0.25, 8),
+  maxDurationPerDayProvider:          requiredNumberInRange("Max duration / day provider (h)", 0.25, 10),
+  maxDurationPerWeekClient:           requiredNumberInRange("Max duration / week client (h)", 0.25, 70),
+  maxDurationPerWeekProvider:         requiredNumberInRange("Max duration / week provider (h)", 0.25, 70),
+  maxAllowedDaysClient:               requiredNumberInRange("Max days allowed per client", 1, 6),
+  maxAllowedDaysProvider:             requiredNumberInRange("Max days allowed per provider", 1, 6),
 
   // ── Billing ──────────────────────────────────────────────────────────────────
   billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),
@@ -43,7 +53,6 @@ export const appointmentConfigSchema = z.object({
   allowEditByUser:            z.boolean(),
   allowNewLocation:           z.boolean(),
   allowedCredentials:         z.boolean(),
-  invoiceable:                z.boolean(),
   showEventInfo:              z.boolean(),
   active:                     z.boolean(),
 
@@ -59,7 +68,6 @@ export const getAppointmentConfigDefaults = (): AppointmentConfigFormValues => (
   lagTimeId:       "",
   startTime:       "",
   endTime:         "",
-  allowedDays:     "",
   allowedSubEvents: "",
 
   // Numeric limits
@@ -88,7 +96,6 @@ export const getAppointmentConfigDefaults = (): AppointmentConfigFormValues => (
   allowEditByUser:            false,
   allowNewLocation:           false,
   allowedCredentials:         false,
-  invoiceable:                false,
   showEventInfo:              false,
   active:                     true,
 
