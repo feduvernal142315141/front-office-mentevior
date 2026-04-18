@@ -28,6 +28,9 @@ type DiagnosisApiItem = {
     specialty?: string
     type?: string
   }
+  diagnosisCodeId?: string | null
+  diagnosisCode?: string
+  diagnosisCodeName?: string
   code?: string
   name?: string
   referralDate?: string
@@ -51,6 +54,9 @@ function normalizeDiagnosis(item: DiagnosisApiItem): Diagnosis {
     item.physician?.fullName ??
     [physicianFirstName, physicianLastName].filter(Boolean).join(" ")
 
+  const diagnosisCode = item.diagnosisCode ?? item.code ?? ""
+  const diagnosisCodeName = item.diagnosisCodeName ?? item.name ?? ""
+
   return {
     id: item.id ?? "",
     clientId: item.clientId ?? "",
@@ -60,8 +66,9 @@ function normalizeDiagnosis(item: DiagnosisApiItem): Diagnosis {
     physicianLastName,
     physicianSpecialty: item.physicianSpecialty ?? item.physician?.specialty,
     physicianType: item.physicianType ?? item.physician?.type,
-    code: item.code ?? "",
-    name: item.name ?? "",
+    diagnosisCodeId: item.diagnosisCodeId ?? null,
+    code: diagnosisCode,
+    name: diagnosisCodeName,
     referralDate: item.referralDate ?? "",
     treatmentStartDate: item.treatmentStartDate ?? "",
     status: item.status ?? true,

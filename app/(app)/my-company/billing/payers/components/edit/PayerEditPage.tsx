@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -50,6 +50,8 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
 
   // Plan + Rates state
   const [rates, setRates] = useState<LocalInsurancePlanRate[]>([])
+  const [ratesError, setRatesError] = useState(false)
+  const ratesSectionRef = useRef<HTMLDivElement>(null)
   const [isRateModalOpen, setIsRateModalOpen] = useState(false)
   const [editingRate, setEditingRate] = useState<LocalInsurancePlanRate | null>(null)
   const [generalExpanded, setGeneralExpanded] = useState(true)
@@ -69,6 +71,10 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
       .finally(() => { if (active) setIsLoadingBillingCodes(false) })
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    if (rates.length > 0) setRatesError(false)
+  }, [rates.length])
 
   const form = useForm<PayerFullFormValues>({
     resolver: zodResolver(payerFullFormSchema),
@@ -184,6 +190,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         currencyLabel,
         billingModifier,
       } as LocalInsurancePlanRate])
+      setRatesError(false)
     }
     setIsRateModalOpen(false)
     setEditingRate(null)
@@ -207,8 +214,21 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     }, 120)
   }
 
-  const handleSave = form.handleSubmit(
+  const savePayer = form.handleSubmit(
     async (data) => {
+      if (rates.length === 0) {
+        window.setTimeout(() => {
+          ratesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+          const focusable = ratesSectionRef.current?.querySelector(
+            "input, button, textarea, select, [tabindex]:not([tabindex='-1'])",
+          ) as HTMLElement | null
+          window.setTimeout(() => {
+            focusable?.focus()
+          }, 120)
+        }, 100)
+        return
+      }
+
       if (!payer) return
 
       const hasPlanData = Boolean(data.planName?.trim())
@@ -260,6 +280,12 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     },
   )
 
+  const handleSubmitForm = (e: FormEvent) => {
+    if (rates.length === 0) setRatesError(true)
+    else setRatesError(false)
+    savePayer(e)
+  }
+
   if (!hydrated || !canEditPayers) {
     return null
   }
@@ -305,7 +331,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
           </div>
         </div>
 
-        <form onSubmit={handleSave}>
+        <form onSubmit={handleSubmitForm}>
           {/* General Information */}
           <Card variant="elevated" padding="lg">
             <div>
@@ -352,6 +378,8 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
               planTypes={planTypes}
               isLoadingPlanTypes={isLoadingPlanTypes}
               defaultExpanded
+              ratesSectionRef={ratesSectionRef}
+              ratesError={ratesError}
             />
           </Card>
 

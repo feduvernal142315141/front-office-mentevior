@@ -7,7 +7,11 @@ export interface Diagnosis {
   physicianLastName?: string
   physicianSpecialty?: string
   physicianType?: string
+  /** ICD catalog row id from API */
+  diagnosisCodeId: string | null
+  /** Display code from API (`diagnosisCode`) — normalized into `code` for tables/UI */
   code: string
+  /** Display description from API (`diagnosisCodeName`) — normalized into `name` */
   name: string
   referralDate: string
   treatmentStartDate: string
@@ -23,8 +27,7 @@ export interface Diagnosis {
 export interface CreateDiagnosisDto {
   clientId: string
   physicianId?: string
-  code: string
-  name: string
+  diagnosisCodeId: string
   referralDate: string
   treatmentStartDate: string
   status: boolean
@@ -36,8 +39,7 @@ export interface CreateDiagnosisDto {
 
 export interface UpdateDiagnosisDto {
   physicianId?: string
-  code: string
-  name: string
+  diagnosisCodeId: string
   referralDate: string
   treatmentStartDate: string
   status: boolean

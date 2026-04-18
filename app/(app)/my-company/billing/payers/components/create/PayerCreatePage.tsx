@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import { Building2, ChevronDown, Landmark, ShieldCheck } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Card } from "@/components/custom/Card"
@@ -81,6 +81,8 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
 
   // Plan + Rates state
   const [rates, setRates] = useState<LocalInsurancePlanRate[]>([])
+  const [ratesError, setRatesError] = useState(false)
+  const ratesSectionRef = useRef<HTMLDivElement>(null)
   const [isRateModalOpen, setIsRateModalOpen] = useState(false)
   const [editingRate, setEditingRate] = useState<LocalInsurancePlanRate | null>(null)
   const [generalExpanded, setGeneralExpanded] = useState(true)
@@ -100,6 +102,10 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
       .finally(() => { if (active) setIsLoadingBillingCodes(false) })
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    if (rates.length > 0) setRatesError(false)
+  }, [rates.length])
 
   const form = useForm<PayerFullFormValues>({
     resolver: zodResolver(payerFullFormSchema),
@@ -189,6 +195,7 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
         currencyLabel,
         billingModifier,
       } as LocalInsurancePlanRate])
+      setRatesError(false)
     }
     setIsRateModalOpen(false)
     setEditingRate(null)
@@ -212,8 +219,21 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     }, 120)
   }
 
-  const handleCreate = form.handleSubmit(
+  const savePayer = form.handleSubmit(
     async (data) => {
+      if (rates.length === 0) {
+        window.setTimeout(() => {
+          ratesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+          const focusable = ratesSectionRef.current?.querySelector(
+            "input, button, textarea, select, [tabindex]:not([tabindex='-1'])",
+          ) as HTMLElement | null
+          window.setTimeout(() => {
+            focusable?.focus()
+          }, 120)
+        }, 100)
+        return
+      }
+
       if (isCatalogSource && !selectedCatalogId) return
 
       const hasPlanData = Boolean(data.planName?.trim())
@@ -261,6 +281,12 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     },
   )
 
+  const handleSubmitForm = (e: FormEvent) => {
+    if (rates.length === 0) setRatesError(true)
+    else setRatesError(false)
+    savePayer(e)
+  }
+
   const nameValue = form.watch("name")
   const isCatalogDataPending = isCatalogSource && isLoadingCatalogs
 
@@ -283,7 +309,7 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
           </div>
         </div>
 
-        <form onSubmit={handleCreate}>
+        <form onSubmit={handleSubmitForm}>
           <Card variant="elevated" padding="lg">
             {isCatalogDataPending ? (
               <div className="space-y-6">
@@ -383,6 +409,8 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
               planTypes={planTypes}
               isLoadingPlanTypes={isLoadingPlanTypes}
               defaultExpanded
+              ratesSectionRef={ratesSectionRef}
+              ratesError={ratesError}
             />
           </Card>
 

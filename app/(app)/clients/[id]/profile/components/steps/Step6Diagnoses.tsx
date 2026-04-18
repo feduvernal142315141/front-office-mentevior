@@ -130,6 +130,8 @@ export function Step6Diagnoses({
   const [selectedReferringPhysician, setSelectedReferringPhysician] = useState<SelectedReferringPhysician | null>(null)
   const [referringPhysicianError, setReferringPhysicianError] = useState<string | null>(null)
   const [editingDiagnosisIdLoading, setEditingDiagnosisIdLoading] = useState<string | null>(null)
+  /** Name comes from ICD catalog (pick or existing record) — keep input disabled like a derived field */
+  const [isDiagnosisNameLockedFromCatalog, setIsDiagnosisNameLockedFromCatalog] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const preventNextDiagnosisCloseRef = useRef(false)
 
@@ -402,8 +404,7 @@ export function Step6Diagnoses({
 
     const payload = {
       physicianId: selectedReferringPhysician?.physicianId,
-      code: values.code,
-      name: values.name,
+      diagnosisCodeId: values.diagnosisCodeId,
       referralDate: values.referralDate,
       treatmentStartDate: values.treatmentStartDate,
       status: values.status,
@@ -432,6 +433,7 @@ export function Step6Diagnoses({
       onProgressUpdate?.(ok.progress)
     }
     form.reset(diagnosisFormDefaults)
+    setIsDiagnosisNameLockedFromCatalog(false)
     setEditingDiagnosis(null)
     setSelectedReferringPhysician(null)
     setReferringPhysicianError(null)
@@ -477,6 +479,7 @@ export function Step6Diagnoses({
 
       setEditingDiagnosis(sourceDiagnosis)
       form.reset({
+        diagnosisCodeId: sourceDiagnosis.diagnosisCodeId ?? "",
         code: sourceDiagnosis.code ?? "",
         name: sourceDiagnosis.name ?? "",
         referralDate: sourceDiagnosis.referralDate ? isoToLocalDate(sourceDiagnosis.referralDate) : "",
@@ -485,6 +488,7 @@ export function Step6Diagnoses({
         treatmentEndDate: sourceDiagnosis.treatmentEndDate ? isoToLocalDate(sourceDiagnosis.treatmentEndDate) : "",
         isPrimary: Boolean(sourceDiagnosis.isPrimary),
       })
+      setIsDiagnosisNameLockedFromCatalog(true)
       setSelectedReferringPhysician(buildDiagnosisPhysician(sourceDiagnosis))
       setReferringPhysicianError(null)
       setAttachmentFile(null)
@@ -680,6 +684,7 @@ export function Step6Diagnoses({
           type="button"
           onClick={() => {
             setEditingDiagnosis(null)
+            setIsDiagnosisNameLockedFromCatalog(false)
             setSelectedReferringPhysician(null)
             setReferringPhysicianError(null)
             form.reset({
@@ -748,6 +753,7 @@ export function Step6Diagnoses({
           setIsDiagnosisModalOpen(open)
           if (!open) {
             setEditingDiagnosis(null)
+            setIsDiagnosisNameLockedFromCatalog(false)
             setSelectedReferringPhysician(null)
             setReferringPhysicianError(null)
             form.reset(diagnosisFormDefaults)
@@ -775,26 +781,45 @@ export function Step6Diagnoses({
             <Controller
               name="code"
               control={form.control}
-              render={({ field, fieldState }) => (
+              render={({ field, fieldState }) => {
+                const idError = form.formState.errors.diagnosisCodeId
+                return (
                 <div>
+                  <Controller
+                    name="diagnosisCodeId"
+                    control={form.control}
+                    render={({ field: idField }) => (
+                      <input type="hidden" {...idField} value={idField.value ?? ""} />
+                    )}
+                  />
                   <DiagnosisCodeCombobox
                     key={editingDiagnosis?.id ?? "new"}
                     value={field.value}
-                    onChange={field.onChange}
+                    onChange={(code) => {
+                      setIsDiagnosisNameLockedFromCatalog(false)
+                      form.setValue("diagnosisCodeId", "", { shouldValidate: true, shouldDirty: true })
+                      field.onChange(code)
+                    }}
                     onBlur={field.onBlur}
                     onCatalogPick={(item: DiagnosisCatalogItem) => {
+                      form.setValue("diagnosisCodeId", item.id, { shouldValidate: true, shouldDirty: true })
                       form.setValue("code", item.code, { shouldValidate: true, shouldDirty: true })
                       form.setValue("name", item.longDescription || item.shortDescription, {
                         shouldValidate: true,
                         shouldDirty: true,
                       })
+                      setIsDiagnosisNameLockedFromCatalog(true)
                     }}
-                    hasError={!!fieldState.error}
+                    hasError={!!fieldState.error || !!idError}
                     required
                   />
                   {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
+                  {idError && (
+                    <p className="mt-2 text-sm text-red-600">{idError.message}</p>
+                  )}
                 </div>
-              )}
+                )
+              }}
             />
 
             <Controller
@@ -809,6 +834,7 @@ export function Step6Diagnoses({
                     onBlur={field.onBlur}
                     hasError={!!fieldState.error}
                     required
+                    disabled={isDiagnosisNameLockedFromCatalog}
                   />
                   {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
                 </div>
@@ -1105,6 +1131,7 @@ export function Step6Diagnoses({
               onClick={() => {
                 setIsDiagnosisModalOpen(false)
                 setEditingDiagnosis(null)
+                setIsDiagnosisNameLockedFromCatalog(false)
                 setSelectedReferringPhysician(null)
                 setReferringPhysicianError(null)
                 form.reset(diagnosisFormDefaults)

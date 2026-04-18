@@ -14,6 +14,8 @@ interface RatesSectionProps {
   onEdit: (entry: LocalInsurancePlanRate) => void
   onDelete: (entry: LocalInsurancePlanRate) => void
   isDeleting?: boolean
+  /** Same treatment as Prior Auth billing codes empty state */
+  hasError?: boolean
 }
 
 export function RatesSection({
@@ -22,17 +24,28 @@ export function RatesSection({
   onEdit,
   onDelete,
   isDeleting = false,
+  hasError = false,
 }: RatesSectionProps) {
   const [pendingDelete, setPendingDelete] = useState<LocalInsurancePlanRate | null>(null)
   return (
     <div>
       {entries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 gap-3 text-slate-500">
-          <div className="h-14 w-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center">
-            <Plus className="w-6 h-6 text-slate-400" />
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center py-10 gap-3 text-slate-500 rounded-xl border-2",
+            hasError ? "border-red-400/70 bg-red-50/40 mb-4" : "border-transparent",
+          )}
+        >
+          <div
+            className={cn(
+              "h-14 w-14 rounded-2xl border flex items-center justify-center",
+              hasError ? "bg-red-50 border-red-200" : "bg-slate-100 border-slate-200",
+            )}
+          >
+            <Plus className={cn("w-6 h-6", hasError ? "text-red-400" : "text-slate-400")} />
           </div>
-          <p className="text-sm font-medium">No rates added</p>
-          <p className="text-xs text-slate-400">
+          <p className={cn("text-sm font-medium", hasError && "text-red-600")}>No rates added</p>
+          <p className={cn("text-xs", hasError ? "text-red-400" : "text-slate-400")}>
             Add the rates for this insurance plan
           </p>
         </div>

@@ -1,6 +1,5 @@
 import { z } from "zod"
 
-const diagnosisCodeRegex = /^[A-Za-z0-9\s\-_/().,:#&+]+$/
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/
 
 const requiredIsoDate = (label: string) => z.string()
@@ -8,16 +7,10 @@ const requiredIsoDate = (label: string) => z.string()
   .regex(isoDateRegex, `${label} is invalid`)
 
 export const diagnosisFormSchema = z.object({
-  code: z.string()
-    .trim()
-    .min(1, "Code is required")
-    .max(120, "Code must be at most 120 characters")
-    .regex(/[A-Za-z0-9]/, "Code must include at least one letter or number")
-    .regex(diagnosisCodeRegex, "Code contains invalid characters"),
-  name: z.string()
-    .trim()
-    .min(1, "Name is required")
-    .max(160, "Name must be at most 160 characters"),
+  /** ICD catalog row id — sent on create/update; code/name are display only */
+  diagnosisCodeId: z.string().min(1, "Select a diagnosis from the catalog"),
+  code: z.string().max(120, "Code must be at most 120 characters"),
+  name: z.string().max(160, "Name must be at most 160 characters"),
   referralDate: requiredIsoDate("Referral date"),
   treatmentStartDate: requiredIsoDate("Treatment start date"),
   status: z.boolean(),
@@ -51,6 +44,7 @@ export const diagnosisFormSchema = z.object({
 export type DiagnosisFormValues = z.infer<typeof diagnosisFormSchema>
 
 export const diagnosisFormDefaults: DiagnosisFormValues = {
+  diagnosisCodeId: "",
   code: "",
   name: "",
   referralDate: "",

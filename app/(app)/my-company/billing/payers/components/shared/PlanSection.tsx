@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, type RefObject } from "react"
 import { Controller, type UseFormReturn } from "react-hook-form"
 import { ChevronDown, FileText } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -20,6 +20,8 @@ interface PlanSectionProps {
   planTypes: Array<{ id: string; name: string }>
   isLoadingPlanTypes: boolean
   defaultExpanded?: boolean
+  ratesSectionRef?: RefObject<HTMLDivElement | null>
+  ratesError?: boolean
 }
 
 export function PlanSection({
@@ -31,8 +33,14 @@ export function PlanSection({
   planTypes,
   isLoadingPlanTypes,
   defaultExpanded = false,
+  ratesSectionRef,
+  ratesError = false,
 }: PlanSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded)
+
+  useEffect(() => {
+    if (ratesError) setExpanded(true)
+  }, [ratesError])
 
   const planTypeOptions = planTypes.map((p) => ({ value: p.id, label: p.name }))
 
@@ -138,15 +146,21 @@ export function PlanSection({
           {/* Divider */}
           <div className="border-t border-slate-200/60" />
 
-          {/* Rates Sub-header */}
-          <div>
-            <h4 className="text-sm font-semibold text-slate-700 mb-3">Rates</h4>
+          {/* Rates — same required UX as Prior Auth billing codes */}
+          <div ref={ratesSectionRef}>
+            <h4 className="text-sm font-semibold text-slate-700 mb-3">
+              Rates <span className="text-[#037ECC]">*</span>
+            </h4>
             <RatesSection
               entries={rates}
               onAdd={onAddRate}
               onEdit={onEditRate}
               onDelete={onDeleteRate}
+              hasError={ratesError}
             />
+            {ratesError && (
+              <p className="mt-2 text-sm text-red-600">At least one rate is required</p>
+            )}
           </div>
         </div>
       )}
