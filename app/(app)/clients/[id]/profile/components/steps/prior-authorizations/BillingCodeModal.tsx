@@ -15,7 +15,6 @@ import {
 } from "@/lib/schemas/prior-authorization-form.schema"
 import type { LocalBillingCodeEntry } from "@/lib/types/prior-authorization.types"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
-import { cn } from "@/lib/utils"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 import { resolveBillingCodeAutoUnits } from "@/lib/constants/billing-code-rules"
 
@@ -152,24 +151,33 @@ export function BillingCodeModal({
 
         {/* Units row */}
         <div className="grid grid-cols-3 gap-4">
-          {/* Used units — read-only */}
-          <div>
-            <div className="relative">
-              <div
-                className={cn(
-                  "w-full h-[52px] 2xl:h-[56px] px-4 rounded-[16px] flex items-center",
-                  "bg-slate-50 border border-slate-200 text-slate-500 text-[15px]",
-                  "cursor-not-allowed select-none"
+          {/* Used units */}
+          <Controller
+            name="usedUnits"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <div>
+                <FloatingInput
+                  label="Used Units"
+                  value={field.value === null || field.value === undefined ? "" : String(field.value)}
+                  onChange={(v) => {
+                    if (v === "") {
+                      field.onChange(0)
+                      return
+                    }
+                    const parsed = parseInt(v, 10)
+                    if (!isNaN(parsed)) field.onChange(parsed)
+                  }}
+                  onBlur={field.onBlur}
+                  inputMode="numeric"
+                  hasError={!!fieldState.error}
+                />
+                {fieldState.error && (
+                  <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
-              >
-                {form.watch("usedUnits") ?? 0}
               </div>
-              <label className="absolute left-4 px-1 top-0 -translate-y-1/2 text-xs text-slate-400 bg-white/80 pointer-events-none">
-                Used Units
-              </label>
-            </div>
-            <p className="mt-1 text-xs text-slate-400">Auto-updated by billing</p>
-          </div>
+            )}
+          />
 
           {/* Approved units */}
           <Controller
