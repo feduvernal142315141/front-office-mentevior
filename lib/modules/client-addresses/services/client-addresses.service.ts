@@ -157,6 +157,22 @@ export async function updateClientAddress(data: UpdateClientAddressDto): Promise
   return { progress: parseProgressOrNull(response.data) }
 }
 
+export async function updateClientAddressPrimary(data: {
+  id: string
+  isPrimary: boolean
+}): Promise<UpdateMutationResult> {
+  const response = await servicePut<{ id: string; isPrimary: boolean }, number>(
+    "/client/address/update-prymary",
+    data,
+  )
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to update primary status")
+  }
+
+  return { progress: parseProgressOrNull(response.data) }
+}
+
 export async function deleteClientAddress(id: string): Promise<number> {
   const response = await serviceDelete<number>(`/client/address/${id}`)
 

@@ -1,4 +1,30 @@
-export const BILLING_CODE_AUTO_UNITS: Record<string, number> = {
-  "b8330095-b2e8-491c-86dd-15b24d94b812": 24,
-  "45a8fcf3-b4b2-4226-a78f-0970559801dd": 18,
+interface BillingCodeAutoUnitsInput {
+  type?: string | null
+  code?: string | null
+  modifier?: string | null
+}
+
+export function resolveBillingCodeAutoUnits({
+  type,
+  code,
+  modifier,
+}: BillingCodeAutoUnitsInput): number | undefined {
+  const normalizedType = (type ?? "").trim().toLowerCase()
+  const normalizedCode = (code ?? "").trim()
+
+  if (normalizedType !== "cpt" || normalizedCode !== "97151") {
+    return undefined
+  }
+
+  const normalizedModifier = (modifier ?? "").trim().toLowerCase()
+
+  if (normalizedModifier === "ts") {
+    return 18
+  }
+
+  if (!normalizedModifier) {
+    return 24
+  }
+
+  return undefined
 }

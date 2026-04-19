@@ -17,7 +17,7 @@ import type { LocalBillingCodeEntry } from "@/lib/types/prior-authorization.type
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import { cn } from "@/lib/utils"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
-import { BILLING_CODE_AUTO_UNITS } from "@/lib/constants/billing-code-rules"
+import { resolveBillingCodeAutoUnits } from "@/lib/constants/billing-code-rules"
 
 interface BillingCodeModalProps {
   open: boolean
@@ -120,7 +120,12 @@ export function BillingCodeModal({
                 value={field.value}
                 onChange={(id) => {
                   field.onChange(id)
-                  const autoUnits = BILLING_CODE_AUTO_UNITS[id]
+                  const selectedBillingCode = billingCodes.find((bc) => bc.id === id)
+                  const autoUnits = resolveBillingCodeAutoUnits({
+                    type: selectedBillingCode?.type,
+                    code: selectedBillingCode?.code,
+                    modifier: selectedBillingCode?.modifier,
+                  })
                   form.setValue(
                     "approvedUnits",
                     autoUnits !== undefined ? autoUnits : (null as unknown as number),

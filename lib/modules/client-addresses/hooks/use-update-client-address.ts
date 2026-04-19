@@ -4,10 +4,11 @@ import { useState } from "react"
 import { toast } from "sonner"
 import type { UpdateClientAddressDto } from "@/lib/types/client-address.types"
 import type { UpdateMutationResult } from "@/lib/types/response.types"
-import { updateClientAddress } from "../services/client-addresses.service"
+import { updateClientAddress, updateClientAddressPrimary } from "../services/client-addresses.service"
 
 interface UseUpdateClientAddressReturn {
   update: (data: UpdateClientAddressDto) => Promise<UpdateMutationResult | null>
+  updatePrimary: (data: { id: string; isPrimary: boolean }) => Promise<UpdateMutationResult | null>
   isLoading: boolean
   error: string | null
 }
@@ -34,5 +35,26 @@ export function useUpdateClientAddress(): UseUpdateClientAddressReturn {
     }
   }
 
-  return { update, isLoading, error }
+  const updatePrimary = async (data: {
+    id: string
+    isPrimary: boolean
+  }): Promise<UpdateMutationResult | null> => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const result = await updateClientAddressPrimary(data)
+      toast.success("Address updated successfully")
+      return result
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update address"
+      setError(message)
+      toast.error("Error updating address", { description: message })
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return { update, updatePrimary, isLoading, error }
 }

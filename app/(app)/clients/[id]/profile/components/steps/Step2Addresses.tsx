@@ -210,7 +210,7 @@ export function Step2Addresses({
     refetch: refetchClientAddresses,
   } = useClientAddresses(resolvedClientId)
   const { create, createFromCompanyAddress, isLoading: isCreating } = useCreateClientAddress()
-  const { update, isLoading: isUpdating } = useUpdateClientAddress()
+  const { update, updatePrimary, isLoading: isUpdating } = useUpdateClientAddress()
   const { remove, isLoading: isDeleting } = useDeleteClientAddress()
 
   const {
@@ -264,8 +264,6 @@ export function Step2Addresses({
   }
 
   const handleOpenEditModal = async (address: ClientAddress) => {
-    if (address.canEdit !== true) return
-
     setEditingAddress(address)
     setAddressModalStage("edit-form")
     setIsAddressModalOpen(true)
@@ -431,6 +429,8 @@ export function Step2Addresses({
     onValidationError(errors)
   })
 
+  const isAgencyEditMode = editingAddress !== null && editingAddress.canEdit !== true
+
   const sourceSections: {
     id: AddressSourceType
     label: string
@@ -495,7 +495,7 @@ export function Step2Addresses({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   options={placesOfService.map((place) => ({ value: place.id, label: place.name }))}
-                  disabled={isLoadingPlaces}
+                  disabled={isLoadingPlaces || isAgencyEditMode}
                   hasError={!!fieldState.error}
                   required
                   searchable
@@ -519,7 +519,7 @@ export function Step2Addresses({
                   }}
                   onBlur={field.onBlur}
                   options={countries.map((country) => ({ value: country.id, label: country.name }))}
-                  disabled={isLoadingCountries}
+                  disabled={isLoadingCountries || isAgencyEditMode}
                   hasError={!!fieldState.error}
                   required
                   searchable
@@ -540,7 +540,7 @@ export function Step2Addresses({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   options={states.map((state) => ({ value: state.id, label: state.name }))}
-                  disabled={!selectedCountryId || isLoadingStates}
+                  disabled={!selectedCountryId || isLoadingStates || isAgencyEditMode}
                   hasError={!!fieldState.error}
                   required
                   searchable
@@ -562,6 +562,7 @@ export function Step2Addresses({
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
                   required
+                  disabled={isAgencyEditMode}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -582,6 +583,7 @@ export function Step2Addresses({
                   required
                   inputMode="numeric"
                   maxLength={5}
+                  disabled={isAgencyEditMode}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -600,6 +602,7 @@ export function Step2Addresses({
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
                   required
+                  disabled={isAgencyEditMode}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -617,6 +620,7 @@ export function Step2Addresses({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
+                  disabled={isAgencyEditMode}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -678,27 +682,25 @@ export function Step2Addresses({
       align: "right",
       render: (address) => (
         <div className="flex justify-end gap-2">
-          {address.canEdit === true && (
-            <button
-              type="button"
-              onClick={() => handleOpenEditModal(address)}
-              className={cn(
-                "group/edit relative h-9 w-9",
-                "flex items-center justify-center rounded-xl",
-                "bg-gradient-to-b from-blue-50 to-blue-100/80",
-                "border border-blue-200/60 shadow-sm shadow-blue-900/5",
-                "hover:from-blue-100 hover:to-blue-200/90",
-                "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
-                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-                "transition-all duration-200 ease-out",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
-              )}
-              title="Edit address"
-              aria-label="Edit address"
-            >
-              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => handleOpenEditModal(address)}
+            className={cn(
+              "group/edit relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
+              "bg-gradient-to-b from-blue-50 to-blue-100/80",
+              "border border-blue-200/60 shadow-sm shadow-blue-900/5",
+              "hover:from-blue-100 hover:to-blue-200/90",
+              "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
+              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+              "transition-all duration-200 ease-out",
+              "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+            )}
+            title="Edit address"
+            aria-label="Edit address"
+          >
+            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+          </button>
 
           <button
             type="button"
@@ -795,7 +797,9 @@ export function Step2Addresses({
             : activeSourceSection?.label ?? "New Address"
         }
         description={
-          editingAddress
+          isAgencyEditMode
+            ? "Agency addresses cannot be edited. You can only change the Primary status."
+            : editingAddress
             ? "Update the address details"
             : addressModalStage === "select-source"
             ? "Choose where this address comes from"
@@ -806,8 +810,22 @@ export function Step2Addresses({
         contentClassName="overflow-visible"
       >
         <form
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault()
+            if (isAgencyEditMode && editingAddress) {
+              const isPrimary = form.getValues("isPrimary")
+              const result = await updatePrimary({ id: editingAddress.id, isPrimary })
+              if (!result) return
+              if (typeof result.progress === "number") {
+                onProgressUpdate?.(result.progress)
+              }
+              setEditingAddress(null)
+              form.reset(defaultValues)
+              setAddressModalStage("select-source")
+              setIsAddressModalOpen(false)
+              await refetchClientAddresses()
+              return
+            }
             void handleSaveAddress()
           }}
           className="flex flex-col"
@@ -857,6 +875,7 @@ export function Step2Addresses({
                           onBlur={field.onBlur}
                           hasError={!!fieldState.error}
                           required
+                          disabled={isAgencyEditMode}
                         />
                         {fieldState.error && <p className="mt-1.5 text-xs text-red-500">{fieldState.error.message}</p>}
                       </div>
@@ -896,6 +915,10 @@ export function Step2Addresses({
               type="button"
               variant="secondary"
               onClick={() => {
+                if (isAgencyEditMode) {
+                  handleCloseModal()
+                  return
+                }
                 if (addressModalStage === "edit-form") {
                   setAddressModalStage("select-source")
                   return
@@ -904,7 +927,7 @@ export function Step2Addresses({
               }}
               disabled={isCreating || isUpdating}
             >
-              {addressModalStage === "edit-form" ? "Back" : "Cancel"}
+              {isAgencyEditMode || addressModalStage !== "edit-form" ? "Cancel" : "Back"}
             </Button>
 
             {addressModalStage === "edit-form" && (
