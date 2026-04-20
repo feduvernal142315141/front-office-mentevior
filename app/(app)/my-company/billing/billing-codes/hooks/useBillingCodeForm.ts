@@ -85,13 +85,14 @@ export function useBillingCodeForm({ billingCodeId = null }: UseBillingCodeFormP
         const type = searchParams.get("type") as "CPT" | "HCPCS" | null
         const code = searchParams.get("code")
         const description = searchParams.get("description")
+        const modifier = searchParams.get("modifier")
         
         if (type && code && description) {
           form.reset({
             type,
             code,
             description,
-            modifiers: "",
+            modifiers: modifier || "",
             parent: "",
             placeServiceId: "",
             active: true,

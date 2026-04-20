@@ -81,6 +81,7 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
           type: selectedCode.type,
           code: selectedCode.code,
           description: selectedCode.description,
+          ...(selectedCode.modifier ? { modifier: selectedCode.modifier } : {}),
         })
         router.push(`/my-company/billing/billing-codes/create?${params.toString()}`)
       }
