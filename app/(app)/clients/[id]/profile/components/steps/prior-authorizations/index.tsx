@@ -300,7 +300,7 @@ export function StepPriorAuthorizations({
       {!isLoading && enrichedPAs.length > 0 && (
         <div className="space-y-3">
           {/* Column labels */}
-          <div className="hidden xl:grid grid-cols-[32px_100px_minmax(100px,1fr)_200px_80px_72px] items-center gap-2 px-5 pb-1">
+          <div className="hidden xl:grid grid-cols-[32px_220px_minmax(120px,1fr)_240px_140px_104px] items-center gap-4 px-5 pb-1">
             <div />
             <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">PA Number</span>
             <span className="text-xs font-semibold text-[#037ECC]/60 uppercase tracking-wider">Insurance</span>
@@ -319,7 +319,7 @@ export function StepPriorAuthorizations({
                 className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-shadow hover:shadow-md"
               >
                 {/* Card header */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 sm:px-5 xl:grid xl:grid-cols-[32px_100px_minmax(100px,1fr)_200px_80px_72px] xl:gap-2">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 sm:px-5 xl:grid xl:grid-cols-[32px_220px_minmax(120px,1fr)_240px_140px_104px] xl:gap-4">
                   {/* Expand toggle */}
                   <button
                     type="button"
@@ -339,9 +339,9 @@ export function StepPriorAuthorizations({
                   </button>
 
                   {/* PA Number */}
-                  <div className="flex items-center gap-1.5 min-w-0 shrink-0">
+                  <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
                     <Hash className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                    <span className="text-sm font-bold text-slate-800 tabular-nums">
+                    <span className="block truncate text-sm font-bold text-slate-800 tabular-nums" title={pa.authNumber}>
                       {pa.authNumber}
                     </span>
                   </div>
@@ -374,7 +374,7 @@ export function StepPriorAuthorizations({
                   </span>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-end gap-2 ml-auto xl:ml-0 xl:w-[72px]">
+                  <div className="flex items-center justify-end gap-3 ml-auto xl:ml-0 xl:w-[104px]">
                     <button
                       type="button"
                       onClick={() => setDeletingPA(pa)}
