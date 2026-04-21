@@ -28,6 +28,7 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/my-company/credentials": PermissionModule.MY_COMPANY,
   "/my-company/physicians": PermissionModule.MY_COMPANY,
   "/my-company/service-plans": PermissionModule.MY_COMPANY,
+  "/my-company/services": PermissionModule.MY_COMPANY,
   
   // Events children (real permissions, under My Company)
   "/my-company/events/appointment": PermissionModule.APPOINTMENT,

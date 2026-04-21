@@ -171,10 +171,34 @@ export function useBillingCodesTable() {
       ),
     },
     {
+      key: "source",
+      header: "Source",
+      render: (item: BillingCodeListItem) => (
+        item.isFromService ? (
+          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
+            Service
+          </Badge>
+        ) : item.isFromCatalog ? (
+          <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+            Catalog
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
+            Custom
+          </Badge>
+        )
+      ),
+    },
+    {
       key: "actions",
       header: "Actions",
       align: "right" as const,
       render: (item: BillingCodeListItem) => (
+        item.isFromService ? (
+          <div className="flex justify-end">
+            <span className="text-xs text-slate-500">Managed by service</span>
+          </div>
+        ) : (
         <div className="flex justify-end gap-2">
           <button
             onClick={() => router.push(`/my-company/billing/billing-codes/${item.id}/edit`)}
@@ -236,6 +260,7 @@ export function useBillingCodesTable() {
             " />
           </button>
         </div>
+        )
       ),
     },
   ], [router, handleDeleteClick])

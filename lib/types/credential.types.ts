@@ -10,6 +10,7 @@ export interface Credential {
   billingCodes?: string[]
   active: boolean
   isFromCatalog?: boolean
+  isFromService?: boolean
   createdAt?: string
   updatedAt?: string
 }
@@ -19,6 +20,7 @@ export interface CredentialListItem {
   name: string
   active: boolean
   isFromCatalog?: boolean
+  isFromService?: boolean
 }
 
 export interface CredentialCatalogItem {

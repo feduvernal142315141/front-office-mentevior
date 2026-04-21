@@ -16,6 +16,7 @@ export interface BillingCode {
   allowedPlacesOfService?: string[]
   active: boolean
   isFromCatalog?: boolean
+  isFromService?: boolean
   createdAt?: string
   updatedAt?: string
 }
@@ -28,6 +29,7 @@ export interface BillingCodeListItem {
   modifier?: string
   active: boolean
   isFromCatalog?: boolean
+  isFromService?: boolean
 }
 
 export interface BillingCodeCatalogItem {

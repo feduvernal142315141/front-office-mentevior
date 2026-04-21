@@ -11,6 +11,7 @@ import { buildFilters } from "@/lib/utils/query-filters"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { deleteCredential } from "@/lib/modules/credentials/services/credentials.service"
 import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
 
 export function useCredentialsTable() {
   const router = useRouter()
@@ -106,10 +107,30 @@ export function useCredentialsTable() {
       ),
     },
     {
+      key: "source",
+      header: "Source",
+      render: (item: CredentialListItem) => (
+        item.isFromService ? (
+          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
+            Service
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
+            Custom
+          </Badge>
+        )
+      ),
+    },
+    {
       key: "actions",
       header: "Actions",
       align: "right" as const,
       render: (item: CredentialListItem) => (
+        item.isFromService ? (
+          <div className="flex justify-end">
+            <span className="text-xs text-slate-500">Managed by service</span>
+          </div>
+        ) : (
         <div className="flex justify-end gap-2">
           <button
             onClick={() => router.push(`/my-company/credentials/${item.id}/edit`)}
@@ -171,6 +192,7 @@ export function useCredentialsTable() {
             " />
           </button>
         </div>
+        )
       ),
     },
   ], [router, handleDeleteClick])

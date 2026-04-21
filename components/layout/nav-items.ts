@@ -122,6 +122,10 @@ export const navItems: NavItem[] = [
         href: "/my-company/service-plans",
       },
       {
+        label: "Services",
+        href: "/my-company/services",
+      },
+      {
         label: "Schedules",
         href: "/my-company/events",
         hasDeepChildren: true,

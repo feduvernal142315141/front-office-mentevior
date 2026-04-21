@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2, Shield, UserCircle, MapPin, CreditCard, Award, Calendar, Stethoscope, FileText, BarChart3, FileSignature, FolderHeart, FolderOpen, FileCheck, UserPlus } from "lucide-react"
+import { Building2, Shield, UserCircle, MapPin, CreditCard, Award, Calendar, Stethoscope, FileText, BarChart3, FileSignature, FolderHeart, FolderOpen, FileCheck, UserPlus, HeartPulse } from "lucide-react"
 import Link from "next/link"
 import { useCanViewModule } from "@/lib/hooks/use-filtered-nav-items"
 import { useMemo } from "react"
@@ -13,6 +13,7 @@ export default function MyCompanyPage() {
   const canViewCredentials = useCanViewModule("/my-company/credentials")
   const canViewPhysicians = useCanViewModule("/my-company/physicians")
   const canViewServicePlans = useCanViewModule("/my-company/service-plans")
+  const canViewServices = useCanViewModule("/my-company/services")
   const canViewEvents = useCanViewModule("/my-company/events")
   const canViewBilling = useCanViewModule("/my-company/billing")
   const canViewDataCollection = useCanViewModule("/data-collection")
@@ -69,6 +70,14 @@ export default function MyCompanyPage() {
       href: "/my-company/service-plans",
       icon: FileText,
       canView: canViewServicePlans,
+      hasDeepChildren: false,
+    },
+    {
+      title: "Services",
+      description: "Review and activate available agency services",
+      href: "/my-company/services",
+      icon: HeartPulse,
+      canView: canViewServices,
       hasDeepChildren: false,
     },
     {
@@ -146,6 +155,7 @@ export default function MyCompanyPage() {
     canViewCredentials, 
     canViewPhysicians, 
     canViewServicePlans,
+    canViewServices,
     canViewEvents,
     canViewBilling,
     canViewDataCollection,
