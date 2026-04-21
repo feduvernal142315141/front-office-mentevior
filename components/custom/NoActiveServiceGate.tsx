@@ -30,28 +30,22 @@ export function NoActiveServiceGate({
 
   if (hasActiveService === false) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50/80 shadow-sm">
-        <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 30% 40%, #f59e0b 0%, transparent 50%), radial-gradient(circle at 70% 70%, #fb923c 0%, transparent 50%)",
-          }}
-        />
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400/60 rounded-t-2xl" />
 
         <div className="relative px-8 py-12 flex flex-col items-center text-center gap-6">
           <div className="relative">
-            <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-2xl scale-150" />
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-200/60 flex items-center justify-center shadow-md">
-              <HeartPulse className="w-10 h-10 text-amber-600" />
+            <div className="absolute inset-0 bg-amber-300/10 rounded-full blur-2xl scale-150" />
+            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20 flex items-center justify-center">
+              <HeartPulse className="w-10 h-10 text-[#037ECC]" />
             </div>
           </div>
 
           <div className="space-y-3 max-w-md">
-            <h3 className="text-xl font-semibold text-slate-800">
+            <h3 className="text-xl font-semibold text-amber-600">
               No active services yet
             </h3>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-sm text-slate-500 leading-relaxed">
               To configure {moduleName}, your company must have at least one active service.
               Activate a service to define which credentials and billing codes are available for your organization.
             </p>
@@ -59,14 +53,14 @@ export function NoActiveServiceGate({
 
           <div
             className={cn(
-              "w-full max-w-sm rounded-xl border border-amber-200/70 bg-white/70 backdrop-blur-sm px-5 py-4",
+              "w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50 px-5 py-4",
               "flex items-start gap-3 text-left"
             )}
           >
-            <div className="mt-0.5 w-5 h-5 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center flex-shrink-0">
-              <span className="text-amber-700 text-xs font-bold leading-none">!</span>
+            <div className="mt-0.5 w-5 h-5 rounded-full bg-amber-100 border border-amber-300/60 flex items-center justify-center flex-shrink-0">
+              <span className="text-amber-600 text-xs font-bold leading-none">!</span>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               All credentials and billing codes associated with activated services are
               managed automatically and cannot be modified independently.
             </p>
