@@ -6,11 +6,14 @@ import { Button } from "@/components/custom/Button"
 import { useRouter } from "next/navigation"
 import { BillingCodesTable, type BillingCodesTableRef } from "./components/BillingCodesTable"
 import { BillingCodeDrawer } from "./components/BillingCodeDrawer"
+import { NoActiveServiceGate } from "@/components/custom/NoActiveServiceGate"
+import { useHasActiveService } from "@/lib/modules/services/hooks/use-has-active-service"
 
 export default function BillingCodesPage() {
   const router = useRouter()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const tableRef = useRef<BillingCodesTableRef>(null)
+  const { hasActiveService, isLoading } = useHasActiveService()
 
   const handleSuccess = () => {
     setIsDrawerOpen(false)
@@ -33,23 +36,31 @@ export default function BillingCodesPage() {
             </div>
           </div>
 
-          <Button
-            variant="primary"
-            onClick={() => setIsDrawerOpen(true)}
-            className="gap-2 flex items-center"
-          >
-            <Plus className="w-4 h-4" />
-            Add Billing Code
-          </Button>
+          {hasActiveService && (
+            <Button
+              variant="primary"
+              onClick={() => setIsDrawerOpen(true)}
+              className="gap-2 flex items-center"
+            >
+              <Plus className="w-4 h-4" />
+              Add Billing Code
+            </Button>
+          )}
         </div>
 
-        <BillingCodesTable ref={tableRef} />
+        <NoActiveServiceGate
+          isLoading={isLoading}
+          hasActiveService={hasActiveService}
+          moduleName="billing codes"
+        >
+          <BillingCodesTable ref={tableRef} />
 
-        <BillingCodeDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          onSuccess={handleSuccess}
-        />
+          <BillingCodeDrawer
+            isOpen={isDrawerOpen}
+            onClose={() => setIsDrawerOpen(false)}
+            onSuccess={handleSuccess}
+          />
+        </NoActiveServiceGate>
       </div>
     </div>
   )

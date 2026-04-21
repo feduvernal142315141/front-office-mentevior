@@ -12,6 +12,14 @@ import type { CompanyServiceListItem } from "@/lib/types/company-service.types"
 
 type StatusFilter = "all" | "active" | "inactive"
 
+function credentialCount(item: CompanyServiceListItem): number {
+  return item.totalCredential ?? item.allowedCredentials.length
+}
+
+function billingCodeCount(item: CompanyServiceListItem): number {
+  return item.totalBillingCode ?? item.allowedBillingCodes.length
+}
+
 export function useServicesTable(onViewDetails: (service: CompanyServiceListItem) => void) {
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
@@ -84,7 +92,7 @@ export function useServicesTable(onViewDetails: (service: CompanyServiceListItem
         className: "min-w-[170px] whitespace-nowrap",
         render: (item) => (
           <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
-            {item.allowedCredentials.length} allowed
+            {credentialCount(item)} allowed
           </Badge>
         ),
       },
@@ -94,7 +102,7 @@ export function useServicesTable(onViewDetails: (service: CompanyServiceListItem
         className: "min-w-[170px] whitespace-nowrap",
         render: (item) => (
           <Badge variant="outline" className="border-purple-200 bg-purple-50 text-purple-700">
-            {item.allowedBillingCodes.length} allowed
+            {billingCodeCount(item)} allowed
           </Badge>
         ),
       },

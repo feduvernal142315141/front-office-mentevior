@@ -25,6 +25,9 @@ export interface CompanyServiceListItem {
   name: string
   description: string
   active: boolean
+  /** Counts from list endpoint (`GET /service-company`) when API returns summary fields */
+  totalCredential?: number
+  totalBillingCode?: number
   allowedCredentials: ServiceCredential[]
   allowedBillingCodes: ServiceBillingCode[]
 }

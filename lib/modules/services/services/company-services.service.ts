@@ -112,8 +112,52 @@ function toListItem(service: CompanyService): CompanyServiceListItem {
     name: service.name,
     description: service.description,
     active: service.active,
+    totalCredential: service.allowedCredentials.length,
+    totalBillingCode: service.allowedBillingCodes.length,
     allowedCredentials: service.allowedCredentials,
     allowedBillingCodes: service.allowedBillingCodes,
+  }
+}
+
+function parseTotalField(value: unknown): number | undefined {
+  if (typeof value === "number" && !Number.isNaN(value)) return value
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = parseInt(value, 10)
+    return Number.isNaN(n) ? undefined : n
+  }
+  return undefined
+}
+
+function isSummaryListRow(raw: unknown): boolean {
+  const row = raw as Record<string, unknown>
+  return (
+    parseTotalField(row.totalCredential) !== undefined ||
+    parseTotalField(row.totalBillingCode) !== undefined ||
+    parseTotalField(row.total_credential) !== undefined ||
+    parseTotalField(row.total_billing_code) !== undefined
+  )
+}
+
+function normalizeListItem(raw: unknown): CompanyServiceListItem {
+  const item = raw as Record<string, unknown>
+  const totalCredential =
+    parseTotalField(item.totalCredential) ??
+    parseTotalField(item.total_credential) ??
+    0
+  const totalBillingCode =
+    parseTotalField(item.totalBillingCode) ??
+    parseTotalField(item.total_billing_code) ??
+    0
+
+  return {
+    id: String(item.id ?? ""),
+    name: String(item.name ?? ""),
+    description: String(item.description ?? ""),
+    active: Boolean(item.active),
+    totalCredential,
+    totalBillingCode,
+    allowedCredentials: [],
+    allowedBillingCodes: [],
   }
 }
 
@@ -131,6 +175,14 @@ export async function getCompanyServices(): Promise<{
           : []
 
       if (rawServices.length > 0) {
+        const summaryList = isSummaryListRow(rawServices[0])
+        if (summaryList) {
+          const services = rawServices.map(normalizeListItem)
+          return {
+            services,
+            totalCount: services.length,
+          }
+        }
         localServicesState = rawServices.map(normalizeService)
       }
 
