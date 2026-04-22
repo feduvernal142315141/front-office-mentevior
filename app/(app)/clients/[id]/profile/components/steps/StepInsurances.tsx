@@ -184,24 +184,36 @@ export function StepInsurances({
       render: (insurance) => formatDate(insurance.terminationDate),
     },
     {
+      key: "isPrimary",
+      header: "Type",
+      className: "whitespace-nowrap",
+      align: "center",
+      render: (insurance) =>
+        insurance.isPrimary ? (
+          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            Primary
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+            Secondary
+          </span>
+        ),
+    },
+    {
       key: "status",
       header: "Status",
       className: "whitespace-nowrap",
       align: "center",
-      render: (insurance) => {
-        if (insurance.isActive) {
-          return (
-            <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Active
-            </span>
-          )
-        }
-        return (
+      render: (insurance) =>
+        insurance.isActive ? (
+          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Active
+          </span>
+        ) : (
           <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
             Inactive
           </span>
-        )
-      },
+        ),
     },
     {
       key: "actions",
@@ -556,17 +568,33 @@ export function StepInsurances({
             />
           </div>
 
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col sm:flex-row gap-4">
             <Controller
               name="isActive"
               control={form.control}
               render={({ field }) => (
-                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 max-w-sm">
+                <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
                   <PremiumSwitch
                     checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
                     label={field.value ? "Active" : "Inactive"}
                     description="Control insurance availability"
+                    variant="default"
+                  />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="isPrimary"
+              control={form.control}
+              render={({ field }) => (
+                <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+                  <PremiumSwitch
+                    checked={Boolean(field.value)}
+                    onCheckedChange={field.onChange}
+                    label={field.value ? "Primary" : "Secondary"}
+                    description="Set as primary insurance"
                     variant="default"
                   />
                 </div>
