@@ -534,7 +534,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
         />
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-36">
-          <div className="max-w-6xl mx-auto py-8">
+          <div className="mx-auto py-8 w-full max-w-6xl 2xl:max-w-[1440px] min-[1800px]:max-w-[1680px] min-[2200px]:max-w-[1960px]">
             <ActiveStepComponent
               clientId={createdClientId ?? clientId}
               client={client}

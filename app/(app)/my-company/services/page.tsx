@@ -1,25 +1,9 @@
 "use client"
 
-import { useRef, useState } from "react"
 import { HeartPulse } from "lucide-react"
-import { ServicesTable, type ServicesTableRef } from "./components/ServicesTable"
-import { ServiceDetailDrawer } from "./components/ServiceDetailDrawer"
-import type { CompanyServiceListItem } from "@/lib/types/company-service.types"
+import { ServicesTable } from "./components/ServicesTable"
 
 export default function ServicesPage() {
-  const tableRef = useRef<ServicesTableRef>(null)
-  const [selectedService, setSelectedService] = useState<CompanyServiceListItem | null>(null)
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-
-  const handleOpenDetails = (service: CompanyServiceListItem) => {
-    setSelectedService(service)
-    setIsDrawerOpen(true)
-  }
-
-  const handleRefresh = () => {
-    tableRef.current?.refetch()
-  }
-
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
@@ -39,14 +23,7 @@ export default function ServicesPage() {
           </div>
         </div>
 
-        <ServicesTable ref={tableRef} onSelectService={handleOpenDetails} />
-
-        <ServiceDetailDrawer
-          service={selectedService}
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          onUpdated={handleRefresh}
-        />
+        <ServicesTable />
       </div>
     </div>
   )
