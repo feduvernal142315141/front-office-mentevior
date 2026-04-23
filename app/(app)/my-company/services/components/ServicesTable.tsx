@@ -139,13 +139,15 @@ export function ServicesTable() {
           </div>
         ) : (
           <>
-            <div className="hidden xl:grid grid-cols-[40px_minmax(260px,1.2fr)_160px_160px_150px_90px] items-center gap-4 px-5 py-3 border-b border-slate-200 bg-gradient-to-b from-[#037ECC]/[0.04] to-[#037ECC]/[0.02]">
-              <div />
-              <span className="text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Service</span>
-              <span className="text-xs font-semibold text-[#037ECC] uppercase tracking-wider text-center">Credentials</span>
-              <span className="text-xs font-semibold text-[#037ECC] uppercase tracking-wider text-center">Billing Codes</span>
-              <span className="text-xs font-semibold text-[#037ECC] uppercase tracking-wider text-center">Status</span>
-              <span className="text-xs font-semibold text-[#037ECC] uppercase tracking-wider text-center">Active</span>
+            <div className="hidden xl:block px-3 pt-3">
+              <div className="grid grid-cols-[40px_minmax(260px,1.2fr)_160px_160px_150px_90px] items-center gap-4 px-5 py-3 border border-slate-200 rounded-2xl bg-gradient-to-b from-[#037ECC]/[0.04] to-[#037ECC]/[0.02]">
+                <div />
+                <div className="text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Service</div>
+                <div className="justify-self-center text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Credentials</div>
+                <div className="justify-self-center text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Billing Codes</div>
+                <div className="justify-self-center text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Status</div>
+                <div className="justify-self-center text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Active</div>
+              </div>
             </div>
 
             <div className="space-y-3 p-3">
