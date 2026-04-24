@@ -157,7 +157,7 @@ export function useBillingCodesTable() {
       header: "Code",
       render: (item: BillingCodeListItem) => (
         <span className="text-sm text-gray-900">
-          {formatBillingCodeDisplay({ type: item.type, code: item.code, modifier: item.modifier })}
+          {formatBillingCodeDisplay({ code: item.code, modifier: item.modifier })}
         </span>
       ),
     },
@@ -168,25 +168,6 @@ export function useBillingCodesTable() {
         <div className="max-w-md">
           <p className="text-sm text-gray-900 line-clamp-2">{item.description}</p>
         </div>
-      ),
-    },
-    {
-      key: "source",
-      header: "Source",
-      render: (item: BillingCodeListItem) => (
-        item.isFromService ? (
-          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
-            Service
-          </Badge>
-        ) : item.isFromCatalog ? (
-          <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-            Catalog
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
-            Custom
-          </Badge>
-        )
       ),
     },
     {

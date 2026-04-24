@@ -17,6 +17,7 @@ interface PremiumDatePickerProps {
   errorMessage?: string
   description?: string
   required?: boolean
+  disabled?: boolean
 }
 
 export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePickerProps>(function PremiumDatePicker({
@@ -29,6 +30,7 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
   errorMessage,
   description,
   required = false,
+  disabled = false,
 }, ref) {
   const [isFocused, setIsFocused] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -108,6 +110,7 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
             <button
               ref={ref}
               type="button"
+              disabled={disabled}
               onFocus={() => setIsFocused(true)}
               onBlur={() => {
                 setIsFocused(false)
@@ -134,7 +137,8 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
                 "focus:bg-gradient-to-b focus:from-white focus:to-[hsl(240_20%_99%)]",
                 "focus:shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_0_0_4px_hsl(var(--primary)/0.12),0_6px_14px_hsl(var(--primary)/0.18)]",
                 "focus:-translate-y-[1px]",
-                "transition-all duration-200 ease-out"
+                "transition-all duration-200 ease-out",
+                disabled && "opacity-60 cursor-not-allowed"
               )}
             >
               {hasValue && dateValue ? format(dateValue, "MM/dd/yyyy") : ""}

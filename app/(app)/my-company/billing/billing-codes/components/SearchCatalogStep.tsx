@@ -274,7 +274,6 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-lg font-semibold ${isSelected ? "text-blue-700" : "text-gray-900"}`}>
                           {formatBillingCodeDisplay({
-                            type: code.type,
                             code: code.code,
                             modifier: code.modifier,
                           })}
