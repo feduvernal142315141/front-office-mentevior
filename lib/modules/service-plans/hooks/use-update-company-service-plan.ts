@@ -9,20 +9,17 @@ import type {
 } from "@/lib/types/company-service-plan.types"
 
 interface UseUpdateCompanyServicePlanReturn {
-  update: (planId: string, payload: UpdateCompanyServicePlanDto) => Promise<CompanyServicePlan | null>
+  update: (payload: UpdateCompanyServicePlanDto) => Promise<CompanyServicePlan | null>
   isLoading: boolean
 }
 
 export function useUpdateCompanyServicePlan(): UseUpdateCompanyServicePlanReturn {
   const [isLoading, setIsLoading] = useState(false)
 
-  const update = async (
-    planId: string,
-    payload: UpdateCompanyServicePlanDto
-  ): Promise<CompanyServicePlan | null> => {
+  const update = async (payload: UpdateCompanyServicePlanDto): Promise<CompanyServicePlan | null> => {
     try {
       setIsLoading(true)
-      const updatedPlan = await updateCompanyServicePlan(planId, payload)
+      const updatedPlan = await updateCompanyServicePlan(payload)
       if (!updatedPlan) {
         toast.error("Service plan not found")
         return null

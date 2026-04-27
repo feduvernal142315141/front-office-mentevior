@@ -1,40 +1,12 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import {
+  resolveCategoryIdFromUnknown,
+} from "@/lib/modules/service-plans/constants/service-plan-categories"
 import type {
   CompanyServicePlan,
   CreateCompanyServicePlanDto,
   UpdateCompanyServicePlanDto,
 } from "@/lib/types/company-service-plan.types"
-
-const DEFAULT_SERVICE_PLANS: CompanyServicePlan[] = [
-  {
-    id: "sp-aba-core",
-    serviceId: "aba-therapy",
-    serviceName: "ABA Therapy",
-    name: "ABA Therapy",
-    description: "Core service plan for ABA treatment goals.",
-    startDate: "2026-01-01",
-    endDate: "2026-12-31",
-    active: true,
-    categories: ["Behaviors", "Replacement/ Acquisition Programs", "Caregiver Training"],
-  },
-  {
-    id: "sp-mental-health-basic",
-    serviceId: "mental-health",
-    serviceName: "Mental Health",
-    name: "Mental Health",
-    description: "Foundational plan for counseling and caregiver support.",
-    startDate: "2026-03-01",
-    endDate: "",
-    active: false,
-    categories: ["Caregivers Programs", "Play and Social Skills"],
-  },
-]
-
-let localServicePlansState: CompanyServicePlan[] = DEFAULT_SERVICE_PLANS
-
-function generateMockId(): string {
-  return `sp-${Date.now()}-${Math.floor(Math.random() * 100000)}`
-}
 
 function asString(value: unknown): string {
   if (typeof value === "string") return value
@@ -42,9 +14,38 @@ function asString(value: unknown): string {
   return ""
 }
 
-function normalizeStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value.map((entry) => asString(entry)).filter((entry) => entry.length > 0)
+function normalizeCategoryIdEntry(entry: unknown): string {
+  if (typeof entry === "string") {
+    const rawValue = entry.trim()
+    if (rawValue.length === 0) return ""
+    return resolveCategoryIdFromUnknown(rawValue)
+  }
+
+  if (!entry || typeof entry !== "object") return ""
+
+  const category = entry as Record<string, unknown>
+  const explicitId = asString(category.id ?? category.categoryId ?? category.category_id)
+  if (explicitId.length > 0) return explicitId
+
+  const rawValue = asString(category.value ?? category.code)
+  if (rawValue.length > 0) return rawValue
+
+  const fallbackLabel = asString(category.name ?? category.label)
+  return resolveCategoryIdFromUnknown(fallbackLabel)
+}
+
+function normalizeCategoryIds(value: unknown): string[] {
+  const rawEntries = Array.isArray(value)
+    ? value
+    : value && typeof value === "object" && Array.isArray((value as { entities?: unknown }).entities)
+      ? (value as { entities: unknown[] }).entities
+      : value && typeof value === "object" && Array.isArray((value as { data?: unknown }).data)
+        ? (value as { data: unknown[] }).data
+        : []
+
+  return rawEntries
+    .map((entry) => normalizeCategoryIdEntry(entry))
+    .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index)
 }
 
 function normalizeServicePlan(raw: unknown): CompanyServicePlan {
@@ -59,118 +60,147 @@ function normalizeServicePlan(raw: unknown): CompanyServicePlan {
     startDate: asString(item.startDate ?? item.start_date),
     endDate: asString(item.endDate ?? item.end_date),
     active: Boolean(item.active),
-    categories: normalizeStringArray(item.categories),
+    categories: normalizeCategoryIds(item.categories ?? item.categoryIds ?? item.category_ids),
   }
+}
+
+function extractSingleServicePlan(data: unknown): CompanyServicePlan | null {
+  if (!data || typeof data !== "object") return null
+
+  const wrapped = data as {
+    entity?: unknown
+    data?: unknown
+    entities?: unknown
+  }
+
+  const directId = asString((data as Record<string, unknown>).id)
+  if (directId.length > 0) return normalizeServicePlan(data)
+
+  if (wrapped.entity && typeof wrapped.entity === "object") {
+    return normalizeServicePlan(wrapped.entity)
+  }
+
+  if (wrapped.data && typeof wrapped.data === "object") {
+    const nestedData = wrapped.data as Record<string, unknown>
+    const nestedId = asString(nestedData.id)
+    if (nestedId.length > 0) return normalizeServicePlan(wrapped.data)
+
+    const nestedEntity = nestedData.entity
+    if (nestedEntity && typeof nestedEntity === "object") {
+      return normalizeServicePlan(nestedEntity)
+    }
+  }
+
+  if (Array.isArray(wrapped.entities) && wrapped.entities.length > 0) {
+    return normalizeServicePlan(wrapped.entities[0])
+  }
+
+  return null
 }
 
 export async function getCompanyServicePlans(): Promise<{
   servicePlans: CompanyServicePlan[]
   totalCount: number
 }> {
-  try {
-    const response = await serviceGet<CompanyServicePlan[] | { entities?: CompanyServicePlan[] }>(
-      "/service-company/plans"
-    )
+  const response = await serviceGet<CompanyServicePlan[] | { entities?: CompanyServicePlan[] }>(
+    "/service-plan"
+  )
 
-    if (response.status === 200 && response.data) {
-      const rawPlans = Array.isArray(response.data)
-        ? response.data
-        : Array.isArray(response.data.entities)
-          ? response.data.entities
-          : []
-
-      if (rawPlans.length > 0) {
-        localServicePlansState = rawPlans.map((rawPlan) => normalizeServicePlan(rawPlan))
-      }
-
-      return {
-        servicePlans: localServicePlansState,
-        totalCount: localServicePlansState.length,
-      }
-    }
-  } catch {
-    // Fallback to mock state while backend endpoint is unavailable.
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch service plans")
   }
 
+  const rawPlans = Array.isArray(response.data)
+    ? response.data
+    : Array.isArray(response.data.entities)
+      ? response.data.entities
+      : []
+
+  const servicePlans = rawPlans.map((rawPlan) => normalizeServicePlan(rawPlan))
   return {
-    servicePlans: localServicePlansState,
-    totalCount: localServicePlansState.length,
+    servicePlans,
+    totalCount: servicePlans.length,
   }
+}
+
+export async function getCompanyServicePlanById(id: string): Promise<CompanyServicePlan | null> {
+  const response = await serviceGet<unknown>(`/service-plan/${id}`)
+
+  if (response.status === 404) return null
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch service plan")
+  }
+
+  const servicePlan = extractSingleServicePlan(response.data)
+  if (!servicePlan) {
+    throw new Error("Invalid service plan response")
+  }
+
+  return servicePlan
 }
 
 export async function createCompanyServicePlan(
   payload: CreateCompanyServicePlanDto
 ): Promise<CompanyServicePlan> {
-  try {
-    const response = await servicePost<CreateCompanyServicePlanDto, CompanyServicePlan>(
-      "/service-company/plans",
-      payload
-    )
-
-    if ((response.status === 200 || response.status === 201) && response.data) {
-      const createdPlan = normalizeServicePlan(response.data)
-      localServicePlansState = [createdPlan, ...localServicePlansState]
-      return createdPlan
-    }
-  } catch {
-    // Fallback to local creation.
-  }
-
-  const createdPlan: CompanyServicePlan = {
-    id: generateMockId(),
+  const requestPayload: CreateCompanyServicePlanDto = {
     serviceId: payload.serviceId,
-    serviceName: payload.serviceName ?? "",
     name: payload.name,
-    description: payload.description ?? "",
     startDate: payload.startDate,
     endDate: payload.endDate,
+    description: payload.description,
     active: payload.active,
     categories: payload.categories,
   }
 
-  localServicePlansState = [createdPlan, ...localServicePlansState]
-  return createdPlan
+  const response = await servicePost<CreateCompanyServicePlanDto, CompanyServicePlan>(
+    "/service-plan",
+    requestPayload
+  )
+
+  if ((response.status === 200 || response.status === 201) && response.data) {
+    return normalizeServicePlan(response.data)
+  }
+
+  throw new Error("Failed to create service plan")
 }
 
 export async function updateCompanyServicePlan(
-  planId: string,
   payload: UpdateCompanyServicePlanDto
 ): Promise<CompanyServicePlan | null> {
-  try {
-    const response = await servicePut<UpdateCompanyServicePlanDto, CompanyServicePlan>(
-      `/service-company/plans/${planId}`,
-      payload
-    )
-
-    if ((response.status === 200 || response.status === 201) && response.data) {
-      const updatedPlan = normalizeServicePlan(response.data)
-      localServicePlansState = localServicePlansState.map((plan) =>
-        plan.id === planId ? updatedPlan : plan
-      )
-      return updatedPlan
-    }
-  } catch {
-    // Fallback to local update.
+  const requestPayload: UpdateCompanyServicePlanDto = {
+    id: payload.id,
+    serviceId: payload.serviceId,
+    name: payload.name,
+    startDate: payload.startDate,
+    endDate: payload.endDate,
+    description: payload.description,
+    active: payload.active,
+    categories: payload.categories,
   }
 
-  let updatedPlan: CompanyServicePlan | null = null
-  localServicePlansState = localServicePlansState.map((plan) => {
-    if (plan.id !== planId) return plan
+  const response = await servicePut<UpdateCompanyServicePlanDto, CompanyServicePlan>(
+    "/service-plan",
+    requestPayload
+  )
 
-    updatedPlan = {
-      ...plan,
-      serviceId: payload.serviceId,
-      serviceName: payload.serviceName ?? "",
-      name: payload.name,
-      description: payload.description ?? "",
-      startDate: payload.startDate,
-      endDate: payload.endDate,
-      active: payload.active,
-      categories: payload.categories,
-    }
+  if ((response.status === 200 || response.status === 201) && response.data) {
+    return normalizeServicePlan(response.data)
+  }
 
-    return updatedPlan
-  })
+  if (response.status === 404) {
+    return null
+  }
 
-  return updatedPlan
+  throw new Error("Failed to update service plan")
+}
+
+export async function deleteCompanyServicePlan(id: string): Promise<boolean> {
+  const response = await serviceDelete(`/service-plan/${id}`)
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error((response.data as { message?: string } | undefined)?.message || "Failed to delete service plan")
+  }
+
+  return true
 }

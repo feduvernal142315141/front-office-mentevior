@@ -76,6 +76,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "new": "New",
   "view": "View",
   "details": "Details",
+  "configuration": "Configuration",
 }
 
 const PAYER_CREATE_SOURCE_SEGMENTS = new Set(["manual", "catalog", "fl-medicaid"])

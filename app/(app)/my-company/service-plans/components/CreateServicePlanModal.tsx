@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { CustomModal } from "@/components/custom/CustomModal"
@@ -8,9 +8,9 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
-import { MultiSelect } from "@/components/custom/MultiSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { Button } from "@/components/custom/Button"
+import { ServicePlanCategoriesPicker } from "./ServicePlanCategoriesPicker"
 import {
   companyServicePlanFormSchema,
   getCompanyServicePlanFormDefaults,
@@ -19,7 +19,10 @@ import {
 import { useCompanyServices } from "@/lib/modules/services/hooks/use-company-services"
 import { useCreateCompanyServicePlan } from "@/lib/modules/service-plans/hooks/use-create-company-service-plan"
 import { useUpdateCompanyServicePlan } from "@/lib/modules/service-plans/hooks/use-update-company-service-plan"
-import { SERVICE_PLAN_CATEGORY_OPTIONS } from "@/lib/modules/service-plans/constants/service-plan-categories"
+import { useServicePlanCategoriesCatalog } from "@/lib/modules/service-plans/hooks/use-service-plan-categories-catalog"
+import { getCompanyServicePlanById } from "@/lib/modules/service-plans/services/company-service-plans.service"
+import { toast } from "@/lib/compat/sonner"
+import { isoToLocalDate } from "@/lib/date"
 import type { CompanyServicePlan } from "@/lib/types/company-service-plan.types"
 
 interface CreateServicePlanModalProps {
@@ -33,8 +36,8 @@ function getFormValuesFromPlan(plan: CompanyServicePlan): CompanyServicePlanForm
   return {
     serviceId: plan.serviceId,
     name: plan.name,
-    startDate: plan.startDate ?? "",
-    endDate: plan.endDate ?? "",
+    startDate: plan.startDate ? isoToLocalDate(plan.startDate) : "",
+    endDate: plan.endDate ? isoToLocalDate(plan.endDate) : "",
     active: plan.active,
     description: plan.description ?? "",
     categories: plan.categories,
@@ -50,8 +53,15 @@ export function CreateServicePlanModal({
   const { services } = useCompanyServices()
   const { create, isLoading: isCreateLoading } = useCreateCompanyServicePlan()
   const { update, isLoading: isUpdateLoading } = useUpdateCompanyServicePlan()
+  const {
+    options: categoryCatalogOptions,
+    createCategory,
+    isCreating: isCreatingCategory,
+    refreshCatalog,
+  } = useServicePlanCategoriesCatalog()
   const isEditMode = initialPlan !== null
-  const isLoading = isCreateLoading || isUpdateLoading
+  const [isLoadingPlanDetail, setIsLoadingPlanDetail] = useState(false)
+  const isLoading = isCreateLoading || isUpdateLoading || isLoadingPlanDetail
 
   const form = useForm<CompanyServicePlanFormValues>({
     resolver: zodResolver(companyServicePlanFormSchema),
@@ -66,7 +76,20 @@ export function CreateServicePlanModal({
   )
 
   const selectedServiceId = form.watch("serviceId")
+  const selectedCategories = form.watch("categories") ?? []
   const isServiceSelected = selectedServiceId.trim().length > 0
+
+  const categoryOptions = useMemo(() => {
+    const map = new Map(categoryCatalogOptions.map((option) => [option.value, option]))
+
+    selectedCategories.forEach((category) => {
+      if (!map.has(category)) {
+        map.set(category, { value: category, label: category })
+      }
+    })
+
+    return Array.from(map.values())
+  }, [categoryCatalogOptions, selectedCategories])
 
   const handleClose = () => {
     form.reset(getCompanyServicePlanFormDefaults())
@@ -74,25 +97,56 @@ export function CreateServicePlanModal({
   }
 
   useEffect(() => {
+    let active = true
+
     if (!open) {
+      setIsLoadingPlanDetail(false)
       form.reset(getCompanyServicePlanFormDefaults())
       return
     }
 
     if (initialPlan) {
-      form.reset(getFormValuesFromPlan(initialPlan))
-      return
+      void refreshCatalog(true)
+      setIsLoadingPlanDetail(true)
+
+      void (async () => {
+        try {
+          const servicePlan = await getCompanyServicePlanById(initialPlan.id)
+          if (!active) return
+
+          if (servicePlan) {
+            form.reset(getFormValuesFromPlan(servicePlan))
+            return
+          }
+
+          toast.error("Service plan not found")
+          form.reset(getFormValuesFromPlan(initialPlan))
+        } catch {
+          if (!active) return
+          toast.error("Failed to load service plan detail")
+          form.reset(getFormValuesFromPlan(initialPlan))
+        } finally {
+          if (active) setIsLoadingPlanDetail(false)
+        }
+      })()
+
+      return () => {
+        active = false
+      }
     }
 
+    void refreshCatalog(true)
     form.reset(getCompanyServicePlanFormDefaults())
-  }, [open, initialPlan, form])
+    setIsLoadingPlanDetail(false)
+
+    return () => {
+      active = false
+    }
+  }, [open, initialPlan, form, refreshCatalog])
 
   const onSubmit = form.handleSubmit(async (values) => {
-    const selectedService = services.find((service) => service.id === values.serviceId)
-
     const payload = {
       serviceId: values.serviceId,
-      serviceName: selectedService?.name ?? "",
       name: values.name,
       description: values.description,
       startDate: values.startDate || undefined,
@@ -101,7 +155,13 @@ export function CreateServicePlanModal({
       categories: values.categories,
     }
 
-    const saved = isEditMode && initialPlan ? await update(initialPlan.id, payload) : await create(payload)
+    const saved =
+      isEditMode && initialPlan
+        ? await update({
+            id: initialPlan.id,
+            ...payload,
+          })
+        : await create(payload)
 
     if (!saved) return
 
@@ -261,20 +321,20 @@ export function CreateServicePlanModal({
         <Controller
           name="categories"
           control={form.control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <div>
-              <MultiSelect
-                label="Categories"
+              <ServicePlanCategoriesPicker
                 value={field.value}
                 onChange={field.onChange}
-                onBlur={field.onBlur}
-                options={SERVICE_PLAN_CATEGORY_OPTIONS}
-                searchable
+                options={categoryOptions}
+                onCreateCategory={createCategory}
+                isCreatingCategory={isCreatingCategory}
                 disabled={!isServiceSelected}
-                maxVisibleTags={24}
-                dropdownPosition="bottom"
-                placeholder="Select one or more categories"
+                hasError={!!fieldState.error}
               />
+              {fieldState.error && (
+                <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
+              )}
             </div>
           )}
         />

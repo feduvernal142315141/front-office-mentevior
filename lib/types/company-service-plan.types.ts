@@ -12,7 +12,6 @@ export interface CompanyServicePlan {
 
 export interface CreateCompanyServicePlanDto {
   serviceId: string
-  serviceName?: string
   name: string
   description?: string
   startDate?: string
@@ -22,8 +21,8 @@ export interface CreateCompanyServicePlanDto {
 }
 
 export interface UpdateCompanyServicePlanDto {
+  id: string
   serviceId: string
-  serviceName?: string
   name: string
   description?: string
   startDate?: string
