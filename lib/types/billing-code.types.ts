@@ -17,6 +17,7 @@ export interface BillingCode {
   active: boolean
   isFromCatalog?: boolean
   isFromService?: boolean
+  canEdit?: boolean
   createdAt?: string
   updatedAt?: string
 }
@@ -30,6 +31,7 @@ export interface BillingCodeListItem {
   active: boolean
   isFromCatalog?: boolean
   isFromService?: boolean
+  canEdit?: boolean
 }
 
 export interface BillingCodeCatalogItem {

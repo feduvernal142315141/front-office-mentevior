@@ -11,6 +11,7 @@ export interface Credential {
   active: boolean
   isFromCatalog?: boolean
   isFromService?: boolean
+  canEdit?: boolean
   createdAt?: string
   updatedAt?: string
 }
@@ -21,6 +22,7 @@ export interface CredentialListItem {
   active: boolean
   isFromCatalog?: boolean
   isFromService?: boolean
+  canEdit?: boolean
 }
 
 export interface CredentialCatalogItem {
