@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/custom/Card"
 import { ChevronRight, FileText, Sliders } from "lucide-react"
 import { getCompanyServicePlanById } from "@/lib/modules/service-plans/services/company-service-plans.service"
-import { useCompanyServices } from "@/lib/modules/services/hooks/use-company-services"
+import { useCompanyActiveServices } from "@/lib/modules/services/hooks/use-company-active-services"
 import { useServicePlanCategoriesCatalog } from "@/lib/modules/service-plans/hooks/use-service-plan-categories-catalog"
 import type { CompanyServicePlan } from "@/lib/types/company-service-plan.types"
 
@@ -16,7 +16,7 @@ export default function ServicePlanConfigurationPage() {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { services } = useCompanyServices()
+  const { services } = useCompanyActiveServices()
   const { options: categoryOptions } = useServicePlanCategoriesCatalog()
 
   useEffect(() => {

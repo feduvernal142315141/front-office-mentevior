@@ -18,6 +18,7 @@ interface ServicePlanCategoriesPickerProps {
   isCreatingCategory?: boolean
   disabled?: boolean
   hasError?: boolean
+  required?: boolean
 }
 
 function normalizeQuery(query: string): string {
@@ -32,6 +33,7 @@ export function ServicePlanCategoriesPicker({
   isCreatingCategory = false,
   disabled = false,
   hasError = false,
+  required = false,
 }: ServicePlanCategoriesPickerProps) {
   const [query, setQuery] = useState("")
   const [isAddingCategory, setIsAddingCategory] = useState(false)
@@ -121,7 +123,9 @@ export function ServicePlanCategoriesPicker({
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Categories</p>
+          <p className="text-sm font-semibold text-slate-900">
+            Categories {required && <span className="text-[#037ECC]">*</span>}
+          </p>
           <p className="text-xs text-slate-500">{value.length} selected</p>
         </div>
 
@@ -276,6 +280,7 @@ export function ServicePlanCategoriesPicker({
           </div>
         </div>
       )}
+
     </div>
   )
 }

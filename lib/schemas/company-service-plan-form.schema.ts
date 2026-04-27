@@ -4,11 +4,11 @@ export const companyServicePlanFormSchema = z
   .object({
     serviceId: z.string().trim().min(1, "Service is required"),
     name: z.string().trim().min(1, "Name is required"),
-    startDate: z.string().optional().or(z.literal("")),
+    startDate: z.string().trim().min(1, "Start date is required"),
     endDate: z.string().optional().or(z.literal("")),
     active: z.boolean(),
     description: z.string().optional().or(z.literal("")),
-    categories: z.array(z.string()),
+    categories: z.array(z.string()).min(1, "At least one category is required"),
   })
   .refine(
     (values) => {

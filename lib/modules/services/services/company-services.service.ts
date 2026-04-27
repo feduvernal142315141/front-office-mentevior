@@ -201,6 +201,46 @@ export async function getCompanyServices(): Promise<{
   }
 }
 
+export async function getCompanyActiveServices(): Promise<{
+  services: CompanyServiceListItem[]
+  totalCount: number
+}> {
+  try {
+    const response = await serviceGet<CompanyService[] | { entities?: CompanyService[] }>("/service-company/active-services")
+    if (response.status === 200 && response.data) {
+      const rawServices = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray((response.data as { entities?: unknown[] }).entities)
+          ? ((response.data as { entities: unknown[] }).entities as unknown[])
+          : []
+
+      if (rawServices.length > 0) {
+        const summaryList = isSummaryListRow(rawServices[0])
+        if (summaryList) {
+          const services = rawServices.map(normalizeListItem)
+          return {
+            services,
+            totalCount: services.length,
+          }
+        }
+
+        const normalized = rawServices.map(normalizeService)
+        return {
+          services: normalized.map(toListItem),
+          totalCount: normalized.length,
+        }
+      }
+    }
+  } catch {
+    // No fallback: return empty list when endpoint fails.
+  }
+
+  return {
+    services: [],
+    totalCount: 0,
+  }
+}
+
 export async function getCompanyServiceById(id: string): Promise<CompanyService | null> {
   try {
     const response = await serviceGet<CompanyService>(`/service-company/${id}`)

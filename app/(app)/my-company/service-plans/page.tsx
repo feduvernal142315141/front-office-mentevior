@@ -3,14 +3,17 @@
 import { useRef, useState } from "react"
 import { FileText, Plus } from "lucide-react"
 import { Button } from "@/components/custom/Button"
+import { NoActiveServiceGate } from "@/components/custom/NoActiveServiceGate"
 import { ServicePlansTable, type ServicePlansTableRef } from "./components/ServicePlansTable"
 import { CreateServicePlanModal } from "./components/CreateServicePlanModal"
+import { useHasActiveService } from "@/lib/modules/services/hooks/use-has-active-service"
 import type { CompanyServicePlan } from "@/lib/types/company-service-plan.types"
 
 export default function ServicePlansPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<CompanyServicePlan | null>(null)
   const tableRef = useRef<ServicePlansTableRef>(null)
+  const { hasActiveService, isLoading } = useHasActiveService()
 
   const handleCreated = () => {
     tableRef.current?.refetch()
@@ -47,24 +50,32 @@ export default function ServicePlansPage() {
             </div>
           </div>
 
-          <Button
-            variant="primary"
-            onClick={handleOpenCreate}
-            className="gap-2 flex items-center"
-          >
-            <Plus className="w-4 h-4" />
-            Add Service Plan
-          </Button>
+          {hasActiveService && (
+            <Button
+              variant="primary"
+              onClick={handleOpenCreate}
+              className="gap-2 flex items-center"
+            >
+              <Plus className="w-4 h-4" />
+              Add Service Plan
+            </Button>
+          )}
         </div>
 
-        <ServicePlansTable ref={tableRef} onEdit={handleEdit} />
+        <NoActiveServiceGate
+          isLoading={isLoading}
+          hasActiveService={hasActiveService}
+          moduleName="service plans"
+        >
+          <ServicePlansTable ref={tableRef} onEdit={handleEdit} />
 
-        <CreateServicePlanModal
-          open={isCreateModalOpen}
-          onClose={handleModalClose}
-          onSuccess={handleCreated}
-          initialPlan={editingPlan}
-        />
+          <CreateServicePlanModal
+            open={isCreateModalOpen}
+            onClose={handleModalClose}
+            onSuccess={handleCreated}
+            initialPlan={editingPlan}
+          />
+        </NoActiveServiceGate>
       </div>
     </div>
   )

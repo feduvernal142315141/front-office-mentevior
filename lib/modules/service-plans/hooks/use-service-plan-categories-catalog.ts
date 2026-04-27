@@ -78,10 +78,9 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
       const data = await inflightCatalogRequest!
 
       if (data.length > 0) {
-        const merged = mergeCategoryOptions(SERVICE_PLAN_CATEGORY_OPTIONS, data)
-        cachedOptions = merged
+        cachedOptions = data
         cachedUsingFallback = false
-        setOptions(merged)
+        setOptions(data)
         return
       }
 

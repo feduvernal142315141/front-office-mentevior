@@ -16,13 +16,13 @@ import {
   getCompanyServicePlanFormDefaults,
   type CompanyServicePlanFormValues,
 } from "@/lib/schemas/company-service-plan-form.schema"
-import { useCompanyServices } from "@/lib/modules/services/hooks/use-company-services"
+import { useCompanyActiveServices } from "@/lib/modules/services/hooks/use-company-active-services"
 import { useCreateCompanyServicePlan } from "@/lib/modules/service-plans/hooks/use-create-company-service-plan"
 import { useUpdateCompanyServicePlan } from "@/lib/modules/service-plans/hooks/use-update-company-service-plan"
 import { useServicePlanCategoriesCatalog } from "@/lib/modules/service-plans/hooks/use-service-plan-categories-catalog"
 import { getCompanyServicePlanById } from "@/lib/modules/service-plans/services/company-service-plans.service"
 import { toast } from "@/lib/compat/sonner"
-import { isoToLocalDate } from "@/lib/date"
+import { getTodayLocalDate, isoToLocalDate } from "@/lib/date"
 import type { CompanyServicePlan } from "@/lib/types/company-service-plan.types"
 
 interface CreateServicePlanModalProps {
@@ -50,7 +50,7 @@ export function CreateServicePlanModal({
   onSuccess,
   initialPlan = null,
 }: CreateServicePlanModalProps) {
-  const { services } = useCompanyServices()
+  const { services } = useCompanyActiveServices()
   const { create, isLoading: isCreateLoading } = useCreateCompanyServicePlan()
   const { update, isLoading: isUpdateLoading } = useUpdateCompanyServicePlan()
   const {
@@ -77,7 +77,9 @@ export function CreateServicePlanModal({
 
   const selectedServiceId = form.watch("serviceId")
   const selectedCategories = form.watch("categories") ?? []
+  const isServicesCatalogEmpty = serviceOptions.length === 0
   const isServiceSelected = selectedServiceId.trim().length > 0
+  const isFormDisabled = !isServiceSelected || isServicesCatalogEmpty
 
   const categoryOptions = useMemo(() => {
     const map = new Map(categoryCatalogOptions.map((option) => [option.value, option]))
@@ -136,7 +138,10 @@ export function CreateServicePlanModal({
     }
 
     void refreshCatalog(true)
-    form.reset(getCompanyServicePlanFormDefaults())
+    form.reset({
+      ...getCompanyServicePlanFormDefaults(),
+      startDate: getTodayLocalDate(),
+    })
     setIsLoadingPlanDetail(false)
 
     return () => {
@@ -145,6 +150,8 @@ export function CreateServicePlanModal({
   }, [open, initialPlan, form, refreshCatalog])
 
   const onSubmit = form.handleSubmit(async (values) => {
+    if (isServicesCatalogEmpty) return
+
     const payload = {
       serviceId: values.serviceId,
       name: values.name,
@@ -214,6 +221,7 @@ export function CreateServicePlanModal({
                   options={serviceOptions}
                   searchable
                   required
+                  disabled={isServicesCatalogEmpty}
                   hasError={!!fieldState.error}
                 />
                 {fieldState.error && (
@@ -235,7 +243,7 @@ export function CreateServicePlanModal({
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
                   required
-                  disabled={!isServiceSelected}
+                  disabled={isFormDisabled}
                 />
                 {fieldState.error && (
                   <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
@@ -256,7 +264,8 @@ export function CreateServicePlanModal({
                   onBlur={field.onBlur}
                   onClear={() => field.onChange("")}
                   hasError={!!fieldState.error}
-                  disabled={!isServiceSelected}
+                  required
+                  disabled={isFormDisabled}
                 />
                 {fieldState.error && (
                   <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
@@ -277,7 +286,7 @@ export function CreateServicePlanModal({
                   onBlur={field.onBlur}
                   onClear={() => field.onChange("")}
                   hasError={!!fieldState.error}
-                  disabled={!isServiceSelected}
+                  disabled={isFormDisabled}
                 />
                 {fieldState.error && (
                   <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
@@ -297,7 +306,7 @@ export function CreateServicePlanModal({
                 onCheckedChange={field.onChange}
                 label="Active"
                 description="Enable this service plan for operational use"
-                disabled={!isServiceSelected}
+                disabled={isFormDisabled}
               />
             </div>
           )}
@@ -313,7 +322,7 @@ export function CreateServicePlanModal({
               onChange={field.onChange}
               onBlur={field.onBlur}
               rows={4}
-              disabled={!isServiceSelected}
+              disabled={isFormDisabled}
             />
           )}
         />
@@ -329,8 +338,9 @@ export function CreateServicePlanModal({
                 options={categoryOptions}
                 onCreateCategory={createCategory}
                 isCreatingCategory={isCreatingCategory}
-                disabled={!isServiceSelected}
+                disabled={isFormDisabled}
                 hasError={!!fieldState.error}
+                required
               />
               {fieldState.error && (
                 <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
@@ -343,7 +353,7 @@ export function CreateServicePlanModal({
           <Button type="button" variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" loading={isLoading} disabled={!isServiceSelected}>
+          <Button type="submit" variant="primary" loading={isLoading} disabled={!isServiceSelected || isServicesCatalogEmpty}>
             {isEditMode ? "Update Service Plan" : "Create Service Plan"}
           </Button>
         </div>
