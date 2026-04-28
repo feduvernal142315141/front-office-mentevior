@@ -1,7 +1,4 @@
 import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
-import {
-  resolveCategoryIdFromUnknown,
-} from "@/lib/modules/service-plans/constants/service-plan-categories"
 import type {
   CompanyServicePlan,
   CreateCompanyServicePlanDto,
@@ -18,7 +15,8 @@ function normalizeCategoryIdEntry(entry: unknown): string {
   if (typeof entry === "string") {
     const rawValue = entry.trim()
     if (rawValue.length === 0) return ""
-    return resolveCategoryIdFromUnknown(rawValue)
+    // Keep backend value as-is to avoid turning category names into fallback ids.
+    return rawValue
   }
 
   if (!entry || typeof entry !== "object") return ""
@@ -31,7 +29,7 @@ function normalizeCategoryIdEntry(entry: unknown): string {
   if (rawValue.length > 0) return rawValue
 
   const fallbackLabel = asString(category.name ?? category.label)
-  return resolveCategoryIdFromUnknown(fallbackLabel)
+  return fallbackLabel.trim()
 }
 
 function normalizeCategoryIds(value: unknown): string[] {

@@ -38,7 +38,7 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
   ({ onEdit }, ref) => {
   const router = useRouter()
   const { data, isLoading, error, pagination, refetch } = useServicePlansTable()
-  const { options: categoryOptions } = useServicePlanCategoriesCatalog()
+  const { options: categoryOptions, refreshCatalog } = useServicePlanCategoriesCatalog()
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [categoriesByPlanId, setCategoriesByPlanId] = useState<Record<string, string[]>>({})
   const [loadingDetailIds, setLoadingDetailIds] = useState<Set<string>>(new Set())
@@ -71,6 +71,11 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
     try {
       const detail = await getCompanyServicePlanById(planId)
       if (!detail) return
+
+      const hasUnmappedCategory = detail.categories.some((category) => !categoryLabelById.has(category))
+      if (hasUnmappedCategory) {
+        await refreshCatalog(true)
+      }
 
       setCategoriesByPlanId((prev) => ({
         ...prev,
