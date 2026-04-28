@@ -106,18 +106,21 @@ export default function ServicePlanConfigurationPage() {
         ) : servicePlan ? (
           <div className="space-y-6">
             <Card variant="elevated" padding="lg">
-              <div className="flex items-center gap-3 flex-wrap">
-                <FileText className="h-5 w-5 text-slate-500" />
-                <h2 className="text-lg font-semibold text-slate-900">{servicePlan.name}</h2>
-                {serviceLabel !== "-" && (
-                  <span className="text-sm text-slate-500">{serviceLabel}</span>
-                )}
-                <Badge
-                  variant="outline"
-                  className={servicePlan.active ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600"}
-                >
-                  {servicePlan.active ? "Active" : "Inactive"}
-                </Badge>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <FileText className="h-5 w-5 shrink-0 text-slate-500" />
+                  <h2 className="truncate text-lg font-semibold text-slate-900">{servicePlan.name}</h2>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {serviceLabel !== "-" && <span className="text-sm text-slate-500">{serviceLabel}</span>}
+                  <Badge
+                    variant="outline"
+                    className={servicePlan.active ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600"}
+                  >
+                    {servicePlan.active ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
               </div>
             </Card>
 

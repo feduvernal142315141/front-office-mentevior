@@ -304,8 +304,12 @@ export function CreateServicePlanModal({
               <PremiumSwitch
                 checked={field.value}
                 onCheckedChange={field.onChange}
-                label="Active"
-                description="Enable this service plan for operational use"
+                label={field.value ? "Active" : "Inactive"}
+                description={
+                  field.value
+                    ? "This service plan is enabled for operational use"
+                    : "This service plan is disabled and won’t be available for operational use"
+                }
                 disabled={isFormDisabled}
               />
             </div>

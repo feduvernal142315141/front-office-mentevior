@@ -51,7 +51,23 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
 
   useImperativeHandle(ref, () => ({
     refetch: () => {
-      void refetch()
+      void (async () => {
+        await refetch()
+
+        if (expandedIds.size === 0) return
+
+        const expandedPlanIds = Array.from(expandedIds)
+
+        setCategoriesByPlanId((prev) => {
+          const next = { ...prev }
+          expandedPlanIds.forEach((planId) => {
+            delete next[planId]
+          })
+          return next
+        })
+
+        await Promise.all(expandedPlanIds.map((planId) => loadPlanCategories(planId, true)))
+      })()
     },
   }))
 
@@ -59,8 +75,8 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
   const startRow = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1
   const endRow = Math.min(pagination.page * pagination.pageSize, pagination.total)
 
-  const loadPlanCategories = async (planId: string) => {
-    if (categoriesByPlanId[planId] || loadingDetailIds.has(planId)) return
+  const loadPlanCategories = async (planId: string, force = false) => {
+    if (!force && (categoriesByPlanId[planId] || loadingDetailIds.has(planId))) return
 
     setLoadingDetailIds((prev) => {
       const next = new Set(prev)
