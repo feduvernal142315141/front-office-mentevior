@@ -187,6 +187,11 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
             {data.map((plan) => {
               const isExpanded = expandedIds.has(plan.id)
               const expandedCategories = categoriesByPlanId[plan.id] ?? plan.categories
+              const sortedExpandedCategories = [...expandedCategories].sort((a, b) => {
+                const labelA = categoryLabelById.get(a) ?? a
+                const labelB = categoryLabelById.get(b) ?? b
+                return labelA.localeCompare(labelB, undefined, { sensitivity: "base" })
+              })
               const isLoadingCategories = loadingDetailIds.has(plan.id)
               return (
                 <div
@@ -467,7 +472,7 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
                         <p className="text-sm text-slate-400 italic">No categories selected.</p>
                       ) : (
                         <div className="flex flex-wrap gap-2">
-                          {expandedCategories.map((category) => (
+                          {sortedExpandedCategories.map((category) => (
                             <Badge
                               key={`${plan.id}-${category}`}
                               variant="outline"

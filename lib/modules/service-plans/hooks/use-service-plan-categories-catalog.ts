@@ -44,7 +44,13 @@ function mergeCategoryOptions(
     map.set(dedupeKey, option)
   })
 
-  return Array.from(map.values())
+  return sortCategoryOptions(Array.from(map.values()))
+}
+
+function sortCategoryOptions(
+  options: ServicePlanCategoryCatalogOption[]
+): ServicePlanCategoryCatalogOption[] {
+  return [...options].sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
 }
 
 export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatalogReturn {
@@ -78,21 +84,24 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
       const data = await inflightCatalogRequest!
 
       if (data.length > 0) {
-        cachedOptions = data
+        const sortedData = sortCategoryOptions(data)
+        cachedOptions = sortedData
         cachedUsingFallback = false
-        setOptions(data)
+        setOptions(sortedData)
         return
       }
 
       setUsingFallback(true)
-      setOptions(SERVICE_PLAN_CATEGORY_OPTIONS)
-      cachedOptions = SERVICE_PLAN_CATEGORY_OPTIONS
+      const sortedFallback = sortCategoryOptions(SERVICE_PLAN_CATEGORY_OPTIONS)
+      setOptions(sortedFallback)
+      cachedOptions = sortedFallback
       cachedUsingFallback = true
     } catch (e) {
       setError(e instanceof Error ? e : new Error("Failed to load categories catalog"))
       setUsingFallback(true)
-      setOptions(SERVICE_PLAN_CATEGORY_OPTIONS)
-      cachedOptions = SERVICE_PLAN_CATEGORY_OPTIONS
+      const sortedFallback = sortCategoryOptions(SERVICE_PLAN_CATEGORY_OPTIONS)
+      setOptions(sortedFallback)
+      cachedOptions = sortedFallback
       cachedUsingFallback = true
     } finally {
       setIsLoading(false)
