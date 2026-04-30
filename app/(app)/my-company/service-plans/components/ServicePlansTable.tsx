@@ -6,13 +6,12 @@ import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
-import type { CompanyServicePlan } from "@/lib/types/company-service-plan.types"
+import type { CompanyServicePlan, ServicePlanCategorySummary } from "@/lib/types/company-service-plan.types"
 import { cn } from "@/lib/utils"
 import { useServicePlansTable } from "../hooks/useServicePlansTable"
-import { useServicePlanCategoriesCatalog } from "@/lib/modules/service-plans/hooks/use-service-plan-categories-catalog"
 import {
   deleteCompanyServicePlan,
-  getCompanyServicePlanById,
+  getServicePlanCategoriesByServicePlanId,
 } from "@/lib/modules/service-plans/services/company-service-plans.service"
 import { parseLocalDate } from "@/lib/date"
 import { toast } from "@/lib/compat/sonner"
@@ -38,16 +37,11 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
   ({ onEdit }, ref) => {
   const router = useRouter()
   const { data, isLoading, error, pagination, refetch } = useServicePlansTable()
-  const { options: categoryOptions, refreshCatalog } = useServicePlanCategoriesCatalog()
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
-  const [categoriesByPlanId, setCategoriesByPlanId] = useState<Record<string, string[]>>({})
+  const [categoriesByPlanId, setCategoriesByPlanId] = useState<Record<string, ServicePlanCategorySummary[]>>({})
   const [loadingDetailIds, setLoadingDetailIds] = useState<Set<string>>(new Set())
   const [planToDelete, setPlanToDelete] = useState<CompanyServicePlan | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-
-  const categoryLabelById = useMemo(() => {
-    return new Map(categoryOptions.map((option) => [option.value, option.label]))
-  }, [categoryOptions])
 
   useImperativeHandle(ref, () => ({
     refetch: () => {
@@ -85,17 +79,11 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
     })
 
     try {
-      const detail = await getCompanyServicePlanById(planId)
-      if (!detail) return
-
-      const hasUnmappedCategory = detail.categories.some((category) => !categoryLabelById.has(category))
-      if (hasUnmappedCategory) {
-        await refreshCatalog(true)
-      }
+      const detail = await getServicePlanCategoriesByServicePlanId(planId)
 
       setCategoriesByPlanId((prev) => ({
         ...prev,
-        [planId]: detail.categories,
+        [planId]: detail,
       }))
     } finally {
       setLoadingDetailIds((prev) => {
@@ -186,10 +174,10 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
           <div className="space-y-3 p-3">
             {data.map((plan) => {
               const isExpanded = expandedIds.has(plan.id)
-              const expandedCategories = categoriesByPlanId[plan.id] ?? plan.categories
+              const expandedCategories = categoriesByPlanId[plan.id] ?? []
               const sortedExpandedCategories = [...expandedCategories].sort((a, b) => {
-                const labelA = categoryLabelById.get(a) ?? a
-                const labelB = categoryLabelById.get(b) ?? b
+                const labelA = a.categoryName
+                const labelB = b.categoryName
                 return labelA.localeCompare(labelB, undefined, { sensitivity: "base" })
               })
               const isLoadingCategories = loadingDetailIds.has(plan.id)
@@ -474,11 +462,11 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
                         <div className="flex flex-wrap gap-2">
                           {sortedExpandedCategories.map((category) => (
                             <Badge
-                              key={`${plan.id}-${category}`}
+                              key={`${plan.id}-${category.id}`}
                               variant="outline"
                               className="border-blue-200 bg-blue-50 text-blue-700"
                             >
-                              {categoryLabelById.get(category) ?? category}
+                              {`${category.categoryName} (${category.totalItems})`}
                             </Badge>
                           ))}
                         </div>

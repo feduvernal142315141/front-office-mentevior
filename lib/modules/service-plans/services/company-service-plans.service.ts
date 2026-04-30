@@ -2,6 +2,7 @@ import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/servic
 import type {
   CompanyServicePlan,
   CreateCompanyServicePlanDto,
+  ServicePlanCategorySummary,
   UpdateCompanyServicePlanDto,
 } from "@/lib/types/company-service-plan.types"
 
@@ -59,6 +60,23 @@ function normalizeServicePlan(raw: unknown): CompanyServicePlan {
     endDate: asString(item.endDate ?? item.end_date),
     active: Boolean(item.active),
     categories: normalizeCategoryIds(item.categories ?? item.categoryIds ?? item.category_ids),
+  }
+}
+
+function normalizeServicePlanCategorySummary(raw: unknown): ServicePlanCategorySummary {
+  const item = raw as Record<string, unknown>
+  const totalItemsRaw = item.totalItems ?? item.total_items
+
+  return {
+    id: asString(item.id),
+    categoryId: asString(item.categoryId ?? item.category_id),
+    categoryName: asString(item.categoryName ?? item.category_name),
+    totalItems:
+      typeof totalItemsRaw === "number"
+        ? totalItemsRaw
+        : typeof totalItemsRaw === "string"
+          ? Number(totalItemsRaw) || 0
+          : 0,
   }
 }
 
@@ -136,6 +154,33 @@ export async function getCompanyServicePlanById(id: string): Promise<CompanyServ
   }
 
   return servicePlan
+}
+
+export async function getServicePlanCategoriesByServicePlanId(
+  servicePlanId: string
+): Promise<ServicePlanCategorySummary[]> {
+  const response = await serviceGet<unknown>(`/service-plan/${servicePlanId}/category`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch service plan categories")
+  }
+
+  const rawData = response.data as unknown
+  const wrapped = (rawData && typeof rawData === "object" ? rawData : {}) as {
+    entities?: unknown
+    data?: unknown
+  }
+  const entries = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray(wrapped.entities)
+      ? wrapped.entities
+      : Array.isArray(wrapped.data)
+        ? wrapped.data
+        : []
+
+  return entries
+    .map((entry) => normalizeServicePlanCategorySummary(entry))
+    .filter((entry) => entry.categoryId.length > 0)
 }
 
 export async function createCompanyServicePlan(

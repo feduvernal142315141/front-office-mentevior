@@ -10,6 +10,13 @@ export interface CompanyServicePlan {
   categories: string[]
 }
 
+export interface ServicePlanCategorySummary {
+  id: string
+  categoryId: string
+  categoryName: string
+  totalItems: number
+}
+
 export interface CreateCompanyServicePlanDto {
   serviceId: string
   name: string

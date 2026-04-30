@@ -5,19 +5,21 @@ import { useParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/custom/Card"
 import { ChevronRight, FileText, Sliders } from "lucide-react"
-import { getCompanyServicePlanById } from "@/lib/modules/service-plans/services/company-service-plans.service"
+import {
+  getCompanyServicePlanById,
+  getServicePlanCategoriesByServicePlanId,
+} from "@/lib/modules/service-plans/services/company-service-plans.service"
 import { useCompanyActiveServices } from "@/lib/modules/services/hooks/use-company-active-services"
-import { useServicePlanCategoriesCatalog } from "@/lib/modules/service-plans/hooks/use-service-plan-categories-catalog"
-import type { CompanyServicePlan } from "@/lib/types/company-service-plan.types"
+import type { CompanyServicePlan, ServicePlanCategorySummary } from "@/lib/types/company-service-plan.types"
 
 export default function ServicePlanConfigurationPage() {
   const params = useParams<{ id: string }>()
   const [servicePlan, setServicePlan] = useState<CompanyServicePlan | null>(null)
+  const [categories, setCategories] = useState<ServicePlanCategorySummary[]>([])
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { services } = useCompanyActiveServices()
-  const { options: categoryOptions } = useServicePlanCategoriesCatalog()
 
   useEffect(() => {
     let active = true
@@ -35,7 +37,14 @@ export default function ServicePlanConfigurationPage() {
           return
         }
 
+        const categoryData = await getServicePlanCategoriesByServicePlanId(params.id)
+
         setServicePlan(data)
+        setCategories(
+          [...categoryData].sort((a, b) =>
+            a.categoryName.localeCompare(b.categoryName, undefined, { sensitivity: "base" })
+          )
+        )
       } catch (err) {
         if (!active) return
         setError(err instanceof Error ? err.message : "Failed to load service plan configuration")
@@ -50,30 +59,24 @@ export default function ServicePlanConfigurationPage() {
   }, [params.id])
 
   useEffect(() => {
-    if (!servicePlan || servicePlan.categories.length === 0) {
+    if (!categories || categories.length === 0) {
       setActiveCategoryId(null)
       return
     }
 
     setActiveCategoryId((current) =>
-      current && servicePlan.categories.includes(current) ? current : servicePlan.categories[0]
+      current && categories.some((category) => category.categoryId === current)
+        ? current
+        : categories[0].categoryId
     )
-  }, [servicePlan])
+  }, [categories])
 
   const serviceLabel =
     servicePlan?.serviceName ||
     services.find((service) => service.id === servicePlan?.serviceId)?.name ||
     "-"
 
-  const categoryLabelById = new Map(categoryOptions.map((option) => [option.value, option.label]))
-  const mappedCategories =
-    servicePlan?.categories.map((categoryId) => ({
-      id: categoryId,
-      label: categoryLabelById.get(categoryId) ?? categoryId,
-      itemsCount: 0,
-    })) ?? []
-
-  const activeCategory = mappedCategories.find((category) => category.id === activeCategoryId) ?? null
+  const activeCategory = categories.find((category) => category.categoryId === activeCategoryId) ?? null
 
   return (
     <div className="p-8">
@@ -130,26 +133,26 @@ export default function ServicePlanConfigurationPage() {
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Categories</h3>
                 </div>
 
-                {mappedCategories.length === 0 ? (
+                {categories.length === 0 ? (
                   <div className="px-4 py-6 text-sm text-slate-500">No categories mapped for this service plan.</div>
                 ) : (
                   <div className="p-3 space-y-2">
-                    {mappedCategories.map((category) => {
-                      const isActive = category.id === activeCategoryId
+                    {categories.map((category) => {
+                      const isActive = category.categoryId === activeCategoryId
 
                       return (
                         <button
                           key={category.id}
                           type="button"
-                          onClick={() => setActiveCategoryId(category.id)}
+                          onClick={() => setActiveCategoryId(category.categoryId)}
                           className={isActive
                             ? "w-full flex items-center justify-between rounded-xl bg-[#2563EB] px-4 py-3 text-left text-white shadow-sm"
                             : "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left text-slate-700 hover:bg-slate-50 transition-colors"
                           }
                         >
-                          <span className="font-medium truncate">{category.label}</span>
+                          <span className="font-medium truncate">{`${category.categoryName} (${category.totalItems})`}</span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className={isActive ? "text-white/85 text-sm" : "text-slate-400 text-sm"}>{category.itemsCount}</span>
+                            <span className={isActive ? "text-white/85 text-sm" : "text-slate-400 text-sm"}>{category.totalItems}</span>
                             <ChevronRight className={isActive ? "h-4 w-4 text-white" : "h-4 w-4 text-slate-400"} />
                           </div>
                         </button>
@@ -162,12 +165,12 @@ export default function ServicePlanConfigurationPage() {
               <Card variant="elevated" padding="lg">
                 {activeCategory ? (
                   <>
-                    <h3 className="text-base font-semibold text-slate-900">{activeCategory.label}</h3>
+                    <h3 className="text-base font-semibold text-slate-900">{`${activeCategory.categoryName} (${activeCategory.totalItems})`}</h3>
                     <p className="mt-1 text-sm text-slate-500">Items mapped for this category will appear in this panel.</p>
 
                     <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-6">
                       <p className="text-sm text-slate-600">
-                        This is the dynamic area for <span className="font-semibold text-slate-800">{activeCategory.label}</span>.
+                        This is the dynamic area for <span className="font-semibold text-slate-800">{`${activeCategory.categoryName} (${activeCategory.totalItems})`}</span>.
                       </p>
                     </div>
                   </>
