@@ -14,7 +14,7 @@ interface UseServicePlanCategoriesCatalogReturn {
   isCreating: boolean
   error: Error | null
   usingFallback: boolean
-  createCategory: (name: string) => Promise<boolean>
+  createCategory: (name: string) => Promise<string | null>
   refreshCatalog: (force?: boolean) => Promise<void>
 }
 
@@ -112,14 +112,15 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
     void refreshCatalog(false)
   }, [refreshCatalog])
 
-  const createCategory = async (name: string): Promise<boolean> => {
+  const createCategory = async (name: string): Promise<string | null> => {
     const normalizedName = name.trim()
 
-    if (normalizedName.length === 0) return false
+    if (normalizedName.length === 0) return null
 
     try {
       setIsCreating(true)
       const created = await createServicePlanCategory(normalizedName)
+      const createdValue = created.option.value
 
       setOptions((current) => {
         const merged = mergeCategoryOptions(current, [created.option])
@@ -127,16 +128,21 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
         return merged
       })
 
-      void refreshCatalog(true)
+      await refreshCatalog(true)
+
+      const canonicalValue =
+        cachedOptions?.find(
+          (option) => option.label.trim().toLowerCase() === normalizedName.toLowerCase()
+        )?.value ?? createdValue
 
       if (created.usedFallback) {
         setUsingFallback(true)
       }
 
-      return true
+      return canonicalValue
     } catch (e) {
       setError(e instanceof Error ? e : new Error("Failed to create category"))
-      return false
+      return null
     } finally {
       setIsCreating(false)
     }

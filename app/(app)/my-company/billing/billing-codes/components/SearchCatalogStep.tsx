@@ -27,7 +27,7 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   
-  const { catalogCodes, isLoading, filterCodes } = useBillingCodesCatalog()
+  const { catalogCodes, allCatalogCodes, isLoading, filterCodes } = useBillingCodesCatalog()
   const { types: billingCodeTypes, isLoading: isLoadingTypes } = useBillingCodeTypes()
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export function SearchCatalogStep({ onSelectCode, onClose, onSuccess }: SearchCa
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchTerm, typeFilter, filterCodes])
+  }, [searchTerm, typeFilter, filterCodes, allCatalogCodes])
 
   const toggleSelection = (id: string) => {
     setSelectedIds(prev => {

@@ -1,7 +1,10 @@
 import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import type {
+  AssignItemsToServicePlanCategoryPayload,
   CompanyServicePlan,
   CreateCompanyServicePlanDto,
+  ItemCatalogItem,
+  ServicePlanCategoryMappedItem,
   ServicePlanCategorySummary,
   UpdateCompanyServicePlanDto,
 } from "@/lib/types/company-service-plan.types"
@@ -78,6 +81,90 @@ function normalizeServicePlanCategorySummary(raw: unknown): ServicePlanCategoryS
           ? Number(totalItemsRaw) || 0
           : 0,
   }
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  const parsed = asString(value).trim()
+  return parsed.length > 0 ? parsed : undefined
+}
+
+function asOptionalBoolean(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value
+  if (typeof value === "number") {
+    if (value === 1) return true
+    if (value === 0) return false
+  }
+
+  if (typeof value === "string") {
+    const normalizedValue = value.trim().toLowerCase()
+    if (normalizedValue === "true" || normalizedValue === "1") return true
+    if (normalizedValue === "false" || normalizedValue === "0") return false
+  }
+
+  return undefined
+}
+
+function asOptionalNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+
+  if (typeof value === "string") {
+    const normalizedValue = value.trim()
+    if (normalizedValue.length === 0) return undefined
+
+    const parsed = Number(normalizedValue)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  return undefined
+}
+
+function normalizeServicePlanCategoryMappedItem(raw: unknown): ServicePlanCategoryMappedItem {
+  const item = raw as Record<string, unknown>
+  const nestedItem = (item.item && typeof item.item === "object" ? item.item : {}) as Record<string, unknown>
+
+  const id = asString(item.id ?? item.servicePlanCategoryItemId ?? item.service_plan_category_item_id)
+  const itemId = asString(
+    item.itemId ??
+      item.item_id ??
+      item.idItem ??
+      nestedItem.id ??
+      nestedItem.itemId ??
+      // Some backends return mapped entries already flattened as item rows.
+      item.id
+  )
+  const itemName = asString(item.itemName ?? item.item_name ?? item.name ?? nestedItem.name ?? nestedItem.itemName)
+
+  return {
+    id: id.length > 0 ? id : itemId,
+    itemId,
+    itemName,
+    description: asOptionalString(item.description ?? item.itemDescription ?? item.item_description),
+    active: asOptionalBoolean(item.active),
+    order: asOptionalNumber(item.order ?? item.sortOrder ?? item.sort_order ?? item.position),
+  }
+}
+
+function normalizeItemCatalogEntry(raw: unknown): ItemCatalogItem {
+  const item = raw as Record<string, unknown>
+
+  return {
+    id: asString(item.id),
+    categoryId: asString(item.categoryId ?? item.category_id),
+    name: asString(item.name ?? item.itemName ?? item.item_name),
+  }
+}
+
+function extractCollectionEntries(rawData: unknown): unknown[] {
+  const wrapped = (rawData && typeof rawData === "object" ? rawData : {}) as {
+    entities?: unknown
+    data?: unknown
+  }
+
+  if (Array.isArray(rawData)) return rawData
+  if (Array.isArray(wrapped.entities)) return wrapped.entities
+  if (Array.isArray(wrapped.data)) return wrapped.data
+
+  return []
 }
 
 function extractSingleServicePlan(data: unknown): CompanyServicePlan | null {
@@ -181,6 +268,52 @@ export async function getServicePlanCategoriesByServicePlanId(
   return entries
     .map((entry) => normalizeServicePlanCategorySummary(entry))
     .filter((entry) => entry.categoryId.length > 0)
+}
+
+export async function getServicePlanCategoryItemsByServicePlanCategoryId(
+  servicePlanCategoryId: string
+): Promise<ServicePlanCategoryMappedItem[]> {
+  const response = await serviceGet<unknown>(`/service-plan-category-item/${servicePlanCategoryId}/item`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(`Failed to fetch mapped items for service plan category ${servicePlanCategoryId}`)
+  }
+
+  const rawData = response.data as unknown
+  const entries = extractCollectionEntries(rawData)
+
+  return entries
+    .map((entry) => normalizeServicePlanCategoryMappedItem(entry))
+    .filter((entry) => entry.itemId.length > 0)
+}
+
+export async function getItemCatalog(): Promise<ItemCatalogItem[]> {
+  const response = await serviceGet<unknown>("/item/catalog")
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch item catalog")
+  }
+
+  const entries = extractCollectionEntries(response.data)
+
+  return entries
+    .map((entry) => normalizeItemCatalogEntry(entry))
+    .filter((entry) => entry.id.length > 0 && entry.name.length > 0)
+}
+
+export async function assignItemsToServicePlanCategory(
+  servicePlanCategoryId: string,
+  itemIds: string[]
+): Promise<void> {
+  const payload: AssignItemsToServicePlanCategoryPayload = { itemIds }
+  const response = await servicePost<AssignItemsToServicePlanCategoryPayload, unknown>(
+    `/service-plan-category-item/${servicePlanCategoryId}/item`,
+    payload
+  )
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error("Failed to assign items to service plan category")
+  }
 }
 
 export async function createCompanyServicePlan(

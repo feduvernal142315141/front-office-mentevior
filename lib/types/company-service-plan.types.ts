@@ -17,6 +17,25 @@ export interface ServicePlanCategorySummary {
   totalItems: number
 }
 
+export interface ServicePlanCategoryMappedItem {
+  id: string
+  itemId: string
+  itemName: string
+  description?: string
+  active?: boolean
+  order?: number
+}
+
+export interface ItemCatalogItem {
+  id: string
+  categoryId: string
+  name: string
+}
+
+export interface AssignItemsToServicePlanCategoryPayload {
+  itemIds: string[]
+}
+
 export interface CreateCompanyServicePlanDto {
   serviceId: string
   name: string

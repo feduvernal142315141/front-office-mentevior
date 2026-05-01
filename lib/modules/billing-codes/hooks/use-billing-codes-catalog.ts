@@ -47,14 +47,15 @@ export function useBillingCodesCatalog(): UseBillingCodesCatalogReturn {
       return
     }
 
+    const normalizedSearch = searchTerm.trim().toLowerCase()
+
     const filtered = allCatalogCodes.filter((code) => {
 
       const matchesType = !type || type === "all" || code.type === type
 
 
-      const matchesSearch = !searchTerm.trim() || 
-        code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        code.description.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch = !normalizedSearch ||
+        code.code.toLowerCase().includes(normalizedSearch)
 
       return matchesType && matchesSearch
     })

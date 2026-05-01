@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Search, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/custom/Button"
@@ -14,7 +14,7 @@ interface ServicePlanCategoriesPickerProps {
   value: string[]
   onChange: (next: string[]) => void
   options: ServicePlanCategoryOption[]
-  onCreateCategory: (name: string) => Promise<boolean>
+  onCreateCategory: (name: string) => Promise<string | null>
   isCreatingCategory?: boolean
   disabled?: boolean
   hasError?: boolean
@@ -38,6 +38,8 @@ export function ServicePlanCategoriesPicker({
   const [query, setQuery] = useState("")
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
+  const [pendingScrollCategoryValue, setPendingScrollCategoryValue] = useState<string | null>(null)
+  const categoryButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   const normalizedQuery = normalizeQuery(query)
 
@@ -54,6 +56,17 @@ export function ServicePlanCategoriesPicker({
 
   const canSelectAll = filteredOptions.length > 0
   const canSaveCategory = newCategoryName.trim().length > 0 && !disabled && !isCreatingCategory
+
+  useEffect(() => {
+    if (!pendingScrollCategoryValue || isAddingCategory) return
+
+    const target = categoryButtonRefs.current[pendingScrollCategoryValue]
+    if (!target) return
+
+    target.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    target.focus({ preventScroll: true })
+    setPendingScrollCategoryValue(null)
+  }, [filteredOptions, isAddingCategory, pendingScrollCategoryValue])
 
   const handleToggleCategory = (categoryValue: string) => {
     if (disabled) return
@@ -100,9 +113,15 @@ export function ServicePlanCategoriesPicker({
   const handleSaveCategory = async () => {
     if (!canSaveCategory) return
 
-    const saved = await onCreateCategory(newCategoryName.trim())
+    const createdCategoryValue = await onCreateCategory(newCategoryName.trim())
 
-    if (!saved) return
+    if (!createdCategoryValue) return
+
+    if (!selectedSet.has(createdCategoryValue)) {
+      onChange([...value, createdCategoryValue])
+    }
+
+    setPendingScrollCategoryValue(createdCategoryValue)
 
     setNewCategoryName("")
     setQuery("")
@@ -165,7 +184,7 @@ export function ServicePlanCategoriesPicker({
             disabled={disabled || isCreatingCategory}
             className="h-8 px-3 text-xs"
           >
-            Add Category
+            Create Category
           </Button>
         </div>
       </div>
@@ -259,6 +278,9 @@ export function ServicePlanCategoriesPicker({
               return (
                 <button
                   key={option.value}
+                  ref={(element) => {
+                    categoryButtonRefs.current[option.value] = element
+                  }}
                   type="button"
                   onClick={() => handleToggleCategory(option.value)}
                   disabled={disabled}
