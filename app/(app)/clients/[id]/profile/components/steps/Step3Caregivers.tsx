@@ -409,6 +409,8 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
         title={editingCaregiver ? "Edit caregiver" : "New caregiver"}
         description={editingCaregiver ? "Update legal parent or caregiver information" : "Add legal parent or caregiver information"}
         maxWidthClassName="sm:max-w-[760px]"
+        allowSelectOverflow
+        contentClassName="overflow-visible"
       >
         <form
           onSubmit={(event) => {
@@ -468,6 +470,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                     options={relationshipOptions}
                     hasError={!!fieldState.error}
                     disabled={isLoadingRelationships}
+                    searchable
                     required
                   />
                   {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}

@@ -318,13 +318,16 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
                 root: "w-full",
                 months: "w-full",
                 month: "w-full px-1.5 pb-1",
-                table: "w-full border-separate border-spacing-x-1.5 border-spacing-y-1.5",
-                weekdays: "flex mb-3 px-1.5",
-                weekday: "text-[11px] font-semibold text-slate-500 tracking-[0.18em]",
-                week: "flex w-full gap-1.5",
-                day: "p-0",
+                /* Real <table> layout: avoid flex on <tr> (weekdays/week) — it collapses <th> and sticks weekday labels together. */
+                table:
+                  "w-full table-fixed border-separate border-spacing-x-1.5 border-spacing-y-1.5 border-0",
+                weekdays: "[&>th]:pb-2",
+                weekday:
+                  "p-0 text-center text-[11px] font-semibold text-slate-500",
+                week: "",
+                day: "p-0 text-center align-middle",
                 day_button:
-                  "h-9 w-9 rounded-full text-sm font-medium text-slate-700 transition-colors hover:bg-[#037ECC]/10 hover:text-slate-900 data-[selected-single=true]:bg-[#037ECC] data-[selected-single=true]:text-white",
+                  "mx-auto h-9 w-9 rounded-full text-sm font-medium text-slate-700 transition-colors hover:bg-[#037ECC]/10 hover:text-slate-900 data-[selected-single=true]:bg-[#037ECC] data-[selected-single=true]:text-white",
                 today:
                   "[&>button]:ring-2 [&>button]:ring-[#037ECC]/25 [&>button]:bg-[#037ECC]/8 [&>button]:text-[#025fa0] [&>button]:font-semibold data-[selected-single=true]:[&>button]:ring-0 data-[selected-single=true]:[&>button]:bg-[#037ECC] data-[selected-single=true]:[&>button]:text-white",
                 month_caption: "hidden",
