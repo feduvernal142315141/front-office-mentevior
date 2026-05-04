@@ -73,17 +73,6 @@ export class ApiPayersService implements PayersServiceContract {
     }
   }
 
-  async createFromStateInsurance(ids: string[]): Promise<void> {
-    const response = await servicePost<{ ids: string[] }, { message?: string }>(
-      "/payers/create-from-state-insurance",
-      { ids }
-    )
-
-    if (response.status !== 200 && response.status !== 201) {
-      throw new Error(response.data?.message || "Failed to create payers from state insurance")
-    }
-  }
-
   async update(data: UpdatePayerDto): Promise<Payer> {
     const response = await servicePut<UpdatePayerDto, Payer>("/payers", data)
 
@@ -99,20 +88,6 @@ export class ApiPayersService implements PayersServiceContract {
 
     if (response.status !== 200 || !response.data) {
       throw new Error(response.data?.message || "Failed to fetch private insurance catalog")
-    }
-
-    const data = response.data as unknown
-    if (Array.isArray(data)) return data as PayerCatalogItem[]
-
-    const paginated = data as { entities?: PayerCatalogItem[] }
-    return Array.isArray(paginated.entities) ? paginated.entities : []
-  }
-
-  async getFlMedicaidCatalog(): Promise<PayerCatalogItem[]> {
-    const response = await serviceGet<PayerCatalogItem[]>("/state-insurance/catalog")
-
-    if (response.status !== 200 || !response.data) {
-      throw new Error(response.data?.message || "Failed to fetch state insurance catalog")
     }
 
     const data = response.data as unknown

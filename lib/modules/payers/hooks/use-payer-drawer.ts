@@ -3,13 +3,12 @@
 import { useState, useCallback } from "react"
 import type { PayerCatalogItem } from "@/lib/types/payer.types"
 
-export type PayerDrawerStep = "select-source" | "search-catalog" | "search-state-catalog"
+export type PayerDrawerStep = "select-source" | "search-catalog"
 
 interface UsePayerDrawerReturn {
   currentStep: PayerDrawerStep
   selectedCatalogItem: PayerCatalogItem | null
   goToCatalog: () => void
-  goToStateCatalog: () => void
   selectCatalogItem: (item: PayerCatalogItem) => void
   goBack: () => void
   reset: () => void
@@ -30,16 +29,12 @@ export function usePayerDrawer(): UsePayerDrawerReturn {
     setCurrentStep("search-catalog")
   }, [])
 
-  const goToStateCatalog = useCallback(() => {
-    setCurrentStep("search-state-catalog")
-  }, [])
-
   const selectCatalogItem = useCallback((item: PayerCatalogItem) => {
     setSelectedCatalogItem(item)
   }, [])
 
   const goBack = useCallback(() => {
-    if (currentStep === "search-catalog" || currentStep === "search-state-catalog") {
+    if (currentStep === "search-catalog") {
       setCurrentStep("select-source")
       setSelectedCatalogItem(null)
     }
@@ -48,9 +43,7 @@ export function usePayerDrawer(): UsePayerDrawerReturn {
   const getStepTitle = useCallback(() => {
     switch (currentStep) {
       case "search-catalog":
-        return "Private Insurances"
-      case "search-state-catalog":
-        return "State Insurances"
+        return "Insurances"
       default:
         return "Add payer"
     }
@@ -60,7 +53,6 @@ export function usePayerDrawer(): UsePayerDrawerReturn {
     currentStep,
     selectedCatalogItem,
     goToCatalog,
-    goToStateCatalog,
     selectCatalogItem,
     goBack,
     reset,

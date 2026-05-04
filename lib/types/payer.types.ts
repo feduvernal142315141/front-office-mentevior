@@ -1,6 +1,5 @@
 export const PAYER_SOURCE = {
   CATALOG: "catalog",
-  FL_MEDICAID: "fl-medicaid",
   MANUAL: "manual",
 } as const
 

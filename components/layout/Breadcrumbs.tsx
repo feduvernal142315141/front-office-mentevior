@@ -71,7 +71,6 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   
   // Common actions
   "create": "Create",
-  "fl-medicaid": "FL Medicaid",
   "edit": "Edit",
   "new": "New",
   "view": "View",
@@ -79,7 +78,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "configuration": "Configuration",
 }
 
-const PAYER_CREATE_SOURCE_SEGMENTS = new Set(["manual", "catalog", "fl-medicaid"])
+const PAYER_CREATE_SOURCE_SEGMENTS = new Set(["manual", "catalog"])
 
 // Helper to get label for a segment
 function getSegmentLabel(segment: string): string {

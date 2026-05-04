@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Check, Landmark, Plus, ShieldCheck, X } from "lucide-react"
+import { ArrowLeft, Check, Plus, ShieldCheck, X } from "lucide-react"
 import {
   Drawer,
   DrawerClose,
@@ -10,11 +10,9 @@ import {
 } from "@/components/ui/drawer"
 import { usePayerDrawer } from "@/lib/modules/payers/hooks/use-payer-drawer"
 import { useCreateFromPrivateInsurance } from "@/lib/modules/payers/hooks/use-create-from-private-insurance"
-import { useCreateFromStateInsurance } from "@/lib/modules/payers/hooks/use-create-from-state-insurance"
 import { PAYER_SOURCE, type PayerCatalogItem, type PayerSource } from "@/lib/types/payer.types"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { SearchPrivateCatalogStep } from "./SearchPrivateCatalogStep"
-import { SearchStateCatalogStep } from "./SearchStateCatalogStep"
 import type { LucideIcon } from "lucide-react"
 
 interface NewPayerModalProps {
@@ -37,31 +35,17 @@ interface SourceOption {
 const SOURCE_OPTIONS: SourceOption[] = [
   {
     id: PAYER_SOURCE.CATALOG,
-    title: "Private Insurances",
-    description: "Select from the private insurance catalog and continue with prefilled payer details.",
+    title: "Insurances",
+    description: "Select from the insurance catalog and continue with prefilled payer details.",
     icon: ShieldCheck,
     benefits: [
-      "Fastest setup with standardized payer naming",
+      "Fast setup with standardized payer naming",
       "Reduces manual entry errors on payer basics",
       "Catalog entries you can reuse across workflows",
     ],
     iconClasses: "bg-blue-600 text-white",
     cardClasses: "border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/10",
     checkClasses: "text-blue-600",
-  },
-  {
-    id: PAYER_SOURCE.FL_MEDICAID,
-    title: "State Insurances",
-    description: "Select from the state insurance catalog and continue with prefilled payer details.",
-    icon: Landmark,
-    benefits: [
-      "Standardized catalog entries for state programs",
-      "Keeps payer source aligned for reporting",
-      "Same creation flow as private catalog",
-    ],
-    iconClasses: "bg-emerald-600 text-white",
-    cardClasses: "border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/60 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-900/10",
-    checkClasses: "text-emerald-600",
   },
   {
     id: PAYER_SOURCE.MANUAL,
@@ -85,9 +69,8 @@ const PAGE_ROUTES: Partial<Record<PayerSource, string>> = {
 
 export function NewPayerModal({ open, onOpenChange, onSuccess }: NewPayerModalProps) {
   const router = useRouter()
-  const { currentStep, goToCatalog, goToStateCatalog, goBack, reset, getStepTitle, canGoBack } = usePayerDrawer()
+  const { currentStep, goToCatalog, goBack, reset, getStepTitle, canGoBack } = usePayerDrawer()
   const { createFromCatalog: createFromPrivate, isLoading: isPrivateBulkLoading } = useCreateFromPrivateInsurance()
-  const { createFromCatalog: createFromState, isLoading: isStateBulkLoading } = useCreateFromStateInsurance()
 
   const handleClose = () => {
     reset()
@@ -97,10 +80,6 @@ export function NewPayerModal({ open, onOpenChange, onSuccess }: NewPayerModalPr
   const handleSourceSelect = (source: PayerSource) => {
     if (source === PAYER_SOURCE.CATALOG) {
       goToCatalog()
-      return
-    }
-    if (source === PAYER_SOURCE.FL_MEDICAID) {
-      goToStateCatalog()
       return
     }
     const route = PAGE_ROUTES[source]
@@ -120,22 +99,6 @@ export function NewPayerModal({ open, onOpenChange, onSuccess }: NewPayerModalPr
 
   const handlePrivateBulkCreate = async (ids: string[]) => {
     const ok = await createFromPrivate(ids)
-    if (ok) {
-      handleClose()
-      onSuccess?.()
-    }
-  }
-
-  const handleStateBulkCreate = async (ids: string[]) => {
-    const ok = await createFromState(ids)
-    if (ok) {
-      handleClose()
-      onSuccess?.()
-    }
-  }
-
-  const handleStateCatalogItemSelect = async (item: PayerCatalogItem) => {
-    const ok = await createFromState([item.id])
     if (ok) {
       handleClose()
       onSuccess?.()
@@ -227,14 +190,6 @@ export function NewPayerModal({ open, onOpenChange, onSuccess }: NewPayerModalPr
               onSelect={handleCatalogItemSelect}
               onBulkCreate={handlePrivateBulkCreate}
               isBulkLoading={isPrivateBulkLoading}
-            />
-          )}
-
-          {currentStep === "search-state-catalog" && (
-            <SearchStateCatalogStep
-              onSelect={handleStateCatalogItemSelect}
-              onBulkCreate={handleStateBulkCreate}
-              isBulkLoading={isStateBulkLoading}
             />
           )}
         </div>

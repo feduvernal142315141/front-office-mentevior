@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { Building2, ChevronDown, Landmark, ShieldCheck } from "lucide-react"
+import { Building2, ChevronDown, ShieldCheck } from "lucide-react"
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -41,7 +41,7 @@ interface SourcePageContent {
   catalogLabel?: string
 }
 
-const SOURCE_PAGE_CONTENT: Record<PayerSource, SourcePageContent> = {
+const SOURCE_PAGE_CONTENT: Partial<Record<PayerSource, SourcePageContent>> = {
   [PAYER_SOURCE.MANUAL]: {
     heading: "Create Payer Manually",
     description: "Set up a payer profile from scratch with full control over contact and address information.",
@@ -49,15 +49,9 @@ const SOURCE_PAGE_CONTENT: Record<PayerSource, SourcePageContent> = {
   },
   [PAYER_SOURCE.CATALOG]: {
     heading: "Create Payer from Catalog",
-    description: "Pick a private insurance from catalog, review details, and create the payer in one page.",
+    description: "Pick an insurance from catalog, review details, and create the payer in one page.",
     icon: ShieldCheck,
-    catalogLabel: "Private insurance catalog",
-  },
-  [PAYER_SOURCE.FL_MEDICAID]: {
-    heading: "Create FL Medicaid Payer",
-    description: "Choose one of the official FL Medicaid options and confirm payer details before creating.",
-    icon: Landmark,
-    catalogLabel: "FL Medicaid catalog",
+    catalogLabel: "Insurance catalog",
   },
 }
 
@@ -68,7 +62,6 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   const { create, isLoading } = useCreatePayer()
   const {
     privateInsurances,
-    flMedicaidInsurances,
     clearingHouses,
     isLoading: isLoadingCatalogs,
   } = usePayerCatalogs()
@@ -134,11 +127,11 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchCountryId])
 
-  const content = SOURCE_PAGE_CONTENT[source]
+  const content = SOURCE_PAGE_CONTENT[source] ?? SOURCE_PAGE_CONTENT[PAYER_SOURCE.MANUAL]!
   const Icon = content.icon
   const isCatalogSource = source !== PAYER_SOURCE.MANUAL
   const isCatalogPreselected = isCatalogSource && Boolean(initialCatalogId)
-  const catalogOptions = source === PAYER_SOURCE.CATALOG ? privateInsurances : flMedicaidInsurances
+  const catalogOptions = source === PAYER_SOURCE.CATALOG ? privateInsurances : []
   const selectOptions = catalogOptions.map((item) => ({ value: item.id, label: item.name }))
 
   const selectedCatalogItem = useMemo(

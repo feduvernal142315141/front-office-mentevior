@@ -15,7 +15,7 @@ export function SearchPrivateCatalogStep({ onSelect, onBulkCreate, isBulkLoading
 
   return (
     <SearchPayerCatalogStep
-      description="Select a private insurance to pre-fill the payer details."
+      description="Select an insurance to pre-fill the payer details."
       items={filteredItems}
       isLoading={isLoading}
       error={error}

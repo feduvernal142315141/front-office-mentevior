@@ -6,14 +6,12 @@ import { getPayersService } from "../services/payers.service"
 
 interface UsePayerCatalogsReturn {
   privateInsurances: PayerCatalogItem[]
-  flMedicaidInsurances: PayerCatalogItem[]
   clearingHouses: PayerClearingHouseItem[]
   isLoading: boolean
 }
 
 export function usePayerCatalogs(): UsePayerCatalogsReturn {
   const [privateInsurances, setPrivateInsurances] = useState<PayerCatalogItem[]>([])
-  const [flMedicaidInsurances, setFlMedicaidInsurances] = useState<PayerCatalogItem[]>([])
   const [clearingHouses, setClearingHouses] = useState<PayerClearingHouseItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -23,9 +21,8 @@ export function usePayerCatalogs(): UsePayerCatalogsReturn {
     const loadCatalogs = async () => {
       try {
         setIsLoading(true)
-        const [privateResponse, medicaidResponse, clearingHouseResponse] = await Promise.all([
+        const [privateResponse, clearingHouseResponse] = await Promise.all([
           getPayersService().getPrivateInsurancesCatalog(),
-          getPayersService().getFlMedicaidCatalog(),
           getPayersService().getClearingHouseCatalog(),
         ])
 
@@ -34,7 +31,6 @@ export function usePayerCatalogs(): UsePayerCatalogsReturn {
         }
 
         setPrivateInsurances(privateResponse)
-        setFlMedicaidInsurances(medicaidResponse)
         setClearingHouses(clearingHouseResponse)
       } finally {
         if (isActive) {
@@ -51,7 +47,6 @@ export function usePayerCatalogs(): UsePayerCatalogsReturn {
 
   return {
     privateInsurances,
-    flMedicaidInsurances,
     clearingHouses,
     isLoading,
   }

@@ -20,9 +20,7 @@ export interface PayersServiceContract {
   update(data: UpdatePayerDto): Promise<Payer>
   delete(id: string): Promise<void>
   createFromPrivateInsurance(ids: string[]): Promise<void>
-  createFromStateInsurance(ids: string[]): Promise<void>
   getPrivateInsurancesCatalog(): Promise<PayerCatalogItem[]>
-  getFlMedicaidCatalog(): Promise<PayerCatalogItem[]>
   getClearingHouseCatalog(): Promise<PayerClearingHouseItem[]>
   getPlanTypeCatalog(): Promise<PlanTypeCatalogItem[]>
   refresh(): Promise<void>
