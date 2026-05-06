@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import { Building2, ChevronDown, ShieldCheck } from "lucide-react"
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
-import { useForm, type FieldErrors } from "react-hook-form"
+import { useFieldArray, useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Card } from "@/components/custom/Card"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -72,11 +72,12 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
   const { states, isLoading: isLoadingStates } = useStates(selectedCountryId)
 
-  // Plan + Rates state
-  const [rates, setRates] = useState<LocalInsurancePlanRate[]>([])
-  const [ratesError, setRatesError] = useState(false)
+  // Plans + rates state
+  const [planRates, setPlanRates] = useState<Record<string, LocalInsurancePlanRate[]>>({})
+  const [ratesErrorByPlan, setRatesErrorByPlan] = useState<Record<string, boolean>>({})
   const ratesSectionRef = useRef<HTMLDivElement>(null)
   const [isRateModalOpen, setIsRateModalOpen] = useState(false)
+  const [activeRatePlanId, setActiveRatePlanId] = useState<string | null>(null)
   const [editingRate, setEditingRate] = useState<LocalInsurancePlanRate | null>(null)
   const [generalExpanded, setGeneralExpanded] = useState(true)
 
@@ -96,10 +97,6 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     return () => { active = false }
   }, [])
 
-  useEffect(() => {
-    if (rates.length > 0) setRatesError(false)
-  }, [rates.length])
-
   const form = useForm<PayerFullFormValues>({
     resolver: zodResolver(payerFullFormSchema),
     defaultValues: {
@@ -108,6 +105,42 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     },
     mode: "onBlur",
   })
+  const { fields: planFields, prepend: prependPlan, remove: removePlan } = useFieldArray({
+    control: form.control,
+    name: "payerPlans",
+  })
+
+  useEffect(() => {
+    setPlanRates((prev) => {
+      const next = { ...prev }
+      const currentIds = new Set(planFields.map((field) => field.id))
+
+      for (const field of planFields) {
+        if (!next[field.id]) next[field.id] = []
+      }
+
+      for (const key of Object.keys(next)) {
+        if (!currentIds.has(key)) delete next[key]
+      }
+
+      return next
+    })
+
+    setRatesErrorByPlan((prev) => {
+      const next = { ...prev }
+      const currentIds = new Set(planFields.map((field) => field.id))
+
+      for (const field of planFields) {
+        if (next[field.id] === undefined) next[field.id] = false
+      }
+
+      for (const key of Object.keys(next)) {
+        if (!currentIds.has(key)) delete next[key]
+      }
+
+      return next
+    })
+  }, [planFields])
 
   const watchCountryId = form.watch("countryId")
   useEffect(() => {
@@ -166,29 +199,44 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   }, [catalogLogoDismissed, form, isCatalogSource, selectedCatalogItem])
 
   // Rate handlers
-  const usedBillingCodeIds = rates.map((r) => r.billingCodeId)
+  const activeRates = activeRatePlanId ? (planRates[activeRatePlanId] ?? []) : []
+  const usedBillingCodeIds = activeRates.map((r) => r.billingCodeId)
 
-  const handleAddRate = () => { setEditingRate(null); setIsRateModalOpen(true) }
-  const handleEditRate = (entry: LocalInsurancePlanRate) => { setEditingRate(entry); setIsRateModalOpen(true) }
-  const handleDeleteRate = (entry: LocalInsurancePlanRate) => {
-    setRates((prev) => prev.filter((r) => r._tempId !== entry._tempId))
+  const handleAddRate = (planId: string) => { setActiveRatePlanId(planId); setEditingRate(null); setIsRateModalOpen(true) }
+  const handleEditRate = (planId: string, entry: LocalInsurancePlanRate) => { setActiveRatePlanId(planId); setEditingRate(entry); setIsRateModalOpen(true) }
+  const handleDeleteRate = (planId: string, entry: LocalInsurancePlanRate) => {
+    setPlanRates((prev) => ({
+      ...prev,
+      [planId]: (prev[planId] ?? []).filter((r) => r._tempId !== entry._tempId),
+    }))
   }
   const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string, billingModifier?: string) => {
+    if (!activeRatePlanId) return
+
     if (editingRate) {
-      setRates((prev) => prev.map((r) =>
-        r._tempId === editingRate._tempId
-          ? { ...r, ...values, billingCodeLabel, currencyLabel, billingModifier } as LocalInsurancePlanRate
-          : r
-      ))
+      setPlanRates((prev) => ({
+        ...prev,
+        [activeRatePlanId]: (prev[activeRatePlanId] ?? []).map((r) =>
+          r._tempId === editingRate._tempId
+            ? { ...r, ...values, billingCodeLabel, currencyLabel, billingModifier } as LocalInsurancePlanRate
+            : r
+        ),
+      }))
     } else {
-      setRates((prev) => [...prev, {
-        _tempId: crypto.randomUUID(),
-        ...values,
-        billingCodeLabel,
-        currencyLabel,
-        billingModifier,
-      } as LocalInsurancePlanRate])
-      setRatesError(false)
+      setPlanRates((prev) => ({
+        ...prev,
+        [activeRatePlanId]: [
+          ...(prev[activeRatePlanId] ?? []),
+          {
+            _tempId: crypto.randomUUID(),
+            ...values,
+            billingCodeLabel,
+            currencyLabel,
+            billingModifier,
+          } as LocalInsurancePlanRate,
+        ],
+      }))
+      setRatesErrorByPlan((prev) => ({ ...prev, [activeRatePlanId]: false }))
     }
     setIsRateModalOpen(false)
     setEditingRate(null)
@@ -214,7 +262,15 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
 
   const savePayer = form.handleSubmit(
     async (data) => {
-      if (rates.length === 0) {
+      const missingPlans = planFields.filter((field) => (planRates[field.id] ?? []).length === 0)
+      if (missingPlans.length > 0) {
+        setRatesErrorByPlan((prev) => {
+          const next = { ...prev }
+          for (const field of planFields) {
+            next[field.id] = (planRates[field.id] ?? []).length === 0
+          }
+          return next
+        })
         window.setTimeout(() => {
           ratesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
           const focusable = ratesSectionRef.current?.querySelector(
@@ -229,7 +285,26 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
 
       if (isCatalogSource && !selectedCatalogId) return
 
-      const hasPlanData = Boolean(data.planName?.trim())
+      const payerPlans = data.payerPlans
+        .map((plan, index) => {
+          const ratesForPlan = planRates[planFields[index]?.id] ?? []
+          return {
+            planName: plan.planName.trim(),
+            planTypeId: plan.insurancePlanTypeId || "",
+            comments: "",
+            payerRates: ratesForPlan.map((r) => ({
+              billingCodeId: r.billingCodeId,
+              amount: r.amount,
+              submitAmount: r.submitAmount,
+              intervalType: r.intervalType,
+              currencyId: r.currencyId,
+              alias: r.alias || undefined,
+              startDate: r.startDate || undefined,
+              endDate: r.endDate || undefined,
+            })),
+          }
+        })
+        .filter((plan) => plan.planName)
 
       const created = await create({
         name: data.name.trim(),
@@ -246,23 +321,7 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
         zipCode: data.zipCode,
         clearingHouseId: data.planTypeId ?? "",
         description: data.description ?? "",
-        ...(hasPlanData && {
-          payerPlan: {
-            planName: data.planName!.trim(),
-            planTypeId: data.insurancePlanTypeId || "",
-            comments: data.planComments || "",
-          },
-          payerRates: rates.map((r) => ({
-            billingCodeId: r.billingCodeId,
-            amount: r.amount,
-            submitAmount: r.submitAmount,
-            intervalType: r.intervalType,
-            currencyId: r.currencyId,
-            alias: r.alias || undefined,
-            startDate: r.startDate || undefined,
-            endDate: r.endDate || undefined,
-          })),
-        }),
+        ...(payerPlans.length > 0 && { payerPlans }),
       })
 
       if (!created) return
@@ -275,9 +334,24 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
   )
 
   const handleSubmitForm = (e: FormEvent) => {
-    if (rates.length === 0) setRatesError(true)
-    else setRatesError(false)
     savePayer(e)
+  }
+
+  const handleAddPlan = () => {
+    prependPlan({ planName: "", insurancePlanTypeId: "" })
+  }
+
+  const handleRemovePlan = (planIndex: number) => {
+    if (planFields.length <= 1) return
+
+    const removedPlanId = planFields[planIndex]?.id
+    if (removedPlanId && activeRatePlanId === removedPlanId) {
+      setIsRateModalOpen(false)
+      setEditingRate(null)
+      setActiveRatePlanId(null)
+    }
+
+    removePlan(planIndex)
   }
 
   const nameValue = form.watch("name")
@@ -391,21 +465,36 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
             )}
           </Card>
 
-          {/* Insurance Plan — separate card */}
-          <Card variant="elevated" padding="lg" className="mt-4">
-            <PlanSection
-              form={form}
-              rates={rates}
-              onAddRate={handleAddRate}
-              onEditRate={handleEditRate}
-              onDeleteRate={handleDeleteRate}
-              planTypes={planTypes}
-              isLoadingPlanTypes={isLoadingPlanTypes}
-              defaultExpanded
-              ratesSectionRef={ratesSectionRef}
-              ratesError={ratesError}
-            />
-          </Card>
+          <div className="mt-4 space-y-4">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleAddPlan}
+                className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                New Plan
+              </button>
+            </div>
+            {planFields.map((planField, planIndex) => (
+              <Card key={planField.id} variant="elevated" padding="lg">
+                <PlanSection
+                  form={form}
+                  planIndex={planIndex}
+                  rates={planRates[planField.id] ?? []}
+                  onAddRate={() => handleAddRate(planField.id)}
+                  onEditRate={(entry) => handleEditRate(planField.id, entry)}
+                  onDeleteRate={(entry) => handleDeleteRate(planField.id, entry)}
+                  onRemovePlan={() => handleRemovePlan(planIndex)}
+                  canRemovePlan={planFields.length > 1}
+                  planTypes={planTypes}
+                  isLoadingPlanTypes={isLoadingPlanTypes}
+                  defaultExpanded
+                  ratesSectionRef={planIndex === 0 ? ratesSectionRef : undefined}
+                  ratesError={ratesErrorByPlan[planField.id] ?? false}
+                />
+              </Card>
+            ))}
+          </div>
 
           <FormBottomBar
             isSubmitting={isLoading}
@@ -424,6 +513,7 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
           open={isRateModalOpen}
           onClose={() => { setIsRateModalOpen(false); setEditingRate(null) }}
           onConfirm={handleRateConfirm}
+          planLabel={activeRatePlanId ? `Plan ${planFields.findIndex((p) => p.id === activeRatePlanId) + 1}` : undefined}
           editingRate={editingRate}
           billingCodes={catalogBillingCodes}
           usedBillingCodeIds={usedBillingCodeIds}

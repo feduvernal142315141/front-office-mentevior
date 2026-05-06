@@ -26,6 +26,8 @@ export interface PayerPlanEmbed {
   planTypeName?: string
   comments?: string
   active?: boolean
+  /** Embedded rates for this specific plan */
+  payerRates?: PayerRateEmbed[]
 }
 
 /** Embedded rate returned by GET /payers/{id} */
@@ -79,9 +81,11 @@ export interface Payer {
   active?: boolean
   createdAt?: string
   updatedAt?: string
-  /** Embedded plan — present only on GET /payers/{id} */
+  /** Embedded plans — present only on GET /payers/{id} */
+  payerPlans?: PayerPlanEmbed[]
+  /** Legacy embedded plan fallback */
   payerPlan?: PayerPlanEmbed | null
-  /** Embedded rates — present only on GET /payers/{id} */
+  /** Legacy embedded rates fallback */
   payerRates?: PayerRateEmbed[]
 }
 
@@ -101,6 +105,7 @@ export interface PayerPlanPayload {
   planName: string
   planTypeId: string
   comments: string
+  payerRates?: PayerRatePayload[]
 }
 
 export interface PayerRatePayload {
@@ -130,8 +135,7 @@ export interface CreatePayerDto {
   zipCode: string
   clearingHouseId: string
   description: string
-  payerPlan?: PayerPlanPayload
-  payerRates?: PayerRatePayload[]
+  payerPlans?: PayerPlanPayload[]
 }
 
 export interface UpdatePayerDto {
@@ -151,8 +155,7 @@ export interface UpdatePayerDto {
   zipCode: string
   clearingHouseId: string
   description: string
-  payerPlan?: PayerPlanPayload
-  payerRates?: PayerRatePayload[]
+  payerPlans?: PayerPlanPayload[]
 }
 
 export interface ListPayersQueryDto {

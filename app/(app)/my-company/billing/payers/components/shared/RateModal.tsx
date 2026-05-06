@@ -51,6 +51,7 @@ const emptyDefaults: RateFormValues = {
 
 interface RateModalProps {
   open: boolean
+  planLabel?: string
   onClose: () => void
   onConfirm: (values: RateFormValues, billingCodeLabel: string, currencyLabel: string, billingModifier?: string) => void | Promise<void>
   editingRate: LocalInsurancePlanRate | null
@@ -63,6 +64,7 @@ interface RateModalProps {
 
 export function RateModal({
   open,
+  planLabel,
   onClose,
   onConfirm,
   editingRate,
@@ -139,7 +141,7 @@ export function RateModal({
     <CustomModal
       open={open}
       onOpenChange={(o) => { if (!o) handleClose() }}
-      title={editingRate ? "Edit Rate" : "Add Rate"}
+      title={editingRate ? `Edit Rate${planLabel ? ` · ${planLabel}` : ""}` : `Add Rate${planLabel ? ` · ${planLabel}` : ""}`}
       maxWidthClassName="sm:max-w-[680px]"
       contentClassName="overflow-visible"
       allowSelectOverflow

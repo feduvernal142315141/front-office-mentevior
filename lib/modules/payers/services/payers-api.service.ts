@@ -14,6 +14,19 @@ import type { PaginatedResponse } from "@/lib/types/response.types"
 import type { PayersListResult, PayersServiceContract } from "../types/payers-service.types"
 
 export class ApiPayersService implements PayersServiceContract {
+  private normalizePayer(raw: Payer): Payer {
+    const payerPlans = raw.payerPlans?.length
+      ? raw.payerPlans
+      : raw.payerPlan
+        ? [{ ...raw.payerPlan, payerRates: raw.payerRates ?? [] }]
+        : []
+
+    return {
+      ...raw,
+      payerPlans,
+    }
+  }
+
   async list(query: ListPayersQueryDto): Promise<PayersListResult> {
     const model: QueryModel = {
       page: query.page ?? 0,
@@ -31,7 +44,7 @@ export class ApiPayersService implements PayersServiceContract {
     const entities = Array.isArray(paginatedData.entities) ? paginatedData.entities : []
     const totalCount = paginatedData.pagination?.total ?? entities.length
 
-    return { payers: entities, totalCount }
+    return { payers: entities.map((payer) => this.normalizePayer(payer)), totalCount }
   }
 
   async getById(id: string): Promise<Payer> {
@@ -41,7 +54,7 @@ export class ApiPayersService implements PayersServiceContract {
       throw new Error(response.data?.message || "Failed to fetch payer")
     }
 
-    return response.data as unknown as Payer
+    return this.normalizePayer(response.data as unknown as Payer)
   }
 
   async create(data: CreatePayerDto): Promise<Payer> {
@@ -51,7 +64,7 @@ export class ApiPayersService implements PayersServiceContract {
       throw new Error(response.data?.message || "Failed to create payer")
     }
 
-    return response.data as unknown as Payer
+    return this.normalizePayer(response.data as unknown as Payer)
   }
 
   async delete(id: string): Promise<void> {
@@ -80,7 +93,7 @@ export class ApiPayersService implements PayersServiceContract {
       throw new Error(response.data?.message || "Failed to update payer")
     }
 
-    return response.data as unknown as Payer
+    return this.normalizePayer(response.data as unknown as Payer)
   }
 
   async getPrivateInsurancesCatalog(): Promise<PayerCatalogItem[]> {

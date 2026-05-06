@@ -50,12 +50,13 @@ export type PayerBaseFormValues = z.infer<typeof payerBaseFormSchema>
 export const payerPlanSchema = z.object({
   planName: z.string().min(1, "Plan Name is required").max(200, "Plan Name must be less than 200 characters"),
   insurancePlanTypeId: z.string().min(1, "Plan Type is required"),
-  planComments: z.string().max(2000).optional().or(z.literal("")),
 })
 
 export type PayerPlanFormValues = z.infer<typeof payerPlanSchema>
 
-export const payerFullFormSchema = payerBaseFormSchema.merge(payerPlanSchema)
+export const payerFullFormSchema = payerBaseFormSchema.extend({
+  payerPlans: z.array(payerPlanSchema).min(1, "At least one plan is required"),
+})
 
 export type PayerFullFormValues = z.infer<typeof payerFullFormSchema>
 
@@ -74,7 +75,10 @@ export const getPayerBaseFormDefaults = (): PayerFullFormValues => ({
   zipCode: "",
   planTypeId: "",
   description: "",
-  planName: "",
-  insurancePlanTypeId: "",
-  planComments: "",
+  payerPlans: [
+    {
+      planName: "",
+      insurancePlanTypeId: "",
+    },
+  ],
 })

@@ -27,6 +27,13 @@ export function RatesSection({
   hasError = false,
 }: RatesSectionProps) {
   const [pendingDelete, setPendingDelete] = useState<LocalInsurancePlanRate | null>(null)
+
+  const getCurrencyToken = (currencyLabel: string) => {
+    const match = currencyLabel.match(/\(([^)]+)\)/)
+    if (match?.[1]) return match[1].trim().toUpperCase()
+    return currencyLabel.trim().toUpperCase()
+  }
+
   return (
     <div>
       {entries.length === 0 ? (
@@ -51,18 +58,12 @@ export function RatesSection({
         </div>
       ) : (
         <div className="rounded-xl border border-slate-200 overflow-hidden mb-4">
-          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_90px] gap-4 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+          <div className="grid grid-cols-[2fr_1fr_90px] gap-4 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Billing Code
             </span>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
-              Amount
-            </span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
-              Currency
-            </span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
-              Interval
+              Approved Rate
             </span>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
               Actions
@@ -79,7 +80,7 @@ export function RatesSection({
             <div
               key={entry._tempId}
               className={cn(
-                "grid grid-cols-[2fr_1fr_1fr_1fr_90px] gap-4 px-4 py-3 items-center",
+                "grid grid-cols-[2fr_1fr_90px] gap-4 px-4 py-3 items-center",
                 idx < entries.length - 1 && "border-b border-slate-100"
               )}
             >
@@ -95,16 +96,10 @@ export function RatesSection({
                 )}
               </div>
               <span className="text-sm tabular-nums text-slate-700 text-center">
-                {new Intl.NumberFormat(undefined, {
+                {`${new Intl.NumberFormat(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                }).format(entry.amount)}
-              </span>
-              <span className="text-sm text-slate-700 text-center truncate" title={entry.currencyLabel}>
-                {entry.currencyLabel}
-              </span>
-              <span className="text-sm text-slate-700 text-center capitalize">
-                {entry.intervalType.toLowerCase()}
+                }).format(entry.amount)} ${getCurrencyToken(entry.currencyLabel)}/${entry.intervalType.toUpperCase()}`}
               </span>
               <div className="flex items-center justify-center gap-1.5">
                 <button
