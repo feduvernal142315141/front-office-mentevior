@@ -7,7 +7,6 @@ import { z } from "zod"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
-import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Button } from "@/components/custom/Button"
 import type { LocalInsurancePlanRate } from "@/lib/types/payer.types"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
@@ -296,63 +295,6 @@ export function RateModal({
             )}
           />
 
-          {/* Alias */}
-          <Controller
-            name="alias"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <div>
-                <FloatingInput
-                  label="Alias"
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  hasError={!!fieldState.error}
-                  autoComplete="off"
-                />
-                {fieldState.error && (
-                  <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
-                )}
-              </div>
-            )}
-          />
-
-          {/* Spacer for alignment */}
-          <div className="hidden md:block" />
-
-          {/* Start Date */}
-          <Controller
-            name="startDate"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <PremiumDatePicker
-                label="Start Date"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                onClear={() => field.onChange("")}
-                hasError={!!fieldState.error}
-                errorMessage={fieldState.error?.message}
-              />
-            )}
-          />
-
-          {/* End Date */}
-          <Controller
-            name="endDate"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <PremiumDatePicker
-                label="End Date"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                onClear={() => field.onChange("")}
-                hasError={!!fieldState.error}
-                errorMessage={fieldState.error?.message}
-              />
-            )}
-          />
         </div>
 
         {/* Actions */}

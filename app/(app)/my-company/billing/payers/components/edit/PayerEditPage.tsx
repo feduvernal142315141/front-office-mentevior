@@ -50,6 +50,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
 
   // Plans + rates state
   const [planRates, setPlanRates] = useState<Record<string, LocalInsurancePlanRate[]>>({})
+  const [planBackendIdByFieldId, setPlanBackendIdByFieldId] = useState<Record<string, string | undefined>>({})
   const [ratesErrorByPlan, setRatesErrorByPlan] = useState<Record<string, boolean>>({})
   const ratesSectionRef = useRef<HTMLDivElement>(null)
   const [isRateModalOpen, setIsRateModalOpen] = useState(false)
@@ -57,12 +58,20 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
   const [editingRate, setEditingRate] = useState<LocalInsurancePlanRate | null>(null)
   const [generalExpanded, setGeneralExpanded] = useState(true)
   const [apiPlansSnapshot, setApiPlansSnapshot] = useState<PayerPlanEmbed[]>([])
+  const [apiRatesSnapshotByIndex, setApiRatesSnapshotByIndex] = useState<LocalInsurancePlanRate[][]>([])
+  const hasHydratedRatesFromApiRef = useRef(false)
+  const hasUserMutatedRatesRef = useRef(false)
+  const planRatesRef = useRef<Record<string, LocalInsurancePlanRate[]>>({})
 
   // Plan & Rate catalogs
   const { planTypes, isLoading: isLoadingPlanTypes } = usePlanTypeCatalog()
   const { currencies, isLoading: isLoadingCurrencies } = useCurrencyCatalog()
   const [catalogBillingCodes, setCatalogBillingCodes] = useState<BillingCodeListItem[]>([])
   const [isLoadingBillingCodes, setIsLoadingBillingCodes] = useState(false)
+
+  useEffect(() => {
+    planRatesRef.current = planRates
+  }, [planRates])
 
   useEffect(() => {
     let active = true
@@ -138,45 +147,66 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         }))
       : [{ planName: "", insurancePlanTypeId: "" }]
 
+    const ratesByIndex = normalizedPlans.map((plan) => {
+      const embeddedRates = plan?.payerRates ?? []
+      return embeddedRates.map((r) => ({
+        _tempId: crypto.randomUUID(),
+        id: r.id,
+        billingCodeId: r.billingCodeId,
+        billingCodeLabel: formatBillingCodeDisplay({
+          type: r.billingCodeType || r.billingCodeTypeName || r.billingCodeTypeCode || "",
+          code: r.billingCode ?? r.billingCodeId,
+        }),
+        billingModifier: r.billingModifier?.trim() || undefined,
+        amount: r.amount,
+        submitAmount: r.submitAmount ?? undefined,
+        intervalType: r.intervalType,
+        currencyId: r.currencyId,
+        currencyLabel: r.currencyCode || r.currencyId,
+        alias: r.alias,
+        startDate: r.startDate ?? undefined,
+        endDate: r.endDate ?? undefined,
+      }))
+    })
+
     replacePlans(formPlans)
     setApiPlansSnapshot(normalizedPlans)
+    setApiRatesSnapshotByIndex(ratesByIndex)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [payer, replacePlans])
 
   useEffect(() => {
+    hasHydratedRatesFromApiRef.current = false
+    hasUserMutatedRatesRef.current = false
+  }, [payer?.id])
+
+  useEffect(() => {
     if (planFields.length === 0) return
 
-    if (apiPlansSnapshot.length > 0) {
+    if (apiPlansSnapshot.length > 0 && planFields.length === apiPlansSnapshot.length) {
+      const shouldHydrateFromApi =
+        !hasHydratedRatesFromApiRef.current ||
+        (!hasUserMutatedRatesRef.current && planFields.every((field) => !(planRatesRef.current[field.id] ?? []).length))
+
+      if (!shouldHydrateFromApi) {
+        // continue with reconciliation branch below
+      } else {
       const nextRates: Record<string, LocalInsurancePlanRate[]> = {}
+      const nextPlanBackendIds: Record<string, string | undefined> = {}
       const nextErrors: Record<string, boolean> = {}
 
       planFields.forEach((field, idx) => {
-        const plan = apiPlansSnapshot[idx]
-        const embeddedRates = plan?.payerRates ?? []
-        nextRates[field.id] = embeddedRates.map((r) => ({
-          _tempId: crypto.randomUUID(),
-          id: r.id,
-          billingCodeId: r.billingCodeId,
-          billingCodeLabel: formatBillingCodeDisplay({
-            type: r.billingCodeType || r.billingCodeTypeName || r.billingCodeTypeCode || "",
-            code: r.billingCode ?? r.billingCodeId,
-          }),
-          billingModifier: r.billingModifier?.trim() || undefined,
-          amount: r.amount,
-          submitAmount: r.submitAmount ?? undefined,
-          intervalType: r.intervalType,
-          currencyId: r.currencyId,
-          currencyLabel: r.currencyCode || r.currencyId,
-          alias: r.alias,
-          startDate: r.startDate ?? undefined,
-          endDate: r.endDate ?? undefined,
-        }))
+        nextRates[field.id] = apiRatesSnapshotByIndex[idx] ?? []
+        nextPlanBackendIds[field.id] = apiPlansSnapshot[idx]?.id
         nextErrors[field.id] = false
       })
 
       setPlanRates(nextRates)
+      setPlanBackendIdByFieldId(nextPlanBackendIds)
       setRatesErrorByPlan(nextErrors)
+      hasHydratedRatesFromApiRef.current = true
       return
+      }
     }
 
     setPlanRates((prev) => {
@@ -208,7 +238,22 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
 
       return next
     })
-  }, [apiPlansSnapshot, planFields])
+
+    setPlanBackendIdByFieldId((prev) => {
+      const next = { ...prev }
+      const currentIds = new Set(planFields.map((field) => field.id))
+
+      for (const field of planFields) {
+        if (!(field.id in next)) next[field.id] = undefined
+      }
+
+      for (const key of Object.keys(next)) {
+        if (!currentIds.has(key)) delete next[key]
+      }
+
+      return next
+    })
+  }, [apiPlansSnapshot, apiRatesSnapshotByIndex, planFields])
 
   // Rate handlers
   const activeRates = activeRatePlanId ? (planRates[activeRatePlanId] ?? []) : []
@@ -229,6 +274,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
       ...prev,
       [planId]: (prev[planId] ?? []).filter((r) => r._tempId !== entry._tempId),
     }))
+    hasUserMutatedRatesRef.current = true
   }
   const handleRateConfirm = (values: RateFormValues, billingCodeLabel: string, currencyLabel: string, billingModifier?: string) => {
     if (!activeRatePlanId) return
@@ -258,6 +304,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
       }))
       setRatesErrorByPlan((prev) => ({ ...prev, [activeRatePlanId]: false }))
     }
+    hasUserMutatedRatesRef.current = true
     setIsRateModalOpen(false)
     setEditingRate(null)
   }
@@ -310,7 +357,13 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
           const planId = planFields[index]?.id
           const ratesForPlan = planId ? (planRates[planId] ?? []) : []
           return {
-            id: payer.payerPlans?.[index]?.id ?? (index === 0 ? payer.payerPlan?.id : undefined),
+            id:
+              (planId ? planBackendIdByFieldId[planId] : undefined)
+              ?? apiPlansSnapshot.find(
+                (apiPlan) =>
+                  apiPlan.planName?.trim() === plan.planName.trim()
+                  && (apiPlan.planTypeId || "") === (plan.insurancePlanTypeId || "")
+              )?.id,
             planName: plan.planName.trim(),
             planTypeId: plan.insurancePlanTypeId || "",
             comments: "",
@@ -331,7 +384,7 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
 
       const saved = await update({
         id: payer.id,
-        source: payer.source,
+        source: payer.source ?? "",
         sourceReferenceId: payer.sourceReferenceId ?? "",
         logo: data.logo || payer.logoUrl || "",
         clearingHouseId: data.planTypeId ?? payer.clearingHouseId ?? payer.planTypeId ?? "",
