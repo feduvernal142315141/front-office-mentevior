@@ -8,10 +8,9 @@ import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { getPayersService } from "@/lib/modules/payers/services/payers.service"
-import type { Payer, PayerRateEmbed } from "@/lib/types/payer.types"
+import type { Payer, PayerPlanEmbed, PayerRateEmbed } from "@/lib/types/payer.types"
 import { cn } from "@/lib/utils"
 import { parseLocalDate } from "@/lib/date"
-import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 import { usePayersTable } from "../hooks/usePayersTable"
 
 export interface PayersTableRef {
@@ -48,7 +47,7 @@ function PayerInitials({ payer }: { payer: Payer }) {
   )
 }
 
-const GRID_COLS = "grid-cols-[32px_minmax(120px,1.5fr)_100px_minmax(100px,1fr)_minmax(100px,1fr)_100px_72px]"
+const GRID_COLS = "grid-cols-[32px_minmax(220px,1.8fr)_minmax(140px,1fr)_minmax(180px,1fr)_120px_72px]"
 
 export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
   const router = useRouter()
@@ -67,7 +66,8 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
   } = usePayersTable()
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
-  const [ratesMap, setRatesMap] = useState<Record<string, PayerRateEmbed[]>>({})
+  const [plansMap, setPlansMap] = useState<Record<string, PayerPlanEmbed[]>>({})
+  const [expandedPlanIdsMap, setExpandedPlanIdsMap] = useState<Record<string, Set<string>>>({})
   const [loadingRateIds, setLoadingRateIds] = useState<Set<string>>(new Set())
 
   useImperativeHandle(ref, () => ({ refetch }))
@@ -79,12 +79,22 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
         next.delete(id)
       } else {
         next.add(id)
-        if (!(id in ratesMap)) {
+        if (!(id in plansMap)) {
           setLoadingRateIds((s) => new Set(s).add(id))
           void getPayersService()
             .getById(id)
             .then((payer) => {
-              setRatesMap((m) => ({ ...m, [id]: payer.payerRates ?? [] }))
+              const normalizedPlans = (payer.payerPlans ?? []).map((plan) => ({
+                ...plan,
+                payerRates: plan.payerRates ?? [],
+              }))
+
+              setPlansMap((m) => ({ ...m, [id]: normalizedPlans }))
+
+              setExpandedPlanIdsMap((m) => ({
+                ...m,
+                [id]: new Set(normalizedPlans.map((plan) => plan.id)),
+              }))
             })
             .finally(() => {
               setLoadingRateIds((s) => {
@@ -110,6 +120,24 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pagination.pageSize))
   const hasActions = canEditPayers || canDeletePayers
+
+  const togglePlanExpanded = (payerId: string, planId: string) => {
+    setExpandedPlanIdsMap((prev) => {
+      const current = prev[payerId] ?? new Set<string>()
+      const next = new Set(current)
+
+      if (next.has(planId)) {
+        next.delete(planId)
+      } else {
+        next.add(planId)
+      }
+
+      return {
+        ...prev,
+        [payerId]: next,
+      }
+    })
+  }
 
   if (error) {
     return (
@@ -210,9 +238,6 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                 Clearing House
               </span>
               <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">
-                Plan Type
-              </span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">
                 Created
               </span>
               {hasActions && (
@@ -225,7 +250,8 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
             {/* Card rows */}
             {payers.map((payer) => {
               const isExpanded = expandedIds.has(payer.id)
-              const rates: PayerRateEmbed[] = ratesMap[payer.id] ?? []
+              const plans = plansMap[payer.id] ?? []
+              const expandedPlanIds = expandedPlanIdsMap[payer.id] ?? new Set<string>()
 
               return (
                 <div
@@ -268,18 +294,13 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                     </div>
 
                     {/* External ID */}
-                    <span className="truncate text-sm text-slate-600">
+                    <span className="truncate text-sm font-medium text-slate-700">
                       {payer.externalId || "—"}
                     </span>
 
                     {/* Clearing House */}
                     <span className="truncate text-sm text-slate-600">
                       {payer.clearingHouseName || "—"}
-                    </span>
-
-                    {/* Plan Type */}
-                    <span className="truncate text-sm text-slate-600">
-                      {payer.planTypeName || "—"}
                     </span>
 
                     {/* Created */}
@@ -345,56 +366,104 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                             <div key={i} className="h-10 animate-pulse rounded-xl bg-slate-200" />
                           ))}
                         </div>
-                      ) : rates.length === 0 ? (
+                      ) : plans.length === 0 ? (
                         <p className="py-3 text-center text-sm italic text-slate-400">
-                          No rates configured.
+                          No plans configured.
                         </p>
                       ) : (
-                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                          {/* Sub-header */}
-                          <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 border-b border-slate-200 bg-slate-100/80 px-4 py-2">
-                            {["Billing Code", "Amount", "Currency", "Interval"].map((h, i) => (
-                              <span
-                                key={h}
-                                className={cn(
-                                  "text-[10px] font-semibold uppercase tracking-widest text-slate-400",
-                                  i > 0 && "text-center"
-                                )}
-                              >
-                                {h}
-                              </span>
-                            ))}
-                          </div>
-
-                          {/* Rate rows */}
-                          {rates.map((rate, idx) => {
-                            const billingCodeDisplay = formatBillingCodeDisplay({
-                              type: rate.billingCodeType || rate.billingCodeTypeName || rate.billingCodeTypeCode || "",
-                              code: rate.billingCode ?? rate.billingCodeId,
-                              modifier: rate.billingModifier,
-                            })
+                        <div className="space-y-3">
+                          {plans.map((plan) => {
+                            const isPlanExpanded = expandedPlanIds.has(plan.id)
+                            const planRates: PayerRateEmbed[] = plan.payerRates ?? []
 
                             return (
-                            <div
-                              key={rate.id ?? idx}
-                              className={cn(
-                                "grid grid-cols-[2fr_1fr_1fr_1fr] items-center gap-4 px-4 py-3",
-                                idx > 0 && "border-t border-slate-100",
-                              )}
-                            >
-                              <span className="text-sm font-medium text-[#037ECC]">
-                                {billingCodeDisplay}
-                              </span>
-                              <span className="text-sm tabular-nums text-slate-700 text-center">
-                                {rate.amount}
-                              </span>
-                              <span className="text-sm text-slate-500 text-center">
-                                {rate.currencyCode || "—"}
-                              </span>
-                              <span className="text-sm text-slate-500 text-center">
-                                {rate.intervalType || "—"}
-                              </span>
-                            </div>
+                              <div
+                                key={plan.id}
+                                className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => togglePlanExpanded(payer.id, plan.id)}
+                                  className="flex w-full items-center justify-between gap-3 bg-slate-100/80 px-4 py-3 text-left hover:bg-slate-100"
+                                  aria-label={
+                                    isPlanExpanded
+                                      ? `Collapse rates for ${plan.planName}`
+                                      : `Expand rates for ${plan.planName}`
+                                  }
+                                >
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold text-slate-900">
+                                      {plan.planName || "Unnamed plan"}
+                                    </p>
+                                    <p className="truncate text-xs text-slate-500">
+                                      {plan.planTypeName || "No type"}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-3">
+                                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                                      {planRates.length} rate{planRates.length !== 1 ? "s" : ""}
+                                    </span>
+                                    <ChevronDown
+                                      className={cn(
+                                        "h-4 w-4 text-slate-500 transition-transform duration-200",
+                                        isPlanExpanded ? "rotate-0" : "-rotate-90",
+                                      )}
+                                    />
+                                  </div>
+                                </button>
+
+                                {isPlanExpanded && (
+                                  <div>
+                                    {planRates.length === 0 ? (
+                                      <p className="py-3 text-center text-sm italic text-slate-400">
+                                        No rates configured for this plan.
+                                      </p>
+                                    ) : (
+                                      <>
+                                        <div className="grid grid-cols-[2fr_1fr] gap-4 border-y border-slate-200 bg-slate-50 px-4 py-2">
+                                          <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                                            Billing Code
+                                          </span>
+                                          <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 text-center">
+                                            Approved Rate
+                                          </span>
+                                        </div>
+
+                                        {planRates.map((rate, idx) => {
+                                          const billingCodeDisplay = formatBillingCodeDisplay({
+                                            type: rate.billingCodeType || rate.billingCodeTypeName || rate.billingCodeTypeCode || "",
+                                            code: rate.billingCode ?? rate.billingCodeId,
+                                            modifier: rate.billingModifier,
+                                          })
+
+                                          const approvedRateDisplay = `${new Intl.NumberFormat(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          }).format(rate.amount)} ${(rate.currencyCode || "—").toUpperCase()}/${(rate.intervalType || "—").toUpperCase()}`
+
+                                          return (
+                                            <div
+                                              key={rate.id ?? `${plan.id}-${idx}`}
+                                              className={cn(
+                                                "grid grid-cols-[2fr_1fr] items-center gap-4 px-4 py-3",
+                                                idx > 0 && "border-t border-slate-100",
+                                              )}
+                                            >
+                                              <span className="text-sm font-medium text-[#037ECC]">
+                                                {billingCodeDisplay}
+                                              </span>
+                                              <span className="text-sm tabular-nums text-slate-700 text-center">
+                                                {approvedRateDisplay}
+                                              </span>
+                                            </div>
+                                          )
+                                        })}
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             )
                           })}
                         </div>
@@ -476,3 +545,4 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
 })
 
 PayersTable.displayName = "PayersTable"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
