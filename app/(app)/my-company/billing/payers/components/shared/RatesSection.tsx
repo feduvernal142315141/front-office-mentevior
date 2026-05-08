@@ -43,14 +43,19 @@ export function RatesSection({
             hasError ? "border-red-400/70 bg-red-50/40 mb-4" : "border-transparent",
           )}
         >
-          <div
+          <button
+            type="button"
+            onClick={onAdd}
+            aria-label="Add rate"
             className={cn(
-              "h-14 w-14 rounded-2xl border flex items-center justify-center",
+              "h-14 w-14 rounded-2xl border flex items-center justify-center cursor-pointer",
+              "transition-colors duration-150",
               hasError ? "bg-red-50 border-red-200" : "bg-slate-100 border-slate-200",
+              hasError ? "hover:bg-red-100" : "hover:bg-slate-200",
             )}
           >
             <Plus className={cn("w-6 h-6", hasError ? "text-red-400" : "text-slate-400")} />
-          </div>
+          </button>
           <p className={cn("text-sm font-medium", hasError && "text-red-600")}>No rates added</p>
           <p className={cn("text-xs", hasError ? "text-red-400" : "text-slate-400")}>
             Add the rates for this insurance plan

@@ -188,7 +188,7 @@ export function RateModal({
             render={({ field, fieldState }) => (
               <div>
                 <FloatingInput
-                  label="Amount"
+                  label="Approved rate"
                   value={
                     field.value === undefined ||
                     field.value === null ||
