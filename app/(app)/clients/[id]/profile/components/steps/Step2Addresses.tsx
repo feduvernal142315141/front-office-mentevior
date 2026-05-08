@@ -299,6 +299,9 @@ export function Step2Addresses({
 
       const placeServiceId = data.placeServiceId
         || placesOfService.find((place) => normalizeText(place.name) === normalizeText(data.placeService))?.id
+        || placesOfService.find((place) => normalizeText(place.name).includes("other place of service (99)"))?.id
+        || placesOfService.find((place) => normalizeText(place.name).includes("(99)"))?.id
+        || placesOfService[0]?.id
 
       return {
         sourceType: "manual",
@@ -854,7 +857,6 @@ export function Step2Addresses({
         }
         maxWidthClassName="sm:max-w-[600px]"
         allowSelectOverflow
-        contentClassName="overflow-visible"
       >
         <form
           onSubmit={async (event) => {
