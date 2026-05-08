@@ -287,8 +287,8 @@ export async function getServicePlanCategoryItemsByServicePlanCategoryId(
     .filter((entry) => entry.itemId.length > 0)
 }
 
-export async function getItemCatalog(): Promise<ItemCatalogItem[]> {
-  const response = await serviceGet<unknown>("/item/catalog")
+export async function getItemCatalog(categoryId: string): Promise<ItemCatalogItem[]> {
+  const response = await serviceGet<unknown>(`/item/catalog/by-category-id/${categoryId}`)
 
   if (response.status !== 200 || !response.data) {
     throw new Error("Failed to fetch item catalog")

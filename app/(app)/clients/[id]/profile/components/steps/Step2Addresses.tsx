@@ -168,6 +168,10 @@ function normalizeNickname(value: string) {
   return value.trim().toLowerCase()
 }
 
+function normalizeText(value?: string | null) {
+  return (value ?? "").trim().toLowerCase()
+}
+
 export function Step2Addresses({
   clientId,
   isCreateMode = false,
@@ -254,6 +258,24 @@ export function Step2Addresses({
     }
   }, [countries, form])
 
+  useEffect(() => {
+    if (!editingAddress) return
+
+    const sourceType = form.getValues("sourceType")
+    const currentStateId = form.getValues("stateId")
+    const currentCountryId = form.getValues("countryId")
+
+    if (sourceType !== "manual" || currentStateId || !currentCountryId || !editingAddress.state) return
+
+    const matchedState = states.find(
+      (state) => normalizeText(state.name) === normalizeText(editingAddress.state)
+    )
+
+    if (matchedState) {
+      form.setValue("stateId", matchedState.id)
+    }
+  }, [editingAddress, form, states])
+
   const handleOpenModal = () => {
     form.reset({
       ...defaultValues,
@@ -268,41 +290,66 @@ export function Step2Addresses({
     setAddressModalStage("edit-form")
     setIsAddressModalOpen(true)
 
-    try {
-      const full = await getClientAddressById(address.id)
-      const data = full ?? address
-      form.reset({
+    const mapAddressToFormValues = (data: ClientAddress): AddressSourceFormValues => {
+      const countryId = data.countryId
+        || countries.find((country) => normalizeText(country.name) === normalizeText(data.country))?.id
+
+      const stateId = data.stateId
+        || states.find((state) => normalizeText(state.name) === normalizeText(data.state))?.id
+
+      const placeServiceId = data.placeServiceId
+        || placesOfService.find((place) => normalizeText(place.name) === normalizeText(data.placeService))?.id
+
+      return {
         sourceType: "manual",
         nickName: data.nickName || "",
         isPrimary: data.isPrimary,
         selectedAgencyAddressId: "",
-        placeServiceId: data.placeServiceId || "",
+        placeServiceId: placeServiceId || "",
         addressLine1: data.addressLine1 || "",
         apartmentSuite: data.apartmentSuite || "",
         city: data.city || "",
-        stateId: data.stateId || "",
+        stateId: stateId || "",
         zipCode: data.zipCode || "",
-        countryId: data.countryId || "",
-      })
+        countryId: countryId || "",
+      }
+    }
+
+    try {
+      const full = await getClientAddressById(address.id)
+      const data = full ?? address
+      form.reset(mapAddressToFormValues(data))
     } catch {
-      form.reset({
-        sourceType: "manual",
-        nickName: address.nickName || "",
-        isPrimary: address.isPrimary,
-        selectedAgencyAddressId: "",
-        placeServiceId: address.placeServiceId || "",
-        addressLine1: address.addressLine1 || "",
-        apartmentSuite: address.apartmentSuite || "",
-        city: address.city || "",
-        stateId: address.stateId || "",
-        zipCode: address.zipCode || "",
-        countryId: address.countryId || "",
-      })
+      form.reset(mapAddressToFormValues(address))
     }
   }
 
-  const handleSourceTypeChange = (sourceType: AddressSourceType) => {
+  const handleSourceTypeChange = async (sourceType: AddressSourceType) => {
     form.setValue("sourceType", sourceType)
+
+    if (sourceType === "agency" && agencyAddresses.length === 1 && resolvedClientId) {
+      const onlyAgencyAddress = agencyAddresses[0]
+      if (!onlyAgencyAddress) return
+
+      const result = await createFromCompanyAddress({
+        clientId: resolvedClientId,
+        companyAddressId: onlyAgencyAddress.id,
+        isPrimary: form.getValues("isPrimary"),
+      })
+
+      if (!result) return
+
+      if (typeof result.progress === "number") {
+        onProgressUpdate?.(result.progress)
+      }
+
+      form.reset(defaultValues)
+      setAddressModalStage("select-source")
+      setIsAddressModalOpen(false)
+      await refetchClientAddresses()
+      return
+    }
+
     setAddressModalStage("edit-form")
   }
 
@@ -837,13 +884,16 @@ export function Step2Addresses({
                   <button
                     key={section.id}
                     type="button"
-                    onClick={() => handleSourceTypeChange(section.id)}
+                    onClick={() => {
+                      void handleSourceTypeChange(section.id)
+                    }}
                     className={cn(
                       "group flex items-center gap-4 rounded-2xl border-2 border-gray-200 bg-white p-5 text-left",
                       "hover:border-[#037ECC] hover:shadow-lg hover:shadow-blue-900/8",
                       "transition-all duration-200",
                       "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/30 focus-visible:ring-offset-2"
                     )}
+                    disabled={isCreating || isUpdating}
                   >
                     <span className={cn(
                       "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",

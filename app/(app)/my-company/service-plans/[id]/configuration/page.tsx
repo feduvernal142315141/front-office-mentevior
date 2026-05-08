@@ -137,6 +137,16 @@ export default function ServicePlanConfigurationPage() {
   }, [isItemDrawerOpen])
 
   const openItemDrawer = () => {
+    const selectedCategory = categories.find((category) => category.id === activeServicePlanCategoryId)
+
+    if (!selectedCategory?.categoryId) {
+      const message = "Select a valid category before adding items"
+      setItemCatalog([])
+      setItemCatalogError(message)
+      toast.error(message)
+      return
+    }
+
     setIsItemDrawerOpen(true)
     setItemSearchTerm("")
     setSelectedItemIds(new Set())
@@ -145,7 +155,7 @@ export default function ServicePlanConfigurationPage() {
     void (async () => {
       try {
         setItemCatalogLoading(true)
-        const catalog = await getItemCatalog()
+        const catalog = await getItemCatalog(selectedCategory.categoryId)
         setItemCatalog(
           [...catalog].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
         )
@@ -342,7 +352,7 @@ export default function ServicePlanConfigurationPage() {
                     <h3 className="text-base font-semibold text-slate-900">{`${activeCategory.categoryName} (${activeCategory.totalItems})`}</h3>
                     <div className="mt-1 flex items-center justify-between gap-3">
                       <p className="text-sm text-slate-500">Mapped items for this category.</p>
-                      <Button type="button" variant="secondary" className="h-9 px-4 text-xs" onClick={openItemDrawer}>
+                      <Button type="button" className="h-9 px-4 text-xs" onClick={openItemDrawer}>
                         Add items
                       </Button>
                     </div>
