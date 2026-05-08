@@ -56,7 +56,11 @@ export function CreateServicePlanModal({
   const {
     options: categoryCatalogOptions,
     createCategory,
+    editCategory,
+    removeCategory,
     isCreating: isCreatingCategory,
+    isUpdating: isUpdatingCategory,
+    isDeleting: isDeletingCategory,
     refreshCatalog,
   } = useServicePlanCategoriesCatalog()
   const isEditMode = initialPlan !== null
@@ -341,7 +345,11 @@ export function CreateServicePlanModal({
                 onChange={field.onChange}
                 options={categoryOptions}
                 onCreateCategory={createCategory}
+                onEditCategory={editCategory}
+                onDeleteCategory={removeCategory}
                 isCreatingCategory={isCreatingCategory}
+                isUpdatingCategory={isUpdatingCategory}
+                isDeletingCategory={isDeletingCategory}
                 disabled={isFormDisabled}
                 hasError={!!fieldState.error}
                 required

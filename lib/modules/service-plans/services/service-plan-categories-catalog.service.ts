@@ -1,4 +1,4 @@
-import { serviceGet, servicePost } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import {
   createFallbackCategoryIdFromLabel,
   resolveCategoryIdFromUnknown,
@@ -7,6 +7,7 @@ import {
 export interface ServicePlanCategoryCatalogOption {
   value: string
   label: string
+  canEdit?: boolean
 }
 
 interface CreateServicePlanCategoryPayload {
@@ -16,6 +17,11 @@ interface CreateServicePlanCategoryPayload {
 interface CreateServicePlanCategoryResult {
   option: ServicePlanCategoryCatalogOption
   usedFallback: boolean
+}
+
+interface UpdateServicePlanCategoryPayload {
+  id: string
+  name: string
 }
 
 function asString(value: unknown): string {
@@ -67,6 +73,7 @@ function normalizeCategoryEntry(entry: unknown): ServicePlanCategoryCatalogOptio
   return {
     value,
     label: label.length > 0 ? label : value,
+    canEdit: Boolean(raw.canEdit ?? raw.can_edit),
   }
 }
 
@@ -177,4 +184,44 @@ export async function createServicePlanCategory(
   }
 
   throw new Error(getResponseErrorMessage(response.data) || "Failed to create category")
+}
+
+export async function updateServicePlanCategory(
+  id: string,
+  name: string
+): Promise<ServicePlanCategoryCatalogOption | null> {
+  const normalizedId = id.trim()
+  const normalizedName = name.trim()
+
+  if (normalizedId.length === 0) {
+    throw new Error("Category id is required")
+  }
+
+  if (normalizedName.length === 0) {
+    throw new Error("Category name is required")
+  }
+
+  const response = await servicePut<UpdateServicePlanCategoryPayload, unknown>("/category", {
+    id: normalizedId,
+    name: normalizedName,
+  })
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(getResponseErrorMessage(response.data) || "Failed to update category")
+  }
+
+  return normalizeResponseCategory(response.data)
+}
+
+export async function deleteServicePlanCategory(id: string): Promise<void> {
+  const normalizedId = id.trim()
+  if (normalizedId.length === 0) {
+    throw new Error("Category id is required")
+  }
+
+  const response = await serviceDelete<never, unknown>(`/category/${normalizedId}`)
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(getResponseErrorMessage(response.data) || "Failed to delete category")
+  }
 }

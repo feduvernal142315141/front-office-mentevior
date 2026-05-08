@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Search, Sparkles } from "lucide-react"
+import { Pencil, Search, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/custom/Button"
 
 interface ServicePlanCategoryOption {
   value: string
   label: string
+  canEdit?: boolean
 }
 
 interface ServicePlanCategoriesPickerProps {
@@ -15,7 +16,11 @@ interface ServicePlanCategoriesPickerProps {
   onChange: (next: string[]) => void
   options: ServicePlanCategoryOption[]
   onCreateCategory: (name: string) => Promise<string | null>
+  onEditCategory: (id: string, name: string) => Promise<string | null>
+  onDeleteCategory: (id: string) => Promise<boolean>
   isCreatingCategory?: boolean
+  isUpdatingCategory?: boolean
+  isDeletingCategory?: boolean
   disabled?: boolean
   hasError?: boolean
   required?: boolean
@@ -30,7 +35,11 @@ export function ServicePlanCategoriesPicker({
   onChange,
   options,
   onCreateCategory,
+  onEditCategory,
+  onDeleteCategory,
   isCreatingCategory = false,
+  isUpdatingCategory = false,
+  isDeletingCategory = false,
   disabled = false,
   hasError = false,
   required = false,
@@ -38,6 +47,7 @@ export function ServicePlanCategoriesPicker({
   const [query, setQuery] = useState("")
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
+  const [editingCategoryValue, setEditingCategoryValue] = useState<string | null>(null)
   const [pendingScrollCategoryValue, setPendingScrollCategoryValue] = useState<string | null>(null)
   const categoryButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
@@ -55,7 +65,8 @@ export function ServicePlanCategoriesPicker({
   )
 
   const canSelectAll = filteredOptions.length > 0
-  const canSaveCategory = newCategoryName.trim().length > 0 && !disabled && !isCreatingCategory
+  const isSavingCategory = isCreatingCategory || isUpdatingCategory || isDeletingCategory
+  const canSaveCategory = newCategoryName.trim().length > 0 && !disabled && !isSavingCategory
 
   useEffect(() => {
     if (!pendingScrollCategoryValue || isAddingCategory) return
@@ -100,32 +111,63 @@ export function ServicePlanCategoriesPicker({
 
     setQuery("")
     setNewCategoryName("")
+    setEditingCategoryValue(null)
+    setIsAddingCategory(true)
+  }
+
+  const handleStartEditCategory = (option: ServicePlanCategoryOption) => {
+    if (disabled || !option.canEdit) return
+
+    setQuery("")
+    setNewCategoryName(option.label)
+    setEditingCategoryValue(option.value)
     setIsAddingCategory(true)
   }
 
   const handleCancelAddCategory = () => {
-    if (isCreatingCategory) return
+    if (isSavingCategory) return
 
     setNewCategoryName("")
+    setEditingCategoryValue(null)
     setIsAddingCategory(false)
   }
 
   const handleSaveCategory = async () => {
     if (!canSaveCategory) return
 
-    const createdCategoryValue = await onCreateCategory(newCategoryName.trim())
+    const savedCategoryValue = editingCategoryValue
+      ? await onEditCategory(editingCategoryValue, newCategoryName.trim())
+      : await onCreateCategory(newCategoryName.trim())
 
-    if (!createdCategoryValue) return
+    if (!savedCategoryValue) return
 
-    if (!selectedSet.has(createdCategoryValue)) {
-      onChange([...value, createdCategoryValue])
+    if (!selectedSet.has(savedCategoryValue)) {
+      onChange([...value, savedCategoryValue])
     }
 
-    setPendingScrollCategoryValue(createdCategoryValue)
+    setPendingScrollCategoryValue(savedCategoryValue)
 
     setNewCategoryName("")
+    setEditingCategoryValue(null)
     setQuery("")
     setIsAddingCategory(false)
+  }
+
+  const handleDeleteCategory = async (option: ServicePlanCategoryOption) => {
+    if (disabled || !option.canEdit || isSavingCategory) return
+
+    const deleted = await onDeleteCategory(option.value)
+    if (!deleted) return
+
+    if (selectedSet.has(option.value)) {
+      onChange(value.filter((entry) => entry !== option.value))
+    }
+
+    if (editingCategoryValue === option.value) {
+      setNewCategoryName("")
+      setEditingCategoryValue(null)
+      setIsAddingCategory(false)
+    }
   }
 
   return (
@@ -181,7 +223,7 @@ export function ServicePlanCategoriesPicker({
             type="button"
             variant="primary"
             onClick={handleStartAddCategory}
-            disabled={disabled || isCreatingCategory}
+            disabled={disabled || isSavingCategory}
             className="h-8 px-3 text-xs"
           >
             Create Category
@@ -201,7 +243,7 @@ export function ServicePlanCategoriesPicker({
                 void handleSaveCategory()
               }
             }}
-            disabled={disabled || isCreatingCategory}
+            disabled={disabled || isSavingCategory}
             placeholder="Name"
             className={cn(
               "h-10 w-full rounded-xl border bg-white px-3 text-sm text-slate-900 sm:w-[90%]",
@@ -218,7 +260,7 @@ export function ServicePlanCategoriesPicker({
             <button
               type="button"
               onClick={handleCancelAddCategory}
-              disabled={disabled || isCreatingCategory}
+               disabled={disabled || isSavingCategory}
               className={cn(
                 "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300",
@@ -238,7 +280,7 @@ export function ServicePlanCategoriesPicker({
               disabled={!canSaveCategory}
               className="h-8 px-3 text-xs"
             >
-              {isCreatingCategory ? "Saving..." : "Save"}
+               {isSavingCategory ? "Saving..." : "Save"}
             </Button>
           </div>
         </div>
@@ -295,7 +337,28 @@ export function ServicePlanCategoriesPicker({
                   aria-pressed={isSelected}
                 >
                   <span className="line-clamp-1 text-sm font-medium">{option.label}</span>
-                  {isSelected && <Sparkles className="h-4 w-4 shrink-0 text-[#037ECC]" />}
+                  <span className="flex items-center gap-1 shrink-0">
+                    {option.canEdit && (
+                      <>
+                        <Pencil
+                          className="h-4 w-4 text-slate-400 hover:text-[#037ECC]"
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            handleStartEditCategory(option)
+                          }}
+                        />
+                        <Trash2
+                          className="h-4 w-4 text-slate-400 hover:text-red-500"
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            void handleDeleteCategory(option)
+                          }}
+                        />
+                      </>
+                    )}
+                  </span>
                 </button>
               )
             })}
