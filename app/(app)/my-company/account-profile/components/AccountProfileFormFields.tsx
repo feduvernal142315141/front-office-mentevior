@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 function ChartIdConfiguration({ control }: { control: ReturnType<typeof useFormContext>["control"] }) {
   const { watch } = useFormContext()
   const prefix = watch("chartPrefix") || "BA"
-  const startNumber = watch("chartStartNumber") || 1
+  const startNumber = watch("chartStartNumber") || "1"
 
   return (
     <div className="col-span-1 lg:col-span-2 mt-2">
@@ -59,15 +59,11 @@ function ChartIdConfiguration({ control }: { control: ReturnType<typeof useFormC
               <div>
                 <FloatingInput
                   label="Starting Number"
-                  value={field.value?.toString() || ""}
-                  onChange={(v) => {
-                    const num = parseInt(v, 10)
-                    field.onChange(isNaN(num) ? "" : num)
-                  }}
+                  value={field.value || ""}
+                  onChange={field.onChange}
                   onBlur={field.onBlur}
                   placeholder=" "
                   hasError={!!fieldState.error}
-                  inputMode="numeric"
                   required
                 />
                 {fieldState.error && (

@@ -140,7 +140,7 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
                   checked={field.value}
                   onCheckedChange={field.onChange}
                   label="Professional Information"
-                  description="Enable the professional information section in user profiles"
+                  description="Enable: NPI, MPI, CAQH etc."
                   size="md"
                 />
               )}
@@ -153,7 +153,7 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
                   checked={field.value}
                   onCheckedChange={field.onChange}
                   label="Credentials & Signature"
-                  description="Enable the credentials and signature section in user profiles"
+                  description="Enable: Certification number and signature"
                   size="md"
                 />
               )}

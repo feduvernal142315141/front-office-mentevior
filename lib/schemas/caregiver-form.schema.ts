@@ -8,6 +8,7 @@ export const caregiverFormSchema = z.object({
   phone: phoneValidation,
   email: z.string().trim().min(1, "Email is required").max(100).email("Invalid email format").toLowerCase(),
   status: z.boolean(),
+  isEmergency: z.boolean(),
   isPrimary: z.boolean(),
 })
 
@@ -20,5 +21,6 @@ export const caregiverFormDefaults: CaregiverFormValues = {
   phone: "",
   email: "",
   status: true,
+  isEmergency: false,
   isPrimary: true,
 }

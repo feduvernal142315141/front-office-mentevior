@@ -53,12 +53,13 @@ export const accountProfileSchema = z.object({
     .string()
     .min(1, "Chart prefix is required")
     .max(10, "Chart prefix must be less than 10 characters")
-    .regex(/^[A-Za-z]+$/, "Only letters are allowed"),
+    .regex(/^[\p{L}\p{N}\p{P}\p{S}\s]+$/u, "Only alphanumeric and special characters are allowed"),
 
   chartStartNumber: z
-    .number({ invalid_type_error: "Must be a number" })
-    .int("Must be a whole number")
-    .min(1, "Must be at least 1"),
+    .string()
+    .min(1, "Starting number is required")
+    .max(20, "Starting number must be less than 20 characters")
+    .regex(/^[\p{L}\p{N}\p{P}\p{S}\s]+$/u, "Only alphanumeric and special characters are allowed"),
 })
 
 export type AccountProfileFormValues = z.infer<typeof accountProfileSchema>
@@ -75,5 +76,5 @@ export const getAccountProfileDefaults = (): AccountProfileFormValues => ({
   taxonomyCode: "",
   logo: "",
   chartPrefix: "BA",
-  chartStartNumber: 1,
+  chartStartNumber: "1",
 })

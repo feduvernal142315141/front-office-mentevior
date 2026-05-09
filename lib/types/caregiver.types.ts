@@ -10,6 +10,7 @@ export interface Caregiver {
   phoneNumber?: string
   email: string
   status: boolean
+  isEmergency: boolean
   isPrimary: boolean
   createdAt?: string
 }
@@ -22,6 +23,7 @@ export interface CreateCaregiverDto {
   phone: string
   email: string
   status: boolean
+  isEmergency: boolean
   isPrimary: boolean
 }
 
@@ -32,5 +34,6 @@ export interface UpdateCaregiverDto {
   phone: string
   email: string
   status: boolean
+  isEmergency: boolean
   isPrimary: boolean
 }

@@ -17,6 +17,7 @@ type CaregiverApiItem = {
   phoneNumber?: string
   email?: string
   status?: boolean
+  isEmergency?: boolean
   isPrimary?: boolean
   createdAt?: string
 }
@@ -67,6 +68,7 @@ function normalizeCaregiver(item: CaregiverApiItem): Caregiver {
     phoneNumber: item.phoneNumber,
     email: item.email ?? "",
     status: toBoolean(item.status, true),
+    isEmergency: toBoolean(item.isEmergency, false),
     isPrimary: toBoolean(item.isPrimary, false),
     createdAt: item.createdAt,
   }

@@ -11,7 +11,7 @@ export interface AccountProfile {
   taxonomyCode: string
   logo: string
   chartPrefix: string
-  chartStartNumber: number
+  chartStartNumber: string
   active: boolean
   createdAt?: string
   updatedAt?: string
@@ -29,7 +29,7 @@ export interface UpdateAccountProfileDto {
   taxonomyCode: string
   logo: string
   chartPrefix: string
-  chartStartNumber: number
+  chartStartNumber: string
 }
 
 export interface AccountProfileResponse {

@@ -103,6 +103,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     phone: caregiver.phone || caregiver.phoneNumber || "",
     email: caregiver.email ?? "",
     status: caregiver.status ?? true,
+    isEmergency: caregiver.isEmergency ?? false,
     isPrimary: caregiver.isPrimary ?? true,
   })
 
@@ -272,6 +273,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
           phone: values.phone,
           email: values.email,
           status: values.status,
+          isEmergency: values.isEmergency,
           isPrimary: values.isPrimary,
         })
       : await create({
@@ -282,6 +284,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
           phone: values.phone,
           email: values.email,
           status: values.status,
+          isEmergency: values.isEmergency,
           isPrimary: values.isPrimary,
         })
 
@@ -560,6 +563,24 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                       : "Set caregiver role priority"
                     }
                     disabled={isCreatePrimaryLocked}
+                    variant="default"
+                  />
+                </div>
+              )}
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Controller
+              name="isEmergency"
+              control={form.control}
+              render={({ field }) => (
+                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+                  <PremiumSwitch
+                    checked={Boolean(field.value)}
+                    onCheckedChange={field.onChange}
+                    label="Emergency contact"
+                    description="Mark caregiver as emergency contact"
                     variant="default"
                   />
                 </div>

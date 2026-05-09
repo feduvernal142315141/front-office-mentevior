@@ -52,7 +52,7 @@ export function useAccountProfileForm(): UseAccountProfileFormReturn {
         taxonomyCode: accountProfile.taxonomyCode,
         logo: accountProfile.logo || "",
         chartPrefix: accountProfile.chartPrefix || "BA",
-        chartStartNumber: accountProfile.chartStartNumber || 1,
+        chartStartNumber: accountProfile.chartStartNumber || "1",
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,7 +105,7 @@ export function useAccountProfileForm(): UseAccountProfileFormReturn {
           taxonomyCode: accountProfile.taxonomyCode,
           logo: accountProfile.logo || "",
           chartPrefix: accountProfile.chartPrefix || "BA",
-          chartStartNumber: accountProfile.chartStartNumber || 1,
+          chartStartNumber: accountProfile.chartStartNumber || "1",
         })
       }
       router.push("/my-company")
