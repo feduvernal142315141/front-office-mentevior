@@ -164,6 +164,8 @@ const defaultValues: AddressSourceFormValues = {
   countryId: "",
 }
 
+const OFFICE_PLACE_OF_SERVICE_ID = "a9acbcbe-dceb-41ab-8823-5f547cef80c9"
+
 function normalizeNickname(value: string) {
   return value.trim().toLowerCase()
 }
@@ -299,8 +301,8 @@ export function Step2Addresses({
 
       const placeServiceId = data.placeServiceId
         || placesOfService.find((place) => normalizeText(place.name) === normalizeText(data.placeService))?.id
-        || placesOfService.find((place) => normalizeText(place.name).includes("other place of service (99)"))?.id
-        || placesOfService.find((place) => normalizeText(place.name).includes("(99)"))?.id
+        || placesOfService.find((place) => place.id === OFFICE_PLACE_OF_SERVICE_ID)?.id
+        || placesOfService.find((place) => normalizeText(place.name).includes("office (11)"))?.id
         || placesOfService[0]?.id
 
       return {
@@ -692,7 +694,21 @@ export function Step2Addresses({
       key: "placeServiceName",
       header: "Place of Service",
       className: "min-w-[180px]",
-      render: (address) => address.placeServiceName || "-",
+      render: (address) => {
+        const resolvedPlaceServiceName =
+          address.placeServiceName
+          || address.placeService
+          || placesOfService.find((place) => place.id === address.placeServiceId)?.name
+          || (address.placeServiceId === OFFICE_PLACE_OF_SERVICE_ID ? "Office (11)" : "")
+
+        if (resolvedPlaceServiceName) return resolvedPlaceServiceName
+
+        if (address.canEdit !== true) {
+          return "Office (11)"
+        }
+
+        return "-"
+      },
     },
     {
       key: "location",
