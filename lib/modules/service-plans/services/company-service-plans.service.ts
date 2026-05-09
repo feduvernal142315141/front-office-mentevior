@@ -3,10 +3,12 @@ import type {
   AssignItemsToServicePlanCategoryPayload,
   CompanyServicePlan,
   CreateCompanyServicePlanDto,
+  CreateItemCatalogDto,
   ItemCatalogItem,
   ServicePlanCategoryMappedItem,
   ServicePlanCategorySummary,
   UpdateCompanyServicePlanDto,
+  UpdateItemCatalogDto,
 } from "@/lib/types/company-service-plan.types"
 
 function asString(value: unknown): string {
@@ -151,6 +153,7 @@ function normalizeItemCatalogEntry(raw: unknown): ItemCatalogItem {
     id: asString(item.id),
     categoryId: asString(item.categoryId ?? item.category_id),
     name: asString(item.name ?? item.itemName ?? item.item_name),
+    canEdit: asOptionalBoolean(item.canEdit ?? item.can_edit),
   }
 }
 
@@ -379,4 +382,42 @@ export async function deleteCompanyServicePlan(id: string): Promise<boolean> {
   }
 
   return true
+}
+
+export async function createItemCatalog(payload: CreateItemCatalogDto): Promise<ItemCatalogItem> {
+  const response = await servicePost<CreateItemCatalogDto, unknown>("/item", payload)
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(
+      (response.data as { message?: string } | undefined)?.message || "Failed to create item"
+    )
+  }
+
+  return normalizeItemCatalogEntry(
+    response.data && typeof response.data === "object"
+      ? (response.data as { entity?: unknown; data?: unknown }).entity ??
+          (response.data as { data?: unknown }).data ??
+          response.data
+      : response.data
+  )
+}
+
+export async function updateItemCatalog(payload: UpdateItemCatalogDto): Promise<void> {
+  const response = await servicePut<UpdateItemCatalogDto, unknown>("/item", payload)
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(
+      (response.data as { message?: string } | undefined)?.message || "Failed to update item"
+    )
+  }
+}
+
+export async function deleteItemCatalog(id: string): Promise<void> {
+  const response = await serviceDelete<never, unknown>(`/item/${id}`)
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(
+      (response.data as { message?: string } | undefined)?.message || "Failed to delete item"
+    )
+  }
 }

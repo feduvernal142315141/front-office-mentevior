@@ -7,13 +7,16 @@ import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 import { Checkbox } from "@/components/custom/Checkbox"
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
-import { Check, ChevronRight, FileText, Loader2, Search, Sliders, X } from "lucide-react"
+import { Check, ChevronRight, FileText, Loader2, Pencil, Search, Sliders, Trash2, X } from "lucide-react"
 import {
   assignItemsToServicePlanCategory,
+  createItemCatalog,
+  deleteItemCatalog,
   getCompanyServicePlanById,
   getItemCatalog,
   getServicePlanCategoryItemsByServicePlanCategoryId,
   getServicePlanCategoriesByServicePlanId,
+  updateItemCatalog,
 } from "@/lib/modules/service-plans/services/company-service-plans.service"
 import { useCompanyActiveServices } from "@/lib/modules/services/hooks/use-company-active-services"
 import type {
@@ -42,7 +45,13 @@ export default function ServicePlanConfigurationPage() {
   const [isAssigningItems, setIsAssigningItems] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isItemFormVisible, setIsItemFormVisible] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [itemFormName, setItemFormName] = useState("")
+  const [isSavingItem, setIsSavingItem] = useState(false)
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
   const itemSearchRef = useRef<HTMLInputElement>(null)
+  const itemFormInputRef = useRef<HTMLInputElement>(null)
   const { services } = useCompanyActiveServices()
 
   const loadCategories = useCallback(async () => {
@@ -151,6 +160,9 @@ export default function ServicePlanConfigurationPage() {
     setItemSearchTerm("")
     setSelectedItemIds(new Set())
     setItemCatalogError(null)
+    setIsItemFormVisible(false)
+    setEditingItemId(null)
+    setItemFormName("")
 
     void (async () => {
       try {
@@ -252,6 +264,92 @@ export default function ServicePlanConfigurationPage() {
       toast.error(message)
     } finally {
       setIsAssigningItems(false)
+    }
+  }
+
+  const reloadCatalog = useCallback(async () => {
+    const selectedCategory = categories.find((c) => c.id === activeServicePlanCategoryId)
+    if (!selectedCategory?.categoryId) return
+
+    try {
+      const catalog = await getItemCatalog(selectedCategory.categoryId)
+      setItemCatalog(
+        [...catalog].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+      )
+    } catch {
+      // keep current catalog on refresh failure
+    }
+  }, [categories, activeServicePlanCategoryId])
+
+  const handleStartCreateItem = () => {
+    setEditingItemId(null)
+    setItemFormName("")
+    setIsItemFormVisible(true)
+    setTimeout(() => itemFormInputRef.current?.focus(), 0)
+  }
+
+  const handleStartEditItem = (item: ItemCatalogItem) => {
+    setEditingItemId(item.id)
+    setItemFormName(item.name)
+    setIsItemFormVisible(true)
+    setTimeout(() => itemFormInputRef.current?.focus(), 0)
+  }
+
+  const handleCancelItemForm = () => {
+    if (isSavingItem) return
+    setIsItemFormVisible(false)
+    setEditingItemId(null)
+    setItemFormName("")
+  }
+
+  const handleSaveItem = async () => {
+    const trimmedName = itemFormName.trim()
+    if (trimmedName.length === 0 || isSavingItem) return
+
+    const selectedCategory = categories.find((c) => c.id === activeServicePlanCategoryId)
+    if (!selectedCategory) return
+
+    setIsSavingItem(true)
+    try {
+      if (editingItemId) {
+        await updateItemCatalog({ id: editingItemId, name: trimmedName })
+        toast.success("Item updated successfully")
+      } else {
+        await createItemCatalog({ categoryId: selectedCategory.categoryId, name: trimmedName })
+        toast.success("Item created successfully")
+      }
+
+      setIsItemFormVisible(false)
+      setEditingItemId(null)
+      setItemFormName("")
+
+      await reloadCatalog()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save item")
+    } finally {
+      setIsSavingItem(false)
+    }
+  }
+
+  const handleDeleteItem = async (item: ItemCatalogItem) => {
+    if (deletingItemId) return
+
+    setDeletingItemId(item.id)
+    try {
+      await deleteItemCatalog(item.id)
+      toast.success("Item deleted successfully")
+
+      if (editingItemId === item.id) {
+        setIsItemFormVisible(false)
+        setEditingItemId(null)
+        setItemFormName("")
+      }
+
+      await reloadCatalog()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete item")
+    } finally {
+      setDeletingItemId(null)
     }
   }
 
@@ -438,22 +536,75 @@ export default function ServicePlanConfigurationPage() {
               />
             </div>
 
-            {!itemCatalogLoading && filteredCatalogItems.length > 0 && (
-              <div className="mt-4 flex justify-end">
-                <button
+            {!itemCatalogLoading && (
+              <div className="mt-4 flex items-center justify-end gap-2">
+                {filteredCatalogItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={toggleSelectAllVisible}
+                    className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-xs font-medium transition-all ${
+                      isAllVisibleSelected
+                        ? "border-blue-600 bg-blue-50 text-blue-700"
+                        : isSomeVisibleSelected
+                          ? "border-blue-400 bg-blue-50/60 text-blue-600"
+                          : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {(isAllVisibleSelected || isSomeVisibleSelected) && <Check className="h-4 w-4" strokeWidth={2.5} />}
+                    {isAllVisibleSelected ? "Deselect All" : "Select All"}
+                  </button>
+                )}
+                <Button
                   type="button"
-                  onClick={toggleSelectAllVisible}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-xs font-medium transition-all ${
-                    isAllVisibleSelected
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : isSomeVisibleSelected
-                        ? "border-blue-400 bg-blue-50/60 text-blue-600"
-                        : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
+                  variant="primary"
+                  className="h-8 px-4 text-xs"
+                  onClick={handleStartCreateItem}
+                  disabled={isSavingItem || !!deletingItemId}
                 >
-                  {(isAllVisibleSelected || isSomeVisibleSelected) && <Check className="h-4 w-4" strokeWidth={2.5} />}
-                  {isAllVisibleSelected ? "Deselect All" : "Select All"}
-                </button>
+                  Create Item
+                </Button>
+              </div>
+            )}
+
+            {isItemFormVisible && (
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  ref={itemFormInputRef}
+                  type="text"
+                  value={itemFormName}
+                  onChange={(e) => setItemFormName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      void handleSaveItem()
+                    }
+                    if (e.key === "Escape") {
+                      handleCancelItemForm()
+                    }
+                  }}
+                  disabled={isSavingItem}
+                  placeholder="Item name"
+                  className="h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 sm:flex-1"
+                />
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCancelItemForm}
+                    disabled={isSavingItem}
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() => { void handleSaveItem() }}
+                    disabled={itemFormName.trim().length === 0 || isSavingItem}
+                    className="h-8 px-3 text-xs"
+                  >
+                    {isSavingItem ? "Saving..." : "Save"}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -485,14 +636,15 @@ export default function ServicePlanConfigurationPage() {
               <div className="divide-y divide-gray-100">
                 {filteredCatalogItems.map((item) => {
                   const isSelected = selectedItemIds.has(item.id)
+                  const isDeleting = deletingItemId === item.id
 
                   return (
                     <div
                       key={item.id}
-                      className={`p-4 transition-colors ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                      className={`p-4 transition-colors ${isDeleting ? "opacity-50" : ""} ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"}`}
                     >
-                      <div className="flex items-start gap-4">
-                        <div className="pt-1">
+                      <div className="flex items-center gap-4">
+                        <div>
                           <Checkbox checked={isSelected} onCheckedChange={() => toggleItemSelection(item.id)} size="md" />
                         </div>
 
@@ -505,6 +657,35 @@ export default function ServicePlanConfigurationPage() {
                             {item.name}
                           </p>
                         </button>
+
+                        {item.canEdit && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleStartEditItem(item)
+                              }}
+                              disabled={isSavingItem || !!deletingItemId}
+                              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Edit item"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                void handleDeleteItem(item)
+                              }}
+                              disabled={isSavingItem || !!deletingItemId}
+                              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Delete item"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )

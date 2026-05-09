@@ -30,10 +30,21 @@ export interface ItemCatalogItem {
   id: string
   categoryId: string
   name: string
+  canEdit?: boolean
 }
 
 export interface AssignItemsToServicePlanCategoryPayload {
   itemIds: string[]
+}
+
+export interface CreateItemCatalogDto {
+  categoryId: string
+  name: string
+}
+
+export interface UpdateItemCatalogDto {
+  id: string
+  name: string
 }
 
 export interface CreateCompanyServicePlanDto {
