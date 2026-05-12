@@ -50,8 +50,10 @@ export default function ServicePlanConfigurationPage() {
   const [itemFormName, setItemFormName] = useState("")
   const [isSavingItem, setIsSavingItem] = useState(false)
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
+  const [recentlyCreatedItemId, setRecentlyCreatedItemId] = useState<string | null>(null)
   const itemSearchRef = useRef<HTMLInputElement>(null)
   const itemFormInputRef = useRef<HTMLInputElement>(null)
+  const itemRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const { services } = useCompanyActiveServices()
 
   const loadCategories = useCallback(async () => {
@@ -145,6 +147,23 @@ export default function ServicePlanConfigurationPage() {
     itemSearchRef.current?.focus()
   }, [isItemDrawerOpen])
 
+  useEffect(() => {
+    if (!isItemDrawerOpen || !recentlyCreatedItemId) return
+
+    const row = itemRowRefs.current[recentlyCreatedItemId]
+    if (!row) return
+
+    row.scrollIntoView({ behavior: "smooth", block: "center" })
+
+    const timeoutId = window.setTimeout(() => {
+      setRecentlyCreatedItemId((current) => (current === recentlyCreatedItemId ? null : current))
+    }, 1800)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [isItemDrawerOpen, recentlyCreatedItemId, itemCatalog])
+
   const openItemDrawer = () => {
     const selectedCategory = categories.find((category) => category.id === activeServicePlanCategoryId)
 
@@ -163,6 +182,7 @@ export default function ServicePlanConfigurationPage() {
     setIsItemFormVisible(false)
     setEditingItemId(null)
     setItemFormName("")
+    setRecentlyCreatedItemId(null)
 
     void (async () => {
       try {
@@ -267,17 +287,18 @@ export default function ServicePlanConfigurationPage() {
     }
   }
 
-  const reloadCatalog = useCallback(async () => {
+  const reloadCatalog = useCallback(async (): Promise<ItemCatalogItem[]> => {
     const selectedCategory = categories.find((c) => c.id === activeServicePlanCategoryId)
-    if (!selectedCategory?.categoryId) return
+    if (!selectedCategory?.categoryId) return []
 
     try {
       const catalog = await getItemCatalog(selectedCategory.categoryId)
-      setItemCatalog(
-        [...catalog].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
-      )
+      const sortedCatalog = [...catalog].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+      setItemCatalog(sortedCatalog)
+      return sortedCatalog
     } catch {
       // keep current catalog on refresh failure
+      return []
     }
   }, [categories, activeServicePlanCategoryId])
 
@@ -314,16 +335,27 @@ export default function ServicePlanConfigurationPage() {
       if (editingItemId) {
         await updateItemCatalog({ id: editingItemId, name: trimmedName })
         toast.success("Item updated successfully")
+        await reloadCatalog()
       } else {
-        await createItemCatalog({ categoryId: selectedCategory.categoryId, name: trimmedName })
+        const createdItem = await createItemCatalog({ categoryId: selectedCategory.categoryId, name: trimmedName })
+        const refreshedCatalog = await reloadCatalog()
+        const matchedItem =
+          refreshedCatalog.find((item) => item.id === createdItem.id) ??
+          refreshedCatalog.find((item) => item.name.trim().toLowerCase() === trimmedName.toLowerCase())
+        const selectedId = matchedItem?.id ?? createdItem.id
+
+        setSelectedItemIds((current) => {
+          const next = new Set(current)
+          next.add(selectedId)
+          return next
+        })
+        setRecentlyCreatedItemId(selectedId)
         toast.success("Item created successfully")
       }
 
       setIsItemFormVisible(false)
       setEditingItemId(null)
       setItemFormName("")
-
-      await reloadCatalog()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save item")
     } finally {
@@ -641,7 +673,10 @@ export default function ServicePlanConfigurationPage() {
                   return (
                     <div
                       key={item.id}
-                      className={`p-4 transition-colors ${isDeleting ? "opacity-50" : ""} ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                      ref={(node) => {
+                        itemRowRefs.current[item.id] = node
+                      }}
+                      className={`p-4 transition-colors ${isDeleting ? "opacity-50" : ""} ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"} ${recentlyCreatedItemId === item.id ? "ring-2 ring-blue-300 ring-inset bg-blue-100/70" : ""}`}
                     >
                       <div className="flex items-center gap-4">
                         <div>

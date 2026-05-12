@@ -28,7 +28,7 @@ export const PERMISSION_IDS: Record<string, string> = {
   "replacement_programs": "d6e7f8a9-b0c1-42d3-e4f5-a6b7c8d9e0f1",
   "caregiver_programs": "e7f8a9b0-c1d2-43e4-f5a6-b7c8d9e0f1a2",
   
-  // My Company modules
+  // Company Configuration modules
   "role": "7b5b5e20-ea82-478d-90f6-995fc6e72c94",
   "account_profile": "a1a2a3a4-b5b6-47c8-d9e0-f1a2b3c4d5e6",
   "services_pending_billing": "a9b0c1d2-e3f4-45a6-b7c8-d9e0f1a2b3c4",

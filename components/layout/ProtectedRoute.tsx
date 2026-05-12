@@ -24,12 +24,12 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   
   "/my-company": PermissionModule.MY_COMPANY,
   
-  // Events children (real permissions, under My Company)
+  // Events children (real permissions, under Company Configuration)
   "/my-company/events/appointment": PermissionModule.APPOINTMENT,
   "/my-company/events/service-plan": PermissionModule.SERVICE_PLAN,
   "/my-company/events/supervision": PermissionModule.SUPERVISION,
   
-  // Billing children (real permissions, under My Company)
+  // Billing children (real permissions, under Company Configuration)
   "/my-company/billing/services-pending": PermissionModule.SERVICES_PENDING_BILLING,
   "/my-company/billing/billed-claims": PermissionModule.BILLED_CLAIMS,
   "/my-company/billing/payers": PermissionModule.PAYERS,

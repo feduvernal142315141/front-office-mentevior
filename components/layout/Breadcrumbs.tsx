@@ -22,7 +22,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "service-log": "Service Log",
   "assessment": "Assessment",
   "behavior-plan": "Behavior Plan",
-  "my-company": "My Company",
+  "my-company": "Company Configuration",
   "my-profile": "My Profile",
   "manager": "Profile Management",
   
@@ -31,7 +31,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "replacement-programs": "Replacement Programs",
   "caregiver-programs": "Caregiver Programs",
   
-  // My Company children
+  // Company Configuration children
   "roles": "Roles",
   "account-profile": "Account Profile",
   "address": "Address",
@@ -152,7 +152,7 @@ export function Breadcrumbs() {
       // Documents is virtual, point to /my-company/documents
       href = "/my-company/documents"
     } else if (segment === "my-company" && index === 0 && (filteredSegments.includes("clinical-documents") || filteredSegments.includes("hr-documents"))) {
-      // My Company link when it's injected
+      // Company Configuration link when it's injected
       href = "/my-company"
     } else {
       // Build normal href based on actual path segments

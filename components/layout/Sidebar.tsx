@@ -111,7 +111,7 @@ export function Sidebar() {
     <motion.aside
       initial={false}
       animate={{ width: sidebarCollapsed ? 80 
-      : 280, }}
+      : 300, }}
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       className="
         fixed left-0 top-0 z-40 h-screen
@@ -236,7 +236,7 @@ export function Sidebar() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={cn(
-                          "relative h-12 rounded-xl flex items-center gap-4 transition-all duration-200",
+                          "relative h-12 rounded-xl flex items-center justify-between gap-3 transition-all duration-200",
                           sidebarCollapsed ? "justify-center px-2" : "px-4",
                           isActive || isChildActive
                             ? "bg-gradient-to-r from-[#037ECC] to-[#079CFB] text-white shadow-[0_8px_24px_rgba(3,126,204,0.4)]"
@@ -264,7 +264,7 @@ export function Sidebar() {
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: -6 }}
                               transition={{ duration: 0.15 }}
-                              className="text-sm font-semibold tracking-wide flex-1 text-left"
+                              className="text-sm font-semibold flex-1 min-w-0 pr-10 text-left whitespace-nowrap"
                             >
                               {item.label}
                             </motion.span>
@@ -278,13 +278,13 @@ export function Sidebar() {
                               e.stopPropagation()
                               toggleExpanded(item.href)
                             }}
-                            className="z-10 p-1 hover:bg-white/10 rounded transition-colors"
+                            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 shrink-0 p-1.5 text-current hover:bg-white/10 rounded transition-colors"
                           >
                             <motion.div
                               animate={{ rotate: isExpanded ? 180 : 0 }}
                               transition={{ duration: 0.2 }}
                             >
-                              <ChevronDown className="h-4 w-4" />
+                              <ChevronDown className="h-4.5 w-4.5 opacity-95" />
                             </motion.div>
                           </button>
                         )}
@@ -337,7 +337,7 @@ export function Sidebar() {
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: -6 }}
                               transition={{ duration: 0.15 }}
-                              className="text-sm font-semibold tracking-wide"
+                              className="text-sm font-semibold tracking-wide whitespace-nowrap"
                             >
                               {item.label}
                             </motion.span>

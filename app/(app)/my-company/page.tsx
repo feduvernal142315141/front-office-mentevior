@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2, Shield, UserCircle, MapPin, CreditCard, Award, Calendar, Stethoscope, FileText, BarChart3, FileSignature, FolderHeart, FolderOpen, FileCheck, UserPlus, HeartPulse } from "lucide-react"
+import { Building2, Shield, UserCircle, MapPin, CreditCard, Award, Stethoscope, FileText, BarChart3, FileSignature, FolderHeart, FileCheck, UserPlus, HeartPulse, CalendarCheck, Users } from "lucide-react"
 import Link from "next/link"
 import { useCanViewModule } from "@/lib/hooks/use-filtered-nav-items"
 import { useMemo } from "react"
@@ -14,7 +14,8 @@ export default function MyCompanyPage() {
   const canViewPhysicians = useCanViewModule("/my-company/physicians")
   const canViewServicePlans = useCanViewModule("/my-company/service-plans")
   const canViewServices = useCanViewModule("/my-company/services")
-  const canViewEvents = useCanViewModule("/my-company/events")
+  const canViewAppointments = useCanViewModule("/my-company/events/appointment")
+  const canViewSupervision = useCanViewModule("/my-company/events/supervision")
   const canViewBilling = useCanViewModule("/my-company/billing")
   const canViewDataCollection = useCanViewModule("/data-collection")
   const canViewSignaturesCaregiver = useCanViewModule("/my-company/signatures-caregiver")
@@ -81,14 +82,6 @@ export default function MyCompanyPage() {
       hasDeepChildren: false,
     },
     {
-      title: "Schedules",
-      description: "Manage appointments, service plans and supervision",
-      href: "/my-company/events",
-      icon: Calendar,
-      canView: canViewEvents,
-      hasDeepChildren: true,
-    },
-    {
       title: "Billing",
       description: "Handle billing and payment processing",
       href: "/my-company/billing",
@@ -144,10 +137,28 @@ export default function MyCompanyPage() {
       canView: canViewApplicants,
       hasDeepChildren: false,
     },
+    {
+      title: "Appointments",
+      description: "Schedule and manage client appointments",
+      href: "/my-company/events/appointment",
+      icon: CalendarCheck,
+      canView: canViewAppointments,
+      hasDeepChildren: false,
+    },
+    {
+      title: "Supervision",
+      description: "Coordinate supervision sessions",
+      href: "/my-company/events/supervision",
+      icon: Users,
+      canView: canViewSupervision,
+      hasDeepChildren: false,
+    },
   ]
 
   const subModules = useMemo(() => {
-    return allSubModules.filter(module => module.canView)
+    return allSubModules
+      .filter(module => module.canView)
+      .sort((a, b) => a.title.localeCompare(b.title))
   }, [
     canViewRoles, 
     canViewAccountProfile, 
@@ -156,7 +167,8 @@ export default function MyCompanyPage() {
     canViewPhysicians, 
     canViewServicePlans,
     canViewServices,
-    canViewEvents,
+    canViewAppointments,
+    canViewSupervision,
     canViewBilling,
     canViewDataCollection,
     canViewSignaturesCaregiver,
@@ -175,7 +187,7 @@ export default function MyCompanyPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-              My Company
+              Company Configuration
             </h1>
             <p className="text-slate-600 mt-1">Manage your company settings and information</p>
           </div>

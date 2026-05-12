@@ -6,6 +6,7 @@ import { Button } from "@/components/custom/Button"
 import { NoActiveServiceGate } from "@/components/custom/NoActiveServiceGate"
 import { ServicePlansTable, type ServicePlansTableRef } from "./components/ServicePlansTable"
 import { CreateServicePlanModal } from "./components/CreateServicePlanModal"
+import { ServicePlanConfigurationSection } from "./components/ServicePlanConfigurationSection"
 import { useHasActiveService } from "@/lib/modules/services/hooks/use-has-active-service"
 import type { CompanyServicePlan } from "@/lib/types/company-service-plan.types"
 
@@ -68,6 +69,9 @@ export default function ServicePlansPage() {
           moduleName="service plans"
         >
           <ServicePlansTable ref={tableRef} onEdit={handleEdit} />
+          <div className="mt-6">
+            <ServicePlanConfigurationSection />
+          </div>
 
           <CreateServicePlanModal
             open={isCreateModalOpen}

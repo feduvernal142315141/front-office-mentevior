@@ -30,12 +30,12 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/my-company/service-plans": PermissionModule.MY_COMPANY,
   "/my-company/services": PermissionModule.MY_COMPANY,
   
-  // Events children (real permissions, under My Company)
+  // Events children (real permissions, under Company Configuration)
   "/my-company/events/appointment": PermissionModule.APPOINTMENT,
   "/my-company/events/service-plan": PermissionModule.SERVICE_PLAN,
   "/my-company/events/supervision": PermissionModule.SUPERVISION,
   
-  // Billing children (real permissions, under My Company)
+  // Billing children (real permissions, under Company Configuration)
   "/my-company/billing/services-pending": PermissionModule.SERVICES_PENDING_BILLING,
   "/my-company/billing/billed-claims": PermissionModule.BILLED_CLAIMS,
   "/my-company/billing/payers": PermissionModule.PAYERS,
@@ -52,7 +52,7 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/data-collection/data-analysis": PermissionModule.DATA_ANALYSIS,
   "/data-collection/raw-data": PermissionModule.RAW_DATA,
 
-  // Signatures Caregiver (now a simple module, under My Company)
+  // Signatures Caregiver (now a simple module, under Company Configuration)
   "/my-company/signatures-caregiver": PermissionModule.SIGNATURES_CAREGIVER,
   
   // Template Documents children (real permissions)

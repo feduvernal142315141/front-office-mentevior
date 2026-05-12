@@ -351,7 +351,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                       disabled
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <InfoTooltip message="To change the Chart ID format, go to My Company → Account Profile" />
+                      <InfoTooltip message="To change the Chart ID format, go to Company Configuration → Account Profile" />
                     </div>
                     {fieldState.error && (
                       <p className="text-sm text-red-600 mt-2">

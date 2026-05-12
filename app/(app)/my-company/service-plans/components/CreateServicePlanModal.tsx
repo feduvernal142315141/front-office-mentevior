@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
-import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { Button } from "@/components/custom/Button"
@@ -152,6 +151,23 @@ export function CreateServicePlanModal({
       active = false
     }
   }, [open, initialPlan, form, refreshCatalog])
+
+  useEffect(() => {
+    if (!open || isEditMode) return
+    if (selectedServiceId.trim().length > 0) return
+    if (services.length !== 1) return
+
+    const [onlyService] = services
+
+    form.setValue("serviceId", onlyService.id, {
+      shouldDirty: false,
+      shouldValidate: true,
+    })
+    form.setValue("name", onlyService.name, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+  }, [open, isEditMode, services, selectedServiceId, form])
 
   const onSubmit = form.handleSubmit(async (values) => {
     if (isServicesCatalogEmpty) return
@@ -317,21 +333,6 @@ export function CreateServicePlanModal({
                 disabled={isFormDisabled}
               />
             </div>
-          )}
-        />
-
-        <Controller
-          name="description"
-          control={form.control}
-          render={({ field }) => (
-            <FloatingTextarea
-              label="Description"
-              value={field.value ?? ""}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              rows={4}
-              disabled={isFormDisabled}
-            />
           )}
         />
 

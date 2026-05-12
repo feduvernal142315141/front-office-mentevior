@@ -79,9 +79,21 @@ const SWITCH_ITEMS: { label: string; description?: string; field: SwitchField }[
 
 interface ServicePlanConfigFormProps {
   config: ServicePlanConfig | null
+  onSavedRedirectPath?: string
+  onCancelRedirectPath?: string
+  showBottomBar?: boolean
+  withContainerCard?: boolean
+  hideHeader?: boolean
 }
 
-export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
+export function ServicePlanConfigForm({
+  config,
+  onSavedRedirectPath = EVENTS_PATH,
+  onCancelRedirectPath = EVENTS_PATH,
+  showBottomBar = true,
+  withContainerCard = true,
+  hideHeader = false,
+}: ServicePlanConfigFormProps) {
   const router = useRouter()
   const { upsert, isLoading: isSaving } = useUpsertServicePlanConfig()
   const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
@@ -233,33 +245,26 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
       color: data.color ?? "",
     })
 
-    if (result) router.push(EVENTS_PATH)
+    if (result) router.push(onSavedRedirectPath)
   })
 
-  return (
-    <form onSubmit={onSubmit}>
-      {/* ── General (commented out — no name/description for now) ─────────────
-      <Card variant="elevated" padding="lg">
-        General section placeholder
-      </Card>
-      ──────────────────────────────────────────────────────────────────────── */}
-
-      {/* ── Configuration ──────────────────────────────────────────────────── */}
-      <Card variant="elevated" padding="lg">
-        <div>
-          <div className="w-full flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Settings className="w-5 h-5 text-blue-700" />
-              </div>
-              <div className="text-left">
-                <h3 className="text-base font-semibold text-gray-900">Configuration</h3>
-                <p className="text-sm text-gray-500">Rules and constraints for service plan events</p>
-              </div>
+  const configurationContent = (
+    <div>
+      {!hideHeader && (
+        <div className="w-full flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Settings className="w-5 h-5 text-blue-700" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-base font-semibold text-gray-900">Configuration</h3>
+              <p className="text-sm text-gray-500">Rules and constraints for service plan events</p>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="space-y-6">
+      <div className="pt-4 space-y-6">
 
               {/* Row 1: Time window */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -503,16 +508,33 @@ export function ServicePlanConfigForm({ config }: ServicePlanConfigFormProps) {
                 </div>
               </div>
 
-          </div>
-        </div>
-      </Card>
+      </div>
+    </div>
+  )
 
-      <FormBottomBar
-        isSubmitting={isSaving}
-        onCancel={() => router.push(EVENTS_PATH)}
-        cancelText="Back"
-        submitText="Save changes"
-      />
+  return (
+    <form onSubmit={onSubmit}>
+      {/* ── General (commented out — no name/description for now) ─────────────
+      <Card variant="elevated" padding="lg">
+        General section placeholder
+      </Card>
+      ──────────────────────────────────────────────────────────────────────── */}
+
+      {/* ── Configuration ──────────────────────────────────────────────────── */}
+      {withContainerCard ? (
+        <Card variant="elevated" padding="lg">
+          {configurationContent}
+        </Card>
+      ) : configurationContent}
+
+      {showBottomBar ? (
+        <FormBottomBar
+          isSubmitting={isSaving}
+          onCancel={() => router.push(onCancelRedirectPath)}
+          cancelText="Back"
+          submitText="Save changes"
+        />
+      ) : null}
     </form>
   )
 }

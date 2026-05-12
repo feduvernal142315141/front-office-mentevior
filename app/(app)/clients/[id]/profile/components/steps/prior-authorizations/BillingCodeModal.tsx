@@ -142,7 +142,7 @@ export function BillingCodeModal({
               )}
               {!editingCode && !isLoadingCatalog && billingCodeOptions.length === 0 && (
                 <p className="mt-1.5 text-sm text-amber-600">
-                  No billing codes available. Please create billing codes first in My Company → Billing → Billing Codes.
+                  No billing codes available. Please create billing codes first in Company Configuration → Billing → Billing Codes.
                 </p>
               )}
             </div>

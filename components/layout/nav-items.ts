@@ -36,12 +36,6 @@ export const navItems: NavItem[] = [
     section: "main",
   },
   {
-    label: "Schedules",
-    href: "/schedules",
-    icon: "CalendarCheck",
-    section: "main",
-  },
-  {
     label: "Session Note",
     href: "/session-note",
     icon: "NotebookPen",
@@ -92,15 +86,11 @@ export const navItems: NavItem[] = [
     ],
   },
   {
-    label: "My Company",
+    label: "Company Configuration",
     href: "/my-company",
     icon: "Building2",
     section: "main",  
     children: [
-      {
-        label: "Roles",
-        href: "/my-company/roles",
-      },
       {
         label: "Account Profile",
         href: "/my-company/account-profile",
@@ -110,12 +100,43 @@ export const navItems: NavItem[] = [
         href: "/my-company/address",
       },
       {
+        label: "Agreements",
+        href: "/agreements",
+      },
+      {
+        label: "Applicants",
+        href: "/applicants",
+      },
+      {
+        label: "Appointment",
+        href: "/my-company/events/appointment",
+      },
+      {
+        label: "Billing",
+        href: "/my-company/billing",
+        hasDeepChildren: true,
+      },
+      {
         label: "Credentials",
         href: "/my-company/credentials",
       },
       {
+        label: "Data Collection",
+        href: "/data-collection",
+        hasDeepChildren: true,  
+      },
+      {
+        label: "Documents",
+        href: "/my-company/documents",
+        hasDeepChildren: true,
+      },
+      {
         label: "Referring Physicians",
         href: "/my-company/physicians",
+      },
+      {
+        label: "Roles",
+        href: "/my-company/roles",
       },
       {
         label: "Service Plans",
@@ -126,41 +147,17 @@ export const navItems: NavItem[] = [
         href: "/my-company/services",
       },
       {
-        label: "Schedules",
-        href: "/my-company/events",
-        hasDeepChildren: true,
-      },
-      {
-        label: "Billing",
-        href: "/my-company/billing",
-        hasDeepChildren: true,
-      },
-      {
-        label: "Data Collection",
-        href: "/data-collection",
-        hasDeepChildren: true,  
-      },
-      {
         label: "Signatures Caregiver",
         href: "/my-company/signatures-caregiver",
+      },
+      {
+        label: "Supervision",
+        href: "/my-company/events/supervision",
       },
       {
         label: "Template Documents",
         href: "/template-documents",
         hasDeepChildren: true,  
-      },
-      {
-        label: "Documents",
-        href: "/my-company/documents",
-        hasDeepChildren: true,
-      },
-      {
-        label: "Agreements",
-        href: "/agreements",
-      },
-      {
-        label: "Applicants",
-        href: "/applicants",
       },
     ],
   },

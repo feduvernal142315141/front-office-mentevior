@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, CalendarCheck, FileText, Users } from "lucide-react"
+import { Calendar, CalendarCheck, Users } from "lucide-react"
 import Link from "next/link"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -16,13 +16,6 @@ export default function EventsPage() {
       href: "/my-company/events/appointment",
       icon: CalendarCheck,
       module: PermissionModule.APPOINTMENT,
-    },
-    {
-      title: "Service Plan",
-      description: "Configure service delivery plans",
-      href: "/my-company/events/service-plan",
-      icon: FileText,
-      module: PermissionModule.SERVICE_PLAN,
     },
     {
       title: "Supervision",
@@ -86,7 +79,7 @@ export default function EventsPage() {
         <div className="mt-8 bg-gradient-to-br from-[#037ECC]/5 to-[#079CFB]/5 rounded-2xl border border-[#037ECC]/10 p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-2">About Schedules</h3>
           <p className="text-slate-600 leading-relaxed">
-            Coordinate all scheduling activities including appointments, service planning, and supervision sessions. 
+            Coordinate all scheduling activities including appointments and supervision sessions.
             Streamline scheduling and ensure efficient management across your organization.
           </p>
         </div>

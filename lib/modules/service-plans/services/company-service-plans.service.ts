@@ -150,7 +150,7 @@ function normalizeItemCatalogEntry(raw: unknown): ItemCatalogItem {
   const item = raw as Record<string, unknown>
 
   return {
-    id: asString(item.id),
+    id: asString(item.id ?? item.itemId ?? item.item_id ?? item.idItem),
     categoryId: asString(item.categoryId ?? item.category_id),
     name: asString(item.name ?? item.itemName ?? item.item_name),
     canEdit: asOptionalBoolean(item.canEdit ?? item.can_edit),

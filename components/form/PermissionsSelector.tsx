@@ -249,7 +249,7 @@ export function PermissionsSelector({
     const newObj: Record<string, number> = {}
     
     if (preset === 'readonly') {
-      // Read Only: Solo lectura en TODOS los módulos (Core + Behavior Plan + My Company expandables)
+      // Read Only: Solo lectura en TODOS los módulos (Core + Behavior Plan + Company Configuration expandables)
       const allModules = [
         ...CORE_MODULES.map(m => m.key),
         ...BEHAVIOR_PLAN.children.map(c => c.key),
@@ -779,7 +779,7 @@ export function PermissionsSelector({
               )} 
             />
             <div className="text-left">
-              <h3 className="text-base font-semibold text-slate-800">My Company</h3>
+              <h3 className="text-base font-semibold text-slate-800">Company Configuration</h3>
               <p className="text-xs text-slate-500 mt-1">
                 Configure permissions for company management modules
               </p>
