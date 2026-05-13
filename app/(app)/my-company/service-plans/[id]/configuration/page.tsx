@@ -7,7 +7,8 @@ import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 import { Checkbox } from "@/components/custom/Checkbox"
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
-import { Check, ChevronRight, FileText, Loader2, Pencil, Search, Sliders, Trash2, X } from "lucide-react"
+import { Check, ChevronRight, Edit2, FileText, Loader2, Pencil, Search, Sliders, Trash2, X } from "lucide-react"
+import { CreateServicePlanModal } from "@/app/(app)/my-company/service-plans/components/CreateServicePlanModal"
 import {
   assignItemsToServicePlanCategory,
   createItemCatalog,
@@ -47,13 +48,14 @@ export default function ServicePlanConfigurationPage() {
   const [isAssigningItems, setIsAssigningItems] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isItemFormVisible, setIsItemFormVisible] = useState(false)
+  const [isCreateItemFormVisible, setIsCreateItemFormVisible] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [itemFormName, setItemFormName] = useState("")
   const [isSavingItem, setIsSavingItem] = useState(false)
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
   const [deletingMappedItemId, setDeletingMappedItemId] = useState<string | null>(null)
   const [recentlyCreatedItemId, setRecentlyCreatedItemId] = useState<string | null>(null)
+  const [isEditServicePlanModalOpen, setIsEditServicePlanModalOpen] = useState(false)
   const itemSearchRef = useRef<HTMLInputElement>(null)
   const itemFormInputRef = useRef<HTMLInputElement>(null)
   const itemRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -182,8 +184,7 @@ export default function ServicePlanConfigurationPage() {
     setItemSearchTerm("")
     setSelectedItemIds(new Set())
     setItemCatalogError(null)
-    setIsItemFormVisible(false)
-    setEditingItemId(null)
+    setIsCreateItemFormVisible(false)
     setItemFormName("")
     setRecentlyCreatedItemId(null)
 
@@ -310,20 +311,21 @@ export default function ServicePlanConfigurationPage() {
   const handleStartCreateItem = () => {
     setEditingItemId(null)
     setItemFormName("")
-    setIsItemFormVisible(true)
+    setIsCreateItemFormVisible(true)
     setTimeout(() => itemFormInputRef.current?.focus(), 0)
   }
 
   const handleStartEditItem = (item: ItemCatalogItem) => {
     setEditingItemId(item.id)
     setItemFormName(item.name)
-    setIsItemFormVisible(true)
+    setIsItemDrawerOpen(false)
+    setIsCreateItemFormVisible(true)
     setTimeout(() => itemFormInputRef.current?.focus(), 0)
   }
 
   const handleCancelItemForm = () => {
     if (isSavingItem) return
-    setIsItemFormVisible(false)
+    setIsCreateItemFormVisible(false)
     setEditingItemId(null)
     setItemFormName("")
   }
@@ -339,8 +341,8 @@ export default function ServicePlanConfigurationPage() {
     try {
       if (editingItemId) {
         await updateItemCatalog({ id: editingItemId, name: trimmedName })
-        toast.success("Item updated successfully")
         await reloadCatalog()
+        toast.success("Item updated successfully")
       } else {
         const createdItem = await createItemCatalog({ categoryId: selectedCategory.categoryId, name: trimmedName })
         const refreshedCatalog = await reloadCatalog()
@@ -358,7 +360,7 @@ export default function ServicePlanConfigurationPage() {
         toast.success("Item created successfully")
       }
 
-      setIsItemFormVisible(false)
+      setIsCreateItemFormVisible(false)
       setEditingItemId(null)
       setItemFormName("")
     } catch (err) {
@@ -377,7 +379,7 @@ export default function ServicePlanConfigurationPage() {
       toast.success("Item deleted successfully")
 
       if (editingItemId === item.id) {
-        setIsItemFormVisible(false)
+        setIsCreateItemFormVisible(false)
         setEditingItemId(null)
         setItemFormName("")
       }
@@ -418,6 +420,15 @@ export default function ServicePlanConfigurationPage() {
     "-"
 
   const activeCategory = categories.find((category) => category.id === activeServicePlanCategoryId) ?? null
+
+  const handleServicePlanUpdated = async () => {
+    const updatedPlan = await getCompanyServicePlanById(params.id)
+    if (updatedPlan) {
+      setServicePlan(updatedPlan)
+    }
+    await loadCategories()
+    setIsEditServicePlanModalOpen(false)
+  }
 
   return (
     <div className="p-8">
@@ -471,7 +482,18 @@ export default function ServicePlanConfigurationPage() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
               <Card variant="elevated" padding="none" className="overflow-hidden">
                 <div className="border-b border-slate-200 px-4 py-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Categories</h3>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Categories</h3>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditServicePlanModalOpen(true)}
+                      className="group/edit relative h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-b from-blue-50 to-blue-100/80 border border-blue-200/60 shadow-sm shadow-blue-900/5 hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+                      title="Edit service plan"
+                      aria-label="Edit service plan"
+                    >
+                      <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+                    </button>
+                  </div>
                 </div>
 
                 {categories.length === 0 ? (
@@ -509,10 +531,65 @@ export default function ServicePlanConfigurationPage() {
                     <h3 className="text-base font-semibold text-slate-900">{`${activeCategory.categoryName} (${activeCategory.totalItems})`}</h3>
                     <div className="mt-1 flex items-center justify-between gap-3">
                       <p className="text-sm text-slate-500">Mapped items for this category.</p>
-                      <Button type="button" className="h-9 px-4 text-xs" onClick={openItemDrawer}>
-                        Add items
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="h-9 px-4 text-xs"
+                          onClick={handleStartCreateItem}
+                          disabled={isSavingItem}
+                        >
+                          Create item
+                        </Button>
+                        <Button type="button" className="h-9 px-4 text-xs" onClick={openItemDrawer}>
+                          Add items
+                        </Button>
+                      </div>
                     </div>
+
+                    {isCreateItemFormVisible && (
+                      <div className="mt-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:flex-row sm:items-center">
+                        <input
+                          ref={itemFormInputRef}
+                          type="text"
+                          value={itemFormName}
+                          onChange={(e) => setItemFormName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault()
+                              void handleSaveItem()
+                            }
+                            if (e.key === "Escape") {
+                              handleCancelItemForm()
+                            }
+                          }}
+                          disabled={isSavingItem}
+                          placeholder="Item name"
+                          className="h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 sm:flex-1"
+                        />
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleCancelItemForm}
+                            disabled={isSavingItem}
+                            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <Button
+                            type="button"
+                            variant="primary"
+                            onClick={() => {
+                              void handleSaveItem()
+                            }}
+                            disabled={itemFormName.trim().length === 0 || isSavingItem}
+                            className="h-8 px-3 text-xs"
+                          >
+                            {isSavingItem ? "Saving..." : editingItemId ? "Update" : "Save"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mt-5">
                       {itemsLoading ? (
@@ -573,6 +650,15 @@ export default function ServicePlanConfigurationPage() {
         ) : null}
       </div>
 
+      <CreateServicePlanModal
+        open={isEditServicePlanModalOpen}
+        onClose={() => setIsEditServicePlanModalOpen(false)}
+        onSuccess={() => {
+          void handleServicePlanUpdated()
+        }}
+        initialPlan={servicePlan}
+      />
+
       <Drawer
         open={isItemDrawerOpen}
         onOpenChange={(open) => {
@@ -631,57 +717,6 @@ export default function ServicePlanConfigurationPage() {
                     {isAllVisibleSelected ? "Deselect All" : "Select All"}
                   </button>
                 )}
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="h-8 px-4 text-xs"
-                  onClick={handleStartCreateItem}
-                  disabled={isSavingItem || !!deletingItemId}
-                >
-                  Create Item
-                </Button>
-              </div>
-            )}
-
-            {isItemFormVisible && (
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <input
-                  ref={itemFormInputRef}
-                  type="text"
-                  value={itemFormName}
-                  onChange={(e) => setItemFormName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault()
-                      void handleSaveItem()
-                    }
-                    if (e.key === "Escape") {
-                      handleCancelItemForm()
-                    }
-                  }}
-                  disabled={isSavingItem}
-                  placeholder="Item name"
-                  className="h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 sm:flex-1"
-                />
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleCancelItemForm}
-                    disabled={isSavingItem}
-                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={() => { void handleSaveItem() }}
-                    disabled={itemFormName.trim().length === 0 || isSavingItem}
-                    className="h-8 px-3 text-xs"
-                  >
-                    {isSavingItem ? "Saving..." : "Save"}
-                  </Button>
-                </div>
               </div>
             )}
           </div>

@@ -153,7 +153,7 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
                   checked={field.value}
                   onCheckedChange={field.onChange}
                   label="Credentials & Signature"
-                  description="Enable: Certification number and signature."
+                  description="Enable: Certification Number and Signature."
                   size="md"
                 />
               )}

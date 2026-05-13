@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const ssnValidationRegex = /^\d{9}$/
 
 // Validación de teléfono: acepta formatos con símbolos pero valida longitud de dígitos
 export const phoneValidation = z.string().refine((val) => {
@@ -32,7 +33,7 @@ export const clientCreateFormSchema = z.object({
   email: z.string().max(100).regex(emailRegex, "Invalid email format").optional().or(z.literal("")),
   ssn: z
     .string()
-    .regex(/^\d{4}$|^\d{9}$/, "SSN must be 4 or 9 digits")
+    .regex(ssnValidationRegex, "SSN must be exactly 9 digits")
     .optional()
     .or(z.literal("")),
   active: z.boolean().optional(),
@@ -53,7 +54,7 @@ export const clientEditFormSchema = z.object({
   ssn: z
     .string()
     .min(1, "Social Security Number is required")
-    .regex(/^\d{4}$|^\d{9}$/, "SSN must be 4 or 9 digits"),
+    .regex(ssnValidationRegex, "SSN must be exactly 9 digits"),
   active: z.boolean().optional(),
 })
 

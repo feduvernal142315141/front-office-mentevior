@@ -11,6 +11,7 @@ import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { caregiverFormDefaults, caregiverFormSchema, type CaregiverFormValues } from "@/lib/schemas/caregiver-form.schema"
 import type { Caregiver } from "@/lib/types/caregiver.types"
 import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
@@ -132,9 +133,26 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
         const phoneNumber = caregiver.phone || caregiver.phoneNumber
         return phoneNumber
           ? (
-            <span className="inline-block whitespace-nowrap font-medium tabular-nums tracking-[0.01em] text-slate-700" title={formatPhoneDisplay(phoneNumber)}>
-              {formatPhoneDisplay(phoneNumber)}
-            </span>
+            <div className="inline-flex items-center gap-2 whitespace-nowrap" title={formatPhoneDisplay(phoneNumber)}>
+              <span className="font-medium tabular-nums tracking-[0.01em] text-slate-700">
+                {formatPhoneDisplay(phoneNumber)}
+              </span>
+              {caregiver.isEmergency && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className="inline-flex items-center justify-center text-[12px] leading-none"
+                      aria-label="Emergency contact"
+                    >
+                      <span aria-hidden="true">🚨</span>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={6} className="bg-slate-900 text-white text-xs rounded-md px-2 py-1">
+                    Emergency contact
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           )
           : "-"
       },
