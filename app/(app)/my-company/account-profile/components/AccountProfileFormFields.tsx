@@ -60,9 +60,12 @@ function ChartIdConfiguration({ control }: { control: ReturnType<typeof useFormC
                 <FloatingInput
                   label="Starting Number"
                   value={field.value || ""}
-                  onChange={field.onChange}
+                  onChange={(value) => field.onChange(value.replace(/\D/g, ""))}
                   onBlur={field.onBlur}
                   placeholder=" "
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   hasError={!!fieldState.error}
                   required
                 />

@@ -139,7 +139,7 @@ export const navItems: NavItem[] = [
         href: "/my-company/roles",
       },
       {
-        label: "Service Plans",
+        label: "Service Plan",
         href: "/my-company/service-plans",
       },
       {

@@ -45,7 +45,7 @@ export default function ServicePlansPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-                Service Plans
+                Service Plan
               </h1>
               <p className="text-slate-600 mt-1">Manage service plans and offerings</p>
             </div>

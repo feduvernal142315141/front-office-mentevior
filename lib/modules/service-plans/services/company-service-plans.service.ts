@@ -76,6 +76,7 @@ function normalizeServicePlanCategorySummary(raw: unknown): ServicePlanCategoryS
     id: asString(item.id),
     categoryId: asString(item.categoryId ?? item.category_id),
     categoryName: asString(item.categoryName ?? item.category_name),
+    canEdit: asOptionalBoolean(item.canEdit ?? item.can_edit),
     totalItems:
       typeof totalItemsRaw === "number"
         ? totalItemsRaw
@@ -155,6 +156,14 @@ function normalizeItemCatalogEntry(raw: unknown): ItemCatalogItem {
     name: asString(item.name ?? item.itemName ?? item.item_name),
     canEdit: asOptionalBoolean(item.canEdit ?? item.can_edit),
   }
+}
+
+function normalizeItemCatalogCollection(rawData: unknown): ItemCatalogItem[] {
+  const entries = extractCollectionEntries(rawData)
+
+  return entries
+    .map((entry) => normalizeItemCatalogEntry(entry))
+    .filter((entry) => entry.id.length > 0 && entry.name.length > 0)
 }
 
 function extractCollectionEntries(rawData: unknown): unknown[] {
@@ -297,11 +306,17 @@ export async function getItemCatalog(categoryId: string): Promise<ItemCatalogIte
     throw new Error("Failed to fetch item catalog")
   }
 
-  const entries = extractCollectionEntries(response.data)
+  return normalizeItemCatalogCollection(response.data)
+}
 
-  return entries
-    .map((entry) => normalizeItemCatalogEntry(entry))
-    .filter((entry) => entry.id.length > 0 && entry.name.length > 0)
+export async function getItemCatalogByServicePlanId(servicePlanId: string): Promise<ItemCatalogItem[]> {
+  const response = await serviceGet<unknown>(`/service-plan/${servicePlanId}/item/catalog`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch item catalog")
+  }
+
+  return normalizeItemCatalogCollection(response.data)
 }
 
 export async function assignItemsToServicePlanCategory(
@@ -316,6 +331,19 @@ export async function assignItemsToServicePlanCategory(
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error("Failed to assign items to service plan category")
+  }
+}
+
+export async function deleteServicePlanCategoryItem(servicePlanCategoryId: string, itemId: string): Promise<void> {
+  const response = await serviceDelete<never, unknown>(
+    `/service-plan-category-item/${servicePlanCategoryId}/item/${itemId}`
+  )
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(
+      (response.data as { message?: string } | undefined)?.message ||
+        "Failed to delete mapped item from service plan category"
+    )
   }
 }
 

@@ -11,9 +11,11 @@ import { Check, ChevronRight, FileText, Loader2, Pencil, Search, Sliders, Trash2
 import {
   assignItemsToServicePlanCategory,
   createItemCatalog,
+  deleteServicePlanCategoryItem,
   deleteItemCatalog,
   getCompanyServicePlanById,
   getItemCatalog,
+  getItemCatalogByServicePlanId,
   getServicePlanCategoryItemsByServicePlanCategoryId,
   getServicePlanCategoriesByServicePlanId,
   updateItemCatalog,
@@ -50,6 +52,7 @@ export default function ServicePlanConfigurationPage() {
   const [itemFormName, setItemFormName] = useState("")
   const [isSavingItem, setIsSavingItem] = useState(false)
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
+  const [deletingMappedItemId, setDeletingMappedItemId] = useState<string | null>(null)
   const [recentlyCreatedItemId, setRecentlyCreatedItemId] = useState<string | null>(null)
   const itemSearchRef = useRef<HTMLInputElement>(null)
   const itemFormInputRef = useRef<HTMLInputElement>(null)
@@ -187,7 +190,9 @@ export default function ServicePlanConfigurationPage() {
     void (async () => {
       try {
         setItemCatalogLoading(true)
-        const catalog = await getItemCatalog(selectedCategory.categoryId)
+        const catalog = selectedCategory.canEdit === true
+          ? await getItemCatalogByServicePlanId(params.id)
+          : await getItemCatalog(selectedCategory.categoryId)
         setItemCatalog(
           [...catalog].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
         )
@@ -385,6 +390,28 @@ export default function ServicePlanConfigurationPage() {
     }
   }
 
+  const handleDeleteMappedItem = async (item: ServicePlanCategoryMappedItem) => {
+    if (!activeServicePlanCategoryId || deletingMappedItemId) return
+
+    setDeletingMappedItemId(item.id)
+    try {
+      await deleteServicePlanCategoryItem(activeServicePlanCategoryId, item.id)
+      setActiveCategoryItems((current) => current.filter((mappedItem) => mappedItem.id !== item.id))
+      setCategories((current) =>
+        current.map((category) =>
+          category.id === activeServicePlanCategoryId
+            ? { ...category, totalItems: Math.max(0, category.totalItems - 1) }
+            : category
+        )
+      )
+      toast.success("Item removed from category")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove item from category")
+    } finally {
+      setDeletingMappedItemId(null)
+    }
+  }
+
   const serviceLabel =
     servicePlan?.serviceName ||
     services.find((service) => service.id === servicePlan?.serviceId)?.name ||
@@ -506,11 +533,29 @@ export default function ServicePlanConfigurationPage() {
                       ) : (
                         <div className="space-y-3">
                           {activeCategoryItems.map((item) => (
-                            <div key={item.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                              <p className="text-sm font-medium text-slate-900">{item.itemName}</p>
-                              {item.description && (
-                                <p className="mt-1 text-sm text-slate-600">{item.description}</p>
-                              )}
+                            <div
+                              key={item.id}
+                              className={`rounded-xl border border-slate-200 bg-white px-4 py-3 transition-opacity ${deletingMappedItemId === item.id ? "opacity-60" : ""}`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-900">{item.itemName}</p>
+                                  {item.description && (
+                                    <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  aria-label={`Remove ${item.itemName} from category`}
+                                  onClick={() => {
+                                    void handleDeleteMappedItem(item)
+                                  }}
+                                  disabled={deletingMappedItemId !== null}
+                                  className="shrink-0 rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>

@@ -66,7 +66,7 @@ export default function MyCompanyPage() {
       hasDeepChildren: false,
     },
     {
-      title: "Service Plans",
+      title: "Service Plan",
       description: "Configure service plan offerings",
       href: "/my-company/service-plans",
       icon: FileText,

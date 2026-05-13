@@ -14,6 +14,7 @@ export interface ServicePlanCategorySummary {
   id: string
   categoryId: string
   categoryName: string
+  canEdit?: boolean
   totalItems: number
 }
 
