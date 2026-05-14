@@ -22,6 +22,7 @@ export interface ServicePlanCategoryMappedItem {
   id: string
   itemId: string
   itemName: string
+  canEdit?: boolean
   description?: string
   active?: boolean
   order?: number
@@ -39,7 +40,7 @@ export interface AssignItemsToServicePlanCategoryPayload {
 }
 
 export interface CreateItemCatalogDto {
-  categoryId: string
+  servicePlanCategoryId: string
   name: string
 }
 

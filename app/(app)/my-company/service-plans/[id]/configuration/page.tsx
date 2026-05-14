@@ -13,10 +13,10 @@ import {
   assignItemsToServicePlanCategory,
   createItemCatalog,
   deleteServicePlanCategoryItem,
-  deleteItemCatalog,
   getCompanyServicePlanById,
+  getItemCatalogByCategoryPage,
   getItemCatalog,
-  getItemCatalogByServicePlanId,
+  getItemCatalogPage,
   getServicePlanCategoryItemsByServicePlanCategoryId,
   getServicePlanCategoriesByServicePlanId,
   updateItemCatalog,
@@ -42,22 +42,29 @@ export default function ServicePlanConfigurationPage() {
   const [isItemDrawerOpen, setIsItemDrawerOpen] = useState(false)
   const [itemCatalog, setItemCatalog] = useState<ItemCatalogItem[]>([])
   const [itemCatalogLoading, setItemCatalogLoading] = useState(false)
+  const [itemCatalogLoadingMore, setItemCatalogLoadingMore] = useState(false)
   const [itemCatalogError, setItemCatalogError] = useState<string | null>(null)
+  const [itemCatalogPage, setItemCatalogPage] = useState(1)
+  const [itemCatalogHasMore, setItemCatalogHasMore] = useState(true)
+  const [itemCatalogSourceCategoryId, setItemCatalogSourceCategoryId] = useState<string | null>(null)
+  const [itemCatalogSourceCanEdit, setItemCatalogSourceCanEdit] = useState(false)
   const [itemSearchTerm, setItemSearchTerm] = useState("")
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
   const [isAssigningItems, setIsAssigningItems] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isCreateItemFormVisible, setIsCreateItemFormVisible] = useState(false)
-  const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [itemFormName, setItemFormName] = useState("")
   const [isSavingItem, setIsSavingItem] = useState(false)
-  const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
   const [deletingMappedItemId, setDeletingMappedItemId] = useState<string | null>(null)
+  const [editingMappedItemId, setEditingMappedItemId] = useState<string | null>(null)
+  const [mappedItemFormName, setMappedItemFormName] = useState("")
+  const [isSavingMappedItem, setIsSavingMappedItem] = useState(false)
   const [recentlyCreatedItemId, setRecentlyCreatedItemId] = useState<string | null>(null)
   const [isEditServicePlanModalOpen, setIsEditServicePlanModalOpen] = useState(false)
   const itemSearchRef = useRef<HTMLInputElement>(null)
   const itemFormInputRef = useRef<HTMLInputElement>(null)
+  const itemCatalogScrollRef = useRef<HTMLDivElement>(null)
   const itemRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const { services } = useCompanyActiveServices()
 
@@ -184,6 +191,11 @@ export default function ServicePlanConfigurationPage() {
     setItemSearchTerm("")
     setSelectedItemIds(new Set())
     setItemCatalogError(null)
+    setItemCatalog([])
+    setItemCatalogPage(1)
+    setItemCatalogHasMore(true)
+    setItemCatalogSourceCategoryId(selectedCategory.categoryId)
+    setItemCatalogSourceCanEdit(selectedCategory.canEdit === true)
     setIsCreateItemFormVisible(false)
     setItemFormName("")
     setRecentlyCreatedItemId(null)
@@ -191,12 +203,14 @@ export default function ServicePlanConfigurationPage() {
     void (async () => {
       try {
         setItemCatalogLoading(true)
-        const catalog = selectedCategory.canEdit === true
-          ? await getItemCatalogByServicePlanId(params.id)
-          : await getItemCatalog(selectedCategory.categoryId)
+        const { items, hasMore } = selectedCategory.canEdit === true
+          ? await getItemCatalogPage(1, 50)
+          : await getItemCatalogByCategoryPage(selectedCategory.categoryId, 1, 50)
+        const catalog = items
         setItemCatalog(
           [...catalog].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
         )
+        setItemCatalogHasMore(hasMore)
       } catch (err) {
         setItemCatalog([])
         const message = err instanceof Error ? err.message : "Failed to load item catalog"
@@ -206,6 +220,49 @@ export default function ServicePlanConfigurationPage() {
         setItemCatalogLoading(false)
       }
     })()
+  }
+
+  const loadMoreItemCatalog = useCallback(async () => {
+    if (itemCatalogLoading || itemCatalogLoadingMore || !itemCatalogHasMore) return
+
+    try {
+      setItemCatalogLoadingMore(true)
+      const nextPage = itemCatalogPage + 1
+      const { items, hasMore } = itemCatalogSourceCanEdit
+        ? await getItemCatalogPage(nextPage, 50)
+        : itemCatalogSourceCategoryId
+          ? await getItemCatalogByCategoryPage(itemCatalogSourceCategoryId, nextPage, 50)
+          : { items: [], hasMore: false }
+
+      setItemCatalog((current) => {
+        const merged = [...current, ...items]
+        const deduped = merged.filter((item, index, list) => index === list.findIndex((entry) => entry.id === item.id))
+        return deduped.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+      })
+      setItemCatalogPage(nextPage)
+      setItemCatalogHasMore(hasMore)
+    } catch (err) {
+      setItemCatalogError(err instanceof Error ? err.message : "Failed to load more catalog items")
+    } finally {
+      setItemCatalogLoadingMore(false)
+    }
+  }, [
+    itemCatalogHasMore,
+    itemCatalogLoading,
+    itemCatalogLoadingMore,
+    itemCatalogPage,
+    itemCatalogSourceCanEdit,
+    itemCatalogSourceCategoryId,
+  ])
+
+  const handleItemCatalogScroll = () => {
+    const container = itemCatalogScrollRef.current
+    if (!container || itemCatalogLoading || itemCatalogLoadingMore || !itemCatalogHasMore) return
+
+    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+    if (distanceToBottom <= 120) {
+      void loadMoreItemCatalog()
+    }
   }
 
   const closeItemDrawer = () => {
@@ -309,16 +366,7 @@ export default function ServicePlanConfigurationPage() {
   }, [categories, activeServicePlanCategoryId])
 
   const handleStartCreateItem = () => {
-    setEditingItemId(null)
     setItemFormName("")
-    setIsCreateItemFormVisible(true)
-    setTimeout(() => itemFormInputRef.current?.focus(), 0)
-  }
-
-  const handleStartEditItem = (item: ItemCatalogItem) => {
-    setEditingItemId(item.id)
-    setItemFormName(item.name)
-    setIsItemDrawerOpen(false)
     setIsCreateItemFormVisible(true)
     setTimeout(() => itemFormInputRef.current?.focus(), 0)
   }
@@ -326,7 +374,6 @@ export default function ServicePlanConfigurationPage() {
   const handleCancelItemForm = () => {
     if (isSavingItem) return
     setIsCreateItemFormVisible(false)
-    setEditingItemId(null)
     setItemFormName("")
   }
 
@@ -339,56 +386,33 @@ export default function ServicePlanConfigurationPage() {
 
     setIsSavingItem(true)
     try {
-      if (editingItemId) {
-        await updateItemCatalog({ id: editingItemId, name: trimmedName })
-        await reloadCatalog()
-        toast.success("Item updated successfully")
-      } else {
-        const createdItem = await createItemCatalog({ categoryId: selectedCategory.categoryId, name: trimmedName })
-        const refreshedCatalog = await reloadCatalog()
-        const matchedItem =
-          refreshedCatalog.find((item) => item.id === createdItem.id) ??
-          refreshedCatalog.find((item) => item.name.trim().toLowerCase() === trimmedName.toLowerCase())
-        const selectedId = matchedItem?.id ?? createdItem.id
-
-        setSelectedItemIds((current) => {
-          const next = new Set(current)
-          next.add(selectedId)
-          return next
-        })
-        setRecentlyCreatedItemId(selectedId)
-        toast.success("Item created successfully")
+      const createdItem = await createItemCatalog({ servicePlanCategoryId: selectedCategory.id, name: trimmedName })
+      const refreshedCatalog = await reloadCatalog()
+      if (activeServicePlanCategoryId) {
+        await Promise.all([
+          loadItemsByServicePlanCategoryId(activeServicePlanCategoryId),
+          loadCategories(),
+        ])
       }
+      const matchedItem =
+        refreshedCatalog.find((item) => item.id === createdItem.id) ??
+        refreshedCatalog.find((item) => item.name.trim().toLowerCase() === trimmedName.toLowerCase())
+      const selectedId = matchedItem?.id ?? createdItem.id
+
+      setSelectedItemIds((current) => {
+        const next = new Set(current)
+        next.add(selectedId)
+        return next
+      })
+      setRecentlyCreatedItemId(selectedId)
+      toast.success("Item created successfully")
 
       setIsCreateItemFormVisible(false)
-      setEditingItemId(null)
       setItemFormName("")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save item")
     } finally {
       setIsSavingItem(false)
-    }
-  }
-
-  const handleDeleteItem = async (item: ItemCatalogItem) => {
-    if (deletingItemId) return
-
-    setDeletingItemId(item.id)
-    try {
-      await deleteItemCatalog(item.id)
-      toast.success("Item deleted successfully")
-
-      if (editingItemId === item.id) {
-        setIsCreateItemFormVisible(false)
-        setEditingItemId(null)
-        setItemFormName("")
-      }
-
-      await reloadCatalog()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete item")
-    } finally {
-      setDeletingItemId(null)
     }
   }
 
@@ -398,19 +422,48 @@ export default function ServicePlanConfigurationPage() {
     setDeletingMappedItemId(item.id)
     try {
       await deleteServicePlanCategoryItem(activeServicePlanCategoryId, item.id)
-      setActiveCategoryItems((current) => current.filter((mappedItem) => mappedItem.id !== item.id))
-      setCategories((current) =>
-        current.map((category) =>
-          category.id === activeServicePlanCategoryId
-            ? { ...category, totalItems: Math.max(0, category.totalItems - 1) }
-            : category
-        )
-      )
+      await Promise.all([
+        loadItemsByServicePlanCategoryId(activeServicePlanCategoryId),
+        loadCategories(),
+      ])
       toast.success("Item removed from category")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to remove item from category")
     } finally {
       setDeletingMappedItemId(null)
+    }
+  }
+
+  const handleStartEditMappedItem = (item: ServicePlanCategoryMappedItem) => {
+    if (deletingMappedItemId || isSavingMappedItem) return
+    setEditingMappedItemId(item.id)
+    setMappedItemFormName(item.itemName)
+  }
+
+  const handleCancelEditMappedItem = () => {
+    if (isSavingMappedItem) return
+    setEditingMappedItemId(null)
+    setMappedItemFormName("")
+  }
+
+  const handleSaveMappedItem = async (item: ServicePlanCategoryMappedItem) => {
+    const trimmedName = mappedItemFormName.trim()
+    if (trimmedName.length === 0 || isSavingMappedItem || !activeServicePlanCategoryId) return
+
+    setIsSavingMappedItem(true)
+    try {
+      await updateItemCatalog({ id: item.itemId, name: trimmedName })
+      await Promise.all([
+        loadItemsByServicePlanCategoryId(activeServicePlanCategoryId),
+        loadCategories(),
+      ])
+      setEditingMappedItemId(null)
+      setMappedItemFormName("")
+      toast.success("Item updated successfully")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update item")
+    } finally {
+      setIsSavingMappedItem(false)
     }
   }
 
@@ -515,7 +568,6 @@ export default function ServicePlanConfigurationPage() {
                         >
                           <span className="font-medium truncate">{`${category.categoryName} (${category.totalItems})`}</span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className={isActive ? "text-white/85 text-sm" : "text-slate-400 text-sm"}>{category.totalItems}</span>
                             <ChevronRight className={isActive ? "h-4 w-4 text-white" : "h-4 w-4 text-slate-400"} />
                           </div>
                         </button>
@@ -548,7 +600,7 @@ export default function ServicePlanConfigurationPage() {
                     </div>
 
                     {isCreateItemFormVisible && (
-                      <div className="mt-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:flex-row sm:items-center">
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
                         <input
                           ref={itemFormInputRef}
                           type="text"
@@ -585,7 +637,7 @@ export default function ServicePlanConfigurationPage() {
                             disabled={itemFormName.trim().length === 0 || isSavingItem}
                             className="h-8 px-3 text-xs"
                           >
-                            {isSavingItem ? "Saving..." : editingItemId ? "Update" : "Save"}
+                            {isSavingItem ? "Saving..." : "Save"}
                           </Button>
                         </div>
                       </div>
@@ -612,26 +664,77 @@ export default function ServicePlanConfigurationPage() {
                           {activeCategoryItems.map((item) => (
                             <div
                               key={item.id}
-                              className={`rounded-xl border border-slate-200 bg-white px-4 py-3 transition-opacity ${deletingMappedItemId === item.id ? "opacity-60" : ""}`}
+                              className={editingMappedItemId === item.id
+                                ? `transition-opacity ${deletingMappedItemId === item.id ? "opacity-60" : ""}`
+                                : `rounded-xl border border-slate-200 bg-white px-4 py-3 transition-opacity ${deletingMappedItemId === item.id ? "opacity-60" : ""}`
+                              }
                             >
                               <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-slate-900">{item.itemName}</p>
-                                  {item.description && (
-                                    <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                                <div className="min-w-0 flex-1">
+                                  {editingMappedItemId === item.id ? (
+                                    <div className="flex w-full items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={mappedItemFormName}
+                                        onChange={(event) => setMappedItemFormName(event.target.value)}
+                                        className="h-9 flex-1 rounded-lg border border-slate-300 px-3 text-sm text-slate-800 outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+                                        disabled={isSavingMappedItem}
+                                      />
+                                      <Button
+                                        type="button"
+                                        className="h-8 px-3 text-xs"
+                                        onClick={() => {
+                                          void handleSaveMappedItem(item)
+                                        }}
+                                        disabled={mappedItemFormName.trim().length === 0 || isSavingMappedItem}
+                                      >
+                                        {isSavingMappedItem ? "Saving..." : "Save"}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className="h-8 px-3 text-xs"
+                                        onClick={handleCancelEditMappedItem}
+                                        disabled={isSavingMappedItem}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <p className="text-sm font-medium text-slate-900">{item.itemName}</p>
+                                      {item.description && (
+                                        <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                                      )}
+                                    </>
                                   )}
                                 </div>
-                                <button
-                                  type="button"
-                                  aria-label={`Remove ${item.itemName} from category`}
-                                  onClick={() => {
-                                    void handleDeleteMappedItem(item)
-                                  }}
-                                  disabled={deletingMappedItemId !== null}
-                                  className="shrink-0 rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
+                                {editingMappedItemId !== item.id && (
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    {item.canEdit === true && (
+                                      <button
+                                        type="button"
+                                        aria-label={`Edit ${item.itemName}`}
+                                        onClick={() => handleStartEditMappedItem(item)}
+                                        disabled={deletingMappedItemId !== null || isSavingMappedItem}
+                                        className="rounded-md p-1.5 text-[#2563EB] transition-colors hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      aria-label={`Remove ${item.itemName} from category`}
+                                      onClick={() => {
+                                        void handleDeleteMappedItem(item)
+                                      }}
+                                      disabled={deletingMappedItemId !== null || isSavingMappedItem}
+                                      className="rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -721,7 +824,7 @@ export default function ServicePlanConfigurationPage() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto pb-24">
+          <div ref={itemCatalogScrollRef} onScroll={handleItemCatalogScroll} className="flex-1 overflow-y-auto pb-24">
             {itemCatalogLoading ? (
               <div className="flex h-64 items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -748,7 +851,6 @@ export default function ServicePlanConfigurationPage() {
               <div className="divide-y divide-gray-100">
                 {filteredCatalogItems.map((item) => {
                   const isSelected = selectedItemIds.has(item.id)
-                  const isDeleting = deletingItemId === item.id
 
                   return (
                     <div
@@ -756,7 +858,7 @@ export default function ServicePlanConfigurationPage() {
                       ref={(node) => {
                         itemRowRefs.current[item.id] = node
                       }}
-                      className={`p-4 transition-colors ${isDeleting ? "opacity-50" : ""} ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"} ${recentlyCreatedItemId === item.id ? "ring-2 ring-blue-300 ring-inset bg-blue-100/70" : ""}`}
+                      className={`p-4 transition-colors ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"} ${recentlyCreatedItemId === item.id ? "ring-2 ring-blue-300 ring-inset bg-blue-100/70" : ""}`}
                     >
                       <div className="flex items-center gap-4">
                         <div>
@@ -773,38 +875,15 @@ export default function ServicePlanConfigurationPage() {
                           </p>
                         </button>
 
-                        {item.canEdit && (
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleStartEditItem(item)
-                              }}
-                              disabled={isSavingItem || !!deletingItemId}
-                              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                              title="Edit item"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                void handleDeleteItem(item)
-                              }}
-                              disabled={isSavingItem || !!deletingItemId}
-                              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-                              title="Delete item"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )
                 })}
+                {itemCatalogLoadingMore && (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                  </div>
+                )}
               </div>
             )}
           </div>

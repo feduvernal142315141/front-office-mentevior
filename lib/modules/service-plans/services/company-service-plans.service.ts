@@ -141,6 +141,7 @@ function normalizeServicePlanCategoryMappedItem(raw: unknown): ServicePlanCatego
     id: id.length > 0 ? id : itemId,
     itemId,
     itemName,
+    canEdit: asOptionalBoolean(item.canEdit ?? item.can_edit ?? nestedItem.canEdit ?? nestedItem.can_edit),
     description: asOptionalString(item.description ?? item.itemDescription ?? item.item_description),
     active: asOptionalBoolean(item.active),
     order: asOptionalNumber(item.order ?? item.sortOrder ?? item.sort_order ?? item.position),
@@ -211,6 +212,16 @@ function extractSingleServicePlan(data: unknown): CompanyServicePlan | null {
   }
 
   return null
+}
+
+function getApiErrorMessage(data: unknown, fallback: string): string {
+  if (!data || typeof data !== "object") return fallback
+
+  const payload = data as { message?: unknown; details?: unknown }
+  if (typeof payload.message === "string" && payload.message.trim().length > 0) return payload.message
+  if (typeof payload.details === "string" && payload.details.trim().length > 0) return payload.details
+
+  return fallback
 }
 
 export async function getCompanyServicePlans(): Promise<{
@@ -319,6 +330,44 @@ export async function getItemCatalogByServicePlanId(servicePlanId: string): Prom
   return normalizeItemCatalogCollection(response.data)
 }
 
+export async function getItemCatalogPage(page: number, pageSize: number): Promise<{
+  items: ItemCatalogItem[]
+  hasMore: boolean
+}> {
+  const response = await serviceGet<unknown>(`/item/catalog?page=${page}&pageSize=${pageSize}`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch item catalog")
+  }
+
+  const items = normalizeItemCatalogCollection(response.data)
+  return {
+    items,
+    hasMore: items.length === pageSize,
+  }
+}
+
+export async function getItemCatalogByCategoryPage(
+  categoryId: string,
+  page: number,
+  pageSize: number
+): Promise<{
+  items: ItemCatalogItem[]
+  hasMore: boolean
+}> {
+  const response = await serviceGet<unknown>(`/item/catalog/by-category-id/${categoryId}?page=${page}&pageSize=${pageSize}`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch item catalog")
+  }
+
+  const items = normalizeItemCatalogCollection(response.data)
+  return {
+    items,
+    hasMore: items.length === pageSize,
+  }
+}
+
 export async function assignItemsToServicePlanCategory(
   servicePlanCategoryId: string,
   itemIds: string[]
@@ -369,7 +418,7 @@ export async function createCompanyServicePlan(
     return normalizeServicePlan(response.data)
   }
 
-  throw new Error("Failed to create service plan")
+  throw new Error(getApiErrorMessage(response.data, "Failed to create service plan"))
 }
 
 export async function updateCompanyServicePlan(
