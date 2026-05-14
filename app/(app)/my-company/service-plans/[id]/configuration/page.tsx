@@ -44,7 +44,7 @@ export default function ServicePlanConfigurationPage() {
   const [itemCatalogLoading, setItemCatalogLoading] = useState(false)
   const [itemCatalogLoadingMore, setItemCatalogLoadingMore] = useState(false)
   const [itemCatalogError, setItemCatalogError] = useState<string | null>(null)
-  const [itemCatalogPage, setItemCatalogPage] = useState(1)
+  const [itemCatalogPage, setItemCatalogPage] = useState(0)
   const [itemCatalogHasMore, setItemCatalogHasMore] = useState(true)
   const [itemCatalogSourceCategoryId, setItemCatalogSourceCategoryId] = useState<string | null>(null)
   const [itemCatalogSourceCanEdit, setItemCatalogSourceCanEdit] = useState(false)
@@ -192,7 +192,7 @@ export default function ServicePlanConfigurationPage() {
     setSelectedItemIds(new Set())
     setItemCatalogError(null)
     setItemCatalog([])
-    setItemCatalogPage(1)
+    setItemCatalogPage(0)
     setItemCatalogHasMore(true)
     setItemCatalogSourceCategoryId(selectedCategory.categoryId)
     setItemCatalogSourceCanEdit(selectedCategory.canEdit === true)
@@ -204,8 +204,8 @@ export default function ServicePlanConfigurationPage() {
       try {
         setItemCatalogLoading(true)
         const { items, hasMore } = selectedCategory.canEdit === true
-          ? await getItemCatalogPage(1, 50)
-          : await getItemCatalogByCategoryPage(selectedCategory.categoryId, 1, 50)
+          ? await getItemCatalogPage(0, 50)
+          : await getItemCatalogByCategoryPage(selectedCategory.categoryId, 0, 50)
         const catalog = items
         setItemCatalog(
           [...catalog].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
