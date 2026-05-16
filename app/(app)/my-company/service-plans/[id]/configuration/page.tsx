@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/custom/Checkbox"
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
 import { Check, ChevronRight, Edit2, FileText, Loader2, Pencil, Search, Sliders, Trash2, X } from "lucide-react"
 import { CreateServicePlanModal } from "@/app/(app)/my-company/service-plans/components/CreateServicePlanModal"
+import { DataCollectionDrawer } from "@/app/(app)/my-company/service-plans/components/data-collection/DataCollectionDrawer"
+import { DataCollectionBadge } from "@/app/(app)/my-company/service-plans/components/data-collection/DataCollectionBadge"
 import {
   assignItemsToServicePlanCategory,
   createItemCatalog,
@@ -62,6 +64,12 @@ export default function ServicePlanConfigurationPage() {
   const [isSavingMappedItem, setIsSavingMappedItem] = useState(false)
   const [recentlyCreatedItemId, setRecentlyCreatedItemId] = useState<string | null>(null)
   const [isEditServicePlanModalOpen, setIsEditServicePlanModalOpen] = useState(false)
+  const [dcDrawerOpen, setDcDrawerOpen] = useState(false)
+  const [dcDrawerMode, setDcDrawerMode] = useState<"category" | "item">("category")
+  const [dcDrawerCategoryId, setDcDrawerCategoryId] = useState("")
+  const [dcDrawerCategoryName, setDcDrawerCategoryName] = useState("")
+  const [dcDrawerItemId, setDcDrawerItemId] = useState<string | undefined>()
+  const [dcDrawerItemName, setDcDrawerItemName] = useState<string | undefined>()
   const itemSearchRef = useRef<HTMLInputElement>(null)
   const itemFormInputRef = useRef<HTMLInputElement>(null)
   const itemCatalogScrollRef = useRef<HTMLDivElement>(null)
@@ -467,6 +475,24 @@ export default function ServicePlanConfigurationPage() {
     }
   }
 
+  const openCategoryDcConfig = (cat: ServicePlanCategorySummary) => {
+    setDcDrawerMode("category")
+    setDcDrawerCategoryId(cat.id)
+    setDcDrawerCategoryName(cat.categoryName)
+    setDcDrawerItemId(undefined)
+    setDcDrawerItemName(undefined)
+    setDcDrawerOpen(true)
+  }
+
+  const openItemDcConfig = (item: ServicePlanCategoryMappedItem, catName: string, catId: string) => {
+    setDcDrawerMode("item")
+    setDcDrawerCategoryId(catId)
+    setDcDrawerCategoryName(catName)
+    setDcDrawerItemId(item.itemId)
+    setDcDrawerItemName(item.itemName)
+    setDcDrawerOpen(true)
+  }
+
   const serviceLabel =
     servicePlan?.serviceName ||
     services.find((service) => service.id === servicePlan?.serviceId)?.name ||
@@ -566,8 +592,32 @@ export default function ServicePlanConfigurationPage() {
                             : "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left text-slate-700 hover:bg-slate-50 transition-colors"
                           }
                         >
-                          <span className="font-medium truncate">{`${category.categoryName} (${category.totalItems})`}</span>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-medium truncate flex items-center gap-2">
+                            {`${category.categoryName} (${category.totalItems})`}
+                            <DataCollectionBadge hasConfig={category.hasDataCollection === true} />
+                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openCategoryDcConfig(category)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.stopPropagation()
+                                  openCategoryDcConfig(category)
+                                }
+                              }}
+                              title="Configure Data Collection"
+                              className={isActive
+                                ? "rounded-md p-1 text-white/60 hover:text-white hover:bg-white/15 transition-colors"
+                                : "rounded-md p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                              }
+                            >
+                              <Sliders className="h-4 w-4" />
+                            </span>
                             <ChevronRight className={isActive ? "h-4 w-4 text-white" : "h-4 w-4 text-slate-400"} />
                           </div>
                         </button>
@@ -702,7 +752,13 @@ export default function ServicePlanConfigurationPage() {
                                     </div>
                                   ) : (
                                     <>
-                                      <p className="text-sm font-medium text-slate-900">{item.itemName}</p>
+                                      <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                                        {item.itemName}
+                                        <DataCollectionBadge
+                                          hasConfig={item.hasDataCollection === true}
+                                          isCustomOverride={item.hasCustomDataCollection === true}
+                                        />
+                                      </p>
                                       {item.description && (
                                         <p className="mt-1 text-sm text-slate-600">{item.description}</p>
                                       )}
@@ -711,6 +767,16 @@ export default function ServicePlanConfigurationPage() {
                                 </div>
                                 {editingMappedItemId !== item.id && (
                                   <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      type="button"
+                                      aria-label={`Configure Data Collection for ${item.itemName}`}
+                                      onClick={() => openItemDcConfig(item, activeCategory?.categoryName ?? "", activeServicePlanCategoryId ?? "")}
+                                      disabled={deletingMappedItemId !== null || isSavingMappedItem}
+                                      className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                      title="Data Collection"
+                                    >
+                                      <Sliders className="h-4 w-4" />
+                                    </button>
                                     {item.canEdit === true && (
                                       <button
                                         type="button"
@@ -917,6 +983,23 @@ export default function ServicePlanConfigurationPage() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <DataCollectionDrawer
+        open={dcDrawerOpen}
+        onClose={() => setDcDrawerOpen(false)}
+        mode={dcDrawerMode}
+        categoryId={dcDrawerCategoryId}
+        categoryName={dcDrawerCategoryName}
+        itemId={dcDrawerItemId}
+        itemName={dcDrawerItemName}
+        servicePlanId={params.id}
+        onSaved={() => {
+          if (activeServicePlanCategoryId) {
+            void loadItemsByServicePlanCategoryId(activeServicePlanCategoryId)
+          }
+          void loadCategories()
+        }}
+      />
     </div>
   )
 }

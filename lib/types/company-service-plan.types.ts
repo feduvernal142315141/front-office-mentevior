@@ -16,6 +16,7 @@ export interface ServicePlanCategorySummary {
   categoryName: string
   canEdit?: boolean
   totalItems: number
+  hasDataCollection?: boolean
 }
 
 export interface ServicePlanCategoryMappedItem {
@@ -26,6 +27,8 @@ export interface ServicePlanCategoryMappedItem {
   description?: string
   active?: boolean
   order?: number
+  hasDataCollection?: boolean
+  hasCustomDataCollection?: boolean
 }
 
 export interface ItemCatalogItem {
