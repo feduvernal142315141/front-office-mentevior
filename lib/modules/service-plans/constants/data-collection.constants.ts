@@ -1,56 +1,5 @@
 import type { LevelsLibraryGroup } from "@/lib/types/data-collection.types"
 
-// Grouped Type catalog
-export const DATA_COLLECTION_TYPE_GROUPS = [
-  {
-    group: "Event-recording",
-    options: [
-      { value: "frequency", label: "Frequency" },
-      { value: "count", label: "Count" },
-      { value: "rate", label: "Rate" },
-    ],
-  },
-  {
-    group: "Time-sampling",
-    options: [
-      { value: "whole-interval", label: "Whole Interval" },
-      { value: "partial-interval", label: "Partial Interval" },
-      { value: "momentary-time-sampling", label: "Momentary Time Sampling" },
-    ],
-  },
-  {
-    group: "Timing",
-    options: [
-      { value: "duration", label: "Duration" },
-      { value: "response-latency", label: "Response Latency" },
-      { value: "interresponse-time", label: "Interresponse Time" },
-    ],
-  },
-  {
-    group: "Trial",
-    options: [
-      { value: "discrete-trial-teaching", label: "Discrete Trial Teaching" },
-      { value: "incident-teaching", label: "Incident Teaching" },
-      { value: "percentage-of-opportunities", label: "Percentage of Opportunities" },
-    ],
-  },
-  {
-    group: "Task-analysis",
-    options: [
-      { value: "forward-chaining", label: "Forward Chaining" },
-      { value: "total-task-chaining", label: "Total Task Chaining" },
-      { value: "backward-chaining", label: "Backward Chaining" },
-      { value: "backward-chaining-with-leaps-ahead", label: "Backward Chaining with Leaps Ahead" },
-    ],
-  },
-  {
-    group: "Log",
-    options: [
-      { value: "measurement-log", label: "Measurement Log" },
-    ],
-  },
-] as const
-
 // Weekly/Daily Value options
 export const WEEKLY_DAILY_OPTIONS = [
   { value: "total", label: "Total" },
@@ -62,6 +11,7 @@ export const UNIT_OF_TIME_OPTIONS = [
   { value: "seconds", label: "Seconds" },
   { value: "minutes", label: "Minutes" },
   { value: "hours", label: "Hours" },
+  { value: "days", label: "Days" },
 ]
 
 // Levels Library data
@@ -102,28 +52,24 @@ export const LEVELS_LIBRARY: LevelsLibraryGroup[] = [
 ]
 
 // --- Helper functions: which fields are shown per type ---
+// These receive the resolved `name` or `group` from the catalog, not the UUID.
 
-export function typeRequiresWeeklyDaily(type: string): boolean {
-  return ["frequency"].includes(type)
+export function typeRequiresWeeklyDaily(typeName: string): boolean {
+  return typeName === "Frequency" || typeName === "Rate"
 }
 
-export function typeRequiresInterval(type: string): boolean {
-  return ["whole-interval", "partial-interval", "momentary-time-sampling"].includes(type)
+export function typeRequiresUnitOfTime(typeName: string): boolean {
+  return typeName === "Rate"
 }
 
-export function typeHasCumulativeValueToggles(type: string): boolean {
-  return ["whole-interval", "partial-interval", "momentary-time-sampling"].includes(type)
+export function typeRequiresInterval(typeGroup: string): boolean {
+  return typeGroup === "Time-sampling"
 }
 
-export function typeHasLevels(type: string): boolean {
-  return type !== ""
+export function typeHasCumulativeValueToggles(typeGroup: string): boolean {
+  return typeGroup === "Time-sampling"
 }
 
-// Resolve display label for a type value
-export function getTypeLabel(typeValue: string): string {
-  for (const group of DATA_COLLECTION_TYPE_GROUPS) {
-    const found = group.options.find((o) => o.value === typeValue)
-    if (found) return found.label
-  }
-  return typeValue
+export function typeHasLevels(typeId: string): boolean {
+  return typeId !== ""
 }

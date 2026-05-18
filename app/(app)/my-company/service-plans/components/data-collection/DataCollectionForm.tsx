@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Minus, Plus } from "lucide-react"
@@ -21,14 +21,16 @@ import {
 } from "@/lib/schemas/data-collection-form.schema"
 
 import {
-  DATA_COLLECTION_TYPE_GROUPS,
   WEEKLY_DAILY_OPTIONS,
   UNIT_OF_TIME_OPTIONS,
   typeRequiresWeeklyDaily,
+  typeRequiresUnitOfTime,
   typeRequiresInterval,
   typeHasCumulativeValueToggles,
   typeHasLevels,
 } from "@/lib/modules/service-plans/constants/data-collection.constants"
+
+import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
 
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 
@@ -77,26 +79,34 @@ export function DataCollectionForm({
     },
   })
 
+  const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } = useTypeEventCatalog()
+
   const watchedType = watch("type")
   const watchedLevels = watch("levels")
   const watchedCumulative = watch("cumulative")
   const watchedActive = watch("active")
   const watchedIntervalLength = watch("intervalLength")
 
+  // Resolve the selected type UUID to its name and group
+  const resolvedType = useMemo(() => {
+    const item = typeItemsMap.get(watchedType)
+    return { name: item?.name ?? "", group: item?.group ?? "" }
+  }, [watchedType, typeItemsMap])
+
   // Reset type-specific fields when type changes
   useEffect(() => {
-    if (!typeRequiresWeeklyDaily(watchedType)) {
+    if (!typeRequiresWeeklyDaily(resolvedType.name)) {
       setValue("weeklyDailyValue", undefined)
     }
-    if (!typeRequiresInterval(watchedType)) {
+    if (!typeRequiresInterval(resolvedType.group)) {
       setValue("intervalLength", undefined)
       setValue("unitOfTime", undefined)
       setValue("suggestedNumberOfRecordings", undefined)
     }
-    if (!typeHasCumulativeValueToggles(watchedType)) {
+    if (!typeHasCumulativeValueToggles(resolvedType.group)) {
       setValue("cumulative", undefined)
     }
-  }, [watchedType, setValue])
+  }, [resolvedType, setValue])
 
   const onSubmit = handleSubmit(async (data) => {
     await onSave(data)
@@ -197,16 +207,17 @@ export function DataCollectionForm({
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                groups={DATA_COLLECTION_TYPE_GROUPS as unknown as { group: string; options: { value: string; label: string }[] }[]}
+                groups={typeGroups}
                 hasError={!!errors.type}
                 searchable
                 required
+                disabled={isLoadingCatalog}
               />
             )}
           />
 
           {/* Weekly/Daily Value — only for frequency */}
-          {typeRequiresWeeklyDaily(watchedType) && (
+          {typeRequiresWeeklyDaily(resolvedType.name) && (
             <Controller
               name="weeklyDailyValue"
               control={control}
@@ -223,7 +234,7 @@ export function DataCollectionForm({
           )}
 
           {/* Interval fields — for time-sampling types */}
-          {typeRequiresInterval(watchedType) && (
+          {typeRequiresInterval(resolvedType.group) && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {/* Interval length with +/- stepper */}
@@ -318,8 +329,8 @@ export function DataCollectionForm({
             <LevelsTable
               levels={watchedLevels ?? []}
               onChange={(newLevels) => setValue("levels", newLevels)}
-              showValueToggle={typeHasCumulativeValueToggles(watchedType)}
-              showCumulative={typeHasCumulativeValueToggles(watchedType)}
+              showValueToggle={typeHasCumulativeValueToggles(resolvedType.group)}
+              showCumulative={typeHasCumulativeValueToggles(resolvedType.group)}
               cumulative={watchedCumulative ?? false}
               onCumulativeChange={(v) => setValue("cumulative", v)}
             />

@@ -1,36 +1,5 @@
-// --- Data Collection Type catalog (grouped) ---
-export type DataCollectionTypeGroup =
-  | "Event-recording"
-  | "Time-sampling"
-  | "Timing"
-  | "Trial"
-  | "Task-analysis"
-  | "Log"
-
-export type DataCollectionType =
-  // Event-recording
-  | "frequency"
-  | "count"
-  | "rate"
-  // Time-sampling
-  | "whole-interval"
-  | "partial-interval"
-  | "momentary-time-sampling"
-  // Timing
-  | "duration"
-  | "response-latency"
-  | "interresponse-time"
-  // Trial
-  | "discrete-trial-teaching"
-  | "incident-teaching"
-  | "percentage-of-opportunities"
-  // Task-analysis
-  | "forward-chaining"
-  | "total-task-chaining"
-  | "backward-chaining"
-  | "backward-chaining-with-leaps-ahead"
-  // Log
-  | "measurement-log"
+// --- Data Collection Type (UUID from /type-event/catalog) ---
+export type DataCollectionType = string
 
 export type WeeklyDailyValue = "total" | "average"
 export type UnitOfTime = "seconds" | "minutes" | "hours"
