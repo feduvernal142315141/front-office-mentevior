@@ -1,0 +1,141 @@
+"use client"
+
+import { Button } from "@/components/custom/Button"
+import { Card } from "@/components/custom/Card"
+import type {
+  ServicePlanCategoryMappedItem,
+  ServicePlanCategorySummary,
+} from "@/lib/types/company-service-plan.types"
+
+import { CreateItemInlineForm } from "./CreateItemInlineForm"
+import { MappedItemRow } from "./MappedItemRow"
+
+interface CreateInlineFormState {
+  visible: boolean
+  name: string
+  isSaving: boolean
+  start: () => void
+  cancel: () => void
+  setName: (name: string) => void
+  save: () => void
+}
+
+interface EditInlineFormState {
+  activeItemId: string | null
+  name: string
+  isSaving: boolean
+  start: (item: ServicePlanCategoryMappedItem) => void
+  cancel: () => void
+  setName: (name: string) => void
+  save: (item: ServicePlanCategoryMappedItem) => void
+}
+
+interface CategoryItemsPanelProps {
+  activeCategory: ServicePlanCategorySummary | null
+  items: ServicePlanCategoryMappedItem[]
+  isLoading: boolean
+  error: string | null
+  createForm: CreateInlineFormState
+  editForm: EditInlineFormState
+  deletingItemId: string | null
+  onDeleteItem: (item: ServicePlanCategoryMappedItem) => void
+  onConfigureDataCollection: (item: ServicePlanCategoryMappedItem) => void
+  onOpenAddItemsDrawer: () => void
+}
+
+export function CategoryItemsPanel({
+  activeCategory,
+  items,
+  isLoading,
+  error,
+  createForm,
+  editForm,
+  deletingItemId,
+  onDeleteItem,
+  onConfigureDataCollection,
+  onOpenAddItemsDrawer,
+}: CategoryItemsPanelProps) {
+  if (!activeCategory) {
+    return (
+      <Card variant="elevated" padding="lg">
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-6">
+          <p className="text-sm text-slate-600">Select a category to view and configure its mapped items.</p>
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card variant="elevated" padding="lg">
+      <h3 className="text-base font-semibold text-slate-900">
+        {`${activeCategory.categoryName} (${activeCategory.totalItems})`}
+      </h3>
+      <div className="mt-1 flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">Mapped items for this category.</p>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-9 px-4 text-xs"
+            onClick={createForm.start}
+            disabled={createForm.isSaving}
+          >
+            Create item
+          </Button>
+          <Button type="button" className="h-9 px-4 text-xs" onClick={onOpenAddItemsDrawer}>
+            Add items
+          </Button>
+        </div>
+      </div>
+
+      {createForm.visible && (
+        <CreateItemInlineForm
+          name={createForm.name}
+          isSaving={createForm.isSaving}
+          onChangeName={createForm.setName}
+          onCancel={createForm.cancel}
+          onSave={createForm.save}
+        />
+      )}
+
+      <div className="mt-5">
+        {isLoading ? (
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="h-4 w-2/5 animate-pulse rounded bg-slate-200" />
+            <div className="h-4 w-3/5 animate-pulse rounded bg-slate-200" />
+            <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200" />
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm font-medium text-red-700">Could not load category items.</p>
+            <p className="mt-1 text-sm text-red-600">{error}</p>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-6">
+            <p className="text-sm text-slate-600">No items mapped for this category.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {items.map((item) => (
+              <MappedItemRow
+                key={item.id}
+                item={item}
+                isEditing={editForm.activeItemId === item.id}
+                editFormName={editForm.name}
+                isSavingEdit={editForm.isSaving}
+                isDeleting={deletingItemId === item.id}
+                isAnyDeleting={deletingItemId !== null}
+                onChangeEditName={editForm.setName}
+                onStartEdit={editForm.start}
+                onCancelEdit={editForm.cancel}
+                onSaveEdit={editForm.save}
+                onDelete={onDeleteItem}
+                onConfigureDataCollection={onConfigureDataCollection}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}

@@ -66,6 +66,18 @@ export function typeRequiresInterval(typeGroup: string): boolean {
   return typeGroup === "Time-sampling"
 }
 
+/**
+ * Duration-like types render Unit of time + Suggested recordings + Daily + Weekly value.
+ * Includes Duration, Response latency and Interresponse time.
+ */
+export function typeRequiresDailyAndWeekly(typeName: string): boolean {
+  return (
+    typeName === "Duration" ||
+    typeName === "Response latency" ||
+    typeName === "Interresponse time"
+  )
+}
+
 export function typeHasCumulativeValueToggles(typeGroup: string): boolean {
   return typeGroup === "Time-sampling"
 }

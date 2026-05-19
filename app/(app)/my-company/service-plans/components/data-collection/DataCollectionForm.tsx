@@ -26,6 +26,7 @@ import {
   typeRequiresWeeklyDaily,
   typeRequiresUnitOfTime,
   typeRequiresInterval,
+  typeRequiresDailyAndWeekly,
   typeHasCumulativeValueToggles,
   typeHasLevels,
 } from "@/lib/modules/service-plans/constants/data-collection.constants"
@@ -69,6 +70,7 @@ export function DataCollectionForm({
     defaultValues: {
       type: initialConfig?.type ?? "",
       weeklyDailyValue: initialConfig?.weeklyDailyValue ?? "total",
+      dailyValue: initialConfig?.dailyValue ?? "total",
       intervalLength: initialConfig?.intervalLength ?? 30,
       unitOfTime: initialConfig?.unitOfTime ?? "seconds",
       suggestedNumberOfRecordings: initialConfig?.suggestedNumberOfRecordings ?? 10,
@@ -95,13 +97,28 @@ export function DataCollectionForm({
 
   // Reset type-specific fields when type changes
   useEffect(() => {
-    if (!typeRequiresWeeklyDaily(resolvedType.name)) {
+    // weeklyDailyValue is used by Frequency, Rate and Duration-like types.
+    if (!typeRequiresWeeklyDaily(resolvedType.name) && !typeRequiresDailyAndWeekly(resolvedType.name)) {
       setValue("weeklyDailyValue", undefined)
+    }
+    // dailyValue is exclusive to Duration-like types.
+    if (!typeRequiresDailyAndWeekly(resolvedType.name)) {
+      setValue("dailyValue", undefined)
     }
     if (!typeRequiresInterval(resolvedType.group)) {
       setValue("intervalLength", undefined)
-      setValue("unitOfTime", undefined)
+    }
+    // suggestedNumberOfRecordings is used by Time-sampling and Duration-like types.
+    if (!typeRequiresInterval(resolvedType.group) && !typeRequiresDailyAndWeekly(resolvedType.name)) {
       setValue("suggestedNumberOfRecordings", undefined)
+    }
+    // unitOfTime is shared between Rate, Duration-like and Time-sampling; only reset when none uses it.
+    if (
+      !typeRequiresUnitOfTime(resolvedType.name) &&
+      !typeRequiresDailyAndWeekly(resolvedType.name) &&
+      !typeRequiresInterval(resolvedType.group)
+    ) {
+      setValue("unitOfTime", undefined)
     }
     if (!typeHasCumulativeValueToggles(resolvedType.group)) {
       setValue("cumulative", undefined)
@@ -216,8 +233,40 @@ export function DataCollectionForm({
             )}
           />
 
-          {/* Weekly/Daily Value — only for frequency */}
-          {typeRequiresWeeklyDaily(resolvedType.name) && (
+          {/* Rate → Unit of time + Weekly value side by side */}
+          {typeRequiresUnitOfTime(resolvedType.name) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Controller
+                name="unitOfTime"
+                control={control}
+                render={({ field }) => (
+                  <FloatingSelect
+                    label="Unit of time"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={UNIT_OF_TIME_OPTIONS}
+                  />
+                )}
+              />
+              <Controller
+                name="weeklyDailyValue"
+                control={control}
+                render={({ field }) => (
+                  <FloatingSelect
+                    label="Weekly value"
+                    value={field.value ?? "total"}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={WEEKLY_DAILY_OPTIONS}
+                  />
+                )}
+              />
+            </div>
+          )}
+
+          {/* Frequency → only Weekly / Daily value */}
+          {typeRequiresWeeklyDaily(resolvedType.name) && !typeRequiresUnitOfTime(resolvedType.name) && (
             <Controller
               name="weeklyDailyValue"
               control={control}
@@ -231,6 +280,72 @@ export function DataCollectionForm({
                 />
               )}
             />
+          )}
+
+          {/* Duration / Response latency / Interresponse time
+              → Unit of time + Suggested recordings (row), Daily value + Weekly value (row) */}
+          {typeRequiresDailyAndWeekly(resolvedType.name) && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Controller
+                  name="unitOfTime"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingSelect
+                      label="Unit of time"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      options={UNIT_OF_TIME_OPTIONS}
+                    />
+                  )}
+                />
+                <Controller
+                  name="suggestedNumberOfRecordings"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingInput
+                      label="Suggested number of recordings"
+                      value={String(field.value ?? "")}
+                      onChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
+                      onBlur={field.onBlur}
+                      type="number"
+                      inputMode="numeric"
+                      hasError={!!errors.suggestedNumberOfRecordings}
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Controller
+                  name="dailyValue"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingSelect
+                      label="Daily value"
+                      value={field.value ?? "total"}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      options={WEEKLY_DAILY_OPTIONS}
+                    />
+                  )}
+                />
+                <Controller
+                  name="weeklyDailyValue"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingSelect
+                      label="Weekly value"
+                      value={field.value ?? "total"}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      options={WEEKLY_DAILY_OPTIONS}
+                    />
+                  )}
+                />
+              </div>
+            </div>
           )}
 
           {/* Interval fields — for time-sampling types */}

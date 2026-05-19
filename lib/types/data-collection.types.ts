@@ -16,6 +16,7 @@ export interface DataCollectionConfig {
   id?: string
   type: DataCollectionType | ""
   weeklyDailyValue?: WeeklyDailyValue
+  dailyValue?: WeeklyDailyValue
   levels: DataCollectionLevel[]
   intervalLength?: number
   unitOfTime?: UnitOfTime
@@ -45,6 +46,7 @@ export interface UpsertCategoryDataCollectionDto {
   servicePlanCategoryId: string
   type: DataCollectionType
   weeklyDailyValue?: WeeklyDailyValue
+  dailyValue?: WeeklyDailyValue
   levels: Omit<DataCollectionLevel, "id">[]
   intervalLength?: number
   unitOfTime?: UnitOfTime
@@ -53,7 +55,7 @@ export interface UpsertCategoryDataCollectionDto {
 }
 
 export interface UpsertItemDataCollectionDto extends UpsertCategoryDataCollectionDto {
-  itemId: string
+  servicePlanCategoryItemId: string
   topography: string
   active: boolean
 }

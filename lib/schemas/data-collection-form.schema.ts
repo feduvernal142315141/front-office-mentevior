@@ -10,6 +10,7 @@ export const dataCollectionLevelSchema = z.object({
 export const dataCollectionFormSchema = z.object({
   type: z.string().min(1, "Type is required"),
   weeklyDailyValue: z.string().optional(),
+  dailyValue: z.string().optional(),
   intervalLength: z.coerce.number().positive("Must be positive").optional(),
   unitOfTime: z.string().optional(),
   suggestedNumberOfRecordings: z.coerce.number().int("Must be an integer").positive("Must be positive").optional(),

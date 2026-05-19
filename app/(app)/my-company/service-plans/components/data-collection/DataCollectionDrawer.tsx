@@ -28,7 +28,7 @@ interface DataCollectionDrawerProps {
   mode: "category" | "item"
   categoryId: string
   categoryName: string
-  itemId?: string
+  servicePlanCategoryItemId?: string
   itemName?: string
   servicePlanId: string
   onSaved: () => void
@@ -40,7 +40,7 @@ export function DataCollectionDrawer({
   mode,
   categoryId,
   categoryName,
-  itemId,
+  servicePlanCategoryItemId,
   itemName,
   servicePlanId,
   onSaved,
@@ -58,9 +58,9 @@ export function DataCollectionDrawer({
         const data = await getCategoryDataCollection(categoryId)
         setConfig(data)
         setItemConfig(null)
-      } else if (mode === "item" && itemId) {
+      } else if (mode === "item" && servicePlanCategoryItemId) {
         // Try item-specific first, fall back to category config
-        const itemData = await getItemDataCollection(itemId)
+        const itemData = await getItemDataCollection(servicePlanCategoryItemId)
         if (itemData) {
           setItemConfig(itemData)
           setConfig(itemData)
@@ -75,7 +75,7 @@ export function DataCollectionDrawer({
     } finally {
       setIsLoading(false)
     }
-  }, [open, mode, categoryId, itemId])
+  }, [open, mode, categoryId, servicePlanCategoryItemId])
 
   useEffect(() => {
     if (open) {
@@ -101,6 +101,7 @@ export function DataCollectionDrawer({
           servicePlanCategoryId: categoryId,
           type: values.type as DataCollectionType,
           weeklyDailyValue: values.weeklyDailyValue as "total" | "average" | undefined,
+          dailyValue: values.dailyValue as "total" | "average" | undefined,
           levels: levelsPayload,
           intervalLength: values.intervalLength,
           unitOfTime: values.unitOfTime as "seconds" | "minutes" | "hours" | undefined,
@@ -108,12 +109,13 @@ export function DataCollectionDrawer({
           cumulative: values.cumulative,
         })
         toast.success(`Configuration applied to all items in "${categoryName}"`)
-      } else if (mode === "item" && itemId) {
+      } else if (mode === "item" && servicePlanCategoryItemId) {
         await upsertItemDataCollection({
           servicePlanCategoryId: categoryId,
-          itemId,
+          servicePlanCategoryItemId,
           type: values.type as DataCollectionType,
           weeklyDailyValue: values.weeklyDailyValue as "total" | "average" | undefined,
+          dailyValue: values.dailyValue as "total" | "average" | undefined,
           levels: levelsPayload,
           intervalLength: values.intervalLength,
           unitOfTime: values.unitOfTime as "seconds" | "minutes" | "hours" | undefined,

@@ -1,0 +1,96 @@
+"use client"
+
+import { ChevronRight, Edit2, Sliders } from "lucide-react"
+
+import { Card } from "@/components/custom/Card"
+import type { ServicePlanCategorySummary } from "@/lib/types/company-service-plan.types"
+
+import { DataCollectionBadge } from "@/app/(app)/my-company/service-plans/components/data-collection/DataCollectionBadge"
+
+interface CategoriesSidebarProps {
+  categories: ServicePlanCategorySummary[]
+  activeCategoryId: string | null
+  onSelectCategory: (id: string) => void
+  onEditServicePlan: () => void
+  onConfigureDataCollection: (category: ServicePlanCategorySummary) => void
+}
+
+export function CategoriesSidebar({
+  categories,
+  activeCategoryId,
+  onSelectCategory,
+  onEditServicePlan,
+  onConfigureDataCollection,
+}: CategoriesSidebarProps) {
+  return (
+    <Card variant="elevated" padding="none" className="overflow-hidden">
+      <div className="border-b border-slate-200 px-4 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Categories</h3>
+          <button
+            type="button"
+            onClick={onEditServicePlan}
+            className="group/edit relative h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-b from-blue-50 to-blue-100/80 border border-blue-200/60 shadow-sm shadow-blue-900/5 hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+            title="Edit service plan"
+            aria-label="Edit service plan"
+          >
+            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+          </button>
+        </div>
+      </div>
+
+      {categories.length === 0 ? (
+        <div className="px-4 py-6 text-sm text-slate-500">No categories mapped for this service plan.</div>
+      ) : (
+        <div className="p-3 space-y-2">
+          {categories.map((category) => {
+            const isActive = category.id === activeCategoryId
+
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => onSelectCategory(category.id)}
+                className={
+                  isActive
+                    ? "w-full flex items-center justify-between rounded-xl bg-[#2563EB] px-4 py-3 text-left text-white shadow-sm"
+                    : "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left text-slate-700 hover:bg-slate-50 transition-colors"
+                }
+              >
+                <span className="font-medium truncate flex items-center gap-2">
+                  {`${category.categoryName} (${category.totalItems})`}
+                  <DataCollectionBadge hasConfig={category.hasDataCollection === true} />
+                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onConfigureDataCollection(category)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.stopPropagation()
+                        onConfigureDataCollection(category)
+                      }
+                    }}
+                    title="Configure Data Collection"
+                    className={
+                      isActive
+                        ? "rounded-md p-1 text-white/60 hover:text-white hover:bg-white/15 transition-colors"
+                        : "rounded-md p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                    }
+                  >
+                    <Sliders className="h-4 w-4" />
+                  </span>
+                  <ChevronRight className={isActive ? "h-4 w-4 text-white" : "h-4 w-4 text-slate-400"} />
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </Card>
+  )
+}
