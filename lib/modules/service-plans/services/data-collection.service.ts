@@ -4,40 +4,15 @@ import {
   ServicePlanUnitOfTime,
   ServicePlanValueType,
 } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
-import { serviceGet, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePut } from "@/lib/services/baseService"
 import type {
   DataCollectionConfig,
   DataCollectionLevel,
+  DataCollectionType,
   ItemDataCollectionConfig,
   UpsertCategoryDataCollectionDto,
   UpsertItemDataCollectionDto,
 } from "@/lib/types/data-collection.types"
-
-// ---------------------------------------------------------------------------
-// Backend contract
-// ---------------------------------------------------------------------------
-//   GET  /service-plan-category/{servicePlanCategoryId}/level
-//   PUT  /service-plan-category/{servicePlanCategoryId}/level
-//   GET  /service-plan-category-item/{servicePlanCategoryItemId}/level
-//   PUT  /service-plan-category-item/{servicePlanCategoryItemId}/level
-//
-// Body:
-//   {
-//     servicePlanCategoryId,
-//     dataCollection: {
-//       typeEventCatalogId,
-//       dailyValue?: "TOTAL" | "AVERAGE",
-//       weeklyValue?: "TOTAL" | "AVERAGE",
-//       unitOfTime?: "SECONDS" | "MINUTES" | "HOURS" | "DAYS",
-//       unitMeasurementCatalogId?: string,
-//       recordingsNumber?: number,
-//       intervalLength?: number,
-//       levels: [{ id?, level, description }]
-//     }
-//   }
-//
-// Not in contract yet: cumulative, topography, active (item-only UI fields).
-// ---------------------------------------------------------------------------
 
 interface ApiLevel {
   id?: string
@@ -56,15 +31,14 @@ interface ApiDataCollection {
   levels?: ApiLevel[]
 }
 
-interface ApiPayload {
+interface ApiCategoryPayload {
   servicePlanCategoryId: string
   dataCollection: ApiDataCollection
 }
 
-interface ApiResponse {
+interface ApiCategoryResponse {
   servicePlanCategoryId?: string
   dataCollection?: ApiDataCollection
-  // Legacy flat shape (tolerated on read only)
   typeEventCatalogId?: string
   dailyValue?: ServicePlanValueType
   weeklyValue?: ServicePlanValueType
@@ -73,6 +47,41 @@ interface ApiResponse {
   recordingsNumber?: number
   intervalLength?: number
   levels?: ApiLevel[]
+}
+
+interface ApiItemPayload {
+  servicePlanCategoryItemId: string
+  name?: string
+  topography: string
+  status: boolean
+  dataCollection: ApiDataCollection
+}
+
+interface ApiItemResponse {
+  servicePlanCategoryItemId?: string
+  name?: string
+  topography?: string
+  status?: boolean
+  dataCollection?: ApiDataCollection
+  typeEventCatalogId?: string
+  dailyValue?: ServicePlanValueType
+  weeklyValue?: ServicePlanValueType
+  unitOfTime?: ServicePlanUnitOfTime
+  unitMeasurementCatalogId?: string
+  recordingsNumber?: number
+  intervalLength?: number
+  levels?: ApiLevel[]
+}
+
+type DataCollectionDtoFields = {
+  type: DataCollectionType
+  weeklyDailyValue?: ServicePlanValueType
+  dailyValue?: ServicePlanValueType
+  unitMeasurementCatalogId?: string
+  levels: UpsertCategoryDataCollectionDto["levels"]
+  intervalLength?: number
+  unitOfTime?: ServicePlanUnitOfTime
+  suggestedNumberOfRecordings?: number
 }
 
 function asString(value: unknown): string {
@@ -133,7 +142,9 @@ function normalizeLevels(rawLevels: unknown): DataCollectionLevel[] {
     .filter((entry): entry is DataCollectionLevel => entry !== null)
 }
 
-function extractApiDataCollection(response: ApiResponse): ApiDataCollection | null {
+function extractApiDataCollection(
+  response: ApiCategoryResponse | ApiItemResponse
+): ApiDataCollection | null {
   if (response.dataCollection && typeof response.dataCollection === "object") {
     return response.dataCollection
   }
@@ -185,15 +196,8 @@ function fromApiDataCollection(dc: ApiDataCollection): DataCollectionConfig {
   }
 }
 
-function fromApiResponse(raw: unknown): DataCollectionConfig | null {
-  const entity = extractEntity(raw)
-  if (!entity || typeof entity !== "object") return null
-
-  const dataCollection = extractApiDataCollection(entity as ApiResponse)
-  if (!dataCollection) return null
-
-  const config = fromApiDataCollection(dataCollection)
-  const hasContent =
+function hasDataCollectionContent(config: DataCollectionConfig): boolean {
+  return (
     config.type.length > 0 ||
     config.levels.length > 0 ||
     config.dailyValue !== undefined ||
@@ -202,13 +206,58 @@ function fromApiResponse(raw: unknown): DataCollectionConfig | null {
     config.unitMeasurementCatalogId !== undefined ||
     config.suggestedNumberOfRecordings !== undefined ||
     config.intervalLength !== undefined
-
-  return hasContent ? config : null
+  )
 }
 
-function toApiDataCollection(
-  dto: UpsertCategoryDataCollectionDto | UpsertItemDataCollectionDto
-): ApiDataCollection {
+function fromApiCategoryResponse(raw: unknown): DataCollectionConfig | null {
+  const entity = extractEntity(raw)
+  if (!entity || typeof entity !== "object") return null
+
+  const dataCollection = extractApiDataCollection(entity as ApiCategoryResponse)
+  if (!dataCollection) return null
+
+  const config = fromApiDataCollection(dataCollection)
+  return hasDataCollectionContent(config) ? config : null
+}
+
+function fromApiItemResponse(
+  raw: unknown,
+  fallbackItemId: string
+): ItemDataCollectionConfig | null {
+  const entity = extractEntity(raw)
+  if (!entity || typeof entity !== "object") return null
+
+  const itemEntity = entity as ApiItemResponse
+  const dataCollection = extractApiDataCollection(itemEntity)
+  const topography = asString(itemEntity.topography)
+  const active = typeof itemEntity.status === "boolean" ? itemEntity.status : true
+  const name = asString(itemEntity.name)
+  const itemId = asOptionalString(itemEntity.servicePlanCategoryItemId) ?? fallbackItemId
+
+  const base = dataCollection
+    ? fromApiDataCollection(dataCollection)
+    : { type: "", levels: [] as DataCollectionLevel[] }
+
+  const hasContent =
+    hasDataCollectionContent(base) ||
+    topography.length > 0 ||
+    typeof itemEntity.status === "boolean"
+
+  if (!hasContent) return null
+
+  return {
+    ...base,
+    itemId,
+    itemName: name,
+    categoryId: "",
+    categoryName: "",
+    topography,
+    active,
+    isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
+  }
+}
+
+function toApiDataCollection(dto: DataCollectionDtoFields): ApiDataCollection {
   const dataCollection: ApiDataCollection = {
     typeEventCatalogId: dto.type,
     levels: dto.levels.map((level) => {
@@ -243,13 +292,26 @@ function toApiDataCollection(
   return dataCollection
 }
 
-function toApiPayload(
-  dto: UpsertCategoryDataCollectionDto | UpsertItemDataCollectionDto
-): ApiPayload {
+function toApiCategoryPayload(dto: UpsertCategoryDataCollectionDto): ApiCategoryPayload {
   return {
     servicePlanCategoryId: dto.servicePlanCategoryId,
     dataCollection: toApiDataCollection(dto),
   }
+}
+
+function toApiItemPayload(dto: UpsertItemDataCollectionDto): ApiItemPayload {
+  const payload: ApiItemPayload = {
+    servicePlanCategoryItemId: dto.servicePlanCategoryItemId,
+    topography: dto.topography,
+    status: dto.active,
+    dataCollection: toApiDataCollection(dto),
+  }
+
+  if (dto.name?.trim()) {
+    payload.name = dto.name.trim()
+  }
+
+  return payload
 }
 
 function getApiErrorMessage(data: unknown, fallback: string): string {
@@ -263,8 +325,6 @@ function getApiErrorMessage(data: unknown, fallback: string): string {
   }
   return fallback
 }
-
-// --- Category-level ---------------------------------------------------------
 
 export async function getCategoryDataCollection(
   servicePlanCategoryId: string
@@ -283,14 +343,29 @@ export async function getCategoryDataCollection(
 
   if (response.status === 204 || !response.data) return null
 
-  return fromApiResponse(response.data)
+  return fromApiCategoryResponse(response.data)
+}
+
+export async function deleteServicePlanCategoryLevel(
+  servicePlanCategoryLevelId: string
+): Promise<void> {
+  const response = await serviceDelete<unknown>(
+    `/service-plan-category-level/${servicePlanCategoryLevelId}`
+  )
+
+  if (
+    !response ||
+    (response.status !== 200 && response.status !== 201 && response.status !== 204)
+  ) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete level"))
+  }
 }
 
 export async function upsertCategoryDataCollection(
   dto: UpsertCategoryDataCollectionDto
 ): Promise<void> {
-  const payload = toApiPayload(dto)
-  const response = await servicePut<ApiPayload, unknown>(
+  const payload = toApiCategoryPayload(dto)
+  const response = await servicePut<ApiCategoryPayload, unknown>(
     `/service-plan-category/${dto.servicePlanCategoryId}/level`,
     payload
   )
@@ -304,8 +379,6 @@ export async function upsertCategoryDataCollection(
     )
   }
 }
-
-// --- Item-level -------------------------------------------------------------
 
 export async function getItemDataCollection(
   servicePlanCategoryItemId: string
@@ -324,26 +397,29 @@ export async function getItemDataCollection(
 
   if (response.status === 204 || !response.data) return null
 
-  const base = fromApiResponse(response.data)
-  if (!base) return null
+  return fromApiItemResponse(response.data, servicePlanCategoryItemId)
+}
 
-  return {
-    ...base,
-    itemId: "",
-    itemName: "",
-    categoryId: "",
-    categoryName: "",
-    topography: "",
-    active: true,
-    isCustomOverride: true,
+export async function deleteServicePlanCategoryItemLevel(
+  servicePlanCategoryItemLevelId: string
+): Promise<void> {
+  const response = await serviceDelete<unknown>(
+    `/service-plan-category-item-level/${servicePlanCategoryItemLevelId}`
+  )
+
+  if (
+    !response ||
+    (response.status !== 200 && response.status !== 201 && response.status !== 204)
+  ) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete level"))
   }
 }
 
 export async function upsertItemDataCollection(
   dto: UpsertItemDataCollectionDto
 ): Promise<void> {
-  const payload = toApiPayload(dto)
-  const response = await servicePut<ApiPayload, unknown>(
+  const payload = toApiItemPayload(dto)
+  const response = await servicePut<ApiItemPayload, unknown>(
     `/service-plan-category-item/${dto.servicePlanCategoryItemId}/level`,
     payload
   )

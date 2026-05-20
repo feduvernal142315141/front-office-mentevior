@@ -45,7 +45,10 @@ import { useUnitMeasurementCatalog } from "@/lib/modules/service-plans/hooks/use
 import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
 import { DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
 
-import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
+import type {
+  DataCollectionConfig,
+  DataCollectionLevel,
+} from "@/lib/types/data-collection.types"
 
 interface DataCollectionFormProps {
   mode: "category" | "item"
@@ -55,6 +58,7 @@ interface DataCollectionFormProps {
   initialTopography?: string
   initialActive?: boolean
   onSave: (values: DataCollectionFormValues) => Promise<void>
+  onDeleteLevel?: (level: DataCollectionLevel) => Promise<void>
   onCancel: () => void
   isSaving: boolean
 }
@@ -67,6 +71,7 @@ export function DataCollectionForm({
   initialTopography,
   initialActive,
   onSave,
+  onDeleteLevel,
   onCancel,
   isSaving,
 }: DataCollectionFormProps) {
@@ -570,6 +575,7 @@ export function DataCollectionForm({
             <LevelsTable
               levels={watchedLevels ?? []}
               onChange={(newLevels) => setValue("levels", newLevels)}
+              onDeleteLevel={onDeleteLevel}
               showValueToggle={typeHasCumulativeValueToggles(resolvedType.group)}
               showCumulative={typeHasCumulativeValueToggles(resolvedType.group)}
               cumulative={watchedCumulative ?? false}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, Plus, Trash2, BookOpen } from "lucide-react"
+import { ChevronDown, Loader2, Plus, Trash2, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 import {
@@ -25,6 +25,7 @@ import { LevelsLibraryModal } from "./LevelsLibraryModal"
 interface LevelsTableProps {
   levels: DataCollectionLevel[]
   onChange: (levels: DataCollectionLevel[]) => void
+  onDeleteLevel?: (level: DataCollectionLevel) => Promise<void>
   showValueToggle?: boolean
   showCumulative?: boolean
   cumulative?: boolean
@@ -35,6 +36,7 @@ interface LevelsTableProps {
 export function LevelsTable({
   levels,
   onChange,
+  onDeleteLevel,
   showValueToggle = false,
   showCumulative = false,
   cumulative = false,
@@ -42,6 +44,7 @@ export function LevelsTable({
   disabled = false,
 }: LevelsTableProps) {
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [deletingRowId, setDeletingRowId] = useState<string | null>(null)
 
   const handleLabelChange = (id: string, newLabel: string) => {
     onChange(levels.map((l) => (l.id === id ? { ...l, label: newLabel } : l)))
@@ -55,8 +58,19 @@ export function LevelsTable({
     onChange(levels.map((l) => (l.id === id ? { ...l, value: newValue } : l)))
   }
 
-  const handleDelete = (id: string) => {
-    onChange(levels.filter((l) => l.id !== id))
+  const handleDelete = async (rowId: string) => {
+    const level = levels.find((l) => l.id === rowId)
+    if (!level || deletingRowId) return
+
+    setDeletingRowId(rowId)
+    try {
+      if (level.recordId && onDeleteLevel) {
+        await onDeleteLevel(level)
+      }
+      onChange(levels.filter((l) => l.id !== rowId))
+    } finally {
+      setDeletingRowId(null)
+    }
   }
 
   const handleAddManual = () => {
@@ -193,16 +207,20 @@ export function LevelsTable({
                   <TableCell className="p-1.5">
                     <button
                       type="button"
-                      onClick={() => handleDelete(level.id)}
-                      disabled={disabled}
+                      onClick={() => void handleDelete(level.id)}
+                      disabled={disabled || deletingRowId === level.id}
                       className={cn(
                         "p-1.5 rounded-lg transition-all duration-150",
                         "text-gray-300 hover:text-red-500 hover:bg-red-50",
                         "opacity-0 group-hover:opacity-100",
-                        disabled && "pointer-events-none"
+                        (disabled || deletingRowId === level.id) && "pointer-events-none opacity-100"
                       )}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingRowId === level.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-red-500" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </button>
                   </TableCell>
                 </TableRow>

@@ -68,10 +68,25 @@ export interface UpsertCategoryDataCollectionDto {
   cumulative?: boolean
 }
 
-export interface UpsertItemDataCollectionDto extends UpsertCategoryDataCollectionDto {
+export interface UpsertItemDataCollectionDto {
   servicePlanCategoryItemId: string
+  name?: string
   topography: string
   active: boolean
+  type: DataCollectionType
+  weeklyDailyValue?: ServicePlanValueType
+  dailyValue?: ServicePlanValueType
+  unitMeasurementCatalogId?: string
+  levels: Array<{
+    id?: string
+    label: string
+    description: string
+    value?: boolean
+  }>
+  intervalLength?: number
+  unitOfTime?: ServicePlanUnitOfTime
+  suggestedNumberOfRecordings?: number
+  cumulative?: boolean
 }
 
 // --- Levels Library ---

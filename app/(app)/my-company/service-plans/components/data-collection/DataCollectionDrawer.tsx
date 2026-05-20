@@ -9,6 +9,8 @@ import { toast } from "sonner"
 import { DataCollectionForm } from "./DataCollectionForm"
 
 import {
+  deleteServicePlanCategoryItemLevel,
+  deleteServicePlanCategoryLevel,
   getCategoryDataCollection,
   getItemDataCollection,
   upsertCategoryDataCollection,
@@ -17,10 +19,18 @@ import {
 
 import type {
   DataCollectionConfig,
+  DataCollectionLevel,
   DataCollectionType,
   ItemDataCollectionConfig,
 } from "@/lib/types/data-collection.types"
 import type { DataCollectionFormValues } from "@/lib/schemas/data-collection-form.schema"
+
+function stripPersistedLevelIds(config: DataCollectionConfig): DataCollectionConfig {
+  return {
+    ...config,
+    levels: config.levels.map(({ recordId: _recordId, ...level }) => level),
+  }
+}
 
 interface DataCollectionDrawerProps {
   open: boolean
@@ -66,7 +76,7 @@ export function DataCollectionDrawer({
           setConfig(itemData)
         } else {
           const catData = await getCategoryDataCollection(categoryId)
-          setConfig(catData)
+          setConfig(catData ? stripPersistedLevelIds(catData) : null)
           setItemConfig(null)
         }
       }
@@ -86,6 +96,22 @@ export function DataCollectionDrawer({
       setItemConfig(null)
     }
   }, [open, loadConfig])
+
+  const handleDeleteLevel = async (level: DataCollectionLevel) => {
+    if (!level.recordId) return
+
+    try {
+      if (mode === "item") {
+        await deleteServicePlanCategoryItemLevel(level.recordId)
+      } else {
+        await deleteServicePlanCategoryLevel(level.recordId)
+      }
+      toast.success("Level removed")
+    } catch {
+      toast.error("Failed to delete level")
+      throw new Error("Failed to delete level")
+    }
+  }
 
   const handleSave = async (values: DataCollectionFormValues) => {
     setIsSaving(true)
@@ -113,8 +139,8 @@ export function DataCollectionDrawer({
         toast.success(`Configuration applied to all items in "${categoryName}"`)
       } else if (mode === "item" && servicePlanCategoryItemId) {
         await upsertItemDataCollection({
-          servicePlanCategoryId: categoryId,
           servicePlanCategoryItemId,
+          name: itemName,
           type: values.type as DataCollectionType,
           weeklyDailyValue: values.weeklyDailyValue,
           dailyValue: values.dailyValue,
@@ -178,6 +204,7 @@ export function DataCollectionDrawer({
             initialTopography={itemConfig?.topography}
             initialActive={itemConfig?.active}
             onSave={handleSave}
+            onDeleteLevel={handleDeleteLevel}
             onCancel={onClose}
             isSaving={isSaving}
           />
