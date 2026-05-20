@@ -11,6 +11,9 @@ interface PremiumSwitchProps {
   description?: string
   disabled?: boolean
   variant?: "default" | "success" | "danger"
+  /** Label and toggle stay adjacent (for equal-width grid columns). */
+  compact?: boolean
+  className?: string
 }
 
 export function PremiumSwitch({
@@ -20,6 +23,8 @@ export function PremiumSwitch({
   description,
   disabled = false,
   variant = "default",
+  compact = false,
+  className,
 }: PremiumSwitchProps) {
   const variantColors = {
     default: {
@@ -42,11 +47,18 @@ export function PremiumSwitch({
   const colors = variantColors[variant]
 
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="flex-1">
+    <div
+      className={cn(
+        "flex",
+        compact ? "items-center gap-2" : "items-start justify-between gap-4",
+        className
+      )}
+    >
+      <div className={cn(compact ? "shrink-0" : "min-w-0 flex-1")}>
         <label
           className={cn(
             "text-sm font-medium transition-colors cursor-pointer",
+            compact && "whitespace-nowrap",
             colors.label,
             disabled && "opacity-50 cursor-not-allowed"
           )}

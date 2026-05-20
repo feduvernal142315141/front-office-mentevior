@@ -13,6 +13,12 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { Button } from "@/components/custom/Button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { DataCollectionLevel } from "@/lib/types/data-collection.types"
 import { LevelsLibraryModal } from "./LevelsLibraryModal"
 
@@ -35,7 +41,6 @@ export function LevelsTable({
   onCumulativeChange,
   disabled = false,
 }: LevelsTableProps) {
-  const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
 
   const handleLabelChange = (id: string, newLabel: string) => {
@@ -62,11 +67,9 @@ export function LevelsTable({
       value: showValueToggle ? false : undefined,
     }
     onChange([...levels, newLevel])
-    setAddMenuOpen(false)
   }
 
   const handleAddFromLibrary = () => {
-    setAddMenuOpen(false)
     setLibraryOpen(true)
   }
 
@@ -209,48 +212,42 @@ export function LevelsTable({
         </Table>
       </div>
 
-      {/* Add levels button with dropdown */}
-      <div className="flex justify-center relative">
-        <div className="relative">
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() => setAddMenuOpen(!addMenuOpen)}
-            disabled={disabled}
-            className="text-sm h-9 px-4 rounded-lg"
+      {/* Add levels — menu portals outside collapsible/drawer overflow */}
+      <div className="flex justify-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={disabled}
+              className="text-sm h-9 px-4 rounded-lg data-[state=open]:[&_svg:last-child]:rotate-180"
+            >
+              <Plus className="w-4 h-4" />
+              Add levels
+              <ChevronDown className="w-3.5 h-3.5 transition-transform duration-150" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="center"
+            sideOffset={6}
+            className="min-w-[180px] rounded-xl border border-gray-200 bg-white p-1 shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
           >
-            <Plus className="w-4 h-4" />
-            Add levels
-            <ChevronDown
-              className={cn(
-                "w-3.5 h-3.5 transition-transform duration-150",
-                addMenuOpen && "rotate-180"
-              )}
-            />
-          </Button>
-
-          {addMenuOpen && (
-            <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-50 bg-white border border-gray-200 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden min-w-[180px] animate-in fade-in-0 duration-150">
-              <button
-                type="button"
-                onClick={handleAddManual}
-                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors"
-              >
-                <Plus className="w-4 h-4 text-gray-400" />
-                Manual
-              </button>
-              <div className="mx-3 border-t border-gray-100" />
-              <button
-                type="button"
-                onClick={handleAddFromLibrary}
-                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors"
-              >
-                <BookOpen className="w-4 h-4 text-gray-400" />
-                From Library
-              </button>
-            </div>
-          )}
-        </div>
+            <DropdownMenuItem
+              onClick={handleAddManual}
+              className="cursor-pointer rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:bg-gray-50"
+            >
+              <Plus className="w-4 h-4 text-gray-400" />
+              Manual
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleAddFromLibrary}
+              className="cursor-pointer rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:bg-gray-50"
+            >
+              <BookOpen className="w-4 h-4 text-gray-400" />
+              From Library
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Levels Library Modal */}

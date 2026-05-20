@@ -1,58 +1,26 @@
-import type { LevelsLibraryGroup } from "@/lib/types/data-collection.types"
+export {
+  SERVICE_PLAN_VALUE_TYPE_OPTIONS,
+  SERVICE_PLAN_UNIT_OF_TIME_OPTIONS,
+  ServicePlanUnitOfTime,
+  ServicePlanValueType,
+} from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 
-// Weekly/Daily Value options
-export const WEEKLY_DAILY_OPTIONS = [
-  { value: "total", label: "Total" },
-  { value: "average", label: "Average" },
-]
+/** @deprecated Use SERVICE_PLAN_VALUE_TYPE_OPTIONS */
+export { SERVICE_PLAN_VALUE_TYPE_OPTIONS as WEEKLY_DAILY_OPTIONS } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 
-// Unit of Time options
-export const UNIT_OF_TIME_OPTIONS = [
-  { value: "seconds", label: "Seconds" },
-  { value: "minutes", label: "Minutes" },
-  { value: "hours", label: "Hours" },
-  { value: "days", label: "Days" },
-]
-
-// Levels Library data
-export const LEVELS_LIBRARY: LevelsLibraryGroup[] = [
-  {
-    id: "levels-of-prompts",
-    name: "Levels of Prompts",
-    items: [
-      { id: "nr", name: "No Response", abbreviation: "NR" },
-      { id: "pp", name: "Physical Prompt", abbreviation: "PP" },
-      { id: "mp", name: "Modeling Prompt", abbreviation: "MP" },
-      { id: "gp", name: "Gestural Prompt", abbreviation: "GP" },
-      { id: "vp", name: "Verbal Prompt", abbreviation: "VP" },
-      { id: "visp", name: "Visual Prompt", abbreviation: "VP" },
-      { id: "po", name: "Positional Prompt", abbreviation: "PO" },
-      { id: "i", name: "Independent", abbreviation: "I" },
-    ],
-  },
-  {
-    id: "levels-of-response",
-    name: "Levels of Response",
-    items: [
-      { id: "nc", name: "Non-compliance", abbreviation: "NC" },
-      { id: "ur", name: "Unsuccessful response", abbreviation: "-" },
-      { id: "sr", name: "Successful response", abbreviation: "+" },
-    ],
-  },
-  {
-    id: "levels-of-intensity",
-    name: "Levels of Intensity",
-    items: [
-      { id: "mild", name: "Mild", abbreviation: "1" },
-      { id: "moderate", name: "Moderate", abbreviation: "2" },
-      { id: "severe", name: "Severe", abbreviation: "3" },
-      { id: "extreme", name: "Extreme", abbreviation: "4" },
-    ],
-  },
-]
+/** @deprecated Use SERVICE_PLAN_UNIT_OF_TIME_OPTIONS */
+export { SERVICE_PLAN_UNIT_OF_TIME_OPTIONS as UNIT_OF_TIME_OPTIONS } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 
 // --- Helper functions: which fields are shown per type ---
 // These receive the resolved `name` or `group` from the catalog, not the UUID.
+
+function normalizeTypeName(typeName: string): string {
+  return typeName.trim().toLowerCase()
+}
+
+export function typeIsMeasurementLog(typeName: string): boolean {
+  return normalizeTypeName(typeName) === "measurement log"
+}
 
 export function typeRequiresWeeklyDaily(typeName: string): boolean {
   return typeName === "Frequency" || typeName === "Rate"

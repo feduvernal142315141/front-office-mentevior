@@ -1,3 +1,9 @@
+import {
+  parseServicePlanUnitOfTime,
+  parseServicePlanValueType,
+  ServicePlanUnitOfTime,
+  ServicePlanValueType,
+} from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { serviceGet, servicePut } from "@/lib/services/baseService"
 import type {
   DataCollectionConfig,
@@ -8,20 +14,29 @@ import type {
 } from "@/lib/types/data-collection.types"
 
 // ---------------------------------------------------------------------------
-// Backend contract (subject to change — only the minimal shape is wired today)
+// Backend contract
 // ---------------------------------------------------------------------------
 //   GET  /service-plan-category/{servicePlanCategoryId}/level
 //   PUT  /service-plan-category/{servicePlanCategoryId}/level
 //   GET  /service-plan-category-item/{servicePlanCategoryItemId}/level
 //   PUT  /service-plan-category-item/{servicePlanCategoryItemId}/level
 //
-// Body shape (both endpoints):
-//   { servicePlanCategoryId, typeEventCatalogId, levels: [{ id, level, description }] }
+// Body:
+//   {
+//     servicePlanCategoryId,
+//     dataCollection: {
+//       typeEventCatalogId,
+//       dailyValue?: "TOTAL" | "AVERAGE",
+//       weeklyValue?: "TOTAL" | "AVERAGE",
+//       unitOfTime?: "SECONDS" | "MINUTES" | "HOURS" | "DAYS",
+//       unitMeasurementCatalogId?: string,
+//       recordingsNumber?: number,
+//       intervalLength?: number,
+//       levels: [{ id?, level, description }]
+//     }
+//   }
 //
-// Form fields that are NOT part of the contract yet
-// (weeklyDailyValue, intervalLength, unitOfTime, suggestedNumberOfRecordings,
-//  cumulative, topography, active) stay in the UI but are not round-tripped.
-// When the contract grows, just extend `toApiPayload` / `fromApiResponse`.
+// Not in contract yet: cumulative, topography, active (item-only UI fields).
 // ---------------------------------------------------------------------------
 
 interface ApiLevel {
@@ -30,19 +45,33 @@ interface ApiLevel {
   description?: string
 }
 
+interface ApiDataCollection {
+  typeEventCatalogId?: string
+  dailyValue?: ServicePlanValueType
+  weeklyValue?: ServicePlanValueType
+  unitOfTime?: ServicePlanUnitOfTime
+  unitMeasurementCatalogId?: string
+  recordingsNumber?: number
+  intervalLength?: number
+  levels?: ApiLevel[]
+}
+
 interface ApiPayload {
   servicePlanCategoryId: string
-  typeEventCatalogId: string
-  levels: Array<{
-    id?: string
-    level: string
-    description: string
-  }>
+  dataCollection: ApiDataCollection
 }
 
 interface ApiResponse {
   servicePlanCategoryId?: string
+  dataCollection?: ApiDataCollection
+  // Legacy flat shape (tolerated on read only)
   typeEventCatalogId?: string
+  dailyValue?: ServicePlanValueType
+  weeklyValue?: ServicePlanValueType
+  unitOfTime?: ServicePlanUnitOfTime
+  unitMeasurementCatalogId?: string
+  recordingsNumber?: number
+  intervalLength?: number
   levels?: ApiLevel[]
 }
 
@@ -55,6 +84,15 @@ function asString(value: unknown): string {
 function asOptionalString(value: unknown): string | undefined {
   const parsed = asString(value).trim()
   return parsed.length > 0 ? parsed : undefined
+}
+
+function asOptionalNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string") {
+    const parsed = Number(value.trim())
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+  return undefined
 }
 
 function extractEntity(raw: unknown): unknown {
@@ -86,7 +124,8 @@ function normalizeLevels(rawLevels: unknown): DataCollectionLevel[] {
       if (label.length === 0 && description.length === 0) return null
 
       return {
-        id: id ?? crypto.randomUUID(),
+        id: crypto.randomUUID(),
+        ...(id ? { recordId: id } : {}),
         label,
         description,
       } satisfies DataCollectionLevel
@@ -94,20 +133,114 @@ function normalizeLevels(rawLevels: unknown): DataCollectionLevel[] {
     .filter((entry): entry is DataCollectionLevel => entry !== null)
 }
 
+function extractApiDataCollection(response: ApiResponse): ApiDataCollection | null {
+  if (response.dataCollection && typeof response.dataCollection === "object") {
+    return response.dataCollection
+  }
+
+  const typeEventCatalogId = asOptionalString(response.typeEventCatalogId)
+  const hasLegacyFields =
+    typeEventCatalogId ||
+    response.dailyValue ||
+    response.weeklyValue ||
+    response.unitOfTime ||
+    asOptionalString(response.unitMeasurementCatalogId) ||
+    response.recordingsNumber !== undefined ||
+    response.intervalLength !== undefined ||
+    (Array.isArray(response.levels) && response.levels.length > 0)
+
+  if (!hasLegacyFields) return null
+
+  return {
+    typeEventCatalogId,
+    dailyValue: response.dailyValue,
+    weeklyValue: response.weeklyValue,
+    unitOfTime: response.unitOfTime,
+    unitMeasurementCatalogId: asOptionalString(response.unitMeasurementCatalogId),
+    recordingsNumber: response.recordingsNumber,
+    intervalLength: response.intervalLength,
+    levels: response.levels,
+  }
+}
+
+function fromApiDataCollection(dc: ApiDataCollection): DataCollectionConfig {
+  const typeEventCatalogId = asString(dc.typeEventCatalogId)
+  const dailyValue = parseServicePlanValueType(dc.dailyValue)
+  const weeklyDailyValue = parseServicePlanValueType(dc.weeklyValue)
+  const unitOfTime = parseServicePlanUnitOfTime(dc.unitOfTime)
+  const unitMeasurementCatalogId = asOptionalString(dc.unitMeasurementCatalogId)
+  const suggestedNumberOfRecordings = asOptionalNumber(dc.recordingsNumber)
+  const intervalLength = asOptionalNumber(dc.intervalLength)
+  const levels = normalizeLevels(dc.levels)
+
+  return {
+    type: typeEventCatalogId,
+    dailyValue,
+    weeklyDailyValue,
+    unitOfTime,
+    unitMeasurementCatalogId,
+    suggestedNumberOfRecordings,
+    intervalLength,
+    levels,
+  }
+}
+
 function fromApiResponse(raw: unknown): DataCollectionConfig | null {
   const entity = extractEntity(raw)
   if (!entity || typeof entity !== "object") return null
 
-  const response = entity as ApiResponse
-  const typeEventCatalogId = asString(response.typeEventCatalogId)
-  const levels = normalizeLevels(response.levels)
+  const dataCollection = extractApiDataCollection(entity as ApiResponse)
+  if (!dataCollection) return null
 
-  if (typeEventCatalogId.length === 0 && levels.length === 0) return null
+  const config = fromApiDataCollection(dataCollection)
+  const hasContent =
+    config.type.length > 0 ||
+    config.levels.length > 0 ||
+    config.dailyValue !== undefined ||
+    config.weeklyDailyValue !== undefined ||
+    config.unitOfTime !== undefined ||
+    config.unitMeasurementCatalogId !== undefined ||
+    config.suggestedNumberOfRecordings !== undefined ||
+    config.intervalLength !== undefined
 
-  return {
-    type: typeEventCatalogId,
-    levels,
+  return hasContent ? config : null
+}
+
+function toApiDataCollection(
+  dto: UpsertCategoryDataCollectionDto | UpsertItemDataCollectionDto
+): ApiDataCollection {
+  const dataCollection: ApiDataCollection = {
+    typeEventCatalogId: dto.type,
+    levels: dto.levels.map((level) => {
+      const entry: ApiLevel = {
+        level: level.label,
+        description: level.description,
+      }
+      if (level.id) entry.id = level.id
+      return entry
+    }),
   }
+
+  if (dto.dailyValue) {
+    dataCollection.dailyValue = dto.dailyValue
+  }
+  if (dto.weeklyDailyValue) {
+    dataCollection.weeklyValue = dto.weeklyDailyValue
+  }
+  if (dto.unitOfTime) {
+    dataCollection.unitOfTime = dto.unitOfTime
+  }
+  if (dto.unitMeasurementCatalogId) {
+    dataCollection.unitMeasurementCatalogId = dto.unitMeasurementCatalogId
+  }
+  if (dto.suggestedNumberOfRecordings !== undefined) {
+    dataCollection.recordingsNumber = dto.suggestedNumberOfRecordings
+  }
+  if (dto.intervalLength !== undefined) {
+    dataCollection.intervalLength = dto.intervalLength
+  }
+
+  return dataCollection
 }
 
 function toApiPayload(
@@ -115,11 +248,7 @@ function toApiPayload(
 ): ApiPayload {
   return {
     servicePlanCategoryId: dto.servicePlanCategoryId,
-    typeEventCatalogId: dto.type,
-    levels: dto.levels.map((level) => ({
-      level: level.label,
-      description: level.description,
-    })),
+    dataCollection: toApiDataCollection(dto),
   }
 }
 
@@ -198,9 +327,6 @@ export async function getItemDataCollection(
   const base = fromApiResponse(response.data)
   if (!base) return null
 
-  // Extra fields (itemName, categoryName, topography, active) are not part of
-  // the current contract — the drawer fills the visible name from props and
-  // defaults topography/active until the contract grows.
   return {
     ...base,
     itemId: "",

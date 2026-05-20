@@ -1,13 +1,17 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/custom/Button"
 import { Checkbox } from "@/components/custom/Checkbox"
-import { LEVELS_LIBRARY } from "@/lib/modules/service-plans/constants/data-collection.constants"
-import type { DataCollectionLevel, LevelsLibraryItem } from "@/lib/types/data-collection.types"
+import { useLevelsCatalog } from "@/lib/modules/service-plans/hooks/use-levels-catalog"
+import type {
+  DataCollectionLevel,
+  LevelsLibraryGroup,
+  LevelsLibraryItem,
+} from "@/lib/types/data-collection.types"
 
 interface LevelsLibraryModalProps {
   open: boolean
@@ -22,21 +26,30 @@ export function LevelsLibraryModal({
   onInsert,
   existingLabels = [],
 }: LevelsLibraryModalProps) {
-  const [activeGroupId, setActiveGroupId] = useState(LEVELS_LIBRARY[0]?.id ?? "")
+  const { groups, isLoading, error, refetch } = useLevelsCatalog(open)
+  const [activeGroupId, setActiveGroupId] = useState("")
   const [selectedItems, setSelectedItems] = useState<Map<string, LevelsLibraryItem>>(new Map())
 
-  const activeGroup = LEVELS_LIBRARY.find((g) => g.id === activeGroupId)
+  useEffect(() => {
+    if (!open || groups.length === 0) return
+
+    setActiveGroupId((current) =>
+      current && groups.some((group) => group.id === current) ? current : groups[0].id
+    )
+  }, [open, groups])
+
+  const activeGroup = groups.find((group) => group.id === activeGroupId)
 
   const groupSelectionState = useMemo(() => {
     const state: Record<string, "none" | "some" | "all"> = {}
-    for (const group of LEVELS_LIBRARY) {
+    for (const group of groups) {
       const selectedCount = group.items.filter((item) => selectedItems.has(item.id)).length
       if (selectedCount === 0) state[group.id] = "none"
       else if (selectedCount === group.items.length) state[group.id] = "all"
       else state[group.id] = "some"
     }
     return state
-  }, [selectedItems])
+  }, [groups, selectedItems])
 
   const toggleItem = (item: LevelsLibraryItem) => {
     setSelectedItems((prev) => {
@@ -51,7 +64,7 @@ export function LevelsLibraryModal({
   }
 
   const toggleGroup = (groupId: string) => {
-    const group = LEVELS_LIBRARY.find((g) => g.id === groupId)
+    const group = groups.find((entry) => entry.id === groupId)
     if (!group) return
 
     setSelectedItems((prev) => {
@@ -75,20 +88,22 @@ export function LevelsLibraryModal({
         label: item.abbreviation,
         description: item.name,
       }))
+
     onInsert(newLevels)
     handleClose()
   }
 
   const handleClose = () => {
     setSelectedItems(new Map())
-    setActiveGroupId(LEVELS_LIBRARY[0]?.id ?? "")
+    setActiveGroupId("")
     onClose()
   }
 
   const totalSelected = selectedItems.size
+  const canInsert = !isLoading && !error && groups.length > 0
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+    <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
       <DialogContent
         className="sm:max-w-[620px] !rounded-2xl p-0 gap-0 overflow-hidden bg-white shadow-[0_25px_60px_rgba(0,0,0,0.15)]"
         showCloseButton
@@ -97,100 +112,34 @@ export function LevelsLibraryModal({
           Levels
         </DialogTitle>
 
-        <div className="flex min-h-[340px] max-h-[440px]">
-          {/* Left panel — groups */}
-          <div className="w-[210px] border-r border-slate-100 overflow-y-auto bg-slate-50/50">
-            <div className="py-2">
-              {LEVELS_LIBRARY.map((group) => {
-                const isActive = group.id === activeGroupId
-                const selState = groupSelectionState[group.id]
-
-                return (
-                  <button
-                    key={group.id}
-                    type="button"
-                    onClick={() => setActiveGroupId(group.id)}
-                    className={cn(
-                      "w-full flex items-center gap-2.5 px-4 py-3.5 text-left transition-all duration-150",
-                      isActive
-                        ? "bg-white border-r-2 border-r-[#037ECC] shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
-                        : "hover:bg-white/60"
-                    )}
-                  >
-                    <Checkbox
-                      checked={selState === "all"}
-                      indeterminate={selState === "some"}
-                      onCheckedChange={() => toggleGroup(group.id)}
-                      size="sm"
-                    />
-                    <span
-                      className={cn(
-                        "text-sm flex-1 truncate leading-tight",
-                        isActive ? "font-semibold text-[#037ECC]" : "text-slate-600"
-                      )}
-                    >
-                      {group.name}
-                    </span>
-                    <ChevronRight
-                      className={cn(
-                        "w-4 h-4 flex-shrink-0 transition-colors",
-                        isActive ? "text-[#037ECC]" : "text-slate-300"
-                      )}
-                    />
-                  </button>
-                )
-              })}
-            </div>
+        {isLoading ? (
+          <div className="flex min-h-[340px] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
-
-          {/* Right panel — items */}
-          <div className="flex-1 overflow-y-auto bg-white">
-            <div className="py-2">
-              {activeGroup?.items.map((item) => {
-                const isSelected = selectedItems.has(item.id)
-                const alreadyExists = existingLabels.includes(item.abbreviation)
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => !alreadyExists && toggleItem(item)}
-                    disabled={alreadyExists}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-5 py-3 text-left transition-all duration-150",
-                      isSelected && "bg-blue-50/70",
-                      !isSelected && !alreadyExists && "hover:bg-slate-50",
-                      alreadyExists && "opacity-35 cursor-not-allowed"
-                    )}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleItem(item)}
-                      disabled={alreadyExists}
-                      size="sm"
-                    />
-                    <span
-                      className={cn(
-                        "text-sm leading-tight",
-                        isSelected ? "font-medium text-[#037ECC]" : "text-slate-700"
-                      )}
-                    >
-                      {item.name}
-                      <span className={cn(
-                        "ml-1",
-                        isSelected ? "text-[#037ECC]/60" : "text-slate-400"
-                      )}>
-                        ({item.abbreviation})
-                      </span>
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+        ) : error ? (
+          <CatalogErrorState message={error.message} onRetry={() => void refetch()} />
+        ) : groups.length === 0 ? (
+          <div className="flex min-h-[340px] items-center justify-center px-6">
+            <p className="text-center text-sm text-slate-500">No levels available in catalog.</p>
           </div>
-        </div>
+        ) : (
+          <div className="flex min-h-[340px] max-h-[440px]">
+            <GroupsPanel
+              groups={groups}
+              activeGroupId={activeGroupId}
+              groupSelectionState={groupSelectionState}
+              onSelectGroup={setActiveGroupId}
+              onToggleGroup={toggleGroup}
+            />
+            <ItemsPanel
+              activeGroup={activeGroup}
+              selectedItems={selectedItems}
+              existingLabels={existingLabels}
+              onToggleItem={toggleItem}
+            />
+          </div>
+        )}
 
-        {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/40">
           <Button type="button" variant="secondary" onClick={handleClose} className="min-w-[90px]">
             Cancel
@@ -199,13 +148,152 @@ export function LevelsLibraryModal({
             type="button"
             variant="primary"
             onClick={handleInsert}
-            disabled={totalSelected === 0}
+            disabled={!canInsert || totalSelected === 0}
             className="min-w-[90px]"
           >
             Insert{totalSelected > 0 ? ` (${totalSelected})` : ""}
           </Button>
-        </div>
+          </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function CatalogErrorState({
+  message,
+  onRetry,
+}: {
+  message: string
+  onRetry: () => void
+}) {
+  return (
+    <div className="flex min-h-[340px] flex-col items-center justify-center gap-4 px-6 py-10">
+      <p className="text-center text-sm text-red-600">{message}</p>
+      <Button type="button" variant="secondary" onClick={onRetry}>
+        Retry
+      </Button>
+    </div>
+  )
+}
+
+interface GroupsPanelProps {
+  groups: LevelsLibraryGroup[]
+  activeGroupId: string
+  groupSelectionState: Record<string, "none" | "some" | "all">
+  onSelectGroup: (groupId: string) => void
+  onToggleGroup: (groupId: string) => void
+}
+
+function GroupsPanel({
+  groups,
+  activeGroupId,
+  groupSelectionState,
+  onSelectGroup,
+  onToggleGroup,
+}: GroupsPanelProps) {
+  return (
+    <div className="w-[210px] border-r border-slate-100 overflow-y-auto bg-slate-50/50">
+      <div className="py-2">
+        {groups.map((group) => {
+          const isActive = group.id === activeGroupId
+          const selState = groupSelectionState[group.id]
+
+          return (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => onSelectGroup(group.id)}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-4 py-3.5 text-left transition-all duration-150",
+                isActive
+                  ? "bg-white border-r-2 border-r-[#037ECC] shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+                  : "hover:bg-white/60"
+              )}
+            >
+              <Checkbox
+                checked={selState === "all"}
+                indeterminate={selState === "some"}
+                onCheckedChange={() => onToggleGroup(group.id)}
+                size="sm"
+              />
+              <span
+                className={cn(
+                  "text-sm flex-1 truncate leading-tight",
+                  isActive ? "font-semibold text-[#037ECC]" : "text-slate-600"
+                )}
+              >
+                {group.name}
+              </span>
+              <ChevronRight
+                className={cn(
+                  "w-4 h-4 flex-shrink-0 transition-colors",
+                  isActive ? "text-[#037ECC]" : "text-slate-300"
+                )}
+              />
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+interface ItemsPanelProps {
+  activeGroup: LevelsLibraryGroup | undefined
+  selectedItems: Map<string, LevelsLibraryItem>
+  existingLabels: string[]
+  onToggleItem: (item: LevelsLibraryItem) => void
+}
+
+function ItemsPanel({
+  activeGroup,
+  selectedItems,
+  existingLabels,
+  onToggleItem,
+}: ItemsPanelProps) {
+  return (
+    <div className="flex-1 overflow-y-auto bg-white">
+      <div className="py-2">
+        {activeGroup?.items.map((item) => {
+          const isSelected = selectedItems.has(item.id)
+          const alreadyExists = existingLabels.includes(item.abbreviation)
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => !alreadyExists && onToggleItem(item)}
+              disabled={alreadyExists}
+              className={cn(
+                "w-full flex items-center gap-3 px-5 py-3 text-left transition-all duration-150",
+                isSelected && "bg-blue-50/70",
+                !isSelected && !alreadyExists && "hover:bg-slate-50",
+                alreadyExists && "opacity-35 cursor-not-allowed"
+              )}
+            >
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleItem(item)}
+                disabled={alreadyExists}
+                size="sm"
+              />
+              <span
+                className={cn(
+                  "text-sm leading-tight",
+                  isSelected ? "font-medium text-[#037ECC]" : "text-slate-700"
+                )}
+              >
+                {item.name}
+                <span
+                  className={cn("ml-1", isSelected ? "text-[#037ECC]/60" : "text-slate-400")}
+                >
+                  ({item.abbreviation})
+                </span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }

@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Minus, Plus } from "lucide-react"
+import { ChevronDown, Minus, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -12,6 +12,11 @@ import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { GroupedSelect } from "@/components/custom/GroupedSelect"
 import { Button } from "@/components/custom/Button"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 import { LevelsTable } from "./LevelsTable"
 
@@ -21,17 +26,24 @@ import {
 } from "@/lib/schemas/data-collection-form.schema"
 
 import {
-  WEEKLY_DAILY_OPTIONS,
-  UNIT_OF_TIME_OPTIONS,
+  SERVICE_PLAN_UNIT_OF_TIME_OPTIONS,
+  SERVICE_PLAN_VALUE_TYPE_OPTIONS,
+  ServicePlanUnitOfTime,
+  ServicePlanValueType,
   typeRequiresWeeklyDaily,
   typeRequiresUnitOfTime,
   typeRequiresInterval,
   typeRequiresDailyAndWeekly,
   typeHasCumulativeValueToggles,
   typeHasLevels,
+  typeIsMeasurementLog,
 } from "@/lib/modules/service-plans/constants/data-collection.constants"
 
 import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
+import { useUnitMeasurementCatalog } from "@/lib/modules/service-plans/hooks/use-unit-measurement-catalog"
+
+import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
+import { DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
 
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 
@@ -69,19 +81,44 @@ export function DataCollectionForm({
     resolver: zodResolver(dataCollectionFormSchema),
     defaultValues: {
       type: initialConfig?.type ?? "",
-      weeklyDailyValue: initialConfig?.weeklyDailyValue ?? "total",
-      dailyValue: initialConfig?.dailyValue ?? "total",
+      weeklyDailyValue: initialConfig?.weeklyDailyValue ?? ServicePlanValueType.TOTAL,
+      dailyValue: initialConfig?.dailyValue ?? ServicePlanValueType.TOTAL,
+      unitMeasurementCatalogId: initialConfig?.unitMeasurementCatalogId ?? "",
       intervalLength: initialConfig?.intervalLength ?? 30,
-      unitOfTime: initialConfig?.unitOfTime ?? "seconds",
+      unitOfTime: initialConfig?.unitOfTime ?? ServicePlanUnitOfTime.SECONDS,
       suggestedNumberOfRecordings: initialConfig?.suggestedNumberOfRecordings ?? 10,
       cumulative: initialConfig?.cumulative ?? false,
       levels: initialConfig?.levels ?? [],
       topography: initialTopography ?? "",
       active: initialActive ?? true,
+      chart: DEFAULT_CHART_CONFIG,
     },
   })
 
   const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } = useTypeEventCatalog()
+
+  useEffect(() => {
+    if (!initialConfig) return
+
+    reset({
+      type: initialConfig.type ?? "",
+      weeklyDailyValue: initialConfig.weeklyDailyValue ?? ServicePlanValueType.TOTAL,
+      dailyValue: initialConfig.dailyValue ?? ServicePlanValueType.TOTAL,
+      unitMeasurementCatalogId: initialConfig.unitMeasurementCatalogId ?? "",
+      intervalLength: initialConfig.intervalLength ?? 30,
+      unitOfTime: initialConfig.unitOfTime ?? ServicePlanUnitOfTime.SECONDS,
+      suggestedNumberOfRecordings: initialConfig.suggestedNumberOfRecordings ?? 10,
+      cumulative: initialConfig.cumulative ?? false,
+      levels: initialConfig.levels ?? [],
+      topography: initialTopography ?? "",
+      active: initialActive ?? true,
+      chart: DEFAULT_CHART_CONFIG,
+    })
+  }, [initialConfig, initialTopography, initialActive, reset])
+
+  const [openSection, setOpenSection] = useState<"data" | "chart" | null>("data")
+  const isDataCollectionOpen = openSection === "data"
+  const isChartOpen = openSection === "chart"
 
   const watchedType = watch("type")
   const watchedLevels = watch("levels")
@@ -95,15 +132,28 @@ export function DataCollectionForm({
     return { name: item?.name ?? "", group: item?.group ?? "" }
   }, [watchedType, typeItemsMap])
 
+  const isMeasurementLogType = typeIsMeasurementLog(resolvedType.name)
+  const {
+    groups: unitMeasurementGroups,
+    isLoading: isLoadingUnitMeasurement,
+  } = useUnitMeasurementCatalog(isMeasurementLogType)
+
   // Reset type-specific fields when type changes
   useEffect(() => {
-    // weeklyDailyValue is used by Frequency, Rate and Duration-like types.
-    if (!typeRequiresWeeklyDaily(resolvedType.name) && !typeRequiresDailyAndWeekly(resolvedType.name)) {
+    // weeklyDailyValue is used by Frequency, Rate, Duration-like and Measurement log.
+    if (
+      !typeRequiresWeeklyDaily(resolvedType.name) &&
+      !typeRequiresDailyAndWeekly(resolvedType.name) &&
+      !typeIsMeasurementLog(resolvedType.name)
+    ) {
       setValue("weeklyDailyValue", undefined)
     }
-    // dailyValue is exclusive to Duration-like types.
-    if (!typeRequiresDailyAndWeekly(resolvedType.name)) {
+    // dailyValue is used by Duration-like types and Measurement log.
+    if (!typeRequiresDailyAndWeekly(resolvedType.name) && !typeIsMeasurementLog(resolvedType.name)) {
       setValue("dailyValue", undefined)
+    }
+    if (!typeIsMeasurementLog(resolvedType.name)) {
+      setValue("unitMeasurementCatalogId", undefined)
     }
     if (!typeRequiresInterval(resolvedType.group)) {
       setValue("intervalLength", undefined)
@@ -208,12 +258,37 @@ export function DataCollectionForm({
           </div>
         )}
 
-        {/* --- Data Collection section --- */}
-        <div className="space-y-5">
-          <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">
-            Data Collection
-          </h3>
+        {/* --- Data Collection (collapsible) --- */}
+        <Collapsible
+          open={isDataCollectionOpen}
+          onOpenChange={(next) => setOpenSection(next ? "data" : null)}
+          className="group rounded-xl border border-slate-200 bg-white"
+        >
+          <CollapsibleTrigger
+            type="button"
+            className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/20"
+            aria-label={isDataCollectionOpen ? "Collapse data collection" : "Expand data collection"}
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">
+                Data Collection
+              </h3>
+              {watchedType && typeHasLevels(watchedType) && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                  {(watchedLevels ?? []).length} level{(watchedLevels ?? []).length === 1 ? "" : "s"}
+                </span>
+              )}
+            </div>
+            <ChevronDown
+              className={cn(
+                "h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200",
+                isDataCollectionOpen && "rotate-180"
+              )}
+            />
+          </CollapsibleTrigger>
 
+          <CollapsibleContent className="overflow-visible border-t border-slate-100">
+            <div className="space-y-5 px-4 py-5">
           {/* Type (grouped select) */}
           <Controller
             name="type"
@@ -242,10 +317,10 @@ export function DataCollectionForm({
                 render={({ field }) => (
                   <FloatingSelect
                     label="Unit of time"
-                    value={field.value ?? ""}
+                    value={field.value ?? ServicePlanUnitOfTime.SECONDS}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    options={UNIT_OF_TIME_OPTIONS}
+                    options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
                   />
                 )}
               />
@@ -255,10 +330,10 @@ export function DataCollectionForm({
                 render={({ field }) => (
                   <FloatingSelect
                     label="Weekly value"
-                    value={field.value ?? "total"}
+                    value={field.value ?? ServicePlanValueType.TOTAL}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    options={WEEKLY_DAILY_OPTIONS}
+                    options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                   />
                 )}
               />
@@ -273,13 +348,64 @@ export function DataCollectionForm({
               render={({ field }) => (
                 <FloatingSelect
                   label="Weekly / Daily Value"
-                  value={field.value ?? "total"}
+                  value={field.value ?? ServicePlanValueType.TOTAL}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
-                  options={WEEKLY_DAILY_OPTIONS}
+                  options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                 />
               )}
             />
+          )}
+
+          {/* Measurement log → Unit of measurement + Daily/Weekly value */}
+          {isMeasurementLogType && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Controller
+                  name="unitMeasurementCatalogId"
+                  control={control}
+                  render={({ field }) => (
+                    <GroupedSelect
+                      label="Unit of Measurement"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      groups={unitMeasurementGroups}
+                      hasError={!!errors.unitMeasurementCatalogId}
+                      searchable
+                      disabled={isLoadingUnitMeasurement}
+                    />
+                  )}
+                />
+                <Controller
+                  name="dailyValue"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingSelect
+                      label="Daily value"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                    />
+                  )}
+                />
+              </div>
+
+              <Controller
+                name="weeklyDailyValue"
+                control={control}
+                render={({ field }) => (
+                  <FloatingSelect
+                    label="Weekly value"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                  />
+                )}
+              />
+            </div>
           )}
 
           {/* Duration / Response latency / Interresponse time
@@ -293,10 +419,10 @@ export function DataCollectionForm({
                   render={({ field }) => (
                     <FloatingSelect
                       label="Unit of time"
-                      value={field.value ?? ""}
+                      value={field.value ?? ServicePlanUnitOfTime.SECONDS}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
-                      options={UNIT_OF_TIME_OPTIONS}
+                      options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
                     />
                   )}
                 />
@@ -324,10 +450,10 @@ export function DataCollectionForm({
                   render={({ field }) => (
                     <FloatingSelect
                       label="Daily value"
-                      value={field.value ?? "total"}
+                      value={field.value ?? ServicePlanValueType.TOTAL}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
-                      options={WEEKLY_DAILY_OPTIONS}
+                      options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                     />
                   )}
                 />
@@ -337,10 +463,10 @@ export function DataCollectionForm({
                   render={({ field }) => (
                     <FloatingSelect
                       label="Weekly value"
-                      value={field.value ?? "total"}
+                      value={field.value ?? ServicePlanValueType.TOTAL}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
-                      options={WEEKLY_DAILY_OPTIONS}
+                      options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                     />
                   )}
                 />
@@ -410,10 +536,10 @@ export function DataCollectionForm({
                       <label className="text-sm font-medium text-slate-600 opacity-0">.</label>
                       <FloatingSelect
                         label="Unit of time"
-                        value={field.value ?? "seconds"}
+                        value={field.value ?? ServicePlanUnitOfTime.SECONDS}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
-                        options={UNIT_OF_TIME_OPTIONS}
+                        options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
                       />
                     </div>
                   )}
@@ -450,7 +576,17 @@ export function DataCollectionForm({
               onCumulativeChange={(v) => setValue("cumulative", v)}
             />
           )}
-        </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* --- Chart (collapsible) --- */}
+        <ChartCollapsibleSection
+          control={control}
+          mode={mode}
+          open={isChartOpen}
+          onOpenChange={(next) => setOpenSection(next ? "chart" : null)}
+        />
       </div>
 
       {/* Bottom bar */}

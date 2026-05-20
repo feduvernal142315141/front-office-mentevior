@@ -91,6 +91,7 @@ export function DataCollectionDrawer({
     setIsSaving(true)
     try {
       const levelsPayload = (values.levels ?? []).map((l) => ({
+        ...(l.recordId ? { id: l.recordId } : {}),
         label: l.label,
         description: l.description,
         value: l.value,
@@ -100,11 +101,12 @@ export function DataCollectionDrawer({
         await upsertCategoryDataCollection({
           servicePlanCategoryId: categoryId,
           type: values.type as DataCollectionType,
-          weeklyDailyValue: values.weeklyDailyValue as "total" | "average" | undefined,
-          dailyValue: values.dailyValue as "total" | "average" | undefined,
+          weeklyDailyValue: values.weeklyDailyValue,
+          dailyValue: values.dailyValue,
+          unitMeasurementCatalogId: values.unitMeasurementCatalogId,
           levels: levelsPayload,
           intervalLength: values.intervalLength,
-          unitOfTime: values.unitOfTime as "seconds" | "minutes" | "hours" | undefined,
+          unitOfTime: values.unitOfTime,
           suggestedNumberOfRecordings: values.suggestedNumberOfRecordings,
           cumulative: values.cumulative,
         })
@@ -114,11 +116,12 @@ export function DataCollectionDrawer({
           servicePlanCategoryId: categoryId,
           servicePlanCategoryItemId,
           type: values.type as DataCollectionType,
-          weeklyDailyValue: values.weeklyDailyValue as "total" | "average" | undefined,
-          dailyValue: values.dailyValue as "total" | "average" | undefined,
+          weeklyDailyValue: values.weeklyDailyValue,
+          dailyValue: values.dailyValue,
+          unitMeasurementCatalogId: values.unitMeasurementCatalogId,
           levels: levelsPayload,
           intervalLength: values.intervalLength,
-          unitOfTime: values.unitOfTime as "seconds" | "minutes" | "hours" | undefined,
+          unitOfTime: values.unitOfTime,
           suggestedNumberOfRecordings: values.suggestedNumberOfRecordings,
           cumulative: values.cumulative,
           topography: values.topography ?? "",
