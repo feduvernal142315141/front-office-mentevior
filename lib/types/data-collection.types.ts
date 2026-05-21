@@ -2,10 +2,10 @@ import {
   ServicePlanUnitOfTime,
   ServicePlanValueType,
 } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
+import type { ChartConfig } from "@/lib/modules/service-plans/constants/chart.constants"
 
 export { ServicePlanUnitOfTime, ServicePlanValueType }
 
-// --- Data Collection Type (UUID from /type-event/catalog) ---
 export type DataCollectionType = string
 
 export interface DataCollectionLevel {
@@ -18,7 +18,6 @@ export interface DataCollectionLevel {
   value?: boolean
 }
 
-// --- Base config ---
 export interface DataCollectionConfig {
   id?: string
   type: DataCollectionType | ""
@@ -30,15 +29,14 @@ export interface DataCollectionConfig {
   unitOfTime?: ServicePlanUnitOfTime
   suggestedNumberOfRecordings?: number
   cumulative?: boolean
+  chart?: ChartConfig
 }
 
-// --- Category-level config ---
 export interface CategoryDataCollectionConfig extends DataCollectionConfig {
   categoryId: string
   categoryName: string
 }
 
-// --- Item-level config (extends with extra fields) ---
 export interface ItemDataCollectionConfig extends DataCollectionConfig {
   itemId: string
   itemName: string
@@ -49,7 +47,6 @@ export interface ItemDataCollectionConfig extends DataCollectionConfig {
   isCustomOverride?: boolean
 }
 
-// --- API DTOs ---
 export interface UpsertCategoryDataCollectionDto {
   servicePlanCategoryId: string
   type: DataCollectionType
@@ -66,6 +63,7 @@ export interface UpsertCategoryDataCollectionDto {
   unitOfTime?: ServicePlanUnitOfTime
   suggestedNumberOfRecordings?: number
   cumulative?: boolean
+  chart?: ChartConfig
 }
 
 export interface UpsertItemDataCollectionDto {
@@ -87,9 +85,9 @@ export interface UpsertItemDataCollectionDto {
   unitOfTime?: ServicePlanUnitOfTime
   suggestedNumberOfRecordings?: number
   cumulative?: boolean
+  chart?: ChartConfig
 }
 
-// --- Levels Library ---
 export interface LevelsLibraryGroup {
   id: string
   name: string

@@ -25,12 +25,14 @@ import { ChartDatasetTab } from "./ChartDatasetTab"
 import { ChartObjectivesTab } from "./ChartObjectivesTab"
 
 import {
-  CHART_DATASET_OPTIONS,
-  ChartDataset,
   DEFAULT_CHART_CONFIG,
-  DEFAULT_Y_AXIS_ID,
   createDefaultDatasetVisualConfig,
+  isBaselineDataset,
+  isObjectivesDataset,
+  isStackedDataset,
 } from "@/lib/modules/service-plans/constants/chart.constants"
+import { useDatasetsCatalog } from "@/lib/modules/service-plans/hooks/use-datasets-catalog"
+import type { DatasetCatalogEntry } from "@/lib/modules/service-plans/services/datasets-catalog.service"
 import type { DataCollectionFormValues } from "@/lib/schemas/data-collection-form.schema"
 
 const STATIC_TABS = {
@@ -39,14 +41,15 @@ const STATIC_TABS = {
   Y_AXES: "y-axes",
 } as const
 
-function datasetTabId(dataset: ChartDataset): string {
-  return `dataset:${dataset}`
+const DATASET_TAB_PREFIX = "dataset:"
+
+function datasetTabId(datasetId: string): string {
+  return `${DATASET_TAB_PREFIX}${datasetId}`
 }
 
-function parseDatasetTabId(tabId: string): ChartDataset | null {
-  if (!tabId.startsWith("dataset:")) return null
-  const value = tabId.slice("dataset:".length) as ChartDataset
-  return Object.values(ChartDataset).includes(value) ? value : null
+function parseDatasetTabId(tabId: string): string | null {
+  if (!tabId.startsWith(DATASET_TAB_PREFIX)) return null
+  return tabId.slice(DATASET_TAB_PREFIX.length)
 }
 
 interface ChartCollapsibleSectionProps {
@@ -71,6 +74,21 @@ export function ChartCollapsibleSection({
   const [activeTab, setActiveTab] = useState<string>(STATIC_TABS.GENERAL)
   const sectionRef = useRef<HTMLDivElement>(null)
 
+  const {
+    entries: datasetEntries,
+    isLoading: isDatasetsLoading,
+    error: datasetsError,
+    refetch: refetchDatasets,
+  } = useDatasetsCatalog(open)
+
+  const datasetById = useMemo(() => {
+    const map = new Map<string, DatasetCatalogEntry>()
+    for (const entry of datasetEntries) {
+      map.set(entry.id, entry)
+    }
+    return map
+  }, [datasetEntries])
+
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen)
     if (nextOpen) {
@@ -87,14 +105,15 @@ export function ChartCollapsibleSection({
 
   const datasetTabs = useMemo(
     () =>
-      CHART_DATASET_OPTIONS.filter((option) => selectedDatasets.includes(option.value)).map(
-        (option) => ({
-          id: datasetTabId(option.value),
-          label: option.label,
-          dataset: option.value,
-        })
-      ),
-    [selectedDatasets]
+      datasetEntries
+        .filter((entry) => selectedDatasets.includes(entry.id))
+        .map((entry) => ({
+          id: datasetTabId(entry.id),
+          label: entry.name,
+          datasetId: entry.id,
+          datasetName: entry.name,
+        })),
+    [datasetEntries, selectedDatasets]
   )
 
   const tabs: ChartTab[] = useMemo(
@@ -107,7 +126,8 @@ export function ChartCollapsibleSection({
     [datasetTabs]
   )
 
-  const activeDataset = parseDatasetTabId(activeTab)
+  const activeDatasetId = parseDatasetTabId(activeTab)
+  const activeDataset = activeDatasetId ? datasetById.get(activeDatasetId) : undefined
 
   useEffect(() => {
     const validTabIds = new Set(tabs.map((tab) => tab.id))
@@ -117,14 +137,16 @@ export function ChartCollapsibleSection({
   }, [tabs, activeTab])
 
   useEffect(() => {
-    if (!open || selectedDatasets.length === 0) return
+    if (!open || selectedDatasets.length === 0 || datasetEntries.length === 0) return
 
-    const yAxes = getValues("chart.yAxes")
-    const defaultAxisId = yAxes?.[0]?.id ?? DEFAULT_Y_AXIS_ID
+    const yAxisTitle = getValues("chart.yAxis.title") ?? ""
     const configs = getValues("chart.datasetConfigs") ?? {}
 
-    for (const dataset of selectedDatasets) {
-      if (dataset === ChartDataset.OBJECTIVES) {
+    for (const datasetId of selectedDatasets) {
+      const entry = datasetById.get(datasetId)
+      if (!entry) continue
+
+      if (isObjectivesDataset(entry.name)) {
         if (!getValues("chart.objectives")) {
           setValue("chart.objectives", DEFAULT_CHART_CONFIG.objectives!, {
             shouldDirty: false,
@@ -133,15 +155,15 @@ export function ChartCollapsibleSection({
         continue
       }
 
-      if (!configs[dataset]) {
+      if (!configs[datasetId]) {
         setValue(
-          `chart.datasetConfigs.${dataset}`,
-          createDefaultDatasetVisualConfig(dataset, defaultAxisId),
+          `chart.datasetConfigs.${datasetId}`,
+          createDefaultDatasetVisualConfig(entry.name, yAxisTitle),
           { shouldDirty: false }
         )
       }
     }
-  }, [selectedDatasets, open, setValue, getValues])
+  }, [selectedDatasets, datasetById, datasetEntries.length, open, setValue, getValues])
 
   return (
     <Collapsible
@@ -192,19 +214,29 @@ export function ChartCollapsibleSection({
           <ChartTabs tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
 
           <div className="pt-4">
-            {activeTab === STATIC_TABS.GENERAL && <ChartGeneralTab control={control} />}
+            {activeTab === STATIC_TABS.GENERAL && (
+              <ChartGeneralTab
+                control={control}
+                datasetEntries={datasetEntries}
+                isDatasetsLoading={isDatasetsLoading}
+                datasetsError={datasetsError}
+                onRetryDatasets={() => void refetchDatasets()}
+              />
+            )}
             {activeTab === STATIC_TABS.X_AXIS && <ChartXAxisTab control={control} />}
             {activeTab === STATIC_TABS.Y_AXES && <ChartYAxesTab control={control} />}
-            {activeDataset === ChartDataset.OBJECTIVES && (
+            {activeDataset && isObjectivesDataset(activeDataset.name) && (
               <ChartObjectivesTab control={control} />
             )}
             {activeDataset &&
-              activeDataset !== ChartDataset.OBJECTIVES &&
-              selectedDatasets.includes(activeDataset) && (
+              !isObjectivesDataset(activeDataset.name) &&
+              selectedDatasets.includes(activeDataset.id) && (
                 <ChartDatasetTab
                   control={control}
-                  dataset={activeDataset}
-                  showUnpin={activeDataset === ChartDataset.BASELINE}
+                  setValue={setValue}
+                  dataset={activeDataset.id}
+                  showUnpin={isBaselineDataset(activeDataset.name)}
+                  showStacked={isStackedDataset(activeDataset.name)}
                 />
               )}
           </div>

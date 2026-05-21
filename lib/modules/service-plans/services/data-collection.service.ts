@@ -5,6 +5,18 @@ import {
   ServicePlanValueType,
 } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { serviceDelete, serviceGet, servicePut } from "@/lib/services/baseService"
+import {
+  AxisPositionX,
+  AxisPositionY,
+  ChartInterval,
+  ChartLineType,
+  DEFAULT_CHART_CONFIG,
+  ObjectivesLineType,
+  PointStyle,
+  type ChartConfig,
+  type ChartDatasetVisualConfig,
+  type ChartObjectivesVisualConfig,
+} from "@/lib/modules/service-plans/constants/chart.constants"
 import type {
   DataCollectionConfig,
   DataCollectionLevel,
@@ -31,14 +43,51 @@ interface ApiDataCollection {
   levels?: ApiLevel[]
 }
 
+interface ApiChartDataset {
+  datasetCatalogId?: string
+  title?: string
+  axis?: string
+  type?: ChartLineType | string
+  pointStyle?: PointStyle | string
+  spanGaps?: boolean
+  showValues?: boolean
+  unpin?: boolean
+  stacked?: boolean
+  borderColor?: string
+  backgroundColor?: string
+  trendlineColor?: string
+}
+
+interface ApiChart {
+  interval?: ChartInterval | string
+  titleXAxes?: string
+  positionXAxes?: AxisPositionX | string
+  hideGridXAxes?: boolean
+  titleYAxes?: string
+  positionYAxes?: AxisPositionY | string
+  hideGridYAxes?: boolean
+  suggestedMinYAxes?: number
+  suggestedMaxYAxes?: number
+  showLabelObjectives?: boolean
+  showLineObjectives?: boolean
+  showBackgroundObjectives?: boolean
+  fontColorObjectives?: string
+  borderColorObjectives?: string
+  backgroundColorObjectives?: string
+  lineTypeObjectives?: ObjectivesLineType | string
+  datasets?: ApiChartDataset[]
+}
+
 interface ApiCategoryPayload {
   servicePlanCategoryId: string
   dataCollection: ApiDataCollection
+  chart?: ApiChart
 }
 
 interface ApiCategoryResponse {
   servicePlanCategoryId?: string
   dataCollection?: ApiDataCollection
+  chart?: ApiChart
   typeEventCatalogId?: string
   dailyValue?: ServicePlanValueType
   weeklyValue?: ServicePlanValueType
@@ -55,6 +104,7 @@ interface ApiItemPayload {
   topography: string
   status: boolean
   dataCollection: ApiDataCollection
+  chart?: ApiChart
 }
 
 interface ApiItemResponse {
@@ -63,6 +113,7 @@ interface ApiItemResponse {
   topography?: string
   status?: boolean
   dataCollection?: ApiDataCollection
+  chart?: ApiChart
   typeEventCatalogId?: string
   dailyValue?: ServicePlanValueType
   weeklyValue?: ServicePlanValueType
@@ -102,6 +153,22 @@ function asOptionalNumber(value: unknown): number | undefined {
     return Number.isFinite(parsed) ? parsed : undefined
   }
   return undefined
+}
+
+function asBoolean(value: unknown, fallback = false): boolean {
+  if (typeof value === "boolean") return value
+  return fallback
+}
+
+function asEnum<T extends string>(
+  value: unknown,
+  enumObject: Record<string, T>,
+  fallback: T
+): T {
+  if (typeof value !== "string") return fallback
+  const upper = value.toUpperCase()
+  const values = Object.values(enumObject) as string[]
+  return (values.includes(upper) ? (upper as T) : fallback)
 }
 
 function extractEntity(raw: unknown): unknown {
@@ -196,6 +263,82 @@ function fromApiDataCollection(dc: ApiDataCollection): DataCollectionConfig {
   }
 }
 
+function fromApiDataset(dataset: ApiChartDataset): ChartDatasetVisualConfig {
+  const config: ChartDatasetVisualConfig = {
+    title: asString(dataset.title),
+    axis: asString(dataset.axis),
+    type: asEnum(dataset.type, ChartLineType, ChartLineType.LINE),
+    pointStyle: asEnum(dataset.pointStyle, PointStyle, PointStyle.CIRCLE),
+    borderColor: asString(dataset.borderColor),
+    backgroundColor: asString(dataset.backgroundColor),
+    trendlineColor: asString(dataset.trendlineColor),
+    spanGaps: asBoolean(dataset.spanGaps),
+    showValues: asBoolean(dataset.showValues),
+  }
+  if (typeof dataset.unpin === "boolean") config.unpin = dataset.unpin
+  if (typeof dataset.stacked === "boolean") config.stacked = dataset.stacked
+  return config
+}
+
+function fromApiChart(chart: ApiChart): ChartConfig {
+  const datasets = Array.isArray(chart.datasets) ? chart.datasets : []
+  const datasetIds: string[] = []
+  const datasetConfigs: Record<string, ChartDatasetVisualConfig> = {}
+
+  for (const dataset of datasets) {
+    const id = asOptionalString(dataset.datasetCatalogId)
+    if (!id) continue
+    datasetIds.push(id)
+    datasetConfigs[id] = fromApiDataset(dataset)
+  }
+
+  const objectives: ChartObjectivesVisualConfig = {
+    showLabel: asBoolean(chart.showLabelObjectives, true),
+    fontColor: asString(chart.fontColorObjectives) || DEFAULT_CHART_CONFIG.objectives!.fontColor,
+    showLine: asBoolean(chart.showLineObjectives, true),
+    borderColor:
+      asString(chart.borderColorObjectives) || DEFAULT_CHART_CONFIG.objectives!.borderColor,
+    lineType: asEnum(
+      chart.lineTypeObjectives,
+      ObjectivesLineType,
+      ObjectivesLineType.DASHED
+    ),
+    showBackground: asBoolean(chart.showBackgroundObjectives),
+    backgroundColor:
+      asString(chart.backgroundColorObjectives) ||
+      DEFAULT_CHART_CONFIG.objectives!.backgroundColor,
+  }
+
+  return {
+    datasets: datasetIds,
+    interval: asEnum(chart.interval, ChartInterval, DEFAULT_CHART_CONFIG.interval),
+    xAxis: {
+      title: asString(chart.titleXAxes),
+      position: asEnum(chart.positionXAxes, AxisPositionX, AxisPositionX.BOTTOM),
+      hideGrid: asBoolean(chart.hideGridXAxes),
+    },
+    yAxis: {
+      title: asString(chart.titleYAxes) || DEFAULT_CHART_CONFIG.yAxis.title,
+      position: asEnum(chart.positionYAxes, AxisPositionY, AxisPositionY.LEFT),
+      hideGrid: asBoolean(chart.hideGridYAxes),
+      suggestedMin: asOptionalNumber(chart.suggestedMinYAxes),
+      suggestedMax: asOptionalNumber(chart.suggestedMaxYAxes),
+    },
+    datasetConfigs,
+    objectives,
+  }
+}
+
+function hasChartContent(chart?: ApiChart): boolean {
+  if (!chart || typeof chart !== "object") return false
+  return (
+    !!chart.interval ||
+    !!chart.titleXAxes ||
+    !!chart.titleYAxes ||
+    (Array.isArray(chart.datasets) && chart.datasets.length > 0)
+  )
+}
+
 function hasDataCollectionContent(config: DataCollectionConfig): boolean {
   return (
     config.type.length > 0 ||
@@ -213,11 +356,23 @@ function fromApiCategoryResponse(raw: unknown): DataCollectionConfig | null {
   const entity = extractEntity(raw)
   if (!entity || typeof entity !== "object") return null
 
-  const dataCollection = extractApiDataCollection(entity as ApiCategoryResponse)
-  if (!dataCollection) return null
+  const response = entity as ApiCategoryResponse
+  const dataCollection = extractApiDataCollection(response)
+  const chartRaw = response.chart
+  const hasChart = hasChartContent(chartRaw)
 
-  const config = fromApiDataCollection(dataCollection)
-  return hasDataCollectionContent(config) ? config : null
+  if (!dataCollection && !hasChart) return null
+
+  const config = dataCollection
+    ? fromApiDataCollection(dataCollection)
+    : ({ type: "", levels: [] as DataCollectionLevel[] } satisfies DataCollectionConfig)
+
+  if (hasChart && chartRaw) {
+    config.chart = fromApiChart(chartRaw)
+  }
+
+  if (!hasDataCollectionContent(config) && !config.chart) return null
+  return config
 }
 
 function fromApiItemResponse(
@@ -229,6 +384,8 @@ function fromApiItemResponse(
 
   const itemEntity = entity as ApiItemResponse
   const dataCollection = extractApiDataCollection(itemEntity)
+  const chartRaw = itemEntity.chart
+  const hasChart = hasChartContent(chartRaw)
   const topography = asString(itemEntity.topography)
   const active = typeof itemEntity.status === "boolean" ? itemEntity.status : true
   const name = asString(itemEntity.name)
@@ -238,8 +395,13 @@ function fromApiItemResponse(
     ? fromApiDataCollection(dataCollection)
     : { type: "", levels: [] as DataCollectionLevel[] }
 
+  if (hasChart && chartRaw) {
+    base.chart = fromApiChart(chartRaw)
+  }
+
   const hasContent =
     hasDataCollectionContent(base) ||
+    !!base.chart ||
     topography.length > 0 ||
     typeof itemEntity.status === "boolean"
 
@@ -292,11 +454,64 @@ function toApiDataCollection(dto: DataCollectionDtoFields): ApiDataCollection {
   return dataCollection
 }
 
+function toApiChart(chart: ChartConfig): ApiChart {
+  const datasets: ApiChartDataset[] = chart.datasets.map((datasetId) => {
+    const config = chart.datasetConfigs?.[datasetId]
+    const entry: ApiChartDataset = {
+      datasetCatalogId: datasetId,
+      title: config?.title ?? "",
+      axis: config?.axis ?? chart.yAxis.title,
+      type: config?.type ?? ChartLineType.LINE,
+      pointStyle: config?.pointStyle ?? PointStyle.CIRCLE,
+      spanGaps: !!config?.spanGaps,
+      showValues: !!config?.showValues,
+      unpin: !!config?.unpin,
+      borderColor: config?.borderColor ?? "",
+      backgroundColor: config?.backgroundColor ?? "",
+      trendlineColor: config?.trendlineColor ?? "",
+    }
+    if (typeof config?.stacked === "boolean") entry.stacked = config.stacked
+    return entry
+  })
+
+  const apiChart: ApiChart = {
+    interval: chart.interval,
+    titleXAxes: chart.xAxis.title,
+    positionXAxes: chart.xAxis.position,
+    hideGridXAxes: chart.xAxis.hideGrid,
+    titleYAxes: chart.yAxis.title,
+    positionYAxes: chart.yAxis.position,
+    hideGridYAxes: chart.yAxis.hideGrid,
+    datasets,
+  }
+
+  if (chart.yAxis.suggestedMin !== undefined) {
+    apiChart.suggestedMinYAxes = chart.yAxis.suggestedMin
+  }
+  if (chart.yAxis.suggestedMax !== undefined) {
+    apiChart.suggestedMaxYAxes = chart.yAxis.suggestedMax
+  }
+
+  if (chart.objectives) {
+    apiChart.showLabelObjectives = chart.objectives.showLabel
+    apiChart.showLineObjectives = chart.objectives.showLine
+    apiChart.showBackgroundObjectives = chart.objectives.showBackground
+    apiChart.fontColorObjectives = chart.objectives.fontColor
+    apiChart.borderColorObjectives = chart.objectives.borderColor
+    apiChart.backgroundColorObjectives = chart.objectives.backgroundColor
+    apiChart.lineTypeObjectives = chart.objectives.lineType
+  }
+
+  return apiChart
+}
+
 function toApiCategoryPayload(dto: UpsertCategoryDataCollectionDto): ApiCategoryPayload {
-  return {
+  const payload: ApiCategoryPayload = {
     servicePlanCategoryId: dto.servicePlanCategoryId,
     dataCollection: toApiDataCollection(dto),
   }
+  if (dto.chart) payload.chart = toApiChart(dto.chart)
+  return payload
 }
 
 function toApiItemPayload(dto: UpsertItemDataCollectionDto): ApiItemPayload {
@@ -310,6 +525,7 @@ function toApiItemPayload(dto: UpsertItemDataCollectionDto): ApiItemPayload {
   if (dto.name?.trim()) {
     payload.name = dto.name.trim()
   }
+  if (dto.chart) payload.chart = toApiChart(dto.chart)
 
   return payload
 }

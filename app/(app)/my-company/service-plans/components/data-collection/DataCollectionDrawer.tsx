@@ -163,6 +163,7 @@ export function DataCollectionDrawer({
           unitOfTime: values.unitOfTime,
           suggestedNumberOfRecordings: values.suggestedNumberOfRecordings,
           cumulative: values.cumulative,
+          chart: values.chart,
         })
         toast.success(`Configuration applied to all items in "${categoryName}"`)
       } else if (mode === "item" && servicePlanCategoryItemId) {
@@ -180,6 +181,7 @@ export function DataCollectionDrawer({
           cumulative: values.cumulative,
           topography: values.topography ?? "",
           active: values.active ?? true,
+          chart: values.chart,
         })
         toast.success("Item configuration saved")
       }

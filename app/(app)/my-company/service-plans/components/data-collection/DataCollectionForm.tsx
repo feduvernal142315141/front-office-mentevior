@@ -43,12 +43,30 @@ import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-
 import { useUnitMeasurementCatalog } from "@/lib/modules/service-plans/hooks/use-unit-measurement-catalog"
 
 import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
-import { DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
+import {
+  DEFAULT_CHART_CONFIG,
+  type ChartConfig,
+} from "@/lib/modules/service-plans/constants/chart.constants"
 
 import type {
   DataCollectionConfig,
   DataCollectionLevel,
 } from "@/lib/types/data-collection.types"
+
+function resolveChartConfig(chart?: ChartConfig): ChartConfig {
+  if (!chart) return DEFAULT_CHART_CONFIG
+  return {
+    ...DEFAULT_CHART_CONFIG,
+    ...chart,
+    xAxis: { ...DEFAULT_CHART_CONFIG.xAxis, ...chart.xAxis },
+    yAxis: { ...DEFAULT_CHART_CONFIG.yAxis, ...chart.yAxis },
+    objectives: {
+      ...DEFAULT_CHART_CONFIG.objectives!,
+      ...(chart.objectives ?? {}),
+    },
+    datasetConfigs: { ...(chart.datasetConfigs ?? {}) },
+  }
+}
 
 interface DataCollectionFormProps {
   mode: "category" | "item"
@@ -99,7 +117,7 @@ export function DataCollectionForm({
       levels: initialConfig?.levels ?? [],
       topography: initialTopography ?? "",
       active: initialActive ?? true,
-      chart: DEFAULT_CHART_CONFIG,
+      chart: resolveChartConfig(initialConfig?.chart),
     },
   })
 
@@ -120,7 +138,7 @@ export function DataCollectionForm({
       levels: initialConfig.levels ?? [],
       topography: initialTopography ?? "",
       active: initialActive ?? true,
-      chart: DEFAULT_CHART_CONFIG,
+      chart: resolveChartConfig(initialConfig.chart),
     })
   }, [initialConfig, initialTopography, initialActive, reset])
 

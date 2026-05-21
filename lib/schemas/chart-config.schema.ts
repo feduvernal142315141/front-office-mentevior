@@ -3,15 +3,19 @@ import { z } from "zod"
 import {
   AxisPositionX,
   AxisPositionY,
-  ChartDataset,
   ChartInterval,
   ChartLineType,
   ObjectivesLineType,
   PointStyle,
 } from "@/lib/modules/service-plans/constants/chart.constants"
 
+const xAxisSchema = z.object({
+  title: z.string(),
+  position: z.nativeEnum(AxisPositionX),
+  hideGrid: z.boolean(),
+})
+
 const yAxisSchema = z.object({
-  id: z.string(),
   title: z.string(),
   position: z.nativeEnum(AxisPositionY),
   hideGrid: z.boolean(),
@@ -21,7 +25,7 @@ const yAxisSchema = z.object({
 
 const datasetVisualSchema = z.object({
   title: z.string(),
-  axisId: z.string(),
+  axis: z.string(),
   type: z.nativeEnum(ChartLineType),
   pointStyle: z.nativeEnum(PointStyle).optional(),
   borderColor: z.string(),
@@ -30,6 +34,7 @@ const datasetVisualSchema = z.object({
   spanGaps: z.boolean(),
   showValues: z.boolean(),
   unpin: z.boolean().optional(),
+  stacked: z.boolean().optional(),
 })
 
 const objectivesVisualSchema = z.object({
@@ -43,15 +48,11 @@ const objectivesVisualSchema = z.object({
 })
 
 export const chartConfigSchema = z.object({
-  datasets: z.array(z.nativeEnum(ChartDataset)),
+  datasets: z.array(z.string()),
   interval: z.nativeEnum(ChartInterval),
-  xAxis: z.object({
-    title: z.string(),
-    position: z.nativeEnum(AxisPositionX),
-    hideGrid: z.boolean(),
-  }),
-  yAxes: z.array(yAxisSchema).min(1),
-  datasetConfigs: z.record(z.nativeEnum(ChartDataset), datasetVisualSchema).optional(),
+  xAxis: xAxisSchema,
+  yAxis: yAxisSchema,
+  datasetConfigs: z.record(z.string(), datasetVisualSchema).optional(),
   objectives: objectivesVisualSchema.optional(),
 })
 

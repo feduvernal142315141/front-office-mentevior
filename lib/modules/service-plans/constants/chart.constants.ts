@@ -1,6 +1,3 @@
-// Chart configuration — premium UI inside the Data Collection drawer.
-// No backend contract yet → values are persisted only in form state.
-
 export const ChartInterval = {
   SESSION: "SESSION",
   DAILY: "DAILY",
@@ -20,44 +17,33 @@ export const CHART_INTERVAL_OPTIONS: { value: ChartInterval; label: string }[] =
   { value: ChartInterval.YEARLY, label: "Yearly" },
 ]
 
-export const ChartDataset = {
-  BASELINE: "BASELINE",
-  AVERAGE: "AVERAGE",
-  TOTAL: "TOTAL",
-  LEVELS_AVERAGE: "LEVELS_AVERAGE",
-  LEVELS_TOTAL: "LEVELS_TOTAL",
-  OBJECTIVES: "OBJECTIVES",
-  INTENSITY: "INTENSITY",
-  RATE: "RATE",
-  TAGS: "TAGS",
-  NUMBER_OF_TAGS: "NUMBER_OF_TAGS",
-  SESSIONS_COUNT: "SESSIONS_COUNT",
-  RECORDINGS: "RECORDINGS",
-  COUNT: "COUNT",
+export const KNOWN_DATASET_NAMES = {
+  BASELINE: "Baseline",
+  TOTAL: "Total",
+  OBJECTIVES: "Objectives",
+  TAGS: "Tags",
+  SESSIONS_COUNT: "Sessions (count)",
 } as const
-export type ChartDataset = (typeof ChartDataset)[keyof typeof ChartDataset]
 
-export interface ChartDatasetOption {
-  value: ChartDataset
-  label: string
-  description: string
+function normalizeDatasetName(name: string): string {
+  return name.trim().toLowerCase()
 }
 
-export const CHART_DATASET_OPTIONS: ChartDatasetOption[] = [
-  { value: ChartDataset.BASELINE, label: "Baseline", description: "All collected baselines marked as visible." },
-  { value: ChartDataset.AVERAGE, label: "Average", description: "Average of all per session values for interval." },
-  { value: ChartDataset.TOTAL, label: "Total", description: "Sum of all per session values for interval." },
-  { value: ChartDataset.LEVELS_AVERAGE, label: "Levels (Average)", description: "Average per level for interval." },
-  { value: ChartDataset.LEVELS_TOTAL, label: "Levels (Total)", description: "Sum per level for interval." },
-  { value: ChartDataset.OBJECTIVES, label: "Objectives", description: "Phase lines for defined objectives." },
-  { value: ChartDataset.INTENSITY, label: "Intensity", description: "Intensity (average of levels values) for interval." },
-  { value: ChartDataset.RATE, label: "Rate", description: "Average of rate for interval." },
-  { value: ChartDataset.TAGS, label: "Tags", description: "Division by tags per interval." },
-  { value: ChartDataset.NUMBER_OF_TAGS, label: "# of Tags", description: "Number of unique tags used for interval." },
-  { value: ChartDataset.SESSIONS_COUNT, label: "Sessions (count)", description: "# of individual sessions for interval (Ex: 1 visit = 1 session)." },
-  { value: ChartDataset.RECORDINGS, label: "Recordings", description: "# of recordings for interval (Ex: 1 trial = 1 recording)." },
-  { value: ChartDataset.COUNT, label: "Count", description: "Sum of all session values for entire period." },
-]
+export function isObjectivesDataset(name: string): boolean {
+  return normalizeDatasetName(name) === normalizeDatasetName(KNOWN_DATASET_NAMES.OBJECTIVES)
+}
+
+export function isBaselineDataset(name: string): boolean {
+  return normalizeDatasetName(name) === normalizeDatasetName(KNOWN_DATASET_NAMES.BASELINE)
+}
+
+export function isStackedDataset(name: string): boolean {
+  const lower = normalizeDatasetName(name)
+  return (
+    lower === normalizeDatasetName(KNOWN_DATASET_NAMES.TAGS) ||
+    lower === normalizeDatasetName(KNOWN_DATASET_NAMES.SESSIONS_COUNT)
+  )
+}
 
 export const AxisPositionX = {
   TOP: "TOP",
@@ -93,16 +79,16 @@ export const CHART_LINE_TYPE_OPTIONS: { value: ChartLineType; label: string }[] 
 ]
 
 export const PointStyle = {
-  CIRCLE: "circle",
-  CROSS: "cross",
-  CROSS_ROT: "crossRot",
-  DASH: "dash",
-  LINE: "line",
-  RECT: "rect",
-  RECT_ROUNDED: "rectRounded",
-  RECT_ROT: "rectRot",
-  STAR: "star",
-  TRIANGLE: "triangle",
+  CIRCLE: "CIRCLE",
+  CROSS: "CROSS",
+  CROSS_ROT: "CROSS_ROT",
+  DASH: "DASH",
+  LINE: "LINE",
+  RECT: "RECT",
+  RECT_ROUNDED: "RECT_ROUNDED",
+  RECT_ROT: "RECT_ROT",
+  STAR: "STAR",
+  TRIANGLE: "TRIANGLE",
 } as const
 export type PointStyle = (typeof PointStyle)[keyof typeof PointStyle]
 
@@ -130,8 +116,13 @@ export const OBJECTIVES_LINE_TYPE_OPTIONS: { value: ObjectivesLineType; label: s
   { value: ObjectivesLineType.DASHED, label: "Dashed" },
 ]
 
-export interface ChartYAxis {
-  id: string
+export interface ChartXAxisConfig {
+  title: string
+  position: AxisPositionX
+  hideGrid: boolean
+}
+
+export interface ChartYAxisConfig {
   title: string
   position: AxisPositionY
   hideGrid: boolean
@@ -141,7 +132,7 @@ export interface ChartYAxis {
 
 export interface ChartDatasetVisualConfig {
   title: string
-  axisId: string
+  axis: string
   type: ChartLineType
   pointStyle?: PointStyle
   borderColor: string
@@ -150,6 +141,7 @@ export interface ChartDatasetVisualConfig {
   spanGaps: boolean
   showValues: boolean
   unpin?: boolean
+  stacked?: boolean
 }
 
 export interface ChartObjectivesVisualConfig {
@@ -163,33 +155,34 @@ export interface ChartObjectivesVisualConfig {
 }
 
 export interface ChartConfig {
-  datasets: ChartDataset[]
+  datasets: string[]
   interval: ChartInterval
-  xAxis: {
-    title: string
-    position: AxisPositionX
-    hideGrid: boolean
-  }
-  yAxes: ChartYAxis[]
-  datasetConfigs?: Partial<Record<ChartDataset, ChartDatasetVisualConfig>>
+  xAxis: ChartXAxisConfig
+  yAxis: ChartYAxisConfig
+  datasetConfigs?: Record<string, ChartDatasetVisualConfig>
   objectives?: ChartObjectivesVisualConfig
 }
 
-export function getChartDatasetLabel(dataset: ChartDataset): string {
-  return CHART_DATASET_OPTIONS.find((o) => o.value === dataset)?.label ?? dataset
+const DATASET_NAME_PRESETS: Record<string, Partial<ChartDatasetVisualConfig>> = {
+  [normalizeDatasetName(KNOWN_DATASET_NAMES.BASELINE)]: {
+    borderColor: "#DC2626",
+    backgroundColor: "#DC2626",
+    unpin: false,
+  },
+  [normalizeDatasetName(KNOWN_DATASET_NAMES.TOTAL)]: {
+    borderColor: "#0F172A",
+    backgroundColor: "#0F172A",
+  },
 }
 
 export function createDefaultDatasetVisualConfig(
-  dataset: ChartDataset,
-  yAxisId: string = DEFAULT_Y_AXIS_ID
+  datasetName: string,
+  yAxisTitle: string = ""
 ): ChartDatasetVisualConfig {
-  const title = getChartDatasetLabel(dataset)
-  const preset = DEFAULT_CHART_CONFIG.datasetConfigs?.[dataset]
-  if (preset) return { ...preset, axisId: preset.axisId || yAxisId }
-
-  return {
-    title,
-    axisId: yAxisId,
+  const preset = DATASET_NAME_PRESETS[normalizeDatasetName(datasetName)] ?? {}
+  const base: ChartDatasetVisualConfig = {
+    title: datasetName,
+    axis: yAxisTitle,
     type: ChartLineType.LINE,
     pointStyle: PointStyle.CIRCLE,
     borderColor: "#037ECC",
@@ -197,55 +190,30 @@ export function createDefaultDatasetVisualConfig(
     trendlineColor: "#00000000",
     spanGaps: false,
     showValues: false,
-    ...(dataset === ChartDataset.BASELINE ? { unpin: false } : {}),
   }
+
+  if (isBaselineDataset(datasetName)) base.unpin = false
+  if (isStackedDataset(datasetName)) base.stacked = false
+
+  return { ...base, ...preset }
 }
 
-export const DEFAULT_Y_AXIS_ID = "y-axis-default"
-
 export const DEFAULT_CHART_CONFIG: ChartConfig = {
-  datasets: [ChartDataset.BASELINE, ChartDataset.TOTAL, ChartDataset.OBJECTIVES],
+  datasets: [],
   interval: ChartInterval.WEEKLY,
   xAxis: {
     title: "Dates",
     position: AxisPositionX.BOTTOM,
     hideGrid: false,
   },
-  yAxes: [
-    {
-      id: DEFAULT_Y_AXIS_ID,
-      title: "Number of occurrences",
-      position: AxisPositionY.LEFT,
-      hideGrid: false,
-      suggestedMin: 0,
-      suggestedMax: 20,
-    },
-  ],
-  datasetConfigs: {
-    [ChartDataset.BASELINE]: {
-      title: "Baseline",
-      axisId: DEFAULT_Y_AXIS_ID,
-      type: ChartLineType.LINE,
-      pointStyle: PointStyle.CIRCLE,
-      borderColor: "#DC2626",
-      backgroundColor: "#DC2626",
-      trendlineColor: "#00000000",
-      spanGaps: false,
-      showValues: false,
-      unpin: false,
-    },
-    [ChartDataset.TOTAL]: {
-      title: "Total",
-      axisId: DEFAULT_Y_AXIS_ID,
-      type: ChartLineType.LINE,
-      pointStyle: PointStyle.CIRCLE,
-      borderColor: "#0F172A",
-      backgroundColor: "#0F172A",
-      trendlineColor: "#00000000",
-      spanGaps: false,
-      showValues: false,
-    },
+  yAxis: {
+    title: "Number of occurrences",
+    position: AxisPositionY.LEFT,
+    hideGrid: false,
+    suggestedMin: 0,
+    suggestedMax: 20,
   },
+  datasetConfigs: {},
   objectives: {
     showLabel: true,
     fontColor: "#0F172A",
