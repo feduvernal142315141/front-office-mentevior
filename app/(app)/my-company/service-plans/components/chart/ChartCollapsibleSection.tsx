@@ -68,7 +68,7 @@ export function ChartCollapsibleSection({
   onOpenChange,
   onLoadFromCategory,
 }: ChartCollapsibleSectionProps) {
-  const [activeTab, setActiveTab] = useState(STATIC_TABS.GENERAL)
+  const [activeTab, setActiveTab] = useState<string>(STATIC_TABS.GENERAL)
   const sectionRef = useRef<HTMLDivElement>(null)
 
   const handleOpenChange = (nextOpen: boolean) => {
