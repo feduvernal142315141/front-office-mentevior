@@ -1,10 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+
+import { cn } from "@/lib/utils"
 
 import { DataCollectionForm } from "./DataCollectionForm"
 
@@ -30,6 +32,22 @@ function stripPersistedLevelIds(config: DataCollectionConfig): DataCollectionCon
     ...config,
     levels: config.levels.map(({ recordId: _recordId, ...level }) => level),
   }
+}
+
+const DRAWER_BASE_WIDTH_PX = 672
+const DRAWER_PER_DATASET_PX = 80
+const DRAWER_DATASET_BASELINE = 3
+
+function getDrawerMaxWidthPx({
+  isChartOpen,
+  datasetCount,
+}: {
+  isChartOpen: boolean
+  datasetCount: number
+}): number {
+  if (!isChartOpen) return DRAWER_BASE_WIDTH_PX
+  const extra = Math.max(0, datasetCount - DRAWER_DATASET_BASELINE)
+  return DRAWER_BASE_WIDTH_PX + extra * DRAWER_PER_DATASET_PX
 }
 
 interface DataCollectionDrawerProps {
@@ -59,6 +77,16 @@ export function DataCollectionDrawer({
   const [isSaving, setIsSaving] = useState(false)
   const [config, setConfig] = useState<DataCollectionConfig | null>(null)
   const [itemConfig, setItemConfig] = useState<ItemDataCollectionConfig | null>(null)
+  const [chartLayout, setChartLayout] = useState({ datasetCount: 0, isOpen: false })
+
+  const maxWidthPx = useMemo(
+    () =>
+      getDrawerMaxWidthPx({
+        isChartOpen: chartLayout.isOpen,
+        datasetCount: chartLayout.datasetCount,
+      }),
+    [chartLayout]
+  )
 
   const loadConfig = useCallback(async () => {
     if (!open) return
@@ -91,9 +119,9 @@ export function DataCollectionDrawer({
     if (open) {
       loadConfig()
     } else {
-      // Reset state when drawer closes
       setConfig(null)
       setItemConfig(null)
+      setChartLayout({ datasetCount: 0, isOpen: false })
     }
   }, [open, loadConfig])
 
@@ -178,7 +206,17 @@ export function DataCollectionDrawer({
       }}
       direction="right"
     >
-      <DrawerContent className="w-full bg-white shadow-2xl sm:max-w-2xl flex flex-col">
+      <DrawerContent
+        style={{ ["--drawer-max-w" as string]: `${maxWidthPx}px` }}
+        className={cn(
+          "bg-white shadow-2xl",
+          "md:data-[vaul-drawer-direction=right]:w-full",
+          "lg:data-[vaul-drawer-direction=right]:w-full",
+          "xl:data-[vaul-drawer-direction=right]:w-full",
+          "sm:max-w-[min(var(--drawer-max-w),95vw)]",
+          "transition-[max-width] duration-300 ease-out motion-reduce:transition-none"
+        )}
+      >
         <VisuallyHidden>
           <DrawerTitle>{drawerTitle}</DrawerTitle>
         </VisuallyHidden>
@@ -205,6 +243,7 @@ export function DataCollectionDrawer({
             initialActive={itemConfig?.active}
             onSave={handleSave}
             onDeleteLevel={handleDeleteLevel}
+            onChartLayoutChange={setChartLayout}
             onCancel={onClose}
             isSaving={isSaving}
           />

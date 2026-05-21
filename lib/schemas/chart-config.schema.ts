@@ -51,8 +51,7 @@ export const chartConfigSchema = z.object({
     hideGrid: z.boolean(),
   }),
   yAxes: z.array(yAxisSchema).min(1),
-  baseline: datasetVisualSchema.optional(),
-  total: datasetVisualSchema.optional(),
+  datasetConfigs: z.record(z.nativeEnum(ChartDataset), datasetVisualSchema).optional(),
   objectives: objectivesVisualSchema.optional(),
 })
 

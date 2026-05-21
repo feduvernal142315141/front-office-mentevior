@@ -171,9 +171,34 @@ export interface ChartConfig {
     hideGrid: boolean
   }
   yAxes: ChartYAxis[]
-  baseline?: ChartDatasetVisualConfig
-  total?: ChartDatasetVisualConfig
+  datasetConfigs?: Partial<Record<ChartDataset, ChartDatasetVisualConfig>>
   objectives?: ChartObjectivesVisualConfig
+}
+
+export function getChartDatasetLabel(dataset: ChartDataset): string {
+  return CHART_DATASET_OPTIONS.find((o) => o.value === dataset)?.label ?? dataset
+}
+
+export function createDefaultDatasetVisualConfig(
+  dataset: ChartDataset,
+  yAxisId: string = DEFAULT_Y_AXIS_ID
+): ChartDatasetVisualConfig {
+  const title = getChartDatasetLabel(dataset)
+  const preset = DEFAULT_CHART_CONFIG.datasetConfigs?.[dataset]
+  if (preset) return { ...preset, axisId: preset.axisId || yAxisId }
+
+  return {
+    title,
+    axisId: yAxisId,
+    type: ChartLineType.LINE,
+    pointStyle: PointStyle.CIRCLE,
+    borderColor: "#037ECC",
+    backgroundColor: "#037ECC",
+    trendlineColor: "#00000000",
+    spanGaps: false,
+    showValues: false,
+    ...(dataset === ChartDataset.BASELINE ? { unpin: false } : {}),
+  }
 }
 
 export const DEFAULT_Y_AXIS_ID = "y-axis-default"
@@ -196,28 +221,30 @@ export const DEFAULT_CHART_CONFIG: ChartConfig = {
       suggestedMax: 20,
     },
   ],
-  baseline: {
-    title: "Baseline",
-    axisId: DEFAULT_Y_AXIS_ID,
-    type: ChartLineType.LINE,
-    pointStyle: PointStyle.CIRCLE,
-    borderColor: "#DC2626",
-    backgroundColor: "#DC2626",
-    trendlineColor: "#00000000",
-    spanGaps: false,
-    showValues: false,
-    unpin: false,
-  },
-  total: {
-    title: "Total",
-    axisId: DEFAULT_Y_AXIS_ID,
-    type: ChartLineType.LINE,
-    pointStyle: PointStyle.CIRCLE,
-    borderColor: "#0F172A",
-    backgroundColor: "#0F172A",
-    trendlineColor: "#00000000",
-    spanGaps: false,
-    showValues: false,
+  datasetConfigs: {
+    [ChartDataset.BASELINE]: {
+      title: "Baseline",
+      axisId: DEFAULT_Y_AXIS_ID,
+      type: ChartLineType.LINE,
+      pointStyle: PointStyle.CIRCLE,
+      borderColor: "#DC2626",
+      backgroundColor: "#DC2626",
+      trendlineColor: "#00000000",
+      spanGaps: false,
+      showValues: false,
+      unpin: false,
+    },
+    [ChartDataset.TOTAL]: {
+      title: "Total",
+      axisId: DEFAULT_Y_AXIS_ID,
+      type: ChartLineType.LINE,
+      pointStyle: PointStyle.CIRCLE,
+      borderColor: "#0F172A",
+      backgroundColor: "#0F172A",
+      trendlineColor: "#00000000",
+      spanGaps: false,
+      showValues: false,
+    },
   },
   objectives: {
     showLabel: true,

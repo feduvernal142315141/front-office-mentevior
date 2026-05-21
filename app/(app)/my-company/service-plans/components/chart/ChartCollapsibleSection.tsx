@@ -1,8 +1,13 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ChevronDown, Download } from "lucide-react"
-import { useWatch, type Control } from "react-hook-form"
+import {
+  useWatch,
+  type Control,
+  type UseFormGetValues,
+  type UseFormSetValue,
+} from "react-hook-form"
 
 import { Button } from "@/components/custom/Button"
 import { cn } from "@/lib/utils"
@@ -19,22 +24,35 @@ import { ChartYAxesTab } from "./ChartYAxesTab"
 import { ChartDatasetTab } from "./ChartDatasetTab"
 import { ChartObjectivesTab } from "./ChartObjectivesTab"
 
-import { ChartDataset } from "@/lib/modules/service-plans/constants/chart.constants"
+import {
+  CHART_DATASET_OPTIONS,
+  ChartDataset,
+  DEFAULT_CHART_CONFIG,
+  DEFAULT_Y_AXIS_ID,
+  createDefaultDatasetVisualConfig,
+} from "@/lib/modules/service-plans/constants/chart.constants"
 import type { DataCollectionFormValues } from "@/lib/schemas/data-collection-form.schema"
 
-const TABS = {
+const STATIC_TABS = {
   GENERAL: "general",
   X_AXIS: "x-axis",
   Y_AXES: "y-axes",
-  BASELINE: "baseline",
-  TOTAL: "total",
-  OBJECTIVES: "objectives",
 } as const
 
-type TabId = (typeof TABS)[keyof typeof TABS]
+function datasetTabId(dataset: ChartDataset): string {
+  return `dataset:${dataset}`
+}
+
+function parseDatasetTabId(tabId: string): ChartDataset | null {
+  if (!tabId.startsWith("dataset:")) return null
+  const value = tabId.slice("dataset:".length) as ChartDataset
+  return Object.values(ChartDataset).includes(value) ? value : null
+}
 
 interface ChartCollapsibleSectionProps {
   control: Control<DataCollectionFormValues>
+  setValue: UseFormSetValue<DataCollectionFormValues>
+  getValues: UseFormGetValues<DataCollectionFormValues>
   mode: "category" | "item"
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -43,20 +61,19 @@ interface ChartCollapsibleSectionProps {
 
 export function ChartCollapsibleSection({
   control,
+  setValue,
+  getValues,
   mode,
   open,
   onOpenChange,
   onLoadFromCategory,
 }: ChartCollapsibleSectionProps) {
-  const [activeTab, setActiveTab] = useState<TabId>(TABS.GENERAL)
+  const [activeTab, setActiveTab] = useState(STATIC_TABS.GENERAL)
   const sectionRef = useRef<HTMLDivElement>(null)
 
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen)
     if (nextOpen) {
-      // Premium UX: wait for the expand animation to start, then bring the
-      // chart section's header to the top of the drawer's scroll area so the
-      // content is visible without manual scrolling.
       window.setTimeout(() => {
         sectionRef.current?.scrollIntoView({
           block: "start",
@@ -68,36 +85,63 @@ export function ChartCollapsibleSection({
 
   const selectedDatasets = useWatch({ control, name: "chart.datasets" }) ?? []
 
-  const hasBaseline = selectedDatasets.includes(ChartDataset.BASELINE)
-  const hasTotal = selectedDatasets.includes(ChartDataset.TOTAL)
-  const hasObjectives = selectedDatasets.includes(ChartDataset.OBJECTIVES)
+  const datasetTabs = useMemo(
+    () =>
+      CHART_DATASET_OPTIONS.filter((option) => selectedDatasets.includes(option.value)).map(
+        (option) => ({
+          id: datasetTabId(option.value),
+          label: option.label,
+          dataset: option.value,
+        })
+      ),
+    [selectedDatasets]
+  )
 
   const tabs: ChartTab[] = useMemo(
     () => [
-      { id: TABS.GENERAL, label: "General" },
-      { id: TABS.X_AXIS, label: "X Axes" },
-      { id: TABS.Y_AXES, label: "Y Axes" },
-      {
-        id: TABS.BASELINE,
-        label: "Baseline",
-        disabled: !hasBaseline,
-        disabledHint: "Select Baseline dataset in General first",
-      },
-      {
-        id: TABS.TOTAL,
-        label: "Total",
-        disabled: !hasTotal,
-        disabledHint: "Select Total dataset in General first",
-      },
-      {
-        id: TABS.OBJECTIVES,
-        label: "Objectives",
-        disabled: !hasObjectives,
-        disabledHint: "Select Objectives dataset in General first",
-      },
+      { id: STATIC_TABS.GENERAL, label: "General" },
+      { id: STATIC_TABS.X_AXIS, label: "X Axes" },
+      { id: STATIC_TABS.Y_AXES, label: "Y Axes" },
+      ...datasetTabs.map(({ id, label }) => ({ id, label })),
     ],
-    [hasBaseline, hasTotal, hasObjectives]
+    [datasetTabs]
   )
+
+  const activeDataset = parseDatasetTabId(activeTab)
+
+  useEffect(() => {
+    const validTabIds = new Set(tabs.map((tab) => tab.id))
+    if (!validTabIds.has(activeTab)) {
+      setActiveTab(STATIC_TABS.GENERAL)
+    }
+  }, [tabs, activeTab])
+
+  useEffect(() => {
+    if (!open || selectedDatasets.length === 0) return
+
+    const yAxes = getValues("chart.yAxes")
+    const defaultAxisId = yAxes?.[0]?.id ?? DEFAULT_Y_AXIS_ID
+    const configs = getValues("chart.datasetConfigs") ?? {}
+
+    for (const dataset of selectedDatasets) {
+      if (dataset === ChartDataset.OBJECTIVES) {
+        if (!getValues("chart.objectives")) {
+          setValue("chart.objectives", DEFAULT_CHART_CONFIG.objectives!, {
+            shouldDirty: false,
+          })
+        }
+        continue
+      }
+
+      if (!configs[dataset]) {
+        setValue(
+          `chart.datasetConfigs.${dataset}`,
+          createDefaultDatasetVisualConfig(dataset, defaultAxisId),
+          { shouldDirty: false }
+        )
+      }
+    }
+  }, [selectedDatasets, open, setValue, getValues])
 
   return (
     <Collapsible
@@ -131,7 +175,6 @@ export function ChartCollapsibleSection({
 
       <CollapsibleContent className="overflow-visible border-t border-slate-100">
         <div className="space-y-5 px-4 py-5">
-          {/* Top bar — Load from Category (item mode only) */}
           {mode === "item" && (
             <div className="flex justify-end">
               <Button
@@ -146,21 +189,24 @@ export function ChartCollapsibleSection({
             </div>
           )}
 
-          <ChartTabs tabs={tabs} activeId={activeTab} onChange={(id) => setActiveTab(id as TabId)} />
+          <ChartTabs tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
 
           <div className="pt-4">
-            {activeTab === TABS.GENERAL && <ChartGeneralTab control={control} />}
-            {activeTab === TABS.X_AXIS && <ChartXAxisTab control={control} />}
-            {activeTab === TABS.Y_AXES && <ChartYAxesTab control={control} />}
-            {activeTab === TABS.BASELINE && hasBaseline && (
-              <ChartDatasetTab control={control} field="baseline" showUnpin />
-            )}
-            {activeTab === TABS.TOTAL && hasTotal && (
-              <ChartDatasetTab control={control} field="total" />
-            )}
-            {activeTab === TABS.OBJECTIVES && hasObjectives && (
+            {activeTab === STATIC_TABS.GENERAL && <ChartGeneralTab control={control} />}
+            {activeTab === STATIC_TABS.X_AXIS && <ChartXAxisTab control={control} />}
+            {activeTab === STATIC_TABS.Y_AXES && <ChartYAxesTab control={control} />}
+            {activeDataset === ChartDataset.OBJECTIVES && (
               <ChartObjectivesTab control={control} />
             )}
+            {activeDataset &&
+              activeDataset !== ChartDataset.OBJECTIVES &&
+              selectedDatasets.includes(activeDataset) && (
+                <ChartDatasetTab
+                  control={control}
+                  dataset={activeDataset}
+                  showUnpin={activeDataset === ChartDataset.BASELINE}
+                />
+              )}
           </div>
         </div>
       </CollapsibleContent>

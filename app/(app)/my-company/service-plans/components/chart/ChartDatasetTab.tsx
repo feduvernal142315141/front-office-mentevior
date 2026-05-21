@@ -8,26 +8,25 @@ import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import {
   CHART_LINE_TYPE_OPTIONS,
   POINT_STYLE_OPTIONS,
+  type ChartDataset,
 } from "@/lib/modules/service-plans/constants/chart.constants"
 import type { DataCollectionFormValues } from "@/lib/schemas/data-collection-form.schema"
 import { cn } from "@/lib/utils"
 
-type FieldKey = "baseline" | "total"
-
 interface ChartDatasetTabProps {
   control: Control<DataCollectionFormValues>
-  field: FieldKey
+  dataset: ChartDataset
   showUnpin?: boolean
 }
 
-export function ChartDatasetTab({ control, field, showUnpin }: ChartDatasetTabProps) {
+export function ChartDatasetTab({ control, dataset, showUnpin }: ChartDatasetTabProps) {
   const yAxes = useWatch({ control, name: "chart.yAxes" }) ?? []
   const axisOptions = yAxes.map((a) => ({
     value: a.id,
     label: a.title || "(untitled)",
   }))
 
-  const base = `chart.${field}` as const
+  const base = `chart.datasetConfigs.${dataset}` as const
 
   return (
     <div className="space-y-6">

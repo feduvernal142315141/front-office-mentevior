@@ -59,6 +59,7 @@ interface DataCollectionFormProps {
   initialActive?: boolean
   onSave: (values: DataCollectionFormValues) => Promise<void>
   onDeleteLevel?: (level: DataCollectionLevel) => Promise<void>
+  onChartLayoutChange?: (layout: { datasetCount: number; isOpen: boolean }) => void
   onCancel: () => void
   isSaving: boolean
 }
@@ -72,6 +73,7 @@ export function DataCollectionForm({
   initialActive,
   onSave,
   onDeleteLevel,
+  onChartLayoutChange,
   onCancel,
   isSaving,
 }: DataCollectionFormProps) {
@@ -80,6 +82,7 @@ export function DataCollectionForm({
     handleSubmit,
     watch,
     setValue,
+    getValues,
     reset,
     formState: { errors },
   } = useForm<DataCollectionFormValues>({
@@ -130,6 +133,14 @@ export function DataCollectionForm({
   const watchedCumulative = watch("cumulative")
   const watchedActive = watch("active")
   const watchedIntervalLength = watch("intervalLength")
+  const watchedChartDatasets = watch("chart.datasets")
+
+  useEffect(() => {
+    onChartLayoutChange?.({
+      datasetCount: watchedChartDatasets?.length ?? 0,
+      isOpen: isChartOpen,
+    })
+  }, [watchedChartDatasets, isChartOpen, onChartLayoutChange])
 
   // Resolve the selected type UUID to its name and group
   const resolvedType = useMemo(() => {
@@ -589,6 +600,8 @@ export function DataCollectionForm({
         {/* --- Chart (collapsible) --- */}
         <ChartCollapsibleSection
           control={control}
+          setValue={setValue}
+          getValues={getValues}
           mode={mode}
           open={isChartOpen}
           onOpenChange={(next) => setOpenSection(next ? "chart" : null)}
