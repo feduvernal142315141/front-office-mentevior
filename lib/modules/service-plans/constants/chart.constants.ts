@@ -163,6 +163,15 @@ export interface ChartConfig {
   objectives?: ChartObjectivesVisualConfig
 }
 
+export function pruneChartDatasetConfigs(chart: ChartConfig): ChartConfig {
+  const datasetConfigs: Record<string, ChartDatasetVisualConfig> = {}
+  for (const datasetId of chart.datasets) {
+    const config = chart.datasetConfigs?.[datasetId]
+    if (config) datasetConfigs[datasetId] = config
+  }
+  return { ...chart, datasetConfigs }
+}
+
 const DATASET_NAME_PRESETS: Record<string, Partial<ChartDatasetVisualConfig>> = {
   [normalizeDatasetName(KNOWN_DATASET_NAMES.BASELINE)]: {
     borderColor: "#DC2626",

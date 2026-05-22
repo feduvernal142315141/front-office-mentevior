@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, Download } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import {
   useWatch,
   type Control,
@@ -9,7 +9,6 @@ import {
   type UseFormSetValue,
 } from "react-hook-form"
 
-import { Button } from "@/components/custom/Button"
 import { cn } from "@/lib/utils"
 import {
   Collapsible,
@@ -30,6 +29,7 @@ import {
   isBaselineDataset,
   isObjectivesDataset,
   isStackedDataset,
+  pruneChartDatasetConfigs,
 } from "@/lib/modules/service-plans/constants/chart.constants"
 import { useDatasetsCatalog } from "@/lib/modules/service-plans/hooks/use-datasets-catalog"
 import type { DatasetCatalogEntry } from "@/lib/modules/service-plans/services/datasets-catalog.service"
@@ -56,20 +56,16 @@ interface ChartCollapsibleSectionProps {
   control: Control<DataCollectionFormValues>
   setValue: UseFormSetValue<DataCollectionFormValues>
   getValues: UseFormGetValues<DataCollectionFormValues>
-  mode: "category" | "item"
   open: boolean
   onOpenChange: (open: boolean) => void
-  onLoadFromCategory?: () => void
 }
 
 export function ChartCollapsibleSection({
   control,
   setValue,
   getValues,
-  mode,
   open,
   onOpenChange,
-  onLoadFromCategory,
 }: ChartCollapsibleSectionProps) {
   const [activeTab, setActiveTab] = useState<string>(STATIC_TABS.GENERAL)
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -137,6 +133,18 @@ export function ChartCollapsibleSection({
   }, [tabs, activeTab])
 
   useEffect(() => {
+    const chart = getValues("chart")
+    if (!chart?.datasetConfigs) return
+
+    const pruned = pruneChartDatasetConfigs(chart)
+    const currentKeys = Object.keys(chart.datasetConfigs).sort().join(",")
+    const prunedKeys = Object.keys(pruned.datasetConfigs ?? {}).sort().join(",")
+    if (currentKeys !== prunedKeys) {
+      setValue("chart.datasetConfigs", pruned.datasetConfigs, { shouldDirty: false })
+    }
+  }, [selectedDatasets, getValues, setValue])
+
+  useEffect(() => {
     if (!open || selectedDatasets.length === 0 || datasetEntries.length === 0) return
 
     const yAxisTitle = getValues("chart.yAxis.title") ?? ""
@@ -197,20 +205,6 @@ export function ChartCollapsibleSection({
 
       <CollapsibleContent className="overflow-visible border-t border-slate-100">
         <div className="space-y-5 px-4 py-5">
-          {mode === "item" && (
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="primary"
-                onClick={onLoadFromCategory}
-                disabled={!onLoadFromCategory}
-              >
-                <Download className="h-4 w-4" />
-                Load from Category
-              </Button>
-            </div>
-          )}
-
           <ChartTabs tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
 
           <div className="pt-4">

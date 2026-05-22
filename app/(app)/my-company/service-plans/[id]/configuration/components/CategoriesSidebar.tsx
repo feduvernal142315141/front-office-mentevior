@@ -51,17 +51,27 @@ export function CategoriesSidebar({
                 key={category.id}
                 type="button"
                 onClick={() => onSelectCategory(category.id)}
+                title={category.categoryName}
                 className={
                   isActive
-                    ? "w-full flex items-center justify-between rounded-xl bg-[#2563EB] px-4 py-3 text-left text-white shadow-sm"
-                    : "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left text-slate-700 hover:bg-slate-50 transition-colors"
+                    ? "w-full flex items-center gap-2 rounded-xl bg-[#2563EB] px-3 py-3 text-left text-white shadow-sm"
+                    : "w-full flex items-center gap-2 rounded-xl px-3 py-3 text-left text-slate-700 hover:bg-slate-50 transition-colors"
                 }
               >
-                <span className="font-medium truncate flex items-center gap-2">
-                  {`${category.categoryName} (${category.totalItems})`}
+                <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                  <span className="min-w-0 flex-1 truncate font-medium">{category.categoryName}</span>
+                  <span
+                    className={
+                      isActive
+                        ? "shrink-0 text-sm font-medium tabular-nums text-white/80"
+                        : "shrink-0 text-sm font-medium tabular-nums text-slate-500"
+                    }
+                  >
+                    ({category.totalItems})
+                  </span>
                   <DataCollectionBadge hasConfig={category.hasDataCollection === true} />
-                </span>
-                <div className="flex items-center gap-1.5 shrink-0">
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
                   <span
                     role="button"
                     tabIndex={0}

@@ -22,6 +22,11 @@ import {
 import type { DataCollectionLevel } from "@/lib/types/data-collection.types"
 import { LevelsLibraryModal } from "./LevelsLibraryModal"
 
+type LevelFieldErrors = {
+  label?: { message?: string }
+  description?: { message?: string }
+}
+
 interface LevelsTableProps {
   levels: DataCollectionLevel[]
   onChange: (levels: DataCollectionLevel[]) => void
@@ -31,6 +36,8 @@ interface LevelsTableProps {
   cumulative?: boolean
   onCumulativeChange?: (v: boolean) => void
   disabled?: boolean
+  levelErrors?: LevelFieldErrors[]
+  levelsError?: string
 }
 
 export function LevelsTable({
@@ -42,6 +49,8 @@ export function LevelsTable({
   cumulative = false,
   onCumulativeChange,
   disabled = false,
+  levelErrors,
+  levelsError,
 }: LevelsTableProps) {
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [deletingRowId, setDeletingRowId] = useState<string | null>(null)
@@ -124,8 +133,19 @@ export function LevelsTable({
         )}
       </div>
 
+      {levelsError && (
+        <p className="text-xs font-medium text-red-600">{levelsError}</p>
+      )}
+
       {/* Table */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <div
+        className={cn(
+          "border rounded-xl overflow-hidden",
+          levelsError || levelErrors?.some((e) => e?.label || e?.description)
+            ? "border-red-300"
+            : "border-gray-200"
+        )}
+      >
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
@@ -148,7 +168,9 @@ export function LevelsTable({
                 </TableCell>
               </TableRow>
             ) : (
-              levels.map((level) => (
+              levels.map((level, index) => {
+                const rowErrors = levelErrors?.[index]
+                return (
                 <TableRow key={level.id} className="group">
                   <TableCell className="p-1.5">
                     <input
@@ -158,10 +180,11 @@ export function LevelsTable({
                       disabled={disabled}
                       placeholder="..."
                       className={cn(
-                        "w-full px-2.5 py-2 text-sm text-center rounded-lg border border-gray-200",
+                        "w-full px-2.5 py-2 text-sm text-center rounded-lg border",
                         "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400",
                         "transition-all duration-150",
                         "bg-white hover:border-gray-300",
+                        rowErrors?.label ? "border-red-400" : "border-gray-200",
                         disabled && "opacity-50 cursor-not-allowed"
                       )}
                     />
@@ -174,10 +197,11 @@ export function LevelsTable({
                       disabled={disabled}
                       placeholder="Enter description"
                       className={cn(
-                        "w-full px-3 py-2 text-sm rounded-lg border border-gray-200",
+                        "w-full px-3 py-2 text-sm rounded-lg border",
                         "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400",
                         "transition-all duration-150",
                         "bg-white hover:border-gray-300",
+                        rowErrors?.description ? "border-red-400" : "border-gray-200",
                         disabled && "opacity-50 cursor-not-allowed"
                       )}
                     />
@@ -224,7 +248,7 @@ export function LevelsTable({
                     </button>
                   </TableCell>
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
         </Table>

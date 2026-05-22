@@ -9,6 +9,13 @@ import {
   PointStyle,
 } from "@/lib/modules/service-plans/constants/chart.constants"
 
+function optionalEnum<T extends Record<string, string>>(enumObject: T) {
+  return z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    z.nativeEnum(enumObject).optional()
+  )
+}
+
 const xAxisSchema = z.object({
   title: z.string(),
   position: z.nativeEnum(AxisPositionX),
@@ -27,7 +34,7 @@ const datasetVisualSchema = z.object({
   title: z.string(),
   axis: z.string(),
   type: z.nativeEnum(ChartLineType),
-  pointStyle: z.nativeEnum(PointStyle).optional(),
+  pointStyle: optionalEnum(PointStyle),
   borderColor: z.string(),
   backgroundColor: z.string(),
   trendlineColor: z.string(),

@@ -80,54 +80,68 @@ export function DatasetChips({
           {entries.map((entry) => {
             const isActive = selected.has(entry.id)
             return (
-              <Tooltip key={entry.id}>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => toggle(entry.id)}
-                    className={cn(
-                      "group flex items-center justify-between gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium w-full",
-                      "transition-all duration-200 ease-out",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/40 focus-visible:ring-offset-1",
-                      isActive
-                        ? "border-[#037ECC]/30 bg-[#037ECC]/10 text-[#037ECC] shadow-[0_1px_2px_rgba(3,126,204,0.12)] hover:bg-[#037ECC]/15"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
-                    )}
-                  >
-                    <span className="flex items-center gap-1.5 min-w-0">
-                      <span
-                        className={cn(
-                          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
-                          isActive
-                            ? "border-[#037ECC] bg-[#037ECC] text-white"
-                            : "border-slate-300 bg-white text-transparent group-hover:border-slate-400"
-                        )}
-                        aria-hidden
-                      >
-                        <Check className="h-3 w-3" strokeWidth={3} />
-                      </span>
-                      <span className="truncate">{entry.name}</span>
-                    </span>
-                    <Info
-                      className={cn(
-                        "h-3.5 w-3.5 shrink-0 transition-colors",
-                        isActive
-                          ? "text-[#037ECC]/60"
-                          : "text-slate-300 group-hover:text-slate-400"
-                      )}
-                    />
-                  </button>
-                </TooltipTrigger>
-                {entry.description && (
-                  <TooltipContent
-                    side="top"
-                    sideOffset={6}
-                    className="max-w-xs bg-slate-900 text-white"
-                  >
-                    <span className="text-xs leading-relaxed">{entry.description}</span>
-                  </TooltipContent>
+              <div
+                key={entry.id}
+                className={cn(
+                  "group flex items-center gap-0.5 rounded-xl border px-2 py-2 w-full",
+                  "transition-all duration-200 ease-out",
+                  isActive
+                    ? "border-[#037ECC]/30 bg-[#037ECC]/10 text-[#037ECC] shadow-[0_1px_2px_rgba(3,126,204,0.12)]"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
                 )}
-              </Tooltip>
+              >
+                <button
+                  type="button"
+                  onClick={() => toggle(entry.id)}
+                  className={cn(
+                    "flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 py-0.5 text-sm font-medium",
+                    "transition-colors duration-200 ease-out",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/40 focus-visible:ring-offset-1",
+                    isActive ? "hover:bg-[#037ECC]/10" : "hover:bg-slate-50"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+                      isActive
+                        ? "border-[#037ECC] bg-[#037ECC] text-white"
+                        : "border-slate-300 bg-white text-transparent group-hover:border-slate-400"
+                    )}
+                    aria-hidden
+                  >
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                  <span className="truncate">{entry.name}</span>
+                </button>
+
+                {entry.description && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        tabIndex={0}
+                        aria-label={`Info about ${entry.name}`}
+                        className={cn(
+                          "shrink-0 rounded-md p-1 transition-colors",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/40",
+                          isActive
+                            ? "text-[#037ECC]/60 hover:bg-[#037ECC]/10 hover:text-[#037ECC]"
+                            : "text-slate-300 hover:bg-slate-100 hover:text-slate-500"
+                        )}
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      sideOffset={6}
+                      className="max-w-xs bg-slate-900 text-white"
+                    >
+                      <span className="text-xs leading-relaxed">{entry.description}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             )
           })}
         </div>

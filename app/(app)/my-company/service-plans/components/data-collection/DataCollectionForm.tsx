@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, Minus, Plus } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -21,7 +22,10 @@ import {
 import { LevelsTable } from "./LevelsTable"
 
 import {
-  dataCollectionFormSchema,
+  createDataCollectionFormSchema,
+  getFirstFormErrorMessage,
+  hasChartSectionErrors,
+  hasDataCollectionSectionErrors,
   type DataCollectionFormValues,
 } from "@/lib/schemas/data-collection-form.schema"
 
@@ -45,6 +49,7 @@ import { useUnitMeasurementCatalog } from "@/lib/modules/service-plans/hooks/use
 import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
 import {
   DEFAULT_CHART_CONFIG,
+  pruneChartDatasetConfigs,
   type ChartConfig,
 } from "@/lib/modules/service-plans/constants/chart.constants"
 
@@ -55,7 +60,7 @@ import type {
 
 function resolveChartConfig(chart?: ChartConfig): ChartConfig {
   if (!chart) return DEFAULT_CHART_CONFIG
-  return {
+  const merged: ChartConfig = {
     ...DEFAULT_CHART_CONFIG,
     ...chart,
     xAxis: { ...DEFAULT_CHART_CONFIG.xAxis, ...chart.xAxis },
@@ -66,6 +71,12 @@ function resolveChartConfig(chart?: ChartConfig): ChartConfig {
     },
     datasetConfigs: { ...(chart.datasetConfigs ?? {}) },
   }
+  return pruneChartDatasetConfigs(merged)
+}
+
+function FieldErrorText({ message }: { message?: string }) {
+  if (!message) return null
+  return <p className="text-xs font-medium text-red-600">{message}</p>
 }
 
 interface DataCollectionFormProps {
@@ -95,6 +106,19 @@ export function DataCollectionForm({
   onCancel,
   isSaving,
 }: DataCollectionFormProps) {
+  const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } =
+    useTypeEventCatalog()
+  const dataCollectionRef = useRef<HTMLDivElement>(null)
+
+  const formSchema = useMemo(
+    () =>
+      createDataCollectionFormSchema(mode, (typeId) => {
+        const item = typeItemsMap.get(typeId)
+        return { name: item?.name ?? "", group: item?.group ?? "" }
+      }),
+    [mode, typeItemsMap]
+  )
+
   const {
     control,
     handleSubmit,
@@ -104,7 +128,7 @@ export function DataCollectionForm({
     reset,
     formState: { errors },
   } = useForm<DataCollectionFormValues>({
-    resolver: zodResolver(dataCollectionFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       type: initialConfig?.type ?? "",
       weeklyDailyValue: initialConfig?.weeklyDailyValue ?? ServicePlanValueType.TOTAL,
@@ -120,8 +144,6 @@ export function DataCollectionForm({
       chart: resolveChartConfig(initialConfig?.chart),
     },
   })
-
-  const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } = useTypeEventCatalog()
 
   useEffect(() => {
     if (!initialConfig) return
@@ -209,9 +231,34 @@ export function DataCollectionForm({
     }
   }, [resolvedType, setValue])
 
-  const onSubmit = handleSubmit(async (data) => {
-    await onSave(data)
-  })
+  const onSubmit = handleSubmit(
+    async (data) => {
+      await onSave({
+        ...data,
+        chart: data.chart ? pruneChartDatasetConfigs(data.chart) : data.chart,
+      })
+    },
+    (formErrors) => {
+      if (hasDataCollectionSectionErrors(formErrors) || formErrors.type) {
+        setOpenSection("data")
+        window.setTimeout(() => {
+          dataCollectionRef.current?.scrollIntoView({ block: "start", behavior: "smooth" })
+        }, 80)
+      } else if (hasChartSectionErrors(formErrors)) {
+        setOpenSection("chart")
+      }
+
+      if (formErrors.topography) {
+        window.setTimeout(() => {
+          document
+            .getElementById("data-collection-topography")
+            ?.scrollIntoView({ block: "center", behavior: "smooth" })
+        }, 80)
+      }
+
+      toast.error(getFirstFormErrorMessage(formErrors))
+    }
+  )
 
   const handleIntervalIncrement = () => {
     const current = watchedIntervalLength ?? 30
@@ -246,20 +293,23 @@ export function DataCollectionForm({
               />
             </div>
 
-            <Controller
-              name="topography"
-              control={control}
-              render={({ field }) => (
-                <FloatingTextarea
-                  label="Topography"
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  hasError={!!errors.topography}
-                  rows={3}
-                />
-              )}
-            />
+            <div id="data-collection-topography" className="space-y-1">
+              <Controller
+                name="topography"
+                control={control}
+                render={({ field }) => (
+                  <FloatingTextarea
+                    label="Topography"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    hasError={!!errors.topography}
+                    rows={3}
+                  />
+                )}
+              />
+              <FieldErrorText message={errors.topography?.message} />
+            </div>
 
             <Controller
               name="active"
@@ -293,10 +343,16 @@ export function DataCollectionForm({
         )}
 
         {/* --- Data Collection (collapsible) --- */}
+        <div ref={dataCollectionRef} className="scroll-mt-4">
         <Collapsible
           open={isDataCollectionOpen}
           onOpenChange={(next) => setOpenSection(next ? "data" : null)}
-          className="group rounded-xl border border-slate-200 bg-white"
+          className={cn(
+            "group rounded-xl border bg-white",
+            hasDataCollectionSectionErrors(errors) || errors.type
+              ? "border-red-300 ring-1 ring-red-200"
+              : "border-slate-200"
+          )}
         >
           <CollapsibleTrigger
             type="button"
@@ -324,129 +380,31 @@ export function DataCollectionForm({
           <CollapsibleContent className="overflow-visible border-t border-slate-100">
             <div className="space-y-5 px-4 py-5">
           {/* Type (grouped select) */}
-          <Controller
-            name="type"
-            control={control}
-            render={({ field }) => (
-              <GroupedSelect
-                label="Type"
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                groups={typeGroups}
-                hasError={!!errors.type}
-                searchable
-                required
-                disabled={isLoadingCatalog}
-              />
-            )}
-          />
+          <div className="space-y-1">
+            <Controller
+              name="type"
+              control={control}
+              render={({ field }) => (
+                <GroupedSelect
+                  label="Type"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  groups={typeGroups}
+                  hasError={!!errors.type}
+                  searchable
+                  required
+                  disabled={isLoadingCatalog}
+                />
+              )}
+            />
+            <FieldErrorText message={errors.type?.message} />
+          </div>
 
           {/* Rate → Unit of time + Weekly value side by side */}
           {typeRequiresUnitOfTime(resolvedType.name) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Controller
-                name="unitOfTime"
-                control={control}
-                render={({ field }) => (
-                  <FloatingSelect
-                    label="Unit of time"
-                    value={field.value ?? ServicePlanUnitOfTime.SECONDS}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
-                  />
-                )}
-              />
-              <Controller
-                name="weeklyDailyValue"
-                control={control}
-                render={({ field }) => (
-                  <FloatingSelect
-                    label="Weekly value"
-                    value={field.value ?? ServicePlanValueType.TOTAL}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
-                  />
-                )}
-              />
-            </div>
-          )}
-
-          {/* Frequency → only Weekly / Daily value */}
-          {typeRequiresWeeklyDaily(resolvedType.name) && !typeRequiresUnitOfTime(resolvedType.name) && (
-            <Controller
-              name="weeklyDailyValue"
-              control={control}
-              render={({ field }) => (
-                <FloatingSelect
-                  label="Weekly / Daily Value"
-                  value={field.value ?? ServicePlanValueType.TOTAL}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
-                />
-              )}
-            />
-          )}
-
-          {/* Measurement log → Unit of measurement + Daily/Weekly value */}
-          {isMeasurementLogType && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Controller
-                  name="unitMeasurementCatalogId"
-                  control={control}
-                  render={({ field }) => (
-                    <GroupedSelect
-                      label="Unit of Measurement"
-                      value={field.value ?? ""}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      groups={unitMeasurementGroups}
-                      hasError={!!errors.unitMeasurementCatalogId}
-                      searchable
-                      disabled={isLoadingUnitMeasurement}
-                    />
-                  )}
-                />
-                <Controller
-                  name="dailyValue"
-                  control={control}
-                  render={({ field }) => (
-                    <FloatingSelect
-                      label="Daily value"
-                      value={field.value ?? ""}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
-                    />
-                  )}
-                />
-              </div>
-
-              <Controller
-                name="weeklyDailyValue"
-                control={control}
-                render={({ field }) => (
-                  <FloatingSelect
-                    label="Weekly value"
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
-                  />
-                )}
-              />
-            </div>
-          )}
-
-          {/* Duration / Response latency / Interresponse time
-              → Unit of time + Suggested recordings (row), Daily value + Weekly value (row) */}
-          {typeRequiresDailyAndWeekly(resolvedType.name) && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
                 <Controller
                   name="unitOfTime"
                   control={control}
@@ -457,40 +415,13 @@ export function DataCollectionForm({
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
+                      hasError={!!errors.unitOfTime}
                     />
                   )}
                 />
-                <Controller
-                  name="suggestedNumberOfRecordings"
-                  control={control}
-                  render={({ field }) => (
-                    <FloatingInput
-                      label="Suggested number of recordings"
-                      value={String(field.value ?? "")}
-                      onChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
-                      onBlur={field.onBlur}
-                      type="number"
-                      inputMode="numeric"
-                      hasError={!!errors.suggestedNumberOfRecordings}
-                    />
-                  )}
-                />
+                <FieldErrorText message={errors.unitOfTime?.message} />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Controller
-                  name="dailyValue"
-                  control={control}
-                  render={({ field }) => (
-                    <FloatingSelect
-                      label="Daily value"
-                      value={field.value ?? ServicePlanValueType.TOTAL}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
-                    />
-                  )}
-                />
+              <div className="space-y-1">
                 <Controller
                   name="weeklyDailyValue"
                   control={control}
@@ -501,9 +432,176 @@ export function DataCollectionForm({
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                      hasError={!!errors.weeklyDailyValue}
                     />
                   )}
                 />
+                <FieldErrorText message={errors.weeklyDailyValue?.message} />
+              </div>
+            </div>
+          )}
+
+          {/* Frequency → only Weekly / Daily value */}
+          {typeRequiresWeeklyDaily(resolvedType.name) && !typeRequiresUnitOfTime(resolvedType.name) && (
+            <div className="space-y-1">
+              <Controller
+                name="weeklyDailyValue"
+                control={control}
+                render={({ field }) => (
+                  <FloatingSelect
+                    label="Weekly / Daily Value"
+                    value={field.value ?? ServicePlanValueType.TOTAL}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                    hasError={!!errors.weeklyDailyValue}
+                  />
+                )}
+              />
+              <FieldErrorText message={errors.weeklyDailyValue?.message} />
+            </div>
+          )}
+
+          {/* Measurement log → Unit of measurement + Daily/Weekly value */}
+          {isMeasurementLogType && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Controller
+                    name="unitMeasurementCatalogId"
+                    control={control}
+                    render={({ field }) => (
+                      <GroupedSelect
+                        label="Unit of Measurement"
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        groups={unitMeasurementGroups}
+                        hasError={!!errors.unitMeasurementCatalogId}
+                        searchable
+                        required
+                        disabled={isLoadingUnitMeasurement}
+                      />
+                    )}
+                  />
+                  <FieldErrorText message={errors.unitMeasurementCatalogId?.message} />
+                </div>
+                <div className="space-y-1">
+                  <Controller
+                    name="dailyValue"
+                    control={control}
+                    render={({ field }) => (
+                      <FloatingSelect
+                        label="Daily value"
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                        hasError={!!errors.dailyValue}
+                      />
+                    )}
+                  />
+                  <FieldErrorText message={errors.dailyValue?.message} />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Controller
+                  name="weeklyDailyValue"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingSelect
+                      label="Weekly value"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                      hasError={!!errors.weeklyDailyValue}
+                    />
+                  )}
+                />
+                <FieldErrorText message={errors.weeklyDailyValue?.message} />
+              </div>
+            </div>
+          )}
+
+          {/* Duration / Response latency / Interresponse time
+              → Unit of time + Suggested recordings (row), Daily value + Weekly value (row) */}
+          {typeRequiresDailyAndWeekly(resolvedType.name) && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Controller
+                    name="unitOfTime"
+                    control={control}
+                    render={({ field }) => (
+                      <FloatingSelect
+                        label="Unit of time"
+                        value={field.value ?? ServicePlanUnitOfTime.SECONDS}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
+                        hasError={!!errors.unitOfTime}
+                      />
+                    )}
+                  />
+                  <FieldErrorText message={errors.unitOfTime?.message} />
+                </div>
+                <div className="space-y-1">
+                  <Controller
+                    name="suggestedNumberOfRecordings"
+                    control={control}
+                    render={({ field }) => (
+                      <FloatingInput
+                        label="Suggested number of recordings"
+                        value={String(field.value ?? "")}
+                        onChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
+                        onBlur={field.onBlur}
+                        type="number"
+                        inputMode="numeric"
+                        hasError={!!errors.suggestedNumberOfRecordings}
+                      />
+                    )}
+                  />
+                  <FieldErrorText message={errors.suggestedNumberOfRecordings?.message} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Controller
+                    name="dailyValue"
+                    control={control}
+                    render={({ field }) => (
+                      <FloatingSelect
+                        label="Daily value"
+                        value={field.value ?? ServicePlanValueType.TOTAL}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                        hasError={!!errors.dailyValue}
+                      />
+                    )}
+                  />
+                  <FieldErrorText message={errors.dailyValue?.message} />
+                </div>
+                <div className="space-y-1">
+                  <Controller
+                    name="weeklyDailyValue"
+                    control={control}
+                    render={({ field }) => (
+                      <FloatingSelect
+                        label="Weekly value"
+                        value={field.value ?? ServicePlanValueType.TOTAL}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                        hasError={!!errors.weeklyDailyValue}
+                      />
+                    )}
+                  />
+                  <FieldErrorText message={errors.weeklyDailyValue?.message} />
+                </div>
               </div>
             </div>
           )}
@@ -512,10 +610,14 @@ export function DataCollectionForm({
           {typeRequiresInterval(resolvedType.group) && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {/* Interval length with +/- stepper */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-slate-600">Interval length</label>
-                  <div className="flex items-center">
+                  <div
+                    className={cn(
+                      "flex items-center rounded-[16px]",
+                      errors.intervalLength && "ring-2 ring-red-400/60"
+                    )}
+                  >
                     <button
                       type="button"
                       onClick={handleIntervalDecrement}
@@ -559,43 +661,49 @@ export function DataCollectionForm({
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
+                  <FieldErrorText message={errors.intervalLength?.message} />
                 </div>
 
-                {/* Unit of time */}
-                <Controller
-                  name="unitOfTime"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-slate-600 opacity-0">.</label>
-                      <FloatingSelect
-                        label="Unit of time"
-                        value={field.value ?? ServicePlanUnitOfTime.SECONDS}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
-                      />
-                    </div>
-                  )}
-                />
+                <div className="space-y-1">
+                  <Controller
+                    name="unitOfTime"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-slate-600 opacity-0">.</label>
+                        <FloatingSelect
+                          label="Unit of time"
+                          value={field.value ?? ServicePlanUnitOfTime.SECONDS}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
+                          hasError={!!errors.unitOfTime}
+                        />
+                      </div>
+                    )}
+                  />
+                  <FieldErrorText message={errors.unitOfTime?.message} />
+                </div>
               </div>
 
-              {/* Suggested number of recordings */}
-              <Controller
-                name="suggestedNumberOfRecordings"
-                control={control}
-                render={({ field }) => (
-                  <FloatingInput
-                    label="Suggested number of recordings"
-                    value={String(field.value ?? "")}
-                    onChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
-                    onBlur={field.onBlur}
-                    type="number"
-                    inputMode="numeric"
-                    hasError={!!errors.suggestedNumberOfRecordings}
-                  />
-                )}
-              />
+              <div className="space-y-1">
+                <Controller
+                  name="suggestedNumberOfRecordings"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingInput
+                      label="Suggested number of recordings"
+                      value={String(field.value ?? "")}
+                      onChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
+                      onBlur={field.onBlur}
+                      type="number"
+                      inputMode="numeric"
+                      hasError={!!errors.suggestedNumberOfRecordings}
+                    />
+                  )}
+                />
+                <FieldErrorText message={errors.suggestedNumberOfRecordings?.message} />
+              </div>
             </div>
           )}
 
@@ -609,18 +717,24 @@ export function DataCollectionForm({
               showCumulative={typeHasCumulativeValueToggles(resolvedType.group)}
               cumulative={watchedCumulative ?? false}
               onCumulativeChange={(v) => setValue("cumulative", v)}
+              levelErrors={Array.isArray(errors.levels) ? errors.levels : undefined}
+              levelsError={
+                errors.levels && !Array.isArray(errors.levels)
+                  ? (errors.levels as { message?: string }).message
+                  : undefined
+              }
             />
           )}
             </div>
           </CollapsibleContent>
         </Collapsible>
+        </div>
 
         {/* --- Chart (collapsible) --- */}
         <ChartCollapsibleSection
           control={control}
           setValue={setValue}
           getValues={getValues}
-          mode={mode}
           open={isChartOpen}
           onOpenChange={(next) => setOpenSection(next ? "chart" : null)}
         />

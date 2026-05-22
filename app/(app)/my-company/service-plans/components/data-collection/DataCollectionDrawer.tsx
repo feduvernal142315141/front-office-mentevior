@@ -188,8 +188,10 @@ export function DataCollectionDrawer({
 
       onSaved()
       onClose()
-    } catch {
-      toast.error("Failed to save configuration")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save configuration"
+      toast.error(message)
     } finally {
       setIsSaving(false)
     }
