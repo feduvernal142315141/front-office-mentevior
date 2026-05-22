@@ -9,6 +9,7 @@ import { clientEditFormSchema, clientCreateFormSchema, type ClientFormValues } f
 import type { Client, UpdateClientDto, CreateClientDto } from "@/lib/types/client.types"
 import { isoToLocalDate } from "@/lib/date"
 import { normalizePhone } from "@/lib/utils/phone-format"
+import { ssnForApiPayload } from "@/lib/utils/ssn"
 
 interface UseStep1FormProps {
   client: Client | null
@@ -95,7 +96,7 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
         languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
         genderId: data.genderId || undefined,
         email: data.email || undefined,
-        ssn: data.ssn || undefined,
+        ssn: ssnForApiPayload(data.ssn),
         status: data.active ?? true,
       }
 
@@ -125,7 +126,7 @@ export function useStep1Form({ client, isCreateMode = false, onSaveSuccess, onVa
       languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
       genderId: data.genderId || undefined,
       email: data.email || undefined,
-      ssn: data.ssn || undefined,
+      ssn: ssnForApiPayload(data.ssn),
       status: data.active,
     }
 

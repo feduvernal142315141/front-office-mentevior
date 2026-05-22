@@ -14,6 +14,7 @@ import {
 import type { CreateClientDto, UpdateClientDto } from "@/lib/types/client.types"
 import { isoToLocalDate } from "@/lib/date"
 import { normalizePhone, formatPhoneInput } from "@/lib/utils/phone-format"
+import { ssnForApiPayload } from "@/lib/utils/ssn"
 
 interface UseClientFormProps {
   clientId?: string | null
@@ -81,7 +82,7 @@ export function useClientForm({ clientId = null, onSuccess }: UseClientFormProps
         languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
         genderId: data.genderId || undefined,
         email: data.email || undefined,
-        ssn: data.ssn || undefined,
+        ssn: ssnForApiPayload(data.ssn),
         status: data.active,
       }
       
@@ -105,7 +106,7 @@ export function useClientForm({ clientId = null, onSuccess }: UseClientFormProps
         languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
         genderId: data.genderId || undefined,
         email: data.email || undefined,
-        ssn: data.ssn || undefined,
+        ssn: ssnForApiPayload(data.ssn),
         status: data.active,
       }
       

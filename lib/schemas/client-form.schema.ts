@@ -1,7 +1,11 @@
 import { z } from "zod"
 
+import {
+  isValidClientSsnForCreate,
+  isValidClientSsnForEdit,
+} from "@/lib/utils/ssn"
+
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const ssnValidationRegex = /^\d{9}$/
 
 // Validación de teléfono: acepta formatos con símbolos pero valida longitud de dígitos
 export const phoneValidation = z.string().refine((val) => {
@@ -31,11 +35,12 @@ export const clientCreateFormSchema = z.object({
   languages: z.array(z.string()).optional(),
   genderId: z.string().max(50).optional().or(z.literal("")),
   email: z.string().max(100).regex(emailRegex, "Invalid email format").optional().or(z.literal("")),
-  ssn: z
-    .string()
-    .regex(ssnValidationRegex, "SSN must be exactly 9 digits")
-    .optional()
-    .or(z.literal("")),
+  ssn: z.preprocess(
+    (val) => (val === null || val === undefined ? "" : String(val)),
+    z.string().refine(isValidClientSsnForCreate, {
+      message: "SSN must be exactly 9 digits",
+    })
+  ),
   active: z.boolean().optional(),
 })
 
@@ -54,7 +59,9 @@ export const clientEditFormSchema = z.object({
   ssn: z
     .string()
     .min(1, "Social Security Number is required")
-    .regex(ssnValidationRegex, "SSN must be exactly 9 digits"),
+    .refine(isValidClientSsnForEdit, {
+      message: "SSN must be exactly 9 digits",
+    }),
   active: z.boolean().optional(),
 })
 

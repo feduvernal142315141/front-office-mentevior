@@ -21,6 +21,7 @@ import { useLanguagesCatalog } from "@/lib/modules/languages/hooks/use-languages
 import { useGenderCatalog } from "@/lib/modules/gender/hooks/use-gender-catalog"
 import { isoToLocalDate } from "@/lib/date"
 import { formatPhoneInput, normalizePhone } from "@/lib/utils/phone-format"
+import { ssnForApiPayload } from "@/lib/utils/ssn"
 import { UserCheck } from "lucide-react"
 import { InfoTooltip } from "@/components/custom/InfoTooltip"
 
@@ -80,7 +81,7 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
       languages: data.languages && data.languages.length > 0 ? data.languages : undefined,
       genderId: data.genderId || undefined,
       email: data.email || undefined,
-      ssn: data.ssn || undefined,
+      ssn: ssnForApiPayload(data.ssn),
       status: data.active, // Send as 'status' to backend
     }
 
