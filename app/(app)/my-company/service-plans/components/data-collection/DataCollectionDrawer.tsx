@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Loader2 } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@/lib/compat/sonner"
 
 import { cn } from "@/lib/utils"
 
@@ -109,7 +109,9 @@ export function DataCollectionDrawer({
         }
       }
     } catch {
-      toast.error("Failed to load data collection configuration")
+      toast.error("Unable to load configuration", {
+        description: "Failed to load data collection configuration.",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -136,7 +138,9 @@ export function DataCollectionDrawer({
       }
       toast.success("Level removed")
     } catch {
-      toast.error("Failed to delete level")
+      toast.error("Unable to delete level", {
+        description: "Failed to delete level.",
+      })
       throw new Error("Failed to delete level")
     }
   }
@@ -188,10 +192,8 @@ export function DataCollectionDrawer({
 
       onSaved()
       onClose()
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to save configuration"
-      toast.error(message)
+    } catch {
+      // API validation errors are surfaced by the global HTTP interceptor.
     } finally {
       setIsSaving(false)
     }

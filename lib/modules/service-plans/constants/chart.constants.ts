@@ -172,6 +172,69 @@ export function pruneChartDatasetConfigs(chart: ChartConfig): ChartConfig {
   return { ...chart, datasetConfigs }
 }
 
+function asChartEnum<T extends string>(
+  value: unknown,
+  enumObject: Record<string, T>,
+  fallback: T
+): T {
+  if (typeof value !== "string") return fallback
+  const upper = value.trim().toUpperCase()
+  const values = Object.values(enumObject) as string[]
+  return values.includes(upper) ? (upper as T) : fallback
+}
+
+export function normalizeDatasetVisualConfig(
+  config: Partial<ChartDatasetVisualConfig> | undefined,
+  datasetName: string,
+  yAxisTitle: string
+): ChartDatasetVisualConfig {
+  const defaults = createDefaultDatasetVisualConfig(datasetName, yAxisTitle)
+  const merged = { ...defaults, ...(config ?? {}) }
+
+  const normalized: ChartDatasetVisualConfig = {
+    title: String(merged.title ?? defaults.title).trim() || defaults.title,
+    axis: String(merged.axis ?? yAxisTitle ?? defaults.axis).trim() || yAxisTitle || defaults.axis,
+    type: asChartEnum(merged.type, ChartLineType, defaults.type),
+    borderColor: String(merged.borderColor ?? defaults.borderColor).trim() || defaults.borderColor,
+    backgroundColor:
+      String(merged.backgroundColor ?? defaults.backgroundColor).trim() ||
+      defaults.backgroundColor,
+    trendlineColor:
+      String(merged.trendlineColor ?? defaults.trendlineColor).trim() ||
+      defaults.trendlineColor,
+    spanGaps: merged.spanGaps ?? defaults.spanGaps,
+    showValues: merged.showValues ?? defaults.showValues,
+  }
+
+  if (merged.pointStyle) {
+    normalized.pointStyle = asChartEnum(merged.pointStyle, PointStyle, defaults.pointStyle!)
+  }
+
+  if (merged.unpin !== undefined) normalized.unpin = merged.unpin
+  if (merged.stacked !== undefined) normalized.stacked = merged.stacked
+
+  return normalized
+}
+
+export function normalizeChartConfigForValidation(
+  chart: ChartConfig,
+  resolveDatasetName: (datasetId: string) => string = () => "Dataset"
+): ChartConfig {
+  const pruned = pruneChartDatasetConfigs(chart)
+  const yAxisTitle = pruned.yAxis?.title ?? ""
+  const datasetConfigs: Record<string, ChartDatasetVisualConfig> = {}
+
+  for (const datasetId of pruned.datasets) {
+    datasetConfigs[datasetId] = normalizeDatasetVisualConfig(
+      pruned.datasetConfigs?.[datasetId],
+      resolveDatasetName(datasetId),
+      yAxisTitle
+    )
+  }
+
+  return { ...pruned, datasetConfigs }
+}
+
 const DATASET_NAME_PRESETS: Record<string, Partial<ChartDatasetVisualConfig>> = {
   [normalizeDatasetName(KNOWN_DATASET_NAMES.BASELINE)]: {
     borderColor: "#DC2626",

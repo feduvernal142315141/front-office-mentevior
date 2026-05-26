@@ -10,6 +10,7 @@ export interface ChartTab {
   label: string
   disabled?: boolean
   disabledHint?: string
+  hasError?: boolean
 }
 
 interface ChartTabsProps {
@@ -112,10 +113,17 @@ export function ChartTabs({ tabs, activeId, onChange }: ChartTabsProps) {
                 !isActive &&
                   !tab.disabled &&
                   "text-slate-500 hover:text-slate-700 hover:bg-white/60",
-                tab.disabled && "cursor-not-allowed text-slate-300"
+                tab.disabled && "cursor-not-allowed text-slate-300",
+                tab.hasError && !isActive && "text-red-600 ring-1 ring-red-200"
               )}
             >
               {tab.label}
+              {tab.hasError && (
+                <span
+                  className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500"
+                  aria-hidden
+                />
+              )}
             </button>
           )
         })}

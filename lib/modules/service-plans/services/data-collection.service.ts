@@ -5,6 +5,7 @@ import {
   ServicePlanValueType,
 } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { serviceDelete, serviceGet, servicePut } from "@/lib/services/baseService"
+import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import {
   AxisPositionX,
   AxisPositionY,
@@ -528,18 +529,6 @@ function toApiItemPayload(dto: UpsertItemDataCollectionDto): ApiItemPayload {
   if (dto.chart) payload.chart = toApiChart(dto.chart)
 
   return payload
-}
-
-function getApiErrorMessage(data: unknown, fallback: string): string {
-  if (!data || typeof data !== "object") return fallback
-  const payload = data as { message?: unknown; details?: unknown }
-  if (typeof payload.message === "string" && payload.message.trim().length > 0) {
-    return payload.message
-  }
-  if (typeof payload.details === "string" && payload.details.trim().length > 0) {
-    return payload.details
-  }
-  return fallback
 }
 
 export async function getCategoryDataCollection(

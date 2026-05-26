@@ -1,5 +1,6 @@
 import axios, {AxiosError, InternalAxiosRequestConfig} from 'axios'
 import {useAuthStore} from '@/lib/store/auth.store'
+import { parseApiErrorMessage } from '@/lib/utils/api-error-message'
 
 // Tipos para los handlers que se pueden inyectar
 type InterceptorHandlers = {
@@ -89,13 +90,15 @@ apiInstance.interceptors.response.use(
             const data = error.response.data as any
 
             switch (status) {
-                case 400:
-                    const message400 = data?.message || 'Incorrect request. Please verify the information submitted.'
+                case 400: {
+                    const { description: message400 } = parseApiErrorMessage(
+                        data,
+                        'Incorrect request. Please verify the information submitted.'
+                    )
 
                     interceptorHandlers.onNotification?.(message400, 'error')
-
-                    console.error('Error 400 - Bad Request:', data)
                     break
+                }
 
                 case 401:
                     // Solo mostrar el AlertDialog, no el toast (evita notificación duplicada)

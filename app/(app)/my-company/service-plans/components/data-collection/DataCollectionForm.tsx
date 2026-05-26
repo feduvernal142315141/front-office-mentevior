@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, Minus, Plus } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
 
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -23,7 +23,7 @@ import { LevelsTable } from "./LevelsTable"
 
 import {
   createDataCollectionFormSchema,
-  getFirstFormErrorMessage,
+  formatDataCollectionValidationAlert,
   hasChartSectionErrors,
   hasDataCollectionSectionErrors,
   type DataCollectionFormValues,
@@ -45,6 +45,7 @@ import {
 
 import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
 import { useUnitMeasurementCatalog } from "@/lib/modules/service-plans/hooks/use-unit-measurement-catalog"
+import { useDatasetsCatalog } from "@/lib/modules/service-plans/hooks/use-datasets-catalog"
 
 import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
 import {
@@ -109,14 +110,24 @@ export function DataCollectionForm({
   const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } =
     useTypeEventCatalog()
   const dataCollectionRef = useRef<HTMLDivElement>(null)
+  const { entries: datasetCatalogEntries } = useDatasetsCatalog(true)
+
+  const datasetNameById = useMemo(
+    () => Object.fromEntries(datasetCatalogEntries.map((entry) => [entry.id, entry.name])),
+    [datasetCatalogEntries]
+  )
 
   const formSchema = useMemo(
     () =>
-      createDataCollectionFormSchema(mode, (typeId) => {
-        const item = typeItemsMap.get(typeId)
-        return { name: item?.name ?? "", group: item?.group ?? "" }
-      }),
-    [mode, typeItemsMap]
+      createDataCollectionFormSchema(
+        mode,
+        (typeId) => {
+          const item = typeItemsMap.get(typeId)
+          return { name: item?.name ?? "", group: item?.group ?? "" }
+        },
+        (datasetId) => datasetNameById[datasetId] ?? "Dataset"
+      ),
+    [mode, typeItemsMap, datasetNameById]
   )
 
   const {
@@ -165,6 +176,7 @@ export function DataCollectionForm({
   }, [initialConfig, initialTopography, initialActive, reset])
 
   const [openSection, setOpenSection] = useState<"data" | "chart" | null>("data")
+  const [chartFocusToken, setChartFocusToken] = useState(0)
   const isDataCollectionOpen = openSection === "data"
   const isChartOpen = openSection === "chart"
 
@@ -246,6 +258,7 @@ export function DataCollectionForm({
         }, 80)
       } else if (hasChartSectionErrors(formErrors)) {
         setOpenSection("chart")
+        setChartFocusToken((token) => token + 1)
       }
 
       if (formErrors.topography) {
@@ -256,7 +269,11 @@ export function DataCollectionForm({
         }, 80)
       }
 
-      toast.error(getFirstFormErrorMessage(formErrors))
+      const datasetLabels = Object.fromEntries(
+        datasetCatalogEntries.map((entry) => [entry.id, entry.name])
+      )
+      const alert = formatDataCollectionValidationAlert(formErrors, { datasetLabels })
+      toast.error(alert.title, { description: alert.description })
     }
   )
 
@@ -737,6 +754,7 @@ export function DataCollectionForm({
           getValues={getValues}
           open={isChartOpen}
           onOpenChange={(next) => setOpenSection(next ? "chart" : null)}
+          focusToken={chartFocusToken}
         />
       </div>
 

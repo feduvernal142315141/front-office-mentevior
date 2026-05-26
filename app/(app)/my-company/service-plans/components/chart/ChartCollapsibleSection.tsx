@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ChevronDown } from "lucide-react"
 import {
+  useFormState,
   useWatch,
   type Control,
   type UseFormGetValues,
@@ -25,7 +26,7 @@ import { ChartObjectivesTab } from "./ChartObjectivesTab"
 
 import {
   DEFAULT_CHART_CONFIG,
-  createDefaultDatasetVisualConfig,
+  normalizeDatasetVisualConfig,
   isBaselineDataset,
   isObjectivesDataset,
   isStackedDataset,
@@ -34,22 +35,18 @@ import {
 import { useDatasetsCatalog } from "@/lib/modules/service-plans/hooks/use-datasets-catalog"
 import type { DatasetCatalogEntry } from "@/lib/modules/service-plans/services/datasets-catalog.service"
 import type { DataCollectionFormValues } from "@/lib/schemas/data-collection-form.schema"
-
-const STATIC_TABS = {
-  GENERAL: "general",
-  X_AXIS: "x-axis",
-  Y_AXES: "y-axes",
-} as const
-
-const DATASET_TAB_PREFIX = "dataset:"
-
-function datasetTabId(datasetId: string): string {
-  return `${DATASET_TAB_PREFIX}${datasetId}`
-}
+import { hasChartSectionErrors } from "@/lib/schemas/data-collection-form.schema"
+import {
+  CHART_DATASET_TAB_PREFIX,
+  CHART_STATIC_TABS,
+  chartDatasetTabId,
+  getChartTabsWithErrors,
+  getFirstChartErrorTab,
+} from "@/lib/schemas/chart-form-errors"
 
 function parseDatasetTabId(tabId: string): string | null {
-  if (!tabId.startsWith(DATASET_TAB_PREFIX)) return null
-  return tabId.slice(DATASET_TAB_PREFIX.length)
+  if (!tabId.startsWith(CHART_DATASET_TAB_PREFIX)) return null
+  return tabId.slice(CHART_DATASET_TAB_PREFIX.length)
 }
 
 interface ChartCollapsibleSectionProps {
@@ -58,6 +55,7 @@ interface ChartCollapsibleSectionProps {
   getValues: UseFormGetValues<DataCollectionFormValues>
   open: boolean
   onOpenChange: (open: boolean) => void
+  focusToken?: number
 }
 
 export function ChartCollapsibleSection({
@@ -66,9 +64,13 @@ export function ChartCollapsibleSection({
   getValues,
   open,
   onOpenChange,
+  focusToken = 0,
 }: ChartCollapsibleSectionProps) {
-  const [activeTab, setActiveTab] = useState<string>(STATIC_TABS.GENERAL)
+  const [activeTab, setActiveTab] = useState<string>(CHART_STATIC_TABS.GENERAL)
   const sectionRef = useRef<HTMLDivElement>(null)
+  const { errors } = useFormState({ control })
+  const chartErrors = errors.chart as Record<string, unknown> | undefined
+  const hasChartErrors = hasChartSectionErrors(errors)
 
   const {
     entries: datasetEntries,
@@ -104,7 +106,7 @@ export function ChartCollapsibleSection({
       datasetEntries
         .filter((entry) => selectedDatasets.includes(entry.id))
         .map((entry) => ({
-          id: datasetTabId(entry.id),
+          id: chartDatasetTabId(entry.id),
           label: entry.name,
           datasetId: entry.id,
           datasetName: entry.name,
@@ -112,14 +114,47 @@ export function ChartCollapsibleSection({
     [datasetEntries, selectedDatasets]
   )
 
+  const objectivesDatasetId = useMemo(() => {
+    for (const id of selectedDatasets) {
+      const entry = datasetById.get(id)
+      if (entry && isObjectivesDataset(entry.name)) return id
+    }
+    return undefined
+  }, [selectedDatasets, datasetById])
+
+  const tabsWithErrors = useMemo(
+    () =>
+      getChartTabsWithErrors(chartErrors, {
+        objectivesDatasetId,
+        selectedDatasetIds: selectedDatasets,
+      }),
+    [chartErrors, objectivesDatasetId, selectedDatasets]
+  )
+
   const tabs: ChartTab[] = useMemo(
     () => [
-      { id: STATIC_TABS.GENERAL, label: "General" },
-      { id: STATIC_TABS.X_AXIS, label: "X Axes" },
-      { id: STATIC_TABS.Y_AXES, label: "Y Axes" },
-      ...datasetTabs.map(({ id, label }) => ({ id, label })),
+      {
+        id: CHART_STATIC_TABS.GENERAL,
+        label: "General",
+        hasError: tabsWithErrors.has(CHART_STATIC_TABS.GENERAL),
+      },
+      {
+        id: CHART_STATIC_TABS.X_AXIS,
+        label: "X Axes",
+        hasError: tabsWithErrors.has(CHART_STATIC_TABS.X_AXIS),
+      },
+      {
+        id: CHART_STATIC_TABS.Y_AXES,
+        label: "Y Axes",
+        hasError: tabsWithErrors.has(CHART_STATIC_TABS.Y_AXES),
+      },
+      ...datasetTabs.map(({ id, label }) => ({
+        id,
+        label,
+        hasError: tabsWithErrors.has(id),
+      })),
     ],
-    [datasetTabs]
+    [datasetTabs, tabsWithErrors]
   )
 
   const activeDatasetId = parseDatasetTabId(activeTab)
@@ -128,9 +163,23 @@ export function ChartCollapsibleSection({
   useEffect(() => {
     const validTabIds = new Set(tabs.map((tab) => tab.id))
     if (!validTabIds.has(activeTab)) {
-      setActiveTab(STATIC_TABS.GENERAL)
+      setActiveTab(CHART_STATIC_TABS.GENERAL)
     }
   }, [tabs, activeTab])
+
+  useEffect(() => {
+    if (!focusToken || !hasChartErrors) return
+
+    const nextTab = getFirstChartErrorTab(chartErrors, {
+      objectivesDatasetId,
+      selectedDatasetIds: selectedDatasets,
+    })
+    setActiveTab(nextTab)
+
+    window.setTimeout(() => {
+      sectionRef.current?.scrollIntoView({ block: "start", behavior: "smooth" })
+    }, 120)
+  }, [focusToken, hasChartErrors, chartErrors, objectivesDatasetId, selectedDatasets])
 
   useEffect(() => {
     const chart = getValues("chart")
@@ -163,12 +212,19 @@ export function ChartCollapsibleSection({
         continue
       }
 
-      if (!configs[datasetId]) {
-        setValue(
-          `chart.datasetConfigs.${datasetId}`,
-          createDefaultDatasetVisualConfig(entry.name, yAxisTitle),
-          { shouldDirty: false }
-        )
+      const nextConfig = normalizeDatasetVisualConfig(
+        configs[datasetId],
+        entry.name,
+        yAxisTitle
+      )
+      const current = configs[datasetId]
+      const shouldSync =
+        !current || JSON.stringify(current) !== JSON.stringify(nextConfig)
+
+      if (shouldSync) {
+        setValue(`chart.datasetConfigs.${datasetId}`, nextConfig, {
+          shouldDirty: false,
+        })
       }
     }
   }, [selectedDatasets, datasetById, datasetEntries.length, open, setValue, getValues])
@@ -178,7 +234,10 @@ export function ChartCollapsibleSection({
       open={open}
       onOpenChange={handleOpenChange}
       ref={sectionRef}
-      className="group scroll-mt-4 rounded-xl border border-slate-200 bg-white"
+      className={cn(
+        "group scroll-mt-4 rounded-xl border bg-white",
+        hasChartErrors ? "border-red-300 ring-1 ring-red-200" : "border-slate-200"
+      )}
     >
       <CollapsibleTrigger
         type="button"
@@ -208,7 +267,7 @@ export function ChartCollapsibleSection({
           <ChartTabs tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
 
           <div className="pt-4">
-            {activeTab === STATIC_TABS.GENERAL && (
+            {activeTab === CHART_STATIC_TABS.GENERAL && (
               <ChartGeneralTab
                 control={control}
                 datasetEntries={datasetEntries}
@@ -217,8 +276,8 @@ export function ChartCollapsibleSection({
                 onRetryDatasets={() => void refetchDatasets()}
               />
             )}
-            {activeTab === STATIC_TABS.X_AXIS && <ChartXAxisTab control={control} />}
-            {activeTab === STATIC_TABS.Y_AXES && <ChartYAxesTab control={control} />}
+            {activeTab === CHART_STATIC_TABS.X_AXIS && <ChartXAxisTab control={control} />}
+            {activeTab === CHART_STATIC_TABS.Y_AXES && <ChartYAxesTab control={control} />}
             {activeDataset && isObjectivesDataset(activeDataset.name) && (
               <ChartObjectivesTab control={control} />
             )}

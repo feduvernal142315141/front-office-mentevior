@@ -23,7 +23,7 @@ const QUICK_COLORS = [
 ]
 
 function isValidHex(hex: string): boolean {
-  return /^#[0-9A-Fa-f]{6}$/.test(hex)
+  return /^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(hex)
 }
 
 export function FloatingColorPicker({

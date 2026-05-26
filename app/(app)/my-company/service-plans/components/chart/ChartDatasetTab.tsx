@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo } from "react"
-import { Controller, useWatch, type Control } from "react-hook-form"
+import { Controller, useFormState, useWatch, type Control } from "react-hook-form"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingColorPicker } from "@/components/custom/FloatingColorPicker"
@@ -12,7 +12,8 @@ import {
 } from "@/lib/modules/service-plans/constants/chart.constants"
 import type { DataCollectionFormValues } from "@/lib/schemas/data-collection-form.schema"
 import { cn } from "@/lib/utils"
-import type { UseFormSetValue } from "react-hook-form"
+import type { FieldErrors, UseFormSetValue } from "react-hook-form"
+import { ChartFieldError } from "./ChartFieldError"
 
 interface ChartDatasetTabProps {
   control: Control<DataCollectionFormValues>
@@ -29,6 +30,11 @@ export function ChartDatasetTab({
   showUnpin,
   showStacked,
 }: ChartDatasetTabProps) {
+  const { errors } = useFormState({ control })
+  const datasetErrors = (
+    errors.chart as { datasetConfigs?: Record<string, FieldErrors<Record<string, unknown>>> } | undefined
+  )?.datasetConfigs?.[dataset]
+
   const yAxisTitle = useWatch({ control, name: "chart.yAxis.title" }) ?? ""
   const currentAxis = useWatch({
     control,
@@ -54,44 +60,56 @@ export function ChartDatasetTab({
   return (
     <div className="space-y-6">
       <div className={cn("grid gap-x-4 gap-y-6", headerCols)}>
-        <Controller
-          name={`${base}.title`}
-          control={control}
-          render={({ field: f }) => (
-            <FloatingInput
-              label="Title"
-              value={f.value ?? ""}
-              onChange={f.onChange}
-              onBlur={f.onBlur}
-            />
-          )}
-        />
-        <Controller
-          name={`${base}.axis`}
-          control={control}
-          render={({ field: f }) => (
-            <FloatingSelect
-              label="Axis"
-              value={f.value ?? ""}
-              onChange={f.onChange}
-              onBlur={f.onBlur}
-              options={axisOptions}
-            />
-          )}
-        />
-        <Controller
-          name={`${base}.type`}
-          control={control}
-          render={({ field: f }) => (
-            <FloatingSelect
-              label="Type"
-              value={f.value ?? ""}
-              onChange={f.onChange}
-              onBlur={f.onBlur}
-              options={CHART_LINE_TYPE_OPTIONS}
-            />
-          )}
-        />
+        <div className="space-y-1">
+          <Controller
+            name={`${base}.title`}
+            control={control}
+            render={({ field: f }) => (
+              <FloatingInput
+                label="Title"
+                value={f.value ?? ""}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
+                hasError={!!datasetErrors?.title}
+              />
+            )}
+          />
+          <ChartFieldError message={datasetErrors?.title?.message} />
+        </div>
+        <div className="space-y-1">
+          <Controller
+            name={`${base}.axis`}
+            control={control}
+            render={({ field: f }) => (
+              <FloatingSelect
+                label="Axis"
+                value={f.value ?? ""}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
+                options={axisOptions}
+                hasError={!!datasetErrors?.axis}
+              />
+            )}
+          />
+          <ChartFieldError message={datasetErrors?.axis?.message} />
+        </div>
+        <div className="space-y-1">
+          <Controller
+            name={`${base}.type`}
+            control={control}
+            render={({ field: f }) => (
+              <FloatingSelect
+                label="Type"
+                value={f.value ?? ""}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
+                options={CHART_LINE_TYPE_OPTIONS}
+                hasError={!!datasetErrors?.type}
+              />
+            )}
+          />
+          <ChartFieldError message={datasetErrors?.type?.message} />
+        </div>
         {showStacked && (
           <Controller
             name={`${base}.stacked`}
@@ -129,55 +147,71 @@ export function ChartDatasetTab({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-x-4 gap-y-6">
-        <Controller
-          name={`${base}.pointStyle`}
-          control={control}
-          render={({ field: f }) => (
-            <FloatingSelect
-              label="Point Style"
-              value={f.value ?? ""}
-              onChange={f.onChange}
-              onBlur={f.onBlur}
-              options={POINT_STYLE_OPTIONS}
-            />
-          )}
-        />
-        <Controller
-          name={`${base}.borderColor`}
-          control={control}
-          render={({ field: f }) => (
-            <FloatingColorPicker
-              label="Border Color"
-              value={f.value ?? ""}
-              onChange={f.onChange}
-              onBlur={f.onBlur}
-            />
-          )}
-        />
-        <Controller
-          name={`${base}.backgroundColor`}
-          control={control}
-          render={({ field: f }) => (
-            <FloatingColorPicker
-              label="Background Color"
-              value={f.value ?? ""}
-              onChange={f.onChange}
-              onBlur={f.onBlur}
-            />
-          )}
-        />
-        <Controller
-          name={`${base}.trendlineColor`}
-          control={control}
-          render={({ field: f }) => (
-            <FloatingColorPicker
-              label="Trendline color"
-              value={f.value ?? ""}
-              onChange={f.onChange}
-              onBlur={f.onBlur}
-            />
-          )}
-        />
+        <div className="space-y-1">
+          <Controller
+            name={`${base}.pointStyle`}
+            control={control}
+            render={({ field: f }) => (
+              <FloatingSelect
+                label="Point Style"
+                value={f.value ?? ""}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
+                options={POINT_STYLE_OPTIONS}
+                hasError={!!datasetErrors?.pointStyle}
+              />
+            )}
+          />
+          <ChartFieldError message={datasetErrors?.pointStyle?.message} />
+        </div>
+        <div className="space-y-1">
+          <Controller
+            name={`${base}.borderColor`}
+            control={control}
+            render={({ field: f }) => (
+              <FloatingColorPicker
+                label="Border Color"
+                value={f.value ?? ""}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
+                hasError={!!datasetErrors?.borderColor}
+              />
+            )}
+          />
+          <ChartFieldError message={datasetErrors?.borderColor?.message} />
+        </div>
+        <div className="space-y-1">
+          <Controller
+            name={`${base}.backgroundColor`}
+            control={control}
+            render={({ field: f }) => (
+              <FloatingColorPicker
+                label="Background Color"
+                value={f.value ?? ""}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
+                hasError={!!datasetErrors?.backgroundColor}
+              />
+            )}
+          />
+          <ChartFieldError message={datasetErrors?.backgroundColor?.message} />
+        </div>
+        <div className="space-y-1">
+          <Controller
+            name={`${base}.trendlineColor`}
+            control={control}
+            render={({ field: f }) => (
+              <FloatingColorPicker
+                label="Trendline color"
+                value={f.value ?? ""}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
+                hasError={!!datasetErrors?.trendlineColor}
+              />
+            )}
+          />
+          <ChartFieldError message={datasetErrors?.trendlineColor?.message} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
