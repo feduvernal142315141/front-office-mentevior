@@ -20,13 +20,15 @@ import {
   type ChartObjectivesVisualConfig,
 } from "@/lib/modules/service-plans/constants/chart.constants"
 import type {
+  DataCollectionBaselineData,
   DataCollectionConfig,
   DataCollectionLevel,
+  DataCollectionObjectiveData,
   DataCollectionType,
   ItemDataCollectionConfig,
-  UpsertCategoryDataCollectionDto,
-  UpsertItemDataCollectionDto,
 } from "@/lib/types/data-collection.types"
+
+// --- Internal API shapes (mirror of data-collection.service.ts) ---
 
 interface ApiLevel {
   id?: string
@@ -80,42 +82,112 @@ interface ApiChart {
   datasets?: ApiChartDataset[]
 }
 
-interface ApiCategoryPayload {
-  servicePlanCategoryId: string
+// --- Baselines ---
+
+interface ApiBaseline {
+  id?: string
+  date?: string
+  value?: number | string
+  periodCatalogId?: string
+  comments?: string
+  show?: boolean | number | string
+}
+
+function normalizeBaselines(raw: unknown): DataCollectionBaselineData[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((entry): DataCollectionBaselineData | null => {
+      if (!entry || typeof entry !== "object") return null
+      const b = entry as ApiBaseline
+      const date = asString(b.date)
+      if (!date) return null
+      return {
+        recordId: asOptionalString(b.id),
+        date,
+        value: asOptionalNumber(b.value) ?? 0,
+        periodCatalogId: asString(b.periodCatalogId),
+        comments: asString(b.comments),
+        show: asBoolean(b.show, true),
+      }
+    })
+    .filter((b): b is DataCollectionBaselineData => b !== null)
+}
+
+interface ApiObjective {
+  id?: string
+  name?: string
+  startDate?: string
+  estimatedEndDate?: string
+  endDate?: string
+  operatorSmartCriteria?: string
+  valueSmartCriteria?: number | string
+  periodSmartCriteriaCatalogId?: string
+  valueDuration?: number | string
+  periodDurationCatalogId?: string
+}
+
+function normalizeObjectives(raw: unknown): DataCollectionObjectiveData[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((entry): DataCollectionObjectiveData | null => {
+      if (!entry || typeof entry !== "object") return null
+      const o = entry as ApiObjective
+      return {
+        recordId: asOptionalString(o.id),
+        name: asString(o.name),
+        startDate: asString(o.startDate),
+        estimatedEndDate: asString(o.estimatedEndDate),
+        endDate: asString(o.endDate),
+        operatorSmartCriteria: asString(o.operatorSmartCriteria),
+        valueSmartCriteria: asOptionalNumber(o.valueSmartCriteria) ?? 0,
+        periodSmartCriteriaCatalogId: asString(o.periodSmartCriteriaCatalogId),
+        valueDuration: asOptionalNumber(o.valueDuration) ?? 0,
+        periodDurationCatalogId: asString(o.periodDurationCatalogId),
+      }
+    })
+    .filter((o): o is DataCollectionObjectiveData => o !== null)
+}
+
+function toApiObjectives(objectives: DataCollectionObjectiveData[]): ApiObjective[] {
+  return objectives.map((o) => ({
+    ...(o.recordId ? { id: o.recordId } : {}),
+    name: o.name,
+    startDate: o.startDate,
+    estimatedEndDate: o.estimatedEndDate,
+    endDate: o.endDate,
+    operatorSmartCriteria: o.operatorSmartCriteria,
+    valueSmartCriteria: o.valueSmartCriteria,
+    periodSmartCriteriaCatalogId: o.periodSmartCriteriaCatalogId,
+    valueDuration: o.valueDuration,
+    periodDurationCatalogId: o.periodDurationCatalogId,
+  }))
+}
+
+// Client-specific payload shapes
+interface ClientCategoryPayload {
+  clientServicePlanCategoryId: string
   dataCollection: ApiDataCollection
   chart?: ApiChart
+  baseline?: ApiBaseline[]
+  objetive?: ApiObjective[]
 }
 
-interface ApiCategoryResponse {
-  servicePlanCategoryId?: string
-  dataCollection?: ApiDataCollection
-  chart?: ApiChart
-  typeEventCatalogId?: string
-  dailyValue?: ServicePlanValueType
-  weeklyValue?: ServicePlanValueType
-  unitOfTime?: ServicePlanUnitOfTime
-  unitMeasurementCatalogId?: string
-  recordingsNumber?: number
-  intervalLength?: number
-  levels?: ApiLevel[]
-}
-
-interface ApiItemPayload {
-  servicePlanCategoryItemId: string
+interface ClientItemPayload {
+  clientServicePlanCategoryItemId: string
   name?: string
   topography: string
   status: boolean
   dataCollection: ApiDataCollection
   chart?: ApiChart
+  baseline?: ApiBaseline[]
+  objetive?: ApiObjective[]
 }
 
-interface ApiItemResponse {
-  servicePlanCategoryItemId?: string
-  name?: string
-  topography?: string
-  status?: boolean
+interface ApiResponse {
   dataCollection?: ApiDataCollection
   chart?: ApiChart
+  baseline?: ApiBaseline[]
+  objetive?: ApiObjective[]
   typeEventCatalogId?: string
   dailyValue?: ServicePlanValueType
   weeklyValue?: ServicePlanValueType
@@ -124,18 +196,48 @@ interface ApiItemResponse {
   recordingsNumber?: number
   intervalLength?: number
   levels?: ApiLevel[]
+  topography?: string
+  status?: boolean
+  name?: string
+  clientServicePlanCategoryItemId?: string
 }
 
-type DataCollectionDtoFields = {
+export interface UpsertClientCategoryDataCollectionDto {
+  clientServicePlanCategoryId: string
   type: DataCollectionType
   weeklyDailyValue?: ServicePlanValueType
   dailyValue?: ServicePlanValueType
   unitMeasurementCatalogId?: string
-  levels: UpsertCategoryDataCollectionDto["levels"]
+  levels: Array<{ id?: string; label: string; description: string; value?: boolean }>
   intervalLength?: number
   unitOfTime?: ServicePlanUnitOfTime
   suggestedNumberOfRecordings?: number
+  cumulative?: boolean
+  chart?: ChartConfig
+  baselines?: DataCollectionBaselineData[]
+  objectives?: DataCollectionObjectiveData[]
 }
+
+export interface UpsertClientItemDataCollectionDto {
+  clientServicePlanCategoryItemId: string
+  name?: string
+  topography: string
+  active: boolean
+  type: DataCollectionType
+  weeklyDailyValue?: ServicePlanValueType
+  dailyValue?: ServicePlanValueType
+  unitMeasurementCatalogId?: string
+  levels: Array<{ id?: string; label: string; description: string; value?: boolean }>
+  intervalLength?: number
+  unitOfTime?: ServicePlanUnitOfTime
+  suggestedNumberOfRecordings?: number
+  cumulative?: boolean
+  chart?: ChartConfig
+  baselines?: DataCollectionBaselineData[]
+  objectives?: DataCollectionObjectiveData[]
+}
+
+// --- Normalization helpers ---
 
 function asString(value: unknown): string {
   if (typeof value === "string") return value
@@ -162,20 +264,15 @@ function asBoolean(value: unknown, fallback = false): boolean {
   return fallback
 }
 
-function asEnum<T extends string>(
-  value: unknown,
-  enumObject: Record<string, T>,
-  fallback: T
-): T {
+function asEnum<T extends string>(value: unknown, enumObject: Record<string, T>, fallback: T): T {
   if (typeof value !== "string") return fallback
   const upper = value.toUpperCase()
   const values = Object.values(enumObject) as string[]
-  return (values.includes(upper) ? (upper as T) : fallback)
+  return values.includes(upper) ? (upper as T) : fallback
 }
 
 function extractEntity(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw
-
   const wrapped = raw as { entity?: unknown; data?: unknown }
   if (wrapped.entity && typeof wrapped.entity === "object") return wrapped.entity
   if (wrapped.data && typeof wrapped.data === "object") {
@@ -183,41 +280,33 @@ function extractEntity(raw: unknown): unknown {
     if (dataEntity && typeof dataEntity === "object") return dataEntity
     return wrapped.data
   }
-
   return raw
 }
 
 function normalizeLevels(rawLevels: unknown): DataCollectionLevel[] {
   if (!Array.isArray(rawLevels)) return []
-
   return rawLevels
-    .map((entry) => {
+    .map((entry): DataCollectionLevel | null => {
       if (!entry || typeof entry !== "object") return null
-
       const level = entry as ApiLevel
       const label = asString(level.level)
       const description = asString(level.description)
       const id = asOptionalString(level.id)
-
-      if (label.length === 0 && description.length === 0) return null
-
+      if (!label && !description) return null
       return {
         id: crypto.randomUUID(),
         ...(id ? { recordId: id } : {}),
         label,
         description,
-      } satisfies DataCollectionLevel
+      }
     })
     .filter((entry): entry is DataCollectionLevel => entry !== null)
 }
 
-function extractApiDataCollection(
-  response: ApiCategoryResponse | ApiItemResponse
-): ApiDataCollection | null {
+function extractApiDataCollection(response: ApiResponse): ApiDataCollection | null {
   if (response.dataCollection && typeof response.dataCollection === "object") {
     return response.dataCollection
   }
-
   const typeEventCatalogId = asOptionalString(response.typeEventCatalogId)
   const hasLegacyFields =
     typeEventCatalogId ||
@@ -228,9 +317,7 @@ function extractApiDataCollection(
     response.recordingsNumber !== undefined ||
     response.intervalLength !== undefined ||
     (Array.isArray(response.levels) && response.levels.length > 0)
-
   if (!hasLegacyFields) return null
-
   return {
     typeEventCatalogId,
     dailyValue: response.dailyValue,
@@ -244,24 +331,15 @@ function extractApiDataCollection(
 }
 
 function fromApiDataCollection(dc: ApiDataCollection): DataCollectionConfig {
-  const typeEventCatalogId = asString(dc.typeEventCatalogId)
-  const dailyValue = parseServicePlanValueType(dc.dailyValue)
-  const weeklyDailyValue = parseServicePlanValueType(dc.weeklyValue)
-  const unitOfTime = parseServicePlanUnitOfTime(dc.unitOfTime)
-  const unitMeasurementCatalogId = asOptionalString(dc.unitMeasurementCatalogId)
-  const suggestedNumberOfRecordings = asOptionalNumber(dc.recordingsNumber)
-  const intervalLength = asOptionalNumber(dc.intervalLength)
-  const levels = normalizeLevels(dc.levels)
-
   return {
-    type: typeEventCatalogId,
-    dailyValue,
-    weeklyDailyValue,
-    unitOfTime,
-    unitMeasurementCatalogId,
-    suggestedNumberOfRecordings,
-    intervalLength,
-    levels,
+    type: asString(dc.typeEventCatalogId),
+    dailyValue: parseServicePlanValueType(dc.dailyValue),
+    weeklyDailyValue: parseServicePlanValueType(dc.weeklyValue),
+    unitOfTime: parseServicePlanUnitOfTime(dc.unitOfTime),
+    unitMeasurementCatalogId: asOptionalString(dc.unitMeasurementCatalogId),
+    suggestedNumberOfRecordings: asOptionalNumber(dc.recordingsNumber),
+    intervalLength: asOptionalNumber(dc.intervalLength),
+    levels: normalizeLevels(dc.levels),
   }
 }
 
@@ -286,31 +364,22 @@ function fromApiChart(chart: ApiChart): ChartConfig {
   const datasets = Array.isArray(chart.datasets) ? chart.datasets : []
   const datasetIds: string[] = []
   const datasetConfigs: Record<string, ChartDatasetVisualConfig> = {}
-
   for (const dataset of datasets) {
     const id = asOptionalString(dataset.datasetCatalogId)
     if (!id) continue
     datasetIds.push(id)
     datasetConfigs[id] = fromApiDataset(dataset)
   }
-
   const objectives: ChartObjectivesVisualConfig = {
     showLabel: asBoolean(chart.showLabelObjectives, true),
     fontColor: asString(chart.fontColorObjectives) || DEFAULT_CHART_CONFIG.objectives!.fontColor,
     showLine: asBoolean(chart.showLineObjectives, true),
-    borderColor:
-      asString(chart.borderColorObjectives) || DEFAULT_CHART_CONFIG.objectives!.borderColor,
-    lineType: asEnum(
-      chart.lineTypeObjectives,
-      ObjectivesLineType,
-      ObjectivesLineType.DASHED
-    ),
+    borderColor: asString(chart.borderColorObjectives) || DEFAULT_CHART_CONFIG.objectives!.borderColor,
+    lineType: asEnum(chart.lineTypeObjectives, ObjectivesLineType, ObjectivesLineType.DASHED),
     showBackground: asBoolean(chart.showBackgroundObjectives),
     backgroundColor:
-      asString(chart.backgroundColorObjectives) ||
-      DEFAULT_CHART_CONFIG.objectives!.backgroundColor,
+      asString(chart.backgroundColorObjectives) || DEFAULT_CHART_CONFIG.objectives!.backgroundColor,
   }
-
   return {
     datasets: datasetIds,
     interval: asEnum(chart.interval, ChartInterval, DEFAULT_CHART_CONFIG.interval),
@@ -346,69 +415,53 @@ function hasDataCollectionContent(config: DataCollectionConfig): boolean {
     config.type.length > 0 ||
     config.levels.length > 0 ||
     config.dailyValue !== undefined ||
-    config.weeklyDailyValue !== undefined ||
-    config.unitOfTime !== undefined ||
-    config.unitMeasurementCatalogId !== undefined ||
-    config.suggestedNumberOfRecordings !== undefined ||
-    config.intervalLength !== undefined
+    config.weeklyDailyValue !== undefined
   )
 }
 
-function fromApiCategoryResponse(raw: unknown): DataCollectionConfig | null {
+function fromApiResponse(raw: unknown): DataCollectionConfig | null {
   const entity = extractEntity(raw)
   if (!entity || typeof entity !== "object") return null
-
-  const response = entity as ApiCategoryResponse
+  const response = entity as ApiResponse
   const dataCollection = extractApiDataCollection(response)
   const chartRaw = response.chart
   const hasChart = hasChartContent(chartRaw)
-
   if (!dataCollection && !hasChart) return null
-
   const config = dataCollection
     ? fromApiDataCollection(dataCollection)
     : ({ type: "", levels: [] as DataCollectionLevel[] } satisfies DataCollectionConfig)
-
-  if (hasChart && chartRaw) {
-    config.chart = fromApiChart(chartRaw)
-  }
-
-  if (!hasDataCollectionContent(config) && !config.chart) return null
+  if (hasChart && chartRaw) config.chart = fromApiChart(chartRaw)
+  config.baselines = normalizeBaselines(response.baseline)
+  config.objectives = normalizeObjectives(response.objetive)
+  if (!hasDataCollectionContent(config) && !config.chart && !config.baselines.length && !config.objectives.length) return null
   return config
 }
 
-function fromApiItemResponse(
-  raw: unknown,
-  fallbackItemId: string
-): ItemDataCollectionConfig | null {
+function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataCollectionConfig | null {
   const entity = extractEntity(raw)
   if (!entity || typeof entity !== "object") return null
-
-  const itemEntity = entity as ApiItemResponse
+  const itemEntity = entity as ApiResponse
   const dataCollection = extractApiDataCollection(itemEntity)
   const chartRaw = itemEntity.chart
   const hasChart = hasChartContent(chartRaw)
   const topography = asString(itemEntity.topography)
   const active = typeof itemEntity.status === "boolean" ? itemEntity.status : true
   const name = asString(itemEntity.name)
-  const itemId = asOptionalString(itemEntity.servicePlanCategoryItemId) ?? fallbackItemId
-
+  const itemId = asOptionalString(itemEntity.clientServicePlanCategoryItemId) ?? fallbackItemId
   const base = dataCollection
     ? fromApiDataCollection(dataCollection)
     : { type: "", levels: [] as DataCollectionLevel[] }
-
-  if (hasChart && chartRaw) {
-    base.chart = fromApiChart(chartRaw)
-  }
-
+  if (hasChart && chartRaw) base.chart = fromApiChart(chartRaw)
+  base.baselines = normalizeBaselines(itemEntity.baseline)
+  base.objectives = normalizeObjectives(itemEntity.objetive)
   const hasContent =
     hasDataCollectionContent(base) ||
     !!base.chart ||
     topography.length > 0 ||
-    typeof itemEntity.status === "boolean"
-
+    typeof itemEntity.status === "boolean" ||
+    (base.baselines && base.baselines.length > 0) ||
+    (base.objectives && base.objectives.length > 0)
   if (!hasContent) return null
-
   return {
     ...base,
     itemId,
@@ -421,39 +474,24 @@ function fromApiItemResponse(
   }
 }
 
-function toApiDataCollection(dto: DataCollectionDtoFields): ApiDataCollection {
-  const dataCollection: ApiDataCollection = {
+// --- Serialize to API ---
+
+function toApiDataCollection(dto: UpsertClientCategoryDataCollectionDto | UpsertClientItemDataCollectionDto): ApiDataCollection {
+  const dc: ApiDataCollection = {
     typeEventCatalogId: dto.type,
     levels: dto.levels.map((level) => {
-      const entry: ApiLevel = {
-        level: level.label,
-        description: level.description,
-      }
+      const entry: ApiLevel = { level: level.label, description: level.description }
       if (level.id) entry.id = level.id
       return entry
     }),
   }
-
-  if (dto.dailyValue) {
-    dataCollection.dailyValue = dto.dailyValue
-  }
-  if (dto.weeklyDailyValue) {
-    dataCollection.weeklyValue = dto.weeklyDailyValue
-  }
-  if (dto.unitOfTime) {
-    dataCollection.unitOfTime = dto.unitOfTime
-  }
-  if (dto.unitMeasurementCatalogId) {
-    dataCollection.unitMeasurementCatalogId = dto.unitMeasurementCatalogId
-  }
-  if (dto.suggestedNumberOfRecordings !== undefined) {
-    dataCollection.recordingsNumber = dto.suggestedNumberOfRecordings
-  }
-  if (dto.intervalLength !== undefined) {
-    dataCollection.intervalLength = dto.intervalLength
-  }
-
-  return dataCollection
+  if (dto.dailyValue) dc.dailyValue = dto.dailyValue
+  if (dto.weeklyDailyValue) dc.weeklyValue = dto.weeklyDailyValue
+  if (dto.unitOfTime) dc.unitOfTime = dto.unitOfTime
+  if (dto.unitMeasurementCatalogId) dc.unitMeasurementCatalogId = dto.unitMeasurementCatalogId
+  if (dto.suggestedNumberOfRecordings !== undefined) dc.recordingsNumber = dto.suggestedNumberOfRecordings
+  if (dto.intervalLength !== undefined) dc.intervalLength = dto.intervalLength
+  return dc
 }
 
 function toApiChart(chart: ChartConfig): ApiChart {
@@ -475,7 +513,6 @@ function toApiChart(chart: ChartConfig): ApiChart {
     if (typeof config?.stacked === "boolean") entry.stacked = config.stacked
     return entry
   })
-
   const apiChart: ApiChart = {
     interval: chart.interval,
     titleXAxes: chart.xAxis.title,
@@ -486,14 +523,8 @@ function toApiChart(chart: ChartConfig): ApiChart {
     hideGridYAxes: chart.yAxis.hideGrid,
     datasets,
   }
-
-  if (chart.yAxis.suggestedMin !== undefined) {
-    apiChart.suggestedMinYAxes = chart.yAxis.suggestedMin
-  }
-  if (chart.yAxis.suggestedMax !== undefined) {
-    apiChart.suggestedMaxYAxes = chart.yAxis.suggestedMax
-  }
-
+  if (chart.yAxis.suggestedMin !== undefined) apiChart.suggestedMinYAxes = chart.yAxis.suggestedMin
+  if (chart.yAxis.suggestedMax !== undefined) apiChart.suggestedMaxYAxes = chart.yAxis.suggestedMax
   if (chart.objectives) {
     apiChart.showLabelObjectives = chart.objectives.showLabel
     apiChart.showLineObjectives = chart.objectives.showLine
@@ -503,139 +534,143 @@ function toApiChart(chart: ChartConfig): ApiChart {
     apiChart.backgroundColorObjectives = chart.objectives.backgroundColor
     apiChart.lineTypeObjectives = chart.objectives.lineType
   }
-
   return apiChart
 }
 
-function toApiCategoryPayload(dto: UpsertCategoryDataCollectionDto): ApiCategoryPayload {
-  const payload: ApiCategoryPayload = {
-    servicePlanCategoryId: dto.servicePlanCategoryId,
+function toApiBaselines(baselines: DataCollectionBaselineData[]): ApiBaseline[] {
+  return baselines.map((b) => ({
+    ...(b.recordId ? { id: b.recordId } : {}),
+    date: b.date,
+    value: b.value,
+    periodCatalogId: b.periodCatalogId,
+    comments: b.comments,
+    show: b.show,
+  }))
+}
+
+// --- Public API ---
+
+export async function getClientCategoryDataCollection(
+  clientServicePlanCategoryId: string
+): Promise<DataCollectionConfig | null> {
+  const response = await serviceGet<unknown>(
+    `/client-service-plan-category/${clientServicePlanCategoryId}/level`
+  )
+  if (response?.status === 404) return null
+  if (!response || (response.status !== 200 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to load category data collection"))
+  }
+  if (response.status === 204 || !response.data) return null
+  return fromApiResponse(response.data)
+}
+
+export async function upsertClientCategoryDataCollection(
+  dto: UpsertClientCategoryDataCollectionDto
+): Promise<void> {
+  const payload: ClientCategoryPayload = {
+    clientServicePlanCategoryId: dto.clientServicePlanCategoryId,
     dataCollection: toApiDataCollection(dto),
   }
   if (dto.chart) payload.chart = toApiChart(dto.chart)
-  return payload
+  if (dto.baselines) payload.baseline = toApiBaselines(dto.baselines)
+  if (dto.objectives) payload.objetive = toApiObjectives(dto.objectives)
+  const response = await servicePut<ClientCategoryPayload, unknown>(
+    `/client-service-plan-category/level`,
+    payload
+  )
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to save category data collection"))
+  }
 }
 
-function toApiItemPayload(dto: UpsertItemDataCollectionDto): ApiItemPayload {
-  const payload: ApiItemPayload = {
-    servicePlanCategoryItemId: dto.servicePlanCategoryItemId,
+export async function deleteClientCategoryLevel(levelId: string): Promise<void> {
+  const response = await serviceDelete<unknown>(`/client-service-plan-category-level/${levelId}`)
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete level"))
+  }
+}
+
+export async function getClientItemDataCollection(
+  clientServicePlanCategoryItemId: string
+): Promise<ItemDataCollectionConfig | null> {
+  const response = await serviceGet<unknown>(
+    `/client-service-plan-category-item/${clientServicePlanCategoryItemId}/level`
+  )
+  if (response?.status === 404) return null
+  if (!response || (response.status !== 200 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to load item data collection"))
+  }
+  if (response.status === 204 || !response.data) return null
+  return fromApiItemResponse(response.data, clientServicePlanCategoryItemId)
+}
+
+export async function upsertClientItemDataCollection(
+  dto: UpsertClientItemDataCollectionDto
+): Promise<void> {
+  const payload: ClientItemPayload = {
+    clientServicePlanCategoryItemId: dto.clientServicePlanCategoryItemId,
     topography: dto.topography,
     status: dto.active,
     dataCollection: toApiDataCollection(dto),
   }
-
-  if (dto.name?.trim()) {
-    payload.name = dto.name.trim()
-  }
+  if (dto.name?.trim()) payload.name = dto.name.trim()
   if (dto.chart) payload.chart = toApiChart(dto.chart)
-
-  return payload
-}
-
-export async function getCategoryDataCollection(
-  servicePlanCategoryId: string
-): Promise<DataCollectionConfig | null> {
-  const response = await serviceGet<unknown>(
-    `/service-plan-category/${servicePlanCategoryId}/level`
+  if (dto.baselines) payload.baseline = toApiBaselines(dto.baselines)
+  if (dto.objectives) payload.objetive = toApiObjectives(dto.objectives)
+  const response = await servicePut<ClientItemPayload, unknown>(
+    `/client-service-plan-category-item/level`,
+    payload
   )
-
-  if (response?.status === 404) return null
-
-  if (!response || (response.status !== 200 && response.status !== 204)) {
-    throw new Error(
-      getApiErrorMessage(response?.data, "Failed to load category data collection")
-    )
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to save item data collection"))
   }
-
-  if (response.status === 204 || !response.data) return null
-
-  return fromApiCategoryResponse(response.data)
 }
 
-export async function deleteServicePlanCategoryLevel(
-  servicePlanCategoryLevelId: string
-): Promise<void> {
+export async function deleteClientItemLevel(levelId: string): Promise<void> {
   const response = await serviceDelete<unknown>(
-    `/service-plan-category-level/${servicePlanCategoryLevelId}`
+    `/client-service-plan-category-item-level/${levelId}`
   )
-
-  if (
-    !response ||
-    (response.status !== 200 && response.status !== 201 && response.status !== 204)
-  ) {
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
     throw new Error(getApiErrorMessage(response?.data, "Failed to delete level"))
   }
 }
 
-export async function upsertCategoryDataCollection(
-  dto: UpsertCategoryDataCollectionDto
-): Promise<void> {
-  const payload = toApiCategoryPayload(dto)
-  const response = await servicePut<ApiCategoryPayload, unknown>(
-    `/service-plan-category/${dto.servicePlanCategoryId}/level`,
-    payload
-  )
+// --- Baseline deletes ---
 
-  if (
-    !response ||
-    (response.status !== 200 && response.status !== 201 && response.status !== 204)
-  ) {
-    throw new Error(
-      getApiErrorMessage(response?.data, "Failed to save category data collection")
-    )
-  }
-}
-
-export async function getItemDataCollection(
-  servicePlanCategoryItemId: string
-): Promise<ItemDataCollectionConfig | null> {
-  const response = await serviceGet<unknown>(
-    `/service-plan-category-item/${servicePlanCategoryItemId}/level`
-  )
-
-  if (response?.status === 404) return null
-
-  if (!response || (response.status !== 200 && response.status !== 204)) {
-    throw new Error(
-      getApiErrorMessage(response?.data, "Failed to load item data collection")
-    )
-  }
-
-  if (response.status === 204 || !response.data) return null
-
-  return fromApiItemResponse(response.data, servicePlanCategoryItemId)
-}
-
-export async function deleteServicePlanCategoryItemLevel(
-  servicePlanCategoryItemLevelId: string
-): Promise<void> {
+export async function deleteClientCategoryBaseline(baselineId: string): Promise<void> {
   const response = await serviceDelete<unknown>(
-    `/service-plan-category-item-level/${servicePlanCategoryItemLevelId}`
+    `/client-service-plan-category-baseline/${baselineId}`
   )
-
-  if (
-    !response ||
-    (response.status !== 200 && response.status !== 201 && response.status !== 204)
-  ) {
-    throw new Error(getApiErrorMessage(response?.data, "Failed to delete level"))
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete baseline"))
   }
 }
 
-export async function upsertItemDataCollection(
-  dto: UpsertItemDataCollectionDto
-): Promise<void> {
-  const payload = toApiItemPayload(dto)
-  const response = await servicePut<ApiItemPayload, unknown>(
-    `/service-plan-category-item/${dto.servicePlanCategoryItemId}/level`,
-    payload
+export async function deleteClientItemBaseline(baselineId: string): Promise<void> {
+  const response = await serviceDelete<unknown>(
+    `/client-service-plan-category-item-baseline/${baselineId}`
   )
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete baseline"))
+  }
+}
 
-  if (
-    !response ||
-    (response.status !== 200 && response.status !== 201 && response.status !== 204)
-  ) {
-    throw new Error(
-      getApiErrorMessage(response?.data, "Failed to save item data collection")
-    )
+// --- Objective deletes ---
+
+export async function deleteClientCategoryObjective(objectiveId: string): Promise<void> {
+  const response = await serviceDelete<unknown>(
+    `/client-service-plan-category-objetive/${objectiveId}`
+  )
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete objective"))
+  }
+}
+
+export async function deleteClientItemObjective(objectiveId: string): Promise<void> {
+  const response = await serviceDelete<unknown>(
+    `/client-service-plan-category-item-objetive/${objectiveId}`
+  )
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete objective"))
   }
 }

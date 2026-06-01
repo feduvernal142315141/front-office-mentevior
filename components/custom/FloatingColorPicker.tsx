@@ -125,7 +125,7 @@ export function FloatingColorPicker({
             {/* Label flotante */}
             <label
               className={cn(
-                "absolute left-4 px-1 pointer-events-none",
+                "absolute left-4 right-12 px-1 pointer-events-none overflow-hidden text-ellipsis whitespace-nowrap",
                 "transition-all duration-200 ease-out",
                 isFocused || hasValue || isOpen
                   ? "top-0 -translate-y-1/2 text-xs bg-white"

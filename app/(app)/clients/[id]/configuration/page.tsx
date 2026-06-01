@@ -1,0 +1,17 @@
+"use client"
+
+import { use } from "react"
+import { useSearchParams } from "next/navigation"
+import { ClientConfigurationLayout } from "./components/ClientConfigurationLayout"
+
+interface ClientConfigurationPageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function ClientConfigurationPage({ params }: ClientConfigurationPageProps) {
+  const { id } = use(params)
+  const searchParams = useSearchParams()
+  const spId = searchParams.get("spId") ?? null
+
+  return <ClientConfigurationLayout clientId={id} clientServicePlanId={spId} />
+}

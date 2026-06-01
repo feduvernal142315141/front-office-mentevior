@@ -50,7 +50,7 @@ interface UseClientsTableReturn {
 
 export function useClientsTable(): UseClientsTableReturn {
   const router = useRouter()
-  
+
   const [inputValue, setInputValue] = useState("")
   const searchQuery = inputValue
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
@@ -204,7 +204,13 @@ export function useClientsTable(): UseClientsTableReturn {
       render: (client) => (
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => router.push(`/clients/${client.id}/service-plan`)}
+            onClick={() => {
+              const base = `/clients/${client.id}/configuration`
+              const url = client.clientServicePlanId
+                ? `${base}?spId=${client.clientServicePlanId}`
+                : base
+              router.push(url)
+            }}
             className={cn(
               "group/config relative h-9 w-9",
               "flex items-center justify-center rounded-xl",
@@ -216,8 +222,8 @@ export function useClientsTable(): UseClientsTableReturn {
               "transition-all duration-200 ease-out",
               "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
             )}
-            title="Service Plan Configuration"
-            aria-label="Service Plan Configuration"
+            title="Configuration"
+            aria-label="Configuration"
           >
             <Sliders className="w-4 h-4 text-blue-600 group-hover/config:text-blue-700 transition-colors duration-200" />
           </button>

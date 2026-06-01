@@ -29,6 +29,25 @@ function normalizeDatasetName(name: string): string {
   return name.trim().toLowerCase()
 }
 
+const AXIS_TITLE_ALIASES: Record<string, string> = {
+  "numero de ocurrencia": "Number of occurrences",
+  "número de ocurrencia": "Number of occurrences",
+  "numero de ocurrencias": "Number of occurrences",
+  "número de ocurrencias": "Number of occurrences",
+}
+
+export function normalizeAxisTitle(title: string): string {
+  const trimmed = title.trim()
+  if (!trimmed) return trimmed
+
+  const normalized = trimmed
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+
+  return AXIS_TITLE_ALIASES[normalized] ?? trimmed
+}
+
 export function isObjectivesDataset(name: string): boolean {
   return normalizeDatasetName(name) === normalizeDatasetName(KNOWN_DATASET_NAMES.OBJECTIVES)
 }

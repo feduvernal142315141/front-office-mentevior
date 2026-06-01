@@ -322,6 +322,41 @@ export async function deleteClientServicePlanCategoryItem(id: string): Promise<v
   }
 }
 
+// --- Clone ---
+
+export interface CloneServicePlanToClientDto {
+  clientId: string
+  servicePlanId: string
+}
+
+export async function cloneServicePlanToClient(dto: CloneServicePlanToClientDto): Promise<string> {
+  const response = await servicePost<CloneServicePlanToClientDto, unknown>(
+    "/client-service-plan/clone-to-client",
+    dto
+  )
+
+  if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
+    throw new Error(
+      (response.data as { message?: string } | undefined)?.message ??
+        "Failed to clone service plan to client"
+    )
+  }
+
+  const responseData = response.data as unknown
+
+  // The API returns the new client service plan ID as a raw string
+  if (typeof responseData === "string" && responseData.trim().length > 0) {
+    return responseData.trim().replace(/^"|"$/g, "")
+  }
+
+  // Fallback: extract id from object response
+  const raw = responseData as Record<string, unknown> | null
+  const id = asString(raw?.id ?? raw?.clientServicePlanId ?? "")
+  if (id) return id
+
+  throw new Error("Clone succeeded but no usable client service plan ID was returned")
+}
+
 // --- Item Catalog ---
 
 export async function getClientServicePlanItemCatalog(

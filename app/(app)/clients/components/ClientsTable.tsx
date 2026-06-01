@@ -82,6 +82,7 @@ export function ClientsTable() {
         getRowKey={(client) => client.id}
         pagination={pagination}
       />
+
     </div>
   )
 }

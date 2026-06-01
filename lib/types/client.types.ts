@@ -29,6 +29,7 @@ export interface ClientListItem {
   insurance?: string
   rbt?: string
   progress?: number
+  clientServicePlanId?: string | null
 }
 
 export interface CreateClientDto {

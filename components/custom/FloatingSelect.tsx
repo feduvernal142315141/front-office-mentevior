@@ -109,6 +109,7 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
           type="button"
           onClick={handleToggle}
           disabled={disabled}
+          title={displayText}
           className={cn(
             `
             w-full
@@ -129,7 +130,7 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
             disabled && "!cursor-not-allowed"
           )}
         >
-          {displayText}
+          <span className="block max-w-full truncate whitespace-nowrap pr-1">{displayText}</span>
         </button>
 
         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">

@@ -202,7 +202,7 @@ export function ChartDatasetTab({
             control={control}
             render={({ field: f }) => (
               <FloatingColorPicker
-                label="Trendline color"
+                label="Trendline Color"
                 value={f.value ?? ""}
                 onChange={f.onChange}
                 onBlur={f.onBlur}

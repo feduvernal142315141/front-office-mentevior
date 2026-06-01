@@ -5,18 +5,19 @@ import { useParams } from "next/navigation"
 
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 
-import { AddItemsDrawer } from "./components/AddItemsDrawer"
-import { CategoriesSidebar } from "./components/CategoriesSidebar"
-import { CategoryItemsPanel } from "./components/CategoryItemsPanel"
-import { ClientServicePlanHeader } from "./components/ClientServicePlanHeader"
-import { ClientServicePlanSummaryCard } from "./components/ClientServicePlanSummaryCard"
-import { useClientServicePlanCategoryItems } from "./hooks/useClientServicePlanCategoryItems"
-import { useClientServicePlanConfiguration } from "./hooks/useClientServicePlanConfiguration"
-import { useDataCollectionDrawerController } from "./hooks/useDataCollectionDrawerController"
+import { AddItemsDrawer } from "../components/AddItemsDrawer"
+import { CategoriesSidebar } from "../components/CategoriesSidebar"
+import { CategoryItemsPanel } from "../components/CategoryItemsPanel"
+import { ClientDataCollectionDrawer } from "../components/ClientDataCollectionDrawer"
+import { ClientServicePlanHeader } from "../components/ClientServicePlanHeader"
+import { ClientServicePlanSummaryCard } from "../components/ClientServicePlanSummaryCard"
+import { useClientServicePlanCategoryItems } from "../hooks/useClientServicePlanCategoryItems"
+import { useClientServicePlanConfiguration } from "../hooks/useClientServicePlanConfiguration"
+import { useDataCollectionDrawerController } from "../hooks/useDataCollectionDrawerController"
 
 export default function ClientServicePlanPage() {
-  const params = useParams<{ id: string }>()
-  const clientId = params.id
+  const params = useParams<{ id: string; spId: string }>()
+  const spId = params.spId
 
   const {
     clientServicePlan,
@@ -27,7 +28,7 @@ export default function ClientServicePlanPage() {
     error,
     setActiveCategoryId,
     reloadCategories,
-  } = useClientServicePlanConfiguration(clientId)
+  } = useClientServicePlanConfiguration(spId)
 
   const itemsState = useClientServicePlanCategoryItems({
     activeClientServicePlanCategoryId: activeCategoryId,
@@ -124,7 +125,16 @@ export default function ClientServicePlanPage() {
         />
       )}
 
-      {/* ClientDataCollectionDrawer se agrega en Paso 6-8 (Fase 2) */}
+      <ClientDataCollectionDrawer
+        open={dcDrawer.state.open}
+        onClose={dcDrawer.close}
+        mode={dcDrawer.state.mode}
+        categoryId={dcDrawer.state.categoryId}
+        categoryName={dcDrawer.state.categoryName}
+        clientServicePlanCategoryItemId={dcDrawer.state.clientServicePlanCategoryItemId}
+        itemName={dcDrawer.state.itemName}
+        onSaved={handleDcSaved}
+      />
     </div>
   )
 }

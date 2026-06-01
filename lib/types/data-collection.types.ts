@@ -18,6 +18,46 @@ export interface DataCollectionLevel {
   value?: boolean
 }
 
+export enum OperatorSmartCriteria {
+  GT = "GT",
+  GTE = "GTE",
+  EQ = "EQ",
+  LT = "LT",
+  LTE = "LTE",
+}
+
+export const OPERATOR_SMART_CRITERIA_OPTIONS: { value: string; label: string }[] = [
+  { value: OperatorSmartCriteria.GT, label: ">" },
+  { value: OperatorSmartCriteria.GTE, label: ">=" },
+  { value: OperatorSmartCriteria.EQ, label: "=" },
+  { value: OperatorSmartCriteria.LT, label: "<" },
+  { value: OperatorSmartCriteria.LTE, label: "<=" },
+]
+
+export type ObjectiveStatus = "not_started" | "in_progress" | "mastered"
+
+export interface DataCollectionObjectiveData {
+  recordId?: string
+  name: string
+  startDate: string
+  estimatedEndDate: string
+  endDate: string
+  operatorSmartCriteria: string
+  valueSmartCriteria: number
+  periodSmartCriteriaCatalogId: string
+  valueDuration: number
+  periodDurationCatalogId: string
+}
+
+export interface DataCollectionBaselineData {
+  recordId?: string
+  date: string
+  value: number
+  periodCatalogId: string
+  comments: string
+  show: boolean
+}
+
 export interface DataCollectionConfig {
   id?: string
   type: DataCollectionType | ""
@@ -30,6 +70,8 @@ export interface DataCollectionConfig {
   suggestedNumberOfRecordings?: number
   cumulative?: boolean
   chart?: ChartConfig
+  baselines?: DataCollectionBaselineData[]
+  objectives?: DataCollectionObjectiveData[]
 }
 
 export interface CategoryDataCollectionConfig extends DataCollectionConfig {

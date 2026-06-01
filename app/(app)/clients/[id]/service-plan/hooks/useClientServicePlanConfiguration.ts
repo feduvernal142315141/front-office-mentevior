@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import {
-  getClientServicePlanByClientId,
+  getClientServicePlanById,
   getClientServicePlanCategories,
 } from "@/lib/modules/client-service-plan/services/client-service-plan.service"
 import type {
@@ -32,7 +32,7 @@ function sortCategoriesByName(
 }
 
 export function useClientServicePlanConfiguration(
-  clientId: string
+  spId: string
 ): UseClientServicePlanConfigurationResult {
   const [clientServicePlan, setClientServicePlan] = useState<ClientServicePlan | null>(null)
   const [categories, setCategories] = useState<ClientServicePlanCategorySummary[]>([])
@@ -47,10 +47,10 @@ export function useClientServicePlanConfiguration(
   }, [clientServicePlan?.id])
 
   const reloadClientServicePlan = useCallback(async () => {
-    if (!clientId) return
-    const updated = await getClientServicePlanByClientId(clientId)
+    if (!spId) return
+    const updated = await getClientServicePlanById(spId)
     if (updated) setClientServicePlan(updated)
-  }, [clientId])
+  }, [spId])
 
   useEffect(() => {
     let active = true
@@ -60,7 +60,7 @@ export function useClientServicePlanConfiguration(
         setIsLoading(true)
         setError(null)
 
-        const plan = await getClientServicePlanByClientId(clientId)
+        const plan = await getClientServicePlanById(spId)
         if (!active) return
 
         if (!plan) {
@@ -86,7 +86,7 @@ export function useClientServicePlanConfiguration(
     return () => {
       active = false
     }
-  }, [clientId])
+  }, [spId])
 
   useEffect(() => {
     if (!categories || categories.length === 0) {
