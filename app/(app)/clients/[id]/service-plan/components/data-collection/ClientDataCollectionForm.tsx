@@ -28,10 +28,10 @@ import {
   formatClientDataCollectionValidationAlert,
   hasChartSectionErrors,
   hasDataCollectionSectionErrors,
-  hasRecommendationsSectionErrors,
   defaultRecommendations,
   type ClientDataCollectionFormValues,
 } from "@/lib/schemas/client-data-collection-form.schema"
+import type { RecommendationsConfig } from "@/lib/types/client-service-plan.types"
 
 import {
   SERVICE_PLAN_UNIT_OF_TIME_OPTIONS,
@@ -90,7 +90,7 @@ interface ClientDataCollectionFormProps {
   initialConfig?: DataCollectionConfig
   initialTopography?: string
   initialActive?: boolean
-  onSave: (values: ClientDataCollectionFormValues) => Promise<void>
+  onSave: (values: ClientDataCollectionFormValues & { recommendations: RecommendationsConfig }) => Promise<void>
   onDeleteLevel?: (level: DataCollectionLevel) => Promise<void>
   onChartLayoutChange?: (layout: { datasetCount: number; isOpen: boolean }) => void
   onCancel: () => void
@@ -113,6 +113,9 @@ export function ClientDataCollectionForm({
   const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } =
     useTypeEventCatalog()
   const dataCollectionRef = useRef<HTMLDivElement>(null)
+  const [recommendations, setRecommendations] = useState<RecommendationsConfig>(
+    initialConfig?.recommendations ?? defaultRecommendations
+  )
   const { entries: datasetCatalogEntries } = useDatasetsCatalog(true)
 
   const datasetNameById = useMemo(
@@ -156,7 +159,6 @@ export function ClientDataCollectionForm({
       topography: initialTopography ?? "",
       active: initialActive ?? true,
       chart: resolveChartConfig(initialConfig?.chart),
-      recommendations: defaultRecommendations,
     },
   })
 
@@ -175,8 +177,8 @@ export function ClientDataCollectionForm({
       topography: initialTopography ?? "",
       active: initialActive ?? true,
       chart: resolveChartConfig(initialConfig.chart),
-      recommendations: defaultRecommendations,
     })
+    setRecommendations(initialConfig.recommendations ?? defaultRecommendations)
   }, [initialConfig, initialTopography, initialActive, reset])
 
   const [openSection, setOpenSection] = useState<"data" | "chart" | "recommendations" | null>(
@@ -252,6 +254,7 @@ export function ClientDataCollectionForm({
       await onSave({
         ...data,
         chart: data.chart ? pruneChartDatasetConfigs(data.chart) : data.chart,
+        recommendations,
       })
     },
     (formErrors) => {
@@ -263,8 +266,6 @@ export function ClientDataCollectionForm({
       } else if (hasChartSectionErrors(formErrors)) {
         setOpenSection("chart")
         setChartFocusToken((token) => token + 1)
-      } else if (hasRecommendationsSectionErrors(formErrors)) {
-        setOpenSection("recommendations")
       }
 
       if (formErrors.topography) {
@@ -765,10 +766,10 @@ export function ClientDataCollectionForm({
 
         {/* --- Recommendations (collapsible) --- */}
         <RecommendationsCollapsibleSection
-          control={control}
+          value={recommendations}
+          onChange={setRecommendations}
           open={isRecommendationsOpen}
           onOpenChange={(next) => setOpenSection(next ? "recommendations" : null)}
-          hasErrors={hasRecommendationsSectionErrors(errors)}
         />
       </div>
 

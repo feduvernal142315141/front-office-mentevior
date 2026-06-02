@@ -25,6 +25,7 @@ import type {
 } from "@/lib/types/data-collection.types"
 import type { ClientDataCollectionFormValues } from "@/lib/schemas/client-data-collection-form.schema"
 import type { DataCollectionType } from "@/lib/types/data-collection.types"
+import type { RecommendationsConfig } from "@/lib/types/client-service-plan.types"
 
 function stripPersistedLevelIds(config: DataCollectionConfig): DataCollectionConfig {
   return {
@@ -140,7 +141,7 @@ export function ClientDataCollectionDrawer({
     }
   }
 
-  const handleSave = async (values: ClientDataCollectionFormValues) => {
+  const handleSave = async (values: ClientDataCollectionFormValues & { recommendations: RecommendationsConfig }) => {
     setIsSaving(true)
     try {
       const levelsPayload = (values.levels ?? []).map((l) => ({
@@ -149,6 +150,9 @@ export function ClientDataCollectionDrawer({
         description: l.description,
         value: l.value,
       }))
+
+      const loadedBaselines = config?.baselines ?? []
+      const loadedObjectives = config?.objectives ?? []
 
       if (mode === "category") {
         await upsertClientCategoryDataCollection({
@@ -163,6 +167,9 @@ export function ClientDataCollectionDrawer({
           suggestedNumberOfRecordings: values.suggestedNumberOfRecordings,
           cumulative: values.cumulative,
           chart: values.chart,
+          baselines: loadedBaselines,
+          objectives: loadedObjectives,
+          recommendations: values.recommendations ?? undefined,
         })
         toast.success(`Configuration applied to all items in "${categoryName}"`)
       } else if (mode === "item" && clientServicePlanCategoryItemId) {
@@ -181,6 +188,9 @@ export function ClientDataCollectionDrawer({
           topography: values.topography ?? "",
           active: values.active ?? true,
           chart: values.chart,
+          baselines: loadedBaselines,
+          objectives: loadedObjectives,
+          recommendations: values.recommendations ?? undefined,
         })
         toast.success("Item configuration saved")
       }

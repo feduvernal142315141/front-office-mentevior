@@ -24,6 +24,7 @@ interface MultiSelectWithSearchProps {
   fillInBlankValues?: Record<string, string>
   onFillInBlankChange?: (itemId: string, text: string) => void
   disabled?: boolean
+  hasError?: boolean
 }
 
 export function MultiSelectWithSearch({
@@ -38,6 +39,7 @@ export function MultiSelectWithSearch({
   fillInBlankValues = {},
   onFillInBlankChange,
   disabled = false,
+  hasError = false,
 }: MultiSelectWithSearchProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -212,7 +214,9 @@ export function MultiSelectWithSearch({
           "flex w-full items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors",
           isOpen
             ? "border-[#037ECC]/40 bg-white ring-2 ring-[#037ECC]/15"
-            : "border-slate-200 bg-white hover:border-slate-300",
+            : hasError
+              ? "premium-input-error bg-white"
+              : "border-slate-200 bg-white hover:border-slate-300",
           disabled && "cursor-not-allowed opacity-50"
         )}
       >

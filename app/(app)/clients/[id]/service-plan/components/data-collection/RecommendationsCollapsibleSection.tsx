@@ -1,7 +1,6 @@
 "use client"
 
 import { ChevronDown } from "lucide-react"
-import { Controller, type Control } from "react-hook-form"
 import { cn } from "@/lib/utils"
 import {
   Collapsible,
@@ -9,51 +8,38 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { useStrategyCatalog } from "@/lib/modules/client-service-plan/hooks/use-strategy-catalog"
 import { useActivitiesImplementedCatalog } from "@/lib/modules/client-service-plan/hooks/use-activities-implemented-catalog"
 import { usePreventiveStrategiesCatalog } from "@/lib/modules/client-service-plan/hooks/use-preventive-strategies-catalog"
 import { useReplacementsCatalog } from "@/lib/modules/client-service-plan/hooks/use-replacements-catalog"
 import { useInterventionsCatalog } from "@/lib/modules/client-service-plan/hooks/use-interventions-catalog"
 import { useReinforcersCatalog } from "@/lib/modules/client-service-plan/hooks/use-reinforcers-catalog"
-import type { ClientDataCollectionFormValues } from "@/lib/schemas/client-data-collection-form.schema"
+import type { RecommendationsConfig } from "@/lib/types/client-service-plan.types"
 
-type SelectionItem = { catalogItemId: string; customText?: string }
+export type RecommendationFieldKey = keyof RecommendationsConfig
+
+export type RecommendationErrors = Partial<Record<RecommendationFieldKey, string>>
 
 interface RecommendationsCollapsibleSectionProps {
-  control: Control<ClientDataCollectionFormValues>
+  value: RecommendationsConfig
+  onChange: (value: RecommendationsConfig) => void
+  errors?: RecommendationErrors
   open: boolean
   onOpenChange: (open: boolean) => void
-  hasErrors: boolean
 }
 
-function selectionToIds(selections: SelectionItem[]): string[] {
-  return selections.map((s) => s.catalogItemId)
-}
-
-function selectionToFillInValues(selections: SelectionItem[]): Record<string, string> {
-  return Object.fromEntries(
-    selections
-      .filter((s) => s.customText !== undefined)
-      .map((s) => [s.catalogItemId, s.customText ?? ""])
-  )
-}
-
-function mergeSelectionChange(prev: SelectionItem[], newIds: string[]): SelectionItem[] {
-  const prevMap = new Map(prev.map((s) => [s.catalogItemId, s]))
-  return newIds.map((id) => prevMap.get(id) ?? { catalogItemId: id })
-}
-
-function mergeSelectionFillIn(prev: SelectionItem[], itemId: string, text: string): SelectionItem[] {
-  return prev.map((s) =>
-    s.catalogItemId === itemId ? { ...s, customText: text || undefined } : s
-  )
+function FieldErrorText({ message }: { message?: string }) {
+  if (!message) return null
+  return <p className="text-xs font-medium text-red-600">{message}</p>
 }
 
 export function RecommendationsCollapsibleSection({
-  control,
+  value,
+  onChange,
+  errors,
   open,
   onOpenChange,
-  hasErrors,
 }: RecommendationsCollapsibleSectionProps) {
   const strategy = useStrategyCatalog()
   const activities = useActivitiesImplementedCatalog()
@@ -62,13 +48,23 @@ export function RecommendationsCollapsibleSection({
   const interventions = useInterventionsCatalog()
   const reinforcers = useReinforcersCatalog()
 
+  const strategyOptions = strategy.items.map((item) => ({
+    value: item.id,
+    label: item.name,
+  }))
+
+  const update = (patch: Partial<RecommendationsConfig>) =>
+    onChange({ ...value, ...patch })
+
+  const hasAnyError = errors && Object.values(errors).some(Boolean)
+
   return (
     <Collapsible
       open={open}
       onOpenChange={onOpenChange}
       className={cn(
         "group rounded-xl border bg-white",
-        hasErrors ? "border-red-300 ring-1 ring-red-200" : "border-slate-200"
+        hasAnyError ? "border-red-300 ring-1 ring-red-200" : "border-slate-200"
       )}
     >
       <CollapsibleTrigger
@@ -88,126 +84,90 @@ export function RecommendationsCollapsibleSection({
 
       <CollapsibleContent className="overflow-visible border-t border-slate-100">
         <div className="space-y-5 px-4 py-5">
-          {/* Strategy (read-only catalog) */}
-          <Controller
-            name="recommendations.strategyIds"
-            control={control}
-            defaultValue={[]}
-            render={({ field }) => (
-              <MultiSelectWithSearch
-                label="Strategy"
-                items={strategy.items}
-                selectedIds={field.value ?? []}
-                onChange={field.onChange}
-                isLoading={strategy.isLoading}
-              />
-            )}
-          />
+          {/* Strategy (single select) */}
+          <div className="space-y-1">
+            <FloatingSelect
+              label="Strategy"
+              value={value.strategyId ?? ""}
+              onChange={(v) => update({ strategyId: v })}
+              options={strategyOptions}
+              disabled={strategy.isLoading}
+              hasError={!!errors?.strategyId}
+            />
+            <FieldErrorText message={errors?.strategyId} />
+          </div>
 
-          {/* Activities Implemented */}
-          <Controller
-            name="recommendations.activitiesImplemented"
-            control={control}
-            defaultValue={[]}
-            render={({ field }) => (
-              <MultiSelectWithSearch
-                label="Activities Implemented"
-                items={activities.items}
-                selectedIds={selectionToIds(field.value ?? [])}
-                onChange={(ids) =>
-                  field.onChange(mergeSelectionChange(field.value ?? [], ids))
-                }
-                fillInBlankValues={selectionToFillInValues(field.value ?? [])}
-                onFillInBlankChange={(itemId, text) =>
-                  field.onChange(mergeSelectionFillIn(field.value ?? [], itemId, text))
-                }
-                isLoading={activities.isLoading}
-                allowCreate
-                onCreate={activities.create}
-              />
-            )}
-          />
+          {/* Activities Implemented (activitiesToOccurrence) */}
+          <div className="space-y-1">
+            <MultiSelectWithSearch
+              label="Activities Implemented"
+              items={activities.items}
+              selectedIds={value.activitiesToOccurrence ?? []}
+              onChange={(ids) => update({ activitiesToOccurrence: ids })}
+              isLoading={activities.isLoading}
+              allowCreate
+              onCreate={activities.create}
+              hasError={!!errors?.activitiesToOccurrence}
+            />
+            <FieldErrorText message={errors?.activitiesToOccurrence} />
+          </div>
 
           {/* Preventive Strategies */}
-          <Controller
-            name="recommendations.preventiveStrategies"
-            control={control}
-            defaultValue={[]}
-            render={({ field }) => (
-              <MultiSelectWithSearch
-                label="Preventive Strategies"
-                items={preventive.items}
-                selectedIds={selectionToIds(field.value ?? [])}
-                onChange={(ids) =>
-                  field.onChange(mergeSelectionChange(field.value ?? [], ids))
-                }
-                fillInBlankValues={selectionToFillInValues(field.value ?? [])}
-                onFillInBlankChange={(itemId, text) =>
-                  field.onChange(mergeSelectionFillIn(field.value ?? [], itemId, text))
-                }
-                isLoading={preventive.isLoading}
-                allowCreate
-                onCreate={preventive.create}
-              />
-            )}
-          />
+          <div className="space-y-1">
+            <MultiSelectWithSearch
+              label="Preventive Strategies"
+              items={preventive.items}
+              selectedIds={value.preventiveStrategies ?? []}
+              onChange={(ids) => update({ preventiveStrategies: ids })}
+              isLoading={preventive.isLoading}
+              allowCreate
+              onCreate={preventive.create}
+              hasError={!!errors?.preventiveStrategies}
+            />
+            <FieldErrorText message={errors?.preventiveStrategies} />
+          </div>
 
           {/* Replacements (read-only catalog) */}
-          <Controller
-            name="recommendations.replacements"
-            control={control}
-            defaultValue={[]}
-            render={({ field }) => (
-              <MultiSelectWithSearch
-                label="Replacements"
-                items={replacements.items}
-                selectedIds={field.value ?? []}
-                onChange={field.onChange}
-                isLoading={replacements.isLoading}
-              />
-            )}
-          />
+          <div className="space-y-1">
+            <MultiSelectWithSearch
+              label="Replacements"
+              items={replacements.items}
+              selectedIds={value.replacements ?? []}
+              onChange={(ids) => update({ replacements: ids })}
+              isLoading={replacements.isLoading}
+              hasError={!!errors?.replacements}
+            />
+            <FieldErrorText message={errors?.replacements} />
+          </div>
 
           {/* Interventions */}
-          <Controller
-            name="recommendations.interventions"
-            control={control}
-            defaultValue={[]}
-            render={({ field }) => (
-              <MultiSelectWithSearch
-                label="Interventions"
-                items={interventions.items}
-                selectedIds={selectionToIds(field.value ?? [])}
-                onChange={(ids) =>
-                  field.onChange(mergeSelectionChange(field.value ?? [], ids))
-                }
-                fillInBlankValues={selectionToFillInValues(field.value ?? [])}
-                onFillInBlankChange={(itemId, text) =>
-                  field.onChange(mergeSelectionFillIn(field.value ?? [], itemId, text))
-                }
-                isLoading={interventions.isLoading}
-                allowCreate
-                onCreate={interventions.create}
-              />
-            )}
-          />
+          <div className="space-y-1">
+            <MultiSelectWithSearch
+              label="Interventions"
+              items={interventions.items}
+              selectedIds={value.interventions ?? []}
+              onChange={(ids) => update({ interventions: ids })}
+              isLoading={interventions.isLoading}
+              allowCreate
+              onCreate={interventions.create}
+              hasError={!!errors?.interventions}
+            />
+            <FieldErrorText message={errors?.interventions} />
+          </div>
 
           {/* Reinforcers (grouped by group) */}
-          <Controller
-            name="recommendations.reinforcers"
-            control={control}
-            defaultValue={[]}
-            render={({ field }) => (
-              <MultiSelectWithSearch
-                label="Reinforcers"
-                items={reinforcers.items}
-                selectedIds={field.value ?? []}
-                onChange={field.onChange}
-                isLoading={reinforcers.isLoading}
-                grouped
-              />
-            )}
-          />
+          <div className="space-y-1">
+            <MultiSelectWithSearch
+              label="Reinforcers"
+              items={reinforcers.items}
+              selectedIds={value.reinforcers ?? []}
+              onChange={(ids) => update({ reinforcers: ids })}
+              isLoading={reinforcers.isLoading}
+              grouped
+              hasError={!!errors?.reinforcers}
+            />
+            <FieldErrorText message={errors?.reinforcers} />
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>

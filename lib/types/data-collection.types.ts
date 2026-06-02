@@ -3,6 +3,7 @@ import {
   ServicePlanValueType,
 } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import type { ChartConfig } from "@/lib/modules/service-plans/constants/chart.constants"
+import type { RecommendationsConfig } from "@/lib/types/client-service-plan.types"
 
 export { ServicePlanUnitOfTime, ServicePlanValueType }
 
@@ -72,6 +73,7 @@ export interface DataCollectionConfig {
   chart?: ChartConfig
   baselines?: DataCollectionBaselineData[]
   objectives?: DataCollectionObjectiveData[]
+  recommendations?: RecommendationsConfig
 }
 
 export interface CategoryDataCollectionConfig extends DataCollectionConfig {

@@ -21,25 +21,20 @@ import type { DataCollectionFormMode, ResolvedTypeInfo } from "@/lib/schemas/dat
 
 // --- Recommendations schema ---
 
-export const recommendationSelectionSchema = z.object({
-  catalogItemId: z.string(),
-  customText: z.string().optional(),
-})
-
 export const clientRecommendationsSchema = z.object({
-  strategyIds: z.array(z.string()).default([]),
-  activitiesImplemented: z.array(recommendationSelectionSchema).default([]),
-  preventiveStrategies: z.array(recommendationSelectionSchema).default([]),
+  strategyId: z.string().default(""),
+  activitiesToOccurrence: z.array(z.string()).default([]),
+  preventiveStrategies: z.array(z.string()).default([]),
   replacements: z.array(z.string()).default([]),
-  interventions: z.array(recommendationSelectionSchema).default([]),
+  interventions: z.array(z.string()).default([]),
   reinforcers: z.array(z.string()).default([]),
 })
 
 export type ClientRecommendationsFormValues = z.infer<typeof clientRecommendationsSchema>
 
 export const defaultRecommendations: ClientRecommendationsFormValues = {
-  strategyIds: [],
-  activitiesImplemented: [],
+  strategyId: "",
+  activitiesToOccurrence: [],
   preventiveStrategies: [],
   replacements: [],
   interventions: [],
@@ -82,7 +77,6 @@ export function createClientDataCollectionFormSchema(
         if (!value || typeof value !== "object") return value
         return normalizeChartConfigForValidation(value as ChartConfig, resolveDatasetName)
       }, chartConfigSchema.optional()),
-      recommendations: clientRecommendationsSchema.optional(),
     })
     .superRefine((data, ctx) => {
       const { name, group } = resolveType(data.type)
@@ -231,12 +225,6 @@ export function hasChartSectionErrors(errors: Partial<Record<string, unknown>>):
   return Boolean(errors.chart)
 }
 
-export function hasRecommendationsSectionErrors(
-  errors: Partial<Record<string, unknown>>
-): boolean {
-  return Boolean(errors.recommendations)
-}
-
 const FIELD_LABELS: Record<string, string> = {
   type: "Type",
   weeklyDailyValue: "Weekly value",
@@ -248,7 +236,6 @@ const FIELD_LABELS: Record<string, string> = {
   levels: "Levels",
   topography: "Topography",
   chart: "Chart",
-  recommendations: "Recommendations",
 }
 
 function collectFormErrorMessages(

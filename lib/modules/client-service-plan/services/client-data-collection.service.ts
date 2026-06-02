@@ -27,6 +27,10 @@ import type {
   DataCollectionType,
   ItemDataCollectionConfig,
 } from "@/lib/types/data-collection.types"
+import type {
+  ApiRecommendationsPayload,
+  RecommendationsConfig,
+} from "@/lib/types/client-service-plan.types"
 
 // --- Internal API shapes (mirror of data-collection.service.ts) ---
 
@@ -163,6 +167,73 @@ function toApiObjectives(objectives: DataCollectionObjectiveData[]): ApiObjectiv
   }))
 }
 
+// --- Recommendations ---
+
+interface ApiRecommendationItem {
+  id?: string
+  name?: string
+}
+
+interface ApiRecommendation {
+  strategyId?: string
+  activitiesToOccurrence?: ApiRecommendationItem[]
+  preventiveStrategies?: ApiRecommendationItem[]
+  replacements?: ApiRecommendationItem[]
+  interventions?: ApiRecommendationItem[]
+  reinforcers?: ApiRecommendationItem[]
+}
+
+function fromApiRecommendations(raw: unknown): RecommendationsConfig | undefined {
+  if (!raw || typeof raw !== "object") return undefined
+  const rec = raw as ApiRecommendation
+  const strategyId = asString(rec.strategyId)
+  const extractIds = (arr: unknown): string[] => {
+    if (!Array.isArray(arr)) return []
+    return arr
+      .map((item) => {
+        if (typeof item === "string") return item
+        if (item && typeof item === "object" && "id" in item) return asString((item as ApiRecommendationItem).id)
+        return ""
+      })
+      .filter((id) => id.length > 0)
+  }
+  const activitiesToOccurrence = extractIds(rec.activitiesToOccurrence)
+  const preventiveStrategies = extractIds(rec.preventiveStrategies)
+  const replacements = extractIds(rec.replacements)
+  const interventions = extractIds(rec.interventions)
+  const reinforcers = extractIds(rec.reinforcers)
+  const hasContent =
+    strategyId.length > 0 ||
+    activitiesToOccurrence.length > 0 ||
+    preventiveStrategies.length > 0 ||
+    replacements.length > 0 ||
+    interventions.length > 0 ||
+    reinforcers.length > 0
+  if (!hasContent) return undefined
+  return { strategyId, activitiesToOccurrence, preventiveStrategies, replacements, interventions, reinforcers }
+}
+
+function toApiRecommendations(rec: RecommendationsConfig | undefined): ApiRecommendationsPayload {
+  if (!rec) {
+    return {
+      strategyId: null,
+      activitiesToOccurrence: null,
+      preventiveStrategies: null,
+      replacements: null,
+      interventions: null,
+      reinforcers: null,
+    }
+  }
+  return {
+    strategyId: rec.strategyId || null,
+    activitiesToOccurrence: rec.activitiesToOccurrence.length > 0 ? rec.activitiesToOccurrence : null,
+    preventiveStrategies: rec.preventiveStrategies.length > 0 ? rec.preventiveStrategies : null,
+    replacements: rec.replacements.length > 0 ? rec.replacements : null,
+    interventions: rec.interventions.length > 0 ? rec.interventions : null,
+    reinforcers: rec.reinforcers.length > 0 ? rec.reinforcers : null,
+  }
+}
+
 // Client-specific payload shapes
 interface ClientCategoryPayload {
   clientServicePlanCategoryId: string
@@ -170,6 +241,7 @@ interface ClientCategoryPayload {
   chart?: ApiChart
   baseline?: ApiBaseline[]
   objetive?: ApiObjective[]
+  recommendation?: ApiRecommendationsPayload
 }
 
 interface ClientItemPayload {
@@ -181,6 +253,7 @@ interface ClientItemPayload {
   chart?: ApiChart
   baseline?: ApiBaseline[]
   objetive?: ApiObjective[]
+  recommendation?: ApiRecommendationsPayload
 }
 
 interface ApiResponse {
@@ -188,6 +261,7 @@ interface ApiResponse {
   chart?: ApiChart
   baseline?: ApiBaseline[]
   objetive?: ApiObjective[]
+  recommendation?: ApiRecommendation
   typeEventCatalogId?: string
   dailyValue?: ServicePlanValueType
   weeklyValue?: ServicePlanValueType
@@ -216,6 +290,7 @@ export interface UpsertClientCategoryDataCollectionDto {
   chart?: ChartConfig
   baselines?: DataCollectionBaselineData[]
   objectives?: DataCollectionObjectiveData[]
+  recommendations?: RecommendationsConfig
 }
 
 export interface UpsertClientItemDataCollectionDto {
@@ -235,6 +310,7 @@ export interface UpsertClientItemDataCollectionDto {
   chart?: ChartConfig
   baselines?: DataCollectionBaselineData[]
   objectives?: DataCollectionObjectiveData[]
+  recommendations?: RecommendationsConfig
 }
 
 // --- Normalization helpers ---
@@ -433,7 +509,8 @@ function fromApiResponse(raw: unknown): DataCollectionConfig | null {
   if (hasChart && chartRaw) config.chart = fromApiChart(chartRaw)
   config.baselines = normalizeBaselines(response.baseline)
   config.objectives = normalizeObjectives(response.objetive)
-  if (!hasDataCollectionContent(config) && !config.chart && !config.baselines.length && !config.objectives.length) return null
+  config.recommendations = fromApiRecommendations(response.recommendation)
+  if (!hasDataCollectionContent(config) && !config.chart && !config.baselines.length && !config.objectives.length && !config.recommendations) return null
   return config
 }
 
@@ -454,13 +531,15 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
   if (hasChart && chartRaw) base.chart = fromApiChart(chartRaw)
   base.baselines = normalizeBaselines(itemEntity.baseline)
   base.objectives = normalizeObjectives(itemEntity.objetive)
+  base.recommendations = fromApiRecommendations(itemEntity.recommendation)
   const hasContent =
     hasDataCollectionContent(base) ||
     !!base.chart ||
     topography.length > 0 ||
     typeof itemEntity.status === "boolean" ||
     (base.baselines && base.baselines.length > 0) ||
-    (base.objectives && base.objectives.length > 0)
+    (base.objectives && base.objectives.length > 0) ||
+    !!base.recommendations
   if (!hasContent) return null
   return {
     ...base,
@@ -572,8 +651,9 @@ export async function upsertClientCategoryDataCollection(
     dataCollection: toApiDataCollection(dto),
   }
   if (dto.chart) payload.chart = toApiChart(dto.chart)
-  if (dto.baselines) payload.baseline = toApiBaselines(dto.baselines)
-  if (dto.objectives) payload.objetive = toApiObjectives(dto.objectives)
+  payload.baseline = dto.baselines ? toApiBaselines(dto.baselines) : []
+  payload.objetive = dto.objectives ? toApiObjectives(dto.objectives) : []
+  payload.recommendation = toApiRecommendations(dto.recommendations)
   const response = await servicePut<ClientCategoryPayload, unknown>(
     `/client-service-plan-category/level`,
     payload
@@ -615,8 +695,9 @@ export async function upsertClientItemDataCollection(
   }
   if (dto.name?.trim()) payload.name = dto.name.trim()
   if (dto.chart) payload.chart = toApiChart(dto.chart)
-  if (dto.baselines) payload.baseline = toApiBaselines(dto.baselines)
-  if (dto.objectives) payload.objetive = toApiObjectives(dto.objectives)
+  payload.baseline = dto.baselines ? toApiBaselines(dto.baselines) : []
+  payload.objetive = dto.objectives ? toApiObjectives(dto.objectives) : []
+  payload.recommendation = toApiRecommendations(dto.recommendations)
   const response = await servicePut<ClientItemPayload, unknown>(
     `/client-service-plan-category-item/level`,
     payload

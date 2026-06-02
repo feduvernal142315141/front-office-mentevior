@@ -62,17 +62,28 @@ export interface RecommendationCatalogItem {
   group?: string
 }
 
-export interface RecommendationSelection {
-  catalogItemId: string
-  catalogItemName: string
-  customText?: string
+/** Shape returned by the GET /client-service-plan-category-item/{id}/level → recommendation */
+export interface ApiRecommendationItem {
+  id: string
+  name: string
 }
 
-export interface ItemRecommendations {
-  strategies: string[]
-  activitiesImplemented: RecommendationSelection[]
-  preventiveStrategies: RecommendationSelection[]
+/** Parsed recommendations stored in DataCollectionConfig (form-ready: just IDs). */
+export interface RecommendationsConfig {
+  strategyId: string
+  activitiesToOccurrence: string[]
+  preventiveStrategies: string[]
   replacements: string[]
-  interventions: RecommendationSelection[]
+  interventions: string[]
   reinforcers: string[]
+}
+
+/** PUT payload shape nested under "recommendation" key. null = empty. */
+export interface ApiRecommendationsPayload {
+  strategyId: string | null
+  activitiesToOccurrence: string[] | null
+  preventiveStrategies: string[] | null
+  replacements: string[] | null
+  interventions: string[] | null
+  reinforcers: string[] | null
 }

@@ -27,7 +27,10 @@ import { Button } from "@/components/custom/Button"
 
 import { LevelsTable } from "@/app/(app)/my-company/service-plans/components/data-collection/LevelsTable"
 import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
-import { RecommendationsCollapsibleSection } from "../../service-plan/components/data-collection/RecommendationsCollapsibleSection"
+import {
+  RecommendationsCollapsibleSection,
+  type RecommendationErrors,
+} from "../../service-plan/components/data-collection/RecommendationsCollapsibleSection"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import {
   BaselinesTabContent,
@@ -51,10 +54,10 @@ import {
   formatClientDataCollectionValidationAlert,
   hasChartSectionErrors,
   hasDataCollectionSectionErrors,
-  hasRecommendationsSectionErrors,
   defaultRecommendations,
   type ClientDataCollectionFormValues,
 } from "@/lib/schemas/client-data-collection-form.schema"
+import type { RecommendationsConfig } from "@/lib/types/client-service-plan.types"
 
 import {
   SERVICE_PLAN_UNIT_OF_TIME_OPTIONS,
@@ -158,6 +161,8 @@ export function ClientDataCollectionModal({
   const [config, setConfig] = useState<DataCollectionConfig | null>(null)
   const [itemConfig, setItemConfig] = useState<ItemDataCollectionConfig | null>(null)
   const [activeTab, setActiveTab] = useState("data-collection")
+  const [recommendations, setRecommendations] = useState<RecommendationsConfig>(defaultRecommendations)
+  const [recommendationErrors, setRecommendationErrors] = useState<RecommendationErrors>({})
   const [baselines, setBaselines] = useState<BaselineRow[]>([])
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
 
@@ -217,7 +222,6 @@ export function ClientDataCollectionModal({
       topography: "",
       active: true,
       chart: DEFAULT_CHART_CONFIG,
-      recommendations: defaultRecommendations,
     },
   })
 
@@ -311,6 +315,8 @@ export function ClientDataCollectionModal({
     } else {
       setConfig(null)
       setItemConfig(null)
+      setRecommendations(defaultRecommendations)
+      setRecommendationErrors({})
       setBaselines([])
       setObjectives([])
     }
@@ -332,8 +338,8 @@ export function ClientDataCollectionModal({
       topography: itemConfig?.topography ?? "",
       active: itemConfig?.active ?? true,
       chart: resolveChartConfig(config.chart),
-      recommendations: defaultRecommendations,
     })
+    setRecommendations(config.recommendations ?? defaultRecommendations)
   }, [config, itemConfig, reset])
 
   // --- Watched values ---
@@ -392,9 +398,39 @@ export function ClientDataCollectionModal({
     }
   }
 
+  // --- Parse recommendation errors from backend 400 message ---
+  const parseRecommendationErrors = (error: unknown): RecommendationErrors => {
+    const message =
+      error instanceof Error ? error.message : String(error)
+    const errs: RecommendationErrors = {}
+    const lower = message.toLowerCase()
+    if (lower.includes("activities to occurrence"))
+      errs.activitiesToOccurrence = "Activities implemented is required"
+    if (lower.includes("preventive strategies"))
+      errs.preventiveStrategies = "Preventive strategies is required"
+    if (lower.includes("reinforcers"))
+      errs.reinforcers = "Reinforcers is required"
+    if (lower.includes("replacements"))
+      errs.replacements = "Replacements is required"
+    if (lower.includes("interventions"))
+      errs.interventions = "Interventions is required"
+    if (lower.includes("strategy"))
+      errs.strategyId = "Strategy is required"
+    return errs
+  }
+
+  // Clear recommendation errors when user changes selections
+  const handleRecommendationsChange = (rec: RecommendationsConfig) => {
+    setRecommendations(rec)
+    if (Object.keys(recommendationErrors).length > 0) {
+      setRecommendationErrors({})
+    }
+  }
+
   // --- Save ---
   const handleSave = async (values: ClientDataCollectionFormValues) => {
     setIsSaving(true)
+    setRecommendationErrors({})
     try {
       const levelsPayload = (values.levels ?? []).map((l) => ({
         ...(l.recordId ? { id: l.recordId } : {}),
@@ -444,6 +480,7 @@ export function ClientDataCollectionModal({
           chart: values.chart,
           baselines: baselinesPayload,
           objectives: objectivesPayload,
+          recommendations,
         })
         toast.success(`Configuration applied to all items in "${categoryName}"`)
       } else if (mode === "item" && clientServicePlanCategoryItemId) {
@@ -464,14 +501,20 @@ export function ClientDataCollectionModal({
           chart: values.chart,
           baselines: baselinesPayload,
           objectives: objectivesPayload,
+          recommendations,
         })
         toast.success("Item configuration saved")
       }
 
       onSaved()
       onClose()
-    } catch {
-      // API errors surfaced by global interceptor
+    } catch (err) {
+      // Global interceptor shows toast. Also parse field-level errors for recommendations.
+      const recErrors = parseRecommendationErrors(err)
+      if (Object.keys(recErrors).length > 0) {
+        setRecommendationErrors(recErrors)
+        setActiveTab("recommendations")
+      }
     } finally {
       setIsSaving(false)
     }
@@ -489,8 +532,6 @@ export function ClientDataCollectionModal({
         setActiveTab("data-collection")
       } else if (hasChartSectionErrors(formErrors)) {
         setActiveTab("chart")
-      } else if (hasRecommendationsSectionErrors(formErrors)) {
-        setActiveTab("recommendations")
       }
 
       const datasetLabels = Object.fromEntries(
@@ -864,10 +905,11 @@ export function ClientDataCollectionModal({
   // --- Tab content: Recommendations ---
   const recommendationsContent = (
     <RecommendationsCollapsibleSection
-      control={control}
+      value={recommendations}
+      onChange={handleRecommendationsChange}
+      errors={recommendationErrors}
       open={true}
       onOpenChange={() => {}}
-      hasErrors={hasRecommendationsSectionErrors(errors)}
     />
   )
 
@@ -948,6 +990,8 @@ export function ClientDataCollectionModal({
       getValues,
       baselines,
       objectives,
+      recommendations,
+      recommendationErrors,
     ]
   )
 
