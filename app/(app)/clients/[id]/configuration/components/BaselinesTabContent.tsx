@@ -41,6 +41,7 @@ interface BaselinesTabContentProps {
   onChange: (baselines: BaselineRow[]) => void
   mode: "category" | "item"
   periodSelectOptions: { value: string; label: string }[]
+  showErrors?: boolean
 }
 
 export function BaselinesTabContent({
@@ -48,6 +49,7 @@ export function BaselinesTabContent({
   onChange,
   mode,
   periodSelectOptions,
+  showErrors = false,
 }: BaselinesTabContentProps) {
 
   const handleAdd = useCallback(() => {
@@ -105,6 +107,8 @@ export function BaselinesTabContent({
                   label="Date"
                   value={row.date}
                   onChange={(v) => handleUpdate(row.localId, "date", v)}
+                  hasError={showErrors && !row.date}
+                  required
                 />
               </div>
               <div className="w-[130px] shrink-0">
@@ -114,6 +118,8 @@ export function BaselinesTabContent({
                   onChange={(v) => handleUpdate(row.localId, "value", v.replace(/[^0-9.-]/g, ""))}
                   onBlur={() => {}}
                   inputMode="numeric"
+                  hasError={showErrors && !row.value}
+                  required
                 />
               </div>
               <div className="w-[140px] shrink-0 relative">
@@ -123,6 +129,8 @@ export function BaselinesTabContent({
                   onChange={(v) => handleUpdate(row.localId, "periodCatalogId", v)}
                   options={periodSelectOptions}
                   dropdownPosition="bottom"
+                  hasError={showErrors && !row.periodCatalogId}
+                  required
                 />
               </div>
               <div className="min-w-0 flex-1">

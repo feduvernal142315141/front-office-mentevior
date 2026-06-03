@@ -29,8 +29,10 @@ import { LevelsTable } from "@/app/(app)/my-company/service-plans/components/dat
 import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
 import {
   RecommendationsCollapsibleSection,
+  validateRecommendations,
   type RecommendationErrors,
 } from "../../service-plan/components/data-collection/RecommendationsCollapsibleSection"
+import { useStrategyCatalog } from "@/lib/modules/client-service-plan/hooks/use-strategy-catalog"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import {
   BaselinesTabContent,
@@ -163,6 +165,8 @@ export function ClientDataCollectionModal({
   const [activeTab, setActiveTab] = useState("data-collection")
   const [recommendations, setRecommendations] = useState<RecommendationsConfig>(defaultRecommendations)
   const [recommendationErrors, setRecommendationErrors] = useState<RecommendationErrors>({})
+  const [baselinesError, setBaselinesError] = useState(false)
+  const [objectivesError, setObjectivesError] = useState(false)
   const [baselines, setBaselines] = useState<BaselineRow[]>([])
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
 
@@ -179,6 +183,7 @@ export function ClientDataCollectionModal({
   const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } =
     useTypeEventCatalog()
   const { entries: datasetCatalogEntries } = useDatasetsCatalog(true)
+  const { items: strategyCatalogItems } = useStrategyCatalog()
 
   const datasetNameById = useMemo(
     () => Object.fromEntries(datasetCatalogEntries.map((e) => [e.id, e.name])),
@@ -317,6 +322,8 @@ export function ClientDataCollectionModal({
       setItemConfig(null)
       setRecommendations(defaultRecommendations)
       setRecommendationErrors({})
+      setBaselinesError(false)
+      setObjectivesError(false)
       setBaselines([])
       setObjectives([])
     }
@@ -398,27 +405,6 @@ export function ClientDataCollectionModal({
     }
   }
 
-  // --- Parse recommendation errors from backend 400 message ---
-  const parseRecommendationErrors = (error: unknown): RecommendationErrors => {
-    const message =
-      error instanceof Error ? error.message : String(error)
-    const errs: RecommendationErrors = {}
-    const lower = message.toLowerCase()
-    if (lower.includes("activities to occurrence"))
-      errs.activitiesToOccurrence = "Activities implemented is required"
-    if (lower.includes("preventive strategies"))
-      errs.preventiveStrategies = "Preventive strategies is required"
-    if (lower.includes("reinforcers"))
-      errs.reinforcers = "Reinforcers is required"
-    if (lower.includes("replacements"))
-      errs.replacements = "Replacements is required"
-    if (lower.includes("interventions"))
-      errs.interventions = "Interventions is required"
-    if (lower.includes("strategy"))
-      errs.strategyId = "Strategy is required"
-    return errs
-  }
-
   // Clear recommendation errors when user changes selections
   const handleRecommendationsChange = (rec: RecommendationsConfig) => {
     setRecommendations(rec)
@@ -427,10 +413,78 @@ export function ClientDataCollectionModal({
     }
   }
 
+  // Clear baselines error when user changes baselines
+  const handleBaselinesChange = (rows: BaselineRow[]) => {
+    setBaselines(rows)
+    if (baselinesError) setBaselinesError(false)
+  }
+
+  // Clear objectives error when user changes objectives
+  const handleObjectivesChange = (rows: ObjectiveRow[]) => {
+    setObjectives(rows)
+    if (objectivesError) setObjectivesError(false)
+  }
+
   // --- Save ---
   const handleSave = async (values: ClientDataCollectionFormValues) => {
+    // Validate client-side before API call
+    let hasErrors = false
+
+    // Validate baselines (at least one required, each must have date, value, period)
+    if (baselines.length === 0) {
+      setBaselinesError(true)
+      if (!hasErrors) setActiveTab("baselines")
+      hasErrors = true
+    } else {
+      const hasIncomplete = baselines.some(
+        (b) => !b.date || !b.value || !b.periodCatalogId
+      )
+      if (hasIncomplete) {
+        setBaselinesError(true)
+        if (!hasErrors) setActiveTab("baselines")
+        hasErrors = true
+      } else {
+        setBaselinesError(false)
+      }
+    }
+
+    // Validate objectives (at least one required, each must have name, startDate, smart criteria, duration)
+    if (objectives.length === 0) {
+      setObjectivesError(true)
+      if (!hasErrors) setActiveTab("objectives")
+      hasErrors = true
+    } else {
+      const hasIncomplete = objectives.some(
+        (o) => !o.name.trim() || !o.startDate || !o.operatorSmartCriteria || !o.valueSmartCriteria || !o.periodSmartCriteriaCatalogId || !o.valueDuration || !o.periodDurationCatalogId
+      )
+      if (hasIncomplete) {
+        setObjectivesError(true)
+        if (!hasErrors) setActiveTab("objectives")
+        hasErrors = true
+      } else {
+        setObjectivesError(false)
+      }
+    }
+
+    // Validate recommendations
+    const selectedStrategyName = strategyCatalogItems.find((i) => i.id === recommendations.strategyId)?.name ?? ""
+    const recErrors = validateRecommendations(recommendations, selectedStrategyName)
+    if (Object.keys(recErrors).length > 0) {
+      setRecommendationErrors(recErrors)
+      if (!hasErrors) setActiveTab("recommendations")
+      hasErrors = true
+    } else {
+      setRecommendationErrors({})
+    }
+
+    if (hasErrors) {
+      toast.error("Complete required fields", {
+        description: "Please fill in all required fields before saving.",
+      })
+      return
+    }
+
     setIsSaving(true)
-    setRecommendationErrors({})
     try {
       const levelsPayload = (values.levels ?? []).map((l) => ({
         ...(l.recordId ? { id: l.recordId } : {}),
@@ -508,13 +562,8 @@ export function ClientDataCollectionModal({
 
       onSaved()
       onClose()
-    } catch (err) {
-      // Global interceptor shows toast. Also parse field-level errors for recommendations.
-      const recErrors = parseRecommendationErrors(err)
-      if (Object.keys(recErrors).length > 0) {
-        setRecommendationErrors(recErrors)
-        setActiveTab("recommendations")
-      }
+    } catch {
+      // API errors surfaced by global interceptor
     } finally {
       setIsSaving(false)
     }
@@ -940,6 +989,7 @@ export function ClientDataCollectionModal({
         id: "recommendations",
         label: "Recommendations",
         icon: <Lightbulb className="w-4 h-4" />,
+        hasError: Object.keys(recommendationErrors).length > 0,
         content: recommendationsContent,
       },
       {
@@ -947,12 +997,15 @@ export function ClientDataCollectionModal({
         label: "Baselines",
         icon: <TrendingUp className="w-4 h-4" />,
         badge: baselines.length || undefined,
+        hasError: baselinesError,
+        required: true,
         content: (
           <BaselinesTabContent
             baselines={baselines}
-            onChange={setBaselines}
+            onChange={handleBaselinesChange}
             mode={mode}
             periodSelectOptions={periodSelectOptions}
+            showErrors={baselinesError}
           />
         ),
       },
@@ -961,10 +1014,12 @@ export function ClientDataCollectionModal({
         label: "Objectives",
         icon: <Target className="w-4 h-4" />,
         badge: objectives.length || undefined,
+        hasError: objectivesError,
+        required: true,
         content: (
           <ObjectivesTabContent
             objectives={objectives}
-            onChange={setObjectives}
+            onChange={handleObjectivesChange}
             mode={mode}
             periodMap={periodMap}
             periodSelectOptions={periodSelectOptions}
@@ -992,6 +1047,8 @@ export function ClientDataCollectionModal({
       objectives,
       recommendations,
       recommendationErrors,
+      baselinesError,
+      objectivesError,
     ]
   )
 

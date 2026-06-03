@@ -194,7 +194,7 @@ export function Breadcrumbs() {
   }
 
   return (
-    <nav className="flex items-center gap-3">
+    <nav className="flex items-center gap-3 ml-2">
       {showBackButton && (
         <>
           <button

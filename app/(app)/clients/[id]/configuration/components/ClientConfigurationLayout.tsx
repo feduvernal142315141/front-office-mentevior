@@ -1,9 +1,11 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ClipboardList, BarChart3, Sliders } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ClipboardList, BarChart3, Sliders, ArrowLeft } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
+import { Button } from "@/components/custom/Button"
 
 import {
   ConfigurationSidebar,
@@ -17,6 +19,7 @@ interface ClientConfigurationLayoutProps {
 }
 
 export function ClientConfigurationLayout({ clientId, clientServicePlanId }: ClientConfigurationLayoutProps) {
+  const router = useRouter()
   const { client, isLoading } = useClientById(clientId)
   const [activeSectionId, setActiveSectionId] = useState("service-plan")
 
@@ -90,6 +93,23 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
                 <p className="text-sm text-slate-500 mt-1">Coming soon</p>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky footer */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+        <div className="max-w-5xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => router.push("/clients")}
+              className="gap-2 flex items-center"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
           </div>
         </div>
       </div>

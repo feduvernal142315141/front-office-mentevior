@@ -10,6 +10,8 @@ export interface TabItem {
   icon?: React.ReactNode
   content: React.ReactNode
   badge?: string | number
+  hasError?: boolean
+  required?: boolean
 }
 
 interface TabsProps {
@@ -119,9 +121,11 @@ export function Tabs({
                   onClick={() => handleTabChange(item.id)}
                   className={cn(
                     "relative h-16 px-3 text-[15px] font-semibold tracking-wide transition-all duration-300 cursor-pointer whitespace-nowrap flex items-center gap-2 flex-shrink-0",
-                    isActive
-                      ? "text-[#037ECC]"
-                      : "text-slate-500 hover:text-slate-900"
+                    item.hasError
+                      ? "text-red-500"
+                      : isActive
+                        ? "text-[#037ECC]"
+                        : "text-slate-500 hover:text-slate-900"
                   )}
                 >
                   {item.icon && (
@@ -135,17 +139,23 @@ export function Tabs({
                     </span>
                   )}
 
-                  <span>{item.label}</span>
+                  <span>{item.label} {item.required && <span className="text-[#037ECC]">*</span>}</span>
 
                   {item.badge !== undefined && (
                     <span
                       className={cn(
                         "ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums transition-colors",
-                        isActive ? "bg-[#037ECC]/10 text-[#037ECC]" : "bg-gray-200 text-gray-600"
+                        item.hasError
+                          ? "bg-red-100 text-red-600"
+                          : isActive ? "bg-[#037ECC]/10 text-[#037ECC]" : "bg-gray-200 text-gray-600"
                       )}
                     >
                       {item.badge}
                     </span>
+                  )}
+
+                  {item.hasError && item.badge === undefined && (
+                    <span className="ml-1 h-2 w-2 rounded-full bg-red-500" />
                   )}
 
                   {isActive && (

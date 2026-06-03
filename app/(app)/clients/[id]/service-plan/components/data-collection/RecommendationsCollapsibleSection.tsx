@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -20,6 +21,26 @@ import type { RecommendationsConfig } from "@/lib/types/client-service-plan.type
 export type RecommendationFieldKey = keyof RecommendationsConfig
 
 export type RecommendationErrors = Partial<Record<RecommendationFieldKey, string>>
+
+export function validateRecommendations(
+  rec: RecommendationsConfig,
+  selectedStrategyName: string
+): RecommendationErrors {
+  const errors: RecommendationErrors = {}
+  if (!rec.strategyId) errors.strategyId = "Strategy is required"
+  if (!rec.activitiesToOccurrence?.length) errors.activitiesToOccurrence = "Activities implemented is required"
+  if (!rec.preventiveStrategies?.length) errors.preventiveStrategies = "Preventive strategies is required"
+
+  const lowerStrategy = selectedStrategyName.toLowerCase()
+  if (lowerStrategy.includes("intervention")) {
+    if (!rec.replacements?.length) errors.replacements = "Replacements is required"
+    if (!rec.interventions?.length) errors.interventions = "Interventions is required"
+  }
+  if (lowerStrategy.includes("reinforcement")) {
+    if (!rec.reinforcers?.length) errors.reinforcers = "Reinforcers is required"
+  }
+  return errors
+}
 
 interface RecommendationsCollapsibleSectionProps {
   value: RecommendationsConfig
@@ -53,6 +74,15 @@ export function RecommendationsCollapsibleSection({
     label: item.name,
   }))
 
+  const selectedStrategyName = useMemo(() => {
+    const item = strategy.items.find((i) => i.id === value.strategyId)
+    return item?.name ?? ""
+  }, [strategy.items, value.strategyId])
+
+  const lowerStrategy = selectedStrategyName.toLowerCase()
+  const showIntervention = lowerStrategy.includes("intervention")
+  const showReinforcement = lowerStrategy.includes("reinforcement")
+
   const update = (patch: Partial<RecommendationsConfig>) =>
     onChange({ ...value, ...patch })
 
@@ -84,7 +114,7 @@ export function RecommendationsCollapsibleSection({
 
       <CollapsibleContent className="overflow-visible border-t border-slate-100">
         <div className="space-y-5 px-4 py-5">
-          {/* Strategy (single select) */}
+          {/* Strategy (single select) — always visible */}
           <div className="space-y-1">
             <FloatingSelect
               label="Strategy"
@@ -93,11 +123,12 @@ export function RecommendationsCollapsibleSection({
               options={strategyOptions}
               disabled={strategy.isLoading}
               hasError={!!errors?.strategyId}
+              required
             />
             <FieldErrorText message={errors?.strategyId} />
           </div>
 
-          {/* Activities Implemented (activitiesToOccurrence) */}
+          {/* Activities Implemented — always visible */}
           <div className="space-y-1">
             <MultiSelectWithSearch
               label="Activities Implemented"
@@ -108,11 +139,12 @@ export function RecommendationsCollapsibleSection({
               allowCreate
               onCreate={activities.create}
               hasError={!!errors?.activitiesToOccurrence}
+              required
             />
             <FieldErrorText message={errors?.activitiesToOccurrence} />
           </div>
 
-          {/* Preventive Strategies */}
+          {/* Preventive Strategies — always visible */}
           <div className="space-y-1">
             <MultiSelectWithSearch
               label="Preventive Strategies"
@@ -123,51 +155,61 @@ export function RecommendationsCollapsibleSection({
               allowCreate
               onCreate={preventive.create}
               hasError={!!errors?.preventiveStrategies}
+              required
             />
             <FieldErrorText message={errors?.preventiveStrategies} />
           </div>
 
-          {/* Replacements (read-only catalog) */}
-          <div className="space-y-1">
-            <MultiSelectWithSearch
-              label="Replacements"
-              items={replacements.items}
-              selectedIds={value.replacements ?? []}
-              onChange={(ids) => update({ replacements: ids })}
-              isLoading={replacements.isLoading}
-              hasError={!!errors?.replacements}
-            />
-            <FieldErrorText message={errors?.replacements} />
-          </div>
+          {/* Replacements — only if Strategy includes "Intervention" */}
+          {showIntervention && (
+            <div className="space-y-1">
+              <MultiSelectWithSearch
+                label="Replacements"
+                items={replacements.items}
+                selectedIds={value.replacements ?? []}
+                onChange={(ids) => update({ replacements: ids })}
+                isLoading={replacements.isLoading}
+                hasError={!!errors?.replacements}
+                required
+              />
+              <FieldErrorText message={errors?.replacements} />
+            </div>
+          )}
 
-          {/* Interventions */}
-          <div className="space-y-1">
-            <MultiSelectWithSearch
-              label="Interventions"
-              items={interventions.items}
-              selectedIds={value.interventions ?? []}
-              onChange={(ids) => update({ interventions: ids })}
-              isLoading={interventions.isLoading}
-              allowCreate
-              onCreate={interventions.create}
-              hasError={!!errors?.interventions}
-            />
-            <FieldErrorText message={errors?.interventions} />
-          </div>
+          {/* Interventions — only if Strategy includes "Intervention" */}
+          {showIntervention && (
+            <div className="space-y-1">
+              <MultiSelectWithSearch
+                label="Interventions"
+                items={interventions.items}
+                selectedIds={value.interventions ?? []}
+                onChange={(ids) => update({ interventions: ids })}
+                isLoading={interventions.isLoading}
+                allowCreate
+                onCreate={interventions.create}
+                hasError={!!errors?.interventions}
+                required
+              />
+              <FieldErrorText message={errors?.interventions} />
+            </div>
+          )}
 
-          {/* Reinforcers (grouped by group) */}
-          <div className="space-y-1">
-            <MultiSelectWithSearch
-              label="Reinforcers"
-              items={reinforcers.items}
-              selectedIds={value.reinforcers ?? []}
-              onChange={(ids) => update({ reinforcers: ids })}
-              isLoading={reinforcers.isLoading}
-              grouped
-              hasError={!!errors?.reinforcers}
-            />
-            <FieldErrorText message={errors?.reinforcers} />
-          </div>
+          {/* Reinforcers — only if Strategy includes "Reinforcement" */}
+          {showReinforcement && (
+            <div className="space-y-1">
+              <MultiSelectWithSearch
+                label="Reinforcers"
+                items={reinforcers.items}
+                selectedIds={value.reinforcers ?? []}
+                onChange={(ids) => update({ reinforcers: ids })}
+                isLoading={reinforcers.isLoading}
+                grouped
+                hasError={!!errors?.reinforcers}
+                required
+              />
+              <FieldErrorText message={errors?.reinforcers} />
+            </div>
+          )}
         </div>
       </CollapsibleContent>
     </Collapsible>

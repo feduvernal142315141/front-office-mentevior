@@ -25,6 +25,7 @@ interface MultiSelectWithSearchProps {
   onFillInBlankChange?: (itemId: string, text: string) => void
   disabled?: boolean
   hasError?: boolean
+  required?: boolean
 }
 
 export function MultiSelectWithSearch({
@@ -40,6 +41,7 @@ export function MultiSelectWithSearch({
   onFillInBlankChange,
   disabled = false,
   hasError = false,
+  required = false,
 }: MultiSelectWithSearchProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -113,7 +115,7 @@ export function MultiSelectWithSearch({
     <div className="space-y-1.5">
       {/* Label row */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-slate-700">{label}</span>
+        <span className="text-sm font-medium text-slate-700">{label} {required && <span className="text-[#037ECC]">*</span>}</span>
         {allowCreate && !isCreating && (
           <button
             type="button"
