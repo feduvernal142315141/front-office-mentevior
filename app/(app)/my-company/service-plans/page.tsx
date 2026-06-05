@@ -36,7 +36,7 @@ export default function ServicePlansPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 pb-28">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">

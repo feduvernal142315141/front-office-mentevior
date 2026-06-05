@@ -16,6 +16,29 @@ import {
 } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
 import { OPERATOR_SMART_CRITERIA_OPTIONS } from "@/lib/types/data-collection.types"
 
+type ObjectiveFieldErrorKey =
+  | "name"
+  | "startDate"
+  | "operatorSmartCriteria"
+  | "valueSmartCriteria"
+  | "periodSmartCriteriaCatalogId"
+  | "valueDuration"
+  | "periodDurationCatalogId"
+
+type ObjectiveFieldErrors = Partial<Record<ObjectiveFieldErrorKey, boolean>>
+
+function validateObjectiveForm(form: ObjectiveRow): ObjectiveFieldErrors {
+  const errors: ObjectiveFieldErrors = {}
+  if (!form.name.trim()) errors.name = true
+  if (!form.startDate) errors.startDate = true
+  if (!form.operatorSmartCriteria) errors.operatorSmartCriteria = true
+  if (!form.valueSmartCriteria) errors.valueSmartCriteria = true
+  if (!form.periodSmartCriteriaCatalogId) errors.periodSmartCriteriaCatalogId = true
+  if (!form.valueDuration) errors.valueDuration = true
+  if (!form.periodDurationCatalogId) errors.periodDurationCatalogId = true
+  return errors
+}
+
 export interface ObjectiveRow {
   localId: string
   recordId?: string
@@ -67,38 +90,36 @@ export function ObjectiveFormModal({
   const isEdit = !!objective?.recordId
 
   const [form, setForm] = useState<ObjectiveRow>(objective ?? createEmptyObjective())
+  const [fieldErrors, setFieldErrors] = useState<ObjectiveFieldErrors>({})
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (open) {
       setForm(objective ?? createEmptyObjective())
+      setFieldErrors({})
     }
   }, [open, objective])
 
   const update = useCallback(
     (field: keyof ObjectiveRow, value: string) => {
       setForm((prev) => ({ ...prev, [field]: value }))
+      setFieldErrors((prev) => {
+        if (!(field in prev)) return prev
+        const next = { ...prev }
+        delete next[field as ObjectiveFieldErrorKey]
+        return next
+      })
     },
     []
   )
 
   const handleSave = useCallback(() => {
-    if (!form.name.trim()) {
-      toast.error("Name is required")
+    const errors = validateObjectiveForm(form)
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
       return
     }
-    if (!form.startDate) {
-      toast.error("Start date is required")
-      return
-    }
-    if (!form.operatorSmartCriteria || !form.valueSmartCriteria || !form.periodSmartCriteriaCatalogId) {
-      toast.error("Smart Criteria fields are required")
-      return
-    }
-    if (!form.valueDuration || !form.periodDurationCatalogId) {
-      toast.error("Duration fields are required")
-      return
-    }
+    setFieldErrors({})
     onSave(form)
     onClose()
   }, [form, onSave, onClose])
@@ -131,6 +152,7 @@ export function ObjectiveFormModal({
       localId: prev.localId,
       recordId: prev.recordId,
     }))
+    setFieldErrors({})
   }, [])
 
   return (
@@ -150,7 +172,8 @@ export function ObjectiveFormModal({
           onChange={(v) => update("name", v)}
           onBlur={() => {}}
           rows={2}
-          hasError={false}
+          required
+          hasError={!!fieldErrors.name}
         />
 
         {/* Dates */}
@@ -160,6 +183,7 @@ export function ObjectiveFormModal({
             value={form.startDate}
             onChange={(v) => update("startDate", v)}
             required
+            hasError={!!fieldErrors.startDate}
           />
           <PremiumDatePicker
             label="Estimated End Date"
@@ -182,6 +206,8 @@ export function ObjectiveFormModal({
               value={form.operatorSmartCriteria}
               onChange={(v) => update("operatorSmartCriteria", v)}
               options={OPERATOR_SMART_CRITERIA_OPTIONS}
+              required
+              hasError={!!fieldErrors.operatorSmartCriteria}
             />
             <FloatingInput
               label="Value"
@@ -189,12 +215,16 @@ export function ObjectiveFormModal({
               onChange={(v) => update("valueSmartCriteria", v.replace(/[^0-9.-]/g, ""))}
               onBlur={() => {}}
               inputMode="numeric"
+              required
+              hasError={!!fieldErrors.valueSmartCriteria}
             />
             <FloatingSelect
               label="Period"
               value={form.periodSmartCriteriaCatalogId}
               onChange={(v) => update("periodSmartCriteriaCatalogId", v)}
               options={periodSelectOptions}
+              required
+              hasError={!!fieldErrors.periodSmartCriteriaCatalogId}
             />
           </div>
         </div>
@@ -209,12 +239,16 @@ export function ObjectiveFormModal({
               onChange={(v) => update("valueDuration", v.replace(/[^0-9.-]/g, ""))}
               onBlur={() => {}}
               inputMode="numeric"
+              required
+              hasError={!!fieldErrors.valueDuration}
             />
             <FloatingSelect
               label="Period"
               value={form.periodDurationCatalogId}
               onChange={(v) => update("periodDurationCatalogId", v)}
               options={periodSelectOptions}
+              required
+              hasError={!!fieldErrors.periodDurationCatalogId}
             />
           </div>
         </div>
