@@ -42,8 +42,22 @@ export function CustomModal({
       <DialogContent
         showCloseButton={showCloseButton}
         onOpenAutoFocus={onOpenAutoFocus}
-        onInteractOutside={onInteractOutside}
-        onPointerDownOutside={onPointerDownOutside}
+        onInteractOutside={(e) => {
+          const target = e.target as HTMLElement | null
+          if (target?.closest?.("[data-portal-dropdown]")) {
+            e.preventDefault()
+            return
+          }
+          onInteractOutside?.(e)
+        }}
+        onPointerDownOutside={(e) => {
+          const target = e.target as HTMLElement | null
+          if (target?.closest?.("[data-portal-dropdown]")) {
+            e.preventDefault()
+            return
+          }
+          onPointerDownOutside?.(e)
+        }}
         onEscapeKeyDown={onEscapeKeyDown}
         className={cn(
           "p-0 gap-0 rounded-2xl shadow-[0_30px_80px_rgba(2,12,27,0.28)] overflow-hidden bg-transparent",

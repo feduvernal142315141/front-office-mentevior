@@ -45,6 +45,7 @@ export interface AssignItemsToServicePlanCategoryPayload {
 export interface CreateItemCatalogDto {
   servicePlanCategoryId: string
   name: string
+  type: "SERVICE_PLAN" | "CLIENT_SERVICE_PLAN"
 }
 
 export interface UpdateItemCatalogDto {

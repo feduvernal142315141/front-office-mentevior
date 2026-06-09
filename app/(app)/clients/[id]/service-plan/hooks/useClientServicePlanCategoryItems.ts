@@ -125,8 +125,9 @@ export function useClientServicePlanCategoryItems({
     setIsSavingCreate(true)
     try {
       await createClientServicePlanItem({
-        clientServicePlanCategoryId: activeClientServicePlanCategoryId,
+        servicePlanCategoryId: activeClientServicePlanCategoryId,
         name: trimmedName,
+        type: "CLIENT_SERVICE_PLAN",
       })
       await refreshAfterMutation()
 

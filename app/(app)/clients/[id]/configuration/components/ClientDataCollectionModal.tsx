@@ -326,6 +326,20 @@ export function ClientDataCollectionModal({
       setObjectivesError(false)
       setBaselines([])
       setObjectives([])
+      reset({
+        type: "",
+        weeklyDailyValue: ServicePlanValueType.TOTAL,
+        dailyValue: ServicePlanValueType.TOTAL,
+        unitMeasurementCatalogId: "",
+        intervalLength: 30,
+        unitOfTime: ServicePlanUnitOfTime.SECONDS,
+        suggestedNumberOfRecordings: 10,
+        cumulative: false,
+        levels: [],
+        topography: "",
+        active: true,
+        chart: DEFAULT_CHART_CONFIG,
+      })
     }
   }, [open, loadConfig])
 
@@ -636,7 +650,6 @@ export function ClientDataCollectionModal({
         />
         <FieldErrorText message={errors.type?.message} />
       </div>
-
       {/* Rate → Unit of time + Weekly value */}
       {typeRequiresUnitOfTime(resolvedType.name) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

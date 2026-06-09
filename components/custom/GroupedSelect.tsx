@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useEffect, forwardRef } from "react"
+import { useState, useRef, useEffect, useCallback, forwardRef } from "react"
+import { createPortal } from "react-dom"
 import { ChevronDown, Check, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -37,6 +38,7 @@ export const GroupedSelect = forwardRef<HTMLButtonElement, GroupedSelectProps>(f
   const [isOpen, setIsOpen] = useState(false)
   const [openUpward, setOpenUpward] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
   const containerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -98,18 +100,77 @@ export const GroupedSelect = forwardRef<HTMLButtonElement, GroupedSelectProps>(f
     onBlur?.()
   }
 
+  const computePosition = useCallback(() => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - rect.bottom
+    const shouldOpenUp =
+      dropdownPosition === "top" ||
+      (dropdownPosition !== "bottom" && spaceBelow < DROPDOWN_HEIGHT && rect.top > DROPDOWN_HEIGHT)
+
+    setOpenUpward(shouldOpenUp)
+    setDropdownStyle({
+      position: "fixed",
+      left: rect.left,
+      width: rect.width,
+      pointerEvents: "auto",
+      ...(shouldOpenUp
+        ? { bottom: window.innerHeight - rect.top + 8 }
+        : { top: rect.bottom + 8 }),
+    })
+  }, [dropdownPosition])
+
+  // Close on resize; close on scroll only if the scroll is outside the dropdown
+  useEffect(() => {
+    if (!isOpen) return
+    const close = () => {
+      setIsOpen(false)
+      setSearchQuery("")
+    }
+    const handleScroll = (e: Event) => {
+      if (dropdownRef.current?.contains(e.target as Node)) return
+      close()
+    }
+    window.addEventListener("resize", close)
+    window.addEventListener("scroll", handleScroll, true)
+    return () => {
+      window.removeEventListener("resize", close)
+      window.removeEventListener("scroll", handleScroll, true)
+    }
+  }, [isOpen])
+
+  // Prevent Radix FocusScope from stealing focus and
+  // react-remove-scroll from blocking wheel on our portal dropdown.
+  // FocusScope uses document-level focusin/focusout in bubbling phase;
+  // we intercept in capture phase so it never sees focus leave the dialog.
+  useEffect(() => {
+    if (!isOpen) return
+    const el = dropdownRef.current
+    if (!el) return
+
+    const handleFocusIn = (e: Event) => {
+      if (el.contains(e.target as Node)) e.stopPropagation()
+    }
+    const handleFocusOut = (e: FocusEvent) => {
+      if (el.contains(e.relatedTarget as Node)) e.stopPropagation()
+    }
+    const stopWheel = (e: Event) => e.stopPropagation()
+
+    document.addEventListener("focusin", handleFocusIn, true)
+    document.addEventListener("focusout", handleFocusOut, true)
+    el.addEventListener("wheel", stopWheel, { passive: true })
+
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn, true)
+      document.removeEventListener("focusout", handleFocusOut, true)
+      el.removeEventListener("wheel", stopWheel)
+    }
+  }, [isOpen])
+
   const handleToggle = () => {
     if (disabled) return
-    if (!isOpen && containerRef.current) {
-      if (dropdownPosition === "top") {
-        setOpenUpward(true)
-      } else if (dropdownPosition === "bottom") {
-        setOpenUpward(false)
-      } else {
-        const rect = containerRef.current.getBoundingClientRect()
-        const spaceBelow = window.innerHeight - rect.bottom
-        setOpenUpward(spaceBelow < DROPDOWN_HEIGHT && rect.top > DROPDOWN_HEIGHT)
-      }
+    if (!isOpen) {
+      computePosition()
     }
     setIsOpen(!isOpen)
   }
@@ -182,15 +243,16 @@ export const GroupedSelect = forwardRef<HTMLButtonElement, GroupedSelectProps>(f
         </label>
       </div>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <div
           ref={dropdownRef}
+          style={dropdownStyle}
           className={cn(
-            "absolute left-0 right-0 z-[9999]",
+            "z-[9999]",
             "bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden",
-            "animate-in fade-in-0 duration-150",
-            openUpward ? "bottom-full mb-2" : "top-full mt-2"
+            "animate-in fade-in-0 duration-150"
           )}
+          data-portal-dropdown
         >
           {searchable && (
             <div className="p-3 border-b border-gray-200">
@@ -263,7 +325,8 @@ export const GroupedSelect = forwardRef<HTMLButtonElement, GroupedSelectProps>(f
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

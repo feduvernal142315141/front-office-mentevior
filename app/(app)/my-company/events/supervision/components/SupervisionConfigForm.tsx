@@ -90,7 +90,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
   const billingCodeOptions = billingCodes.map((bc) => ({
     value: bc.id,
     label: formatBillingCodeDisplay({ type: bc.type, code: bc.code, modifier: bc.modifier }),
-    tagLabel: bc.code,
+    tagLabel: bc.modifier?.trim() ? `${bc.code} (${bc.modifier.trim()})` : bc.code,
   }))
 
   const form = useForm<SupervisionConfigFormValues>({

@@ -199,10 +199,10 @@ export function ObjectiveFormModal({
 
         {/* Smart Criteria */}
         <div>
-          <label className="text-sm font-medium text-slate-600 mb-2 block">Smart Criteria</label>
-          <div className="grid grid-cols-[100px_1fr_1fr] gap-3">
+    
+          <div className="grid grid-cols-[120px_1fr_1fr] gap-3">
             <FloatingSelect
-              label="Op"
+              label="Smart Criteria"
               value={form.operatorSmartCriteria}
               onChange={(v) => update("operatorSmartCriteria", v)}
               options={OPERATOR_SMART_CRITERIA_OPTIONS}

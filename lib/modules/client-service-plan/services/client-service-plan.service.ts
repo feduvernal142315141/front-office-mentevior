@@ -360,8 +360,9 @@ export async function cloneServicePlanToClient(dto: CloneServicePlanToClientDto)
 // --- Create Item ---
 
 export interface CreateClientItemDto {
-  clientServicePlanCategoryId: string
+  servicePlanCategoryId: string
   name: string
+  type: "SERVICE_PLAN" | "CLIENT_SERVICE_PLAN"
 }
 
 export async function createClientServicePlanItem(

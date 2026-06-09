@@ -127,6 +127,7 @@ export function useServicePlanCategoryItems({
       await createItemCatalog({
         servicePlanCategoryId: activeServicePlanCategoryId,
         name: trimmedName,
+        type: "SERVICE_PLAN",
       })
       await refreshAfterMutation()
 
