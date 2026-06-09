@@ -415,7 +415,26 @@ export async function createCompanyServicePlan(
   )
 
   if ((response.status === 200 || response.status === 201) && response.data) {
-    return normalizeServicePlan(response.data)
+    // Backend may return the full object or just the ID as a raw string
+    const rawData = response.data as unknown
+    if (typeof rawData === "string") {
+      const id = rawData.trim().replace(/^"|"$/g, "")
+      if (id.length > 0) {
+        return {
+          id,
+          serviceId: requestPayload.serviceId,
+          serviceName: "",
+          name: requestPayload.name,
+          description: requestPayload.description ?? "",
+          startDate: requestPayload.startDate ?? "",
+          endDate: requestPayload.endDate ?? "",
+          active: requestPayload.active,
+          categories: requestPayload.categories,
+        }
+      }
+    }
+    const plan = extractSingleServicePlan(rawData)
+    if (plan) return plan
   }
 
   throw new Error(getApiErrorMessage(response.data, "Failed to create service plan"))

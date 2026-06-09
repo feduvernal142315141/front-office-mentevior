@@ -53,6 +53,7 @@ export function PayerLogoUpload({
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null)
   const [fetchedLogoUrl, setFetchedLogoUrl] = useState<string | null>(null)
   const [imageReady, setImageReady] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
     if (!existingLogoUrl) {
@@ -60,9 +61,10 @@ export function PayerLogoUpload({
       return
     }
     setFetchedLogoUrl(existingLogoUrl)
+    setImageError(false)
   }, [existingLogoUrl])
 
-  const displaySrc = previewObjectUrl ?? fetchedLogoUrl
+  const displaySrc = imageError ? null : (previewObjectUrl ?? fetchedLogoUrl)
   const logoImgRef = useRef<HTMLImageElement>(null)
 
   useLayoutEffect(() => {
@@ -156,8 +158,8 @@ export function PayerLogoUpload({
                 "h-full w-full object-contain",
                 !imageReady && "opacity-0",
               )}
-              onLoad={() => setImageReady(true)}
-              onError={() => setImageReady(true)}
+              onLoad={() => { setImageReady(true); setImageError(false) }}
+              onError={() => { setImageReady(true); setImageError(true) }}
             />
           </div>
           <div className="min-w-0 flex-1">

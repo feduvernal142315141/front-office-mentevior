@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import {
+  createClientServicePlanItem,
   deleteClientServicePlanCategoryItem,
   getClientServicePlanCategoryItems,
 } from "@/lib/modules/client-service-plan/services/client-service-plan.service"
@@ -117,13 +118,27 @@ export function useClientServicePlanCategoryItems({
     setCreateFormName("")
   }, [isSavingCreate])
 
-  // Client SP items are added via catalog (AddItemsDrawer), not created inline from scratch.
-  // This stub is kept for interface compatibility but shows a warning if used.
   const saveCreate = useCallback(async () => {
-    toast.error("Use 'Add items' to add items to this category")
-    setIsCreateFormVisible(false)
-    setCreateFormName("")
-  }, [])
+    const trimmedName = createFormName.trim()
+    if (trimmedName.length === 0 || isSavingCreate || !activeClientServicePlanCategoryId) return
+
+    setIsSavingCreate(true)
+    try {
+      await createClientServicePlanItem({
+        clientServicePlanCategoryId: activeClientServicePlanCategoryId,
+        name: trimmedName,
+      })
+      await refreshAfterMutation()
+
+      toast.success("Item created successfully")
+      setIsCreateFormVisible(false)
+      setCreateFormName("")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save item")
+    } finally {
+      setIsSavingCreate(false)
+    }
+  }, [activeClientServicePlanCategoryId, createFormName, isSavingCreate, refreshAfterMutation])
 
   const startEdit = useCallback(
     (item: ClientServicePlanCategoryMappedItem) => {

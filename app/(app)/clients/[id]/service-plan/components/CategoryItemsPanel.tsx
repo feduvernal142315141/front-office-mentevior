@@ -7,6 +7,7 @@ import type {
   ClientServicePlanCategorySummary,
 } from "@/lib/types/client-service-plan.types"
 
+import { CreateItemInlineForm } from "./CreateItemInlineForm"
 import { MappedItemRow } from "./MappedItemRow"
 
 interface CreateInlineFormState {
@@ -36,6 +37,7 @@ export function CategoryItemsPanel({
   items,
   isLoading,
   error,
+  createForm,
   deletingItemId,
   onDeleteItem,
   onConfigureDataCollection,
@@ -58,10 +60,31 @@ export function CategoryItemsPanel({
       </h3>
       <div className="mt-1 flex items-center justify-between gap-3">
         <p className="text-sm text-slate-500">Mapped items for this category.</p>
-        <Button type="button" className="h-9 px-4 text-xs" onClick={onOpenAddItemsDrawer}>
-          Add items
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-9 px-4 text-xs"
+            onClick={createForm.start}
+            disabled={createForm.isSaving}
+          >
+            Create item
+          </Button>
+          <Button type="button" className="h-9 px-4 text-xs" onClick={onOpenAddItemsDrawer}>
+            Add items
+          </Button>
+        </div>
       </div>
+
+      {createForm.visible && (
+        <CreateItemInlineForm
+          name={createForm.name}
+          isSaving={createForm.isSaving}
+          onChangeName={createForm.setName}
+          onCancel={createForm.cancel}
+          onSave={createForm.save}
+        />
+      )}
 
       <div className="mt-5">
         {isLoading ? (

@@ -357,6 +357,37 @@ export async function cloneServicePlanToClient(dto: CloneServicePlanToClientDto)
   throw new Error("Clone succeeded but no usable client service plan ID was returned")
 }
 
+// --- Create Item ---
+
+export interface CreateClientItemDto {
+  clientServicePlanCategoryId: string
+  name: string
+}
+
+export async function createClientServicePlanItem(
+  payload: CreateClientItemDto
+): Promise<string> {
+  const response = await servicePost<CreateClientItemDto, unknown>("/item", payload)
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(
+      (response.data as { message?: string } | undefined)?.message ?? "Failed to create item"
+    )
+  }
+
+  const responseData = response.data as unknown
+
+  if (responseData && typeof responseData === "object") {
+    const wrapped = responseData as { entity?: unknown; data?: unknown; id?: unknown }
+    const target = wrapped.entity ?? wrapped.data ?? responseData
+    const raw = target as Record<string, unknown>
+    const id = asString(raw?.id ?? raw?.itemId ?? raw?.item_id ?? "")
+    if (id.length > 0) return id
+  }
+
+  return ""
+}
+
 // --- Item Catalog ---
 
 export async function getClientServicePlanItemCatalog(

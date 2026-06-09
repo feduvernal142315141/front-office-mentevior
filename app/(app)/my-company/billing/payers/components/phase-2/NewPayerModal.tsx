@@ -89,12 +89,13 @@ export function NewPayerModal({ open, onOpenChange, onSuccess }: NewPayerModalPr
     }
   }
 
-  const handleCatalogItemSelect = async (item: PayerCatalogItem) => {
-    const ok = await createFromPrivate([item.id])
-    if (ok) {
-      handleClose()
-      onSuccess?.()
-    }
+  const handleCatalogItemSelect = (item: PayerCatalogItem) => {
+    handleClose()
+    const params = new URLSearchParams({
+      catalogId: item.id,
+      name: item.name,
+    })
+    router.push(`/my-company/billing/payers/create/catalog?${params.toString()}`)
   }
 
   const handlePrivateBulkCreate = async (ids: string[]) => {

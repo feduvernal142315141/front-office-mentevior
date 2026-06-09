@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { CustomModal } from "@/components/custom/CustomModal"
@@ -49,6 +50,7 @@ export function CreateServicePlanModal({
   onSuccess,
   initialPlan = null,
 }: CreateServicePlanModalProps) {
+  const router = useRouter()
   const { services } = useCompanyActiveServices()
   const { create, isLoading: isCreateLoading } = useCreateCompanyServicePlan()
   const { update, isLoading: isUpdateLoading } = useUpdateCompanyServicePlan()
@@ -182,18 +184,18 @@ export function CreateServicePlanModal({
       categories: values.categories,
     }
 
-    const saved =
-      isEditMode && initialPlan
-        ? await update({
-            id: initialPlan.id,
-            ...payload,
-          })
-        : await create(payload)
-
-    if (!saved) return
-
-    handleClose()
-    onSuccess()
+    if (isEditMode && initialPlan) {
+      const updated = await update({ id: initialPlan.id, ...payload })
+      if (!updated) return
+      handleClose()
+      onSuccess()
+    } else {
+      const created = await create(payload)
+      if (!created) return
+      handleClose()
+      onSuccess()
+      router.push(`/my-company/service-plans/${created.id}/configuration`)
+    }
   })
 
   return (
