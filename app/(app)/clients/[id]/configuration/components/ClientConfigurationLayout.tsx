@@ -1,10 +1,11 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ClipboardList, BarChart3, Sliders, ArrowLeft } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
+import { useUi } from "@/lib/store/ui.store"
 import { Button } from "@/components/custom/Button"
 
 import {
@@ -12,6 +13,7 @@ import {
   type ConfigurationSection,
 } from "./ConfigurationSidebar"
 import { ServicePlanContent } from "./ServicePlanContent"
+import { DataCollectionContent } from "./DataCollectionContent"
 
 interface ClientConfigurationLayoutProps {
   clientId: string
@@ -22,6 +24,28 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
   const router = useRouter()
   const { client, isLoading } = useClientById(clientId)
   const [activeSectionId, setActiveSectionId] = useState("service-plan")
+  const [spId, setSpId] = useState<string | null>(clientServicePlanId)
+  const { sidebarCollapsed, setSidebarCollapsed } = useUi()
+  const prevCollapsedRef = useRef<boolean | null>(null)
+
+  // Auto-collapse sidebar on mount, restore on unmount
+  useEffect(() => {
+    prevCollapsedRef.current = sidebarCollapsed
+    setSidebarCollapsed(true)
+    return () => {
+      if (prevCollapsedRef.current !== null) {
+        setSidebarCollapsed(prevCollapsedRef.current)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Keep sidebar collapsed while on this page
+  useEffect(() => {
+    if (!sidebarCollapsed) {
+      setSidebarCollapsed(true)
+    }
+  }, [sidebarCollapsed, setSidebarCollapsed])
 
   const sections: ConfigurationSection[] = useMemo(
     () => [
@@ -34,10 +58,10 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
         id: "data-collection",
         title: "Data Collection",
         icon: <BarChart3 />,
-        disabled: true,
+        disabled: !spId,
       },
     ],
-    []
+    [spId]
   )
 
   if (isLoading || !client) {
@@ -51,47 +75,44 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
   const clientName = `${client.firstName || ""} ${client.lastName || ""}`.trim()
 
   return (
-    <div className="min-h-screen bg-gray-50/50 flex flex-col">
+    <div className="h-full bg-gray-50/50 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200/60 px-8 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
-              <Sliders className="h-7 w-7 text-[#037ECC]" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-                {clientName}
-              </h1>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Service plan and data collection configuration
-              </p>
-            </div>
+      <div className="bg-white border-b border-slate-200/60 px-6 py-5 shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
+            <Sliders className="h-6 w-6 text-[#037ECC]" />
           </div>
-
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent truncate">
+              {clientName}
+            </h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Service plan and data collection configuration
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Body */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         <ConfigurationSidebar
           sections={sections}
           activeSectionId={activeSectionId}
           onSectionClick={setActiveSectionId}
         />
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pb-36">
-          <div className="mx-auto py-8 px-8 w-full max-w-6xl 2xl:max-w-[1440px] min-[1800px]:max-w-[1680px] min-[2200px]:max-w-[1960px]">
+        <div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar pb-36">
+          <div className="py-6 px-6">
             {activeSectionId === "service-plan" && (
-              <ServicePlanContent clientId={clientId} clientServicePlanId={clientServicePlanId} />
+              <ServicePlanContent
+                clientId={clientId}
+                clientServicePlanId={clientServicePlanId}
+                onServicePlanAssigned={setSpId}
+              />
             )}
 
-            {activeSectionId === "data-collection" && (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-12 text-center">
-                <BarChart3 className="mx-auto h-10 w-10 text-slate-400 mb-3" />
-                <p className="text-sm font-medium text-slate-600">Data Collection</p>
-                <p className="text-sm text-slate-500 mt-1">Coming soon</p>
-              </div>
+            {activeSectionId === "data-collection" && spId && (
+              <DataCollectionContent clientServicePlanId={spId} />
             )}
           </div>
         </div>

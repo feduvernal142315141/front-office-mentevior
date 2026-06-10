@@ -12,9 +12,10 @@ import { cloneServicePlanToClient } from "@/lib/modules/client-service-plan/serv
 interface ServicePlanContentProps {
   clientId: string
   clientServicePlanId: string | null
+  onServicePlanAssigned?: (spId: string) => void
 }
 
-export function ServicePlanContent({ clientId, clientServicePlanId }: ServicePlanContentProps) {
+export function ServicePlanContent({ clientId, clientServicePlanId, onServicePlanAssigned }: ServicePlanContentProps) {
   const [spId, setSpId] = useState<string | null>(clientServicePlanId)
   const [showModal, setShowModal] = useState(false)
   const [isAutoAssigning, setIsAutoAssigning] = useState(false)
@@ -24,7 +25,8 @@ export function ServicePlanContent({ clientId, clientServicePlanId }: ServicePla
 
   const handleCloneSuccess = useCallback((newSpId: string) => {
     setSpId(newSpId)
-  }, [])
+    onServicePlanAssigned?.(newSpId)
+  }, [onServicePlanAssigned])
 
   // Auto-assign if company has exactly 1 service plan and client has none
   useEffect(() => {
@@ -39,6 +41,7 @@ export function ServicePlanContent({ clientId, clientServicePlanId }: ServicePla
       .then((newSpId) => {
         toast.success("Service plan assigned")
         setSpId(newSpId)
+        onServicePlanAssigned?.(newSpId)
       })
       .catch((err) => {
         toast.error(err instanceof Error ? err.message : "Failed to assign service plan")
