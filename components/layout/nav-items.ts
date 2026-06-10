@@ -42,6 +42,12 @@ export const navItems: NavItem[] = [
     section: "main",
   },
   {
+    label: "Schedules",
+    href: "/schedules",
+    icon: "CalendarCheck",
+    section: "main",
+  },
+  {
     label: "Clinical Monthly",
     href: "/clinical-monthly",
     icon: "Hospital",
