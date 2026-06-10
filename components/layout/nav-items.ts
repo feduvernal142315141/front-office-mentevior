@@ -71,26 +71,26 @@ export const navItems: NavItem[] = [
     icon: "ClipboardCheck",
     section: "main",
   },
-  {
-    label: "Behavior Plan",
-    href: "/behavior-plan",
-    icon: "TrendingUp",
-    section: "main",
-    children: [
-      {
-        label: "Maladaptive Behaviors",
-        href: "/behavior-plan/maladaptive-behaviors",
-      },
-      {
-        label: "Replacement Programs",
-        href: "/behavior-plan/replacement-programs",
-      },
-      {
-        label: "Caregiver Programs",
-        href: "/behavior-plan/caregiver-programs",
-      },
-    ],
-  },
+  // {
+  //   label: "Behavior Plan",
+  //   href: "/behavior-plan",
+  //   icon: "TrendingUp",
+  //   section: "main",
+  //   children: [
+  //     {
+  //       label: "Maladaptive Behaviors",
+  //       href: "/behavior-plan/maladaptive-behaviors",
+  //     },
+  //     {
+  //       label: "Replacement Programs",
+  //       href: "/behavior-plan/replacement-programs",
+  //     },
+  //     {
+  //       label: "Caregiver Programs",
+  //       href: "/behavior-plan/caregiver-programs",
+  //     },
+  //   ],
+  // },
   {
     label: "Company Configuration",
     href: "/my-company",
