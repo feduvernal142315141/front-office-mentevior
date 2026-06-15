@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { ChevronDown } from "lucide-react"
 
@@ -9,6 +9,7 @@ interface CollapsableSectionProps {
   subtitle?: string
   icon?: React.ReactNode
   defaultOpen?: boolean
+  forceOpen?: boolean
   children: React.ReactNode
   className?: string
   disabled?: boolean
@@ -20,12 +21,20 @@ export function CollapsableSection({
   subtitle,
   icon,
   defaultOpen = false,
+  forceOpen,
   children,
   className,
   disabled = false,
   onToggle,
 }: CollapsableSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  useEffect(() => {
+    if (forceOpen && !isOpen) {
+      setIsOpen(true)
+      onToggle?.(true)
+    }
+  }, [forceOpen])
 
   const handleToggle = () => {
     if (disabled) return

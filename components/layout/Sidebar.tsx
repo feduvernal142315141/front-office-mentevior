@@ -8,10 +8,12 @@ import Image from "next/image"
 import { useUi } from "@/lib/store/ui.store"
 import { cn } from "@/lib/utils"
 import { useFilteredNavItems } from "@/lib/hooks/use-filtered-nav-items"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { useSectionCompletion } from "@/lib/modules/section-completion/hooks/use-section-completion"
+import { SidebarStatusIndicator } from "./SidebarStatusIndicator"
 
 export const ICON_MAP = {
   Gauge,
@@ -45,10 +47,14 @@ export function Sidebar() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const filteredNavItems = useFilteredNavItems()
 
+  const { completionMap, isLoading: completionLoading, isSectionComplete, getMissingCount } = useSectionCompletion()
+
   const isMobile = useMediaQuery("(max-width: 1024px)")
-  
+
   const companyName = company?.name
   const companyLogo = company?.logo
+
+  const hasCompletionData = !completionLoading && Object.keys(completionMap).length > 0
 
   const toggleExpanded = (href: string) => {
     setExpandedItems((prev) => {
@@ -215,6 +221,11 @@ export function Sidebar() {
             const isExpanded = expandedItems[item.href]
             const isChildActive = hasChildren && item.children?.some((child) => pathname === child.href)
 
+            const childKeys = hasChildren ? item.children!.map((c) => c.href) : []
+            const parentCompletion = hasChildren && hasCompletionData ? getMissingCount(childKeys) : null
+            const isParentComplete = parentCompletion ? parentCompletion.missing === 0 : true
+            const itemComplete = hasCompletionData ? isSectionComplete(item.href) : true
+
             if (!Icon) return null
 
             return (
@@ -253,7 +264,19 @@ export function Sidebar() {
                               />
                             )}
 
-                            <Icon className={cn("shrink-0 transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
+                            <div className="relative shrink-0">
+                              <Icon className={cn("transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
+                              {hasCompletionData && sidebarCollapsed && (
+                                <SidebarStatusIndicator
+                                  isComplete={isParentComplete}
+                                  isActive={!!(isActive || isChildActive)}
+                                  isCollapsed
+                                  variant="parent"
+                                  missingCount={parentCompletion?.missing ?? 0}
+                                  totalCount={parentCompletion?.total ?? 0}
+                                />
+                              )}
+                            </div>
 
                             <AnimatePresence>
                               {!sidebarCollapsed && (
@@ -268,6 +291,19 @@ export function Sidebar() {
                                 </motion.span>
                               )}
                             </AnimatePresence>
+
+                            {!sidebarCollapsed && hasCompletionData && parentCompletion && (
+                              <div className="absolute right-10 top-1/2 -translate-y-1/2 z-[5]">
+                                <SidebarStatusIndicator
+                                  isComplete={isParentComplete}
+                                  isActive={!!(isActive || isChildActive)}
+                                  isCollapsed={false}
+                                  variant="parent"
+                                  missingCount={parentCompletion.missing}
+                                  totalCount={parentCompletion.total}
+                                />
+                              </div>
+                            )}
 
                             {!sidebarCollapsed && hasChildren && (
                               <button
@@ -333,7 +369,17 @@ export function Sidebar() {
                               />
                             )}
 
-                            <Icon className={cn("shrink-0 transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
+                            <div className="relative shrink-0">
+                              <Icon className={cn("transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
+                              {hasCompletionData && sidebarCollapsed && (
+                                <SidebarStatusIndicator
+                                  isComplete={itemComplete}
+                                  isActive={isActive}
+                                  isCollapsed
+                                  variant="standalone"
+                                />
+                              )}
+                            </div>
 
                             <AnimatePresence>
                               {!sidebarCollapsed && (
@@ -348,6 +394,17 @@ export function Sidebar() {
                                 </motion.span>
                               )}
                             </AnimatePresence>
+
+                            {hasCompletionData && !sidebarCollapsed && (
+                              <div className="ml-auto">
+                                <SidebarStatusIndicator
+                                  isComplete={itemComplete}
+                                  isActive={isActive}
+                                  isCollapsed={false}
+                                  variant="standalone"
+                                />
+                              </div>
+                            )}
 
                             {isActive && sidebarCollapsed && (
                               <motion.span
@@ -382,6 +439,7 @@ export function Sidebar() {
                       <div className="flex flex-col gap-1 mt-1 ml-4 pl-4 border-l-2 border-slate-200">
                         {item.children?.map((child) => {
                           const isChildItemActive = pathname === child.href
+                          const isChildComplete = hasCompletionData ? isSectionComplete(child.href) : true
 
                           return (
                             <Link key={child.href} href={child.href}>
@@ -396,9 +454,19 @@ export function Sidebar() {
                                 )}
                               >
                                 <span className="flex-1">{child.label}</span>
-                                {child.hasDeepChildren && (
-                                  <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
-                                )}
+                                <div className="flex items-center gap-1.5">
+                                  {hasCompletionData && (
+                                    <SidebarStatusIndicator
+                                      isComplete={isChildComplete}
+                                      isActive={isChildItemActive}
+                                      isCollapsed={false}
+                                      variant="child"
+                                    />
+                                  )}
+                                  {child.hasDeepChildren && (
+                                    <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
+                                  )}
+                                </div>
                               </motion.div>
                             </Link>
                           )

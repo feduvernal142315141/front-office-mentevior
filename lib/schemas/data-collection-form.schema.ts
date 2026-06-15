@@ -63,7 +63,7 @@ export function createDataCollectionFormSchema(
       if (mode === "item" && !data.topography?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Topography is required",
+          message: "Description is required",
           path: ["topography"],
         })
       }
@@ -211,7 +211,7 @@ const FORM_FIELD_LABELS: Record<string, string> = {
   unitOfTime: "Unit of time",
   suggestedNumberOfRecordings: "Suggested number of recordings",
   levels: "Levels",
-  topography: "Topography",
+  topography: "Description",
   chart: "Chart",
 }
 

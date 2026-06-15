@@ -170,7 +170,6 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
                 type="email"
                 hasError={!!fieldState.error}
                 autoComplete="email"
-                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">

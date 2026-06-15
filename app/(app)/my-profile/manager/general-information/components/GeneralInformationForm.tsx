@@ -11,7 +11,7 @@ import { PersonalInformationSection } from "./PersonalInformationSection"
 import { ProfessionalInformationSection } from "./ProfessionalInformationSection"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { useRouter } from "next/navigation"
-import { useEffect, useCallback } from "react"
+import { useEffect, useCallback, useState } from "react"
 import type { FieldErrors } from "react-hook-form"
 import { useGeneralInformation } from "@/lib/modules/general-information/hooks/use-general-information"
 import { useUpdateGeneralInformation } from "@/lib/modules/general-information/hooks/use-update-general-information"
@@ -112,6 +112,11 @@ export function GeneralInformationForm({
   const isEditingSelf = authUser?.id && memberUserId ? authUser.id === memberUserId : false
   const canEditRole = isSuperAdmin && !isEditingSelf
 
+  const [forceOpenPersonal, setForceOpenPersonal] = useState(false)
+  const [forceOpenProfessional, setForceOpenProfessional] = useState(false)
+
+  const PROFESSIONAL_FIELDS = ["npi", "mpi", "caqhNumber", "companyName", "ein", "employerId"]
+
   const form = useForm<GeneralInformationFormValues>({
     resolver: zodResolver(generalInformationSchema),
     defaultValues: getGeneralInformationDefaults(),
@@ -124,35 +129,49 @@ export function GeneralInformationForm({
   }, [generalInformation, form])
 
   const scrollToFirstError = useCallback((errors: FieldErrors<GeneralInformationFormValues>) => {
-    const firstErrorKey = Object.keys(errors)[0]
-    if (!firstErrorKey) return
+    const errorKeys = Object.keys(errors)
+    if (errorKeys.length === 0) return
 
+    const hasPersonalError = errorKeys.some(k => !PROFESSIONAL_FIELDS.includes(k))
+    const hasProfessionalError = errorKeys.some(k => PROFESSIONAL_FIELDS.includes(k))
 
-    const errorElement = 
-      document.querySelector(`[name="${firstErrorKey}"]`) ||
-      document.querySelector(`[data-field="${firstErrorKey}"]`)
+    // Reset force flags first, then set — ensures useEffect triggers even if already true
+    setForceOpenPersonal(false)
+    setForceOpenProfessional(false)
+    setTimeout(() => {
+      if (hasPersonalError) setForceOpenPersonal(true)
+      if (hasProfessionalError) setForceOpenProfessional(true)
+    }, 0)
 
-    if (errorElement) {
-      const scrollContainer = document.getElementById("main-scroll")
-      
-      if (scrollContainer) {
-        const elementRect = errorElement.getBoundingClientRect()
-        const containerRect = scrollContainer.getBoundingClientRect()
-        const scrollOffset = elementRect.top - containerRect.top + scrollContainer.scrollTop - 100
-        
-        scrollContainer.scrollTo({
-          top: scrollOffset,
-          behavior: "smooth",
-        })
-      } else {
-        errorElement.scrollIntoView({ behavior: "smooth", block: "center" })
+    const firstErrorKey = errorKeys[0]
+
+    // Wait for the collapsed section to expand before scrolling
+    setTimeout(() => {
+      const errorElement =
+        document.querySelector(`[name="${firstErrorKey}"]`) ||
+        document.querySelector(`[data-field="${firstErrorKey}"]`)
+
+      if (errorElement) {
+        const scrollContainer = document.getElementById("main-scroll")
+
+        if (scrollContainer) {
+          const elementRect = errorElement.getBoundingClientRect()
+          const containerRect = scrollContainer.getBoundingClientRect()
+          const scrollOffset = elementRect.top - containerRect.top + scrollContainer.scrollTop - 100
+
+          scrollContainer.scrollTo({
+            top: scrollOffset,
+            behavior: "smooth",
+          })
+        } else {
+          errorElement.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+
+        if (errorElement instanceof HTMLElement) {
+          setTimeout(() => errorElement.focus(), 400)
+        }
       }
-
-
-      if (errorElement instanceof HTMLElement) {
-        setTimeout(() => errorElement.focus(), 400)
-      }
-    }
+    }, 350)
   }, [])
 
   const onSubmit = async (data: GeneralInformationFormValues) => {
@@ -207,8 +226,8 @@ export function GeneralInformationForm({
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit, scrollToFirstError)} noValidate>
         <div className="pb-24 space-y-8">
-          <PersonalInformationSection canEditRole={canEditRole} />
-          {(showProfessionalInformation ?? requiredOptions.professionalInformation) && <ProfessionalInformationSection />}
+          <PersonalInformationSection canEditRole={canEditRole} forceOpen={forceOpenPersonal} />
+          {(showProfessionalInformation ?? requiredOptions.professionalInformation) && <ProfessionalInformationSection forceOpen={forceOpenProfessional} />}
         </div>
 
         <FormBottomBar

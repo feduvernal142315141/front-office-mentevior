@@ -13,9 +13,10 @@ import { useMemo, useState } from "react"
 
 interface PersonalInformationSectionProps {
   canEditRole: boolean
+  forceOpen?: boolean
 }
 
-export function PersonalInformationSection({ canEditRole }: PersonalInformationSectionProps) {
+export function PersonalInformationSection({ canEditRole, forceOpen }: PersonalInformationSectionProps) {
   const { control } = useFormContext()
   const { roles, isLoading: isLoadingRoles } = useRoles()
   const { countries, isLoading: isLoadingCountries } = useCountries()
@@ -44,6 +45,7 @@ export function PersonalInformationSection({ canEditRole }: PersonalInformationS
       subtitle="Basic details and contact information"
       icon={<User className="w-4 h-4" />}
       defaultOpen={true}
+      forceOpen={forceOpen}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Controller

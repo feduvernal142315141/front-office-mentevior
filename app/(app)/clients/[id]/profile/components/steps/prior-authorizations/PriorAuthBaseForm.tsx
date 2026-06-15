@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState, type RefObject } from "react"
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import { Controller, type UseFormReturn } from "react-hook-form"
-import { Upload, X, FileText, Eye, Download } from "lucide-react"
+import { Upload, X, FileText, Eye, Download, CalendarDays, Sparkles } from "lucide-react"
 import { toast } from "sonner"
+import { addMonths } from "date-fns"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
@@ -18,6 +19,27 @@ import { calculateDuration } from "@/lib/utils/prior-auth-utils"
 import { cn } from "@/lib/utils"
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
+const QUICK_PERIOD_OFFSETS = [
+  { label: "1 month",  months: 1 },
+  { label: "6 months", months: 6 },
+]
+
+/**
+ * Computes end date = startDate + N months - 1 day.
+ * Input/output format: "YYYY-MM-DD" (ISO local date string).
+ */
+function computeEndDate(startDateStr: string, months: number): string {
+  const [y, m, d] = startDateStr.split("-").map(Number)
+  if (!y || !m || !d) return ""
+  const start = new Date(y, m - 1, d)
+  const end = addMonths(start, months)
+  end.setDate(end.getDate() - 1)
+  const yy = end.getFullYear()
+  const mm = String(end.getMonth() + 1).padStart(2, "0")
+  const dd = String(end.getDate()).padStart(2, "0")
+  return `${yy}-${mm}-${dd}`
+}
 
 export interface PriorAuthBaseFormRefs {
   authNumber: RefObject<HTMLInputElement | null>
@@ -70,10 +92,23 @@ export function PriorAuthBaseForm({
 }: PriorAuthBaseFormProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string } | null>(null)
+  const [selectedQuickPeriod, setSelectedQuickPeriod] = useState<string | null>(null)
 
   const startDate = form.watch("startDate")
   const endDate = form.watch("endDate")
   const interval = form.watch("durationInterval")
+
+  const handleQuickPeriod = useCallback(
+    (label: string, months: number) => {
+      if (!startDate) return
+      const computed = computeEndDate(startDate, months)
+      if (computed) {
+        form.setValue("endDate", computed, { shouldValidate: true, shouldDirty: true })
+      }
+      setSelectedQuickPeriod(label)
+    },
+    [startDate, form]
+  )
   const attachmentName = form.watch("attachmentName")
   const primaryDiagnosisId = form.watch("primaryDiagnosisId")
   const insuranceId = form.watch("insuranceId")
@@ -281,7 +316,17 @@ export function PriorAuthBaseForm({
                 ref={fieldRefs?.startDate}
                 label="Start Date"
                 value={field.value ?? ""}
-                onChange={field.onChange}
+                onChange={(v) => {
+                  field.onChange(v)
+                  // Re-apply quick period if one is selected
+                  if (selectedQuickPeriod && v) {
+                    const offset = QUICK_PERIOD_OFFSETS.find((o) => o.label === selectedQuickPeriod)
+                    if (offset) {
+                      const computed = computeEndDate(v, offset.months)
+                      if (computed) form.setValue("endDate", computed, { shouldValidate: true, shouldDirty: true })
+                    }
+                  }
+                }}
                 onBlur={field.onBlur}
                 onClear={() => field.onChange("")}
                 hasError={!!fieldState.error}
@@ -301,9 +346,15 @@ export function PriorAuthBaseForm({
                 ref={fieldRefs?.endDate}
                 label="End Date"
                 value={field.value ?? ""}
-                onChange={field.onChange}
+                onChange={(v) => {
+                  field.onChange(v)
+                  setSelectedQuickPeriod(null)
+                }}
                 onBlur={field.onBlur}
-                onClear={() => field.onChange("")}
+                onClear={() => {
+                  field.onChange("")
+                  setSelectedQuickPeriod(null)
+                }}
                 hasError={!!fieldState.error}
                 errorMessage={fieldState.error?.message}
                 required
@@ -311,6 +362,59 @@ export function PriorAuthBaseForm({
             </div>
           )}
         />
+      </div>
+
+      {/* Quick Expiration */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className={cn(
+            "w-4 h-4 transition-colors",
+            startDate ? "text-blue-500" : "text-slate-300"
+          )} />
+          <p className={cn(
+            "text-sm font-bold transition-colors",
+            startDate ? "text-slate-800" : "text-slate-400"
+          )}>
+            Quick Expiration
+          </p>
+          {!startDate && (
+            <span className="ml-auto text-xs text-slate-400 italic">Set start date first</span>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          {QUICK_PERIOD_OFFSETS.map(({ label, months }) => {
+            const isSelected = selectedQuickPeriod === label
+            const compactLabel = months === 1 ? "1mo" : `${months}mos`
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => handleQuickPeriod(label, months)}
+                disabled={!startDate}
+                className={cn(
+                  "relative flex h-20 w-20 flex-col items-center justify-center rounded-full p-0",
+                  "border text-center transition-all duration-150",
+                  "disabled:opacity-30 disabled:cursor-not-allowed",
+                  isSelected
+                    ? "border-blue-600 bg-blue-600 shadow-md shadow-blue-200"
+                    : "border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/60"
+                )}
+              >
+                <CalendarDays className={cn(
+                  "w-5 h-5 mb-1.5",
+                  isSelected ? "text-white" : "text-slate-400"
+                )} />
+                <span className={cn(
+                  "text-sm font-bold leading-tight",
+                  isSelected ? "text-white" : "text-slate-700"
+                )}>
+                  {compactLabel}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">

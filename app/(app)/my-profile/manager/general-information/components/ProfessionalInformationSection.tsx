@@ -5,7 +5,11 @@ import { CollapsableSection } from "@/components/custom/CollapsableSection"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { Briefcase } from "lucide-react"
 
-export function ProfessionalInformationSection() {
+interface ProfessionalInformationSectionProps {
+  forceOpen?: boolean
+}
+
+export function ProfessionalInformationSection({ forceOpen }: ProfessionalInformationSectionProps) {
   const { control } = useFormContext()
 
   return (
@@ -14,6 +18,7 @@ export function ProfessionalInformationSection() {
       subtitle="Credentials and professional details"
       icon={<Briefcase className="w-4 h-4" />}
       defaultOpen={true}
+      forceOpen={forceOpen}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Controller

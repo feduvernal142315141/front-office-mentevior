@@ -55,7 +55,7 @@ export const clientEditFormSchema = z.object({
   }),
   languages: z.array(z.string()).min(1, "At least one language is required"),
   genderId: z.string().min(1, "Gender is required").max(50),
-  email: z.string().min(1, "Email is required").max(100).regex(emailRegex, "Invalid email format"),
+  email: z.string().max(100).regex(emailRegex, "Invalid email format").or(z.literal("")).optional(),
   ssn: z
     .string()
     .min(1, "Social Security Number is required")

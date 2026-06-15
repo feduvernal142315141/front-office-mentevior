@@ -316,7 +316,8 @@ export function DataCollectionForm({
                 control={control}
                 render={({ field }) => (
                   <FloatingTextarea
-                    label="Topography"
+                    label="Description"
+                    required
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}

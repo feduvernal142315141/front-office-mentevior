@@ -115,7 +115,7 @@ export const navItems: NavItem[] = [
       },
       {
         label: "Appointment",
-        href: "/my-company/events/appointment",
+        href: "/my-company/appointment",
       },
       {
         label: "Billing",

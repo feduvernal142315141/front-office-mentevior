@@ -160,7 +160,6 @@ export function ClientFormFields({
                         type="email"
                         hasError={!!fieldState.error}
                         autoComplete="email"
-                        required={isEditing}
                       />
                       {fieldState.error && (
                         <p className="text-sm text-red-600 mt-2">

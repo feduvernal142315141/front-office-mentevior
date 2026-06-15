@@ -203,7 +203,6 @@ export function PersonalInformationForm({ client }: PersonalInformationFormProps
                           type="email"
                           hasError={!!fieldState.error}
                           autoComplete="email"
-                          required
                         />
                         {fieldState.error && (
                           <p className="text-sm text-red-600 mt-2">
