@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
-import { Plus, Target } from "lucide-react"
+import { Plus, Sparkles, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
@@ -17,6 +17,7 @@ import {
   createEmptyObjective,
   type ObjectiveRow,
 } from "./ObjectiveFormModal"
+import { GenerateObjectivesModal } from "./GenerateObjectivesModal"
 
 interface ObjectivesTabContentProps {
   objectives: ObjectiveRow[]
@@ -70,6 +71,7 @@ export function ObjectivesTabContent({
   periodSelectOptions,
 }: ObjectivesTabContentProps) {
   const [formOpen, setFormOpen] = useState(false)
+  const [generateOpen, setGenerateOpen] = useState(false)
   const [editingObjective, setEditingObjective] = useState<ObjectiveRow | null>(null)
 
   const handleAdd = useCallback(() => {
@@ -97,6 +99,13 @@ export function ObjectivesTabContent({
   const handleDelete = useCallback(
     (deleted: ObjectiveRow) => {
       onChange(objectives.filter((o) => o.localId !== deleted.localId))
+    },
+    [objectives, onChange]
+  )
+
+  const handleGenerate = useCallback(
+    (generated: ObjectiveRow[]) => {
+      onChange([...objectives, ...generated])
     },
     [objectives, onChange]
   )
@@ -175,11 +184,15 @@ export function ObjectivesTabContent({
           </div>
         )}
 
-        {/* Add button */}
-        <div className="flex justify-center pt-1">
+        {/* Action buttons */}
+        <div className="flex justify-center gap-3 pt-1">
           <Button type="button" onClick={handleAdd} className="gap-2">
             <Plus className="h-4 w-4" />
             Add objective
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Generate objectives
           </Button>
         </div>
       </div>
@@ -191,6 +204,14 @@ export function ObjectivesTabContent({
         mode={mode}
         onSave={handleSave}
         onDelete={handleDelete}
+        periodSelectOptions={periodSelectOptions}
+      />
+
+      <GenerateObjectivesModal
+        open={generateOpen}
+        onClose={() => setGenerateOpen(false)}
+        existingCount={objectives.length}
+        onGenerate={handleGenerate}
         periodSelectOptions={periodSelectOptions}
       />
     </>
