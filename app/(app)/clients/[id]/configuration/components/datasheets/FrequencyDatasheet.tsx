@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarDays, ChevronLeft, ChevronRight, BarChart3, UserCircle, FileText, Minus, Plus } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, BarChart3, Hash, FileText, Minus, Plus } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -112,25 +112,35 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
               })}
             </div>
 
-            {/* Row: Collector Initials */}
+            {/* Row: Occurrence Marks */}
             <div className="grid grid-cols-[200px_repeat(7,minmax(120px,1fr))] border-b border-slate-100">
               <RowLabel
-                icon={<UserCircle className="h-4 w-4 text-slate-400" />}
-                title="Collector Initials"
+                icon={<Hash className="h-4 w-4 text-slate-400" />}
+                title="Occurrences"
               />
               {ds.weekDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
+                const count = entry.occurrences || 0
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-3 py-3", today && "bg-[#037ECC]/[0.03]")}>
-                    <FloatingInput
-                      label="Initials"
-                      value={entry.initials}
-                      onChange={(v) => ds.setInitials(key, v)}
-                      onBlur={() => {}}
-                      maxLength={3}
-                    />
+                  <div key={key} className={cn("px-2 py-3", today && "bg-[#037ECC]/[0.03]")}>
+                    {count > 0 ? (
+                      <div className="grid grid-cols-5 gap-1">
+                        {Array.from({ length: count }, (_, i) => (
+                          <div
+                            key={i}
+                            className="h-7 rounded-md bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-400 flex items-center justify-center"
+                          >
+                            X
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-7">
+                        <span className="text-xs text-slate-300">—</span>
+                      </div>
+                    )}
                   </div>
                 )
               })}
