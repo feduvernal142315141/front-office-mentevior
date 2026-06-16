@@ -58,7 +58,7 @@ function CollapsedDot({ isComplete, isActive }: { isComplete: boolean; isActive:
           animate={
             isComplete
               ? { scale: 1, opacity: 1 }
-              : { scale: [0, 1, 1.3, 1], opacity: 1 }
+              : { scale: 1, opacity: 1 }
           }
           transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
           className={cn(
@@ -99,7 +99,7 @@ function ExpandedDot({
           animate={
             isComplete
               ? { scale: 1, opacity: 1 }
-              : { scale: [0, 1, 1.3, 1], opacity: 1 }
+              : { scale: 1, opacity: 1 }
           }
           transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
           className={cn(
@@ -144,7 +144,7 @@ function ParentIndicator({
             animate={
               isComplete
                 ? { scale: 1, opacity: 1 }
-                : { scale: [0, 1, 1.3, 1], opacity: 1 }
+                : { scale: 1, opacity: 1 }
             }
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className={cn(
@@ -196,7 +196,7 @@ function ParentIndicator({
       <TooltipTrigger asChild>
         <motion.span
           initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: [0, 1, 1.1, 1], opacity: 1 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
           className={cn(
             "shrink-0 h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold leading-none",

@@ -1,13 +1,15 @@
 "use client"
 
-import { FolderHeart, FolderOpen, ChevronRight } from "lucide-react"
+import { FolderHeart, FolderOpen, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useCanViewModule } from "@/lib/hooks/use-filtered-nav-items"
 import { useMemo } from "react"
+import { useSectionCompletion } from "@/lib/modules/section-completion/hooks/use-section-completion"
 
 export default function DocumentsPage() {
   const canViewClinicalDocuments = useCanViewModule("/clinical-documents")
   const canViewHRDocuments = useCanViewModule("/hr-documents")
+  const { completionMap } = useSectionCompletion()
 
   const documentModules = [
     {
@@ -16,6 +18,7 @@ export default function DocumentsPage() {
       href: "/clinical-documents",
       icon: FolderHeart,
       canView: canViewClinicalDocuments,
+      completionKey: "clinicalDocument",
     },
     {
       title: "HR Documents",
@@ -23,6 +26,7 @@ export default function DocumentsPage() {
       href: "/hr-documents",
       icon: FolderOpen,
       canView: canViewHRDocuments,
+      completionKey: "hrDocument",
     },
   ]
 
@@ -65,6 +69,21 @@ export default function DocumentsPage() {
                     className="group block"
                   >
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 transition-all duration-200 hover:shadow-lg hover:border-[#037ECC]/30 hover:-translate-y-1 min-h-[220px] flex flex-col relative">
+                      {module.completionKey in completionMap && (
+                        <div className="absolute top-4 right-4">
+                          {completionMap[module.completionKey] ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Complete
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                              <AlertCircle className="h-3.5 w-3.5" />
+                              Incomplete
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-fit p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20 mb-4">
                           <IconComponent className="h-6 w-6 text-[#037ECC]" />

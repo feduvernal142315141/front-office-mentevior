@@ -1,13 +1,15 @@
 "use client"
 
-import { CreditCard, Clock, FileCheck, Code, Building2 } from "lucide-react"
+import { CreditCard, Clock, FileCheck, Code, Building2, CheckCircle2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { useSectionCompletion } from "@/lib/modules/section-completion/hooks/use-section-completion"
 import type { ComponentType } from "react"
 
 export default function BillingPage() {
   const { view } = usePermission()
+  const { completionMap } = useSectionCompletion()
   // TODO: remove BILLING fallback when backend ships the final PAYERS permission mapping/id.
   const canViewPayers = view(PermissionModule.PAYERS) || view(PermissionModule.BILLING)
 
@@ -18,6 +20,7 @@ export default function BillingPage() {
     icon: ComponentType<{ className?: string }>
     alwaysShow?: boolean
     module?: string
+    completionKey?: string
   }
   
   const allSubModules: BillingSubModule[] = [
@@ -27,6 +30,7 @@ export default function BillingPage() {
       href: "/my-company/billing/billing-codes",
       icon: Code,
       alwaysShow: true,
+      completionKey: "billingCode",
     },
     {
       title: "Payers",
@@ -34,6 +38,7 @@ export default function BillingPage() {
       href: "/my-company/billing/payers",
       icon: Building2,
       module: PermissionModule.PAYERS,
+      completionKey: "payers",
     },
     {
       title: "Services Pending Billing",
@@ -83,7 +88,22 @@ export default function BillingPage() {
                 href={module.href}
                 className="group block"
               >
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 transition-all duration-200 hover:shadow-lg hover:border-[#037ECC]/30 hover:-translate-y-1 min-h-[180px] flex flex-col">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 transition-all duration-200 hover:shadow-lg hover:border-[#037ECC]/30 hover:-translate-y-1 min-h-[180px] flex flex-col relative">
+                  {module.completionKey && module.completionKey in completionMap && (
+                    <div className="absolute top-4 right-4">
+                      {completionMap[module.completionKey] ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Complete
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          Incomplete
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-fit p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20 shrink-0">
                       <IconComponent className="h-6 w-6 text-[#037ECC]" />

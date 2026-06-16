@@ -224,7 +224,9 @@ export function Sidebar() {
             const childKeys = hasChildren ? item.children!.map((c) => c.href) : []
             const parentCompletion = hasChildren && hasCompletionData ? getMissingCount(childKeys) : null
             const isParentComplete = parentCompletion ? parentCompletion.missing === 0 : true
-            const itemComplete = hasCompletionData ? isSectionComplete(item.href) : true
+            const showParentBadge = parentCompletion ? parentCompletion.total > 0 : false
+            const itemHasData = hasCompletionData && item.href in completionMap
+            const itemComplete = itemHasData ? isSectionComplete(item.href) : true
 
             if (!Icon) return null
 
@@ -266,7 +268,7 @@ export function Sidebar() {
 
                             <div className="relative shrink-0">
                               <Icon className={cn("transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
-                              {hasCompletionData && sidebarCollapsed && (
+                              {showParentBadge && sidebarCollapsed && (
                                 <SidebarStatusIndicator
                                   isComplete={isParentComplete}
                                   isActive={!!(isActive || isChildActive)}
@@ -292,7 +294,7 @@ export function Sidebar() {
                               )}
                             </AnimatePresence>
 
-                            {!sidebarCollapsed && hasCompletionData && parentCompletion && (
+                            {!sidebarCollapsed && showParentBadge && parentCompletion && (
                               <div className="absolute right-10 top-1/2 -translate-y-1/2 z-[5]">
                                 <SidebarStatusIndicator
                                   isComplete={isParentComplete}
@@ -371,7 +373,7 @@ export function Sidebar() {
 
                             <div className="relative shrink-0">
                               <Icon className={cn("transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
-                              {hasCompletionData && sidebarCollapsed && (
+                              {itemHasData && sidebarCollapsed && (
                                 <SidebarStatusIndicator
                                   isComplete={itemComplete}
                                   isActive={isActive}
@@ -395,7 +397,7 @@ export function Sidebar() {
                               )}
                             </AnimatePresence>
 
-                            {hasCompletionData && !sidebarCollapsed && (
+                            {itemHasData && !sidebarCollapsed && (
                               <div className="ml-auto">
                                 <SidebarStatusIndicator
                                   isComplete={itemComplete}
@@ -439,7 +441,8 @@ export function Sidebar() {
                       <div className="flex flex-col gap-1 mt-1 ml-4 pl-4 border-l-2 border-slate-200">
                         {item.children?.map((child) => {
                           const isChildItemActive = pathname === child.href
-                          const isChildComplete = hasCompletionData ? isSectionComplete(child.href) : true
+                          const childHasData = hasCompletionData && child.href in completionMap
+                          const isChildComplete = childHasData ? isSectionComplete(child.href) : true
 
                           return (
                             <Link key={child.href} href={child.href}>
@@ -453,20 +456,18 @@ export function Sidebar() {
                                     : "text-slate-600 hover:bg-slate-50 hover:text-[#037ECC]",
                                 )}
                               >
+                                {childHasData && (
+                                  <SidebarStatusIndicator
+                                    isComplete={isChildComplete}
+                                    isActive={isChildItemActive}
+                                    isCollapsed={false}
+                                    variant="child"
+                                  />
+                                )}
                                 <span className="flex-1">{child.label}</span>
-                                <div className="flex items-center gap-1.5">
-                                  {hasCompletionData && (
-                                    <SidebarStatusIndicator
-                                      isComplete={isChildComplete}
-                                      isActive={isChildItemActive}
-                                      isCollapsed={false}
-                                      variant="child"
-                                    />
-                                  )}
-                                  {child.hasDeepChildren && (
-                                    <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
-                                  )}
-                                </div>
+                                {child.hasDeepChildren && (
+                                  <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
+                                )}
                               </motion.div>
                             </Link>
                           )

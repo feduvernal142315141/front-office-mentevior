@@ -57,6 +57,7 @@ export const useSectionCompletionStore = create<SectionCompletionState>((set, ge
     let missing = 0
 
     for (const key of childKeys) {
+      if (!(key in completionMap)) continue
       if (completionMap[key] === false) {
         missing++
       } else {
@@ -64,6 +65,7 @@ export const useSectionCompletionStore = create<SectionCompletionState>((set, ge
       }
     }
 
-    return { complete, total: childKeys.length, missing }
+    const total = complete + missing
+    return { complete, total, missing }
   },
 }))
