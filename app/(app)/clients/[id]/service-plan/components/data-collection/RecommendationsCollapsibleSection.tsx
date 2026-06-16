@@ -123,7 +123,6 @@ export function RecommendationsCollapsibleSection({
               options={strategyOptions}
               disabled={strategy.isLoading}
               hasError={!!errors?.strategyId}
-              required
             />
             <FieldErrorText message={errors?.strategyId} />
           </div>
@@ -139,7 +138,6 @@ export function RecommendationsCollapsibleSection({
               allowCreate
               onCreate={activities.create}
               hasError={!!errors?.activitiesToOccurrence}
-              required
             />
             <FieldErrorText message={errors?.activitiesToOccurrence} />
           </div>
@@ -155,7 +153,6 @@ export function RecommendationsCollapsibleSection({
               allowCreate
               onCreate={preventive.create}
               hasError={!!errors?.preventiveStrategies}
-              required
             />
             <FieldErrorText message={errors?.preventiveStrategies} />
           </div>
@@ -170,7 +167,6 @@ export function RecommendationsCollapsibleSection({
                 onChange={(ids) => update({ replacements: ids })}
                 isLoading={replacements.isLoading}
                 hasError={!!errors?.replacements}
-                required
               />
               <FieldErrorText message={errors?.replacements} />
             </div>
@@ -188,7 +184,6 @@ export function RecommendationsCollapsibleSection({
                 allowCreate
                 onCreate={interventions.create}
                 hasError={!!errors?.interventions}
-                required
               />
               <FieldErrorText message={errors?.interventions} />
             </div>
@@ -205,7 +200,6 @@ export function RecommendationsCollapsibleSection({
                 isLoading={reinforcers.isLoading}
                 grouped
                 hasError={!!errors?.reinforcers}
-                required
               />
               <FieldErrorText message={errors?.reinforcers} />
             </div>

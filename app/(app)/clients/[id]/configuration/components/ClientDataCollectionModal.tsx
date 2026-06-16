@@ -444,53 +444,6 @@ export function ClientDataCollectionModal({
     // Validate client-side before API call
     let hasErrors = false
 
-    // Validate baselines (at least one required, each must have date, value, period)
-    if (baselines.length === 0) {
-      setBaselinesError(true)
-      if (!hasErrors) setActiveTab("baselines")
-      hasErrors = true
-    } else {
-      const hasIncomplete = baselines.some(
-        (b) => !b.date || !b.value || !b.periodCatalogId
-      )
-      if (hasIncomplete) {
-        setBaselinesError(true)
-        if (!hasErrors) setActiveTab("baselines")
-        hasErrors = true
-      } else {
-        setBaselinesError(false)
-      }
-    }
-
-    // Validate objectives (at least one required, each must have name, startDate, smart criteria, duration)
-    if (objectives.length === 0) {
-      setObjectivesError(true)
-      if (!hasErrors) setActiveTab("objectives")
-      hasErrors = true
-    } else {
-      const hasIncomplete = objectives.some(
-        (o) => !o.name.trim() || !o.startDate || !o.operatorSmartCriteria || !o.valueSmartCriteria || !o.periodSmartCriteriaCatalogId || !o.valueDuration || !o.periodDurationCatalogId
-      )
-      if (hasIncomplete) {
-        setObjectivesError(true)
-        if (!hasErrors) setActiveTab("objectives")
-        hasErrors = true
-      } else {
-        setObjectivesError(false)
-      }
-    }
-
-    // Validate recommendations
-    const selectedStrategyName = strategyCatalogItems.find((i) => i.id === recommendations.strategyId)?.name ?? ""
-    const recErrors = validateRecommendations(recommendations, selectedStrategyName)
-    if (Object.keys(recErrors).length > 0) {
-      setRecommendationErrors(recErrors)
-      if (!hasErrors) setActiveTab("recommendations")
-      hasErrors = true
-    } else {
-      setRecommendationErrors({})
-    }
-
     if (hasErrors) {
       toast.error("Complete required fields", {
         description: "Please fill in all required fields before saving.",
@@ -969,7 +922,7 @@ export function ClientDataCollectionModal({
     <RecommendationsCollapsibleSection
       value={recommendations}
       onChange={handleRecommendationsChange}
-      errors={recommendationErrors}
+      errors={{}}
       open={true}
       onOpenChange={() => {}}
     />
@@ -1002,7 +955,6 @@ export function ClientDataCollectionModal({
         id: "recommendations",
         label: "Recommendations",
         icon: <Lightbulb className="w-4 h-4" />,
-        hasError: Object.keys(recommendationErrors).length > 0,
         content: recommendationsContent,
       },
       {
@@ -1011,7 +963,6 @@ export function ClientDataCollectionModal({
         icon: <TrendingUp className="w-4 h-4" />,
         badge: baselines.length || undefined,
         hasError: baselinesError,
-        required: true,
         content: (
           <BaselinesTabContent
             baselines={baselines}
@@ -1028,7 +979,6 @@ export function ClientDataCollectionModal({
         icon: <Target className="w-4 h-4" />,
         badge: objectives.length || undefined,
         hasError: objectivesError,
-        required: true,
         content: (
           <ObjectivesTabContent
             objectives={objectives}
