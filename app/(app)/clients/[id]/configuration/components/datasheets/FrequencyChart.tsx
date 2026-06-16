@@ -31,8 +31,10 @@ interface ChartDataPoint {
   dateLabel: string
   fullDate: string
   occurrences: number | null
+  baselineValue: number | null
   hasNote: boolean
   note: string
+  isBaseline?: boolean
 }
 
 export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartProps) {
@@ -41,27 +43,57 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
   const objectives = dcConfig?.objectives ?? []
 
   const data = useMemo<ChartDataPoint[]>(() => {
-    return weekDays.map((day) => {
-      const key = getDateKey(day)
-      const entry = entries[key]
-      const hasData = entry && entry.occurrences > 0
+    // Baseline points first (sorted by date, only visible ones)
+    const visibleBaselines = baselines
+      .filter((b) => b.show && b.value > 0 && b.date)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+    const baselinePoints: ChartDataPoint[] = visibleBaselines.map((b) => {
+      const d = new Date(b.date)
       return {
-        dateKey: key,
-        dateLabel: format(day, "dd MMM"),
-        fullDate: format(day, "EEEE, MMM dd yyyy"),
-        occurrences: hasData ? entry.occurrences : null,
-        hasNote: (entry?.environmentalNote ?? "").trim().length > 0,
-        note: entry?.environmentalNote ?? "",
+        dateKey: b.date,
+        dateLabel: format(d, "dd MMM"),
+        fullDate: format(d, "EEEE, MMM dd yyyy"),
+        occurrences: null,
+        baselineValue: b.value,
+        hasNote: false,
+        note: b.comments ?? "",
+        isBaseline: true,
       }
     })
-  }, [weekDays, entries])
 
-  // Baseline value (average of all baselines for reference line)
-  const baselineValue = useMemo(() => {
-    const shown = baselines.filter((b) => b.show && b.value > 0)
-    if (shown.length === 0) return null
-    return shown.reduce((sum, b) => sum + b.value, 0) / shown.length
-  }, [baselines])
+    // Last baseline date — week points start after this
+    const lastBaselineTime = visibleBaselines.length > 0
+      ? new Date(visibleBaselines[visibleBaselines.length - 1].date).getTime()
+      : 0
+
+    // Week day points (only days after the last baseline)
+    const weekPoints: ChartDataPoint[] = weekDays
+      .filter((day) => {
+        if (lastBaselineTime === 0) return true
+        const dayStart = new Date(day)
+        dayStart.setHours(0, 0, 0, 0)
+        return dayStart.getTime() > lastBaselineTime
+      })
+      .map((day) => {
+        const key = getDateKey(day)
+        const entry = entries[key]
+        const hasData = entry && entry.occurrences > 0
+        return {
+          dateKey: key,
+          dateLabel: format(day, "dd MMM"),
+          fullDate: format(day, "EEEE, MMM dd yyyy"),
+          occurrences: hasData ? entry.occurrences : null,
+          baselineValue: null,
+          hasNote: (entry?.environmentalNote ?? "").trim().length > 0,
+          note: entry?.environmentalNote ?? "",
+        }
+      })
+
+    return [...baselinePoints, ...weekPoints]
+  }, [weekDays, entries, baselines])
+
+  const hasBaselineData = baselines.some((b) => b.show && b.value > 0 && b.date)
 
   // Objective target value (first objective's smart criteria value)
   const objectiveValue = useMemo(() => {
@@ -120,15 +152,15 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
           {yTitle && <p className="text-[11px] text-slate-400 mt-0.5">{yTitle}</p>}
         </div>
         <div className="flex items-center gap-4">
-          {baselineValue !== null && (
+          {hasBaselineData && (
             <div className="flex items-center gap-1.5">
               <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: baselineColor }} />
-              <span className="text-xs text-slate-500">Baseline: <span className="font-semibold" style={{ color: baselineColor }}>{baselineValue}</span></span>
+              <span className="text-xs text-slate-500">Baseline</span>
             </div>
           )}
           <div className="flex items-center gap-1.5">
             <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: lineColor }} />
-            <span className="text-xs text-slate-500">Total</span>
+            <span className="text-xs text-slate-500">Data</span>
           </div>
           {objectiveValue !== null && (
             <div className="flex items-center gap-1.5">
@@ -159,6 +191,7 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
             tick={{ fontSize: 11, fill: "#94A3B8" }}
             axisLine={{ stroke: "#E2E8F0" }}
             tickLine={false}
+            padding={{ left: 30, right: 30 }}
           />
 
           <YAxis
@@ -176,6 +209,9 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
               return (
                 <div className="rounded-xl bg-slate-900 text-white px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)] text-xs space-y-1 max-w-[220px]">
                   <p className="font-semibold">{point?.fullDate ?? label}</p>
+                  {point?.baselineValue != null && (
+                    <p>Baseline: <span className="font-bold" style={{ color: "#FCA5A5" }}>{point.baselineValue}</span></p>
+                  )}
                   {point?.occurrences != null && (
                     <p>Occurrences: <span className="font-bold">{point.occurrences}</span></p>
                   )}
@@ -188,13 +224,16 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
             cursor={{ stroke: "#037ECC", strokeWidth: 1, strokeDasharray: "4 4" }}
           />
 
-          {/* Baseline reference line */}
-          {baselineValue !== null && (
-            <ReferenceLine
-              y={baselineValue}
+          {/* Baseline data series */}
+          {hasBaselineData && (
+            <Line
+              type="monotone"
+              dataKey="baselineValue"
               stroke={baselineColor}
-              strokeWidth={1.5}
-              strokeDasharray="6 4"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "white", stroke: baselineColor, strokeWidth: 2 }}
+              activeDot={{ r: 6, fill: baselineColor, stroke: "white", strokeWidth: 2 }}
+              connectNulls={false}
             />
           )}
 
