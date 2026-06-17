@@ -24,6 +24,9 @@ import type {
   ContextMenuState,
 } from "@/lib/types/appointment.types"
 import { useAppointments } from "@/lib/store/appointments.store"
+// TODO: Connect when backend is ready
+// import { useScheduleAppointments } from "@/lib/modules/schedules/hooks/use-appointments"
+// import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
 import { getWeekDays, getWeekStart } from "@/lib/date"
 import { getMockClientById } from "@/lib/modules/schedules/mocks"
 import { useAlert } from "@/lib/contexts/alert-context"
@@ -48,6 +51,7 @@ interface UseWeekCalendarReturn {
   
   showModal: boolean
   showDuplicateModal: boolean
+  showDetailDrawer: boolean
   modalDefaults: AppointmentModalDefaults
   contextMenu: ContextMenuState | null
   
@@ -68,6 +72,8 @@ interface UseWeekCalendarReturn {
     setSelectedDay: (day: number) => void
     
     openNewAppointmentModal: (defaults?: AppointmentModalDefaults) => void
+    openDetailDrawer: (appointment: Appointment) => void
+    closeDetailDrawer: () => void
     openEditModal: (appointment: Appointment) => void
     openDuplicateModal: (appointment: Appointment) => void
     closeModal: () => void
@@ -98,10 +104,12 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
 
   const alert = useAlert()
   const isMobile = useIsMobile()
-  const { 
-    appointments, 
-    updateAppointment, 
-    setSelectedAppointment, 
+
+  // Store — mock data for now, will be replaced by API hooks when backend is ready
+  const {
+    appointments,
+    updateAppointment,
+    setSelectedAppointment,
     selectedAppointment,
     checkConflict,
     deleteAppointment,
@@ -115,6 +123,7 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
 
   const [showModal, setShowModal] = useState(false)
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
+  const [showDetailDrawer, setShowDetailDrawer] = useState(false)
   const [modalDefaults, setModalDefaults] = useState<AppointmentModalDefaults>({})
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   
@@ -191,7 +200,17 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     setShowModal(true)
   }, [setSelectedAppointment])
   
+  const openDetailDrawer = useCallback((appointment: Appointment) => {
+    setSelectedAppointment(appointment)
+    setShowDetailDrawer(true)
+  }, [setSelectedAppointment])
+
+  const closeDetailDrawer = useCallback(() => {
+    setShowDetailDrawer(false)
+  }, [])
+
   const openEditModal = useCallback((appointment: Appointment) => {
+    setShowDetailDrawer(false)
     setSelectedAppointment(appointment)
     setShowModal(true)
   }, [setSelectedAppointment])
@@ -225,9 +244,12 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
   const handleContextMenuAction = useCallback((action: string, appointmentId: string) => {
     const appointment = myAppointments.find((apt) => apt.id === appointmentId)
     if (!appointment) return
-    
+
     switch (action) {
       case "view":
+        setSelectedAppointment(appointment)
+        setShowDetailDrawer(true)
+        break
       case "edit":
         setSelectedAppointment(appointment)
         setShowModal(true)
@@ -235,6 +257,14 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
       case "duplicate":
         setSelectedAppointment(appointment)
         setShowDuplicateModal(true)
+        break
+      case "complete":
+        updateAppointment(appointmentId, { status: "Completed" })
+        alert.success("Appointment Completed", "The appointment has been marked as completed")
+        break
+      case "noshow":
+        updateAppointment(appointmentId, { status: "NoShow" })
+        alert.success("No Show", "The appointment has been marked as No Show")
         break
       case "delete":
         deleteAppointment(appointmentId)
@@ -245,7 +275,7 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
         alert.success("Appointment Cancelled", "The appointment has been cancelled")
         break
     }
-    
+
     setContextMenu(null)
   }, [myAppointments, setSelectedAppointment, deleteAppointment, updateAppointment, alert])
   
@@ -294,11 +324,8 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
       return
     }
     
-    updateAppointment(appointment.id, {
-      startsAt: newStart,
-      endsAt: newEnd,
-    })
-    
+    updateAppointment(appointment.id, { startsAt: newStart, endsAt: newEnd })
+
     alert.success("Appointment Moved", "The appointment has been rescheduled")
   }, [myAppointments, weekDays, rbtId, checkConflict, updateAppointment, alert])
   
@@ -350,6 +377,7 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     
     showModal,
     showDuplicateModal,
+    showDetailDrawer,
     modalDefaults,
     contextMenu,
     
@@ -369,6 +397,8 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
       goToToday,
       setSelectedDay,
       openNewAppointmentModal,
+      openDetailDrawer,
+      closeDetailDrawer,
       openEditModal,
       openDuplicateModal,
       closeModal,

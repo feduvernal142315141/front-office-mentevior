@@ -1,31 +1,49 @@
 "use client"
 
-import type React from "react"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { Button } from "@/components/custom/Button"
-import { 
-  Search, 
-  User, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  MapPin, 
-  FileText, 
-  Check, 
-  Briefcase, 
-  Home, 
-  School, 
-  Building2,
-  Video,
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
+import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { MultiSelect } from "@/components/custom/MultiSelect"
+import {
+  User,
+  Calendar as CalendarIcon,
+  FileText,
+  MapPin,
+  Receipt,
+  Users,
+  ShieldCheck,
+  Clock,
+  CheckCircle,
+  XCircle,
+  UserX,
 } from "lucide-react"
-import type { Appointment, AppointmentLocation } from "@/lib/types/appointment.types"
+import * as SwitchPrimitives from "@radix-ui/react-switch"
+import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
 import { useAppointmentForm } from "../hooks/useAppointmentForm"
+import { useAlert } from "@/lib/contexts/alert-context"
+import { formatDuration } from "@/lib/utils/unit-calculation"
 import { cn } from "@/lib/utils"
 
+// ============================================
+// Event type pill options
+// ============================================
+
+const EVENT_TYPES: Array<{ value: EventType; label: string }> = [
+  { value: "session_note", label: "Session Note" },
+  { value: "service_plan", label: "Service Plan" },
+  { value: "supervision", label: "Supervision" },
+]
+
+// ============================================
+// Component
+// ============================================
 
 interface AppointmentModalProps {
   open: boolean
@@ -34,20 +52,8 @@ interface AppointmentModalProps {
   defaultDate?: string
   defaultTime?: string
   rbtId: string
+  onStatusChange?: (appointmentId: string, status: AppointmentStatus) => void
 }
-
-
-const LOCATIONS: Array<{
-  value: AppointmentLocation
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-}> = [
-  { value: "Clinic", label: "Clinic", icon: Building2 },
-  { value: "Home", label: "Home", icon: Home },
-  { value: "School", label: "School", icon: School },
-  { value: "Telehealth", label: "Telehealth", icon: Video },
-]
-
 
 export function AppointmentModal({
   open,
@@ -56,24 +62,25 @@ export function AppointmentModal({
   defaultDate,
   defaultTime,
   rbtId,
+  onStatusChange,
 }: AppointmentModalProps) {
+  const alert = useAlert()
   const {
     formData,
+    updateField,
     errors,
-    showClientDropdown,
-    setShowClientDropdown,
-    showServiceDropdown,
-    setShowServiceDropdown,
-    clientSearch,
-    setClientSearch,
-    clients,
-    services,
-    selectedClient,
-    selectedService,
+    clientOptions,
+    addressOptions,
+    addressesLoading,
+    billingCodeOptions,
+    supervisionCodeOptions,
+    rbtOptions,
+    durationMinutes,
+    billableUnits,
+    isRbt,
     isEditing,
     handleSubmit,
     handleDelete,
-    updateField,
     isSubmitting,
   } = useAppointmentForm({
     appointment,
@@ -82,12 +89,12 @@ export function AppointmentModal({
     rbtId,
     onSuccess: onClose,
   })
-  
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className={cn(
-          "sm:max-w-[520px] p-0 gap-0",
+          "sm:max-w-[720px] p-0 gap-0",
           "bg-white rounded-2xl overflow-hidden",
           "border border-gray-100",
           "shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]",
@@ -99,7 +106,8 @@ export function AppointmentModal({
             {isEditing ? "Edit Appointment" : "New Appointment"}
           </DialogTitle>
         </VisuallyHidden>
-        
+
+        {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-b from-gray-50/50 to-transparent">
           <h2 className="text-xl font-semibold text-gray-900">
             {isEditing ? "Edit Appointment" : "New Appointment"}
@@ -108,249 +116,228 @@ export function AppointmentModal({
             Complete the details to schedule this session
           </p>
         </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <User className="w-4 h-4 text-[#037ECC]" />
-              Client & Service
-            </h3>
-            
-            <div className="relative">
-              <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                Client <span className="text-[#037ECC]">*</span>
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Search client..."
-                  className={cn(
-                    "w-full h-11 pl-10 pr-4 rounded-xl",
-                    "border border-gray-200 bg-white",
-                    "text-sm text-gray-900 placeholder:text-gray-400",
-                    "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]",
-                    "transition-all duration-200",
-                    errors.client && "border-red-300 focus:ring-red-200 focus:border-red-400",
-                  )}
-                  value={selectedClient?.fullName || clientSearch}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value)
-                    setShowClientDropdown(true)
-                    if (selectedClient) updateField("clientId", "")
-                  }}
-                  onFocus={() => setShowClientDropdown(true)}
-                />
-              </div>
-              
-              {showClientDropdown && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                  {clients
-                    .filter((c) => 
-                      !clientSearch || 
-                      c.fullName.toLowerCase().includes(clientSearch.toLowerCase())
-                    )
-                    .map((client) => (
-                      <button
-                        key={client.id}
-                        type="button"
-                        className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2.5 text-left",
-                          "hover:bg-gray-50 transition-colors",
-                          formData.clientId === client.id && "bg-[#037ECC]/5",
-                        )}
-                        onClick={() => {
-                          updateField("clientId", client.id)
-                          setClientSearch("")
-                          setShowClientDropdown(false)
-                        }}
-                      >
-                        <div className="w-8 h-8 rounded-full bg-[#037ECC]/10 flex items-center justify-center text-xs font-medium text-[#037ECC]">
-                          {client.fullName.split(" ").map((n) => n[0]).join("")}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {client.fullName}
-                          </p>
-                          <p className="text-xs text-gray-500">{client.code}</p>
-                        </div>
-                        {formData.clientId === client.id && (
-                          <Check className="w-4 h-4 text-[#037ECC]" />
-                        )}
-                      </button>
-                    ))}
-                </div>
-              )}
-              
-              {errors.client && (
-                <p className="text-xs text-red-500 mt-1">{errors.client}</p>
-              )}
-            </div>
-            
-            <div className="relative">
-              <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                Service <span className="text-[#037ECC]">*</span>
-              </label>
-              <button
-                type="button"
-                className={cn(
-                  "w-full h-11 px-4 rounded-xl text-left",
-                  "border border-gray-200 bg-white",
-                  "text-sm",
-                  "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]",
-                  "transition-all duration-200",
-                  errors.service && "border-red-300",
-                )}
-                onClick={() => setShowServiceDropdown(!showServiceDropdown)}
-              >
-                {selectedService ? (
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: selectedService.color }}
-                    />
-                    <span className="text-gray-900">{selectedService.name}</span>
-                    <span className="text-gray-500 text-xs">
-                      ({selectedService.durationMin} min)
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-gray-400">Select service...</span>
-                )}
-              </button>
-              
-              {showServiceDropdown && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
-                  {services.map((service) => (
-                    <button
-                      key={service.id}
-                      type="button"
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 text-left",
-                        "hover:bg-gray-50 transition-colors",
-                        "border-l-2",
-                        formData.serviceId === service.id
-                          ? "bg-[#037ECC]/5 border-l-[#037ECC]"
-                          : "border-l-transparent",
-                      )}
-                      onClick={() => {
-                        updateField("serviceId", service.id)
-                        setShowServiceDropdown(false)
-                      }}
-                    >
-                      <div
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: service.color }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {service.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {service.durationMin} minutes • Code: {service.code}
-                        </p>
-                      </div>
-                      {formData.serviceId === service.id && (
-                        <Check className="w-4 h-4 text-[#037ECC]" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {errors.service && (
-                <p className="text-xs text-red-500 mt-1">{errors.service}</p>
-              )}
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+
+          {/* ── Section 1: Event Type ─────────────────── */}
+          <div className="space-y-2">
+            <SectionHeader icon={FileText} label="Event Type" />
+            <div className="flex gap-2">
+              {EVENT_TYPES.map((et) => {
+                const isSelected = formData.eventType === et.value
+                return (
+                  <button
+                    key={et.value}
+                    type="button"
+                    className={cn(
+                      "flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200",
+                      isSelected
+                        ? "bg-[#037ECC]/10 border-[#037ECC] text-[#037ECC]"
+                        : "border-gray-200 text-gray-600 hover:bg-gray-50",
+                    )}
+                    onClick={() => updateField("eventType", et.value)}
+                  >
+                    {et.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
-          
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-[#037ECC]" />
-              Date, Time & Location
-            </h3>
-            
+
+          {/* ── Section 2: Client ─────────────────────── */}
+          <div className="space-y-2">
+            <SectionHeader icon={User} label="Client" />
+            <FloatingSelect
+              label="Client"
+              value={formData.clientId}
+              onChange={(v) => updateField("clientId", v)}
+              options={clientOptions}
+              hasError={!!errors.clientId}
+              required
+              searchable
+            />
+            {errors.clientId && (
+              <p className="text-xs text-red-500 mt-1">{errors.clientId}</p>
+            )}
+          </div>
+
+          {/* ── Section 3: Place of Service ───────────── */}
+          <div className="space-y-2">
+            <SectionHeader icon={MapPin} label="Place of Service" />
+            <FloatingSelect
+              label="Place of Service"
+              value={formData.placeOfServiceAddressId}
+              onChange={(v) => updateField("placeOfServiceAddressId", v)}
+              options={addressOptions}
+              hasError={!!errors.placeOfServiceAddressId}
+              required
+              disabled={!formData.clientId || addressesLoading}
+            />
+            {!formData.clientId && (
+              <p className="text-xs text-gray-400 italic">Select a client first</p>
+            )}
+            {errors.placeOfServiceAddressId && (
+              <p className="text-xs text-red-500 mt-1">{errors.placeOfServiceAddressId}</p>
+            )}
+          </div>
+
+          {/* ── Section 4: Date & Time ────────────────── */}
+          <div className="space-y-3">
+            <SectionHeader icon={CalendarIcon} label="Date & Time" />
+
+            <PremiumDatePicker
+              label="Date"
+              value={formData.date}
+              onChange={(v) => updateField("date", v)}
+              onClear={() => updateField("date", "")}
+              hasError={!!errors.date}
+              errorMessage={errors.date}
+              required
+            />
+
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                  Date <span className="text-[#037ECC]">*</span>
-                </label>
-                <input
-                  type="date"
-                  className={cn(
-                    "w-full h-11 px-4 rounded-xl",
-                    "border border-gray-200 bg-white",
-                    "text-sm text-gray-900",
-                    "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]",
-                    errors.date && "border-red-300",
-                  )}
-                  value={formData.date}
-                  onChange={(e) => updateField("date", e.target.value)}
+                <FloatingTimePicker
+                  label="Start Time"
+                  value={formData.startTime}
+                  onChange={(v) => updateField("startTime", v)}
+                  hasError={!!errors.startTime}
+                  required
+                  allowManualInput
                 />
-                {errors.date && (
-                  <p className="text-xs text-red-500 mt-1">{errors.date}</p>
+                {errors.startTime && (
+                  <p className="text-xs text-red-500 mt-1">{errors.startTime}</p>
                 )}
               </div>
-              
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                  Time <span className="text-[#037ECC]">*</span>
-                </label>
-                <input
-                  type="time"
-                  className={cn(
-                    "w-full h-11 px-4 rounded-xl",
-                    "border border-gray-200 bg-white",
-                    "text-sm text-gray-900",
-                    "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]",
-                    errors.time && "border-red-300",
-                  )}
-                  value={formData.time}
-                  onChange={(e) => updateField("time", e.target.value)}
+                <FloatingTimePicker
+                  label="End Time"
+                  value={formData.endTime}
+                  onChange={(v) => updateField("endTime", v)}
+                  hasError={!!errors.endTime}
+                  required
+                  allowManualInput
                 />
-                {errors.time && (
-                  <p className="text-xs text-red-500 mt-1">{errors.time}</p>
+                {errors.endTime && (
+                  <p className="text-xs text-red-500 mt-1">{errors.endTime}</p>
                 )}
               </div>
             </div>
-            
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                Location <span className="text-[#037ECC]">*</span>
-              </label>
-              <div className="flex gap-2">
-                {LOCATIONS.map((loc) => {
-                  const Icon = loc.icon
-                  const isSelected = formData.location === loc.value
-                  
-                  return (
-                    <button
-                      key={loc.value}
-                      type="button"
-                      className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl",
-                        "border text-sm font-medium",
-                        "transition-all duration-200",
-                        isSelected
-                          ? "bg-[#037ECC]/10 border-[#037ECC] text-[#037ECC]"
-                          : "border-gray-200 text-gray-600 hover:bg-gray-50",
-                      )}
-                      onClick={() => updateField("location", loc.value)}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="hidden sm:inline">{loc.label}</span>
-                    </button>
-                  )
-                })}
+
+            {/* Duration & Units — read-only display */}
+            {durationMinutes > 0 && (
+              <div className="flex items-center gap-4 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm text-slate-600">
+                    Duration: <span className="font-semibold text-slate-800">{formatDuration(durationMinutes)}</span>
+                  </span>
+                </div>
+                <div className="w-px h-4 bg-slate-300" />
+                <span className="text-sm text-slate-600">
+                  Units: <span className="font-semibold text-[#037ECC]">{billableUnits}</span>
+                </span>
               </div>
-            </div>
+            )}
           </div>
-          
+
+          {/* ── Section 5: Billing Codes ──────────────── */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#037ECC]" />
-              Notes (optional)
-            </h3>
+            <SectionHeader icon={Receipt} label="Billing Codes" />
+            <MultiSelect
+              label="Billing Codes"
+              value={formData.billingCodeIds}
+              onChange={(v) => updateField("billingCodeIds", v)}
+              options={billingCodeOptions}
+              hasError={!!errors.billingCodeIds}
+              required
+              disabled={!formData.clientId}
+            />
+            {errors.billingCodeIds && (
+              <p className="text-xs text-red-500 mt-1">{errors.billingCodeIds}</p>
+            )}
+          </div>
+
+          {/* ── Section 6: Supervision (non-RBT only) ── */}
+          {!isRbt && (
+            <div className="space-y-3">
+              <SectionHeader icon={Users} label="Supervision" />
+
+              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <span className="text-sm font-medium text-slate-700">Add Supervision</span>
+                <SwitchPrimitives.Root
+                  checked={formData.addSupervision}
+                  onCheckedChange={(v) => updateField("addSupervision", v)}
+                  className={cn(
+                    "inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors shadow-sm",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+                    formData.addSupervision ? "bg-[#037ECC]" : "bg-gray-200",
+                  )}
+                >
+                  <SwitchPrimitives.Thumb className="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+                </SwitchPrimitives.Root>
+              </label>
+
+              {formData.addSupervision && (
+                <div className="space-y-3 pl-1 border-l-2 border-[#037ECC]/20 ml-1">
+                  <div className="pl-3">
+                    <FloatingSelect
+                      label="RBT (Provider being supervised)"
+                      value={formData.supervisionRbtId}
+                      onChange={(v) => updateField("supervisionRbtId", v)}
+                      options={rbtOptions}
+                      hasError={!!errors.supervisionRbtId}
+                      required
+                      searchable
+                    />
+                    {errors.supervisionRbtId && (
+                      <p className="text-xs text-red-500 mt-1">{errors.supervisionRbtId}</p>
+                    )}
+                  </div>
+                  <div className="pl-3">
+                    <MultiSelect
+                      label="Supervision Billing Codes"
+                      value={formData.supervisionBillingCodeIds}
+                      onChange={(v) => updateField("supervisionBillingCodeIds", v)}
+                      options={supervisionCodeOptions}
+                      hasError={!!errors.supervisionBillingCodeIds}
+                      required
+                    />
+                    {errors.supervisionBillingCodeIds && (
+                      <p className="text-xs text-red-500 mt-1">{errors.supervisionBillingCodeIds}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Section 7: Caregiver Signature ────────── */}
+          <div className="space-y-2">
+            <SectionHeader icon={ShieldCheck} label="Caregiver Signature" />
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <div>
+                <span className="text-sm font-medium text-slate-700">Capture signature</span>
+                <p className="text-xs text-slate-400">Only available within 48h after appointment ends</p>
+              </div>
+              <SwitchPrimitives.Root
+                checked={formData.requiresCaregiverSignature}
+                onCheckedChange={(v) => updateField("requiresCaregiverSignature", v)}
+                className={cn(
+                  "inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors shadow-sm",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+                  formData.requiresCaregiverSignature ? "bg-[#037ECC]" : "bg-gray-200",
+                )}
+              >
+                <SwitchPrimitives.Thumb className="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+              </SwitchPrimitives.Root>
+            </label>
+          </div>
+
+          {/* ── Section 8: Notes ──────────────────────── */}
+          <div className="space-y-2">
+            <SectionHeader icon={FileText} label="Notes" optional />
             <textarea
               placeholder="Add any relevant notes about this session..."
               className={cn(
@@ -365,28 +352,88 @@ export function AppointmentModal({
               rows={3}
             />
           </div>
-          
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            {isEditing ? (
+        </form>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 space-y-3">
+          {/* Status actions — only when editing an active appointment */}
+          {isEditing && appointment && onStatusChange &&
+            (appointment.status === "Scheduled" || appointment.status === "InProgress") && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="primary"
+                className="flex-1 h-9 gap-1.5 text-sm"
+                onClick={() => {
+                  alert.confirm({
+                    title: "Complete Appointment",
+                    description: "Mark this appointment as completed? The session note will be activated.",
+                    confirmText: "Complete",
+                    cancelText: "Go Back",
+                    onConfirm: async () => {
+                      onStatusChange(appointment.id, "Completed")
+                      onClose()
+                    },
+                  })
+                }}
+              >
+                <CheckCircle className="w-4 h-4" />
+                Complete
+              </Button>
               <Button
                 type="button"
                 variant="danger"
-                onClick={handleDelete}
-                className="h-10"
+                className="flex-1 h-9 gap-1.5 text-sm"
+                onClick={() => {
+                  alert.confirm({
+                    title: "Cancel Appointment",
+                    description: "Cancel this appointment? The session note will not be activated.",
+                    confirmText: "Cancel Appointment",
+                    cancelText: "Go Back",
+                    onConfirm: async () => {
+                      onStatusChange(appointment.id, "Cancelled")
+                      onClose()
+                    },
+                  })
+                }}
               >
+                <XCircle className="w-4 h-4" />
+                Cancel Apt.
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1 h-9 gap-1.5 text-sm"
+                onClick={() => {
+                  alert.confirm({
+                    title: "Mark as No Show",
+                    description: "The client did not attend. A No Show note may be generated per company policy.",
+                    confirmText: "Mark No Show",
+                    cancelText: "Go Back",
+                    onConfirm: async () => {
+                      onStatusChange(appointment.id, "NoShow")
+                      onClose()
+                    },
+                  })
+                }}
+              >
+                <UserX className="w-4 h-4" />
+                No Show
+              </Button>
+            </div>
+          )}
+
+          {/* Main actions */}
+          <div className="flex items-center justify-between">
+            {isEditing ? (
+              <Button type="button" variant="danger" onClick={handleDelete} className="h-10">
                 Delete
               </Button>
             ) : (
               <div />
             )}
-            
             <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onClose}
-                className="h-10"
-              >
+              <Button type="button" variant="secondary" onClick={onClose} className="h-10">
                 Cancel
               </Button>
               <Button
@@ -394,13 +441,36 @@ export function AppointmentModal({
                 variant="primary"
                 loading={isSubmitting}
                 className="h-10"
+                onClick={handleSubmit}
               >
                 {isEditing ? "Update" : "Create"} Appointment
               </Button>
             </div>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ============================================
+// Section header helper
+// ============================================
+
+function SectionHeader({
+  icon: Icon,
+  label,
+  optional,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  optional?: boolean
+}) {
+  return (
+    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+      <Icon className="w-4 h-4 text-[#037ECC]" />
+      {label}
+      {optional && <span className="text-xs font-normal text-gray-400">(optional)</span>}
+    </h3>
   )
 }

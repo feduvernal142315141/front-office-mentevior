@@ -6,32 +6,36 @@
 /**
  * Possible status values for an appointment
  */
-export type AppointmentStatus = 
-  | "Scheduled" 
-  | "InProgress" 
-  | "Completed" 
+export type AppointmentStatus =
+  | "Scheduled"
+  | "InProgress"
+  | "Completed"
   | "Cancelled"
   | "NoShow"
 
 /**
- * Location where the appointment takes place
+ * Event type determines the clinical context and available billing codes
  */
-export type AppointmentLocation = 
-  | "Clinic" 
-  | "Home" 
+export type EventType = "session_note" | "service_plan" | "supervision"
+
+/**
+ * @deprecated Use place-of-service from client addresses instead
+ */
+export type AppointmentLocation =
+  | "Clinic"
+  | "Home"
   | "School"
   | "Telehealth"
 
 /**
  * Core appointment entity
- * Represents a scheduled session between an RBT and a client
  */
 export interface Appointment {
   id: string
-  rbtId: string                    // RBT assigned to this appointment
-  clientId: string                 // Client receiving the service
-  serviceId: string                // Type of service being provided
-  bcbaId?: string                  // Optional supervising BCBA
+  rbtId: string
+  clientId: string
+  serviceId: string
+  bcbaId?: string
   location: AppointmentLocation
   startsAt: string                 // ISO 8601 datetime
   endsAt: string                   // ISO 8601 datetime
@@ -39,6 +43,15 @@ export interface Appointment {
   notes?: string
   createdAt?: string
   updatedAt?: string
+
+  // Phase 1 — new optional fields (backward compatible)
+  eventType?: EventType
+  placeOfServiceAddressId?: string
+  billingCodeIds?: string[]
+  addSupervision?: boolean
+  supervisionRbtId?: string
+  supervisionBillingCodeIds?: string[]
+  requiresCaregiverSignature?: boolean
 }
 
 /**
@@ -75,9 +88,9 @@ export interface UpdateAppointmentDto {
 export interface ScheduleService {
   id: string
   name: string
-  code: string                     // Billing code (e.g., "97153")
-  durationMin: number              // Default duration in minutes
-  color: string                    // Hex color for UI display
+  code: string
+  durationMin: number
+  color: string
   description?: string
 }
 
@@ -87,7 +100,7 @@ export interface ScheduleService {
 export interface ScheduleClient {
   id: string
   fullName: string
-  code: string                     // Internal client code
+  code: string
   dateOfBirth?: string
   guardianName?: string
   guardianPhone?: string
@@ -131,15 +144,20 @@ export interface AppointmentFilters {
 }
 
 /**
- * Form data structure for appointment modal
+ * Form data for the appointment creation/edit modal
  */
 export interface AppointmentFormData {
+  eventType: EventType
   clientId: string
-  serviceId: string
-  bcbaId: string
-  location: AppointmentLocation
+  placeOfServiceAddressId: string
   date: string                     // YYYY-MM-DD
-  time: string                     // HH:mm
+  startTime: string                // HH:mm (24h)
+  endTime: string                  // HH:mm (24h)
+  billingCodeIds: string[]
+  addSupervision: boolean
+  supervisionRbtId: string
+  supervisionBillingCodeIds: string[]
+  requiresCaregiverSignature: boolean
   notes: string
 }
 
@@ -158,4 +176,16 @@ export interface ContextMenuState {
   x: number
   y: number
   appointmentId: string
+}
+
+/**
+ * Mock billing code item for scheduling context
+ */
+export interface ScheduleBillingCode {
+  id: string
+  type: string                     // "CPT"
+  code: string                     // "97153"
+  modifier?: string                // "XP", "TS"
+  description: string
+  label: string                    // Formatted display: "CPT 97153 (XP)"
 }

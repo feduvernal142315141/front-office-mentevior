@@ -452,6 +452,7 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
         defaultDate={modalDefaults.date}
         defaultTime={modalDefaults.time}
         rbtId={rbtId}
+        onStatusChange={actions.handleStatusChange}
       />
       
       <DuplicateAppointmentModal
