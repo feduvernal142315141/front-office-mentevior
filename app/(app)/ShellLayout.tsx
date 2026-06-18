@@ -1,6 +1,7 @@
 "use client"
 
 import { Sidebar } from "@/components/layout/Sidebar"
+import { SectionCompletionSync } from "@/components/layout/SectionCompletionSync"
 import { Topbar } from "@/components/layout/Topbar"
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute"
 import { cn } from "@/lib/utils"
@@ -15,6 +16,7 @@ export default function ShellLayout({
 
   return (
     <div className="h-screen bg-background overflow-hidden">
+      <SectionCompletionSync />
       <Sidebar />
 
       <div

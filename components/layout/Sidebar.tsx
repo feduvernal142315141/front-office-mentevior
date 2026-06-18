@@ -280,6 +280,17 @@ export function Sidebar() {
                               )}
                             </div>
 
+                            {!sidebarCollapsed && showParentBadge && parentCompletion && (
+                              <SidebarStatusIndicator
+                                isComplete={isParentComplete}
+                                isActive={!!(isActive || isChildActive)}
+                                isCollapsed={false}
+                                variant="parent"
+                                missingCount={parentCompletion.missing}
+                                totalCount={parentCompletion.total}
+                              />
+                            )}
+
                             <AnimatePresence>
                               {!sidebarCollapsed && (
                                 <motion.span
@@ -293,17 +304,6 @@ export function Sidebar() {
                                 </motion.span>
                               )}
                             </AnimatePresence>
-
-                            {!sidebarCollapsed && showParentBadge && parentCompletion && (
-                              <SidebarStatusIndicator
-                                isComplete={isParentComplete}
-                                isActive={!!(isActive || isChildActive)}
-                                isCollapsed={false}
-                                variant="parent"
-                                missingCount={parentCompletion.missing}
-                                totalCount={parentCompletion.total}
-                              />
-                            )}
 
                             {!sidebarCollapsed && hasChildren && (
                               <button

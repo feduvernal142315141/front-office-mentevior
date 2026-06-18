@@ -11,6 +11,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import type { UpdateAccountProfileDto } from "@/lib/types/account-profile.types"
 import { updateAccountProfile } from "../services/account-profile.service"
+import { invalidateSectionCompletion } from "@/lib/modules/section-completion/utils/invalidate-section-completion"
 
 interface UseUpdateAccountProfileReturn {
   update: (data: UpdateAccountProfileDto) => Promise<boolean | null>
@@ -34,6 +35,7 @@ export function useUpdateAccountProfile(): UseUpdateAccountProfileReturn {
         description: `${data.legalName} information has been updated and synced with BO.`,
       })
 
+      invalidateSectionCompletion()
       return result
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error("Failed to update account profile")

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { toast } from "@/lib/compat/sonner"
 import type { AppointmentConfig, UpsertAppointmentConfigDto } from "@/lib/types/appointment-config.types"
 import { upsertAppointmentConfig } from "../services/appointment-config.service"
+import { invalidateSectionCompletion } from "@/lib/modules/section-completion/utils/invalidate-section-completion"
 
 interface UseUpsertAppointmentConfigReturn {
   upsert: (data: UpsertAppointmentConfigDto) => Promise<AppointmentConfig | null>
@@ -18,6 +19,7 @@ export function useUpsertAppointmentConfig(): UseUpsertAppointmentConfigReturn {
       setIsLoading(true)
       const result = await upsertAppointmentConfig(data)
       toast.success("Appointment configuration saved successfully")
+      invalidateSectionCompletion()
       return result
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save appointment configuration"

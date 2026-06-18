@@ -4,12 +4,15 @@ import type { SectionCompletionMap } from "@/lib/types/section-completion.types"
 const API_KEY_TO_HREF: Record<string, string> = {
   service: "/my-company/services",
   servicePlan: "/my-company/service-plans",
+  appointment: "/my-company/appointment",
   billingCode: "/my-company/billing",
   credentials: "/my-company/credentials",
   physician: "/my-company/physicians",
   payers: "/my-company/billing",
   clinicalDocument: "/my-company/documents",
   hrDocument: "/my-company/documents",
+  accountProfile: "/my-company/account-profile",
+  address: "/my-company/address",
 }
 
 export async function getSectionCompletion(): Promise<SectionCompletionMap> {

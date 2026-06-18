@@ -4,6 +4,7 @@ import { useState } from "react"
 import { toast } from "@/lib/compat/sonner"
 import type { SupervisionConfig, UpsertSupervisionConfigDto } from "@/lib/types/supervision-config.types"
 import { upsertSupervisionConfig } from "../services/supervision-config.service"
+import { invalidateSectionCompletion } from "@/lib/modules/section-completion/utils/invalidate-section-completion"
 
 interface UseUpsertSupervisionConfigReturn {
   upsert: (data: UpsertSupervisionConfigDto) => Promise<SupervisionConfig | null>
@@ -18,6 +19,7 @@ export function useUpsertSupervisionConfig(): UseUpsertSupervisionConfigReturn {
       setIsLoading(true)
       const result = await upsertSupervisionConfig(data)
       toast.success("Supervision configuration saved successfully")
+      invalidateSectionCompletion()
       return result
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save supervision configuration"

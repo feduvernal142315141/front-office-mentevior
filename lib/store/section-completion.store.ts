@@ -4,13 +4,18 @@ import { getSectionCompletion } from "@/lib/modules/section-completion/services/
 
 const CACHE_DURATION_MS = 5 * 60 * 1000
 
+interface FetchCompletionOptions {
+  /** Bypass the in-memory cache and always hit the API */
+  force?: boolean
+}
+
 interface SectionCompletionState {
   completionMap: SectionCompletionMap
   isLoading: boolean
   error: Error | null
   lastFetchedAt: number | null
 
-  fetchCompletion: () => Promise<void>
+  fetchCompletion: (options?: FetchCompletionOptions) => Promise<void>
   invalidate: () => void
   isSectionComplete: (key: string) => boolean
   getMissingCount: (childKeys: string[]) => { complete: number; total: number; missing: number }
@@ -22,12 +27,14 @@ export const useSectionCompletionStore = create<SectionCompletionState>((set, ge
   error: null,
   lastFetchedAt: null,
 
-  fetchCompletion: async () => {
+  fetchCompletion: async (options) => {
     const { lastFetchedAt, isLoading } = get()
 
     if (isLoading) return
 
-    if (lastFetchedAt && Date.now() - lastFetchedAt < CACHE_DURATION_MS) return
+    if (!options?.force && lastFetchedAt && Date.now() - lastFetchedAt < CACHE_DURATION_MS) {
+      return
+    }
 
     try {
       set({ isLoading: true, error: null })
