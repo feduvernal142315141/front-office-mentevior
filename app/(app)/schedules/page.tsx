@@ -2,15 +2,12 @@
 
 import { CalendarCheck } from "lucide-react"
 import { WeekCalendar } from "./components"
-// TODO: Replace mock ID with useAuth().user.id when backend is ready
-// import { useAuth } from "@/lib/hooks/use-auth"
-
+import { useAuth } from "@/lib/hooks/use-auth"
 
 export default function SchedulesPage() {
-  // const { user } = useAuth()
-  // const currentUserId = user?.id || ""
-  const currentUserId = "rbt-001" // Mock user for development
-  
+  const { user } = useAuth()
+  const currentUserId = user?.id ?? ""
+
   return (
     <div className="p-4 md:p-8">
       <div className="max-w-[1600px] mx-auto">

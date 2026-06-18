@@ -247,7 +247,7 @@ export function Sidebar() {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             className={cn(
-                              "relative h-12 rounded-xl flex items-center justify-between gap-3 transition-all duration-200",
+                              "relative h-12 rounded-xl flex items-center gap-3 transition-all duration-200",
                               sidebarCollapsed ? "justify-center px-2" : "px-4",
                               isActive || isChildActive
                                 ? "bg-gradient-to-r from-[#037ECC] to-[#079CFB] text-white shadow-[0_8px_24px_rgba(3,126,204,0.4)]"
@@ -287,7 +287,7 @@ export function Sidebar() {
                                   animate={{ opacity: 1, x: 0 }}
                                   exit={{ opacity: 0, x: -6 }}
                                   transition={{ duration: 0.15 }}
-                                  className="text-sm font-semibold flex-1 min-w-0 pr-10 text-left whitespace-nowrap"
+                                  className="text-sm font-semibold flex-1 min-w-0 truncate text-left"
                                 >
                                   {item.label}
                                 </motion.span>
@@ -295,16 +295,14 @@ export function Sidebar() {
                             </AnimatePresence>
 
                             {!sidebarCollapsed && showParentBadge && parentCompletion && (
-                              <div className="absolute right-10 top-1/2 -translate-y-1/2 z-[5]">
-                                <SidebarStatusIndicator
-                                  isComplete={isParentComplete}
-                                  isActive={!!(isActive || isChildActive)}
-                                  isCollapsed={false}
-                                  variant="parent"
-                                  missingCount={parentCompletion.missing}
-                                  totalCount={parentCompletion.total}
-                                />
-                              </div>
+                              <SidebarStatusIndicator
+                                isComplete={isParentComplete}
+                                isActive={!!(isActive || isChildActive)}
+                                isCollapsed={false}
+                                variant="parent"
+                                missingCount={parentCompletion.missing}
+                                totalCount={parentCompletion.total}
+                              />
                             )}
 
                             {!sidebarCollapsed && hasChildren && (
@@ -314,7 +312,7 @@ export function Sidebar() {
                                   e.stopPropagation()
                                   toggleExpanded(item.href)
                                 }}
-                                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 shrink-0 p-1.5 text-current hover:bg-white/10 rounded transition-colors"
+                                className="shrink-0 p-1.5 text-current hover:bg-white/10 rounded transition-colors"
                               >
                                 <motion.div
                                   animate={{ rotate: isExpanded ? 180 : 0 }}
@@ -390,7 +388,7 @@ export function Sidebar() {
                                   animate={{ opacity: 1, x: 0 }}
                                   exit={{ opacity: 0, x: -6 }}
                                   transition={{ duration: 0.15 }}
-                                  className="text-sm font-semibold tracking-wide whitespace-nowrap"
+                                  className="text-sm font-semibold flex-1 min-w-0 truncate tracking-wide text-left"
                                 >
                                   {item.label}
                                 </motion.span>
@@ -398,7 +396,7 @@ export function Sidebar() {
                             </AnimatePresence>
 
                             {itemHasData && !sidebarCollapsed && (
-                              <div className="ml-auto">
+                              <div className="shrink-0">
                                 <SidebarStatusIndicator
                                   isComplete={itemComplete}
                                   isActive={isActive}

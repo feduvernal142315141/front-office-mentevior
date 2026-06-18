@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/custom/Button"
 import { Calendar, Clock, MapPin, Briefcase } from "lucide-react"
 import type { Appointment } from "@/lib/types/appointment.types"
-import { getMockClientById, getMockServiceById } from "@/lib/modules/schedules/mocks"
+import { getEventTypeLabel } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { format, parseISO, setHours, setMinutes, differenceInMinutes, addMinutes } from "date-fns"
@@ -42,8 +42,8 @@ export function DuplicateAppointmentModal({
   
   if (!appointment) return null
   
-  const client = getMockClientById(appointment.clientId)
-  const service = getMockServiceById(appointment.serviceId)
+  const eventLabel =
+    appointment.billingCodeName ?? getEventTypeLabel(appointment.eventType)
   const originalStart = parseISO(appointment.startsAt)
   
   const handleDuplicate = () => {
@@ -133,7 +133,7 @@ export function DuplicateAppointmentModal({
               <div>
                 <p className="text-xs text-gray-500">Client</p>
                 <p className="text-sm font-medium text-gray-900">
-                  {client?.fullName}
+                  {appointment.clientName ?? "Unknown Client"}
                 </p>
               </div>
             </div>
@@ -143,7 +143,7 @@ export function DuplicateAppointmentModal({
               <div>
                 <p className="text-xs text-gray-500">Service</p>
                 <p className="text-sm font-medium text-gray-900">
-                  {service?.name}
+                  {eventLabel}
                 </p>
               </div>
             </div>

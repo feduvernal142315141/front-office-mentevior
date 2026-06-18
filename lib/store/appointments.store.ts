@@ -4,7 +4,6 @@ import type {
   AppointmentStatus,
   UpdateAppointmentDto 
 } from "@/lib/types/appointment.types"
-import { MOCK_APPOINTMENTS } from "@/lib/modules/schedules/mocks"
 import { parseISO, areIntervalsOverlapping } from "date-fns"
 
 // ============================================
@@ -23,6 +22,8 @@ interface AppointmentsState {
   // Actions
   setAppointments: (appointments: Appointment[]) => void
   setSelectedAppointment: (appointment: Appointment | null) => void
+  setIsLoading: (isLoading: boolean) => void
+  setError: (error: string | null) => void
   
   // CRUD operations
   addAppointment: (appointment: Appointment) => void
@@ -51,8 +52,7 @@ interface AppointmentsState {
 // ============================================
 
 export const useAppointments = create<AppointmentsState>((set, get) => ({
-  // Initial state - load from mocks
-  appointments: MOCK_APPOINTMENTS,
+  appointments: [],
   selectedAppointment: null,
   isLoading: false,
   error: null,
@@ -60,6 +60,8 @@ export const useAppointments = create<AppointmentsState>((set, get) => ({
   // Setters
   setAppointments: (appointments) => set({ appointments }),
   setSelectedAppointment: (appointment) => set({ selectedAppointment: appointment }),
+  setIsLoading: (isLoading) => set({ isLoading }),
+  setError: (error) => set({ error }),
   
   // ============================================
   // CRUD OPERATIONS

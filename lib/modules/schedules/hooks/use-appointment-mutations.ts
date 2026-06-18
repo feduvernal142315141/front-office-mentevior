@@ -2,38 +2,29 @@
 
 import { useState, useCallback } from "react"
 import { toast } from "@/lib/compat/sonner"
-import type { Appointment, AppointmentStatus, UpdateAppointmentDto } from "@/lib/types/appointment.types"
+import type { AppointmentApiPayload } from "@/lib/types/appointment.types"
 import {
   createAppointment as createAppointmentService,
-  updateAppointment as updateAppointmentService,
+  updateAppointmentApi,
   deleteAppointmentService,
-  updateAppointmentStatus,
 } from "../services/appointments.service"
 
 interface UseAppointmentMutationsReturn {
-  create: (payload: Parameters<typeof createAppointmentService>[0]) => Promise<Appointment | null>
-  update: (id: string, payload: Partial<UpdateAppointmentDto>) => Promise<Appointment | null>
+  create: (payload: AppointmentApiPayload) => Promise<string | null>
+  update: (payload: AppointmentApiPayload & { id: string }) => Promise<string | null>
   remove: (id: string) => Promise<boolean>
-  changeStatus: (id: string, status: AppointmentStatus) => Promise<Appointment | null>
   isLoading: boolean
 }
 
-/**
- * Provides mutation functions for appointments with toast notifications.
- * Each mutation calls the service layer (which tries the real API first,
- * then falls back to returning null on failure).
- */
 export function useAppointmentMutations(): UseAppointmentMutationsReturn {
   const [isLoading, setIsLoading] = useState(false)
 
-  const create = useCallback(async (payload: Parameters<typeof createAppointmentService>[0]) => {
+  const create = useCallback(async (payload: AppointmentApiPayload) => {
     try {
       setIsLoading(true)
-      const result = await createAppointmentService(payload)
-      if (result) {
-        toast.success("Appointment created successfully")
-      }
-      return result
+      const id = await createAppointmentService(payload)
+      toast.success("Appointment created successfully")
+      return id
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create appointment"
       toast.error(message)
@@ -43,14 +34,12 @@ export function useAppointmentMutations(): UseAppointmentMutationsReturn {
     }
   }, [])
 
-  const update = useCallback(async (id: string, payload: Partial<UpdateAppointmentDto>) => {
+  const update = useCallback(async (payload: AppointmentApiPayload & { id: string }) => {
     try {
       setIsLoading(true)
-      const result = await updateAppointmentService(id, payload)
-      if (result) {
-        toast.success("Appointment updated successfully")
-      }
-      return result
+      const id = await updateAppointmentApi(payload)
+      toast.success("Appointment updated successfully")
+      return id
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update appointment"
       toast.error(message)
@@ -77,22 +66,5 @@ export function useAppointmentMutations(): UseAppointmentMutationsReturn {
     }
   }, [])
 
-  const changeStatus = useCallback(async (id: string, status: AppointmentStatus) => {
-    try {
-      setIsLoading(true)
-      const result = await updateAppointmentStatus(id, status)
-      if (result) {
-        toast.success(`Appointment marked as ${status}`)
-      }
-      return result
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to update status"
-      toast.error(message)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  return { create, update, remove, changeStatus, isLoading }
+  return { create, update, remove, isLoading }
 }

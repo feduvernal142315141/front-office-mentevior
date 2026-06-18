@@ -1,150 +1,142 @@
 import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
-import type { Appointment, AppointmentStatus, UpdateAppointmentDto } from "@/lib/types/appointment.types"
-import { MOCK_APPOINTMENTS } from "@/lib/modules/schedules/mocks"
+import { getApiErrorMessage } from "@/lib/utils/api-error-message"
+import type {
+  ApiAppointmentItem,
+  Appointment,
+  AppointmentApiPayload,
+  AppointmentListQuery,
+  AppointmentStatus,
+} from "@/lib/types/appointment.types"
+import type { PaginatedResponse } from "@/lib/types/response.types"
+import { fromApiAppointment } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 
-// ============================================
-// Types
-// ============================================
+function parseAppointmentList(data: unknown): Appointment[] {
+  if (Array.isArray(data)) {
+    return data.map((item) => fromApiAppointment(item as ApiAppointmentItem))
+  }
 
-interface AppointmentFiltersQuery {
-  userId?: string
-  dateFrom?: string
-  dateTo?: string
-}
-
-interface CreateAppointmentPayload {
-  clientId: string
-  eventType?: string
-  placeOfServiceAddressId?: string
-  startsAt: string
-  endsAt: string
-  billingCodeIds?: string[]
-  addSupervision?: boolean
-  supervisionRbtId?: string
-  supervisionBillingCodeIds?: string[]
-  requiresCaregiverSignature?: boolean
-  notes?: string
-}
-
-// ============================================
-// Service functions
-// ============================================
-
-/**
- * Fetch appointments with optional filters.
- * Falls back to mock data when the API is not available.
- */
-export async function getAppointments(filters: AppointmentFiltersQuery): Promise<Appointment[]> {
-  try {
-    const params = new URLSearchParams()
-    if (filters.userId) params.set("userId", filters.userId)
-    if (filters.dateFrom) params.set("dateFrom", filters.dateFrom)
-    if (filters.dateTo) params.set("dateTo", filters.dateTo)
-
-    const qs = params.toString()
-    const url = `/appointments${qs ? `?${qs}` : ""}`
-    const response = await serviceGet<Appointment[]>(url)
-
-    if (response.status === 200 && response.data) {
-      return response.data as unknown as Appointment[]
+  if (data && typeof data === "object") {
+    const paginated = data as PaginatedResponse<ApiAppointmentItem>
+    if (Array.isArray(paginated.entities)) {
+      return paginated.entities.map(fromApiAppointment)
     }
 
-    // Fallback to mocks
-    return filterMockAppointments(filters)
-  } catch {
-    return filterMockAppointments(filters)
+    const wrapped = data as { data?: unknown; entities?: unknown }
+    if (Array.isArray(wrapped.entities)) {
+      return (wrapped.entities as ApiAppointmentItem[]).map(fromApiAppointment)
+    }
+    if (Array.isArray(wrapped.data)) {
+      return (wrapped.data as ApiAppointmentItem[]).map(fromApiAppointment)
+    }
   }
+
+  return []
 }
 
 /**
- * Fetch a single appointment by ID.
+ * Fetch appointments for a provider within a date range via GET /appointment.
+ */
+export async function getAppointments(filters: AppointmentListQuery): Promise<Appointment[]> {
+  const params = new URLSearchParams()
+  if (filters.providerId) params.set("providerId", filters.providerId)
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom)
+  if (filters.dateTo) params.set("dateTo", filters.dateTo)
+
+  const qs = params.toString()
+  const url = `/appointment${qs ? `?${qs}` : ""}`
+  const response = await serviceGet<ApiAppointmentItem[] | PaginatedResponse<ApiAppointmentItem>>(url)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to fetch appointments"))
+  }
+
+  return parseAppointmentList(response.data)
+}
+
+/**
+ * Fetch a single appointment by ID via GET /appointment/{id}.
  */
 export async function getAppointmentById(id: string): Promise<Appointment | null> {
-  try {
-    const response = await serviceGet<Appointment>(`/appointments/${id}`)
+  const response = await serviceGet<ApiAppointmentItem>(`/appointment/${id}`)
 
-    if (response.status === 200 && response.data) {
-      return response.data as unknown as Appointment
-    }
-
-    return MOCK_APPOINTMENTS.find((a) => a.id === id) ?? null
-  } catch {
-    return MOCK_APPOINTMENTS.find((a) => a.id === id) ?? null
+  if (response.status !== 200 || !response.data) {
+    return null
   }
+
+  return fromApiAppointment(response.data as unknown as ApiAppointmentItem)
 }
 
 /**
- * Create a new appointment.
+ * Create a new appointment via POST /appointment.
+ * Response is the created appointment UUID string.
  */
-export async function createAppointment(payload: CreateAppointmentPayload): Promise<Appointment | null> {
-  try {
-    const response = await servicePost<CreateAppointmentPayload, Appointment>("/appointments", payload)
+export async function createAppointment(payload: AppointmentApiPayload): Promise<string> {
+  const response = await servicePost<AppointmentApiPayload, string>("/appointment", payload)
 
-    if ((response.status === 200 || response.status === 201) && response.data) {
-      return response.data as unknown as Appointment
-    }
-
-    return null
-  } catch {
-    return null
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to create appointment"))
   }
+
+  const data = response.data as unknown
+  if (typeof data === "string") return data
+  if (data && typeof data === "object" && "data" in (data as object)) {
+    const inner = (data as { data?: unknown }).data
+    if (typeof inner === "string") return inner
+  }
+
+  throw new Error("Invalid response from appointment create")
 }
 
 /**
- * Update an existing appointment.
+ * Update an existing appointment via PUT /appointment.
  */
-export async function updateAppointment(
-  id: string,
-  payload: Partial<UpdateAppointmentDto>,
-): Promise<Appointment | null> {
-  try {
-    const response = await servicePut<{ id: string } & Partial<UpdateAppointmentDto>, Appointment>(
-      `/appointments/${id}`,
-      { id, ...payload },
-    )
+export async function updateAppointmentApi(
+  payload: AppointmentApiPayload & { id: string },
+): Promise<string> {
+  const response = await servicePut<AppointmentApiPayload & { id: string }, string>(
+    "/appointment",
+    payload,
+  )
 
-    if (response.status === 200 && response.data) {
-      return response.data as unknown as Appointment
-    }
-
-    return null
-  } catch {
-    return null
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to update appointment"))
   }
+
+  const data = response.data as unknown
+  if (typeof data === "string") return data
+  if (data && typeof data === "object" && "data" in (data as object)) {
+    const inner = (data as { data?: unknown }).data
+    if (typeof inner === "string") return inner
+  }
+
+  return payload.id
 }
 
 /**
- * Delete an appointment.
+ * Delete an appointment via DELETE /appointment/{id}.
  */
 export async function deleteAppointmentService(id: string): Promise<boolean> {
-  try {
-    const response = await serviceDelete(`/appointments/${id}`)
-    return response.status === 200 || response.status === 204
-  } catch {
-    return false
-  }
+  const response = await serviceDelete(`/appointment/${id}`)
+  return response.status === 200 || response.status === 204
 }
 
 /**
- * Update appointment status.
+ * Update appointment status (calendar UI — endpoint TBD).
  */
 export async function updateAppointmentStatus(
   id: string,
   status: AppointmentStatus,
 ): Promise<Appointment | null> {
-  return updateAppointment(id, { status })
-}
-
-// ============================================
-// Mock fallback helpers
-// ============================================
-
-function filterMockAppointments(filters: AppointmentFiltersQuery): Appointment[] {
-  let results = [...MOCK_APPOINTMENTS]
-
-  if (filters.userId) {
-    results = results.filter((a) => a.rbtId === filters.userId)
+  try {
+    const response = await servicePut<{ id: string; status: AppointmentStatus }, Appointment>(
+      `/appointment/${id}`,
+      { id, status },
+    )
+    if (response.status === 200 && response.data) {
+      return fromApiAppointment(response.data as unknown as ApiAppointmentItem)
+    }
+    return null
+  } catch {
+    return null
   }
-
-  return results
 }

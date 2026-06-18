@@ -25,7 +25,7 @@ import {
   Info,
 } from "lucide-react"
 import type { Appointment, AppointmentStatus } from "@/lib/types/appointment.types"
-import { getMockClientById, getMockServiceById } from "@/lib/modules/schedules/mocks"
+import { getEventTypeLabel } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { calculateDurationMinutes, calculateBillableUnits, formatDuration } from "@/lib/utils/unit-calculation"
 import { cn } from "@/lib/utils"
@@ -87,8 +87,8 @@ export function AppointmentDetailDrawer({
 
   if (!appointment) return null
 
-  const client = getMockClientById(appointment.clientId)
-  const service = getMockServiceById(appointment.serviceId)
+  const eventLabel =
+    appointment.billingCodeName ?? getEventTypeLabel(appointment.eventType)
   const status = STATUS_CONFIG[appointment.status]
   const startTime = parseISO(appointment.startsAt)
   const endTime = parseISO(appointment.endsAt)
@@ -170,8 +170,8 @@ export function AppointmentDetailDrawer({
             {/* Event Info */}
             <DetailSection icon={FileText} title="Event Info">
               <DetailRow label="Event Type" value={EVENT_TYPE_LABELS[appointment.eventType || ""] || "Session Note"} />
-              <DetailRow label="Client" value={client?.fullName || "Unknown"} />
-              {service && <DetailRow label="Service" value={`${service.name} (${service.code})`} />}
+              <DetailRow label="Client" value={appointment.clientName || "Unknown"} />
+              <DetailRow label="Event" value={eventLabel} />
               <DetailRow label="Location" value={appointment.location} />
             </DetailSection>
 

@@ -3,11 +3,16 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Clock, GripVertical, MapPin } from "lucide-react"
-import type { Appointment, AppointmentStatus } from "@/lib/types/appointment.types"
-import { getMockClientById, getMockServiceById } from "@/lib/modules/schedules/mocks"
+import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
+import { getEventTypeLabel } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { formatTime } from "@/lib/date"
 import { cn } from "@/lib/utils"
 
+const EVENT_TYPE_COLORS: Record<EventType, string> = {
+  session_note: "#037ECC",
+  service_plan: "#079CFB",
+  supervision: "#6366f1",
+}
 
 const LOCATION_ICONS: Record<Appointment["location"], string> = {
   Clinic: "🏥",
@@ -24,7 +29,6 @@ const STATUS_STYLES: Record<AppointmentStatus, string> = {
   NoShow: "bg-gray-50 text-gray-700 border-gray-200",
 }
 
-
 interface AppointmentCardProps {
   appointment: Appointment
   onClick?: () => void
@@ -32,16 +36,15 @@ interface AppointmentCardProps {
   isDragOverlay?: boolean
 }
 
-
 export function AppointmentCard({
   appointment,
   onClick,
-  onStatusChange,
   isDragOverlay = false,
 }: AppointmentCardProps) {
-  const client = getMockClientById(appointment.clientId)
-  const service = getMockServiceById(appointment.serviceId)
-  
+  const eventColor = EVENT_TYPE_COLORS[appointment.eventType ?? "session_note"]
+  const eventLabel =
+    appointment.billingCodeName ?? getEventTypeLabel(appointment.eventType)
+
   const {
     attributes,
     listeners,
@@ -50,43 +53,33 @@ export function AppointmentCard({
     transition,
     isDragging,
   } = useSortable({ id: appointment.id })
-  
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    "--service-color": service?.color ?? "#037ECC",
+    "--service-color": eventColor,
   } as React.CSSProperties
-  
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-
         "group relative h-full w-full",
         "bg-white rounded-lg",
         "border-l-[3px] border border-gray-100",
         "shadow-[0_1px_3px_rgba(0,0,0,0.08)]",
         "transition-all duration-200",
         "cursor-pointer overflow-hidden",
-        
-    
         "border-l-[var(--service-color)]",
-        
-  
         "hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]",
         "hover:border-gray-200",
-        
-  
         isDragging && "opacity-50 shadow-2xl scale-105 z-50",
         isDragOverlay && "shadow-2xl scale-105",
-        
-      
         appointment.status === "Cancelled" && "opacity-60",
       )}
       onClick={onClick}
     >
-  
       <div
         {...attributes}
         {...listeners}
@@ -100,19 +93,16 @@ export function AppointmentCard({
       >
         <GripVertical className="h-3 w-3 text-gray-400" />
       </div>
-      
-      <div className="p-2 pl-4 space-y-1">
 
+      <div className="p-2 pl-4 space-y-1">
         <div className="flex items-start justify-between gap-1">
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-xs text-gray-900 truncate">
-              {client?.fullName ?? "Unknown Client"}
+              {appointment.clientName ?? "Unknown Client"}
             </p>
-            <p className="text-[10px] text-gray-600 truncate">
-              {service?.name ?? "Unknown Service"}
-            </p>
+            <p className="text-[10px] text-gray-600 truncate">{eventLabel}</p>
           </div>
-          
+
           <span
             className={cn(
               "text-[9px] px-1.5 py-0.5 rounded-full border flex-shrink-0",
@@ -123,25 +113,31 @@ export function AppointmentCard({
             {appointment.status}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-1 text-[10px] text-gray-600">
           <Clock className="h-3 w-3 text-gray-400" />
           <span className="font-medium">
             {formatTime(appointment.startsAt)} - {formatTime(appointment.endsAt)}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-1 text-[10px] text-gray-600">
           <MapPin className="h-3 w-3 text-gray-400" />
-          <span>
-            {LOCATION_ICONS[appointment.location]} {appointment.location}
+          <span className="truncate">
+            {appointment.addressLabel ? (
+              appointment.addressLabel
+            ) : (
+              <>
+                {LOCATION_ICONS[appointment.location]} {appointment.location}
+              </>
+            )}
           </span>
         </div>
       </div>
-    
+
       <div
         className="absolute bottom-0 left-0 right-0 h-0.5"
-        style={{ backgroundColor: service?.color ?? "#037ECC" }}
+        style={{ backgroundColor: eventColor }}
       />
     </div>
   )

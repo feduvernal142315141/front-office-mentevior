@@ -69,6 +69,7 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
     filterStatus,
     filterLocation,
     filteredAppointments,
+    isLoadingAppointments,
     hoveredSlot,
     clickedSlot,
     isMobile,
@@ -251,7 +252,15 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
         </div>
       )}
       
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+      <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+        {isLoadingAppointments && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-2xl">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#037ECC] border-t-transparent" />
+              Loading appointments...
+            </div>
+          </div>
+        )}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -453,6 +462,7 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
         defaultTime={modalDefaults.time}
         rbtId={rbtId}
         onStatusChange={actions.handleStatusChange}
+        onSaved={actions.handleAppointmentSaved}
       />
       
       <DuplicateAppointmentModal

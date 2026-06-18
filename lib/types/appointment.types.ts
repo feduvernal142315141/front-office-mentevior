@@ -18,6 +18,87 @@ export type AppointmentStatus =
  */
 export type EventType = "session_note" | "service_plan" | "supervision"
 
+/** Backend AppointmentTypeEvent enum values */
+export type AppointmentTypeEvent = "Session Note" | "Service Plan" | "Supervision"
+
+/** Billing code item from config endpoints */
+export interface ConfigBillingCodeItem {
+  id: string
+  name: string
+}
+
+/** POST /appointment/validate-event-data request */
+export interface ValidateEventDataRequest {
+  clientId: string
+  billingCodeId: string
+  startTime: string
+  endTime: string
+  appointmentTypeEvent: AppointmentTypeEvent
+}
+
+/** POST /appointment/validate-event-data response */
+export interface ValidateEventDataResponse {
+  unitsToUse: number
+  approvedPriorAuthorizationBillingCodeId: string
+}
+
+/** Supervision sub-event payload for POST/PUT /appointment */
+export interface AppointmentSupervisionApiPayload {
+  title: string
+  timeInit: string
+  timeEnd: string
+  date: string
+  billingCodeId: string
+  units: number
+  priorAuthorizationId: string
+  providerId: string
+}
+
+/** Item returned by GET /appointment */
+export interface ApiAppointmentItem {
+  id: string
+  clientAddressId?: string
+  clientId?: string
+  clientFullName?: string
+  clientName?: string
+  clientAddressName?: string
+  cantUnit?: number
+  units?: number
+  timeInit?: string
+  timeEnd?: string
+  date?: string
+  billingCodeId?: string
+  billingCodeName?: string
+  typeEvent?: string
+  providerId?: string
+  priorAuthorizationId?: string
+  status?: string
+  supervision?: AppointmentSupervisionApiPayload
+}
+
+/** Query params for GET /appointment */
+export interface AppointmentListQuery {
+  providerId?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
+/** POST /appointment and PUT /appointment request body */
+export interface AppointmentApiPayload {
+  id?: string
+  clientAddressId: string
+  cantUnit: number
+  units: number
+  timeInit: string
+  timeEnd: string
+  date: string
+  billingCodeId: string
+  typeEvent: AppointmentTypeEvent
+  providerId: string
+  priorAuthorizationId: string
+  supervision?: AppointmentSupervisionApiPayload
+}
+
 /**
  * @deprecated Use place-of-service from client addresses instead
  */
@@ -47,7 +128,13 @@ export interface Appointment {
   // Phase 1 — new optional fields (backward compatible)
   eventType?: EventType
   placeOfServiceAddressId?: string
+  billingCodeId?: string
   billingCodeIds?: string[]
+  billingCodeName?: string
+  clientName?: string
+  addressLabel?: string
+  priorAuthorizationId?: string
+  units?: number
   addSupervision?: boolean
   supervisionRbtId?: string
   supervisionBillingCodeIds?: string[]
@@ -150,15 +237,29 @@ export interface AppointmentFormData {
   eventType: EventType
   clientId: string
   placeOfServiceAddressId: string
-  date: string                     // YYYY-MM-DD
-  startTime: string                // HH:mm (24h)
-  endTime: string                  // HH:mm (24h)
-  billingCodeIds: string[]
+  date: string
+  startTime: string
+  endTime: string
+  billingCodeId: string
+  priorAuthorizationId: string
+  validatedUnits: number | null
   addSupervision: boolean
-  supervisionRbtId: string
-  supervisionBillingCodeIds: string[]
-  requiresCaregiverSignature: boolean
-  notes: string
+  supervision: {
+    title: string
+    providerId: string
+    billingCodeId: string
+    date: string
+    startTime: string
+    endTime: string
+    priorAuthorizationId: string
+    validatedUnits: number | null
+  }
+  /** @deprecated kept for calendar store compat when loading existing rows */
+  billingCodeIds?: string[]
+  supervisionRbtId?: string
+  supervisionBillingCodeIds?: string[]
+  requiresCaregiverSignature?: boolean
+  notes?: string
 }
 
 /**

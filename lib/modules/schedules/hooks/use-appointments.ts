@@ -5,7 +5,7 @@ import type { Appointment } from "@/lib/types/appointment.types"
 import { getAppointments } from "../services/appointments.service"
 
 interface UseScheduleAppointmentsProps {
-  userId?: string
+  providerId?: string
   dateFrom?: string
   dateTo?: string
 }
@@ -18,11 +18,10 @@ interface UseScheduleAppointmentsReturn {
 }
 
 /**
- * Fetches appointments for a user within a date range.
- * Falls back to mock data when the API is unavailable.
+ * Fetches appointments for a provider within a date range via GET /appointment.
  */
 export function useScheduleAppointments({
-  userId,
+  providerId,
   dateFrom,
   dateTo,
 }: UseScheduleAppointmentsProps): UseScheduleAppointmentsReturn {
@@ -31,20 +30,27 @@ export function useScheduleAppointments({
   const [error, setError] = useState<Error | null>(null)
 
   const fetchAppointments = useCallback(async () => {
+    if (!providerId) {
+      setAppointments([])
+      setIsLoading(false)
+      return
+    }
+
     try {
       setIsLoading(true)
       setError(null)
-      const data = await getAppointments({ userId, dateFrom, dateTo })
+      const data = await getAppointments({ providerId, dateFrom, dateTo })
       setAppointments(data)
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to fetch appointments"))
+      setAppointments([])
     } finally {
       setIsLoading(false)
     }
-  }, [userId, dateFrom, dateTo])
+  }, [providerId, dateFrom, dateTo])
 
   useEffect(() => {
-    fetchAppointments()
+    void fetchAppointments()
   }, [fetchAppointments])
 
   return {

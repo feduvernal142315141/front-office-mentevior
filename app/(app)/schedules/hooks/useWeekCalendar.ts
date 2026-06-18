@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { 
   format, 
   parseISO, 
@@ -24,11 +24,8 @@ import type {
   ContextMenuState,
 } from "@/lib/types/appointment.types"
 import { useAppointments } from "@/lib/store/appointments.store"
-// TODO: Connect when backend is ready
-// import { useScheduleAppointments } from "@/lib/modules/schedules/hooks/use-appointments"
-// import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
+import { useScheduleAppointments } from "@/lib/modules/schedules/hooks/use-appointments"
 import { getWeekDays, getWeekStart } from "@/lib/date"
-import { getMockClientById } from "@/lib/modules/schedules/mocks"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -59,6 +56,7 @@ interface UseWeekCalendarReturn {
   filterStatus: AppointmentStatus | "all"
   filterLocation: AppointmentLocation | "all"
   filteredAppointments: Appointment[]
+  isLoadingAppointments: boolean
   
   hoveredSlot: string | null
   clickedSlot: string | null
@@ -94,6 +92,7 @@ interface UseWeekCalendarReturn {
     handleDragEnd: (event: DragEndEvent) => void
     
     handleStatusChange: (appointmentId: string, status: AppointmentStatus) => void
+    handleAppointmentSaved: () => void
     getAppointmentPosition: (appointment: Appointment) => AppointmentPosition | null
     hasAppointmentCoveringSlot: (dayIndex: number, hour: number) => boolean
   }
@@ -105,10 +104,13 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
   const alert = useAlert()
   const isMobile = useIsMobile()
 
-  // Store — mock data for now, will be replaced by API hooks when backend is ready
+  // Store — synced from GET /appointment
   const {
     appointments,
     updateAppointment,
+    setAppointments,
+    setIsLoading,
+    setError,
     setSelectedAppointment,
     selectedAppointment,
     checkConflict,
@@ -138,6 +140,31 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
   
  
   const weekDays = useMemo(() => getWeekDays(weekStart), [weekStart])
+  const dateFrom = useMemo(() => format(parseISO(weekStart), "yyyy-MM-dd"), [weekStart])
+  const dateTo = useMemo(() => {
+    const days = getWeekDays(weekStart)
+    return format(days[days.length - 1], "yyyy-MM-dd")
+  }, [weekStart])
+
+  const {
+    appointments: fetchedAppointments,
+    isLoading: isLoadingAppointments,
+    error: fetchError,
+    refetch: refetchAppointments,
+  } = useScheduleAppointments({ providerId: rbtId, dateFrom, dateTo })
+
+  useEffect(() => {
+    setAppointments(fetchedAppointments)
+  }, [fetchedAppointments, setAppointments])
+
+  useEffect(() => {
+    setIsLoading(isLoadingAppointments)
+  }, [isLoadingAppointments, setIsLoading])
+
+  useEffect(() => {
+    setError(fetchError?.message ?? null)
+  }, [fetchError, setError])
+
   const displayDays = useMemo(
     () => (isMobile ? [weekDays[selectedDay]] : weekDays),
     [isMobile, weekDays, selectedDay]
@@ -153,8 +180,8 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
-        const client = getMockClientById(apt.clientId)
-        if (!client || !client.fullName.toLowerCase().includes(query)) {
+        const clientName = apt.clientName?.toLowerCase() ?? ""
+        if (!clientName.includes(query)) {
           return false
         }
       }
@@ -225,6 +252,11 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     setSelectedAppointment(null)
     setModalDefaults({})
   }, [setSelectedAppointment])
+
+  const handleAppointmentSaved = useCallback(() => {
+    closeModal()
+    void refetchAppointments()
+  }, [closeModal, refetchAppointments])
   
   const closeDuplicateModal = useCallback(() => {
     setShowDuplicateModal(false)
@@ -385,6 +417,7 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     filterStatus,
     filterLocation,
     filteredAppointments,
+    isLoadingAppointments,
     
     hoveredSlot,
     clickedSlot,
@@ -414,6 +447,7 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
       handleDragStart,
       handleDragEnd,
       handleStatusChange,
+      handleAppointmentSaved,
       getAppointmentPosition,
       hasAppointmentCoveringSlot,
     },
