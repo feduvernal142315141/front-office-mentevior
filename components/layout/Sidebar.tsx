@@ -13,7 +13,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { useSectionCompletion } from "@/lib/modules/section-completion/hooks/use-section-completion"
-import { SidebarStatusIndicator } from "./SidebarStatusIndicator"
+import { ParentMissingCountSup, SidebarStatusIndicator } from "./SidebarStatusIndicator"
 
 export const ICON_MAP = {
   Gauge,
@@ -224,7 +224,7 @@ export function Sidebar() {
             const childKeys = hasChildren ? item.children!.map((c) => c.href) : []
             const parentCompletion = hasChildren && hasCompletionData ? getMissingCount(childKeys) : null
             const isParentComplete = parentCompletion ? parentCompletion.missing === 0 : true
-            const showParentBadge = parentCompletion ? parentCompletion.total > 0 : false
+            const showParentBadge = parentCompletion ? parentCompletion.missing > 0 : false
             const itemHasData = hasCompletionData && item.href in completionMap
             const itemComplete = itemHasData ? isSectionComplete(item.href) : true
 
@@ -268,28 +268,14 @@ export function Sidebar() {
 
                             <div className="relative shrink-0">
                               <Icon className={cn("transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
-                              {showParentBadge && sidebarCollapsed && (
-                                <SidebarStatusIndicator
-                                  isComplete={isParentComplete}
+                              {showParentBadge && parentCompletion && (
+                                <ParentMissingCountSup
+                                  missingCount={parentCompletion.missing}
+                                  totalCount={parentCompletion.total}
                                   isActive={!!(isActive || isChildActive)}
-                                  isCollapsed
-                                  variant="parent"
-                                  missingCount={parentCompletion?.missing ?? 0}
-                                  totalCount={parentCompletion?.total ?? 0}
                                 />
                               )}
                             </div>
-
-                            {!sidebarCollapsed && showParentBadge && parentCompletion && (
-                              <SidebarStatusIndicator
-                                isComplete={isParentComplete}
-                                isActive={!!(isActive || isChildActive)}
-                                isCollapsed={false}
-                                variant="parent"
-                                missingCount={parentCompletion.missing}
-                                totalCount={parentCompletion.total}
-                              />
-                            )}
 
                             <AnimatePresence>
                               {!sidebarCollapsed && (
@@ -371,9 +357,9 @@ export function Sidebar() {
 
                             <div className="relative shrink-0">
                               <Icon className={cn("transition-all", sidebarCollapsed ? "h-6 w-6" : "h-5 w-5")} />
-                              {itemHasData && sidebarCollapsed && (
+                              {itemHasData && !itemComplete && sidebarCollapsed && (
                                 <SidebarStatusIndicator
-                                  isComplete={itemComplete}
+                                  isComplete={false}
                                   isActive={isActive}
                                   isCollapsed
                                   variant="standalone"
@@ -395,10 +381,10 @@ export function Sidebar() {
                               )}
                             </AnimatePresence>
 
-                            {itemHasData && !sidebarCollapsed && (
+                            {itemHasData && !itemComplete && !sidebarCollapsed && (
                               <div className="shrink-0">
                                 <SidebarStatusIndicator
-                                  isComplete={itemComplete}
+                                  isComplete={false}
                                   isActive={isActive}
                                   isCollapsed={false}
                                   variant="standalone"
@@ -454,9 +440,9 @@ export function Sidebar() {
                                     : "text-slate-600 hover:bg-slate-50 hover:text-[#037ECC]",
                                 )}
                               >
-                                {childHasData && (
+                                {childHasData && !isChildComplete && (
                                   <SidebarStatusIndicator
-                                    isComplete={isChildComplete}
+                                    isComplete={false}
                                     isActive={isChildItemActive}
                                     isCollapsed={false}
                                     variant="child"

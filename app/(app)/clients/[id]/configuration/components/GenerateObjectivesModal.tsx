@@ -153,7 +153,7 @@ export function GenerateObjectivesModal({
         {/* Quantity */}
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-slate-600">
-            Number of objectives to generate
+            Number of objectives
           </label>
           <div className="flex items-center gap-2 w-fit">
             <button
