@@ -25,9 +25,14 @@ import type {
 } from "@/lib/types/appointment.types"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useScheduleAppointments } from "@/lib/modules/schedules/hooks/use-appointments"
+import { getAppointmentById } from "@/lib/modules/schedules/services/appointments.service"
 import { getWeekDays, getWeekStart } from "@/lib/date"
 import { useAlert } from "@/lib/contexts/alert-context"
+import { matchesLocationFilter } from "@/lib/modules/schedules/utils/schedule-display"
 import { useIsMobile } from "@/hooks/use-mobile"
+
+export type CalendarScope = "provider" | "agency"
+export type CalendarViewMode = "general" | "client"
 
 
 export const CALENDAR_HOURS = Array.from({ length: 13 }, (_, i) => i + 7) 
@@ -35,6 +40,8 @@ export const SLOT_HEIGHT = 60
 
 interface UseWeekCalendarProps {
   rbtId: string
+  scope?: CalendarScope
+  viewMode?: CalendarViewMode
 }
 
 interface UseWeekCalendarReturn {
@@ -62,6 +69,7 @@ interface UseWeekCalendarReturn {
   clickedSlot: string | null
   
   isMobile: boolean
+  viewMode: CalendarViewMode
   
   actions: {
     goToPrevWeek: () => void
@@ -99,7 +107,11 @@ interface UseWeekCalendarReturn {
 }
 
 
-export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalendarReturn {
+export function useWeekCalendar({
+  rbtId,
+  scope = "provider",
+  viewMode = "client",
+}: UseWeekCalendarProps): UseWeekCalendarReturn {
 
   const alert = useAlert()
   const isMobile = useIsMobile()
@@ -151,7 +163,11 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     isLoading: isLoadingAppointments,
     error: fetchError,
     refetch: refetchAppointments,
-  } = useScheduleAppointments({ providerId: rbtId, dateFrom, dateTo })
+  } = useScheduleAppointments({
+    providerId: scope === "agency" ? undefined : rbtId,
+    dateFrom,
+    dateTo,
+  })
 
   useEffect(() => {
     setAppointments(fetchedAppointments)
@@ -226,7 +242,38 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     setSelectedAppointment(null)
     setShowModal(true)
   }, [setSelectedAppointment])
-  
+
+  const syncAppointmentInStore = useCallback(
+    (appointment: Appointment) => {
+      setSelectedAppointment(appointment)
+      setAppointments(
+        useAppointments.getState().appointments.map((apt) =>
+          apt.id === appointment.id ? appointment : apt,
+        ),
+      )
+    },
+    [setAppointments, setSelectedAppointment],
+  )
+
+  const loadAppointmentDetails = useCallback(
+    async (appointment: Appointment): Promise<Appointment> => {
+      setSelectedAppointment(appointment)
+
+      try {
+        const full = await getAppointmentById(appointment.id)
+        if (full) {
+          syncAppointmentInStore(full)
+          return full
+        }
+        return appointment
+      } catch {
+        alert.error("Error", "Failed to load appointment details")
+        return appointment
+      }
+    },
+    [alert, setSelectedAppointment, syncAppointmentInStore],
+  )
+
   const openDetailDrawer = useCallback((appointment: Appointment) => {
     setSelectedAppointment(appointment)
     setShowDetailDrawer(true)
@@ -238,9 +285,9 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
 
   const openEditModal = useCallback((appointment: Appointment) => {
     setShowDetailDrawer(false)
-    setSelectedAppointment(appointment)
     setShowModal(true)
-  }, [setSelectedAppointment])
+    void loadAppointmentDetails(appointment)
+  }, [loadAppointmentDetails])
   
   const openDuplicateModal = useCallback((appointment: Appointment) => {
     setSelectedAppointment(appointment)
@@ -279,12 +326,12 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
 
     switch (action) {
       case "view":
-        setSelectedAppointment(appointment)
-        setShowDetailDrawer(true)
+        setShowModal(true)
+        void loadAppointmentDetails(appointment)
         break
       case "edit":
-        setSelectedAppointment(appointment)
         setShowModal(true)
+        void loadAppointmentDetails(appointment)
         break
       case "duplicate":
         setSelectedAppointment(appointment)
@@ -309,7 +356,7 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     }
 
     setContextMenu(null)
-  }, [myAppointments, setSelectedAppointment, deleteAppointment, updateAppointment, alert])
+  }, [myAppointments, setSelectedAppointment, deleteAppointment, updateAppointment, alert, loadAppointmentDetails])
   
   
   const handleSlotClick = useCallback((date: Date, hour: number) => {
@@ -423,6 +470,7 @@ export function useWeekCalendar({ rbtId }: UseWeekCalendarProps): UseWeekCalenda
     clickedSlot,
     
     isMobile,
+    viewMode,
     
     actions: {
       goToPrevWeek,

@@ -21,10 +21,15 @@ export type EventType = "session_note" | "service_plan" | "supervision"
 /** Backend AppointmentTypeEvent enum values */
 export type AppointmentTypeEvent = "Session Note" | "Service Plan" | "Supervision"
 
-/** Billing code item from config endpoints */
+/** Billing code item from config endpoints (appointment / service-plan / supervision) */
 export interface ConfigBillingCodeItem {
   id: string
-  name: string
+  type?: string
+  /** Billing code number — mapped from API `name` field */
+  code?: string
+  modifier?: string
+  /** Pre-formatted label for selects: "CPT 97151 (TS)" */
+  label: string
 }
 
 /** POST /appointment/validate-event-data request */
@@ -40,6 +45,7 @@ export interface ValidateEventDataRequest {
 export interface ValidateEventDataResponse {
   unitsToUse: number
   approvedPriorAuthorizationBillingCodeId: string
+  priorAuthorizationId: string
 }
 
 /** Supervision sub-event payload for POST/PUT /appointment */
@@ -58,6 +64,7 @@ export interface AppointmentSupervisionApiPayload {
 export interface ApiAppointmentItem {
   id: string
   clientAddressId?: string
+  clientAddressNickName?: string
   clientId?: string
   clientFullName?: string
   clientName?: string
@@ -68,11 +75,20 @@ export interface ApiAppointmentItem {
   timeEnd?: string
   date?: string
   billingCodeId?: string
+  billingCode?: string
   billingCodeName?: string
+  billingCodeType?: string
+  billingCodeCode?: string
+  billingCodeModifier?: string
   typeEvent?: string
   providerId?: string
+  providerName?: string
   priorAuthorizationId?: string
+  priorAuthorizationNumber?: string
+  appointmentStatusId?: string | null
+  appointmentStatusName?: string
   status?: string
+  active?: boolean
   supervision?: AppointmentSupervisionApiPayload
 }
 
@@ -128,13 +144,19 @@ export interface Appointment {
   // Phase 1 — new optional fields (backward compatible)
   eventType?: EventType
   placeOfServiceAddressId?: string
+  clientAddressId?: string
   billingCodeId?: string
   billingCodeIds?: string[]
   billingCodeName?: string
   clientName?: string
   addressLabel?: string
+  providerName?: string
   priorAuthorizationId?: string
+  priorAuthorizationNumber?: string
   units?: number
+  date?: string
+  timeInit?: string
+  timeEnd?: string
   addSupervision?: boolean
   supervisionRbtId?: string
   supervisionBillingCodeIds?: string[]
@@ -242,6 +264,7 @@ export interface AppointmentFormData {
   endTime: string
   billingCodeId: string
   priorAuthorizationId: string
+  approvedPriorAuthorizationBillingCodeId: string
   validatedUnits: number | null
   addSupervision: boolean
   supervision: {
@@ -252,6 +275,7 @@ export interface AppointmentFormData {
     startTime: string
     endTime: string
     priorAuthorizationId: string
+    approvedPriorAuthorizationBillingCodeId: string
     validatedUnits: number | null
   }
   /** @deprecated kept for calendar store compat when loading existing rows */

@@ -1,14 +1,16 @@
+import {
+  formatBillingCodeLabel,
+} from "@/lib/utils/billing-code-display"
+import { format, parseISO } from "date-fns"
 import type {
   ApiAppointmentItem,
   Appointment,
+  AppointmentApiPayload,
   AppointmentFormData,
   AppointmentStatus,
+  AppointmentSupervisionApiPayload,
   AppointmentTypeEvent,
   EventType,
-} from "@/lib/types/appointment.types"
-import type {
-  AppointmentApiPayload,
-  AppointmentSupervisionApiPayload,
 } from "@/lib/types/appointment.types"
 
 export function toApiEventType(eventType: EventType): AppointmentTypeEvent {
@@ -106,10 +108,75 @@ export function getEventTypeLabel(eventType?: EventType): string {
   }
 }
 
+function toFormTime(value?: string): string {
+  if (!value) return ""
+  return value.length >= 5 ? value.slice(0, 5) : value
+}
+
+export function appointmentToFormData(appointment: Appointment): AppointmentFormData {
+  const date =
+    appointment.date ??
+    (appointment.startsAt ? format(parseISO(appointment.startsAt), "yyyy-MM-dd") : "")
+
+  const startTime = appointment.timeInit
+    ? toFormTime(appointment.timeInit)
+    : appointment.startsAt
+      ? format(parseISO(appointment.startsAt), "HH:mm")
+      : ""
+
+  const endTime = appointment.timeEnd
+    ? toFormTime(appointment.timeEnd)
+    : appointment.endsAt
+      ? format(parseISO(appointment.endsAt), "HH:mm")
+      : ""
+
+  const billingCodeId =
+    appointment.billingCodeId ?? appointment.billingCodeIds?.[0] ?? ""
+
+  const placeOfServiceAddressId =
+    appointment.placeOfServiceAddressId ?? appointment.clientAddressId ?? ""
+
+  return {
+    eventType: appointment.eventType ?? fromApiEventType(),
+    clientId: appointment.clientId ?? "",
+    placeOfServiceAddressId,
+    date,
+    startTime,
+    endTime,
+    billingCodeId,
+    priorAuthorizationId: appointment.priorAuthorizationId ?? "",
+    approvedPriorAuthorizationBillingCodeId: "",
+    validatedUnits: appointment.units ?? null,
+    addSupervision: appointment.addSupervision ?? false,
+    supervision: {
+      ...createEmptySupervisionForm(),
+      providerId: appointment.supervisionRbtId ?? "",
+      billingCodeId: appointment.supervisionBillingCodeIds?.[0] ?? "",
+    },
+  }
+}
+
+export function buildMainValidateKey(form: Pick<
+  AppointmentFormData,
+  "clientId" | "billingCodeId" | "startTime" | "endTime" | "date" | "eventType"
+>): string {
+  return `${form.clientId}|${form.billingCodeId}|${form.startTime}|${form.endTime}|${form.date}|${form.eventType}`
+}
+
 export function fromApiAppointment(api: ApiAppointmentItem): Appointment {
   const date = api.date ?? ""
   const timeInit = api.timeInit ?? "00:00:00"
   const timeEnd = api.timeEnd ?? "00:00:00"
+
+  const billingCodeName =
+    formatBillingCodeLabel(api as unknown as Record<string, unknown>) ||
+    api.billingCodeName ||
+    (api.billingCode ? `CPT ${api.billingCode}` : undefined)
+
+  const addressLabel =
+    api.clientAddressNickName?.trim() ||
+    api.clientAddressName?.trim() ||
+    undefined
 
   return {
     id: api.id,
@@ -120,15 +187,21 @@ export function fromApiAppointment(api: ApiAppointmentItem): Appointment {
     location: "Clinic",
     startsAt: date ? combineDateAndTime(date, timeInit) : new Date().toISOString(),
     endsAt: date ? combineDateAndTime(date, timeEnd) : new Date().toISOString(),
-    status: normalizeAppointmentStatus(api.status),
+    status: normalizeAppointmentStatus(api.appointmentStatusName || api.status),
     eventType: fromApiEventType(api.typeEvent),
     placeOfServiceAddressId: api.clientAddressId,
-    addressLabel: api.clientAddressName,
+    clientAddressId: api.clientAddressId,
+    addressLabel,
+    providerName: api.providerName,
     billingCodeId: api.billingCodeId,
     billingCodeIds: api.billingCodeId ? [api.billingCodeId] : [],
-    billingCodeName: api.billingCodeName,
+    billingCodeName,
     priorAuthorizationId: api.priorAuthorizationId,
+    priorAuthorizationNumber: api.priorAuthorizationNumber,
     units: api.units ?? api.cantUnit,
+    date: api.date,
+    timeInit: api.timeInit,
+    timeEnd: api.timeEnd,
     addSupervision: !!api.supervision,
     supervisionRbtId: api.supervision?.providerId,
     supervisionBillingCodeIds: api.supervision?.billingCodeId
@@ -146,6 +219,7 @@ export function createEmptySupervisionForm(): AppointmentFormData["supervision"]
     startTime: "",
     endTime: "",
     priorAuthorizationId: "",
+    approvedPriorAuthorizationBillingCodeId: "",
     validatedUnits: null,
   }
 }

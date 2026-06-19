@@ -1,6 +1,7 @@
 import { serviceGet } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import type { ConfigBillingCodeItem, EventType } from "@/lib/types/appointment.types"
+import { normalizeConfigBillingCodeList } from "@/lib/modules/schedules/utils/config-billing-code.mapper"
 
 export type AppointmentBillingCodeContext = EventType | "supervision"
 
@@ -21,5 +22,5 @@ export async function getAppointmentBillingCodes(
   }
 
   const data = response.data as unknown
-  return Array.isArray(data) ? data : []
+  return normalizeConfigBillingCodeList(data)
 }

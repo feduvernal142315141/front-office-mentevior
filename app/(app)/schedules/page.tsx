@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/hooks/use-auth"
 export default function SchedulesPage() {
   const { user } = useAuth()
   const currentUserId = user?.id ?? ""
+  const role = String(user?.role ?? "").toLowerCase()
+  const isAgencyAdmin = role.includes("admin")
 
   return (
     <div className="p-4 md:p-8">
@@ -21,13 +23,17 @@ export default function SchedulesPage() {
               Schedules
             </h1>
             <p className="text-slate-600 mt-0.5 text-sm md:text-base">
-              Manage your appointments and sessions
+              Manage your sessions and schedule
             </p>
           </div>
         </div>
 
      
-        <WeekCalendar rbtId={currentUserId} />
+        <WeekCalendar
+          rbtId={currentUserId}
+          viewMode={isAgencyAdmin ? "general" : "client"}
+          scope={isAgencyAdmin ? "agency" : "provider"}
+        />
       </div>
     </div>
   )

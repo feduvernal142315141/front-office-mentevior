@@ -1,5 +1,7 @@
 import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
+import { getClientAddressById } from "@/lib/modules/client-addresses/services/client-addresses.service"
+import { getClientById } from "@/lib/modules/clients/services/clients.service"
 import type {
   ApiAppointmentItem,
   Appointment,
@@ -7,8 +9,67 @@ import type {
   AppointmentListQuery,
   AppointmentStatus,
 } from "@/lib/types/appointment.types"
+import type { Client } from "@/lib/types/client.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import { fromApiAppointment } from "@/lib/modules/schedules/utils/appointment-api.mapper"
+
+function formatClientName(client: Client): string {
+  const full = [client.firstName, client.lastName].filter(Boolean).join(" ").trim()
+  return full || (client as Client & { fullName?: string }).fullName || ""
+}
+
+async function enrichAppointmentsWithClientNames(
+  appointments: Appointment[],
+): Promise<Appointment[]> {
+  const toResolve = appointments.filter(
+    (apt) => !apt.clientName?.trim() && apt.placeOfServiceAddressId,
+  )
+  if (toResolve.length === 0) return appointments
+
+  const uniqueAddressIds = [
+    ...new Set(toResolve.map((apt) => apt.placeOfServiceAddressId!)),
+  ]
+
+  const addressToClientId = new Map<string, string>()
+  await Promise.all(
+    uniqueAddressIds.map(async (addressId) => {
+      try {
+        const address = await getClientAddressById(addressId)
+        if (address?.clientId) addressToClientId.set(addressId, address.clientId)
+      } catch {
+        // skip failed address lookups
+      }
+    }),
+  )
+
+  const uniqueClientIds = [...new Set(addressToClientId.values())]
+  const clientNameById = new Map<string, string>()
+  await Promise.all(
+    uniqueClientIds.map(async (clientId) => {
+      try {
+        const client = await getClientById(clientId)
+        if (client) {
+          const name = formatClientName(client)
+          if (name) clientNameById.set(clientId, name)
+        }
+      } catch {
+        // skip failed client lookups
+      }
+    }),
+  )
+
+  return appointments.map((apt) => {
+    if (apt.clientName?.trim()) return apt
+    const clientId = addressToClientId.get(apt.placeOfServiceAddressId ?? "")
+    const clientName = clientId ? clientNameById.get(clientId) : undefined
+    if (!clientName) return apt
+    return {
+      ...apt,
+      clientId: apt.clientId || clientId || "",
+      clientName,
+    }
+  })
+}
 
 function parseAppointmentList(data: unknown): Appointment[] {
   if (Array.isArray(data)) {
@@ -50,7 +111,7 @@ export async function getAppointments(filters: AppointmentListQuery): Promise<Ap
     throw new Error(getApiErrorMessage(response?.data, "Failed to fetch appointments"))
   }
 
-  return parseAppointmentList(response.data)
+  return enrichAppointmentsWithClientNames(parseAppointmentList(response.data))
 }
 
 /**
@@ -63,7 +124,27 @@ export async function getAppointmentById(id: string): Promise<Appointment | null
     return null
   }
 
-  return fromApiAppointment(response.data as unknown as ApiAppointmentItem)
+  const raw = response.data as unknown
+  let item: ApiAppointmentItem | null = null
+
+  if (raw && typeof raw === "object" && "entities" in (raw as object)) {
+    const entities = (raw as { entities?: unknown }).entities
+    if (Array.isArray(entities) && entities.length > 0) {
+      item = entities[0] as ApiAppointmentItem
+    }
+  } else if (raw && typeof raw === "object" && "data" in (raw as object)) {
+    const data = (raw as { data?: unknown }).data
+    if (data && typeof data === "object") {
+      item = data as ApiAppointmentItem
+    }
+  } else if (raw && typeof raw === "object" && "id" in (raw as object)) {
+    item = raw as ApiAppointmentItem
+  }
+
+  if (!item) return null
+
+  const [enriched] = await enrichAppointmentsWithClientNames([fromApiAppointment(item)])
+  return enriched
 }
 
 /**

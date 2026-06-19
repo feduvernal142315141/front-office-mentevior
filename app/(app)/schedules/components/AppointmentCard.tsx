@@ -2,24 +2,16 @@
 
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { Clock, GripVertical, MapPin } from "lucide-react"
+import { GripVertical } from "lucide-react"
 import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
-import { getEventTypeLabel } from "@/lib/modules/schedules/utils/appointment-api.mapper"
-import { formatTime } from "@/lib/date"
+import {
+  type CalendarViewMode,
+  formatAppointmentTimeRange,
+  getAppointmentBillingCodeLabel,
+  getCalendarEventTypeLabel,
+  getEventColor,
+} from "@/lib/modules/schedules/utils/schedule-display"
 import { cn } from "@/lib/utils"
-
-const EVENT_TYPE_COLORS: Record<EventType, string> = {
-  session_note: "#037ECC",
-  service_plan: "#079CFB",
-  supervision: "#6366f1",
-}
-
-const LOCATION_ICONS: Record<Appointment["location"], string> = {
-  Clinic: "🏥",
-  Home: "🏠",
-  School: "🏫",
-  Telehealth: "💻",
-}
 
 const STATUS_STYLES: Record<AppointmentStatus, string> = {
   Scheduled: "bg-blue-50 text-blue-700 border-blue-200",
@@ -31,19 +23,25 @@ const STATUS_STYLES: Record<AppointmentStatus, string> = {
 
 interface AppointmentCardProps {
   appointment: Appointment
+  viewMode?: CalendarViewMode
+  eventColors?: Partial<Record<EventType, string>>
   onClick?: () => void
-  onStatusChange?: (status: AppointmentStatus) => void
   isDragOverlay?: boolean
 }
 
 export function AppointmentCard({
   appointment,
+  viewMode = "client",
+  eventColors,
   onClick,
   isDragOverlay = false,
 }: AppointmentCardProps) {
-  const eventColor = EVENT_TYPE_COLORS[appointment.eventType ?? "session_note"]
-  const eventLabel =
-    appointment.billingCodeName ?? getEventTypeLabel(appointment.eventType)
+  const eventType = appointment.eventType ?? "session_note"
+  const eventColor = getEventColor(eventType, eventColors)
+  const eventLabel = getCalendarEventTypeLabel(eventType)
+  const billingCode = getAppointmentBillingCodeLabel(appointment)
+  const locationLabel = appointment.addressLabel?.trim() || appointment.location
+  const showPeople = viewMode === "general"
 
   const {
     attributes,
@@ -94,15 +92,11 @@ export function AppointmentCard({
         <GripVertical className="h-3 w-3 text-gray-400" />
       </div>
 
-      <div className="p-2 pl-4 space-y-1">
+      <div className="p-2 pl-4 space-y-0.5">
         <div className="flex items-start justify-between gap-1">
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-xs text-gray-900 truncate">
-              {appointment.clientName ?? "Unknown Client"}
-            </p>
-            <p className="text-[10px] text-gray-600 truncate">{eventLabel}</p>
-          </div>
-
+          <p className="text-[10px] font-medium text-gray-700 truncate flex-1">
+            {formatAppointmentTimeRange(appointment)}
+          </p>
           <span
             className={cn(
               "text-[9px] px-1.5 py-0.5 rounded-full border flex-shrink-0",
@@ -114,25 +108,19 @@ export function AppointmentCard({
           </span>
         </div>
 
-        <div className="flex items-center gap-1 text-[10px] text-gray-600">
-          <Clock className="h-3 w-3 text-gray-400" />
-          <span className="font-medium">
-            {formatTime(appointment.startsAt)} - {formatTime(appointment.endsAt)}
-          </span>
-        </div>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-900 truncate">
+          {eventLabel}
+        </p>
 
-        <div className="flex items-center gap-1 text-[10px] text-gray-600">
-          <MapPin className="h-3 w-3 text-gray-400" />
-          <span className="truncate">
-            {appointment.addressLabel ? (
-              appointment.addressLabel
-            ) : (
-              <>
-                {LOCATION_ICONS[appointment.location]} {appointment.location}
-              </>
-            )}
-          </span>
-        </div>
+        <p className="text-[10px] text-gray-600 truncate">
+          {billingCode} | {locationLabel}
+        </p>
+
+        {showPeople && (
+          <p className="text-[10px] text-gray-500 truncate">
+            {[appointment.providerName, appointment.clientName].filter(Boolean).join(" · ")}
+          </p>
+        )}
       </div>
 
       <div

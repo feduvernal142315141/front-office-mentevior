@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { format, parseISO } from "date-fns"
 import type { Appointment, AppointmentFormData } from "@/lib/types/appointment.types"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
@@ -10,13 +9,17 @@ import {
   eventTypeToBillingContext,
 } from "@/lib/modules/schedules/hooks/use-appointment-billing-codes"
 import { validateAppointmentEventData } from "@/lib/modules/schedules/services/appointment-validate.service"
-import { getMockRBTs } from "@/lib/modules/schedules/mocks"
+import { usePriorAuthorizationLabel } from "@/lib/modules/schedules/hooks/use-prior-authorization-label"
+import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
 import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
+import { getClientAddressById } from "@/lib/modules/client-addresses/services/client-addresses.service"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useAlert } from "@/lib/contexts/alert-context"
 import {
+  appointmentToFormData,
   buildAppointmentApiPayload,
+  buildMainValidateKey,
   createEmptySupervisionForm,
   fromApiEventType,
   toApiEventType,
@@ -45,6 +48,7 @@ const getInitialFormData = (defaultDate?: string, defaultTime?: string): Appoint
   endTime: "",
   billingCodeId: "",
   priorAuthorizationId: "",
+  approvedPriorAuthorizationBillingCodeId: "",
   validatedUnits: null,
   addSupervision: false,
   supervision: createEmptySupervisionForm(),
@@ -70,6 +74,8 @@ export function useAppointmentForm({
   const [supervisionValidationError, setSupervisionValidationError] = useState<string | null>(null)
   const [isValidatingMain, setIsValidatingMain] = useState(false)
   const [isValidatingSupervision, setIsValidatingSupervision] = useState(false)
+  const skipDependentResetsRef = useRef(0)
+  const mainValidateKey = useRef("")
 
   const isEditing = !!appointment
   const providerId = user?.id ?? rbtId
@@ -89,7 +95,11 @@ export function useAppointmentForm({
     error: clientsError,
   } = useClients({ page: 0, pageSize: 100 })
 
-  const rbts = useMemo(() => getMockRBTs(), [])
+  const {
+    providers: clientProviders,
+    isLoading: clientProvidersLoading,
+    error: clientProvidersError,
+  } = useProvidersByClient(formData.clientId || null)
 
   const { addresses, isLoading: addressesLoading } = useClientAddresses(
     formData.clientId || null,
@@ -131,32 +141,79 @@ export function useAppointmentForm({
     formData.supervision.validatedUnits ??
     calculateBillableUnits(supervisionDurationMinutes)
 
-  const addressOptions = useMemo(
-    () =>
-      addresses.map((addr) => ({
-        value: addr.id,
-        label: [addr.nickName, addr.placeService || addr.placeServiceName]
-          .filter(Boolean)
-          .join(" — "),
-      })),
-    [addresses],
+  const { label: priorAuthorizationLabel, isLoading: isLoadingPriorAuthLabel } =
+    usePriorAuthorizationLabel(formData.priorAuthorizationId, formData.clientId)
+
+  const {
+    label: supervisionPriorAuthorizationLabel,
+    isLoading: isLoadingSupervisionPriorAuthLabel,
+  } = usePriorAuthorizationLabel(
+    formData.supervision.priorAuthorizationId,
+    formData.clientId,
   )
 
+  const priorAuthorizationOptions = useMemo(() => {
+    if (!formData.priorAuthorizationId) return []
+    const fallbackLabel = appointment?.priorAuthorizationNumber
+      ? `# ${appointment.priorAuthorizationNumber}`
+      : ""
+    return [
+      {
+        value: formData.priorAuthorizationId,
+        label: isLoadingPriorAuthLabel
+          ? "Loading prior authorization…"
+          : priorAuthorizationLabel || fallbackLabel || "Prior authorization",
+      },
+    ]
+  }, [
+    formData.priorAuthorizationId,
+    priorAuthorizationLabel,
+    isLoadingPriorAuthLabel,
+    appointment?.priorAuthorizationNumber,
+  ])
+
+  const supervisionPriorAuthorizationOptions = useMemo(() => {
+    if (!formData.supervision.priorAuthorizationId) return []
+    return [
+      {
+        value: formData.supervision.priorAuthorizationId,
+        label: isLoadingSupervisionPriorAuthLabel
+          ? "Loading prior authorization…"
+          : supervisionPriorAuthorizationLabel || "Prior authorization",
+      },
+    ]
+  }, [
+    formData.supervision.priorAuthorizationId,
+    supervisionPriorAuthorizationLabel,
+    isLoadingSupervisionPriorAuthLabel,
+  ])
+
+  const addressOptions = useMemo(() => {
+    const options = addresses.map((addr) => ({
+      value: addr.id,
+      label: [addr.nickName, addr.placeService || addr.placeServiceName]
+        .filter(Boolean)
+        .join(" — "),
+    }))
+
+    const selectedId = formData.placeOfServiceAddressId
+    if (selectedId && !options.some((option) => option.value === selectedId)) {
+      options.unshift({
+        value: selectedId,
+        label: appointment?.addressLabel || "Selected address",
+      })
+    }
+
+    return options
+  }, [addresses, formData.placeOfServiceAddressId, appointment?.addressLabel])
+
   const billingCodeOptions = useMemo(
-    () =>
-      mainBillingCodes.map((bc) => ({
-        value: bc.id,
-        label: bc.name,
-      })),
+    () => mainBillingCodes.map((bc) => ({ value: bc.id, label: bc.label })),
     [mainBillingCodes],
   )
 
   const supervisionCodeOptions = useMemo(
-    () =>
-      supervisionBillingCodes.map((bc) => ({
-        value: bc.id,
-        label: bc.name,
-      })),
+    () => supervisionBillingCodes.map((bc) => ({ value: bc.id, label: bc.label })),
     [supervisionBillingCodes],
   )
 
@@ -166,13 +223,40 @@ export function useAppointmentForm({
   )
 
   const rbtOptions = useMemo(
-    () => rbts.map((r) => ({ value: r.id, label: r.fullName })),
-    [rbts],
+    () =>
+      clientProviders
+        .filter((provider) => provider.active && !provider.terminated && provider.userId)
+        .map((provider) => ({
+          value: provider.userId,
+          label: provider.fullName,
+        })),
+    [clientProviders],
   )
 
   const updateField = useCallback(
     <K extends keyof AppointmentFormData>(field: K, value: AppointmentFormData[K]) => {
-      setFormData((prev) => ({ ...prev, [field]: value }))
+      setFormData((prev) => {
+        const next = { ...prev, [field]: value }
+        if (field === "clientId") {
+          next.placeOfServiceAddressId = ""
+          next.billingCodeId = ""
+          next.priorAuthorizationId = ""
+          next.approvedPriorAuthorizationBillingCodeId = ""
+          next.validatedUnits = null
+          next.supervision = { ...prev.supervision, providerId: "" }
+        }
+        if (
+          field === "startTime" ||
+          field === "endTime" ||
+          field === "date" ||
+          field === "billingCodeId"
+        ) {
+          next.priorAuthorizationId = ""
+          next.approvedPriorAuthorizationBillingCodeId = ""
+          next.validatedUnits = null
+        }
+        return next
+      })
       setErrors((prev) => {
         const next = { ...prev }
         delete next[field as string]
@@ -181,7 +265,11 @@ export function useAppointmentForm({
         }
         return next
       })
-      if (field === "startTime" || field === "endTime" || field === "date") {
+      if (field === "startTime" || field === "endTime" || field === "date" || field === "billingCodeId") {
+        setValidationError(null)
+        mainValidateKey.current = ""
+      }
+      if (field === "clientId") {
         setValidationError(null)
         mainValidateKey.current = ""
       }
@@ -251,30 +339,17 @@ export function useAppointmentForm({
 
   useEffect(() => {
     if (appointment) {
-      const startTime = parseISO(appointment.startsAt)
-      const endTime = parseISO(appointment.endsAt)
-      const billingCodeId =
-        appointment.billingCodeIds?.[0] ?? (appointment as { billingCodeId?: string }).billingCodeId ?? ""
-
-      setFormData({
-        eventType: appointment.eventType || fromApiEventType(),
-        clientId: appointment.clientId,
-        placeOfServiceAddressId: appointment.placeOfServiceAddressId || "",
-        date: format(startTime, "yyyy-MM-dd"),
-        startTime: format(startTime, "HH:mm"),
-        endTime: format(endTime, "HH:mm"),
-        billingCodeId,
-        priorAuthorizationId: appointment.priorAuthorizationId || "",
-        validatedUnits: appointment.units ?? null,
-        addSupervision: appointment.addSupervision || false,
-        supervision: {
-          ...createEmptySupervisionForm(),
-          providerId: appointment.supervisionRbtId || "",
-          billingCodeId: appointment.supervisionBillingCodeIds?.[0] ?? "",
-        },
-      })
+      const data = appointmentToFormData(appointment)
+      skipDependentResetsRef.current = 2
+      setFormData(data)
+      if (data.priorAuthorizationId && data.validatedUnits != null) {
+        mainValidateKey.current = buildMainValidateKey(data)
+      } else {
+        mainValidateKey.current = ""
+      }
     } else {
       setFormData(getInitialFormData(defaultDate, defaultTime))
+      mainValidateKey.current = ""
     }
     setErrors({})
     setValidationError(null)
@@ -282,21 +357,49 @@ export function useAppointmentForm({
   }, [appointment, defaultDate, defaultTime])
 
   useEffect(() => {
+    if (isEditing) return
     if (!formData.clientId && clients.length === 1) {
       setFormData((prev) => ({ ...prev, clientId: clients[0].id }))
     }
-  }, [clients, formData.clientId])
+  }, [clients, formData.clientId, isEditing])
 
   useEffect(() => {
+    if (skipDependentResetsRef.current > 0) {
+      skipDependentResetsRef.current--
+      return
+    }
+    if (isEditing) return
+
     setFormData((prev) => ({
       ...prev,
       placeOfServiceAddressId: "",
       billingCodeId: "",
       priorAuthorizationId: "",
+      approvedPriorAuthorizationBillingCodeId: "",
       validatedUnits: null,
     }))
     setValidationError(null)
-  }, [formData.clientId])
+    mainValidateKey.current = ""
+  }, [formData.clientId, isEditing])
+
+  useEffect(() => {
+    if (!isEditing || formData.clientId || !formData.placeOfServiceAddressId) return
+
+    let cancelled = false
+    void getClientAddressById(formData.placeOfServiceAddressId)
+      .then((address) => {
+        if (cancelled || !address?.clientId) return
+        skipDependentResetsRef.current = 1
+        setFormData((prev) => ({ ...prev, clientId: address.clientId }))
+      })
+      .catch(() => {
+        // keep address selected even if client lookup fails
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isEditing, formData.clientId, formData.placeOfServiceAddressId])
 
   useEffect(() => {
     if (!addressesLoading && addresses.length === 1 && !formData.placeOfServiceAddressId) {
@@ -305,10 +408,16 @@ export function useAppointmentForm({
   }, [addresses, addressesLoading, formData.placeOfServiceAddressId])
 
   useEffect(() => {
+    if (skipDependentResetsRef.current > 0) {
+      skipDependentResetsRef.current--
+      return
+    }
+
     setFormData((prev) => ({
       ...prev,
       billingCodeId: "",
       priorAuthorizationId: "",
+      approvedPriorAuthorizationBillingCodeId: "",
       validatedUnits: null,
       ...(formData.eventType !== "service_plan"
         ? {
@@ -319,6 +428,7 @@ export function useAppointmentForm({
     }))
     setValidationError(null)
     setSupervisionValidationError(null)
+    mainValidateKey.current = ""
   }, [formData.eventType])
 
   useEffect(() => {
@@ -342,14 +452,13 @@ export function useAppointmentForm({
     }))
   }, [formData.addSupervision])
 
-  const mainValidateKey = useRef("")
   useEffect(() => {
     const { clientId, billingCodeId, startTime, endTime, date, eventType } = formData
     if (!clientId || !billingCodeId || !startTime || !endTime || !date) {
       return
     }
 
-    const key = `${clientId}|${billingCodeId}|${startTime}|${endTime}|${date}|${eventType}`
+    const key = buildMainValidateKey({ clientId, billingCodeId, startTime, endTime, date, eventType })
     if (key === mainValidateKey.current) return
     mainValidateKey.current = key
 
@@ -369,7 +478,9 @@ export function useAppointmentForm({
         setFormData((prev) => ({
           ...prev,
           validatedUnits: result.unitsToUse,
-          priorAuthorizationId: result.approvedPriorAuthorizationBillingCodeId,
+          priorAuthorizationId: result.priorAuthorizationId,
+          approvedPriorAuthorizationBillingCodeId:
+            result.approvedPriorAuthorizationBillingCodeId,
         }))
       } catch (err) {
         if (cancelled) return
@@ -378,6 +489,7 @@ export function useAppointmentForm({
           ...prev,
           validatedUnits: null,
           priorAuthorizationId: "",
+          approvedPriorAuthorizationBillingCodeId: "",
         }))
         setValidationError(err instanceof Error ? err.message : "Validation failed")
       } finally {
@@ -427,7 +539,9 @@ export function useAppointmentForm({
           supervision: {
             ...prev.supervision,
             validatedUnits: result.unitsToUse,
-            priorAuthorizationId: result.approvedPriorAuthorizationBillingCodeId,
+            priorAuthorizationId: result.priorAuthorizationId,
+            approvedPriorAuthorizationBillingCodeId:
+              result.approvedPriorAuthorizationBillingCodeId,
           },
         }))
       } catch (err) {
@@ -439,6 +553,7 @@ export function useAppointmentForm({
             ...prev.supervision,
             validatedUnits: null,
             priorAuthorizationId: "",
+            approvedPriorAuthorizationBillingCodeId: "",
           },
         }))
         setSupervisionValidationError(
@@ -582,6 +697,11 @@ export function useAppointmentForm({
     supervisionCodeOptions,
     supervisionBillingCodesLoading,
     rbtOptions,
+    rbtProvidersLoading: clientProvidersLoading,
+    rbtProvidersError: clientProvidersError,
+    priorAuthorizationOptions,
+    supervisionPriorAuthorizationOptions,
+    isLoadingPriorAuthLabel,
     durationMinutes,
     billableUnits,
     supervisionDurationMinutes,

@@ -83,7 +83,13 @@ export function AppointmentModal({
     mainBillingCodesError,
     supervisionCodeOptions,
     supervisionBillingCodesLoading,
+    priorAuthorizationOptions,
+    supervisionPriorAuthorizationOptions,
+    isLoadingPriorAuthLabel,
+    isValidatingSupervision,
     rbtOptions,
+    rbtProvidersLoading,
+    rbtProvidersError,
     durationMinutes,
     billableUnits,
     isRbt,
@@ -133,7 +139,7 @@ export function AppointmentModal({
       onOpenChange={(next) => {
         if (!next) onClose()
       }}
-      title={isEditing ? "Edit Appointment" : "New Appointment"}
+      title={isEditing ? "Edit Session" : "New Session"}
       description="Complete the details to schedule this session"
       maxWidthClassName="sm:max-w-[760px]"
       allowSelectOverflow
@@ -197,9 +203,12 @@ export function AppointmentModal({
               options={addressOptions}
               hasError={!!errors.placeOfServiceAddressId}
               required
-              disabled={!formData.clientId || addressesLoading}
+              disabled={
+                addressesLoading ||
+                (!formData.clientId && !formData.placeOfServiceAddressId)
+              }
             />
-            {!formData.clientId ? (
+            {!formData.clientId && !formData.placeOfServiceAddressId ? (
               <p className="mt-1.5 text-xs italic text-slate-400">Select a client first</p>
             ) : (
               <FieldError message={errors.placeOfServiceAddressId} />
@@ -270,14 +279,6 @@ export function AppointmentModal({
                     </span>
                   </span>
                 </div>
-                {formData.priorAuthorizationId && !validationError && (
-                  <>
-                    <div className="h-4 w-px bg-[#037ECC]/20" />
-                    <span className="text-xs font-medium text-emerald-700">
-                      Prior authorization approved
-                    </span>
-                  </>
-                )}
               </div>
             )}
           </div>
@@ -303,6 +304,26 @@ export function AppointmentModal({
             <p className="mt-1.5 text-xs text-red-500">{mainBillingCodesError.message}</p>
           )}
           <FieldError message={errors.billingCodeId} />
+        </Field>
+
+        {/* Prior Authorization — populated after validation */}
+        <Field>
+          <FloatingSelect
+            label="Prior Authorization"
+            value={formData.priorAuthorizationId}
+            onChange={() => {}}
+            options={priorAuthorizationOptions}
+            disabled
+            dropdownPosition="bottom"
+          />
+          {isValidatingMain && (
+            <p className="mt-1.5 text-xs text-slate-400">Validating prior authorization…</p>
+          )}
+          {!isValidatingMain && !formData.priorAuthorizationId && !validationError && (
+            <p className="mt-1.5 text-xs text-slate-400">
+              Assigned automatically after billing code and time are validated
+            </p>
+          )}
         </Field>
 
         {/* Supervision — compact card + secondary modal */}
@@ -468,7 +489,7 @@ export function AppointmentModal({
               className="h-10 min-w-[180px]"
               onClick={handleSubmit}
             >
-              {isEditing ? "Update" : "Create"} Appointment
+              {isEditing ? "Update" : "Create"} Session
             </Button>
           </div>
         </div>
@@ -480,12 +501,17 @@ export function AppointmentModal({
       onClose={() => setShowSupervisionModal(false)}
       onSave={setSupervisionData}
       initialData={formData.supervision}
+      clientId={formData.clientId}
       mainDate={formData.date}
       mainStartTime={formData.startTime}
       mainEndTime={formData.endTime}
       rbtOptions={rbtOptions}
+      rbtProvidersLoading={rbtProvidersLoading}
+      rbtProvidersError={rbtProvidersError}
       supervisionCodeOptions={supervisionCodeOptions}
       supervisionBillingCodesLoading={supervisionBillingCodesLoading}
+      priorAuthorizationOptions={supervisionPriorAuthorizationOptions}
+      isValidatingPriorAuth={isValidatingSupervision}
     />
     </>
   )

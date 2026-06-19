@@ -20,11 +20,16 @@ import {
 import { format } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { AppointmentCard } from "./AppointmentCard"
+import { AppointmentPreviewPopover } from "./AppointmentPreviewPopover"
 import { AppointmentModal } from "./AppointmentModal"
 import { DuplicateAppointmentModal } from "./DuplicateAppointmentModal"
 import { AppointmentContextMenu } from "./AppointmentContextMenu"
 import { useWeekCalendar, CALENDAR_HOURS, SLOT_HEIGHT } from "../hooks/useWeekCalendar"
+import type { CalendarScope, CalendarViewMode } from "../hooks/useWeekCalendar"
+import { useScheduleEventColors } from "@/lib/modules/schedules/hooks/use-schedule-event-colors"
 import { useAppointments } from "@/lib/store/appointments.store"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import { isToday, formatWeekRange } from "@/lib/date"
 import { cn } from "@/lib/utils"
 import type { AppointmentStatus, AppointmentLocation } from "@/lib/types/appointment.types"
@@ -32,6 +37,8 @@ import type { AppointmentStatus, AppointmentLocation } from "@/lib/types/appoint
 
 interface WeekCalendarProps {
   rbtId: string
+  viewMode?: CalendarViewMode
+  scope?: CalendarScope
 }
 
 
@@ -41,6 +48,7 @@ const STATUS_OPTIONS: Array<{ value: AppointmentStatus | "all"; label: string }>
   { value: "InProgress", label: "In Progress" },
   { value: "Completed", label: "Completed" },
   { value: "Cancelled", label: "Cancelled" },
+  { value: "NoShow", label: "No Show" },
 ]
 
 const LOCATION_OPTIONS: Array<{ value: AppointmentLocation | "all"; label: string }> = [
@@ -52,8 +60,15 @@ const LOCATION_OPTIONS: Array<{ value: AppointmentLocation | "all"; label: strin
 ]
 
 
-export function WeekCalendar({ rbtId }: WeekCalendarProps) {
+export function WeekCalendar({
+  rbtId,
+  viewMode = "client",
+  scope = "provider",
+}: WeekCalendarProps) {
   const { selectedAppointment } = useAppointments()
+  const { create: canCreateSession } = usePermission()
+  const eventColors = useScheduleEventColors()
+  const canCreate = canCreateSession(PermissionModule.SCHEDULE)
   
   const {
     weekStart,
@@ -73,8 +88,9 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
     hoveredSlot,
     clickedSlot,
     isMobile,
+    viewMode: calendarViewMode,
     actions,
-  } = useWeekCalendar({ rbtId })
+  } = useWeekCalendar({ rbtId, viewMode, scope })
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -148,14 +164,16 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
             Week of {formatWeekRange(weekStart)}
           </h2>
           
-          <Button
-            variant="primary"
-            onClick={() => actions.openNewAppointmentModal()}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            New Appointment
-          </Button>
+          {canCreate && (
+            <Button
+              variant="primary"
+              onClick={() => actions.openNewAppointmentModal()}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Session
+            </Button>
+          )}
         </div>
       )}
       
@@ -257,7 +275,7 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-2xl">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#037ECC] border-t-transparent" />
-              Loading appointments...
+              Loading sessions...
             </div>
           </div>
         )}
@@ -347,13 +365,20 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
                               }}
                               onContextMenu={(e) => actions.openContextMenu(e, appointment.id)}
                             >
-                              <AppointmentCard
+                              <AppointmentPreviewPopover
                                 appointment={appointment}
-                                onClick={() => actions.openEditModal(appointment)}
-                                onStatusChange={(status) => 
-                                  actions.handleStatusChange(appointment.id, status)
-                                }
-                              />
+                                viewMode={calendarViewMode}
+                                eventColors={eventColors}
+                                onEdit={actions.openEditModal}
+                              >
+                                <div className="h-full w-full">
+                                  <AppointmentCard
+                                    appointment={appointment}
+                                    viewMode={calendarViewMode}
+                                    eventColors={eventColors}
+                                  />
+                                </div>
+                              </AppointmentPreviewPopover>
                             </div>
                           )
                         })}
@@ -363,6 +388,62 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
                 </div>
               </div>
               
+              {isMobile && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="grid grid-cols-[50px_1fr] gap-1">
+                    <div />
+                    <div className="relative">
+                      {CALENDAR_HOURS.map((hour) => {
+                        const day = displayDays[0]
+                        const slotId = `slot-${format(day, "yyyy-MM-dd")}-${hour}`
+                        const dayIndex = selectedDay
+                        const isHovered = hoveredSlot === slotId
+                        const isClicked = clickedSlot === slotId
+                        const hasCovering = actions.hasAppointmentCoveringSlot(dayIndex, hour)
+
+                        return (
+                          <div
+                            key={slotId}
+                            onClick={() => !hasCovering && actions.handleSlotClick(day, hour)}
+                            onMouseEnter={() => !hasCovering && actions.setHoveredSlot(slotId)}
+                            onMouseLeave={() => actions.setHoveredSlot(null)}
+                            className={cn(
+                              "absolute left-0 right-0 pointer-events-auto",
+                              "transition-colors duration-150",
+                              !hasCovering && "cursor-pointer hover:bg-[#037ECC]/5",
+                              isClicked && "bg-[#037ECC]/10",
+                              hasCovering && "pointer-events-none",
+                            )}
+                            style={{
+                              top: `${(hour - 7) * SLOT_HEIGHT}px`,
+                              height: `${SLOT_HEIGHT}px`,
+                            }}
+                          >
+                            {isHovered && !hasCovering && (
+                              <button
+                                className={cn(
+                                  "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+                                  "w-6 h-6 rounded-full",
+                                  "bg-[#037ECC] text-white",
+                                  "flex items-center justify-center",
+                                  "shadow-lg shadow-[#037ECC]/30",
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  actions.handleSlotClick(day, hour)
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {!isMobile && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="grid grid-cols-[60px_repeat(7,1fr)] gap-1">
@@ -428,7 +509,9 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
             {activeAppointment && (
               <div className="w-48">
                 <AppointmentCard 
-                  appointment={activeAppointment} 
+                  appointment={activeAppointment}
+                  viewMode={calendarViewMode}
+                  eventColors={eventColors}
                   isDragOverlay 
                 />
               </div>
@@ -437,7 +520,7 @@ export function WeekCalendar({ rbtId }: WeekCalendarProps) {
         </DndContext>
       </div>
       
-      {isMobile && (
+      {isMobile && canCreate && (
         <button
           onClick={() => actions.openNewAppointmentModal()}
           className={cn(

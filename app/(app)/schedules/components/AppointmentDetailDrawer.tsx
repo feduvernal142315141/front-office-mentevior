@@ -89,6 +89,8 @@ export function AppointmentDetailDrawer({
 
   const eventLabel =
     appointment.billingCodeName ?? getEventTypeLabel(appointment.eventType)
+  const locationLabel =
+    appointment.addressLabel?.trim() || appointment.location
   const status = STATUS_CONFIG[appointment.status]
   const startTime = parseISO(appointment.startsAt)
   const endTime = parseISO(appointment.endsAt)
@@ -96,7 +98,7 @@ export function AppointmentDetailDrawer({
     format(startTime, "HH:mm"),
     format(endTime, "HH:mm")
   )
-  const units = calculateBillableUnits(durationMin)
+  const units = appointment.units ?? calculateBillableUnits(durationMin)
   const canChangeStatus = appointment.status === "Scheduled" || appointment.status === "InProgress"
 
   const handleComplete = () => {
@@ -172,7 +174,16 @@ export function AppointmentDetailDrawer({
               <DetailRow label="Event Type" value={EVENT_TYPE_LABELS[appointment.eventType || ""] || "Session Note"} />
               <DetailRow label="Client" value={appointment.clientName || "Unknown"} />
               <DetailRow label="Event" value={eventLabel} />
-              <DetailRow label="Location" value={appointment.location} />
+              <DetailRow label="Location" value={locationLabel} />
+              {appointment.providerName && (
+                <DetailRow label="Provider" value={appointment.providerName} />
+              )}
+              {appointment.priorAuthorizationNumber && (
+                <DetailRow
+                  label="Prior Authorization"
+                  value={`# ${appointment.priorAuthorizationNumber}`}
+                />
+              )}
             </DetailSection>
 
             {/* Schedule */}
@@ -193,17 +204,12 @@ export function AppointmentDetailDrawer({
             </DetailSection>
 
             {/* Billing Codes */}
-            {appointment.billingCodeIds && appointment.billingCodeIds.length > 0 && (
+            {eventLabel && (
               <DetailSection icon={Receipt} title="Billing Codes">
                 <div className="flex flex-wrap gap-2">
-                  {appointment.billingCodeIds.map((codeId) => (
-                    <span
-                      key={codeId}
-                      className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 border border-slate-200"
-                    >
-                      {codeId}
-                    </span>
-                  ))}
+                  <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 border border-slate-200">
+                    {eventLabel}
+                  </span>
                 </div>
               </DetailSection>
             )}
