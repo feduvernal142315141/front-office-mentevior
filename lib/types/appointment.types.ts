@@ -48,7 +48,7 @@ export interface ValidateEventDataResponse {
   priorAuthorizationId: string
 }
 
-/** Supervision sub-event payload for POST/PUT /appointment */
+/** Supervision sub-event payload for POST/PUT /appointment and GET /appointment/{id} */
 export interface AppointmentSupervisionApiPayload {
   title: string
   timeInit: string
@@ -58,6 +58,7 @@ export interface AppointmentSupervisionApiPayload {
   units: number
   priorAuthorizationId: string
   providerId: string
+  providerName?: string
 }
 
 /** Item returned by GET /appointment */
@@ -154,10 +155,12 @@ export interface Appointment {
   priorAuthorizationId?: string
   priorAuthorizationNumber?: string
   units?: number
+  cantUnit?: number
   date?: string
   timeInit?: string
   timeEnd?: string
   addSupervision?: boolean
+  supervision?: AppointmentSupervisionApiPayload
   supervisionRbtId?: string
   supervisionBillingCodeIds?: string[]
   requiresCaregiverSignature?: boolean

@@ -16,6 +16,7 @@ import {
 } from "@/lib/utils/unit-calculation"
 import {
   createEmptySupervisionForm,
+  buildSupervisionValidateKey,
   toValidateTime,
 } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { validateAppointmentEventData } from "@/lib/modules/schedules/services/appointment-validate.service"
@@ -77,17 +78,24 @@ export function SupervisionConfigModal({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isValidatingLocal, setIsValidatingLocal] = useState(false)
+  const validateKey = useRef("")
 
   const { label: localPriorAuthLabel, isLoading: isLoadingLocalPriorAuthLabel } =
     usePriorAuthorizationLabel(localData.priorAuthorizationId, clientId)
 
   useEffect(() => {
     if (open) {
-      setLocalData(withDefaults(initialData, mainDate, mainStartTime, mainEndTime))
+      const data = withDefaults(initialData, mainDate, mainStartTime, mainEndTime)
+      setLocalData(data)
       setErrors({})
       setValidationError(null)
+      if (data.validatedUnits != null && clientId) {
+        validateKey.current = buildSupervisionValidateKey(clientId, data)
+      } else {
+        validateKey.current = ""
+      }
     }
-  }, [open, initialData, mainDate, mainStartTime, mainEndTime])
+  }, [open, initialData, mainDate, mainStartTime, mainEndTime, clientId])
 
   const updateField = useCallback(
     <K extends keyof AppointmentFormData["supervision"]>(
@@ -123,14 +131,18 @@ export function SupervisionConfigModal({
     [],
   )
 
-  const validateKey = useRef("")
   useEffect(() => {
     if (!open || !clientId) return
 
     const { billingCodeId, startTime, endTime, date } = localData
     if (!billingCodeId || !startTime || !endTime || !date) return
 
-    const key = `${clientId}|${billingCodeId}|${startTime}|${endTime}|${date}|supervision`
+    const key = buildSupervisionValidateKey(clientId, {
+      billingCodeId,
+      startTime,
+      endTime,
+      date,
+    })
     if (key === validateKey.current) return
     validateKey.current = key
 

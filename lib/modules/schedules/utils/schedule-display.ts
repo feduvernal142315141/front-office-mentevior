@@ -31,7 +31,7 @@ export function getEventColor(
 }
 
 export function formatAppointmentUnits(appointment: Appointment): number | null {
-  const units = appointment.units
+  const units = appointment.units ?? appointment.cantUnit
   if (units == null || Number.isNaN(Number(units))) return null
   return Number(units)
 }

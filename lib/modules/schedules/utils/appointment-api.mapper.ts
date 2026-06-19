@@ -113,6 +113,43 @@ function toFormTime(value?: string): string {
   return value.length >= 5 ? value.slice(0, 5) : value
 }
 
+/** Resolves units from API fields (`units` or `cantUnit`). */
+export function resolveApiUnits(
+  units?: number | string | null,
+  cantUnit?: number | string | null,
+): number | null {
+  const raw = units ?? cantUnit
+  if (raw == null || raw === "") return null
+  const num = Number(raw)
+  return Number.isNaN(num) ? null : num
+}
+
+export function buildSupervisionValidateKey(
+  clientId: string,
+  supervision: Pick<
+    AppointmentFormData["supervision"],
+    "billingCodeId" | "startTime" | "endTime" | "date"
+  >,
+): string {
+  return `${clientId}|${supervision.billingCodeId}|${supervision.startTime}|${supervision.endTime}|${supervision.date}|supervision`
+}
+
+function supervisionApiToFormData(
+  supervision: AppointmentSupervisionApiPayload,
+): AppointmentFormData["supervision"] {
+  return {
+    title: supervision.title ?? "",
+    providerId: supervision.providerId ?? "",
+    billingCodeId: supervision.billingCodeId ?? "",
+    date: supervision.date ?? "",
+    startTime: toFormTime(supervision.timeInit),
+    endTime: toFormTime(supervision.timeEnd),
+    priorAuthorizationId: supervision.priorAuthorizationId ?? "",
+    approvedPriorAuthorizationBillingCodeId: "",
+    validatedUnits: resolveApiUnits(supervision.units),
+  }
+}
+
 export function appointmentToFormData(appointment: Appointment): AppointmentFormData {
   const date =
     appointment.date ??
@@ -136,6 +173,14 @@ export function appointmentToFormData(appointment: Appointment): AppointmentForm
   const placeOfServiceAddressId =
     appointment.placeOfServiceAddressId ?? appointment.clientAddressId ?? ""
 
+  const supervision = appointment.supervision
+    ? supervisionApiToFormData(appointment.supervision)
+    : {
+        ...createEmptySupervisionForm(),
+        providerId: appointment.supervisionRbtId ?? "",
+        billingCodeId: appointment.supervisionBillingCodeIds?.[0] ?? "",
+      }
+
   return {
     eventType: appointment.eventType ?? fromApiEventType(),
     clientId: appointment.clientId ?? "",
@@ -146,13 +191,9 @@ export function appointmentToFormData(appointment: Appointment): AppointmentForm
     billingCodeId,
     priorAuthorizationId: appointment.priorAuthorizationId ?? "",
     approvedPriorAuthorizationBillingCodeId: "",
-    validatedUnits: appointment.units ?? null,
-    addSupervision: appointment.addSupervision ?? false,
-    supervision: {
-      ...createEmptySupervisionForm(),
-      providerId: appointment.supervisionRbtId ?? "",
-      billingCodeId: appointment.supervisionBillingCodeIds?.[0] ?? "",
-    },
+    validatedUnits: resolveApiUnits(appointment.units, appointment.cantUnit),
+    addSupervision: appointment.addSupervision ?? !!appointment.supervision,
+    supervision,
   }
 }
 
@@ -178,6 +219,8 @@ export function fromApiAppointment(api: ApiAppointmentItem): Appointment {
     api.clientAddressName?.trim() ||
     undefined
 
+  const resolvedUnits = resolveApiUnits(api.units, api.cantUnit)
+
   return {
     id: api.id,
     rbtId: api.providerId ?? "",
@@ -198,11 +241,13 @@ export function fromApiAppointment(api: ApiAppointmentItem): Appointment {
     billingCodeName,
     priorAuthorizationId: api.priorAuthorizationId,
     priorAuthorizationNumber: api.priorAuthorizationNumber,
-    units: api.units ?? api.cantUnit,
+    units: resolvedUnits ?? undefined,
+    cantUnit: resolvedUnits ?? undefined,
     date: api.date,
     timeInit: api.timeInit,
     timeEnd: api.timeEnd,
     addSupervision: !!api.supervision,
+    supervision: api.supervision,
     supervisionRbtId: api.supervision?.providerId,
     supervisionBillingCodeIds: api.supervision?.billingCodeId
       ? [api.supervision.billingCodeId]

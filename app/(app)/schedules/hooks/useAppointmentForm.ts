@@ -20,6 +20,7 @@ import {
   appointmentToFormData,
   buildAppointmentApiPayload,
   buildMainValidateKey,
+  buildSupervisionValidateKey,
   createEmptySupervisionForm,
   fromApiEventType,
   toApiEventType,
@@ -342,10 +343,18 @@ export function useAppointmentForm({
       const data = appointmentToFormData(appointment)
       skipDependentResetsRef.current = 2
       setFormData(data)
-      if (data.priorAuthorizationId && data.validatedUnits != null) {
+      if (data.validatedUnits != null) {
         mainValidateKey.current = buildMainValidateKey(data)
       } else {
         mainValidateKey.current = ""
+      }
+      if (data.addSupervision && data.supervision.validatedUnits != null) {
+        supervisionValidateKey.current = buildSupervisionValidateKey(
+          data.clientId,
+          data.supervision,
+        )
+      } else {
+        supervisionValidateKey.current = ""
       }
     } else {
       setFormData(getInitialFormData(defaultDate, defaultTime))
@@ -412,6 +421,7 @@ export function useAppointmentForm({
       skipDependentResetsRef.current--
       return
     }
+    if (isEditing) return
 
     setFormData((prev) => ({
       ...prev,
@@ -429,7 +439,7 @@ export function useAppointmentForm({
     setValidationError(null)
     setSupervisionValidationError(null)
     mainValidateKey.current = ""
-  }, [formData.eventType])
+  }, [formData.eventType, isEditing])
 
   useEffect(() => {
     if (!formData.addSupervision) {
@@ -517,7 +527,12 @@ export function useAppointmentForm({
     const { billingCodeId, startTime, endTime, date } = formData.supervision
     if (!clientId || !billingCodeId || !startTime || !endTime || !date) return
 
-    const key = `${clientId}|${billingCodeId}|${startTime}|${endTime}|${date}|supervision`
+    const key = buildSupervisionValidateKey(clientId, {
+      billingCodeId,
+      startTime,
+      endTime,
+      date,
+    })
     if (key === supervisionValidateKey.current) return
     supervisionValidateKey.current = key
 
