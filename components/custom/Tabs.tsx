@@ -19,6 +19,7 @@ interface TabsProps {
   defaultTab?: string
   activeTab?: string
   className?: string
+  fillHeight?: boolean
   onChange?: (tabId: string) => void
 }
 
@@ -27,6 +28,7 @@ export function Tabs({
   defaultTab,
   activeTab: controlledTab,
   className,
+  fillHeight = false,
   onChange,
 }: TabsProps) {
   const [activeTab, setActiveTab] = useState(controlledTab ?? defaultTab ?? items[0]?.id)
@@ -87,13 +89,13 @@ export function Tabs({
   }
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("flex w-full flex-col", className)}>
       <style jsx>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
         }
       `}</style>
-      <div className="relative">
+      <div className="relative shrink-0">
         <div>
           <div
             ref={scrollContainerRef}
@@ -213,7 +215,12 @@ export function Tabs({
           id={`panel-${activeItem.id}`}
           role="tabpanel"
           aria-labelledby={activeItem.id}
-          className="relative px-6 py-6 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className={cn(
+            "relative outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+            fillHeight
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-4"
+              : "px-6 py-6",
+          )}
         >
           {activeItem.content}
         </div>

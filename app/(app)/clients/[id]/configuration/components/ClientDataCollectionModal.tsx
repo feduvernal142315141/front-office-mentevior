@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react"
+import { useParams } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -34,6 +35,7 @@ import {
 } from "../../service-plan/components/data-collection/RecommendationsCollapsibleSection"
 import { useStrategyCatalog } from "@/lib/modules/client-service-plan/hooks/use-strategy-catalog"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
+import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import {
   BaselinesTabContent,
   createEmptyBaseline,
@@ -157,6 +159,12 @@ export function ClientDataCollectionModal({
   itemName,
   onSaved,
 }: ClientDataCollectionModalProps) {
+  const params = useParams()
+  const clientId = typeof params?.id === "string" ? params.id : null
+  const { client } = useClientById(clientId)
+  const clientFirstName = client?.firstName?.trim() || undefined
+  const targetName = mode === "item" ? itemName : categoryName
+
   // --- Load / save state ---
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -286,9 +294,9 @@ export function ClientDataCollectionModal({
               localId: crypto.randomUUID(),
               recordId: o.recordId,
               name: o.name,
-              startDate: o.startDate,
-              estimatedEndDate: o.estimatedEndDate,
-              endDate: o.endDate,
+              startDate: fromISO(o.startDate),
+              estimatedEndDate: fromISO(o.estimatedEndDate),
+              endDate: fromISO(o.endDate),
               operatorSmartCriteria: o.operatorSmartCriteria,
               valueSmartCriteria: String(o.valueSmartCriteria),
               periodSmartCriteriaCatalogId: o.periodSmartCriteriaCatalogId,
@@ -884,24 +892,6 @@ export function ClientDataCollectionModal({
         </div>
       )}
 
-      {/* Levels table */}
-      {typeHasLevels(watchedType) && (
-        <LevelsTable
-          levels={watchedLevels ?? []}
-          onChange={(newLevels) => setValue("levels", newLevels)}
-          onDeleteLevel={handleDeleteLevel}
-          showValueToggle={typeHasCumulativeValueToggles(resolvedType.group)}
-          showCumulative={typeHasCumulativeValueToggles(resolvedType.group)}
-          cumulative={watchedCumulative ?? false}
-          onCumulativeChange={(v) => setValue("cumulative", v)}
-          levelErrors={Array.isArray(errors.levels) ? errors.levels : undefined}
-          levelsError={
-            errors.levels && !Array.isArray(errors.levels)
-              ? (errors.levels as { message?: string }).message
-              : undefined
-          }
-        />
-      )}
     </div>
   )
 
@@ -917,17 +907,6 @@ export function ClientDataCollectionModal({
     />
   )
 
-  // --- Tab content: Recommendations ---
-  const recommendationsContent = (
-    <RecommendationsCollapsibleSection
-      value={recommendations}
-      onChange={handleRecommendationsChange}
-      errors={{}}
-      open={true}
-      onOpenChange={() => {}}
-    />
-  )
-
   // --- Tabs ---
   const tabItems: TabItem[] = useMemo(
     () => [
@@ -936,18 +915,8 @@ export function ClientDataCollectionModal({
         label: "Data Collection",
         icon: <Database className="w-4 h-4" />,
         content: (
-          <div className="max-h-[55vh] overflow-y-auto custom-scrollbar pr-1">
+          <div className="h-full min-h-0 overflow-y-auto custom-scrollbar pr-1">
             {dataCollectionContent}
-          </div>
-        ),
-      },
-      {
-        id: "chart",
-        label: "Chart",
-        icon: <BarChart3 className="w-4 h-4" />,
-        content: (
-          <div className="max-h-[55vh] overflow-y-auto custom-scrollbar pr-1">
-            {chartContent}
           </div>
         ),
       },
@@ -955,7 +924,17 @@ export function ClientDataCollectionModal({
         id: "recommendations",
         label: "Recommendations",
         icon: <Lightbulb className="w-4 h-4" />,
-        content: recommendationsContent,
+        content: (
+          <div className="h-full min-h-0 overflow-y-auto custom-scrollbar pr-1">
+            <RecommendationsCollapsibleSection
+              value={recommendations}
+              onChange={handleRecommendationsChange}
+              errors={{}}
+              open={true}
+              onOpenChange={() => {}}
+            />
+          </div>
+        ),
       },
       {
         id: "baselines",
@@ -964,13 +943,15 @@ export function ClientDataCollectionModal({
         badge: baselines.length || undefined,
         hasError: baselinesError,
         content: (
-          <BaselinesTabContent
-            baselines={baselines}
-            onChange={handleBaselinesChange}
-            mode={mode}
-            periodSelectOptions={periodSelectOptions}
-            showErrors={baselinesError}
-          />
+          <div className="h-full min-h-0 overflow-y-auto custom-scrollbar pr-1">
+            <BaselinesTabContent
+              baselines={baselines}
+              onChange={handleBaselinesChange}
+              mode={mode}
+              periodSelectOptions={periodSelectOptions}
+              showErrors={baselinesError}
+            />
+          </div>
         ),
       },
       {
@@ -980,13 +961,18 @@ export function ClientDataCollectionModal({
         badge: objectives.length || undefined,
         hasError: objectivesError,
         content: (
-          <ObjectivesTabContent
-            objectives={objectives}
-            onChange={handleObjectivesChange}
-            mode={mode}
-            periodMap={periodMap}
-            periodSelectOptions={periodSelectOptions}
-          />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <ObjectivesTabContent
+              objectives={objectives}
+              onChange={handleObjectivesChange}
+              mode={mode}
+              periodMap={periodMap}
+              periodSelectOptions={periodSelectOptions}
+              clientFirstName={clientFirstName}
+              targetName={targetName}
+              dataCollectionTypeName={resolvedType.name}
+            />
+          </div>
         ),
       },
     ],
@@ -1012,6 +998,11 @@ export function ClientDataCollectionModal({
       recommendationErrors,
       baselinesError,
       objectivesError,
+      periodMap,
+      periodSelectOptions,
+      clientFirstName,
+      targetName,
+      mode,
     ]
   )
 
@@ -1024,7 +1015,8 @@ export function ClientDataCollectionModal({
       title={modalTitle}
       maxWidthClassName="sm:max-w-[960px]"
       allowSelectOverflow
-      contentClassName="!overflow-visible !border-0 !bg-transparent"
+      constrainHeight
+      contentClassName="!border-0 !bg-transparent"
       onPointerDownOutside={(e) => {
         if (isSaving) e.preventDefault()
       }}
@@ -1037,11 +1029,11 @@ export function ClientDataCollectionModal({
           <Loader2 className="h-7 w-7 animate-spin text-[#037ECC]" />
         </div>
       ) : (
-        <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Item header fields */}
           {mode === "item" && (
-            <div className="space-y-4 px-6 pt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="shrink-0 space-y-3 px-6 pt-3 pb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FloatingInput label="Name" value={itemName ?? ""} onChange={() => {}} onBlur={() => {}} disabled />
                 <FloatingInput label="Category" value={categoryName} onChange={() => {}} onBlur={() => {}} disabled />
               </div>
@@ -1057,7 +1049,7 @@ export function ClientDataCollectionModal({
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       hasError={!!errors.topography}
-                      rows={3}
+                      rows={2}
                     />
                   )}
                 />
@@ -1080,7 +1072,7 @@ export function ClientDataCollectionModal({
           )}
 
           {mode === "category" && (
-            <div className="px-6 pt-4">
+            <div className="shrink-0 px-6 pt-3 pb-2">
               <FloatingInput label="Category" value={categoryName} onChange={() => {}} onBlur={() => {}} disabled />
             </div>
           )}
@@ -1090,10 +1082,12 @@ export function ClientDataCollectionModal({
             items={tabItems}
             activeTab={activeTab}
             onChange={setActiveTab}
+            fillHeight
+            className="min-h-0 flex-1"
           />
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-white rounded-b-2xl">
+          <div className="flex shrink-0 items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-white rounded-b-2xl">
             <Button type="button" variant="secondary" onClick={handleClose} disabled={isSaving}>
               Cancel
             </Button>

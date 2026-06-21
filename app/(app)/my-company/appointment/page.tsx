@@ -21,9 +21,9 @@ export default function AppointmentPage() {
           </div>
           <div>
             <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
-              Appointment
+              Session
             </h1>
-            <p className="mt-1 text-slate-600">Schedule and manage client appointments</p>
+            <p className="mt-1 text-slate-600">Schedule and manage client sessions</p>
           </div>
         </div>
 

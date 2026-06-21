@@ -1,33 +1,48 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { Minus, Plus } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { CustomModal } from "@/components/custom/CustomModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
+import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
-import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Button } from "@/components/custom/Button"
 
 import { OPERATOR_SMART_CRITERIA_OPTIONS } from "@/lib/types/data-collection.types"
 import type { ObjectiveRow } from "./ObjectiveFormModal"
+import {
+  buildGeneratedObjectiveNames,
+  computeGeneratedObjectiveCriteriaValues,
+  formatCriteriaValueForStorage,
+  type ObjectiveGenerationMode,
+} from "./generate-objective-name"
+
+const GENERATION_MODE_OPTIONS: { value: ObjectiveGenerationMode; label: string }[] = [
+  { value: "number_of_objectives", label: "Number of Objectives" },
+  { value: "percentage_from_start_value", label: "Percentage from Start Value" },
+]
 
 interface GenerateFormState {
+  generationMode: ObjectiveGenerationMode
   quantity: number
-  startDate: string
-  estimatedEndDate: string
+  percentageFromStart: number
+  amountToDecreaseIncrease: string
+  startValue: string
+  endValue: string
   operatorSmartCriteria: string
-  valueSmartCriteria: string
   periodSmartCriteriaCatalogId: string
   valueDuration: string
   periodDurationCatalogId: string
 }
 
 type GenerateFieldErrorKey =
+  | "generationMode"
   | "quantity"
-  | "startDate"
+  | "percentageFromStart"
+  | "amountToDecreaseIncrease"
+  | "startValue"
+  | "endValue"
   | "operatorSmartCriteria"
-  | "valueSmartCriteria"
   | "periodSmartCriteriaCatalogId"
   | "valueDuration"
   | "periodDurationCatalogId"
@@ -36,10 +51,21 @@ type GenerateFieldErrors = Partial<Record<GenerateFieldErrorKey, boolean>>
 
 function validateGenerateForm(form: GenerateFormState): GenerateFieldErrors {
   const errors: GenerateFieldErrors = {}
-  if (!form.quantity || form.quantity < 1) errors.quantity = true
-  if (!form.startDate) errors.startDate = true
+
+  if (form.generationMode === "number_of_objectives") {
+    if (!form.quantity || form.quantity < 1) {
+      errors.quantity = true
+    }
+    if (form.amountToDecreaseIncrease === "" || Number(form.amountToDecreaseIncrease) < 0) {
+      errors.amountToDecreaseIncrease = true
+    }
+  } else if (!form.percentageFromStart || form.percentageFromStart < 1 || form.percentageFromStart > 100) {
+    errors.percentageFromStart = true
+  }
+
+  if (!form.startValue) errors.startValue = true
+  if (form.endValue === "") errors.endValue = true
   if (!form.operatorSmartCriteria) errors.operatorSmartCriteria = true
-  if (!form.valueSmartCriteria) errors.valueSmartCriteria = true
   if (!form.periodSmartCriteriaCatalogId) errors.periodSmartCriteriaCatalogId = true
   if (!form.valueDuration) errors.valueDuration = true
   if (!form.periodDurationCatalogId) errors.periodDurationCatalogId = true
@@ -48,13 +74,15 @@ function validateGenerateForm(form: GenerateFormState): GenerateFieldErrors {
 
 function createDefaultForm(): GenerateFormState {
   return {
-    quantity: 1,
-    startDate: "",
-    estimatedEndDate: "",
+    generationMode: "number_of_objectives",
+    quantity: 0,
+    percentageFromStart: 0,
+    amountToDecreaseIncrease: "0",
+    startValue: "0",
+    endValue: "0",
     operatorSmartCriteria: "LTE",
-    valueSmartCriteria: "",
     periodSmartCriteriaCatalogId: "",
-    valueDuration: "",
+    valueDuration: "0",
     periodDurationCatalogId: "",
   }
 }
@@ -65,6 +93,10 @@ interface GenerateObjectivesModalProps {
   existingCount: number
   onGenerate: (objectives: ObjectiveRow[]) => void
   periodSelectOptions: { value: string; label: string }[]
+  periodMap?: Map<string, string>
+  clientFirstName?: string
+  targetName?: string
+  dataCollectionTypeName?: string
 }
 
 export function GenerateObjectivesModal({
@@ -73,9 +105,15 @@ export function GenerateObjectivesModal({
   existingCount,
   onGenerate,
   periodSelectOptions,
+  periodMap,
+  clientFirstName,
+  targetName,
+  dataCollectionTypeName = "",
 }: GenerateObjectivesModalProps) {
   const [form, setForm] = useState<GenerateFormState>(createDefaultForm())
   const [fieldErrors, setFieldErrors] = useState<GenerateFieldErrors>({})
+
+  const isNumberMode = form.generationMode === "number_of_objectives"
 
   useEffect(() => {
     if (open) {
@@ -97,20 +135,60 @@ export function GenerateObjectivesModal({
     []
   )
 
-  const handleQuantityChange = useCallback(
-    (delta: number) => {
-      setForm((prev) => ({
-        ...prev,
-        quantity: Math.max(1, Math.min(50, prev.quantity + delta)),
-      }))
-      setFieldErrors((prev) => {
-        if (!("quantity" in prev)) return prev
-        const next = { ...prev }
-        delete next.quantity
-        return next
-      })
-    },
-    []
+  const resolvedPeriodMap = useMemo(() => {
+    if (periodMap instanceof Map) return periodMap
+    return new Map(periodSelectOptions.map((option) => [option.value, option.label]))
+  }, [periodMap, periodSelectOptions])
+
+  const criteriaValues = useMemo(
+    () =>
+      computeGeneratedObjectiveCriteriaValues({
+        mode: form.generationMode,
+        quantity: form.quantity,
+        amountToDecreaseIncrease: form.amountToDecreaseIncrease,
+        percentageFromStart: form.percentageFromStart,
+        startValue: form.startValue,
+        endValue: form.endValue,
+        dataCollectionTypeName,
+      }),
+    [
+      form.generationMode,
+      form.quantity,
+      form.amountToDecreaseIncrease,
+      form.percentageFromStart,
+      form.startValue,
+      form.endValue,
+      dataCollectionTypeName,
+    ]
+  )
+
+  const previewNames = useMemo(
+    () =>
+      buildGeneratedObjectiveNames(
+        criteriaValues.length,
+        existingCount,
+        {
+          operatorSmartCriteria: form.operatorSmartCriteria,
+          valueSmartCriteria: form.startValue,
+          periodSmartCriteriaCatalogId: form.periodSmartCriteriaCatalogId,
+          valueDuration: form.valueDuration,
+          periodDurationCatalogId: form.periodDurationCatalogId,
+          clientFirstName,
+          targetName,
+          periodMap: resolvedPeriodMap,
+          dataCollectionTypeName,
+        },
+        criteriaValues
+      ),
+    [
+      form,
+      existingCount,
+      clientFirstName,
+      targetName,
+      resolvedPeriodMap,
+      criteriaValues,
+      dataCollectionTypeName,
+    ]
   )
 
   const handleGenerate = useCallback(() => {
@@ -120,119 +198,122 @@ export function GenerateObjectivesModal({
       return
     }
 
-    const generated: ObjectiveRow[] = []
-    for (let i = 0; i < form.quantity; i++) {
-      generated.push({
+    const generated: ObjectiveRow[] = previewNames.map((name, index) => {
+      const numericValue = criteriaValues[index] ?? (Number(form.startValue) || 0)
+      return {
         localId: crypto.randomUUID(),
-        name: `STO ${existingCount + i + 1}`,
-        startDate: form.startDate,
-        estimatedEndDate: form.estimatedEndDate,
+        name,
+        startDate: "",
+        estimatedEndDate: "",
         endDate: "",
         operatorSmartCriteria: form.operatorSmartCriteria,
-        valueSmartCriteria: form.valueSmartCriteria,
+        valueSmartCriteria: formatCriteriaValueForStorage(numericValue, dataCollectionTypeName),
         periodSmartCriteriaCatalogId: form.periodSmartCriteriaCatalogId,
         valueDuration: form.valueDuration,
         periodDurationCatalogId: form.periodDurationCatalogId,
-      })
-    }
+      }
+    })
 
     onGenerate(generated)
     onClose()
-  }, [form, existingCount, onGenerate, onClose])
+  }, [form, previewNames, criteriaValues, dataCollectionTypeName, onGenerate, onClose])
 
   return (
     <CustomModal
       open={open}
       onOpenChange={(next) => { if (!next) onClose() }}
       title="Generate Objectives"
-      maxWidthClassName="sm:max-w-[640px]"
+      maxWidthClassName="sm:max-w-[720px]"
       allowSelectOverflow
       contentClassName="!overflow-visible"
     >
       <div className="px-6 py-5 space-y-5">
-        {/* Quantity */}
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-600">
-            Number of objectives
-          </label>
-          <div className="flex items-center gap-2 w-fit">
-            <button
-              type="button"
-              onClick={() => handleQuantityChange(-1)}
-              className="flex items-center justify-center w-9 h-9 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-            >
-              <Minus className="w-3.5 h-3.5" />
-            </button>
-            <input
-              type="number"
+        {/* Generation mode + quantity or percentage stepper */}
+        <div className="grid grid-cols-2 gap-4">
+          <FloatingSelect
+            label="Generation type"
+            value={form.generationMode}
+            onChange={(v) => update("generationMode", v as ObjectiveGenerationMode)}
+            options={GENERATION_MODE_OPTIONS}
+            required
+          />
+
+          {isNumberMode ? (
+            <FloatingNumberStepper
+              label="Number of objectives"
               value={form.quantity}
-              onChange={(e) => {
-                const val = Math.max(1, Math.min(50, Number(e.target.value) || 1))
-                update("quantity", val)
-              }}
-              className={`w-16 h-9 text-center text-sm font-semibold border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                fieldErrors.quantity ? "border-red-400 ring-1 ring-red-200" : "border-gray-200"
-              }`}
+              onChange={(val) => update("quantity", val)}
+              min={0}
+              max={50}
+              hasError={!!fieldErrors.quantity}
+              required
             />
-            <button
-              type="button"
-              onClick={() => handleQuantityChange(1)}
-              className="flex items-center justify-center w-9 h-9 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <p className="text-xs text-slate-500">
-            Names will be: STO {existingCount + 1}
-            {form.quantity > 1 && <> — STO {existingCount + form.quantity}</>}
-          </p>
+          ) : (
+            <FloatingNumberStepper
+              label="Percentage from Start Value"
+              value={form.percentageFromStart}
+              onChange={(val) => update("percentageFromStart", val)}
+              min={0}
+              max={100}
+              hasError={!!fieldErrors.percentageFromStart}
+              required
+              suffix="%"
+            />
+          )}
         </div>
 
-        {/* Dates */}
-        <div className="grid grid-cols-2 gap-4">
-          <PremiumDatePicker
-            label="Start Date"
-            value={form.startDate}
-            onChange={(v) => update("startDate", v)}
+        {isNumberMode && (
+          <FloatingInput
+            label="Amount to Decrease/Increase"
+            value={form.amountToDecreaseIncrease}
+            onChange={(v) => update("amountToDecreaseIncrease", v.replace(/[^0-9.-]/g, ""))}
+            onBlur={() => {}}
+            inputMode="decimal"
             required
-            hasError={!!fieldErrors.startDate}
+            hasError={!!fieldErrors.amountToDecreaseIncrease}
           />
-          <PremiumDatePicker
-            label="Estimated End Date"
-            value={form.estimatedEndDate}
-            onChange={(v) => update("estimatedEndDate", v)}
+        )}
+
+        {/* Start / End value */}
+        <div className="grid grid-cols-2 gap-4">
+          <FloatingInput
+            label="Start Value"
+            value={form.startValue}
+            onChange={(v) => update("startValue", v.replace(/[^0-9.-]/g, ""))}
+            onBlur={() => {}}
+            inputMode="decimal"
+            required
+            hasError={!!fieldErrors.startValue}
+          />
+          <FloatingInput
+            label="End Value"
+            value={form.endValue}
+            onChange={(v) => update("endValue", v.replace(/[^0-9.-]/g, ""))}
+            onBlur={() => {}}
+            inputMode="decimal"
+            required
+            hasError={!!fieldErrors.endValue}
           />
         </div>
 
         {/* Smart Criteria */}
-        <div>
-          <div className="grid grid-cols-[120px_1fr_1fr] gap-3">
-            <FloatingSelect
-              label="Smart Criteria"
-              value={form.operatorSmartCriteria}
-              onChange={(v) => update("operatorSmartCriteria", v)}
-              options={OPERATOR_SMART_CRITERIA_OPTIONS}
-              required
-              hasError={!!fieldErrors.operatorSmartCriteria}
-            />
-            <FloatingInput
-              label="Value"
-              value={form.valueSmartCriteria}
-              onChange={(v) => update("valueSmartCriteria", v.replace(/[^0-9.-]/g, ""))}
-              onBlur={() => {}}
-              inputMode="numeric"
-              required
-              hasError={!!fieldErrors.valueSmartCriteria}
-            />
-            <FloatingSelect
-              label="Period"
-              value={form.periodSmartCriteriaCatalogId}
-              onChange={(v) => update("periodSmartCriteriaCatalogId", v)}
-              options={periodSelectOptions}
-              required
-              hasError={!!fieldErrors.periodSmartCriteriaCatalogId}
-            />
-          </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FloatingSelect
+            label="Smart Criteria"
+            value={form.operatorSmartCriteria}
+            onChange={(v) => update("operatorSmartCriteria", v)}
+            options={OPERATOR_SMART_CRITERIA_OPTIONS}
+            required
+            hasError={!!fieldErrors.operatorSmartCriteria}
+          />
+          <FloatingSelect
+            label="Period"
+            value={form.periodSmartCriteriaCatalogId}
+            onChange={(v) => update("periodSmartCriteriaCatalogId", v)}
+            options={periodSelectOptions}
+            required
+            hasError={!!fieldErrors.periodSmartCriteriaCatalogId}
+          />
         </div>
 
         {/* Duration */}
@@ -258,6 +339,30 @@ export function GenerateObjectivesModal({
             />
           </div>
         </div>
+
+        {/* Preview */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-600">Preview</label>
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div className="px-4 py-2 bg-slate-50 border-b border-slate-200">
+              <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
+                Name
+              </span>
+            </div>
+            <div className="max-h-52 overflow-y-auto">
+              {previewNames.map((name, index) => (
+                <div
+                  key={`${existingCount + index + 1}-${name}`}
+                  className="px-4 py-2.5 border-b border-slate-100 last:border-b-0"
+                >
+                  <p className="text-xs text-slate-700 truncate" title={name}>
+                    {name}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
@@ -266,7 +371,7 @@ export function GenerateObjectivesModal({
           Cancel
         </Button>
         <Button type="button" onClick={handleGenerate}>
-          Generate {form.quantity} {form.quantity === 1 ? "objective" : "objectives"}
+          Generate {previewNames.length} {previewNames.length === 1 ? "objective" : "objectives"}
         </Button>
       </div>
     </CustomModal>

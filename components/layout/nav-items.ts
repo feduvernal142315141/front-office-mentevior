@@ -114,7 +114,7 @@ export const navItems: NavItem[] = [
         href: "/applicants",
       },
       {
-        label: "Appointment",
+        label: "Session",
         href: "/my-company/appointment",
       },
       {
