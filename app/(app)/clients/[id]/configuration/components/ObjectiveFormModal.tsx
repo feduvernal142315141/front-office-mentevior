@@ -177,18 +177,13 @@ export function ObjectiveFormModal({
         />
 
         {/* Dates */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <PremiumDatePicker
             label="Start Date"
             value={form.startDate}
             onChange={(v) => update("startDate", v)}
             required
             hasError={!!fieldErrors.startDate}
-          />
-          <PremiumDatePicker
-            label="Estimated End Date"
-            value={form.estimatedEndDate}
-            onChange={(v) => update("estimatedEndDate", v)}
           />
           <PremiumDatePicker
             label="End Date"

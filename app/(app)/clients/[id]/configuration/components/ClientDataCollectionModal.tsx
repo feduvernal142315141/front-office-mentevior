@@ -920,61 +920,63 @@ export function ClientDataCollectionModal({
           </div>
         ),
       },
-      {
-        id: "recommendations",
-        label: "Recommendations",
-        icon: <Lightbulb className="w-4 h-4" />,
-        content: (
-          <div className="h-full min-h-0 overflow-y-auto custom-scrollbar pr-1">
-            <RecommendationsCollapsibleSection
-              value={recommendations}
-              onChange={handleRecommendationsChange}
-              errors={{}}
-              open={true}
-              onOpenChange={() => {}}
-            />
-          </div>
-        ),
-      },
-      {
-        id: "baselines",
-        label: "Baselines",
-        icon: <TrendingUp className="w-4 h-4" />,
-        badge: baselines.length || undefined,
-        hasError: baselinesError,
-        content: (
-          <div className="h-full min-h-0 overflow-y-auto custom-scrollbar pr-1">
-            <BaselinesTabContent
-              baselines={baselines}
-              onChange={handleBaselinesChange}
-              mode={mode}
-              periodSelectOptions={periodSelectOptions}
-              showErrors={baselinesError}
-            />
-          </div>
-        ),
-      },
-      {
-        id: "objectives",
-        label: "Objectives",
-        icon: <Target className="w-4 h-4" />,
-        badge: objectives.length || undefined,
-        hasError: objectivesError,
-        content: (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <ObjectivesTabContent
-              objectives={objectives}
-              onChange={handleObjectivesChange}
-              mode={mode}
-              periodMap={periodMap}
-              periodSelectOptions={periodSelectOptions}
-              clientFirstName={clientFirstName}
-              targetName={targetName}
-              dataCollectionTypeName={resolvedType.name}
-            />
-          </div>
-        ),
-      },
+      ...(mode === "item" ? [
+        {
+          id: "recommendations",
+          label: "Recommendations",
+          icon: <Lightbulb className="w-4 h-4" />,
+          content: (
+            <div className="h-full min-h-0 overflow-y-auto custom-scrollbar pr-1">
+              <RecommendationsCollapsibleSection
+                value={recommendations}
+                onChange={handleRecommendationsChange}
+                errors={{}}
+                open={true}
+                onOpenChange={() => {}}
+              />
+            </div>
+          ),
+        },
+        {
+          id: "baselines",
+          label: "Baselines",
+          icon: <TrendingUp className="w-4 h-4" />,
+          badge: baselines.length || undefined,
+          hasError: baselinesError,
+          content: (
+            <div className="h-full min-h-0 overflow-y-auto custom-scrollbar pr-1">
+              <BaselinesTabContent
+                baselines={baselines}
+                onChange={handleBaselinesChange}
+                mode={mode}
+                periodSelectOptions={periodSelectOptions}
+                showErrors={baselinesError}
+              />
+            </div>
+          ),
+        },
+        {
+          id: "objectives",
+          label: "Objectives",
+          icon: <Target className="w-4 h-4" />,
+          badge: objectives.length || undefined,
+          hasError: objectivesError,
+          content: (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <ObjectivesTabContent
+                objectives={objectives}
+                onChange={handleObjectivesChange}
+                mode={mode}
+                periodMap={periodMap}
+                periodSelectOptions={periodSelectOptions}
+                clientFirstName={clientFirstName}
+                targetName={targetName}
+                dataCollectionTypeName={resolvedType.name}
+              />
+            </div>
+          ),
+        },
+      ] as TabItem[] : []),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [

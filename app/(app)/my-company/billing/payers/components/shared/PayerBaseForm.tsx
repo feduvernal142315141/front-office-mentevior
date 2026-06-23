@@ -374,29 +374,6 @@ export function PayerBaseForm({
         />
       </div>
 
-      {/* Description */}
-      <div className="md:col-span-2" data-form-field="description">
-        <Controller
-          name="description"
-          control={control}
-          render={({ field, fieldState }) => (
-            <div>
-              <FloatingTextarea
-                label="Description"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                rows={3}
-                placeholder="Coverage notes and billing caveats"
-                disabled={readOnly}
-              />
-              {!readOnly && fieldState.error && (
-                <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
-              )}
-            </div>
-          )}
-        />
-      </div>
     </div>
   )
 }

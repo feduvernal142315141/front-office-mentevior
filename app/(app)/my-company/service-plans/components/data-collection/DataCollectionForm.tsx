@@ -748,15 +748,6 @@ export function DataCollectionForm({
         </Collapsible>
         </div>
 
-        {/* --- Chart (collapsible) --- */}
-        <ChartCollapsibleSection
-          control={control}
-          setValue={setValue}
-          getValues={getValues}
-          open={isChartOpen}
-          onOpenChange={(next) => setOpenSection(next ? "chart" : null)}
-          focusToken={chartFocusToken}
-        />
       </div>
 
       {/* Bottom bar */}
