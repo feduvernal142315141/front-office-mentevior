@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Plus, Sparkles, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -29,6 +29,9 @@ interface ObjectivesTabContentProps {
   clientFirstName?: string
   targetName?: string
   dataCollectionTypeName?: string
+  hideButtons?: boolean
+  externalTitle?: boolean
+  onModalChange?: (open: boolean) => void
 }
 
 function computeStatus(obj: ObjectiveRow): ObjectiveStatus {
@@ -79,9 +82,17 @@ export function ObjectivesTabContent({
   clientFirstName,
   targetName,
   dataCollectionTypeName,
+  hideButtons = false,
+  externalTitle = false,
+  onModalChange,
 }: ObjectivesTabContentProps) {
   const [formOpen, setFormOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
+
+  // Notify parent when any modal opens/closes
+  useEffect(() => {
+    onModalChange?.(formOpen || generateOpen)
+  }, [formOpen, generateOpen, onModalChange])
   const [editingObjective, setEditingObjective] = useState<ObjectiveRow | null>(null)
 
   const handleAdd = useCallback(() => {
@@ -161,11 +172,29 @@ export function ObjectivesTabContent({
   return (
     <>
       <div className="flex flex-col gap-3">
+        {externalTitle && (
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-800">
+              Objectives
+              {objectives.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-slate-500">({objectives.length})</span>
+              )}
+            </h3>
+            <div className="flex items-center gap-2">
+              <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3">
+                <Plus className="h-3.5 w-3.5" />
+                Add objective
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3">
+                <Sparkles className="h-3.5 w-3.5" />
+                Generate
+              </Button>
+            </div>
+          </div>
+        )}
         {objectives.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-8 text-center">
-            <Target className="mx-auto h-8 w-8 text-slate-400 mb-2" />
-            <p className="text-sm text-slate-600">No objectives configured yet.</p>
-            <p className="text-xs text-slate-500 mt-1">Click the button below to add one.</p>
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-4 text-center">
+            <p className="text-sm text-slate-500">No objectives configured yet.</p>
           </div>
         ) : (
           <div className="relative rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
@@ -239,16 +268,18 @@ export function ObjectivesTabContent({
           </div>
         )}
 
-        <div className="flex shrink-0 justify-center gap-3 border-t border-slate-100 pt-3">
-          <Button type="button" onClick={handleAdd} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add objective
-          </Button>
-          <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            Generate objectives
-          </Button>
-        </div>
+        {!hideButtons && (
+          <div className="flex shrink-0 justify-center gap-3 border-t border-slate-100 pt-3">
+            <Button type="button" onClick={handleAdd} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add objective
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Generate objectives
+            </Button>
+          </div>
+        )}
       </div>
 
       <ObjectiveFormModal

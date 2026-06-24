@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 
@@ -8,10 +8,17 @@ import { AddItemsDrawer } from "../../service-plan/components/AddItemsDrawer"
 import { CategoriesSidebar } from "../../service-plan/components/CategoriesSidebar"
 import { CategoryItemsPanel } from "../../service-plan/components/CategoryItemsPanel"
 import { ClientDataCollectionModal } from "./ClientDataCollectionModal"
-import { ClientServicePlanSummaryCard } from "../../service-plan/components/ClientServicePlanSummaryCard"
+import { ItemDetailPanel } from "./ItemDetailPanel"
 import { useClientServicePlanCategoryItems } from "../../service-plan/hooks/useClientServicePlanCategoryItems"
 import { useClientServicePlanConfiguration } from "../../service-plan/hooks/useClientServicePlanConfiguration"
 import { useDataCollectionDrawerController } from "../../service-plan/hooks/useDataCollectionDrawerController"
+
+// State for the inline item detail panel
+interface SelectedItemDetail {
+  item: ClientServicePlanCategoryMappedItem
+  categoryId: string
+  categoryName: string
+}
 
 interface ServicePlanConfigViewProps {
   spId: string
@@ -37,6 +44,12 @@ export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
   const dcDrawer = useDataCollectionDrawerController()
 
   const [isAddItemsDrawerOpen, setIsAddItemsDrawerOpen] = useState(false)
+  const [selectedItemDetail, setSelectedItemDetail] = useState<SelectedItemDetail | null>(null)
+
+  // Clear item detail when category changes
+  useEffect(() => {
+    setSelectedItemDetail(null)
+  }, [activeCategoryId])
 
   const mappedItemIds = useMemo(
     () => new Set(itemsState.items.map((item) => item.itemId)),
@@ -56,14 +69,31 @@ export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
     await Promise.all([itemsState.reload(), reloadCategories()])
   }, [itemsState, reloadCategories])
 
+  // Item DC click → open inline detail panel instead of modal
   const handleConfigureItemDc = useCallback(
     (item: ClientServicePlanCategoryMappedItem) => {
       if (!activeCategory || !activeCategoryId) return
-      dcDrawer.openForItem(item, activeCategory.categoryName, activeCategoryId)
+      setSelectedItemDetail({
+        item,
+        categoryId: activeCategoryId,
+        categoryName: activeCategory.categoryName,
+      })
     },
-    [activeCategory, activeCategoryId, dcDrawer]
+    [activeCategory, activeCategoryId]
   )
 
+  // Back from item detail → return to items list
+  const handleItemDetailBack = useCallback(() => {
+    setSelectedItemDetail(null)
+  }, [])
+
+  // Item detail saved → reload and go back
+  const handleItemDetailSaved = useCallback(() => {
+    void itemsState.reload()
+    void reloadCategories()
+  }, [itemsState, reloadCategories])
+
+  // Category DC still uses the modal
   const handleDcSaved = useCallback(() => {
     void itemsState.reload()
     void reloadCategories()
@@ -93,8 +123,6 @@ export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
   return (
     <>
       <div className="space-y-6">
-        <ClientServicePlanSummaryCard clientServicePlan={clientServicePlan} />
-
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
           <CategoriesSidebar
             categories={categories}
@@ -103,17 +131,28 @@ export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
             onConfigureDataCollection={dcDrawer.openForCategory}
           />
 
-          <CategoryItemsPanel
-            activeCategory={activeCategory}
-            items={itemsState.items}
-            isLoading={itemsState.isLoading}
-            error={itemsState.error}
-            createForm={itemsState.createForm}
-            deletingItemId={itemsState.deletingItemId}
-            onDeleteItem={itemsState.deleteItem}
-            onConfigureDataCollection={handleConfigureItemDc}
-            onOpenAddItemsDrawer={handleOpenAddItemsDrawer}
-          />
+          {selectedItemDetail ? (
+            <ItemDetailPanel
+              categoryId={selectedItemDetail.categoryId}
+              categoryName={selectedItemDetail.categoryName}
+              clientServicePlanCategoryItemId={selectedItemDetail.item.id}
+              itemName={selectedItemDetail.item.itemName}
+              onBack={handleItemDetailBack}
+              onSaved={handleItemDetailSaved}
+            />
+          ) : (
+            <CategoryItemsPanel
+              activeCategory={activeCategory}
+              items={itemsState.items}
+              isLoading={itemsState.isLoading}
+              error={itemsState.error}
+              createForm={itemsState.createForm}
+              deletingItemId={itemsState.deletingItemId}
+              onDeleteItem={itemsState.deleteItem}
+              onConfigureDataCollection={handleConfigureItemDc}
+              onOpenAddItemsDrawer={handleOpenAddItemsDrawer}
+            />
+          )}
         </div>
       </div>
 
@@ -128,6 +167,7 @@ export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
         />
       )}
 
+      {/* Modal only used for category-level data collection now */}
       <ClientDataCollectionModal
         open={dcDrawer.state.open}
         onClose={dcDrawer.close}

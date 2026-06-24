@@ -30,9 +30,8 @@ export function CollapsableSection({
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   useEffect(() => {
-    if (forceOpen && !isOpen) {
-      setIsOpen(true)
-      onToggle?.(true)
+    if (forceOpen !== undefined && forceOpen !== isOpen) {
+      setIsOpen(forceOpen)
     }
   }, [forceOpen])
 

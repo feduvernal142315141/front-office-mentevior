@@ -42,6 +42,7 @@ interface BaselinesTabContentProps {
   mode: "category" | "item"
   periodSelectOptions: { value: string; label: string }[]
   showErrors?: boolean
+  hideAddButton?: boolean
 }
 
 export function BaselinesTabContent({
@@ -50,6 +51,7 @@ export function BaselinesTabContent({
   mode,
   periodSelectOptions,
   showErrors = false,
+  hideAddButton = false,
 }: BaselinesTabContentProps) {
 
   const handleAdd = useCallback(() => {
@@ -90,10 +92,8 @@ export function BaselinesTabContent({
   return (
     <div className="space-y-5 pb-2">
       {baselines.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-8 text-center">
-          <CalendarDays className="mx-auto h-8 w-8 text-slate-400 mb-2" />
-          <p className="text-sm text-slate-600">No baselines configured yet.</p>
-          <p className="text-xs text-slate-500 mt-1">Click the button below to add one.</p>
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-4 text-center">
+          <p className="text-sm text-slate-500">No baselines configured yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -167,12 +167,14 @@ export function BaselinesTabContent({
       )}
 
       {/* Add button - centered */}
-      <div className="flex justify-center pt-1">
-        <Button type="button" onClick={handleAdd} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add baseline
-        </Button>
-      </div>
+      {!hideAddButton && (
+        <div className="flex justify-center pt-1">
+          <Button type="button" onClick={handleAdd} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add baseline
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

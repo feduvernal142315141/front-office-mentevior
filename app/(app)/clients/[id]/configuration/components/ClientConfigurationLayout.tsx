@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation"
 import { ClipboardList, BarChart3, Sliders, ArrowLeft } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
+import { useClientServicePlanById } from "@/lib/modules/client-service-plan/hooks/use-client-service-plan-by-id"
 import { useUi } from "@/lib/store/ui.store"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/custom/Button"
 
 import {
@@ -25,6 +27,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
   const { client, isLoading } = useClientById(clientId)
   const [activeSectionId, setActiveSectionId] = useState("service-plan")
   const [spId, setSpId] = useState<string | null>(clientServicePlanId)
+  const { clientServicePlan } = useClientServicePlanById(spId ?? "")
   const { sidebarCollapsed, setSidebarCollapsed } = useUi()
   const prevCollapsedRef = useRef<boolean | null>(null)
 
@@ -82,10 +85,28 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
             <Sliders className="h-6 w-6 text-[#037ECC]" />
           </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent truncate">
-              {clientName}
-            </h1>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent truncate">
+                {clientName}
+              </h1>
+              {clientServicePlan && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-slate-300">|</span>
+                  <span className="text-sm font-medium text-slate-600">{clientServicePlan.name}</span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      clientServicePlan.active
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 bg-slate-50 text-slate-600"
+                    }
+                  >
+                    {clientServicePlan.active ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              )}
+            </div>
             <p className="text-sm text-slate-500 mt-0.5">
               Service plan and data collection configuration
             </p>
