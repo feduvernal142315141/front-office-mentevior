@@ -390,7 +390,7 @@ export function ItemDetailPanel({
           date: toISO(b.date),
           value: Number(b.value) || 0,
           periodCatalogId: b.periodCatalogId,
-          comments: b.comments,
+          environmentalChanges: b.comments,
           show: b.show,
         }))
 

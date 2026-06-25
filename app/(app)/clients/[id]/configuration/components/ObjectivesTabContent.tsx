@@ -85,6 +85,7 @@ export function ObjectivesTabContent({
   dataCollectionTypeName,
   hideButtons = false,
   externalTitle = false,
+  disableActions = false,
   onModalChange,
 }: ObjectivesTabContentProps) {
   const [formOpen, setFormOpen] = useState(false)
@@ -182,11 +183,11 @@ export function ObjectivesTabContent({
               )}
             </h3>
             <div className="flex items-center gap-2">
-              <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3">
+              <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions}>
                 <Plus className="h-3.5 w-3.5" />
                 Add objective
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3">
+              <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions}>
                 <Sparkles className="h-3.5 w-3.5" />
                 Generate
               </Button>

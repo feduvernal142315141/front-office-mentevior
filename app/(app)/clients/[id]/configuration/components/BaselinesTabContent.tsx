@@ -135,7 +135,7 @@ export function BaselinesTabContent({
               </div>
               <div className="min-w-0 flex-1">
                 <FloatingInput
-                  label="Comments"
+                  label="Environmental Changes"
                   value={row.comments}
                   onChange={(v) => handleUpdate(row.localId, "comments", v)}
                   onBlur={() => {}}
