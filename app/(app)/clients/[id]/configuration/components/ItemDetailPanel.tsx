@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -20,13 +20,6 @@ import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { GroupedSelect } from "@/components/custom/GroupedSelect"
 import { Button } from "@/components/custom/Button"
 
-import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
-import { useStrategyCatalog } from "@/lib/modules/client-service-plan/hooks/use-strategy-catalog"
-import { useActivitiesImplementedCatalog } from "@/lib/modules/client-service-plan/hooks/use-activities-implemented-catalog"
-import { usePreventiveStrategiesCatalog } from "@/lib/modules/client-service-plan/hooks/use-preventive-strategies-catalog"
-import { useReplacementsCatalog } from "@/lib/modules/client-service-plan/hooks/use-replacements-catalog"
-import { useInterventionsCatalog } from "@/lib/modules/client-service-plan/hooks/use-interventions-catalog"
-import { useReinforcersCatalog } from "@/lib/modules/client-service-plan/hooks/use-reinforcers-catalog"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import {
@@ -118,6 +111,38 @@ function FieldErrorText({ message }: { message?: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Teaching Method options
+// ---------------------------------------------------------------------------
+
+const TEACHING_METHOD_OPTIONS = [
+  { value: "BACKWARD_CHAINING", label: "Backward Chaining" },
+  { value: "BST", label: "Behavioral Skills Training (BST)" },
+  { value: "DIRECT_INSTRUCTION", label: "Direct Instruction" },
+  { value: "DTT", label: "Discrete Trial Training (DTT)" },
+  { value: "ERRORLESS_LEARNING", label: "Errorless Learning" },
+  { value: "FORWARD_CHAINING", label: "Forward Chaining" },
+  { value: "FCT", label: "Functional Communication Training (FCT)" },
+  { value: "GRADUATED_GUIDANCE", label: "Graduated Guidance" },
+  { value: "IMITATION_TRAINING", label: "Imitation Training" },
+  { value: "INCIDENTAL", label: "Incidental Teaching" },
+  { value: "LEAST_TO_MOST", label: "Least-to-Most Prompting" },
+  { value: "MODELING", label: "Modeling" },
+  { value: "MOST_TO_LEAST", label: "Most-to-Least Prompting" },
+  { value: "NET", label: "Natural Environment Teaching (NET)" },
+  { value: "OBSERVATIONAL", label: "Observational Learning" },
+  { value: "PECS_AAC", label: "PECS/AAC Instruction" },
+  { value: "PRT", label: "Pivotal Response Training (PRT)" },
+  { value: "PRECISION_TEACHING", label: "Precision Teaching" },
+  { value: "SELF_MANAGEMENT", label: "Self-Management Training" },
+  { value: "SHAPING", label: "Shaping" },
+  { value: "TASK_ANALYSIS", label: "Task Analysis" },
+  { value: "TIME_DELAY", label: "Time Delay" },
+  { value: "TOTAL_TASK_CHAINING", label: "Total Task Chaining" },
+  { value: "VERBAL_BEHAVIOR", label: "Verbal Behavior Instruction" },
+  { value: "VIDEO_MODELING", label: "Video Modeling" },
+]
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -149,10 +174,10 @@ export function ItemDetailPanel({
   const [config, setConfig] = useState<DataCollectionConfig | null>(null)
   const [itemConfig, setItemConfig] = useState<ItemDataCollectionConfig | null>(null)
   const [recommendations, setRecommendations] = useState<RecommendationsConfig>(defaultRecommendations)
-  const [recommendationErrors, setRecommendationErrors] = useState<Record<string, string>>({})
   const [baselines, setBaselines] = useState<BaselineRow[]>([])
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [teachingMethod, setTeachingMethod] = useState("")
 
   // --- Catalogs ---
   const { items: periodCatalog } = usePeriodCatalog()
@@ -171,38 +196,6 @@ export function ItemDetailPanel({
     () => Object.fromEntries(datasetCatalogEntries.map((e) => [e.id, e.name])),
     [datasetCatalogEntries]
   )
-
-  // Teaching methods (recommendations) catalogs
-  const strategyCatalog = useStrategyCatalog()
-  const activitiesCatalog = useActivitiesImplementedCatalog()
-  const preventiveCatalog = usePreventiveStrategiesCatalog()
-  const replacementsCatalog = useReplacementsCatalog()
-  const interventionsCatalog = useInterventionsCatalog()
-  const reinforcersCatalog = useReinforcersCatalog()
-
-  const strategyOptions = useMemo(
-    () => strategyCatalog.items.map((item) => ({ value: item.id, label: item.name })),
-    [strategyCatalog.items]
-  )
-  const selectedStrategyName = useMemo(() => {
-    const item = strategyCatalog.items.find((i) => i.id === recommendations.strategyId)
-    return item?.name ?? ""
-  }, [strategyCatalog.items, recommendations.strategyId])
-  const lowerStrategy = selectedStrategyName.toLowerCase()
-  const showIntervention = lowerStrategy.includes("intervention")
-  const showReinforcement = lowerStrategy.includes("reinforcement")
-
-  // Scroll to show all teaching method fields when strategy changes
-  const teachingMethodsEndRef = useRef<HTMLDivElement>(null)
-  const prevStrategyRef = useRef(recommendations.strategyId)
-  useEffect(() => {
-    if (recommendations.strategyId && recommendations.strategyId !== prevStrategyRef.current) {
-      prevStrategyRef.current = recommendations.strategyId
-      requestAnimationFrame(() => {
-        teachingMethodsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-      })
-    }
-  }, [recommendations.strategyId])
 
   const formSchema = useMemo(
     () =>
@@ -376,14 +369,6 @@ export function ItemDetailPanel({
   }
 
   // --- Handlers ---
-  const updateRecommendation = useCallback(
-    (patch: Partial<RecommendationsConfig>) => {
-      setRecommendations((prev) => ({ ...prev, ...patch }))
-      if (Object.keys(recommendationErrors).length > 0) setRecommendationErrors({})
-    },
-    [recommendationErrors]
-  )
-
   const handleBaselinesChange = (rows: BaselineRow[]) => setBaselines(rows)
   const handleObjectivesChange = (rows: ObjectiveRow[]) => setObjectives(rows)
 
@@ -545,6 +530,17 @@ export function ItemDetailPanel({
             )}
           />
           <FieldErrorText message={errors.topography?.message} />
+        </div>
+
+        {/* Teaching Method select */}
+        <div className="grid grid-cols-1 sm:grid-cols-2">
+          <FloatingSelect
+            label="Teaching Method"
+            value={teachingMethod}
+            onChange={setTeachingMethod}
+            options={TEACHING_METHOD_OPTIONS}
+            searchable
+          />
         </div>
 
         {/* ── Data Collection ── */}
@@ -853,82 +849,6 @@ export function ItemDetailPanel({
           </div>
         </div>
 
-        {/* ── Collapsible sections (accordion) ── */}
-        {/* ── Teaching Methods ── */}
-        <div>
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Teaching Methods</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1 sm:col-span-2">
-              <FloatingSelect
-                label="Strategy"
-                value={recommendations.strategyId ?? ""}
-                onChange={(v) => updateRecommendation({ strategyId: v })}
-                options={strategyOptions}
-                disabled={strategyCatalog.isLoading}
-              />
-            </div>
-            <div className="space-y-1">
-              <MultiSelectWithSearch
-                label="Activities Implemented"
-                items={activitiesCatalog.items}
-                selectedIds={recommendations.activitiesToOccurrence ?? []}
-                onChange={(ids) => updateRecommendation({ activitiesToOccurrence: ids })}
-                isLoading={activitiesCatalog.isLoading}
-                allowCreate
-                onCreate={activitiesCatalog.create}
-              />
-            </div>
-            <div className="space-y-1">
-              <MultiSelectWithSearch
-                label="Preventive Strategies"
-                items={preventiveCatalog.items}
-                selectedIds={recommendations.preventiveStrategies ?? []}
-                onChange={(ids) => updateRecommendation({ preventiveStrategies: ids })}
-                isLoading={preventiveCatalog.isLoading}
-                allowCreate
-                onCreate={preventiveCatalog.create}
-              />
-            </div>
-            {showIntervention && (
-              <>
-                <div className="space-y-1">
-                  <MultiSelectWithSearch
-                    label="Replacements"
-                    items={replacementsCatalog.items}
-                    selectedIds={recommendations.replacements ?? []}
-                    onChange={(ids) => updateRecommendation({ replacements: ids })}
-                    isLoading={replacementsCatalog.isLoading}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <MultiSelectWithSearch
-                    label="Interventions"
-                    items={interventionsCatalog.items}
-                    selectedIds={recommendations.interventions ?? []}
-                    onChange={(ids) => updateRecommendation({ interventions: ids })}
-                    isLoading={interventionsCatalog.isLoading}
-                    allowCreate
-                    onCreate={interventionsCatalog.create}
-                  />
-                </div>
-              </>
-            )}
-            {showReinforcement && (
-              <div className="space-y-1">
-                <MultiSelectWithSearch
-                  label="Reinforcers"
-                  items={reinforcersCatalog.items}
-                  selectedIds={recommendations.reinforcers ?? []}
-                  onChange={(ids) => updateRecommendation({ reinforcers: ids })}
-                  isLoading={reinforcersCatalog.isLoading}
-                  grouped
-                />
-              </div>
-            )}
-          </div>
-          <div ref={teachingMethodsEndRef} />
-        </div>
-
         {/* ── Baselines ── */}
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -942,6 +862,7 @@ export function ItemDetailPanel({
               type="button"
               onClick={() => handleBaselinesChange([...baselines, createEmptyBaseline()])}
               className="gap-1.5 text-sm h-8 px-3"
+              disabled={!watchedType}
             >
               <Plus className="h-3.5 w-3.5" />
               Add baseline
@@ -968,6 +889,7 @@ export function ItemDetailPanel({
           dataCollectionTypeName={resolvedType.name}
           externalTitle
           hideButtons
+          disableActions={baselines.length === 0}
           onModalChange={setIsModalOpen}
         />
       </div>

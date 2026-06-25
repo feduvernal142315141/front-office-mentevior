@@ -31,6 +31,7 @@ interface ObjectivesTabContentProps {
   dataCollectionTypeName?: string
   hideButtons?: boolean
   externalTitle?: boolean
+  disableActions?: boolean
   onModalChange?: (open: boolean) => void
 }
 
