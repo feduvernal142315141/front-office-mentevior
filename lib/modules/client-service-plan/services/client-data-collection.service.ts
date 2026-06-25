@@ -94,6 +94,7 @@ interface ApiBaseline {
   value?: number | string
   periodCatalogId?: string
   comments?: string
+  environmentalChanges?: string
   show?: boolean | number | string
 }
 
@@ -253,7 +254,6 @@ interface ClientItemPayload {
   chart?: ApiChart
   baseline?: ApiBaseline[]
   objetive?: ApiObjective[]
-  recommendation?: ApiRecommendationsPayload
 }
 
 interface ApiResponse {
@@ -622,7 +622,7 @@ function toApiBaselines(baselines: DataCollectionBaselineData[]): ApiBaseline[] 
     date: b.date,
     value: b.value,
     periodCatalogId: b.periodCatalogId,
-    comments: b.comments,
+    environmentalChanges: b.environmentalChanges ?? b.comments ?? "",
     show: b.show,
   }))
 }
@@ -697,7 +697,6 @@ export async function upsertClientItemDataCollection(
   if (dto.chart) payload.chart = toApiChart(dto.chart)
   payload.baseline = dto.baselines ? toApiBaselines(dto.baselines) : []
   payload.objetive = dto.objectives ? toApiObjectives(dto.objectives) : []
-  payload.recommendation = toApiRecommendations(dto.recommendations)
   const response = await servicePut<ClientItemPayload, unknown>(
     `/client-service-plan-category-item/level`,
     payload

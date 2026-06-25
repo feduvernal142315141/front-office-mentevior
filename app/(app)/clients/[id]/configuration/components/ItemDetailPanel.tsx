@@ -40,10 +40,8 @@ import {
 import {
   createClientDataCollectionFormSchema,
   formatClientDataCollectionValidationAlert,
-  defaultRecommendations,
   type ClientDataCollectionFormValues,
 } from "@/lib/schemas/client-data-collection-form.schema"
-import type { RecommendationsConfig } from "@/lib/types/client-service-plan.types"
 
 import {
   SERVICE_PLAN_UNIT_OF_TIME_OPTIONS,
@@ -173,7 +171,6 @@ export function ItemDetailPanel({
   const [isSaving, setIsSaving] = useState(false)
   const [config, setConfig] = useState<DataCollectionConfig | null>(null)
   const [itemConfig, setItemConfig] = useState<ItemDataCollectionConfig | null>(null)
-  const [recommendations, setRecommendations] = useState<RecommendationsConfig>(defaultRecommendations)
   const [baselines, setBaselines] = useState<BaselineRow[]>([])
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -251,7 +248,7 @@ export function ItemDetailPanel({
             date: fromISO(b.date),
             value: String(b.value),
             periodCatalogId: b.periodCatalogId,
-            comments: b.comments,
+            comments: b.environmentalChanges ?? b.comments ?? "",
             show: b.show,
           }))
         )
@@ -307,7 +304,6 @@ export function ItemDetailPanel({
       active: itemConfig?.active ?? true,
       chart: resolveChartConfig(config.chart),
     })
-    setRecommendations(config.recommendations ?? defaultRecommendations)
   }, [config, itemConfig, reset])
 
   // --- Watched values ---
@@ -426,7 +422,6 @@ export function ItemDetailPanel({
         chart: values.chart,
         baselines: baselinesPayload,
         objectives: objectivesPayload,
-        recommendations,
       })
 
       toast.success("Item configuration saved")
@@ -512,28 +507,26 @@ export function ItemDetailPanel({
 
       {/* ── Content ── */}
       <div className="px-6 py-6 space-y-6">
-        {/* Description field */}
-        <div className="space-y-1">
-          <Controller
-            name="topography"
-            control={control}
-            render={({ field }) => (
-              <FloatingTextarea
-                label="Description"
-                required
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                hasError={!!errors.topography}
-                rows={2}
-              />
-            )}
-          />
-          <FieldErrorText message={errors.topography?.message} />
-        </div>
-
-        {/* Teaching Method select */}
-        <div className="grid grid-cols-1 sm:grid-cols-2">
+        {/* Description + Teaching Method */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+          <div className="space-y-1">
+            <Controller
+              name="topography"
+              control={control}
+              render={({ field }) => (
+                <FloatingTextarea
+                  label="Description"
+                  required
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  hasError={!!errors.topography}
+                  rows={2}
+                />
+              )}
+            />
+            <FieldErrorText message={errors.topography?.message} />
+          </div>
           <FloatingSelect
             label="Teaching Method"
             value={teachingMethod}

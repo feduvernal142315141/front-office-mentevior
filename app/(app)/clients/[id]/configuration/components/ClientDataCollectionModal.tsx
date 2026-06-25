@@ -254,7 +254,7 @@ export function ClientDataCollectionModal({
             date: fromISO(b.date),
             value: String(b.value),
             periodCatalogId: b.periodCatalogId,
-            comments: b.comments,
+            comments: b.environmentalChanges ?? b.comments ?? "",
             show: b.show,
           }))
         )
@@ -285,7 +285,7 @@ export function ClientDataCollectionModal({
               date: fromISO(b.date),
               value: String(b.value),
               periodCatalogId: b.periodCatalogId,
-              comments: b.comments,
+              comments: b.environmentalChanges ?? b.comments ?? "",
               show: b.show,
             }))
           )
@@ -475,7 +475,7 @@ export function ClientDataCollectionModal({
           date: toISO(b.date),
           value: Number(b.value) || 0,
           periodCatalogId: b.periodCatalogId,
-          comments: b.comments,
+          environmentalChanges: b.comments,
           show: b.show,
         }))
 

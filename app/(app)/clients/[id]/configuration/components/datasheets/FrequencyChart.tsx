@@ -24,6 +24,10 @@ interface FrequencyChartProps {
   weekDays: Date[]
   entries: Record<string, DayEntry>
   dcConfig: DataCollectionConfig | null
+  /** Override days for the chart (from date range toolbar). Falls back to weekDays. */
+  chartDays?: Date[]
+  /** Show every Nth X-axis label (0 = show all). */
+  tickInterval?: number
 }
 
 interface ChartDataPoint {
@@ -37,7 +41,10 @@ interface ChartDataPoint {
   isBaseline?: boolean
 }
 
-export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartProps) {
+export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInterval = 0 }: FrequencyChartProps) {
+  const days = chartDays ?? weekDays
+  // Use shorter label format for larger ranges
+  const labelFormat = "MM/dd/yyyy"
   const chartConfig = dcConfig?.chart ?? DEFAULT_CHART_CONFIG
   const baselines = dcConfig?.baselines ?? []
   const objectives = dcConfig?.objectives ?? []
@@ -52,7 +59,7 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
       const d = new Date(b.date)
       return {
         dateKey: b.date,
-        dateLabel: format(d, "dd MMM"),
+        dateLabel: format(d, labelFormat),
         fullDate: format(d, "EEEE, MMM dd yyyy"),
         occurrences: null,
         baselineValue: b.value,
@@ -67,8 +74,8 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
       ? new Date(visibleBaselines[visibleBaselines.length - 1].date).getTime()
       : 0
 
-    // Week day points (only days after the last baseline)
-    const weekPoints: ChartDataPoint[] = weekDays
+    // Day points (only days after the last baseline)
+    const dayPoints: ChartDataPoint[] = days
       .filter((day) => {
         if (lastBaselineTime === 0) return true
         const dayStart = new Date(day)
@@ -81,7 +88,7 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
         const hasData = entry && entry.occurrences > 0
         return {
           dateKey: key,
-          dateLabel: format(day, "dd MMM"),
+          dateLabel: format(day, labelFormat),
           fullDate: format(day, "EEEE, MMM dd yyyy"),
           occurrences: hasData ? entry.occurrences : null,
           baselineValue: null,
@@ -90,8 +97,8 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
         }
       })
 
-    return [...baselinePoints, ...weekPoints]
-  }, [weekDays, entries, baselines])
+    return [...baselinePoints, ...dayPoints]
+  }, [days, entries, baselines, labelFormat])
 
   const hasBaselineData = baselines.some((b) => b.show && b.value > 0 && b.date)
 
@@ -144,6 +151,12 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
   // Objectives visual config
   const objVisual = chartConfig.objectives
 
+  // For 3M+ (>60 days), use fixed width per point with horizontal scroll
+  const PX_PER_POINT = 30
+  const needsScroll = days.length > 60
+  const chartWidth = needsScroll ? days.length * PX_PER_POINT : undefined
+  const chartHeight = 320
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
@@ -177,7 +190,8 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={280}>
+      <div className={needsScroll ? "overflow-x-auto custom-scrollbar" : undefined}>
+      <ResponsiveContainer width={chartWidth ?? "100%"} height={chartHeight}>
         <ComposedChart data={data} margin={{ top: 10, right: 10, bottom: 5, left: -10 }}>
           <CartesianGrid
             strokeDasharray="3 3"
@@ -188,10 +202,14 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
 
           <XAxis
             dataKey="dateLabel"
-            tick={{ fontSize: 11, fill: "#94A3B8" }}
+            tick={{ fontSize: days.length > 90 ? 8 : days.length > 30 ? 9 : 10, fill: "#64748B" }}
             axisLine={{ stroke: "#E2E8F0" }}
             tickLine={false}
-            padding={{ left: 30, right: 30 }}
+            padding={{ left: 5, right: 5 }}
+            interval={tickInterval}
+            angle={-45}
+            textAnchor="end"
+            height={70}
           />
 
           <YAxis
@@ -264,23 +282,24 @@ export function FrequencyChart({ weekDays, entries, dcConfig }: FrequencyChartPr
               dataKey="occurrences"
               fill={lineColor}
               radius={[4, 4, 0, 0]}
-              maxBarSize={32}
-              label={showValues ? { position: "top", fontSize: 10, fill: "#64748B" } : false}
+              maxBarSize={days.length > 30 ? 12 : 32}
+              label={showValues && days.length <= 31 ? { position: "top", fontSize: 10, fill: "#64748B" } : false}
             />
           ) : (
             <Line
               type="monotone"
               dataKey="occurrences"
               stroke={lineColor}
-              strokeWidth={2.5}
-              dot={{ r: 4, fill: "white", stroke: lineColor, strokeWidth: 2 }}
-              activeDot={{ r: 6, fill: lineColor, stroke: "white", strokeWidth: 2 }}
+              strokeWidth={days.length > 60 ? 1.5 : 2.5}
+              dot={days.length > 30 ? false : { r: 4, fill: "white", stroke: lineColor, strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: lineColor, stroke: "white", strokeWidth: 2 }}
               connectNulls={totalDatasetConfig?.spanGaps ?? false}
-              label={showValues ? { position: "top", fontSize: 10, fill: "#64748B" } : false}
+              label={showValues && days.length <= 31 ? { position: "top", fontSize: 10, fill: "#64748B" } : false}
             />
           )}
         </ComposedChart>
       </ResponsiveContainer>
+      </div>
     </div>
   )
 }

@@ -7,6 +7,8 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import { useFrequencyDatasheet } from "./useFrequencyDatasheet"
+import { useChartDateRange } from "./useChartDateRange"
+import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
 import { getDateKey } from "./frequency-datasheet.types"
 import { FrequencyChart } from "./FrequencyChart"
 
@@ -18,6 +20,7 @@ interface FrequencyDatasheetProps {
 
 export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: FrequencyDatasheetProps) {
   const ds = useFrequencyDatasheet()
+  const chartRange = useChartDateRange()
 
   return (
     <div className="space-y-4">
@@ -177,7 +180,24 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
       </div>
 
       {/* Chart */}
-      <FrequencyChart weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig} />
+      <div className="space-y-3">
+        <ChartDateRangeToolbar
+          preset={chartRange.preset}
+          rangeLabel={chartRange.rangeLabel}
+          isAtToday={chartRange.isAtToday}
+          onPresetChange={chartRange.setPreset}
+          onPrev={chartRange.goToPrev}
+          onNext={chartRange.goToNext}
+          onToday={chartRange.goToToday}
+        />
+        <FrequencyChart
+          weekDays={ds.weekDays}
+          entries={ds.entries}
+          dcConfig={dcConfig}
+          chartDays={chartRange.chartDays}
+          tickInterval={chartRange.tickInterval}
+        />
+      </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white shadow-sm px-5 py-3.5">

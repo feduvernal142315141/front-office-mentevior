@@ -7,6 +7,8 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import { usePercentageDatasheet } from "./usePercentageDatasheet"
+import { useChartDateRange } from "./useChartDateRange"
+import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
 import { getDateKey, calculatePercentage } from "./percentage-datasheet.types"
 import { PercentageChart } from "./PercentageChart"
 
@@ -18,6 +20,7 @@ interface PercentageDatasheetProps {
 
 export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig }: PercentageDatasheetProps) {
   const ds = usePercentageDatasheet()
+  const chartRange = useChartDateRange()
 
   return (
     <div className="space-y-4">
@@ -231,7 +234,24 @@ export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig }: 
       </div>
 
       {/* Chart */}
-      <PercentageChart weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig} />
+      <div className="space-y-3">
+        <ChartDateRangeToolbar
+          preset={chartRange.preset}
+          rangeLabel={chartRange.rangeLabel}
+          isAtToday={chartRange.isAtToday}
+          onPresetChange={chartRange.setPreset}
+          onPrev={chartRange.goToPrev}
+          onNext={chartRange.goToNext}
+          onToday={chartRange.goToToday}
+        />
+        <PercentageChart
+          weekDays={ds.weekDays}
+          entries={ds.entries}
+          dcConfig={dcConfig}
+          chartDays={chartRange.chartDays}
+          tickInterval={chartRange.tickInterval}
+        />
+      </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white shadow-sm px-5 py-3.5">

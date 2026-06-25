@@ -55,7 +55,8 @@ export interface DataCollectionBaselineData {
   date: string
   value: number
   periodCatalogId: string
-  comments: string
+  comments?: string
+  environmentalChanges?: string
   show: boolean
 }
 

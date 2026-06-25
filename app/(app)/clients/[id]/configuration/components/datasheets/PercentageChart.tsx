@@ -22,6 +22,10 @@ interface PercentageChartProps {
   weekDays: Date[]
   entries: Record<string, PercentageDayEntry>
   dcConfig: DataCollectionConfig | null
+  /** Override days for the chart (from date range toolbar). Falls back to weekDays. */
+  chartDays?: Date[]
+  /** Show every Nth X-axis label (0 = show all). */
+  tickInterval?: number
 }
 
 interface ChartDataPoint {
@@ -35,19 +39,21 @@ interface ChartDataPoint {
   note: string
 }
 
-export function PercentageChart({ weekDays, entries, dcConfig }: PercentageChartProps) {
+export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickInterval = 0 }: PercentageChartProps) {
+  const days = chartDays ?? weekDays
+  const labelFormat = "MM/dd/yyyy"
   const chartConfig = dcConfig?.chart ?? DEFAULT_CHART_CONFIG
   const baselines = dcConfig?.baselines ?? []
   const objectives = dcConfig?.objectives ?? []
 
   const data = useMemo<ChartDataPoint[]>(() => {
-    return weekDays.map((day) => {
+    return days.map((day) => {
       const key = getDateKey(day)
       const entry = entries[key]
       const pct = entry ? calculatePercentage(entry) : null
       return {
         dateKey: key,
-        dateLabel: format(day, "dd MMM"),
+        dateLabel: format(day, labelFormat),
         fullDate: format(day, "EEEE, MMM dd yyyy"),
         percentage: pct,
         yesCount: entry ? countYes(entry) : 0,
@@ -56,7 +62,7 @@ export function PercentageChart({ weekDays, entries, dcConfig }: PercentageChart
         note: entry?.environmentalNote ?? "",
       }
     })
-  }, [weekDays, entries])
+  }, [days, entries, labelFormat])
 
   const baselineValue = useMemo(() => {
     const shown = baselines.filter((b) => b.show && b.value > 0)
@@ -102,6 +108,11 @@ export function PercentageChart({ weekDays, entries, dcConfig }: PercentageChart
 
   const objVisual = chartConfig.objectives
 
+  const PX_PER_POINT = 30
+  const needsScroll = days.length > 60
+  const chartWidth = needsScroll ? days.length * PX_PER_POINT : undefined
+  const chartHeight = 320
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
@@ -135,15 +146,21 @@ export function PercentageChart({ weekDays, entries, dcConfig }: PercentageChart
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={280}>
+      <div className={needsScroll ? "overflow-x-auto custom-scrollbar" : undefined}>
+      <ResponsiveContainer width={chartWidth ?? "100%"} height={chartHeight}>
         <ComposedChart data={data} margin={{ top: 10, right: 10, bottom: 5, left: -10 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 20% 93%)" vertical={false} />
 
           <XAxis
             dataKey="dateLabel"
-            tick={{ fontSize: 11, fill: "#94A3B8" }}
+            tick={{ fontSize: days.length > 90 ? 8 : days.length > 30 ? 9 : 10, fill: "#64748B" }}
             axisLine={{ stroke: "#E2E8F0" }}
             tickLine={false}
+            padding={{ left: 5, right: 5 }}
+            interval={tickInterval}
+            angle={-45}
+            textAnchor="end"
+            height={70}
           />
 
           <YAxis
@@ -195,21 +212,22 @@ export function PercentageChart({ weekDays, entries, dcConfig }: PercentageChart
           ))}
 
           {lineType === "BAR" ? (
-            <Bar dataKey="percentage" fill={lineColor} radius={[4, 4, 0, 0]} maxBarSize={32} label={showValues ? { position: "top" as const, fontSize: 10, fill: "#64748B" } : false} />
+            <Bar dataKey="percentage" fill={lineColor} radius={[4, 4, 0, 0]} maxBarSize={days.length > 30 ? 12 : 32} label={showValues && days.length <= 31 ? { position: "top" as const, fontSize: 10, fill: "#64748B" } : false} />
           ) : (
             <Line
               type="monotone"
               dataKey="percentage"
               stroke={lineColor}
-              strokeWidth={2.5}
-              dot={{ r: 4, fill: "white", stroke: lineColor, strokeWidth: 2 }}
-              activeDot={{ r: 6, fill: lineColor, stroke: "white", strokeWidth: 2 }}
+              strokeWidth={days.length > 60 ? 1.5 : 2.5}
+              dot={days.length > 30 ? false : { r: 4, fill: "white", stroke: lineColor, strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: lineColor, stroke: "white", strokeWidth: 2 }}
               connectNulls={totalDatasetConfig?.spanGaps ?? false}
-              label={showValues ? { position: "top" as const, fontSize: 10, fill: "#64748B" } : false}
+              label={showValues && days.length <= 31 ? { position: "top" as const, fontSize: 10, fill: "#64748B" } : false}
             />
           )}
         </ComposedChart>
       </ResponsiveContainer>
+      </div>
     </div>
   )
 }

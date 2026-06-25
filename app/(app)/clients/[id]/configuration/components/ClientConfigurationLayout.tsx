@@ -1,12 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ClipboardList, BarChart3, Sliders, ArrowLeft } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { useClientServicePlanById } from "@/lib/modules/client-service-plan/hooks/use-client-service-plan-by-id"
-import { useUi } from "@/lib/store/ui.store"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/custom/Button"
 
@@ -28,27 +27,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
   const [activeSectionId, setActiveSectionId] = useState("service-plan")
   const [spId, setSpId] = useState<string | null>(clientServicePlanId)
   const { clientServicePlan } = useClientServicePlanById(spId ?? "")
-  const { sidebarCollapsed, setSidebarCollapsed } = useUi()
-  const prevCollapsedRef = useRef<boolean | null>(null)
 
-  // Auto-collapse sidebar on mount, restore on unmount
-  useEffect(() => {
-    prevCollapsedRef.current = sidebarCollapsed
-    setSidebarCollapsed(true)
-    return () => {
-      if (prevCollapsedRef.current !== null) {
-        setSidebarCollapsed(prevCollapsedRef.current)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Keep sidebar collapsed while on this page
-  useEffect(() => {
-    if (!sidebarCollapsed) {
-      setSidebarCollapsed(true)
-    }
-  }, [sidebarCollapsed, setSidebarCollapsed])
 
   const sections: ConfigurationSection[] = useMemo(
     () => [

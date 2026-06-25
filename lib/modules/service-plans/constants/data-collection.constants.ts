@@ -23,7 +23,7 @@ export function typeIsMeasurementLog(typeName: string): boolean {
 }
 
 export function typeRequiresWeeklyDaily(typeName: string): boolean {
-  return typeName === "Frequency" || typeName === "Rate"
+  return typeName === "Frequency" || typeName === "Frequency/Count" || typeName === "Rate"
 }
 
 export function typeRequiresUnitOfTime(typeName: string): boolean {
@@ -42,7 +42,9 @@ export function typeRequiresDailyAndWeekly(typeName: string): boolean {
   return (
     typeName === "Duration" ||
     typeName === "Response latency" ||
-    typeName === "Interresponse time"
+    typeName === "Latency" ||
+    typeName === "Interresponse time" ||
+    typeName === "Interresponse Time"
   )
 }
 

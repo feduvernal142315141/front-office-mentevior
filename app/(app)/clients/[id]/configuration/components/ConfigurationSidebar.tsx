@@ -22,7 +22,7 @@ export function ConfigurationSidebar({
   onSectionClick,
 }: ConfigurationSidebarProps) {
   return (
-    <div className="w-64 shrink-0 bg-white border-r border-slate-200/60 p-4 pb-36 custom-scrollbar overflow-y-auto">
+    <div className="w-72 shrink-0 bg-white border-r border-slate-200/60 pl-8 pr-5 py-4 pb-36 custom-scrollbar overflow-y-auto">
       <div className="mb-6">
         <h2 className="text-lg font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
           Configuration

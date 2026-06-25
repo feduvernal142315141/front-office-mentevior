@@ -199,7 +199,7 @@ function DataCollectionView({ clientServicePlanId }: DataCollectionViewProps) {
               </div>
 
               {/* Collection UI — varies by type */}
-              {categoryTypeName === "Frequency" ? (
+              {categoryTypeName === "Frequency/Count" || categoryTypeName === "Frequency" ? (
                 <FrequencyDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
               ) : categoryTypeName === "Percentage of Opportunities" ? (
                 <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
