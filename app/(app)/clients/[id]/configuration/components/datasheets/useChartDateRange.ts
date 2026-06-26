@@ -86,24 +86,41 @@ interface UseChartDateRangeResult {
   tickInterval: number
 }
 
-function buildRange(endDate: Date, preset: ChartRangePreset) {
+function buildRange(startDate: Date, preset: ChartRangePreset) {
   const cfg = PRESET_MAP[preset]
-  const start = subDays(endDate, cfg.days - 1)
-  return { start, end: endDate }
+  const end = addDays(startDate, cfg.days - 1)
+  return { start: startDate, end }
 }
 
 export function useChartDateRange(
-  initialPreset: ChartRangePreset = "1W"
+  initialPreset: ChartRangePreset = "1W",
+  anchorDate?: Date,
 ): UseChartDateRangeResult {
   const [preset, setPresetState] = useState<ChartRangePreset>(initialPreset)
-  const [endDate, setEndDate] = useState<Date>(() => {
-    // Default: end is today (aligned to end of week for 1W)
+
+  // The anchor is the first baseline date; default to today if none
+  const resolvedAnchor = useMemo(() => {
+    if (anchorDate) {
+      const d = new Date(anchorDate)
+      d.setHours(0, 0, 0, 0)
+      return d
+    }
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     return today
-  })
+  }, [anchorDate])
 
-  const range = useMemo(() => buildRange(endDate, preset), [endDate, preset])
+  const [startDate, setStartDate] = useState<Date>(resolvedAnchor)
+
+  // Sync startDate when anchor changes (item switch)
+  const anchorKey = resolvedAnchor.getTime()
+  const prevAnchorRef = useMemo(() => ({ current: anchorKey }), [])
+  if (prevAnchorRef.current !== anchorKey) {
+    prevAnchorRef.current = anchorKey
+    setStartDate(resolvedAnchor)
+  }
+
+  const range = useMemo(() => buildRange(startDate, preset), [startDate, preset])
 
   const chartDays = useMemo(
     () => eachDayOfInterval({ start: range.start, end: range.end }),
@@ -120,40 +137,32 @@ export function useChartDateRange(
   const isAtToday = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return isSameDay(endDate, today)
-  }, [endDate])
+    return isSameDay(startDate, resolvedAnchor)
+  }, [startDate, resolvedAnchor])
 
   const setPreset = useCallback((p: ChartRangePreset) => {
     setPresetState(p)
-    // Reset end to today when switching presets
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    setEndDate(today)
-  }, [])
+    // Reset start to anchor when switching presets
+    setStartDate(resolvedAnchor)
+  }, [resolvedAnchor])
 
   const goToPrev = useCallback(() => {
-    setEndDate((current) => {
+    setStartDate((current) => {
       const cfg = PRESET_MAP[preset]
       return cfg.shiftFn(current, -1)
     })
   }, [preset])
 
   const goToNext = useCallback(() => {
-    setEndDate((current) => {
+    setStartDate((current) => {
       const cfg = PRESET_MAP[preset]
-      const next = cfg.shiftFn(current, 1)
-      // Don't go beyond today
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      return next.getTime() > today.getTime() ? today : next
+      return cfg.shiftFn(current, 1)
     })
   }, [preset])
 
   const goToToday = useCallback(() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    setEndDate(today)
-  }, [])
+    setStartDate(resolvedAnchor)
+  }, [resolvedAnchor])
 
   // Always show every day label — font/rotation adapts in chart components
   const tickInterval = 0

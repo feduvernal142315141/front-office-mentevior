@@ -21,6 +21,7 @@ import { GroupedSelect } from "@/components/custom/GroupedSelect"
 import { Button } from "@/components/custom/Button"
 
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
+import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-method-catalog"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import {
   BaselinesTabContent,
@@ -109,38 +110,6 @@ function FieldErrorText({ message }: { message?: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Teaching Method options
-// ---------------------------------------------------------------------------
-
-const TEACHING_METHOD_OPTIONS = [
-  { value: "BACKWARD_CHAINING", label: "Backward Chaining" },
-  { value: "BST", label: "Behavioral Skills Training (BST)" },
-  { value: "DIRECT_INSTRUCTION", label: "Direct Instruction" },
-  { value: "DTT", label: "Discrete Trial Training (DTT)" },
-  { value: "ERRORLESS_LEARNING", label: "Errorless Learning" },
-  { value: "FORWARD_CHAINING", label: "Forward Chaining" },
-  { value: "FCT", label: "Functional Communication Training (FCT)" },
-  { value: "GRADUATED_GUIDANCE", label: "Graduated Guidance" },
-  { value: "IMITATION_TRAINING", label: "Imitation Training" },
-  { value: "INCIDENTAL", label: "Incidental Teaching" },
-  { value: "LEAST_TO_MOST", label: "Least-to-Most Prompting" },
-  { value: "MODELING", label: "Modeling" },
-  { value: "MOST_TO_LEAST", label: "Most-to-Least Prompting" },
-  { value: "NET", label: "Natural Environment Teaching (NET)" },
-  { value: "OBSERVATIONAL", label: "Observational Learning" },
-  { value: "PECS_AAC", label: "PECS/AAC Instruction" },
-  { value: "PRT", label: "Pivotal Response Training (PRT)" },
-  { value: "PRECISION_TEACHING", label: "Precision Teaching" },
-  { value: "SELF_MANAGEMENT", label: "Self-Management Training" },
-  { value: "SHAPING", label: "Shaping" },
-  { value: "TASK_ANALYSIS", label: "Task Analysis" },
-  { value: "TIME_DELAY", label: "Time Delay" },
-  { value: "TOTAL_TASK_CHAINING", label: "Total Task Chaining" },
-  { value: "VERBAL_BEHAVIOR", label: "Verbal Behavior Instruction" },
-  { value: "VIDEO_MODELING", label: "Video Modeling" },
-]
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -177,6 +146,7 @@ export function ItemDetailPanel({
   const [teachingMethod, setTeachingMethod] = useState("")
 
   // --- Catalogs ---
+  const { selectOptions: teachingMethodOptions, isLoading: isLoadingTeachingMethods } = useTeachingMethodCatalog()
   const { items: periodCatalog } = usePeriodCatalog()
   const periodSelectOptions = useMemo(
     () => periodCatalog.map((p) => ({ value: p.id, label: p.name })),
@@ -241,6 +211,7 @@ export function ItemDetailPanel({
       if (itemData) {
         setItemConfig(itemData)
         setConfig(itemData)
+        setTeachingMethod(itemData.teachingMethodId ?? "")
         setBaselines(
           (itemData.baselines ?? []).map((b) => ({
             localId: crypto.randomUUID(),
@@ -408,6 +379,7 @@ export function ItemDetailPanel({
       await upsertClientItemDataCollection({
         clientServicePlanCategoryItemId,
         name: itemName,
+        teachingMethodId: teachingMethod || null,
         type: values.type as DataCollectionType,
         weeklyDailyValue: values.weeklyDailyValue,
         dailyValue: values.dailyValue,
@@ -507,8 +479,16 @@ export function ItemDetailPanel({
 
       {/* ── Content ── */}
       <div className="px-6 py-6 space-y-6">
-        {/* Description + Teaching Method */}
+        {/* Teaching Method + Description */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+          <FloatingSelect
+            label="Teaching Method"
+            value={teachingMethod}
+            onChange={setTeachingMethod}
+            options={teachingMethodOptions}
+            searchable
+            disabled={isLoadingTeachingMethods}
+          />
           <div className="space-y-1">
             <Controller
               name="topography"
@@ -527,13 +507,6 @@ export function ItemDetailPanel({
             />
             <FieldErrorText message={errors.topography?.message} />
           </div>
-          <FloatingSelect
-            label="Teaching Method"
-            value={teachingMethod}
-            onChange={setTeachingMethod}
-            options={TEACHING_METHOD_OPTIONS}
-            searchable
-          />
         </div>
 
         {/* ── Data Collection ── */}

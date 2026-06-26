@@ -11,14 +11,16 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
+  ReferenceArea,
   Legend,
 } from "recharts"
 import { format } from "date-fns"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
+import type { ClientServicePlanItemBaseline, ClientServicePlanItemObjective } from "@/lib/types/client-service-plan.types"
 import type { ChartConfig, ChartDatasetVisualConfig } from "@/lib/modules/service-plans/constants/chart.constants"
 import { DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
 import type { DayEntry } from "./frequency-datasheet.types"
-import { getDateKey } from "./frequency-datasheet.types"
+import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 
 interface FrequencyChartProps {
   weekDays: Date[]
@@ -28,6 +30,12 @@ interface FrequencyChartProps {
   chartDays?: Date[]
   /** Show every Nth X-axis label (0 = show all). */
   tickInterval?: number
+  /** Item-level baselines from the API */
+  itemBaselines?: ClientServicePlanItemBaseline[]
+  /** Item-level objectives (STOs) from the API */
+  itemObjectives?: ClientServicePlanItemObjective[]
+  /** Date keys to hide (gap between last baseline and first STO) */
+  gapDateKeys?: Set<string>
 }
 
 interface ChartDataPoint {
@@ -41,63 +49,129 @@ interface ChartDataPoint {
   isBaseline?: boolean
 }
 
-export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInterval = 0 }: FrequencyChartProps) {
+export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInterval = 0, itemBaselines, itemObjectives, gapDateKeys }: FrequencyChartProps) {
   const days = chartDays ?? weekDays
   // Use shorter label format for larger ranges
   const labelFormat = "MM/dd/yyyy"
   const chartConfig = dcConfig?.chart ?? DEFAULT_CHART_CONFIG
-  const baselines = dcConfig?.baselines ?? []
   const objectives = dcConfig?.objectives ?? []
 
+  // Treatment line: first STO start date
+  const treatmentDateLabel = useMemo(() => {
+    const objs = itemObjectives ?? []
+    if (objs.length === 0) return null
+    const sorted = [...objs]
+      .filter((o) => o.startDate)
+      .sort((a, b) => parseLocalDate(a.startDate).getTime() - parseLocalDate(b.startDate).getTime())
+    if (sorted.length === 0) return null
+    return format(parseLocalDate(sorted[0].startDate), labelFormat)
+  }, [itemObjectives, labelFormat])
+
+  // STO phase markers: each objective gets two vertical lines (start + end) with label in between
+  const stoPhases = useMemo(() => {
+    const objs = itemObjectives ?? []
+    if (objs.length === 0) return []
+    const sorted = [...objs]
+      .filter((o) => o.startDate)
+      .sort((a, b) => parseLocalDate(a.startDate).getTime() - parseLocalDate(b.startDate).getTime())
+    return sorted.map((obj, idx) => ({
+      number: idx + 1,
+      startLabel: format(parseLocalDate(obj.startDate), labelFormat),
+      endLabel: obj.endDate ? format(parseLocalDate(obj.endDate), labelFormat) : null,
+    }))
+  }, [itemObjectives, labelFormat])
+
+  // Merge baselines: prefer item-level baselines, fall back to category-level
+  const baselines = useMemo(() => {
+    if (itemBaselines && itemBaselines.length > 0) {
+      // Map item baselines to the same shape used by the chart
+      return itemBaselines.map((b) => ({
+        date: b.date,
+        value: b.value,
+        show: b.show,
+        comments: b.environmentalChanges ?? "",
+        periodCatalogId: b.periodCatalogId,
+      }))
+    }
+    return dcConfig?.baselines ?? []
+  }, [itemBaselines, dcConfig?.baselines])
+
   const data = useMemo<ChartDataPoint[]>(() => {
-    // Baseline points first (sorted by date, only visible ones)
+    // Build a set of baseline date keys for quick lookup
     const visibleBaselines = baselines
       .filter((b) => b.show && b.value > 0 && b.date)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
 
-    const baselinePoints: ChartDataPoint[] = visibleBaselines.map((b) => {
-      const d = new Date(b.date)
+    const baselineDateKeys = new Set(
+      visibleBaselines.map((b) => {
+        const d = parseLocalDate(b.date)
+        return getDateKey(d)
+      })
+    )
+
+    // Build a map of baseline values by date key
+    const baselineMap = new Map<string, { value: number; note: string }>()
+    for (const b of visibleBaselines) {
+      const d = parseLocalDate(b.date)
+      const key = getDateKey(d)
+      baselineMap.set(key, { value: b.value, note: b.comments ?? "" })
+    }
+
+    const gap = gapDateKeys ?? new Set<string>()
+    const allDayKeys = new Set<string>()
+    const allDays: Date[] = []
+
+    // Add chart range days (skip gap dates between baseline and treatment)
+    for (const day of days) {
+      const key = getDateKey(day)
+      if (!allDayKeys.has(key) && !gap.has(key)) {
+        allDayKeys.add(key)
+        allDays.push(day)
+      }
+    }
+
+    // Add baseline dates that may fall outside the chart range
+    for (const b of visibleBaselines) {
+      const d = parseLocalDate(b.date)
+      const key = getDateKey(d)
+      if (!allDayKeys.has(key)) {
+        allDayKeys.add(key)
+        allDays.push(d)
+      }
+    }
+
+    // Sort all days chronologically
+    allDays.sort((a, b) => a.getTime() - b.getTime())
+
+    // Build data points
+    const points: ChartDataPoint[] = allDays.map((day) => {
+      const key = getDateKey(day)
+      const entry = entries[key]
+      const bl = baselineMap.get(key)
+      const isBaselineDay = baselineDateKeys.has(key)
+      const hasData = entry && entry.occurrences > 0
+
+      // For baseline days, use the live entry value (editable in grid) falling back to API value
+      const liveBaselineValue = isBaselineDay
+        ? (hasData ? entry.occurrences : (bl?.value ?? null))
+        : null
+
       return {
-        dateKey: b.date,
-        dateLabel: format(d, labelFormat),
-        fullDate: format(d, "EEEE, MMM dd yyyy"),
-        occurrences: null,
-        baselineValue: b.value,
-        hasNote: false,
-        note: b.comments ?? "",
-        isBaseline: true,
+        dateKey: key,
+        dateLabel: format(day, labelFormat),
+        fullDate: format(day, "EEEE, MMM dd yyyy"),
+        occurrences: isBaselineDay ? null : (hasData ? entry.occurrences : null),
+        baselineValue: liveBaselineValue,
+        hasNote: (entry?.environmentalNote ?? "").trim().length > 0
+          || (isBaselineDay && (bl?.note ?? "").trim().length > 0),
+        note: (entry?.environmentalNote ?? "").trim().length > 0
+          ? entry.environmentalNote
+          : (bl?.note ?? ""),
+        isBaseline: isBaselineDay,
       }
     })
 
-    // Last baseline date — week points start after this
-    const lastBaselineTime = visibleBaselines.length > 0
-      ? new Date(visibleBaselines[visibleBaselines.length - 1].date).getTime()
-      : 0
-
-    // Day points (only days after the last baseline)
-    const dayPoints: ChartDataPoint[] = days
-      .filter((day) => {
-        if (lastBaselineTime === 0) return true
-        const dayStart = new Date(day)
-        dayStart.setHours(0, 0, 0, 0)
-        return dayStart.getTime() > lastBaselineTime
-      })
-      .map((day) => {
-        const key = getDateKey(day)
-        const entry = entries[key]
-        const hasData = entry && entry.occurrences > 0
-        return {
-          dateKey: key,
-          dateLabel: format(day, labelFormat),
-          fullDate: format(day, "EEEE, MMM dd yyyy"),
-          occurrences: hasData ? entry.occurrences : null,
-          baselineValue: null,
-          hasNote: (entry?.environmentalNote ?? "").trim().length > 0,
-          note: entry?.environmentalNote ?? "",
-        }
-      })
-
-    return [...baselinePoints, ...dayPoints]
+    return points
   }, [days, entries, baselines, labelFormat])
 
   const hasBaselineData = baselines.some((b) => b.show && b.value > 0 && b.date)
@@ -110,11 +184,33 @@ export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInt
 
   const objectiveName = objectives.length > 0 ? objectives[0].name : null
 
-  // Resolve Y-axis range
-  const yMin = chartConfig.yAxis?.suggestedMin ?? 0
-  const yMax = chartConfig.yAxis?.suggestedMax ?? undefined
+  // Resolve Y-axis range dynamically from data
   const yTitle = chartConfig.yAxis?.title ?? "Number of occurrences"
   const xTitle = chartConfig.xAxis?.title ?? "Dates"
+
+  const { yMin, yMax, yTicks } = useMemo(() => {
+    const allValues: number[] = []
+    for (const point of data) {
+      if (point.occurrences != null) allValues.push(point.occurrences)
+      if (point.baselineValue != null) allValues.push(point.baselineValue)
+    }
+    if (objectiveValue != null) allValues.push(objectiveValue)
+
+    const dataMax = allValues.length > 0 ? Math.max(...allValues) : 0
+    const suggestedMax = chartConfig.yAxis?.suggestedMax ?? 20
+    const effectiveMax = Math.max(suggestedMax, dataMax)
+
+    // Round up to a nice number
+    const step = effectiveMax <= 10 ? 2 : effectiveMax <= 25 ? 5 : effectiveMax <= 50 ? 10 : effectiveMax <= 100 ? 20 : Math.ceil(effectiveMax / 5 / 10) * 10
+    const ceilMax = Math.ceil(effectiveMax / step) * step + step
+
+    const ticks: number[] = []
+    for (let v = 0; v <= ceilMax; v += step) {
+      ticks.push(v)
+    }
+
+    return { yMin: 0, yMax: ceilMax, yTicks: ticks }
+  }, [data, objectiveValue, chartConfig.yAxis?.suggestedMax])
 
   // Find the "Total" dataset config for main line styling
   const totalDatasetConfig = useMemo<ChartDatasetVisualConfig | null>(() => {
@@ -143,11 +239,6 @@ export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInt
   const showValues = totalDatasetConfig?.showValues ?? false
   const baselineColor = baselineDatasetConfig?.borderColor ?? "#DC2626"
 
-  // Environmental change dates for vertical reference lines
-  const envChangeDates = useMemo(() => {
-    return data.filter((d) => d.hasNote).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
-  }, [data])
-
   // Objectives visual config
   const objVisual = chartConfig.objectives
 
@@ -173,18 +264,12 @@ export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInt
           )}
           <div className="flex items-center gap-1.5">
             <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: lineColor }} />
-            <span className="text-xs text-slate-500">Data</span>
+            <span className="text-xs text-slate-500">Treatment</span>
           </div>
           {objectiveValue !== null && (
             <div className="flex items-center gap-1.5">
               <div className="h-0.5 w-5 border-t-2 border-dashed border-emerald-500" />
               <span className="text-xs text-slate-500">Objective: <span className="font-semibold text-emerald-500">{objectiveValue}</span></span>
-            </div>
-          )}
-          {envChangeDates.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="h-4 w-0 border-l border-dashed border-slate-400" />
-              <span className="text-xs text-slate-500">Env. Change</span>
             </div>
           )}
         </div>
@@ -205,7 +290,7 @@ export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInt
             tick={{ fontSize: days.length > 90 ? 8 : days.length > 30 ? 9 : 10, fill: "#64748B" }}
             axisLine={{ stroke: "#E2E8F0" }}
             tickLine={false}
-            padding={{ left: 5, right: 5 }}
+            padding={{ left: 30, right: 10 }}
             interval={tickInterval}
             angle={-45}
             textAnchor="end"
@@ -213,11 +298,14 @@ export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInt
           />
 
           <YAxis
-            domain={[yMin, yMax ?? "auto"]}
+            domain={[yMin, yMax]}
+            ticks={yTicks}
             tick={{ fontSize: 11, fill: "#94A3B8" }}
             axisLine={{ stroke: "#E2E8F0" }}
             tickLine={false}
             width={45}
+            type="number"
+            allowDataOverflow
           />
 
           <RechartsTooltip
@@ -255,6 +343,10 @@ export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInt
             />
           )}
 
+          {/* Invisible anchors to force Y axis domain when no data */}
+          <ReferenceLine y={yMin} stroke="transparent" />
+          <ReferenceLine y={yMax} stroke="transparent" />
+
           {/* Objective reference line */}
           {objectiveValue !== null && objVisual?.showLine !== false && (
             <ReferenceLine
@@ -265,16 +357,76 @@ export function FrequencyChart({ weekDays, entries, dcConfig, chartDays, tickInt
             />
           )}
 
-          {/* Environmental changes — vertical dashed lines */}
-          {envChangeDates.map((env) => (
+          {/* Treatment vertical line — first STO start date */}
+          {treatmentDateLabel && (
             <ReferenceLine
-              key={env.dateLabel}
-              x={env.dateLabel}
-              stroke="#94A3B8"
-              strokeWidth={1}
-              strokeDasharray="4 3"
+              x={treatmentDateLabel}
+              stroke="#0F172A"
+              strokeWidth={2}
+              strokeDasharray="8 4"
+              label={({ viewBox }: { viewBox: { x?: number; y?: number } }) => {
+                const x = viewBox?.x ?? 0
+                const y = (viewBox?.y ?? 0) + 6
+                return (
+                  <g>
+                    <rect x={x - 38} y={y - 14} width={76} height={20} rx={10} fill="#0F172A" />
+                    <text x={x} y={y} textAnchor="middle" fill="#fff" fontSize={10} fontWeight={600} letterSpacing={0.5}>
+                      Treatment
+                    </text>
+                  </g>
+                )
+              }}
             />
-          ))}
+          )}
+
+          {/* STO phase markers — start line (skip if same as treatment), end line, label centered */}
+          {stoPhases.map((sto) =>
+            sto.startLabel !== treatmentDateLabel ? (
+              <ReferenceLine
+                key={`sto-start-${sto.number}`}
+                x={sto.startLabel}
+                stroke="#94A3B8"
+                strokeWidth={1.5}
+                strokeDasharray="6 3"
+              />
+            ) : null
+          )}
+          {stoPhases.map((sto) =>
+            sto.endLabel ? (
+              <ReferenceLine
+                key={`sto-end-${sto.number}`}
+                x={sto.endLabel}
+                stroke="#94A3B8"
+                strokeWidth={1.5}
+                strokeDasharray="6 3"
+              />
+            ) : null
+          )}
+          {/* STO labels — ReferenceArea gives us both x1 and x2 to center the label */}
+          {stoPhases.map((sto) => {
+            if (!sto.endLabel) return null
+            return (
+              <ReferenceArea
+                key={`sto-area-${sto.number}`}
+                x1={sto.startLabel}
+                x2={sto.endLabel}
+                fill="transparent"
+                strokeOpacity={0}
+                label={({ viewBox }: { viewBox: { x?: number; y?: number; width?: number; height?: number } }) => {
+                  const areaX = viewBox?.x ?? 0
+                  const areaW = viewBox?.width ?? 0
+                  const areaH = viewBox?.height ?? 0
+                  const centerX = areaX + areaW / 2
+                  const y = (viewBox?.y ?? 0) + areaH - 10
+                  return (
+                    <text x={centerX} y={y} textAnchor="middle" fill="#64748B" fontSize={11} fontWeight={600}>
+                      {`STO#${sto.number}`}
+                    </text>
+                  )
+                }}
+              />
+            )
+          })}
 
           {/* Main data series */}
           {lineType === "BAR" ? (

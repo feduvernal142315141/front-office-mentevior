@@ -1,15 +1,18 @@
 "use client"
 
-import { CalendarDays, ChevronLeft, ChevronRight, BarChart3, Hash, FileText, Minus, Plus } from "lucide-react"
-import { format } from "date-fns"
+import { useCallback, useMemo, useState } from "react"
+import { CalendarDays, ChevronLeft, ChevronRight, BarChart3, Hash, FileText, Minus, Plus, MapPin, Save, RotateCcw, Loader2, Check } from "lucide-react"
+import { addDays, format } from "date-fns"
+import { AnimatePresence, motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
+import { updateBaselineValues } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
 import { useFrequencyDatasheet } from "./useFrequencyDatasheet"
 import { useChartDateRange } from "./useChartDateRange"
 import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
-import { getDateKey } from "./frequency-datasheet.types"
+import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { FrequencyChart } from "./FrequencyChart"
 
 interface FrequencyDatasheetProps {
@@ -19,8 +22,99 @@ interface FrequencyDatasheetProps {
 }
 
 export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: FrequencyDatasheetProps) {
-  const ds = useFrequencyDatasheet()
-  const chartRange = useChartDateRange()
+  const ds = useFrequencyDatasheet(activeItem.baseline)
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "success">("idle")
+
+  const handleSaveBaseline = useCallback(async () => {
+    const changed = ds.getChangedBaselines()
+    if (changed.length === 0) return
+    setSaveState("saving")
+    try {
+      await updateBaselineValues(changed)
+      ds.commitBaseline()
+      setSaveState("success")
+      setTimeout(() => setSaveState("idle"), 1500)
+    } catch {
+      setSaveState("idle")
+    }
+  }, [ds])
+
+  // First baseline date as anchor for the chart range
+  const firstBaselineDate = useMemo(() => {
+    const bls = activeItem.baseline
+    if (!bls || bls.length === 0) return undefined
+    const sorted = [...bls]
+      .filter((b) => b.date)
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
+    return sorted.length > 0 ? parseLocalDate(sorted[0].date) : undefined
+  }, [activeItem.baseline])
+
+  // Gap dates: days strictly between last baseline and first STO start — must be hidden
+  const gapDateKeys = useMemo(() => {
+    const bls = activeItem.baseline
+    const objs = activeItem.objetive
+    if (!bls || bls.length === 0 || !objs || objs.length === 0) return new Set<string>()
+
+    const baselineTimes = bls.filter((b) => b.date).map((b) => parseLocalDate(b.date).getTime())
+    const stoTimes = objs.filter((o) => o.startDate).map((o) => parseLocalDate(o.startDate).getTime())
+    if (baselineTimes.length === 0 || stoTimes.length === 0) return new Set<string>()
+
+    const lastBaselineTime = Math.max(...baselineTimes)
+    const firstStoTime = Math.min(...stoTimes)
+
+    if (lastBaselineTime >= firstStoTime) return new Set<string>()
+
+    const keys = new Set<string>()
+    const cursor = new Date(lastBaselineTime)
+    cursor.setDate(cursor.getDate() + 1)
+    while (cursor.getTime() < firstStoTime) {
+      keys.add(getDateKey(cursor))
+      cursor.setDate(cursor.getDate() + 1)
+    }
+    return keys
+  }, [activeItem.baseline, activeItem.objetive])
+
+  const chartRange = useChartDateRange("1W", firstBaselineDate)
+
+  // Visible days in the grid: exclude gap dates, then extend at the end to keep 7
+  const visibleDays = useMemo(() => {
+    const filtered = ds.weekDays.filter((day) => !gapDateKeys.has(getDateKey(day)))
+    const needed = 7 - filtered.length
+    if (needed <= 0) return filtered
+
+    // Add extra days after the last weekDay
+    const lastWeekDay = ds.weekDays[ds.weekDays.length - 1]
+    const extended = [...filtered]
+    let cursor = lastWeekDay
+    while (extended.length < 7) {
+      cursor = addDays(cursor, 1)
+      const key = getDateKey(cursor)
+      if (!gapDateKeys.has(key)) {
+        extended.push(cursor)
+      }
+    }
+    return extended
+  }, [ds.weekDays, gapDateKeys])
+
+  // Extend chart days to compensate for hidden gap days
+  const extendedChartDays = useMemo(() => {
+    const original = chartRange.chartDays
+    const gapCount = original.filter((day) => gapDateKeys.has(getDateKey(day))).length
+    if (gapCount === 0) return original
+
+    const lastDay = original[original.length - 1]
+    const extended = [...original]
+    let cursor = lastDay
+    let added = 0
+    while (added < gapCount) {
+      cursor = addDays(cursor, 1)
+      extended.push(cursor)
+      added++
+    }
+    return extended
+  }, [chartRange.chartDays, gapDateKeys])
+
+  const gridCols = `200px repeat(${visibleDays.length}, minmax(120px, 1fr))`
 
   return (
     <div className="space-y-4">
@@ -40,16 +134,22 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
         <div className="overflow-x-auto">
           <div className="min-w-[1080px]">
             {/* Column Headers */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(120px,1fr))] border-b border-slate-100">
+            <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
               <div className="px-4 py-3 bg-slate-50/60 border-r border-slate-100">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Measurement Row
                 </span>
               </div>
-              {ds.weekDays.map((day) => {
+              {visibleDays.map((day) => {
+                const key = getDateKey(day)
                 const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
                 return (
-                  <div key={getDateKey(day)} className={cn("flex items-center justify-center py-3", today && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn(
+                    "flex items-center justify-center py-3",
+                    isBaseline && "bg-red-50/60",
+                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                  )}>
                     <div
                       className={cn(
                         "flex flex-col items-center justify-center w-14 h-14 rounded-full",
@@ -69,19 +169,24 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
             </div>
 
             {/* Row: Number of Occurrences */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(120px,1fr))] border-b border-slate-100">
+            <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel
                 icon={<BarChart3 className="h-4 w-4 text-[#037ECC]" />}
                 title="Number of occurrences"
                 badge="Mandatory Field"
                 badgeColor="blue"
               />
-              {ds.weekDays.map((day) => {
+              {visibleDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", today && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn(
+                    "flex items-center justify-center px-2 py-3",
+                    isBaseline && "bg-red-50/60",
+                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                  )}>
                     <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1">
                       <button
                         type="button"
@@ -116,18 +221,23 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
             </div>
 
             {/* Row: Occurrence Marks */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(120px,1fr))] border-b border-slate-100">
+            <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel
                 icon={<Hash className="h-4 w-4 text-slate-400" />}
                 title="Occurrences"
               />
-              {ds.weekDays.map((day) => {
+              {visibleDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
                 const count = entry.occurrences || 0
                 return (
-                  <div key={key} className={cn("px-2 py-3", today && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn(
+                    "px-2 py-3",
+                    isBaseline && "bg-red-50/60",
+                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                  )}>
                     {count > 0 ? (
                       <div className="grid grid-cols-5 gap-1">
                         {Array.from({ length: count }, (_, i) => (
@@ -150,20 +260,25 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
             </div>
 
             {/* Row: Environmental Changes */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(120px,1fr))]">
+            <div className="grid" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel
                 icon={<FileText className="h-4 w-4 text-teal-500" />}
                 title="Environmental changes"
                 badge="Affects Chart Phase Lines"
                 badgeColor="teal"
               />
-              {ds.weekDays.map((day) => {
+              {visibleDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const hasNote = entry.environmentalNote.trim().length > 0
                 const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-3 py-3", today && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn(
+                    "flex items-center justify-center px-3 py-3",
+                    isBaseline && "bg-red-50/60",
+                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                  )}>
                     <FloatingInput
                       label="Add note..."
                       value={entry.environmentalNote}
@@ -178,6 +293,73 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
           </div>
         </div>
       </div>
+
+      {/* Baseline Save Bar — sticky bottom with entrance animation */}
+      <AnimatePresence>
+        {ds.hasBaselineChanges && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="sticky bottom-4 z-30"
+          >
+            <div className="relative rounded-2xl border border-amber-300/70 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden">
+              {/* Animated shimmer top border */}
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-[shimmer_2s_ease-in-out_infinite]" />
+
+              <div className="flex items-center justify-between px-5 py-3.5">
+                <div className="flex items-center gap-3">
+                  {/* Pulsing indicator */}
+                  <div className="relative flex h-9 w-9 items-center justify-center">
+                    <div className="absolute inset-0 rounded-full bg-amber-400/20 animate-ping" />
+                    <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200/60">
+                      <Save className="h-4 w-4 text-amber-600" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">Unsaved baseline changes</p>
+                    <p className="text-xs text-slate-500">You have modified baseline values</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={ds.resetBaseline}
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600 active:scale-[0.97]"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Discard
+                  </button>
+                  <motion.button
+                    type="button"
+                    onClick={handleSaveBaseline}
+                    disabled={saveState === "saving"}
+                    animate={saveState === "success" ? { scale: 1 } : { scale: [1, 1.03, 1] }}
+                    transition={saveState === "success" ? {} : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.97] disabled:opacity-80",
+                      saveState === "success"
+                        ? "bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_4px_14px_rgba(16,185,129,0.4)]"
+                        : "bg-gradient-to-r from-[#037ECC] to-[#079CFB] shadow-[0_4px_14px_rgba(3,126,204,0.4)] hover:shadow-[0_6px_20px_rgba(3,126,204,0.5)] hover:brightness-110",
+                    )}
+                  >
+                    {saveState === "saving" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : saveState === "success" ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    {saveState === "saving" ? "Saving..." : saveState === "success" ? "Saved!" : "Save Baseline"}
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Chart */}
       <div className="space-y-3">
@@ -194,8 +376,11 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
           weekDays={ds.weekDays}
           entries={ds.entries}
           dcConfig={dcConfig}
-          chartDays={chartRange.chartDays}
+          chartDays={extendedChartDays}
           tickInterval={chartRange.tickInterval}
+          itemBaselines={activeItem.baseline}
+          itemObjectives={activeItem.objetive}
+          gapDateKeys={gapDateKeys}
         />
       </div>
 
@@ -232,6 +417,9 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
           </div>
         )}
       </div>
+
+      {/* Environmental Changes Legend (print-friendly) */}
+      <EnvironmentalChangesLegend entries={ds.entries} />
     </div>
   )
 }
@@ -343,6 +531,50 @@ function RowLabel({
             {badge}
           </span>
         )}
+      </div>
+    </div>
+  )
+}
+
+function EnvironmentalChangesLegend({ entries }: { entries: Record<string, import("./frequency-datasheet.types").DayEntry> }) {
+  const changes = useMemo(() => {
+    const result: { dateKey: string; note: string }[] = []
+    for (const [dateKey, entry] of Object.entries(entries)) {
+      const note = entry.environmentalNote?.trim()
+      if (note) {
+        result.push({ dateKey, note })
+      }
+    }
+    return result.sort((a, b) => a.dateKey.localeCompare(b.dateKey))
+  }, [entries])
+
+  if (changes.length === 0) return null
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-5 py-4">
+      <div className="flex items-center gap-2 mb-3">
+        <MapPin className="h-4 w-4 text-teal-500" />
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Environmental Changes
+        </h4>
+        <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-teal-50 border border-teal-200/60 text-[10px] font-bold text-teal-600 tabular-nums">
+          {changes.length}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-2">
+        {changes.map(({ dateKey, note }) => {
+          const [y, m, d] = dateKey.split("-")
+          const dateObj = new Date(Number(y), Number(m) - 1, Number(d))
+          return (
+            <div key={dateKey} className="flex items-center gap-2 min-w-0">
+              <div className="h-1.5 w-1.5 rounded-full bg-teal-400 shrink-0" />
+              <span className="text-sm font-semibold text-slate-700 tabular-nums shrink-0">
+                {format(dateObj, "MM/dd/yyyy")}
+              </span>
+              <span className="text-sm text-slate-500 truncate">{note}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

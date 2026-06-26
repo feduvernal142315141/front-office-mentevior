@@ -252,17 +252,7 @@ export function ObjectiveFormModal({
       {/* Footer */}
       <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
         <div>
-          {isEdit ? (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => void handleDelete()}
-              loading={isDeleting}
-              className="!text-red-600 !border-red-200 hover:!bg-red-50"
-            >
-              Delete
-            </Button>
-          ) : (
+          {!isEdit && (
             <Button type="button" variant="secondary" onClick={handleClear} className="!text-red-600 !border-red-200 hover:!bg-red-50">
               Clear
             </Button>

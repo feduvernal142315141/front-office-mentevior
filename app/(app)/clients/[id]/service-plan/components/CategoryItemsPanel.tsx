@@ -1,11 +1,14 @@
 "use client"
 
+import { useMemo } from "react"
 import { Button } from "@/components/custom/Button"
 import { Card } from "@/components/custom/Card"
 import type {
   ClientServicePlanCategoryMappedItem,
   ClientServicePlanCategorySummary,
 } from "@/lib/types/client-service-plan.types"
+import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-method-catalog"
+import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
 
 import { CreateItemInlineForm } from "./CreateItemInlineForm"
 import { MappedItemRow } from "./MappedItemRow"
@@ -43,6 +46,14 @@ export function CategoryItemsPanel({
   onConfigureDataCollection,
   onOpenAddItemsDrawer,
 }: CategoryItemsPanelProps) {
+  const { items: teachingMethods } = useTeachingMethodCatalog()
+  const { itemsMap: typeEventMap } = useTypeEventCatalog()
+
+  const teachingMethodMap = useMemo(
+    () => new Map(teachingMethods.map((tm) => [tm.id, tm.name])),
+    [teachingMethods]
+  )
+
   if (!activeCategory) {
     return (
       <Card variant="elevated" padding="lg">
@@ -103,17 +114,34 @@ export function CategoryItemsPanel({
             <p className="text-sm text-slate-600">No items mapped for this category.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {items.map((item) => (
-              <MappedItemRow
-                key={item.id}
-                item={item}
-                isDeleting={deletingItemId === item.id}
-                isAnyDeleting={deletingItemId !== null}
-                onDelete={onDeleteItem}
-                onConfigureDataCollection={onConfigureDataCollection}
-              />
-            ))}
+          <div className="space-y-2">
+            {/* Column Headers */}
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] gap-4 px-4 pb-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Item</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teaching Method</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Type</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Baseline</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Objective</span>
+              {/* Spacer for actions column */}
+              <span className="w-[68px]" />
+            </div>
+            {items.map((item) => {
+              const tmName = item.teachingMethodId ? teachingMethodMap.get(item.teachingMethodId) : undefined
+              const typeId = item.dataCollection?.typeEventCatalogId
+              const tName = typeId ? typeEventMap.get(typeId)?.name : undefined
+              return (
+                <MappedItemRow
+                  key={item.id}
+                  item={item}
+                  isDeleting={deletingItemId === item.id}
+                  isAnyDeleting={deletingItemId !== null}
+                  onDelete={onDeleteItem}
+                  onConfigureDataCollection={onConfigureDataCollection}
+                  teachingMethodName={tmName}
+                  typeName={tName}
+                />
+              )
+            })}
           </div>
         )}
       </div>

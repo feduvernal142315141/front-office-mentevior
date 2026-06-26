@@ -1,7 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Plus, Sparkles, Target } from "lucide-react"
+import { Plus, Sparkles, Target, Trash2 } from "lucide-react"
+import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { parseLocalDate } from "@/lib/date"
@@ -12,6 +13,10 @@ import {
   OPERATOR_SMART_CRITERIA_OPTIONS,
   type ObjectiveStatus,
 } from "@/lib/types/data-collection.types"
+import {
+  deleteClientCategoryObjective,
+  deleteClientItemObjective,
+} from "@/lib/modules/client-service-plan/services/client-data-collection.service"
 
 import {
   ObjectiveFormModal,
@@ -59,6 +64,16 @@ const STATUS_CONFIG: Record<ObjectiveStatus, { label: string; className: string 
     label: "Mastered",
     className: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
+}
+
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&#34;/g, '"')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
 }
 
 function formatDate(dateStr: string): string {
@@ -168,8 +183,35 @@ export function ObjectivesTabContent({
     if (showEstEndDate) cols.push(DATE_COL_WIDTH)
     if (showEndDate) cols.push(DATE_COL_WIDTH)
     cols.push(STATUS_COL_WIDTH)
+    cols.push("36px")
     return cols.join(" ")
   }, [showStartDate, showEstEndDate, showEndDate])
+
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const handleInlineDelete = useCallback(
+    async (e: React.MouseEvent, obj: ObjectiveRow) => {
+      e.stopPropagation()
+      if (obj.recordId) {
+        setDeletingId(obj.localId)
+        try {
+          if (mode === "item") {
+            await deleteClientItemObjective(obj.recordId)
+          } else {
+            await deleteClientCategoryObjective(obj.recordId)
+          }
+          toast.success("Objective removed")
+        } catch {
+          toast.error("Failed to delete objective")
+          setDeletingId(null)
+          return
+        }
+        setDeletingId(null)
+      }
+      onChange(objectives.filter((o) => o.localId !== obj.localId))
+    },
+    [objectives, onChange, mode]
+  )
 
   return (
     <>
@@ -200,7 +242,7 @@ export function ObjectivesTabContent({
           </div>
         ) : (
           <div className="relative rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-            <div className="max-h-[clamp(180px,40vh,520px)] overflow-y-auto custom-scrollbar overscroll-contain">
+            <div className="max-h-[clamp(180px,40vh,520px)] overflow-y-auto custom-scrollbar overscroll-contain pb-8">
               <div
                 className="sticky top-0 z-10 grid gap-2 px-4 py-2.5 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200"
                 style={{ gridTemplateColumns }}
@@ -210,6 +252,7 @@ export function ObjectivesTabContent({
                 {showEstEndDate && <span className={HEADER_CLASS}>Est. End Date</span>}
                 {showEndDate && <span className={HEADER_CLASS}>End Date</span>}
                 <span className={cn(HEADER_CLASS, "text-right")}>Status</span>
+                <span />
               </div>
 
               {objectives.map((obj) => {
@@ -218,16 +261,18 @@ export function ObjectivesTabContent({
                 const smartSummary = getSmartCriteriaSummary(obj)
 
                 return (
-                  <button
+                  <div
                     key={obj.localId}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleRowClick(obj)}
-                    className="grid gap-2 items-start px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70 transition-colors w-full text-left"
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleRowClick(obj) }}
+                    className="grid gap-2 items-start px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70 transition-colors w-full text-left cursor-pointer"
                     style={{ gridTemplateColumns }}
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-900 whitespace-normal break-words leading-snug">
-                        {obj.name || "Untitled"}
+                        {decodeHtmlEntities(obj.name) || "Untitled"}
                       </p>
                       {smartSummary && (
                         <p className="text-xs text-slate-500 whitespace-normal break-words mt-1 leading-snug">
@@ -258,7 +303,21 @@ export function ObjectivesTabContent({
                         {statusCfg.label}
                       </Badge>
                     </div>
-                  </button>
+                    <div className="flex justify-center pt-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => void handleInlineDelete(e, obj)}
+                        disabled={deletingId === obj.localId}
+                        className={cn(
+                          "rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600",
+                          "disabled:opacity-50 disabled:cursor-not-allowed"
+                        )}
+                        title="Remove objective"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                 )
               })}
             </div>

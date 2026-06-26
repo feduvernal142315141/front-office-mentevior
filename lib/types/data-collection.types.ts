@@ -89,6 +89,7 @@ export interface ItemDataCollectionConfig extends DataCollectionConfig {
   categoryName: string
   topography: string
   active: boolean
+  teachingMethodId?: string | null
   isCustomOverride?: boolean
 }
 

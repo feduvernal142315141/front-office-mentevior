@@ -112,6 +112,7 @@ function normalizeBaselines(raw: unknown): DataCollectionBaselineData[] {
         value: asOptionalNumber(b.value) ?? 0,
         periodCatalogId: asString(b.periodCatalogId),
         comments: asString(b.comments),
+        environmentalChanges: asString(b.environmentalChanges),
         show: asBoolean(b.show, true),
       }
     })
@@ -250,6 +251,7 @@ interface ClientItemPayload {
   name?: string
   topography: string
   status: boolean
+  teachingMethodId?: string | null
   dataCollection: ApiDataCollection
   chart?: ApiChart
   baseline?: ApiBaseline[]
@@ -273,6 +275,7 @@ interface ApiResponse {
   topography?: string
   status?: boolean
   name?: string
+  teachingMethodId?: string
   clientServicePlanCategoryItemId?: string
 }
 
@@ -298,6 +301,7 @@ export interface UpsertClientItemDataCollectionDto {
   name?: string
   topography: string
   active: boolean
+  teachingMethodId?: string | null
   type: DataCollectionType
   weeklyDailyValue?: ServicePlanValueType
   dailyValue?: ServicePlanValueType
@@ -549,6 +553,7 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
     categoryName: "",
     topography,
     active,
+    teachingMethodId: asOptionalString(itemEntity.teachingMethodId) ?? null,
     isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
   }
 }
@@ -694,6 +699,7 @@ export async function upsertClientItemDataCollection(
     dataCollection: toApiDataCollection(dto),
   }
   if (dto.name?.trim()) payload.name = dto.name.trim()
+  if (dto.teachingMethodId !== undefined) payload.teachingMethodId = dto.teachingMethodId || null
   if (dto.chart) payload.chart = toApiChart(dto.chart)
   payload.baseline = dto.baselines ? toApiBaselines(dto.baselines) : []
   payload.objetive = dto.objectives ? toApiObjectives(dto.objectives) : []
@@ -752,5 +758,24 @@ export async function deleteClientItemObjective(objectiveId: string): Promise<vo
   )
   if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
     throw new Error(getApiErrorMessage(response?.data, "Failed to delete objective"))
+  }
+}
+
+// --- Baseline values bulk update ---
+
+export interface UpdateBaselineValueEntry {
+  id: string
+  value: number
+}
+
+export async function updateBaselineValues(
+  baselines: UpdateBaselineValueEntry[]
+): Promise<void> {
+  const response = await servicePut<{ baselines: UpdateBaselineValueEntry[] }, unknown>(
+    `/client-service-plan-category-item-baseline/values`,
+    { baselines }
+  )
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to update baseline values"))
   }
 }

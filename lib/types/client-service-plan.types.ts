@@ -19,6 +19,61 @@ export interface ClientServicePlanCategorySummary {
   hasDataCollection?: boolean
 }
 
+export interface ClientServicePlanItemBaseline {
+  id: string
+  date: string
+  value: number
+  periodCatalogId: string
+  environmentalChanges?: string
+  show: boolean
+}
+
+export interface ClientServicePlanItemObjective {
+  id: string
+  name: string
+  startDate: string
+  estimatedEndDate: string | null
+  endDate: string
+  operatorSmartCriteria: string
+  valueSmartCriteria: number
+  periodSmartCriteriaCatalogId: string
+  valueDuration: number
+  periodDurationCatalogId: string
+}
+
+export interface ClientServicePlanItemDataCollection {
+  typeEventCatalogId: string
+  unitMeasurementCatalogId: string | null
+  dailyValue: string
+  weeklyValue: string
+  unitOfTime: string
+  recordingsNumber: number
+  intervalLength: number
+  levels: unknown[]
+}
+
+export interface ClientServicePlanItemChart {
+  id: string
+  interval: string
+  titleXAxes: string
+  positionXAxes: string
+  hideGridXAxes: boolean
+  titleYAxes: string
+  positionYAxes: string
+  hideGridYAxes: boolean
+  suggestedMinYAxes: number
+  suggestedMaxYAxes: number
+  showLabelObjectives: boolean
+  showLineObjectives: boolean
+  showBackgroundObjectives: boolean
+  fontColorObjectives: string
+  borderColorObjectives: string
+  backgroundColorObjectives: string
+  lineTypeObjectives: string
+  datasetCatalogIds: string[]
+  datasets: unknown[]
+}
+
 export interface ClientServicePlanCategoryMappedItem {
   id: string
   itemId: string
@@ -29,6 +84,11 @@ export interface ClientServicePlanCategoryMappedItem {
   order?: number
   hasDataCollection?: boolean
   hasCustomDataCollection?: boolean
+  teachingMethodId?: string | null
+  baseline?: ClientServicePlanItemBaseline[]
+  objetive?: ClientServicePlanItemObjective[]
+  dataCollection?: ClientServicePlanItemDataCollection | null
+  chart?: ClientServicePlanItemChart | null
 }
 
 export interface ClientItemCatalogItem {

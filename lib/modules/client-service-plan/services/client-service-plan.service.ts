@@ -144,11 +144,16 @@ function normalizeClientCategoryMappedItem(raw: unknown): ClientServicePlanCateg
     itemId,
     itemName,
     canEdit: asOptionalBoolean(item.canEdit ?? item.can_edit ?? nestedItem.canEdit ?? nestedItem.can_edit),
-    description: asOptionalString(item.description ?? item.itemDescription ?? item.item_description),
-    active: asOptionalBoolean(item.active),
+    description: asOptionalString(item.description ?? item.itemDescription ?? item.item_description ?? item.topography),
+    active: asOptionalBoolean(item.active ?? item.status),
     order: asOptionalNumber(item.order ?? item.sortOrder ?? item.sort_order ?? item.position),
     hasDataCollection: asOptionalBoolean(item.hasDataCollection ?? item.has_data_collection),
     hasCustomDataCollection: asOptionalBoolean(item.hasCustomDataCollection ?? item.has_custom_data_collection),
+    teachingMethodId: asOptionalString(item.teachingMethodId ?? item.teaching_method_id) ?? null,
+    baseline: Array.isArray(item.baseline) ? item.baseline as ClientServicePlanCategoryMappedItem["baseline"] : undefined,
+    objetive: Array.isArray(item.objetive) ? item.objetive as ClientServicePlanCategoryMappedItem["objetive"] : undefined,
+    dataCollection: (item.dataCollection && typeof item.dataCollection === "object") ? item.dataCollection as ClientServicePlanCategoryMappedItem["dataCollection"] : undefined,
+    chart: (item.chart && typeof item.chart === "object") ? item.chart as ClientServicePlanCategoryMappedItem["chart"] : undefined,
   }
 }
 

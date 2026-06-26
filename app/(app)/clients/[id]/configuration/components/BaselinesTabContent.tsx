@@ -100,40 +100,73 @@ export function BaselinesTabContent({
           {baselines.map((row) => (
             <div
               key={row.localId}
-              className="flex items-end gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 overflow-visible relative z-0 focus-within:z-50"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 space-y-3 overflow-visible relative z-0 focus-within:z-50"
             >
-              <div className="w-[160px] shrink-0">
-                <PremiumDatePicker
-                  label="Date"
-                  value={row.date}
-                  onChange={(v) => handleUpdate(row.localId, "date", v)}
-                  hasError={showErrors && !row.date}
-                  required
-                />
+              {/* Main fields row */}
+              <div className="flex items-end gap-3">
+                <div className="flex-1 min-w-0">
+                  <PremiumDatePicker
+                    label="Date"
+                    value={row.date}
+                    onChange={(v) => handleUpdate(row.localId, "date", v)}
+                    hasError={showErrors && !row.date}
+                    required
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <FloatingInput
+                    label="Value"
+                    value={row.value}
+                    onChange={(v) => handleUpdate(row.localId, "value", v.replace(/[^0-9.-]/g, ""))}
+                    onBlur={() => {}}
+                    inputMode="numeric"
+                    hasError={showErrors && !row.value}
+                    required
+                  />
+                </div>
+                <div className="flex-1 min-w-0 relative">
+                  <FloatingSelect
+                    label="Period"
+                    value={row.periodCatalogId}
+                    onChange={(v) => handleUpdate(row.localId, "periodCatalogId", v)}
+                    options={periodSelectOptions}
+                    dropdownPosition="bottom"
+                    hasError={showErrors && !row.periodCatalogId}
+                    required
+                  />
+                </div>
+                {/* Environmental Changes — visible only on 2xl+ */}
+                <div className="hidden 2xl:block flex-1 min-w-0">
+                  <FloatingInput
+                    label="Environmental Changes"
+                    value={row.comments}
+                    onChange={(v) => handleUpdate(row.localId, "comments", v)}
+                    onBlur={() => {}}
+                  />
+                </div>
+                <div className="shrink-0 pb-1">
+                  <PremiumSwitch
+                    label="Show"
+                    checked={row.show}
+                    onCheckedChange={(checked) => handleUpdate(row.localId, "show", checked)}
+                    variant="success"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleDelete(row)}
+                  className={cn(
+                    "shrink-0 flex items-center justify-center h-9 w-9 rounded-lg mb-1",
+                    "text-red-400 hover:text-red-600 hover:bg-red-50",
+                    "transition-colors"
+                  )}
+                  title="Remove baseline"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
-              <div className="w-[130px] shrink-0">
-                <FloatingInput
-                  label="Value"
-                  value={row.value}
-                  onChange={(v) => handleUpdate(row.localId, "value", v.replace(/[^0-9.-]/g, ""))}
-                  onBlur={() => {}}
-                  inputMode="numeric"
-                  hasError={showErrors && !row.value}
-                  required
-                />
-              </div>
-              <div className="w-[140px] shrink-0 relative">
-                <FloatingSelect
-                  label="Period"
-                  value={row.periodCatalogId}
-                  onChange={(v) => handleUpdate(row.localId, "periodCatalogId", v)}
-                  options={periodSelectOptions}
-                  dropdownPosition="bottom"
-                  hasError={showErrors && !row.periodCatalogId}
-                  required
-                />
-              </div>
-              <div className="min-w-0 flex-1">
+              {/* Environmental Changes — visible only below 2xl */}
+              <div className="2xl:hidden">
                 <FloatingInput
                   label="Environmental Changes"
                   value={row.comments}
@@ -141,26 +174,6 @@ export function BaselinesTabContent({
                   onBlur={() => {}}
                 />
               </div>
-              <div className="shrink-0 pb-1">
-                <PremiumSwitch
-                  label="Show"
-                  checked={row.show}
-                  onCheckedChange={(checked) => handleUpdate(row.localId, "show", checked)}
-                  variant="success"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleDelete(row)}
-                className={cn(
-                  "shrink-0 flex items-center justify-center h-9 w-9 rounded-lg mb-1",
-                  "text-red-400 hover:text-red-600 hover:bg-red-50",
-                  "transition-colors"
-                )}
-                title="Remove baseline"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
             </div>
           ))}
         </div>

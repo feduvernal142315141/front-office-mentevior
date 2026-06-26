@@ -156,7 +156,7 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
             tick={{ fontSize: days.length > 90 ? 8 : days.length > 30 ? 9 : 10, fill: "#64748B" }}
             axisLine={{ stroke: "#E2E8F0" }}
             tickLine={false}
-            padding={{ left: 5, right: 5 }}
+            padding={{ left: 30, right: 10 }}
             interval={tickInterval}
             angle={-45}
             textAnchor="end"
