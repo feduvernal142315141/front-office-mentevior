@@ -49,27 +49,40 @@ export function FrequencyDatasheet({ activeItem, categoryTypeName, dcConfig }: F
     return sorted.length > 0 ? parseLocalDate(sorted[0].date) : undefined
   }, [activeItem.baseline])
 
-  // Gap dates: days strictly between last baseline and first STO start — must be hidden
+  // Hidden dates: non-baseline days within the baseline range + gap between last baseline and first STO
   const gapDateKeys = useMemo(() => {
     const bls = activeItem.baseline
+    if (!bls || bls.length === 0) return new Set<string>()
+
+    const blDates = bls.filter((b) => b.date).map((b) => parseLocalDate(b.date))
+    if (blDates.length === 0) return new Set<string>()
+
+    const blDateKeys = new Set(blDates.map((d) => getDateKey(d)))
+    const firstBlTime = Math.min(...blDates.map((d) => d.getTime()))
+    const lastBlTime = Math.max(...blDates.map((d) => d.getTime()))
+
+    // Find the end boundary: first STO start date or day after last baseline
     const objs = activeItem.objetive
-    if (!bls || bls.length === 0 || !objs || objs.length === 0) return new Set<string>()
+    const stoTimes = (objs ?? []).filter((o) => o.startDate).map((o) => parseLocalDate(o.startDate).getTime())
+    const endBoundary = stoTimes.length > 0 ? Math.min(...stoTimes) : lastBlTime + 1
 
-    const baselineTimes = bls.filter((b) => b.date).map((b) => parseLocalDate(b.date).getTime())
-    const stoTimes = objs.filter((o) => o.startDate).map((o) => parseLocalDate(o.startDate).getTime())
-    if (baselineTimes.length === 0 || stoTimes.length === 0) return new Set<string>()
-
-    const lastBaselineTime = Math.max(...baselineTimes)
-    const firstStoTime = Math.min(...stoTimes)
-
-    if (lastBaselineTime >= firstStoTime) return new Set<string>()
+    if (endBoundary <= firstBlTime) return new Set<string>()
 
     const keys = new Set<string>()
-    const cursor = new Date(lastBaselineTime)
+    // Hide non-baseline days within baseline range
+    const cursor = new Date(firstBlTime)
     cursor.setDate(cursor.getDate() + 1)
-    while (cursor.getTime() < firstStoTime) {
-      keys.add(getDateKey(cursor))
+    while (cursor.getTime() <= lastBlTime) {
+      const key = getDateKey(cursor)
+      if (!blDateKeys.has(key)) keys.add(key)
       cursor.setDate(cursor.getDate() + 1)
+    }
+    // Hide gap days between last baseline and first STO
+    const gapCursor = new Date(lastBlTime)
+    gapCursor.setDate(gapCursor.getDate() + 1)
+    while (gapCursor.getTime() < endBoundary) {
+      keys.add(getDateKey(gapCursor))
+      gapCursor.setDate(gapCursor.getDate() + 1)
     }
     return keys
   }, [activeItem.baseline, activeItem.objetive])
