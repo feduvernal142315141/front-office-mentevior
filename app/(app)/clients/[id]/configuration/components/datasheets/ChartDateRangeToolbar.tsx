@@ -2,16 +2,26 @@
 
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ChartInterval } from "@/lib/modules/service-plans/constants/chart.constants"
 import {
   CHART_RANGE_PRESETS,
   type ChartRangePreset,
 } from "./useChartDateRange"
 
+const INTERVAL_OPTIONS: { value: ChartInterval; label: string }[] = [
+  { value: ChartInterval.DAILY, label: "Daily" },
+  { value: ChartInterval.WEEKLY, label: "Weekly" },
+  { value: ChartInterval.MONTHLY, label: "Monthly" },
+]
+
 interface ChartDateRangeToolbarProps {
   preset: ChartRangePreset
   rangeLabel: string
   isAtToday: boolean
+  interval?: ChartInterval
+  presetsDisabled?: boolean
   onPresetChange: (preset: ChartRangePreset) => void
+  onIntervalChange?: (interval: ChartInterval) => void
   onPrev: () => void
   onNext: () => void
   onToday: () => void
@@ -21,33 +31,64 @@ export function ChartDateRangeToolbar({
   preset,
   rangeLabel,
   isAtToday,
+  interval,
+  presetsDisabled,
   onPresetChange,
+  onIntervalChange,
   onPrev,
   onNext,
   onToday,
 }: ChartDateRangeToolbarProps) {
   return (
     <div className="flex items-center justify-between gap-3">
-      {/* Preset pills */}
-      <div className="flex items-center gap-1 rounded-xl bg-slate-100/80 p-1">
-        {CHART_RANGE_PRESETS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPresetChange(p)}
-            className={cn(
-              "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
-              p === preset
-                ? "bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
-            )}
-          >
-            {p}
-          </button>
-        ))}
+      {/* Left: Range presets + Interval toggle */}
+      <div className="flex items-center gap-2.5">
+        {/* Range presets */}
+        <div className={cn("flex items-center gap-1 rounded-xl bg-slate-100/80 p-1", presetsDisabled && "opacity-40")}>
+          {CHART_RANGE_PRESETS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              disabled={presetsDisabled}
+              onClick={() => onPresetChange(p)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
+                p === preset && !presetsDisabled
+                  ? "bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/60",
+                presetsDisabled && "cursor-not-allowed hover:bg-transparent hover:text-slate-500",
+              )}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+
+        {interval !== undefined && onIntervalChange && (
+          <>
+            <div className="h-6 w-px bg-slate-200" />
+            <div className="flex items-center gap-1 rounded-xl bg-slate-100/80 p-1">
+              {INTERVAL_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onIntervalChange(opt.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
+                    opt.value === interval
+                      ? "bg-white text-[#037ECC] shadow-sm"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Date range display + navigation */}
+      {/* Right: Date range display + navigation */}
       <div className="flex items-center gap-2">
         <button
           type="button"

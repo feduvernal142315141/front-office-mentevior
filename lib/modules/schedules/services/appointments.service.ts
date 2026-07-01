@@ -100,6 +100,7 @@ function parseAppointmentList(data: unknown): Appointment[] {
 export async function getAppointments(filters: AppointmentListQuery): Promise<Appointment[]> {
   const params = new URLSearchParams()
   if (filters.providerId) params.set("providerId", filters.providerId)
+  if (filters.clientId) params.set("clientId", filters.clientId)
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom)
   if (filters.dateTo) params.set("dateTo", filters.dateTo)
 

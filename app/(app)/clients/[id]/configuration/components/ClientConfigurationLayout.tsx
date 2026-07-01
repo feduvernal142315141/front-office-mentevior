@@ -112,7 +112,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
             )}
 
             {activeSectionId === "data-collection" && spId && (
-              <DataCollectionContent clientServicePlanId={spId} />
+              <DataCollectionContent clientId={clientId} clientServicePlanId={spId} />
             )}
           </div>
         </div>

@@ -1,7 +1,18 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { startOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addWeeks, addDays, format, isToday as isTodayFn } from "date-fns"
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  addWeeks,
+  addMonths,
+  addDays,
+  format,
+  isToday as isTodayFn,
+} from "date-fns"
 import {
   type DayEntry,
   type WeekEntries,
@@ -11,10 +22,19 @@ import {
 } from "./frequency-datasheet.types"
 import type { ClientServicePlanItemBaseline } from "@/lib/types/client-service-plan.types"
 
+// ─── Range mode types ────────────────────────────────────────────────────────
+
+export type RangeMode = "week" | "month" | "custom"
+
+export interface DateRange {
+  start: Date
+  end: Date
+}
+
 export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[]) {
-  const [weekStart, setWeekStart] = useState<Date>(() =>
-    startOfWeek(new Date(), { weekStartsOn: 1 })
-  )
+  const [rangeMode, setRangeMode] = useState<RangeMode>("week")
+  const [anchor, setAnchor] = useState<Date>(() => new Date())
+  const [customRange, setCustomRange] = useState<DateRange | null>(null)
   const [entries, setEntries] = useState<WeekEntries>({})
 
   // Track which item's baselines we've already seeded to avoid re-seeding on every render
@@ -27,7 +47,6 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
       return
     }
 
-    // Build a fingerprint to detect item changes
     const fingerprint = baselines.map((b) => b.id).sort().join(",")
     if (seededBaselineRef.current === fingerprint) return
     seededBaselineRef.current = fingerprint
@@ -50,29 +69,123 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
       .filter((b) => b.date)
       .sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime())
     if (sorted.length > 0) {
-      const latestDate = parseLocalDate(sorted[0].date)
-      setWeekStart(startOfWeek(latestDate, { weekStartsOn: 1 }))
+      setAnchor(parseLocalDate(sorted[0].date))
     }
   }, [baselines])
 
-  const weekDays = useMemo<Date[]>(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart]
+  // ─── Computed range based on mode ────────────────────────────────────────
+
+  const dateRange = useMemo<DateRange>(() => {
+    if (rangeMode === "custom" && customRange) return customRange
+    if (rangeMode === "month") {
+      return {
+        start: startOfMonth(anchor),
+        end: endOfMonth(anchor),
+      }
+    }
+    // week (default)
+    return {
+      start: startOfWeek(anchor, { weekStartsOn: 1 }),
+      end: endOfWeek(anchor, { weekStartsOn: 1 }),
+    }
+  }, [rangeMode, anchor, customRange])
+
+  const rangeDays = useMemo<Date[]>(
+    () => eachDayOfInterval({ start: dateRange.start, end: dateRange.end }),
+    [dateRange]
   )
 
-  const monthYearLabel = useMemo(() => format(weekStart, "MMMM yyyy"), [weekStart])
+  // Legacy compat: weekStart = dateRange.start
+  const weekStart = dateRange.start
+
+  // Legacy compat: weekDays = rangeDays (some consumers use this)
+  const weekDays = rangeDays
+
+  // ─── Labels ──────────────────────────────────────────────────────────────
+
+  const monthYearLabel = useMemo(() => format(anchor, "MMMM yyyy"), [anchor])
 
   const periodLabel = useMemo(() => {
-    const end = addDays(weekStart, 6)
-    return `${format(weekStart, "MMM dd")} - ${format(end, "MMM dd")}`
-  }, [weekStart])
+    const s = dateRange.start
+    const e = dateRange.end
+    if (rangeMode === "month") {
+      return format(s, "MMMM yyyy")
+    }
+    const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()
+    if (sameMonth) {
+      return `${format(s, "MMM dd")} - ${format(e, "dd")}`
+    }
+    return `${format(s, "MMM dd")} - ${format(e, "MMM dd")}`
+  }, [dateRange, rangeMode])
 
-  const goToPrevWeek = useCallback(() => setWeekStart((w) => addWeeks(w, -1)), [])
-  const goToNextWeek = useCallback(() => setWeekStart((w) => addWeeks(w, 1)), [])
-  const goToCurrentWeek = useCallback(
-    () => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 })),
-    []
-  )
+  // ─── Fetch range as YYYY-MM-DD strings ───────────────────────────────────
+
+  const fetchStartDate = useMemo(() => format(dateRange.start, "yyyy-MM-dd"), [dateRange.start])
+  const fetchEndDate = useMemo(() => format(dateRange.end, "yyyy-MM-dd"), [dateRange.end])
+
+  // ─── Navigation ──────────────────────────────────────────────────────────
+
+  const goToPrev = useCallback(() => {
+    if (rangeMode === "month") {
+      setAnchor((a) => addMonths(a, -1))
+    } else if (rangeMode === "custom" && customRange) {
+      const diff = customRange.end.getTime() - customRange.start.getTime()
+      setCustomRange({
+        start: new Date(customRange.start.getTime() - diff - 86400000),
+        end: new Date(customRange.end.getTime() - diff - 86400000),
+      })
+    } else {
+      setAnchor((a) => addWeeks(a, -1))
+    }
+  }, [rangeMode, customRange])
+
+  const goToNext = useCallback(() => {
+    if (rangeMode === "month") {
+      setAnchor((a) => addMonths(a, 1))
+    } else if (rangeMode === "custom" && customRange) {
+      const diff = customRange.end.getTime() - customRange.start.getTime()
+      setCustomRange({
+        start: new Date(customRange.start.getTime() + diff + 86400000),
+        end: new Date(customRange.end.getTime() + diff + 86400000),
+      })
+    } else {
+      setAnchor((a) => addWeeks(a, 1))
+    }
+  }, [rangeMode, customRange])
+
+  const goToToday = useCallback(() => {
+    setAnchor(new Date())
+    if (rangeMode === "custom") {
+      setRangeMode("week")
+      setCustomRange(null)
+    }
+  }, [rangeMode])
+
+  // Jump to a specific date (sets anchor)
+  const goToDate = useCallback((date: Date) => {
+    setAnchor(date)
+  }, [])
+
+  // Set custom range directly
+  const setRange = useCallback((start: Date, end: Date) => {
+    setRangeMode("custom")
+    setCustomRange({ start, end })
+    setAnchor(start)
+  }, [])
+
+  // Change mode (week/month/custom)
+  const changeMode = useCallback((mode: RangeMode) => {
+    setRangeMode(mode)
+    if (mode !== "custom") setCustomRange(null)
+  }, [])
+
+  // ─── Legacy compat: goToPrevWeek / goToNextWeek / goToCurrentWeek ─────
+
+  const goToPrevWeek = goToPrev
+  const goToNextWeek = goToNext
+  const goToCurrentWeek = goToToday
+
+  // ─── Entry CRUD ──────────────────────────────────────────────────────────
 
   const getEntry = useCallback(
     (dateKey: string): DayEntry => entries[dateKey] ?? createEmptyDayEntry(),
@@ -127,16 +240,18 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     [updateEntry]
   )
 
+  // ─── Stats ───────────────────────────────────────────────────────────────
+
   const weeklyTotal = useMemo(() => {
-    return weekDays.reduce((sum, day) => {
+    return rangeDays.reduce((sum, day) => {
       const key = getDateKey(day)
       return sum + (entries[key]?.occurrences ?? 0)
     }, 0)
-  }, [weekDays, entries])
+  }, [rangeDays, entries])
 
   const monthlyAverage = useMemo(() => {
-    const monthStart = startOfMonth(weekStart)
-    const monthEnd = endOfMonth(weekStart)
+    const monthStart = startOfMonth(anchor)
+    const monthEnd = endOfMonth(anchor)
     const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
 
     let total = 0
@@ -150,25 +265,27 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     }
 
     return daysWithData > 0 ? total / daysWithData : 0
-  }, [weekStart, entries])
+  }, [anchor, entries])
 
   const eventsLoggedCount = useMemo(() => {
-    return weekDays.filter((day) => {
+    return rangeDays.filter((day) => {
       const key = getDateKey(day)
       return (entries[key]?.environmentalNote ?? "").trim().length > 0
     }).length
-  }, [weekDays, entries])
+  }, [rangeDays, entries])
 
   const staffAvatars = useMemo(() => {
     const set = new Set<string>()
-    for (const day of weekDays) {
+    for (const day of rangeDays) {
       const initials = entries[getDateKey(day)]?.initials?.trim()
       if (initials) set.add(initials)
     }
     return Array.from(set)
-  }, [weekDays, entries])
+  }, [rangeDays, entries])
 
   const isToday = useCallback((date: Date) => isTodayFn(date), [])
+
+  // ─── Baseline tracking ───────────────────────────────────────────────────
 
   const baselineDateKeys = useMemo(() => {
     if (!baselines || baselines.length === 0) return new Set<string>()
@@ -188,7 +305,6 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
   // Mutable snapshot of baseline values for dirty detection — updated on save
   const [originalBaselineEntries, setOriginalBaselineEntries] = useState<WeekEntries>({})
 
-  // Recompute snapshot when baselines change (item switch)
   useEffect(() => {
     if (!baselines || baselines.length === 0) {
       setOriginalBaselineEntries({})
@@ -232,7 +348,6 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     })
   }, [baselineDateKeys, originalBaselineEntries])
 
-  // After a successful save, update the snapshot so hasBaselineChanges becomes false
   const commitBaseline = useCallback(() => {
     const snap: WeekEntries = {}
     for (const key of baselineDateKeys) {
@@ -242,7 +357,6 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     setOriginalBaselineEntries(snap)
   }, [baselineDateKeys, entries])
 
-  // Returns only the baselines whose value changed, with their API id
   const getChangedBaselines = useCallback(() => {
     if (!baselines) return []
     const changed: { id: string; value: number }[] = []
@@ -258,14 +372,108 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     return changed
   }, [baselines, entries])
 
+  // ─── DC values dirty detection ───────────────────────────────────────────
+
+  const [originalDcEntries, setOriginalDcEntries] = useState<WeekEntries>({})
+
+  /** Seed DC records from API: sets entries + snapshot atomically so hasDcChanges stays false */
+  const seedDcRecords = useCallback((dcDateValues: { dateKey: string; value: number }[]) => {
+    const snap: WeekEntries = {}
+    const valuesToSet: { dateKey: string; value: number }[] = []
+    for (const { dateKey, value } of dcDateValues) {
+      if (baselineDateKeys.has(dateKey)) continue
+      snap[dateKey] = { occurrences: value, initials: "", environmentalNote: "" }
+      valuesToSet.push({ dateKey, value })
+    }
+    // Update entries and snapshot in same React batch
+    setEntries((prev) => {
+      const next = { ...prev }
+      for (const { dateKey, value } of valuesToSet) {
+        next[dateKey] = {
+          occurrences: Math.max(0, Math.floor(value)),
+          initials: prev[dateKey]?.initials ?? "",
+          environmentalNote: prev[dateKey]?.environmentalNote ?? "",
+        }
+      }
+      return next
+    })
+    setOriginalDcEntries(snap)
+  }, [baselineDateKeys])
+
+  const hasDcChanges = useMemo(() => {
+    for (const [key, entry] of Object.entries(entries)) {
+      if (baselineDateKeys.has(key)) continue
+      const original = originalDcEntries[key]
+      const currentVal = entry.occurrences
+      const originalVal = original?.occurrences ?? 0
+      if (currentVal !== originalVal) return true
+    }
+    return false
+  }, [entries, baselineDateKeys, originalDcEntries])
+
+  const commitDcValues = useCallback(() => {
+    const snap: WeekEntries = {}
+    for (const [key, entry] of Object.entries(entries)) {
+      if (baselineDateKeys.has(key)) continue
+      snap[key] = { ...entry }
+    }
+    setOriginalDcEntries(snap)
+  }, [entries, baselineDateKeys])
+
+  /** Restore DC entries to their original API values */
+  const resetDcValues = useCallback(() => {
+    setEntries((prev) => {
+      const restored = { ...prev }
+      // Reset non-baseline keys to original DC values
+      for (const key of Object.keys(restored)) {
+        if (baselineDateKeys.has(key)) continue
+        const original = originalDcEntries[key]
+        if (original) {
+          restored[key] = { ...original }
+        } else {
+          restored[key] = createEmptyDayEntry()
+        }
+      }
+      return restored
+    })
+  }, [baselineDateKeys, originalDcEntries])
+
+  const getChangedDcDateKeys = useCallback(() => {
+    const changed: string[] = []
+    for (const [key, entry] of Object.entries(entries)) {
+      if (baselineDateKeys.has(key)) continue
+      const original = originalDcEntries[key]
+      const currentVal = entry.occurrences
+      const originalVal = original?.occurrences ?? 0
+      if (currentVal !== originalVal) changed.push(key)
+    }
+    return changed
+  }, [entries, baselineDateKeys, originalDcEntries])
+
   return {
+    // Range
+    rangeMode,
+    dateRange,
+    changeMode,
+    setRange,
+    goToDate,
+    fetchStartDate,
+    fetchEndDate,
+    // Legacy compat
     weekStart,
     weekDays,
-    periodLabel,
-    monthYearLabel,
     goToPrevWeek,
     goToNextWeek,
     goToCurrentWeek,
+    // Navigation
+    goToPrev,
+    goToNext,
+    goToToday,
+    // Labels
+    periodLabel,
+    monthYearLabel,
+    // Grid
+    rangeDays,
     entries,
     getEntry,
     incrementOccurrences,
@@ -273,16 +481,25 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     setOccurrences,
     setInitials,
     setNote,
+    // Stats
     weeklyTotal,
     monthlyAverage,
     eventsLoggedCount,
     staffAvatars,
     staffCount: staffAvatars.length,
+    // Helpers
     isToday,
     isBaselineDate,
+    // Baseline tracking
     hasBaselineChanges,
     resetBaseline,
     commitBaseline,
     getChangedBaselines,
+    // DC values
+    hasDcChanges,
+    seedDcRecords,
+    commitDcValues,
+    resetDcValues,
+    getChangedDcDateKeys,
   }
 }

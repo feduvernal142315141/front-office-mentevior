@@ -96,6 +96,7 @@ export interface ApiAppointmentItem {
 /** Query params for GET /appointment */
 export interface AppointmentListQuery {
   providerId?: string
+  clientId?: string
   dateFrom?: string
   dateTo?: string
 }

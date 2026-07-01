@@ -12,12 +12,14 @@ import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import { FrequencyDatasheet } from "./datasheets/FrequencyDatasheet"
 import { PercentageDatasheet } from "./datasheets/PercentageDatasheet"
 interface DataCollectionContentProps {
+  clientId: string
   clientServicePlanId: string
 }
 
-export function DataCollectionContent({ clientServicePlanId }: DataCollectionContentProps) {
+export function DataCollectionContent({ clientId, clientServicePlanId }: DataCollectionContentProps) {
   return (
     <DataCollectionView
+      clientId={clientId}
       clientServicePlanId={clientServicePlanId}
     />
   )
@@ -26,10 +28,11 @@ export function DataCollectionContent({ clientServicePlanId }: DataCollectionCon
 // ─── Data Collection View (Categories + Items) ──────────────────────────────
 
 interface DataCollectionViewProps {
+  clientId: string
   clientServicePlanId: string
 }
 
-function DataCollectionView({ clientServicePlanId }: DataCollectionViewProps) {
+function DataCollectionView({ clientId, clientServicePlanId }: DataCollectionViewProps) {
   const {
     categories,
     activeCategoryId,
@@ -200,7 +203,7 @@ function DataCollectionView({ clientServicePlanId }: DataCollectionViewProps) {
 
               {/* Collection UI — varies by type */}
               {categoryTypeName === "Frequency/Count" || categoryTypeName === "Frequency" ? (
-                <FrequencyDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
+                <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
               ) : categoryTypeName === "Percentage of Opportunities" ? (
                 <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
               ) : (
