@@ -144,14 +144,7 @@ export function BaselinesTabContent({
                     onBlur={() => {}}
                   />
                 </div>
-                <div className="shrink-0 pb-1">
-                  <PremiumSwitch
-                    label="Show"
-                    checked={row.show}
-                    onCheckedChange={(checked) => handleUpdate(row.localId, "show", checked)}
-                    variant="success"
-                  />
-                </div>
+                {/* Show toggle hidden */}
                 <button
                   type="button"
                   onClick={() => void handleDelete(row)}

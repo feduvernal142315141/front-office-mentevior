@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Minus, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -24,9 +25,52 @@ export function FloatingNumberStepper({
   required,
   suffix,
 }: FloatingNumberStepperProps) {
-  const hasValue = Number.isFinite(value)
+  const [displayValue, setDisplayValue] = useState(String(value))
+  const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Sync display when external value changes (and input is not focused)
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(String(value))
+    }
+  }, [value, isFocused])
+
+  const hasValue = displayValue !== "" || Number.isFinite(value)
 
   const clamp = (next: number) => Math.max(min, Math.min(max, next))
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true)
+    if (value === 0) {
+      setDisplayValue("")
+    }
+  }, [value])
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false)
+    const parsed = Number(displayValue)
+    if (displayValue === "" || !Number.isFinite(parsed)) {
+      onChange(min)
+      setDisplayValue(String(min))
+    } else {
+      const clamped = clamp(parsed)
+      onChange(clamped)
+      setDisplayValue(String(clamped))
+    }
+  }, [displayValue, min, max, onChange])
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value
+      setDisplayValue(raw)
+      const parsed = Number(raw)
+      if (raw !== "" && Number.isFinite(parsed)) {
+        onChange(clamp(parsed))
+      }
+    },
+    [min, max, onChange]
+  )
 
   return (
     <div className="w-full">
@@ -45,22 +89,33 @@ export function FloatingNumberStepper({
         >
           <button
             type="button"
-            onClick={() => onChange(clamp(value - 1))}
+            onClick={() => {
+              const next = clamp(value - 1)
+              onChange(next)
+              setDisplayValue(String(next))
+            }}
             className="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl border border-gray-200/80 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
 
           <input
+            ref={inputRef}
             type="number"
-            value={value}
-            onChange={(e) => onChange(clamp(Number(e.target.value) || min))}
+            value={displayValue}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onChange={handleInputChange}
             className="flex-1 min-w-0 h-full bg-transparent text-center text-[15px] 2xl:text-[16px] font-semibold text-gray-900 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
 
           <button
             type="button"
-            onClick={() => onChange(clamp(value + 1))}
+            onClick={() => {
+              const next = clamp(value + 1)
+              onChange(next)
+              setDisplayValue(String(next))
+            }}
             className="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl border border-gray-200/80 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
