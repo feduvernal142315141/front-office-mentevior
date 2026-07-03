@@ -8,6 +8,7 @@ interface Props {
   value: string
   onChange: (v: string) => void
   onBlur: () => void
+  onFocus?: () => void
   placeholder?: string
   type?: React.HTMLInputTypeAttribute
   hasError?: boolean
@@ -19,6 +20,7 @@ interface Props {
   disabled?: boolean
   required?: boolean
   name?: string
+  clearZeroOnFocus?: boolean
 }
 
 export const FloatingInput = forwardRef<HTMLInputElement, Props>(function FloatingInput({
@@ -26,6 +28,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, Props>(function Floati
   value,
   onChange,
   onBlur,
+  onFocus,
   placeholder,
   type = "text",
   hasError,
@@ -37,6 +40,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, Props>(function Floati
   disabled,
   required,
   name,
+  clearZeroOnFocus,
 }, ref) {
   return (
     <div className="w-full">
@@ -46,6 +50,10 @@ export const FloatingInput = forwardRef<HTMLInputElement, Props>(function Floati
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => {
+            if (clearZeroOnFocus && value === "0") onChange("")
+            onFocus?.()
+          }}
           onBlur={onBlur}
           placeholder=" "
           autoComplete={autoComplete}

@@ -61,9 +61,14 @@ export function BaselinesTabContent({
   const handleUpdate = useCallback(
     (localId: string, field: keyof BaselineRow, value: string | boolean) => {
       onChange(
-        baselines.map((row) =>
-          row.localId === localId ? { ...row, [field]: value } : row
-        )
+        baselines.map((row) => {
+          if (row.localId === localId) return { ...row, [field]: value }
+          // Auto-fill period on other baselines that have it empty
+          if (field === "periodCatalogId" && value && !row.periodCatalogId) {
+            return { ...row, periodCatalogId: value as string }
+          }
+          return row
+        })
       )
     },
     [baselines, onChange]

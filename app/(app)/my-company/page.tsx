@@ -138,8 +138,8 @@ export default function MyCompanyPage() {
       hasDeepChildren: false,
     },
     {
-      title: "Appointments",
-      description: "Schedule and manage client appointments",
+      title: "Session",
+      description: "Schedule and manage client sessions",
       href: "/my-company/appointment",
       icon: CalendarCheck,
       canView: canViewAppointments,

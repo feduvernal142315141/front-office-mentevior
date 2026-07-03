@@ -102,28 +102,29 @@ function computeNumberOfObjectivesValues(
 ): number[] {
   if (quantity <= 0) return []
 
-  const normalizedStart = isIntegerType ? Math.round(start) : Math.round(start * 100) / 100
+  const fmt = (v: number) => (isIntegerType ? Math.round(v) : Math.round(v * 100) / 100)
 
   if (amount <= 0) {
-    return Array.from({ length: quantity }, () => normalizedStart)
+    return Array.from({ length: quantity }, () => fmt(start))
   }
 
   const values: number[] = []
   let current = start
 
   while (values.length < quantity && values.length < 50) {
-    const next = current - amount
+    const raw = current - amount
 
-    if (next <= end) {
-      values.push(isIntegerType ? Math.round(end) : end)
+    // If subtracting goes at or below end, clamp to end and finish
+    if (raw <= end) {
+      values.push(fmt(end))
       break
     }
 
-    values.push(isIntegerType ? Math.round(next) : Math.round(next * 100) / 100)
-    current = next
+    values.push(fmt(raw))
+    current = raw
   }
 
-  return values.length > 0 ? values : [isIntegerType ? Math.round(end) : end]
+  return values.length > 0 ? values : [fmt(end)]
 }
 
 /** Percentage from Start Value: subtract a fixed slice of start until reaching end. */

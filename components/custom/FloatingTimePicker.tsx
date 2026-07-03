@@ -59,6 +59,7 @@ interface FloatingTimePickerProps {
   required?: boolean
   disabled?: boolean
   allowManualInput?: boolean
+  defaultPeriod?: "AM" | "PM"
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
@@ -84,13 +85,14 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
   required,
   disabled,
   allowManualInput = false,
+  defaultPeriod = "AM",
 }, ref) {
   const [isOpen, setIsOpen] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const hourRef = useRef<HTMLDivElement>(null)
   const minuteRef = useRef<HTMLDivElement>(null)
   const [manualValue, setManualValue] = useState("")
-  const [period, setPeriod] = useState<"AM" | "PM">("AM")
+  const [period, setPeriod] = useState<"AM" | "PM">(defaultPeriod)
   const prevManualValueRef = useRef("")
 
   const [selectedHour, selectedMinute] = value ? value.split(":") : ["", ""]
@@ -101,7 +103,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
 
     if (!value) {
       setManualValue("")
-      setPeriod("AM")
+      setPeriod(defaultPeriod)
       return
     }
 

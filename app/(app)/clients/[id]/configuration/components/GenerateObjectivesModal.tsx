@@ -178,7 +178,37 @@ export function GenerateObjectivesModal({
 
   const update = useCallback(
     <K extends keyof GenerateFormState>(field: K, value: GenerateFormState[K]) => {
-      setForm((prev) => ({ ...prev, [field]: value }))
+      setForm((prev) => {
+        const next = { ...prev, [field]: value }
+
+        // Auto-calculate in number mode
+        if (next.generationMode === "number_of_objectives") {
+          const start = Number(next.startValue) || 0
+          const end = Number(next.endValue) || 0
+          const range = start - end
+
+          if (field === "quantity" || field === "startValue" || field === "endValue") {
+            const qty = next.quantity
+            if (qty > 0 && range > 0) {
+              next.amountToDecreaseIncrease = String(
+                Math.round((range / qty) * 100) / 100
+              )
+            }
+          } else if (field === "amountToDecreaseIncrease") {
+            const amount = Number(value as string) || 0
+            if (amount > 0 && range > 0) {
+              next.quantity = Math.ceil(range / amount)
+            }
+          }
+        }
+
+        // Auto-fill duration period when smart criteria period is selected
+        if (field === "periodSmartCriteriaCatalogId" && value && !prev.periodDurationCatalogId) {
+          next.periodDurationCatalogId = value as string
+        }
+
+        return next
+      })
       setFieldErrors((prev) => {
         if (!(field in prev)) return prev
         const next = { ...prev }
@@ -281,7 +311,7 @@ export function GenerateObjectivesModal({
       allowSelectOverflow
       contentClassName="!overflow-visible"
     >
-      <div className="px-6 py-5 space-y-5">
+      <div className="px-6 py-5 space-y-5 max-h-[calc(85vh-140px)] overflow-y-auto custom-scrollbar">
         {/* Generation mode + quantity or percentage stepper */}
         <div className="grid grid-cols-2 gap-4">
           <FloatingSelect
@@ -316,18 +346,6 @@ export function GenerateObjectivesModal({
           )}
         </div>
 
-        {isNumberMode && (
-          <FloatingInput
-            label="Amount to Decrease/Increase"
-            value={form.amountToDecreaseIncrease}
-            onChange={(v) => update("amountToDecreaseIncrease", v.replace(/[^0-9.-]/g, ""))}
-            onBlur={() => {}}
-            inputMode="decimal"
-            required
-            hasError={!!fieldErrors.amountToDecreaseIncrease}
-          />
-        )}
-
         {/* Start / End value */}
         <div className="grid grid-cols-2 gap-4">
           <FloatingInput
@@ -338,6 +356,7 @@ export function GenerateObjectivesModal({
             inputMode="decimal"
             required
             hasError={!!fieldErrors.startValue}
+            clearZeroOnFocus
           />
           <FloatingInput
             label="End Value"
@@ -347,8 +366,22 @@ export function GenerateObjectivesModal({
             inputMode="decimal"
             required
             hasError={!!fieldErrors.endValue}
+            clearZeroOnFocus
           />
         </div>
+
+        {isNumberMode && (
+          <FloatingInput
+            label="Amount to Decrease/Increase"
+            value={form.amountToDecreaseIncrease}
+            onChange={(v) => update("amountToDecreaseIncrease", v.replace(/[^0-9.-]/g, ""))}
+            onBlur={() => {}}
+            inputMode="decimal"
+            required
+            hasError={!!fieldErrors.amountToDecreaseIncrease}
+            clearZeroOnFocus
+          />
+        )}
 
         {/* Smart Criteria */}
         <div className="grid grid-cols-2 gap-4">

@@ -284,7 +284,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
               </div>
               <div className="text-left">
                 <h3 className="text-base font-semibold text-gray-900">Configuration</h3>
-                <p className="text-sm text-gray-500">Rules and constraints for appointment scheduling</p>
+                <p className="text-sm text-gray-500">Rules and constraints for session scheduling</p>
               </div>
             </div>
           </div>
@@ -345,6 +345,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                     hasError={!!errors.endTime}
                     allowManualInput
                     required
+                    defaultPeriod="PM"
                   />
                   <p className="mt-1 px-1 text-xs text-gray-500">Type hh:mm and pick AM/PM.</p>
                   {renderFieldError(errors.endTime?.message)}

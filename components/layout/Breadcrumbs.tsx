@@ -69,6 +69,9 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "agreements": "Agreements",
   "applicants": "Applicants",
   
+  // Session
+  "appointment": "Session",
+
   // Common actions
   "create": "Create",
   "edit": "Edit",

@@ -102,7 +102,14 @@ export function ObjectiveFormModal({
 
   const update = useCallback(
     (field: keyof ObjectiveRow, value: string) => {
-      setForm((prev) => ({ ...prev, [field]: value }))
+      setForm((prev) => {
+        const next = { ...prev, [field]: value }
+        // Auto-fill duration period when smart criteria period is selected
+        if (field === "periodSmartCriteriaCatalogId" && value && !prev.periodDurationCatalogId) {
+          next.periodDurationCatalogId = value
+        }
+        return next
+      })
       setFieldErrors((prev) => {
         if (!(field in prev)) return prev
         const next = { ...prev }
