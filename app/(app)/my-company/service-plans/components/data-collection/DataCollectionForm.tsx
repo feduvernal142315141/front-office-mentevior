@@ -381,11 +381,7 @@ export function DataCollectionForm({
               <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">
                 Data Collection
               </h3>
-              {watchedType && typeHasLevels(watchedType) && (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                  {(watchedLevels ?? []).length} level{(watchedLevels ?? []).length === 1 ? "" : "s"}
-                </span>
-              )}
+              {/* Levels badge hidden — levels managed at client level */}
             </div>
             <ChevronDown
               className={cn(
@@ -725,24 +721,7 @@ export function DataCollectionForm({
             </div>
           )}
 
-          {/* Levels table — shown when a type is selected */}
-          {typeHasLevels(watchedType) && (
-            <LevelsTable
-              levels={watchedLevels ?? []}
-              onChange={(newLevels) => setValue("levels", newLevels)}
-              onDeleteLevel={onDeleteLevel}
-              showValueToggle={typeHasCumulativeValueToggles(resolvedType.group)}
-              showCumulative={typeHasCumulativeValueToggles(resolvedType.group)}
-              cumulative={watchedCumulative ?? false}
-              onCumulativeChange={(v) => setValue("cumulative", v)}
-              levelErrors={Array.isArray(errors.levels) ? errors.levels : undefined}
-              levelsError={
-                errors.levels && !Array.isArray(errors.levels)
-                  ? (errors.levels as { message?: string }).message
-                  : undefined
-              }
-            />
-          )}
+          {/* Levels table hidden — levels managed at client level */}
             </div>
           </CollapsibleContent>
         </Collapsible>
