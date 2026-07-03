@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Plus, Sparkles, Target, Trash2 } from "lucide-react"
+import { Pencil, Plus, Sparkles, Target, Trash2 } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -105,11 +105,12 @@ export function ObjectivesTabContent({
 }: ObjectivesTabContentProps) {
   const [formOpen, setFormOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
+  const [bulkEditOpen, setBulkEditOpen] = useState(false)
 
   // Notify parent when any modal opens/closes
   useEffect(() => {
-    onModalChange?.(formOpen || generateOpen)
-  }, [formOpen, generateOpen, onModalChange])
+    onModalChange?.(formOpen || generateOpen || bulkEditOpen)
+  }, [formOpen, generateOpen, bulkEditOpen, onModalChange])
   const [editingObjective, setEditingObjective] = useState<ObjectiveRow | null>(null)
 
   const handleAdd = useCallback(() => {
@@ -146,6 +147,13 @@ export function ObjectivesTabContent({
       onChange([...objectives, ...generated])
     },
     [objectives, onChange]
+  )
+
+  const handleBulkSave = useCallback(
+    (updated: ObjectiveRow[]) => {
+      onChange(updated)
+    },
+    [onChange]
   )
 
   const getSmartCriteriaSummary = useCallback(
@@ -229,6 +237,12 @@ export function ObjectivesTabContent({
                 <Plus className="h-3.5 w-3.5" />
                 Add objective
               </Button>
+              {objectives.length > 0 && (
+                <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions}>
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit All
+                </Button>
+              )}
               <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions}>
                 <Sparkles className="h-3.5 w-3.5" />
                 Generate
@@ -335,6 +349,12 @@ export function ObjectivesTabContent({
               <Plus className="h-4 w-4" />
               Add objective
             </Button>
+            {objectives.length > 0 && (
+              <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-2">
+                <Pencil className="h-4 w-4" />
+                Edit All
+              </Button>
+            )}
             <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-2">
               <Sparkles className="h-4 w-4" />
               Generate objectives
@@ -363,6 +383,20 @@ export function ObjectivesTabContent({
         clientFirstName={clientFirstName}
         targetName={targetName}
         dataCollectionTypeName={dataCollectionTypeName}
+      />
+
+      <GenerateObjectivesModal
+        open={bulkEditOpen}
+        onClose={() => setBulkEditOpen(false)}
+        existingCount={0}
+        onGenerate={handleBulkSave}
+        periodSelectOptions={periodSelectOptions}
+        periodMap={periodMap}
+        clientFirstName={clientFirstName}
+        targetName={targetName}
+        dataCollectionTypeName={dataCollectionTypeName}
+        editMode
+        initialObjectives={objectives}
       />
     </>
   )

@@ -87,6 +87,51 @@ function createDefaultForm(): GenerateFormState {
   }
 }
 
+function extractFormFromObjectives(
+  objectives: ObjectiveRow[],
+): GenerateFormState {
+  const defaults = createDefaultForm()
+  if (objectives.length === 0) return defaults
+
+  const first = objectives[0]
+
+  // Extract numeric criteria values, sorted descending
+  const criteriaValues = objectives
+    .map((o) => Number(o.valueSmartCriteria))
+    .filter((v) => Number.isFinite(v))
+    .sort((a, b) => b - a)
+
+  // Calculate average step between consecutive sorted values
+  let amount = 0
+  if (criteriaValues.length >= 2) {
+    const diffs: number[] = []
+    for (let i = 0; i < criteriaValues.length - 1; i++) {
+      diffs.push(Math.abs(criteriaValues[i] - criteriaValues[i + 1]))
+    }
+    amount = Math.round((diffs.reduce((s, d) => s + d, 0) / diffs.length) * 100) / 100
+  }
+
+  const highestValue = criteriaValues.length > 0 ? criteriaValues[0] : 0
+  const lowestValue =
+    criteriaValues.length > 0 ? criteriaValues[criteriaValues.length - 1] : 0
+
+  // Reverse-engineer startValue: first STO = start - amount, so start = highest + amount
+  const startValue = amount > 0 ? highestValue + amount : highestValue
+
+  return {
+    generationMode: "number_of_objectives",
+    quantity: objectives.length,
+    percentageFromStart: 0,
+    amountToDecreaseIncrease: String(amount),
+    startValue: String(Math.round(startValue * 100) / 100),
+    endValue: String(Math.round(lowestValue * 100) / 100),
+    operatorSmartCriteria: first.operatorSmartCriteria || "LTE",
+    periodSmartCriteriaCatalogId: first.periodSmartCriteriaCatalogId || "",
+    valueDuration: first.valueDuration || "0",
+    periodDurationCatalogId: first.periodDurationCatalogId || "",
+  }
+}
+
 interface GenerateObjectivesModalProps {
   open: boolean
   onClose: () => void
@@ -97,6 +142,9 @@ interface GenerateObjectivesModalProps {
   clientFirstName?: string
   targetName?: string
   dataCollectionTypeName?: string
+  /** When true, pre-populates form from initialObjectives and replaces on save */
+  editMode?: boolean
+  initialObjectives?: ObjectiveRow[]
 }
 
 export function GenerateObjectivesModal({
@@ -109,6 +157,8 @@ export function GenerateObjectivesModal({
   clientFirstName,
   targetName,
   dataCollectionTypeName = "",
+  editMode = false,
+  initialObjectives,
 }: GenerateObjectivesModalProps) {
   const [form, setForm] = useState<GenerateFormState>(createDefaultForm())
   const [fieldErrors, setFieldErrors] = useState<GenerateFieldErrors>({})
@@ -117,10 +167,14 @@ export function GenerateObjectivesModal({
 
   useEffect(() => {
     if (open) {
-      setForm(createDefaultForm())
+      if (editMode && initialObjectives && initialObjectives.length > 0) {
+        setForm(extractFormFromObjectives(initialObjectives))
+      } else {
+        setForm(createDefaultForm())
+      }
       setFieldErrors({})
     }
-  }, [open])
+  }, [open, editMode, initialObjectives])
 
   const update = useCallback(
     <K extends keyof GenerateFormState>(field: K, value: GenerateFormState[K]) => {
@@ -222,7 +276,7 @@ export function GenerateObjectivesModal({
     <CustomModal
       open={open}
       onOpenChange={(next) => { if (!next) onClose() }}
-      title="Generate Objectives"
+      title={editMode ? "Edit All Objectives" : "Generate Objectives"}
       maxWidthClassName="sm:max-w-[720px]"
       allowSelectOverflow
       contentClassName="!overflow-visible"
@@ -371,7 +425,7 @@ export function GenerateObjectivesModal({
           Cancel
         </Button>
         <Button type="button" onClick={handleGenerate}>
-          Generate {previewNames.length} {previewNames.length === 1 ? "objective" : "objectives"}
+          {editMode ? "Update" : "Generate"} {previewNames.length} {previewNames.length === 1 ? "objective" : "objectives"}
         </Button>
       </div>
     </CustomModal>
