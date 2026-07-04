@@ -84,7 +84,11 @@ interface SupervisionConfigFormProps {
 export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
   const router = useRouter()
   const { upsert, isLoading: isSaving } = useUpsertSupervisionConfig()
-  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
+  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({
+    page: 0,
+    pageSize: 0,
+    filters: ["type__EQ__Supervision__AND"],
+  })
   const billingCodesVisibleTags = useBillingCodesVisibleTagsWide()
 
   const billingCodeOptions = billingCodes.map((bc) => ({
@@ -463,45 +467,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
                 </div>
               </div>
 
-              {/* Row 6: Rules & Restrictions ─────────────────────────────── */}
-              <div className="pt-6 mt-2 border-t border-gray-100">
-                <div className="flex items-center gap-2 mb-5">
-                  <CalendarClock className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium text-gray-700">Rules & Restrictions</span>
-                </div>
-                {/* 2 columnas al 50% — orden alfabético continuo izq→der */}
-                <div className="flex flex-col md:flex-row gap-x-24">
-                  {[SWITCH_ITEMS.slice(0, Math.ceil(SWITCH_ITEMS.length / 2)), SWITCH_ITEMS.slice(Math.ceil(SWITCH_ITEMS.length / 2))].map((col, colIdx) => (
-                    <div key={colIdx} className="flex-1">
-                      {col.map((item) => (
-                        <label
-                          key={item.field}
-                          className="flex items-start justify-between gap-4 px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50/60 transition-colors cursor-pointer"
-                        >
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-slate-900">{item.label}</span>
-                            {item.description && (
-                              <p className="text-xs text-gray-500 mt-1">{item.description}</p>
-                            )}
-                          </div>
-                          <SwitchPrimitives.Root
-                            checked={w[item.field]}
-                            onCheckedChange={(v: boolean) => setValue(item.field, v)}
-                            className={cn(
-                              "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors shadow-sm",
-                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                              "disabled:cursor-not-allowed disabled:opacity-50",
-                              w[item.field] ? "bg-[#037ECC] hover:bg-[#026fb8]" : "bg-gray-200 hover:bg-gray-300"
-                            )}
-                          >
-                            <SwitchPrimitives.Thumb className="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
-                          </SwitchPrimitives.Root>
-                        </label>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Rules & Restrictions — hidden for now */}
 
           </div>
         </div>

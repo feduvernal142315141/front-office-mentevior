@@ -1,13 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import type { Appointment, AppointmentFormData } from "@/lib/types/appointment.types"
+import type { Appointment, AppointmentFormData, EventType } from "@/lib/types/appointment.types"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
-import {
-  useAppointmentBillingCodes,
-  eventTypeToBillingContext,
-} from "@/lib/modules/schedules/hooks/use-appointment-billing-codes"
+import { useApprovedBillingCodes } from "@/lib/modules/schedules/hooks/use-approved-billing-codes"
 import { validateAppointmentEventData } from "@/lib/modules/schedules/services/appointment-validate.service"
 import { usePriorAuthorizationLabel } from "@/lib/modules/schedules/hooks/use-prior-authorization-label"
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
@@ -31,6 +28,18 @@ import {
   calculateDurationMinutes,
   roundToNearest15Minutes,
 } from "@/lib/utils/unit-calculation"
+
+/** Maps form eventType to the billingCodeType query param for the approved-billing-codes endpoint */
+function eventTypeToBillingCodeType(eventType: EventType): string {
+  switch (eventType) {
+    case "session_note":
+      return "Session"
+    case "service_plan":
+      return "Service Plan"
+    case "supervision":
+      return "Supervision"
+  }
+}
 
 interface UseAppointmentFormProps {
   appointment?: Appointment | null
@@ -106,20 +115,22 @@ export function useAppointmentForm({
     formData.clientId || null,
   )
 
-  const billingContext = eventTypeToBillingContext(formData.eventType)
+  const billingCodeType = eventTypeToBillingCodeType(formData.eventType)
   const {
     billingCodes: mainBillingCodes,
+    priorAuthorization: activePriorAuth,
+    hasPriorAuthWithoutCodes,
     isLoading: mainBillingCodesLoading,
     error: mainBillingCodesError,
-  } = useAppointmentBillingCodes({ context: billingContext })
+  } = useApprovedBillingCodes(formData.clientId || null, billingCodeType)
 
   const {
     billingCodes: supervisionBillingCodes,
     isLoading: supervisionBillingCodesLoading,
-  } = useAppointmentBillingCodes({
-    context: "supervision",
-    enabled: formData.addSupervision && formData.eventType === "service_plan",
-  })
+  } = useApprovedBillingCodes(
+    formData.addSupervision && formData.eventType === "service_plan" ? formData.clientId || null : null,
+    "Supervision",
+  )
 
   const durationMinutes = useMemo(
     () => calculateDurationMinutes(formData.startTime, formData.endTime),
@@ -155,6 +166,9 @@ export function useAppointmentForm({
 
   const priorAuthorizationOptions = useMemo(() => {
     if (!formData.priorAuthorizationId) return []
+    const activeLabel = activePriorAuth?.authNumber
+      ? `# ${activePriorAuth.authNumber}`
+      : ""
     const fallbackLabel = appointment?.priorAuthorizationNumber
       ? `# ${appointment.priorAuthorizationNumber}`
       : ""
@@ -163,13 +177,14 @@ export function useAppointmentForm({
         value: formData.priorAuthorizationId,
         label: isLoadingPriorAuthLabel
           ? "Loading prior authorization…"
-          : priorAuthorizationLabel || fallbackLabel || "Prior authorization",
+          : priorAuthorizationLabel || activeLabel || fallbackLabel || "Prior authorization",
       },
     ]
   }, [
     formData.priorAuthorizationId,
     priorAuthorizationLabel,
     isLoadingPriorAuthLabel,
+    activePriorAuth?.authNumber,
     appointment?.priorAuthorizationNumber,
   ])
 
@@ -416,6 +431,29 @@ export function useAppointmentForm({
     }
   }, [addresses, addressesLoading, formData.placeOfServiceAddressId])
 
+  // Auto-assign prior authorization from active PA only when it has billing codes
+  useEffect(() => {
+    if (!activePriorAuth || mainBillingCodes.length === 0) {
+      setFormData((prev) => {
+        if (!prev.priorAuthorizationId) return prev
+        return { ...prev, priorAuthorizationId: "", approvedPriorAuthorizationBillingCodeId: "" }
+      })
+      return
+    }
+    setFormData((prev) => ({
+      ...prev,
+      priorAuthorizationId: activePriorAuth.id,
+    }))
+  }, [activePriorAuth, mainBillingCodes.length])
+
+  // Auto-select billing code if only one available
+  useEffect(() => {
+    if (mainBillingCodesLoading) return
+    if (mainBillingCodes.length === 1 && !formData.billingCodeId) {
+      setFormData((prev) => ({ ...prev, billingCodeId: mainBillingCodes[0].id }))
+    }
+  }, [mainBillingCodes, mainBillingCodesLoading, formData.billingCodeId])
+
   useEffect(() => {
     if (skipDependentResetsRef.current > 0) {
       skipDependentResetsRef.current--
@@ -644,7 +682,6 @@ export function useAppointmentForm({
       e.preventDefault()
 
       if (!validateForm()) {
-        alert.error("Validation Error", "Please fill in all required fields")
         return
       }
 
@@ -717,6 +754,9 @@ export function useAppointmentForm({
     priorAuthorizationOptions,
     supervisionPriorAuthorizationOptions,
     isLoadingPriorAuthLabel,
+    activePriorAuth,
+    hasActivePriorAuth: activePriorAuth !== null,
+    hasPriorAuthWithoutCodes,
     durationMinutes,
     billableUnits,
     supervisionDurationMinutes,

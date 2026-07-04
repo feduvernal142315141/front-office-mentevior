@@ -35,9 +35,45 @@ export const servicePost = async <T = any, R = any>(url: string, data: T): Servi
         })
 }
 
+/** POST that suppresses the global error notification (errors handled inline) */
+export const servicePostSilent = async <T = any, R = any>(url: string, data: T): ServiceResponse<R> => {
+    return apiInstance
+        .post<ResponseEntity<R>>(url, data, { skipNotification: true } as any)
+        .then((response) => {
+            return response
+        })
+        .catch((err) => {
+            return err.response
+        })
+}
+
+/** GET that suppresses the global error notification (errors handled inline) */
+export const serviceGetSilent = async <T = any>(url: string): ServiceResponse<T> => {
+    return apiInstance
+        .get<ResponseEntity<T>>(url, { skipNotification: true } as any)
+        .then((response) => {
+            return response
+        })
+        .catch((err) => {
+            return err.response
+        })
+}
+
 export const servicePut = async <T = any, R = any>(url: string, data: T): ServiceResponse<R> => {
     return apiInstance
         .put<ResponseEntity<R>>(url, data)
+        .then((response) => {
+            return response
+        })
+        .catch((err) => {
+            return err.response
+        })
+}
+
+/** PUT that suppresses the global error notification (errors handled inline) */
+export const servicePutSilent = async <T = any, R = any>(url: string, data: T): ServiceResponse<R> => {
+    return apiInstance
+        .put<ResponseEntity<R>>(url, data, { skipNotification: true } as any)
         .then((response) => {
             return response
         })

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { Button } from "@/components/custom/Button"
@@ -18,6 +19,8 @@ import {
   Users,
   Pencil,
   ChevronRight,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react"
 import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
 import { useAppointmentForm } from "../hooks/useAppointmentForm"
@@ -32,7 +35,7 @@ import { cn } from "@/lib/utils"
 // Supervision is no longer a top-level event type — it is configured as a
 // sub-event of Service Plan via the "Add Supervision" toggle below.
 const EVENT_TYPES: Array<{ value: EventType; label: string }> = [
-  { value: "session_note", label: "Session Note" },
+  { value: "session_note", label: "Session" },
   { value: "service_plan", label: "Service Plan" },
 ]
 
@@ -62,6 +65,7 @@ export function AppointmentModal({
   onSaved,
 }: AppointmentModalProps) {
   const alert = useAlert()
+  const router = useRouter()
   const [showSupervisionModal, setShowSupervisionModal] = useState(false)
 
   const {
@@ -97,6 +101,7 @@ export function AppointmentModal({
     handleSubmit,
     handleDelete,
     isSubmitting,
+    hasPriorAuthWithoutCodes,
   } = useAppointmentForm({
     appointment,
     defaultDate,
@@ -215,6 +220,30 @@ export function AppointmentModal({
             )}
           </Field>
         </div>
+
+        {/* Warning: PA exists but no billing codes for this event type */}
+        {hasPriorAuthWithoutCodes && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-amber-800">
+                No billing codes configured for{" "}
+                {EVENT_TYPES.find((et) => et.value === formData.eventType)?.label ?? formData.eventType}
+              </p>
+              <p className="mt-0.5 text-xs text-amber-600">
+                The client has an active Prior Authorization but no billing codes for this event type. Please configure them in the client&apos;s Prior Authorization.
+              </p>
+              <button
+                type="button"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-200"
+                onClick={() => router.push(`/clients/${formData.clientId}/profile`)}
+              >
+                Go to Prior Authorization
+                <ExternalLink className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Date & Time */}
         <Field>

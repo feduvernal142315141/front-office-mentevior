@@ -89,14 +89,18 @@ apiInstance.interceptors.response.use(
             const status = error.response.status
             const data = error.response.data as any
 
+            const skipNotification = !!(error.config as any)?.skipNotification
+
             switch (status) {
                 case 400: {
-                    const { description: message400 } = parseApiErrorMessage(
-                        data,
-                        'Incorrect request. Please verify the information submitted.'
-                    )
+                    if (!skipNotification) {
+                        const { description: message400 } = parseApiErrorMessage(
+                            data,
+                            'Incorrect request. Please verify the information submitted.'
+                        )
 
-                    interceptorHandlers.onNotification?.(message400, 'error')
+                        interceptorHandlers.onNotification?.(message400, 'error')
+                    }
                     break
                 }
 

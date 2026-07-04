@@ -1,4 +1,5 @@
-import { serviceGet, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePutSilent } from "@/lib/services/baseService"
+import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import type { AppointmentConfig, UpsertAppointmentConfigDto } from "@/lib/types/appointment-config.types"
 
 export async function getAppointmentConfig(): Promise<AppointmentConfig | null> {
@@ -16,10 +17,10 @@ export async function getAppointmentConfig(): Promise<AppointmentConfig | null> 
 }
 
 export async function upsertAppointmentConfig(data: UpsertAppointmentConfigDto): Promise<AppointmentConfig> {
-  const response = await servicePut<UpsertAppointmentConfigDto, AppointmentConfig>("/appointment_config", data)
+  const response = await servicePutSilent<UpsertAppointmentConfigDto, AppointmentConfig>("/appointment_config", data)
 
   if (response.status !== 200 && response.status !== 201) {
-    throw new Error("Failed to save appointment configuration")
+    throw new Error(getApiErrorMessage(response?.data, "Failed to save appointment configuration"))
   }
 
   return response.data as unknown as AppointmentConfig

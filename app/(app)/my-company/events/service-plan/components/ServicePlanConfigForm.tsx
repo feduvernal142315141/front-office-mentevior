@@ -96,7 +96,11 @@ export function ServicePlanConfigForm({
 }: ServicePlanConfigFormProps) {
   const router = useRouter()
   const { upsert, isLoading: isSaving } = useUpsertServicePlanConfig()
-  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 100 })
+  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({
+    page: 0,
+    pageSize: 0,
+    filters: ["type__EQ__Service Plan__AND"],
+  })
   const billingCodesVisibleTags = useBillingCodesVisibleTagsWide()
 
   const billingCodeOptions = billingCodes.map((bc) => ({

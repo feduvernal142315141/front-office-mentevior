@@ -9,6 +9,8 @@
 
 import { Button } from "@/components/custom/Button"
 import { X, Save } from "lucide-react"
+import { useUi } from "@/lib/store/ui.store"
+import { cn } from "@/lib/utils"
 
 interface FormBottomBarProps {
   /**
@@ -58,8 +60,13 @@ export function FormBottomBar({
   cancelIcon,
   disabled = false,
 }: FormBottomBarProps) {
+  const { sidebarCollapsed } = useUi()
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+    <div className={cn(
+      "fixed bottom-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+      sidebarCollapsed ? "left-20" : "left-[300px]"
+    )}>
       <div className="max-w-5xl mx-auto px-6 py-4">
         <div className="flex items-center justify-end gap-3">
           <Button

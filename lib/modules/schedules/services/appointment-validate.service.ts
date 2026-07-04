@@ -1,4 +1,4 @@
-import { servicePost } from "@/lib/services/baseService"
+import { servicePostSilent } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import type {
   ValidateEventDataRequest,
@@ -8,7 +8,7 @@ import type {
 export async function validateAppointmentEventData(
   payload: ValidateEventDataRequest,
 ): Promise<ValidateEventDataResponse> {
-  const response = await servicePost<ValidateEventDataRequest, ValidateEventDataResponse>(
+  const response = await servicePostSilent<ValidateEventDataRequest, ValidateEventDataResponse>(
     "/appointment/validate-event-data",
     payload,
   )

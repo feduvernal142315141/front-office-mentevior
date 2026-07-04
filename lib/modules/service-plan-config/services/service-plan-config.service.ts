@@ -1,4 +1,5 @@
-import { serviceGet, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePutSilent } from "@/lib/services/baseService"
+import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import type { ServicePlanConfig, UpsertServicePlanConfigDto } from "@/lib/types/service-plan-config.types"
 
 export async function getServicePlanConfig(): Promise<ServicePlanConfig | null> {
@@ -11,10 +12,10 @@ export async function getServicePlanConfig(): Promise<ServicePlanConfig | null> 
 }
 
 export async function upsertServicePlanConfig(data: UpsertServicePlanConfigDto): Promise<ServicePlanConfig> {
-  const response = await servicePut<UpsertServicePlanConfigDto, ServicePlanConfig>("/service-plan-config", data)
+  const response = await servicePutSilent<UpsertServicePlanConfigDto, ServicePlanConfig>("/service-plan-config", data)
 
   if (response.status !== 200 && response.status !== 201) {
-    throw new Error("Failed to save service plan configuration")
+    throw new Error(getApiErrorMessage(response?.data, "Failed to save service plan configuration"))
   }
 
   return response.data as unknown as ServicePlanConfig
