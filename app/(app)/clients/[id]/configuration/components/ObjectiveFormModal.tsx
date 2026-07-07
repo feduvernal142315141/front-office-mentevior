@@ -184,7 +184,7 @@ export function ObjectiveFormModal({
         />
 
         {/* Dates */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className={form.endDate ? "grid grid-cols-3 gap-4" : "grid grid-cols-2 gap-4"}>
           <PremiumDatePicker
             label="Start Date"
             value={form.startDate}
@@ -193,10 +193,18 @@ export function ObjectiveFormModal({
             hasError={!!fieldErrors.startDate}
           />
           <PremiumDatePicker
-            label="End Date"
-            value={form.endDate}
-            onChange={(v) => update("endDate", v)}
+            label="Estimated End Date"
+            value={form.estimatedEndDate}
+            onChange={(v) => update("estimatedEndDate", v)}
           />
+          {form.endDate && (
+            <PremiumDatePicker
+              label="End Date (Mastered)"
+              value={form.endDate}
+              onChange={() => {}}
+              disabled
+            />
+          )}
         </div>
 
         {/* Smart Criteria */}
