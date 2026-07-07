@@ -108,7 +108,7 @@ function extractFormFromObjectives(
     for (let i = 0; i < criteriaValues.length - 1; i++) {
       diffs.push(Math.abs(criteriaValues[i] - criteriaValues[i + 1]))
     }
-    amount = Math.round((diffs.reduce((s, d) => s + d, 0) / diffs.length) * 100) / 100
+    amount = Math.round(diffs.reduce((s, d) => s + d, 0) / diffs.length)
   }
 
   const highestValue = criteriaValues.length > 0 ? criteriaValues[0] : 0
@@ -191,7 +191,7 @@ export function GenerateObjectivesModal({
             const qty = next.quantity
             if (qty > 0 && range > 0) {
               next.amountToDecreaseIncrease = String(
-                Math.round((range / qty) * 100) / 100
+                Math.round(range / qty)
               )
             }
           } else if (field === "amountToDecreaseIncrease") {

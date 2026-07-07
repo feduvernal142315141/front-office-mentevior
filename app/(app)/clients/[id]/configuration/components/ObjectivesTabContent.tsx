@@ -129,7 +129,12 @@ export function ObjectivesTabContent({
       if (exists) {
         onChange(objectives.map((o) => (o.localId === saved.localId ? saved : o)))
       } else {
-        onChange([...objectives, saved])
+        // Auto-prefix with STO#N if the name doesn't already start with "STO#"
+        const nextNumber = objectives.length + 1
+        const prefixed = saved.name.startsWith("STO#")
+          ? saved
+          : { ...saved, name: `STO#${nextNumber}: ${saved.name}` }
+        onChange([...objectives, prefixed])
       }
     },
     [objectives, onChange]

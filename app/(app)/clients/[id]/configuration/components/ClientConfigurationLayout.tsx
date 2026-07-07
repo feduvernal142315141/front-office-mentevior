@@ -1,11 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ClipboardList, BarChart3, Sliders, ArrowLeft } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { useClientServicePlanById } from "@/lib/modules/client-service-plan/hooks/use-client-service-plan-by-id"
+import { useAlert } from "@/lib/contexts/alert-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/custom/Button"
 
@@ -14,7 +15,7 @@ import {
   type ConfigurationSection,
 } from "./ConfigurationSidebar"
 import { ServicePlanContent } from "./ServicePlanContent"
-import { DataCollectionContent } from "./DataCollectionContent"
+import { DataCollectionContent, type NavigateToItemRequest } from "./DataCollectionContent"
 
 interface ClientConfigurationLayoutProps {
   clientId: string
@@ -24,9 +25,42 @@ interface ClientConfigurationLayoutProps {
 export function ClientConfigurationLayout({ clientId, clientServicePlanId }: ClientConfigurationLayoutProps) {
   const router = useRouter()
   const { client, isLoading } = useClientById(clientId)
+  const alert = useAlert()
   const [activeSectionId, setActiveSectionId] = useState("service-plan")
   const [spId, setSpId] = useState<string | null>(clientServicePlanId)
   const { clientServicePlan } = useClientServicePlanById(spId ?? "")
+  const [autoOpenItem, setAutoOpenItem] = useState<NavigateToItemRequest | null>(null)
+  const isItemDirtyRef = useRef(false)
+
+  const handleItemDirtyChange = useCallback((dirty: boolean) => {
+    isItemDirtyRef.current = dirty
+  }, [])
+
+  const guardedSectionClick = useCallback((sectionId: string) => {
+    if (!isItemDirtyRef.current) {
+      setActiveSectionId(sectionId)
+      return
+    }
+    alert.confirm({
+      title: "Unsaved Changes",
+      description: "You have unsaved changes. Save them before leaving or discard to continue without saving.",
+      confirmText: "Save",
+      cancelText: "Cancel",
+      onConfirm: () => {
+        const form = document.querySelector<HTMLFormElement>("form")
+        form?.requestSubmit()
+      },
+      onCancel: () => {
+        isItemDirtyRef.current = false
+        setActiveSectionId(sectionId)
+      },
+    })
+  }, [alert])
+
+  const handleNavigateToItem = useCallback((request: NavigateToItemRequest) => {
+    setAutoOpenItem(request)
+    setActiveSectionId("service-plan")
+  }, [])
 
 
   const sections: ConfigurationSection[] = useMemo(
@@ -98,7 +132,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
         <ConfigurationSidebar
           sections={sections}
           activeSectionId={activeSectionId}
-          onSectionClick={setActiveSectionId}
+          onSectionClick={guardedSectionClick}
         />
 
         <div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar pb-36">
@@ -108,11 +142,14 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId }: Cli
                 clientId={clientId}
                 clientServicePlanId={clientServicePlanId}
                 onServicePlanAssigned={setSpId}
+                autoOpenItem={autoOpenItem}
+                onAutoOpenItemConsumed={() => setAutoOpenItem(null)}
+                onItemDirtyChange={handleItemDirtyChange}
               />
             )}
 
             {activeSectionId === "data-collection" && spId && (
-              <DataCollectionContent clientId={clientId} clientServicePlanId={spId} />
+              <DataCollectionContent clientId={clientId} clientServicePlanId={spId} onNavigateToItem={handleNavigateToItem} />
             )}
           </div>
         </div>

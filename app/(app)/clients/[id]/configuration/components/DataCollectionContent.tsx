@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Sheet, Loader2 } from "lucide-react"
+import { Sheet, Loader2, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useClientServicePlanConfiguration } from "../../service-plan/hooks/useClientServicePlanConfiguration"
 import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
@@ -11,16 +11,26 @@ import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-ser
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import { FrequencyDatasheet } from "./datasheets/FrequencyDatasheet"
 import { PercentageDatasheet } from "./datasheets/PercentageDatasheet"
+import { Button } from "@/components/custom/Button"
+
+export interface NavigateToItemRequest {
+  categoryId: string
+  itemId: string
+  itemName: string
+}
+
 interface DataCollectionContentProps {
   clientId: string
   clientServicePlanId: string
+  onNavigateToItem?: (request: NavigateToItemRequest) => void
 }
 
-export function DataCollectionContent({ clientId, clientServicePlanId }: DataCollectionContentProps) {
+export function DataCollectionContent({ clientId, clientServicePlanId, onNavigateToItem }: DataCollectionContentProps) {
   return (
     <DataCollectionView
       clientId={clientId}
       clientServicePlanId={clientServicePlanId}
+      onNavigateToItem={onNavigateToItem}
     />
   )
 }
@@ -30,9 +40,10 @@ export function DataCollectionContent({ clientId, clientServicePlanId }: DataCol
 interface DataCollectionViewProps {
   clientId: string
   clientServicePlanId: string
+  onNavigateToItem?: (request: NavigateToItemRequest) => void
 }
 
-function DataCollectionView({ clientId, clientServicePlanId }: DataCollectionViewProps) {
+function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }: DataCollectionViewProps) {
   const {
     categories,
     activeCategoryId,
@@ -100,6 +111,11 @@ function DataCollectionView({ clientId, clientServicePlanId }: DataCollectionVie
     () => items.find((i) => i.id === activeItemId) ?? null,
     [items, activeItemId]
   )
+
+  const itemHasBaseline = useMemo(() => {
+    if (!activeItem) return false
+    return Array.isArray(activeItem.baseline) && activeItem.baseline.length > 0
+  }, [activeItem])
 
   if (isLoading) {
     return (
@@ -183,11 +199,15 @@ function DataCollectionView({ clientId, clientServicePlanId }: DataCollectionVie
           {/* Active Item Content Area */}
           {activeItem && (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-base font-semibold text-slate-800">{activeItem.itemName}</h3>
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-semibold text-slate-800 whitespace-normal break-words">
+                    {activeItem.itemName}
+                  </h3>
                   {activeItem.description && (
-                    <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">{activeItem.description}</p>
+                    <p className="text-sm text-slate-500 mt-0.5 line-clamp-2 break-words leading-relaxed">
+                      {activeItem.description}
+                    </p>
                   )}
                 </div>
                 {categoryTypeName ? (
@@ -201,25 +221,56 @@ function DataCollectionView({ clientId, clientServicePlanId }: DataCollectionVie
                 )}
               </div>
 
-              {/* Collection UI — varies by type */}
-              {categoryTypeName === "Frequency/Count" || categoryTypeName === "Frequency" ? (
-                <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
-              ) : categoryTypeName === "Percentage of Opportunities" ? (
-                <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-gradient-to-br from-slate-50/80 to-white px-6 py-12 text-center">
-                  <div className="inline-flex p-3 rounded-full bg-slate-100 mb-3">
-                    <Sheet className="h-8 w-8 text-slate-400" />
+              {/* Baseline required alert */}
+              {!itemHasBaseline ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-6 py-8 text-center">
+                  <div className="inline-flex p-3 rounded-full bg-amber-100 mb-3">
+                    <AlertTriangle className="h-7 w-7 text-amber-500" />
                   </div>
-                  <p className="text-sm font-medium text-slate-600">
-                    Datasheet — {activeItem.itemName}
+                  <p className="text-sm font-semibold text-amber-800">
+                    Baseline configuration required
                   </p>
-                  <p className="text-sm text-slate-500 mt-1">
-                    {categoryTypeName
-                      ? `Collection type: ${categoryTypeName}`
-                      : "No collection type configured for this category"}
+                  <p className="text-sm text-amber-600 mt-1 max-w-md mx-auto">
+                    You need to configure at least one baseline for <strong>{activeItem.itemName}</strong> before you can start collecting data.
                   </p>
+                  <Button
+                    type="button"
+                    className="mt-4 gap-2"
+                    onClick={() => {
+                      if (!activeCategoryId) return
+                      onNavigateToItem?.({
+                        categoryId: activeCategoryId,
+                        itemId: activeItem.id,
+                        itemName: activeItem.itemName,
+                      })
+                    }}
+                  >
+                    Go to Service Plan and configure
+                  </Button>
                 </div>
+              ) : (
+                <>
+                  {/* Collection UI — varies by type */}
+                  {categoryTypeName === "Frequency/Count" || categoryTypeName === "Frequency" ? (
+                    <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
+                  ) : categoryTypeName === "Percentage of Opportunities" ? (
+                    <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-gradient-to-br from-slate-50/80 to-white px-6 py-12 text-center">
+                      <div className="inline-flex p-3 rounded-full bg-slate-100 mb-3">
+                        <Sheet className="h-8 w-8 text-slate-400" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-600">
+                        Datasheet — {activeItem.itemName}
+                      </p>
+                      <p className="text-sm text-slate-500 mt-1">
+                        {categoryTypeName
+                          ? `Collection type: ${categoryTypeName}`
+                          : "No collection type configured for this category"}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

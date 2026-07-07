@@ -48,9 +48,9 @@ const ICON_MAP = {
   },
   confirm: {
     Icon: AlertTriangle,
-    iconBg: "bg-[hsl(var(--primary)/0.11)]",
-    iconBorder: "border-[hsl(var(--primary)/0.3)]",
-    iconColor: "text-[hsl(var(--primary))]",
+    iconBg: "bg-[hsl(44_96%_53%/0.14)]",
+    iconBorder: "border-[hsl(40_92%_45%/0.28)]",
+    iconColor: "text-[hsl(40_92%_42%)]",
   },
 } as const
 
@@ -153,7 +153,7 @@ export function AlertModal({ alert, onClose, onConfirm }: AlertModalProps) {
                     {alert.type === "confirm" ? (
                       <>
                         <AlertDialogCancel asChild>
-                          <Button variant="ghost" className="min-w-[120px]">
+                          <Button variant="secondary" className="min-w-[120px]">
                             {alert.cancelText ?? "Cancel"}
                           </Button>
                         </AlertDialogCancel>

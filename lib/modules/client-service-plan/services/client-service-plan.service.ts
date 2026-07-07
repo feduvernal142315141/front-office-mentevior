@@ -10,8 +10,19 @@ import type {
 
 // --- Helpers de normalización ---
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&#34;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+}
+
 function asString(value: unknown): string {
-  if (typeof value === "string") return value
+  if (typeof value === "string") return decodeHtmlEntities(value)
   if (typeof value === "number") return String(value)
   return ""
 }

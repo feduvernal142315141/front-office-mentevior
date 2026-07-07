@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useParams } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -9,9 +9,11 @@ import {
   Loader2,
   Minus,
   Plus,
+  Save,
 } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -20,6 +22,7 @@ import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { GroupedSelect } from "@/components/custom/GroupedSelect"
 import { Button } from "@/components/custom/Button"
 
+import { useAlert } from "@/lib/contexts/alert-context"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-method-catalog"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
@@ -120,6 +123,7 @@ interface ItemDetailPanelProps {
   itemName: string
   onBack: () => void
   onSaved: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 export function ItemDetailPanel({
@@ -129,6 +133,7 @@ export function ItemDetailPanel({
   itemName,
   onBack,
   onSaved,
+  onDirtyChange,
 }: ItemDetailPanelProps) {
   const params = useParams()
   const clientId = typeof params?.id === "string" ? params.id : null
@@ -178,13 +183,15 @@ export function ItemDetailPanel({
   )
 
   // --- Form ---
+  const alert = useAlert()
+
   const {
     control,
     handleSubmit,
     watch,
     setValue,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty: isFormDirty },
   } = useForm<ClientDataCollectionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -276,6 +283,63 @@ export function ItemDetailPanel({
       chart: resolveChartConfig(config.chart),
     })
   }, [config, itemConfig, reset])
+
+  // --- Dirty state tracking ---
+  const baselinesSnapshotRef = useRef("")
+  const objectivesSnapshotRef = useRef("")
+
+  // Take snapshot when data loads
+  useEffect(() => {
+    baselinesSnapshotRef.current = JSON.stringify(baselines.map(({ localId, ...b }) => b))
+  }, [isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    objectivesSnapshotRef.current = JSON.stringify(objectives.map(({ localId, ...o }) => o))
+  }, [isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasBaselineChanges = useMemo(() => {
+    if (!baselinesSnapshotRef.current && baselines.length === 0) return false
+    return JSON.stringify(baselines.map(({ localId, ...b }) => b)) !== baselinesSnapshotRef.current
+  }, [baselines])
+
+  const hasObjectiveChanges = useMemo(() => {
+    if (!objectivesSnapshotRef.current && objectives.length === 0) return false
+    return JSON.stringify(objectives.map(({ localId, ...o }) => o)) !== objectivesSnapshotRef.current
+  }, [objectives])
+
+  const hasUnsavedChanges = isFormDirty || hasBaselineChanges || hasObjectiveChanges
+
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges)
+  }, [hasUnsavedChanges, onDirtyChange])
+
+  // Ref to store the form element for programmatic submission
+  const formRef = useRef<HTMLFormElement>(null)
+
+  // Guard navigation when dirty
+  const guardedNavigate = useCallback(
+    (action: () => void) => {
+      if (!hasUnsavedChanges) {
+        action()
+        return
+      }
+      alert.confirm({
+        title: "Unsaved Changes",
+        description: "You have unsaved changes. Save them before leaving or discard to continue without saving.",
+        confirmText: "Save",
+        cancelText: "Cancel",
+        onConfirm: () => {
+          // Trigger form submission programmatically (save then navigate)
+          formRef.current?.requestSubmit()
+        },
+        onCancel: () => {
+          // Discard and navigate
+          action()
+        },
+      })
+    },
+    [hasUnsavedChanges, alert]
+  )
 
   // --- Watched values ---
   const watchedType = watch("type")
@@ -446,6 +510,7 @@ export function ItemDetailPanel({
   // --- Render ---
   return (
     <form
+      ref={formRef}
       onSubmit={onSubmit}
       className="rounded-2xl border border-slate-200 bg-white shadow-sm"
     >
@@ -453,7 +518,7 @@ export function ItemDetailPanel({
       <div className="border-b border-slate-100 px-6 py-4 flex items-center justify-between gap-4">
         <button
           type="button"
-          onClick={onBack}
+          onClick={() => guardedNavigate(onBack)}
           disabled={isSaving}
           className="group flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025ea0] transition-colors"
         >
@@ -862,20 +927,47 @@ export function ItemDetailPanel({
 
       {/* ── Fixed footer (overlays the layout Back button, hidden when modal is open) ── */}
       {!isModalOpen && (
-      <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 z-[60] backdrop-blur-md border-t shadow-[0_-4px_16px_rgba(0,0,0,0.08)] transition-colors duration-300",
+        hasUnsavedChanges
+          ? "bg-amber-50/95 border-amber-200"
+          : "bg-white/95 border-gray-200"
+      )}>
         <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-end gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onBack}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" loading={isSaving}>
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
+          <div className="flex items-center justify-between">
+            {hasUnsavedChanges && (
+              <div className="flex items-center gap-2 text-amber-700">
+                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-sm font-medium">Unsaved changes</span>
+              </div>
+            )}
+            <div className={cn("flex items-center gap-3", !hasUnsavedChanges && "ml-auto")}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => guardedNavigate(onBack)}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <motion.div
+                animate={
+                  hasUnsavedChanges
+                    ? { scale: [1, 1.05, 1] }
+                    : { scale: 1 }
+                }
+                transition={
+                  hasUnsavedChanges
+                    ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
+                    : {}
+                }
+              >
+                <Button type="submit" variant="primary" loading={isSaving} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {isSaving ? "Saving..." : "Save"}
+                </Button>
+              </motion.div>
+            </div>
           </div>
         </div>
       </div>

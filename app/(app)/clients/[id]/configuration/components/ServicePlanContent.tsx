@@ -8,14 +8,18 @@ import { SelectServicePlanModal } from "../../../components/SelectServicePlanMod
 import { ServicePlanConfigView } from "./ServicePlanConfigView"
 import { useCompanyServicePlans } from "@/lib/modules/service-plans/hooks/use-company-service-plans"
 import { cloneServicePlanToClient } from "@/lib/modules/client-service-plan/services/client-service-plan.service"
+import type { NavigateToItemRequest } from "./DataCollectionContent"
 
 interface ServicePlanContentProps {
   clientId: string
   clientServicePlanId: string | null
   onServicePlanAssigned?: (spId: string) => void
+  autoOpenItem?: NavigateToItemRequest | null
+  onAutoOpenItemConsumed?: () => void
+  onItemDirtyChange?: (dirty: boolean) => void
 }
 
-export function ServicePlanContent({ clientId, clientServicePlanId, onServicePlanAssigned }: ServicePlanContentProps) {
+export function ServicePlanContent({ clientId, clientServicePlanId, onServicePlanAssigned, autoOpenItem, onAutoOpenItemConsumed, onItemDirtyChange }: ServicePlanContentProps) {
   const [spId, setSpId] = useState<string | null>(clientServicePlanId)
   const [showModal, setShowModal] = useState(false)
   const [isAutoAssigning, setIsAutoAssigning] = useState(false)
@@ -52,7 +56,14 @@ export function ServicePlanContent({ clientId, clientServicePlanId, onServicePla
   }, [spId, isLoadingPlans, servicePlans, clientId])
 
   if (spId) {
-    return <ServicePlanConfigView spId={spId} />
+    return (
+      <ServicePlanConfigView
+        spId={spId}
+        autoOpenItem={autoOpenItem}
+        onAutoOpenItemConsumed={onAutoOpenItemConsumed}
+        onItemDirtyChange={onItemDirtyChange}
+      />
+    )
   }
 
   // Loading state while checking company plans or auto-assigning

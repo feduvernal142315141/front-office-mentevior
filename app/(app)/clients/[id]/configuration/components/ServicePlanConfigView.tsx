@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 
@@ -12,6 +12,8 @@ import { ItemDetailPanel } from "./ItemDetailPanel"
 import { useClientServicePlanCategoryItems } from "../../service-plan/hooks/useClientServicePlanCategoryItems"
 import { useClientServicePlanConfiguration } from "../../service-plan/hooks/useClientServicePlanConfiguration"
 import { useDataCollectionDrawerController } from "../../service-plan/hooks/useDataCollectionDrawerController"
+import { useAlert } from "@/lib/contexts/alert-context"
+import type { NavigateToItemRequest } from "./DataCollectionContent"
 
 // State for the inline item detail panel
 interface SelectedItemDetail {
@@ -22,9 +24,12 @@ interface SelectedItemDetail {
 
 interface ServicePlanConfigViewProps {
   spId: string
+  autoOpenItem?: NavigateToItemRequest | null
+  onAutoOpenItemConsumed?: () => void
+  onItemDirtyChange?: (dirty: boolean) => void
 }
 
-export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
+export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsumed, onItemDirtyChange }: ServicePlanConfigViewProps) {
   const {
     clientServicePlan,
     categories,
@@ -42,14 +47,84 @@ export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
   })
 
   const dcDrawer = useDataCollectionDrawerController()
+  const alert = useAlert()
 
   const [isAddItemsDrawerOpen, setIsAddItemsDrawerOpen] = useState(false)
   const [selectedItemDetail, setSelectedItemDetail] = useState<SelectedItemDetail | null>(null)
+  const isItemDirtyRef = useRef(false)
+
+  const handleItemDirtyChange = useCallback((dirty: boolean) => {
+    isItemDirtyRef.current = dirty
+    onItemDirtyChange?.(dirty)
+  }, [onItemDirtyChange])
+
+  const guardedAction = useCallback(
+    (action: () => void) => {
+      if (!isItemDirtyRef.current) {
+        action()
+        return
+      }
+      alert.confirm({
+        title: "Unsaved Changes",
+        description: "You have unsaved changes. Save them before leaving or discard to continue without saving.",
+        confirmText: "Save",
+        cancelText: "Cancel",
+        onConfirm: () => {
+          // Trigger the item form save programmatically
+          const form = document.querySelector<HTMLFormElement>("form")
+          form?.requestSubmit()
+        },
+        onCancel: () => {
+          isItemDirtyRef.current = false
+          onItemDirtyChange?.(false)
+          action()
+        },
+      })
+    },
+    [alert, onItemDirtyChange]
+  )
+
+  // Guarded category selection
+  const handleSelectCategory = useCallback(
+    (categoryId: string) => {
+      if (!selectedItemDetail) {
+        setActiveCategoryId(categoryId)
+        return
+      }
+      guardedAction(() => {
+        setSelectedItemDetail(null)
+        setActiveCategoryId(categoryId)
+      })
+    },
+    [selectedItemDetail, guardedAction, setActiveCategoryId]
+  )
 
   // Clear item detail when category changes
   useEffect(() => {
     setSelectedItemDetail(null)
   }, [activeCategoryId])
+
+  // Auto-open item from Data Collection navigation
+  useEffect(() => {
+    if (!autoOpenItem || itemsState.isLoading) return
+
+    // First, select the correct category
+    if (activeCategoryId !== autoOpenItem.categoryId) {
+      setActiveCategoryId(autoOpenItem.categoryId)
+      return
+    }
+
+    // Then, once items are loaded for that category, open the item detail
+    const targetItem = itemsState.items.find((i) => i.id === autoOpenItem.itemId)
+    if (targetItem && activeCategory) {
+      setSelectedItemDetail({
+        item: targetItem,
+        categoryId: autoOpenItem.categoryId,
+        categoryName: activeCategory.categoryName,
+      })
+      onAutoOpenItemConsumed?.()
+    }
+  }, [autoOpenItem, activeCategoryId, itemsState.items, itemsState.isLoading, activeCategory, setActiveCategoryId, onAutoOpenItemConsumed])
 
   const mappedItemIds = useMemo(
     () => new Set(itemsState.items.map((item) => item.itemId)),
@@ -127,7 +202,7 @@ export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
           <CategoriesSidebar
             categories={categories}
             activeCategoryId={activeCategoryId}
-            onSelectCategory={setActiveCategoryId}
+            onSelectCategory={handleSelectCategory}
             onConfigureDataCollection={dcDrawer.openForCategory}
           />
 
@@ -139,6 +214,7 @@ export function ServicePlanConfigView({ spId }: ServicePlanConfigViewProps) {
               itemName={selectedItemDetail.item.itemName}
               onBack={handleItemDetailBack}
               onSaved={handleItemDetailSaved}
+              onDirtyChange={handleItemDirtyChange}
             />
           ) : (
             <CategoryItemsPanel

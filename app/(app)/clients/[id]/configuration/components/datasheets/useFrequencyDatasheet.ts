@@ -123,21 +123,36 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
   const fetchStartDate = useMemo(() => format(dateRange.start, "yyyy-MM-dd"), [dateRange.start])
   const fetchEndDate = useMemo(() => format(dateRange.end, "yyyy-MM-dd"), [dateRange.end])
 
+  // ─── Earliest baseline date (min navigable date) ─────────────────────────
+
+  const minDate = useMemo(() => {
+    if (!baselines || baselines.length === 0) return undefined
+    const dates = baselines.filter((b) => b.date).map((b) => parseLocalDate(b.date))
+    if (dates.length === 0) return undefined
+    return new Date(Math.min(...dates.map((d) => d.getTime())))
+  }, [baselines])
+
   // ─── Navigation ──────────────────────────────────────────────────────────
 
   const goToPrev = useCallback(() => {
     if (rangeMode === "month") {
-      setAnchor((a) => addMonths(a, -1))
+      const prev = addMonths(anchor, -1)
+      if (minDate && startOfMonth(prev) < startOfMonth(minDate)) return
+      setAnchor(prev)
     } else if (rangeMode === "custom" && customRange) {
       const diff = customRange.end.getTime() - customRange.start.getTime()
+      const prevStart = new Date(customRange.start.getTime() - diff - 86400000)
+      if (minDate && prevStart < minDate) return
       setCustomRange({
-        start: new Date(customRange.start.getTime() - diff - 86400000),
+        start: prevStart,
         end: new Date(customRange.end.getTime() - diff - 86400000),
       })
     } else {
-      setAnchor((a) => addWeeks(a, -1))
+      const prev = addWeeks(anchor, -1)
+      if (minDate && startOfWeek(prev, { weekStartsOn: 1 }) < startOfWeek(minDate, { weekStartsOn: 1 })) return
+      setAnchor(prev)
     }
-  }, [rangeMode, customRange])
+  }, [rangeMode, customRange, anchor, minDate])
 
   const goToNext = useCallback(() => {
     if (rangeMode === "month") {
@@ -160,6 +175,17 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
       setCustomRange(null)
     }
   }, [rangeMode])
+
+  const canGoPrev = useMemo(() => {
+    if (!minDate) return true
+    if (rangeMode === "month") {
+      return startOfMonth(anchor) > startOfMonth(minDate)
+    }
+    if (rangeMode === "custom" && customRange) {
+      return customRange.start > minDate
+    }
+    return startOfWeek(anchor, { weekStartsOn: 1 }) > startOfWeek(minDate, { weekStartsOn: 1 })
+  }, [minDate, rangeMode, anchor, customRange])
 
   // Jump to a specific date (sets anchor)
   const goToDate = useCallback((date: Date) => {
@@ -466,6 +492,8 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     goToNextWeek,
     goToCurrentWeek,
     // Navigation
+    minDate,
+    canGoPrev,
     goToPrev,
     goToNext,
     goToToday,

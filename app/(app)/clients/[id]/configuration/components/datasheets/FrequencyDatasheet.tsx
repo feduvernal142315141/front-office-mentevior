@@ -225,6 +225,8 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
         dateRange={ds.dateRange}
         staffAvatars={ds.staffAvatars}
         staffCount={ds.staffCount}
+        minDate={ds.minDate}
+        canGoPrev={ds.canGoPrev}
         onPrev={ds.goToPrev}
         onNext={ds.goToNext}
         onToday={ds.goToToday}
@@ -423,6 +425,8 @@ function DatasheetHeader({
   dateRange,
   staffAvatars,
   staffCount,
+  minDate,
+  canGoPrev,
   onPrev,
   onNext,
   onToday,
@@ -436,6 +440,8 @@ function DatasheetHeader({
   dateRange: { start: Date; end: Date }
   staffAvatars: string[]
   staffCount: number
+  minDate?: Date
+  canGoPrev: boolean
   onPrev: () => void
   onNext: () => void
   onToday: () => void
@@ -532,8 +538,8 @@ function DatasheetHeader({
 
         {/* Center: Period navigation */}
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onPrev}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-[#037ECC]/30 hover:text-[#037ECC] hover:shadow-sm">
+          <button type="button" onClick={onPrev} disabled={!canGoPrev}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-[#037ECC]/30 hover:text-[#037ECC] hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:text-slate-500 disabled:hover:shadow-none">
             <ChevronLeft className="h-4 w-4" />
           </button>
 
@@ -559,28 +565,21 @@ function DatasheetHeader({
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Quick select</p>
                   <div className="grid grid-cols-2 gap-1.5">
-                    <button type="button" onClick={() => handleQuickWeek(new Date())}
-                      className="px-3 py-2 text-xs font-medium text-slate-600 rounded-lg border border-slate-200 bg-white hover:bg-[#037ECC]/5 hover:border-[#037ECC]/30 hover:text-[#037ECC] transition-all">
-                      This week
-                    </button>
-                    <button type="button" onClick={() => handleQuickMonth(new Date())}
-                      className="px-3 py-2 text-xs font-medium text-slate-600 rounded-lg border border-slate-200 bg-white hover:bg-[#037ECC]/5 hover:border-[#037ECC]/30 hover:text-[#037ECC] transition-all">
-                      This month
-                    </button>
-                    <button type="button" onClick={() => {
-                      const d = new Date(); d.setMonth(d.getMonth() - 1)
-                      handleQuickMonth(d)
-                    }}
-                      className="px-3 py-2 text-xs font-medium text-slate-600 rounded-lg border border-slate-200 bg-white hover:bg-[#037ECC]/5 hover:border-[#037ECC]/30 hover:text-[#037ECC] transition-all">
-                      Last month
-                    </button>
-                    <button type="button" onClick={() => {
-                      const s = new Date(new Date().getFullYear(), 0, 1)
-                      handleQuickWeek(s)
-                    }}
-                      className="px-3 py-2 text-xs font-medium text-slate-600 rounded-lg border border-slate-200 bg-white hover:bg-[#037ECC]/5 hover:border-[#037ECC]/30 hover:text-[#037ECC] transition-all">
-                      First week of year
-                    </button>
+                    {[
+                      { label: "This week", getDate: () => new Date(), handler: handleQuickWeek },
+                      { label: "This month", getDate: () => new Date(), handler: handleQuickMonth },
+                      { label: "Last month", getDate: () => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d }, handler: handleQuickMonth },
+                      { label: "First week of year", getDate: () => new Date(new Date().getFullYear(), 0, 1), handler: handleQuickWeek },
+                    ].map(({ label, getDate, handler }) => {
+                      const target = getDate()
+                      const isBlocked = !!minDate && target < minDate
+                      return (
+                        <button key={label} type="button" onClick={() => handler(target)} disabled={isBlocked}
+                          className="px-3 py-2 text-xs font-medium text-slate-600 rounded-lg border border-slate-200 bg-white hover:bg-[#037ECC]/5 hover:border-[#037ECC]/30 hover:text-[#037ECC] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-slate-200 disabled:hover:text-slate-600">
+                          {label}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -598,6 +597,8 @@ function DatasheetHeader({
                     numberOfMonths={1}
                     fromYear={2020}
                     toYear={2030}
+                    disabled={minDate ? { before: minDate } : undefined}
+                    fromDate={minDate}
                     modifiers={selectedWeekRange ? { weekHighlight: { from: selectedWeekRange.start, to: selectedWeekRange.end } } : undefined}
                     modifiersClassNames={{ weekHighlight: "!bg-[#037ECC]/10 !text-[#037ECC] !font-semibold" }}
                   />

@@ -296,6 +296,7 @@ export function ServicePlanConfigForm({
                     hasError={!!errors.endTime}
                     allowManualInput
                     required
+                    defaultPeriod="PM"
                   />
                   <p className="mt-1 px-1 text-xs text-gray-500">Type hh:mm and pick AM/PM.</p>
                   {renderFieldError(errors.endTime?.message)}

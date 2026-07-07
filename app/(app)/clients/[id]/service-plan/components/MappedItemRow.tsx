@@ -1,10 +1,11 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Sliders, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 
 import { DataCollectionBadge } from "@/app/(app)/my-company/service-plans/components/data-collection/DataCollectionBadge"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 
 function parseLocalDate(iso: string): Date {
@@ -32,6 +33,8 @@ export function MappedItemRow({
   teachingMethodName,
   typeName,
 }: MappedItemRowProps) {
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
   const baselines = useMemo(() => {
     if (!item.baseline || item.baseline.length === 0) return []
     return [...item.baseline]
@@ -141,13 +144,26 @@ export function MappedItemRow({
         <button
           type="button"
           aria-label={`Remove ${item.itemName} from category`}
-          onClick={() => onDelete(item)}
+          onClick={() => setShowDeleteModal(true)}
           disabled={isAnyDeleting}
           className="rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => {
+          setShowDeleteModal(false)
+          onDelete(item)
+        }}
+        title="Delete Item"
+        message="Are you sure you want to delete this item? This action cannot be undone."
+        itemName={item.itemName}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }
