@@ -30,9 +30,10 @@ interface FrequencyDatasheetProps {
   activeItem: ClientServicePlanCategoryMappedItem
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
+  onItemsReload?: () => Promise<void>
 }
 
-export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcConfig }: FrequencyDatasheetProps) {
+export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, onItemsReload }: FrequencyDatasheetProps) {
   const ds = useFrequencyDatasheet(activeItem.baseline)
 
   // --- Compute visible days FIRST (no dependency on fetched data) ---
@@ -159,12 +160,14 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
       await Promise.all(promises)
       ds.commitDcValues()
       await dcValues.refetch()
+      // Reload items to pick up objective status changes from backend auto-evaluation
+      await onItemsReload?.()
       setDcSaveState("success")
       setTimeout(() => setDcSaveState("idle"), 1500)
     } catch {
       setDcSaveState("idle")
     }
-  }, [ds, clientAppointments.appointmentsByDate, activeItem.id, dcValues])
+  }, [ds, clientAppointments.appointmentsByDate, activeItem.id, dcValues, onItemsReload])
 
   // Chart
   const firstBaselineDate = useMemo(() => {

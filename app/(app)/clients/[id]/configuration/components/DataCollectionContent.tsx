@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Sheet, Loader2, AlertTriangle } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useClientServicePlanConfiguration } from "../../service-plan/hooks/useClientServicePlanConfiguration"
 import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
@@ -105,6 +106,51 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
     })()
 
     return () => { active = false }
+  }, [activeCategoryId])
+
+  // Snapshot of objectives before reload for mastery detection
+  const prevObjectivesRef = useRef<Map<string, boolean>>(new Map())
+
+  // Keep snapshot up to date whenever items change
+  useEffect(() => {
+    const map = new Map<string, boolean>()
+    for (const item of items) {
+      for (const obj of item.objetive ?? []) {
+        map.set(obj.id, !!obj.endDate)
+      }
+    }
+    prevObjectivesRef.current = map
+  }, [items])
+
+  // Reload items silently (without resetting activeItemId)
+  const reloadItems = useCallback(async () => {
+    if (!activeCategoryId) return
+    try {
+      const itemsData = await getClientServicePlanCategoryItems(activeCategoryId)
+      const sorted = [...itemsData].sort((a, b) => {
+        const oa = a.order ?? Number.MAX_SAFE_INTEGER
+        const ob = b.order ?? Number.MAX_SAFE_INTEGER
+        if (oa !== ob) return oa - ob
+        return a.itemName.localeCompare(b.itemName, undefined, { sensitivity: "base" })
+      })
+
+      // Detect newly mastered STOs
+      const prev = prevObjectivesRef.current
+      for (const item of sorted) {
+        for (const obj of item.objetive ?? []) {
+          const wasMastered = prev.get(obj.id)
+          if (obj.endDate && wasMastered === false) {
+            const stoMatch = obj.name.match(/^STO#\d+/)
+            const label = stoMatch ? stoMatch[0] : obj.name
+            toast.success(`${label} has been mastered!`)
+          }
+        }
+      }
+
+      setItems(sorted)
+    } catch {
+      // silent — keep current items on error
+    }
   }, [activeCategoryId])
 
   const activeItem = useMemo(
@@ -252,7 +298,7 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
                 <>
                   {/* Collection UI — varies by type */}
                   {categoryTypeName === "Frequency/Count" || categoryTypeName === "Frequency" ? (
-                    <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
+                    <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} onItemsReload={reloadItems} />
                   ) : categoryTypeName === "Percentage of Opportunities" ? (
                     <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
                   ) : (

@@ -82,6 +82,17 @@ export const servicePutSilent = async <T = any, R = any>(url: string, data: T): 
         })
 }
 
+export const servicePatch = async <T = any, R = any>(url: string, data: T): ServiceResponse<R> => {
+    return apiInstance
+        .patch<ResponseEntity<R>>(url, data)
+        .then((response) => {
+            return response
+        })
+        .catch((err) => {
+            return err.response
+        })
+}
+
 export const serviceDownloadBlob = async <T = any>(url: string): ServiceResponse<T> => {
     return apiInstance
         .get<ResponseEntity<T>>(url, { responseType: 'blob' })

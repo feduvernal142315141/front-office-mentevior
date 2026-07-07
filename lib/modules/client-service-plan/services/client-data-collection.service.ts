@@ -4,7 +4,7 @@ import {
   ServicePlanUnitOfTime,
   ServicePlanValueType,
 } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
-import { serviceDelete, serviceGet, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePatch, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import {
   AxisPositionX,
@@ -160,7 +160,7 @@ function toApiObjectives(objectives: DataCollectionObjectiveData[]): ApiObjectiv
     name: o.name,
     startDate: o.startDate,
     estimatedEndDate: o.estimatedEndDate,
-    endDate: o.endDate,
+    // endDate is read-only — owned by backend, set only on mastery evaluation
     operatorSmartCriteria: o.operatorSmartCriteria,
     valueSmartCriteria: o.valueSmartCriteria,
     periodSmartCriteriaCatalogId: o.periodSmartCriteriaCatalogId,
@@ -769,6 +769,21 @@ export async function deleteClientItemObjective(objectiveId: string): Promise<vo
   )
   if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
     throw new Error(getApiErrorMessage(response?.data, "Failed to delete objective"))
+  }
+}
+
+// --- Objective PATCH ---
+
+export async function patchItemObjectiveStartDate(
+  objectiveId: string,
+  startDate: string
+): Promise<void> {
+  const response = await servicePatch<{ startDate: string }, unknown>(
+    `/client-service-plan-category-item-objetive/${objectiveId}`,
+    { startDate }
+  )
+  if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to update objective start date"))
   }
 }
 
