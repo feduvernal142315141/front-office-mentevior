@@ -14,7 +14,7 @@ export default function MyCompanyPage() {
   const canViewPhysicians = useCanViewModule("/my-company/physicians")
   const canViewServicePlans = useCanViewModule("/my-company/service-plans")
   const canViewServices = useCanViewModule("/my-company/services")
-  const canViewAppointments = useCanViewModule("/my-company/appointment")
+  const canViewAppointments = useCanViewModule("/my-company/session")
   const canViewSupervision = useCanViewModule("/my-company/events/supervision")
   const canViewBilling = useCanViewModule("/my-company/billing")
   const canViewDataCollection = useCanViewModule("/data-collection")
@@ -140,7 +140,7 @@ export default function MyCompanyPage() {
     {
       title: "Session",
       description: "Schedule and manage client sessions",
-      href: "/my-company/appointment",
+      href: "/my-company/session",
       icon: CalendarCheck,
       canView: canViewAppointments,
       hasDeepChildren: false,

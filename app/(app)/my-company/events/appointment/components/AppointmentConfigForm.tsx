@@ -51,7 +51,7 @@ function fromTimeField(field: EventTimeField | string | undefined): string {
   return formatTimeTo24h(`${field.value} ${field.code}`) ?? ""
 }
 
-const EVENTS_PATH = "/my-company/events"
+const COMPANY_PATH = "/my-company"
 
 const SUBEVENT_OPTIONS = [
   { value: "", label: "None" },
@@ -260,7 +260,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       color: data.color ?? "",
     })
 
-    if (result) router.push(EVENTS_PATH)
+    if (result) router.push(COMPANY_PATH)
   }, (formErrors) => {
     // eslint-disable-next-line no-console
     console.warn("[AppointmentConfigForm] validation failed:", formErrors)
@@ -574,7 +574,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
 
       <FormBottomBar
         isSubmitting={isSaving}
-        onCancel={() => router.push(EVENTS_PATH)}
+        onCancel={() => router.push(COMPANY_PATH)}
         cancelText="Back"
         submitText="Save changes"
       />

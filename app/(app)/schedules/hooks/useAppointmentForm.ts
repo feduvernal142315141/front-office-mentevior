@@ -656,7 +656,6 @@ export function useAppointmentForm({
       if (!isSupervisionConfigured) {
         newErrors.supervisionConfig = "Configure supervision details"
       }
-      if (!formData.supervision.title.trim()) newErrors.supervisionTitle = "Enter a supervision title"
       if (!formData.supervision.providerId) newErrors.supervisionRbtId = "Select an RBT"
       if (!formData.supervision.billingCodeId) {
         newErrors.supervisionBillingCodeId = "Select a supervision billing code"

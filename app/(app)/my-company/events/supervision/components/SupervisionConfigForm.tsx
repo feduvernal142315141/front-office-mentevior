@@ -42,7 +42,7 @@ function fromTimeField(field: EventTimeField | string | undefined): string {
   return formatTimeTo24h(`${field.value} ${field.code}`) ?? ""
 }
 
-const EVENTS_PATH = "/my-company/events"
+const COMPANY_PATH = "/my-company"
 
 type SwitchField = keyof Pick<
   SupervisionConfigFormValues,
@@ -237,7 +237,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
       color: data.color ?? "",
     })
 
-    if (result) router.push(EVENTS_PATH)
+    if (result) router.push(COMPANY_PATH)
   })
 
   return (
@@ -475,7 +475,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
 
       <FormBottomBar
         isSubmitting={isSaving}
-        onCancel={() => router.push(EVENTS_PATH)}
+        onCancel={() => router.push(COMPANY_PATH)}
         cancelText="Back"
         submitText="Save changes"
       />

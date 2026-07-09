@@ -25,7 +25,7 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/my-company": PermissionModule.MY_COMPANY,
   
   // Events children (real permissions, under Company Configuration)
-  "/my-company/appointment": PermissionModule.APPOINTMENT,
+  "/my-company/session": PermissionModule.APPOINTMENT,
   "/my-company/events/service-plan": PermissionModule.SERVICE_PLAN,
   "/my-company/events/supervision": PermissionModule.SUPERVISION,
   
@@ -67,7 +67,7 @@ const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
     "/my-company/credentials",
     "/my-company/physicians",
     "/my-company/service-plans",
-    "/my-company/appointment",
+    "/my-company/session",
     "/my-company/events",
     "/my-company/billing",
     "/data-collection",  

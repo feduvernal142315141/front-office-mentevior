@@ -24,12 +24,7 @@ export function createEmptyPercentageDayEntry(numberOfTrials = DEFAULT_TRIALS): 
   }
 }
 
-export function getDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
-}
+export { getDateKey } from "./datasheet-utils"
 
 export function countYes(entry: PercentageDayEntry): number {
   return entry.trials.filter((t) => t.result === "yes").length

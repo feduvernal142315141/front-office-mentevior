@@ -7,11 +7,15 @@ import { cn } from "@/lib/utils"
 import { useClientServicePlanConfiguration } from "../../service-plan/hooks/useClientServicePlanConfiguration"
 import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
 import { getClientServicePlanCategoryItems } from "@/lib/modules/client-service-plan/services/client-service-plan.service"
-import { getClientCategoryDataCollection } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
+import { getClientCategoryDataCollection, getClientItemDataCollection } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import { FrequencyDatasheet } from "./datasheets/FrequencyDatasheet"
 import { PercentageDatasheet } from "./datasheets/PercentageDatasheet"
+import { RateDatasheet } from "./datasheets/RateDatasheet"
+import { IntervalDatasheet } from "./datasheets/IntervalDatasheet"
+import { DurationDatasheet } from "./datasheets/DurationDatasheet"
+import { typeRequiresDailyAndWeekly } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import { Button } from "@/components/custom/Button"
 
 export interface NavigateToItemRequest {
@@ -58,21 +62,39 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
   const [items, setItems] = useState<ClientServicePlanCategoryMappedItem[]>([])
   const [activeItemId, setActiveItemId] = useState<string | null>(null)
   const [isLoadingItems, setIsLoadingItems] = useState(false)
-  const [categoryTypeId, setCategoryTypeId] = useState<string | null>(null)
-  const [dcConfig, setDcConfig] = useState<DataCollectionConfig | null>(null)
+  // Category-level DC config (fallback)
+  const [catTypeId, setCatTypeId] = useState<string | null>(null)
+  const [catDcConfig, setCatDcConfig] = useState<DataCollectionConfig | null>(null)
+  // Item-level DC config (overrides category when item has custom DC)
+  const [itemTypeId, setItemTypeId] = useState<string | null>(null)
+  const [itemDcConfig, setItemDcConfig] = useState<DataCollectionConfig | null>(null)
+  const [isLoadingItemDc, setIsLoadingItemDc] = useState(false)
+
+  // Effective type: item-level overrides category-level
+  const effectiveTypeId = itemTypeId ?? catTypeId
 
   const categoryTypeName = useMemo(() => {
-    if (!categoryTypeId) return null
-    return typeEventMap.get(categoryTypeId)?.name ?? null
-  }, [categoryTypeId, typeEventMap])
+    if (!effectiveTypeId) return null
+    return typeEventMap.get(effectiveTypeId)?.name ?? null
+  }, [effectiveTypeId, typeEventMap])
 
-  // Load items when active category changes
+  const categoryTypeGroup = useMemo(() => {
+    if (!effectiveTypeId) return null
+    return typeEventMap.get(effectiveTypeId)?.group ?? null
+  }, [effectiveTypeId, typeEventMap])
+
+  // Effective DC config: item-level overrides category-level
+  const dcConfig = itemDcConfig ?? catDcConfig
+
+  // Load items + category DC when active category changes
   useEffect(() => {
     if (!activeCategoryId) {
       setItems([])
       setActiveItemId(null)
-      setCategoryTypeId(null)
-      setDcConfig(null)
+      setCatTypeId(null)
+      setCatDcConfig(null)
+      setItemTypeId(null)
+      setItemDcConfig(null)
       return
     }
 
@@ -81,7 +103,7 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
 
     void (async () => {
       try {
-        const [itemsData, dcConfig] = await Promise.all([
+        const [itemsData, categoryDc] = await Promise.all([
           getClientServicePlanCategoryItems(activeCategoryId),
           getClientCategoryDataCollection(activeCategoryId).catch(() => null),
         ])
@@ -96,8 +118,9 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
 
         setItems(sorted)
         setActiveItemId(sorted.length > 0 ? sorted[0].id : null)
-        setCategoryTypeId(typeof dcConfig?.type === "string" && dcConfig.type.length > 0 ? dcConfig.type : null)
-        setDcConfig(dcConfig)
+        setCatTypeId(typeof categoryDc?.type === "string" && categoryDc.type.length > 0 ? categoryDc.type : null)
+        setCatDcConfig(categoryDc)
+        // Item DC will be loaded by the activeItemId effect below
       } catch {
         if (active) setItems([])
       } finally {
@@ -107,6 +130,49 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
 
     return () => { active = false }
   }, [activeCategoryId])
+
+  // Load item-level DC config when active item changes
+  useEffect(() => {
+    if (!activeItemId) {
+      setItemTypeId(null)
+      setItemDcConfig(null)
+      return
+    }
+
+    // Check if the item has inline DC with its own type
+    const item = items.find((i) => i.id === activeItemId)
+    const inlineType = item?.dataCollection?.typeEventCatalogId
+    if (inlineType && inlineType.length > 0 && inlineType !== catTypeId) {
+      // Item has a different type than category — fetch full item DC config
+      let active = true
+      setIsLoadingItemDc(true)
+
+      void (async () => {
+        try {
+          const itemDc = await getClientItemDataCollection(activeItemId)
+          if (!active) return
+          if (itemDc) {
+            const resolvedType = typeof itemDc.type === "string" && itemDc.type.length > 0 ? itemDc.type : null
+            setItemTypeId(resolvedType)
+            setItemDcConfig(itemDc)
+          } else {
+            setItemTypeId(null)
+            setItemDcConfig(null)
+          }
+        } catch {
+          if (active) { setItemTypeId(null); setItemDcConfig(null) }
+        } finally {
+          if (active) setIsLoadingItemDc(false)
+        }
+      })()
+
+      return () => { active = false }
+    } else {
+      // Item uses same type as category — no override needed
+      setItemTypeId(null)
+      setItemDcConfig(null)
+    }
+  }, [activeItemId, items, catTypeId])
 
   // Snapshot of objectives before reload for mastery detection
   const prevObjectivesRef = useRef<Map<string, boolean>>(new Map())
@@ -299,8 +365,14 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
                   {/* Collection UI — varies by type */}
                   {categoryTypeName === "Frequency/Count" || categoryTypeName === "Frequency" ? (
                     <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} onItemsReload={reloadItems} />
+                  ) : categoryTypeName === "Rate" ? (
+                    <RateDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} onItemsReload={reloadItems} />
+                  ) : categoryTypeGroup === "Time-sampling" ? (
+                    <IntervalDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName ?? ""} dcConfig={dcConfig} onItemsReload={reloadItems} />
                   ) : categoryTypeName === "Percentage of Opportunities" ? (
                     <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
+                  ) : categoryTypeName && typeRequiresDailyAndWeekly(categoryTypeName) ? (
+                    <DurationDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} onItemsReload={reloadItems} />
                   ) : (
                     <div className="rounded-xl border border-dashed border-slate-300 bg-gradient-to-br from-slate-50/80 to-white px-6 py-12 text-center">
                       <div className="inline-flex p-3 rounded-full bg-slate-100 mb-3">

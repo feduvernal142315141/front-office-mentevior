@@ -42,7 +42,7 @@ function fromTimeField(field: EventTimeField | string | undefined): string {
   return formatTimeTo24h(`${field.value} ${field.code}`) ?? ""
 }
 
-const EVENTS_PATH = "/my-company/events"
+const COMPANY_PATH = "/my-company"
 
 type SwitchField = keyof Pick<
   ServicePlanConfigFormValues,
@@ -88,8 +88,8 @@ interface ServicePlanConfigFormProps {
 
 export function ServicePlanConfigForm({
   config,
-  onSavedRedirectPath = EVENTS_PATH,
-  onCancelRedirectPath = EVENTS_PATH,
+  onSavedRedirectPath = COMPANY_PATH,
+  onCancelRedirectPath = COMPANY_PATH,
   showBottomBar = true,
   withContainerCard = true,
   hideHeader = false,

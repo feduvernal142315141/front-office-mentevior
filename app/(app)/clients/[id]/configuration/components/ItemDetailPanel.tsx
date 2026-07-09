@@ -460,6 +460,11 @@ export function ItemDetailPanel({
         objectives: objectivesPayload,
       })
 
+      // Reset dirty state BEFORE navigating away
+      baselinesSnapshotRef.current = JSON.stringify(baselines.map(({ localId, ...b }) => b))
+      objectivesSnapshotRef.current = JSON.stringify(objectives.map(({ localId, ...o }) => o))
+      reset(values)
+
       toast.success("Item configuration saved")
       onSaved()
       onBack()

@@ -4,7 +4,7 @@ import type { SectionCompletionMap } from "@/lib/types/section-completion.types"
 const API_KEY_TO_HREF: Record<string, string> = {
   service: "/my-company/services",
   servicePlan: "/my-company/service-plans",
-  appointment: "/my-company/appointment",
+  appointment: "/my-company/session",
   billingCode: "/my-company/billing",
   credentials: "/my-company/credentials",
   physician: "/my-company/physicians",

@@ -46,8 +46,8 @@ export function ServicePlanConfigurationSection() {
         ) : (
           <ServicePlanConfigForm
             config={config}
-            onSavedRedirectPath="/my-company/service-plans"
-            onCancelRedirectPath="/my-company/service-plans"
+            onSavedRedirectPath="/my-company"
+            onCancelRedirectPath="/my-company"
             showBottomBar
             withContainerCard={false}
             hideHeader

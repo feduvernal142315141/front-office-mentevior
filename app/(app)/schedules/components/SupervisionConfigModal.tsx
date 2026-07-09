@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
-import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Clock, Zap } from "lucide-react"
@@ -217,7 +216,6 @@ export function SupervisionConfigModal({
   const validate = useCallback((): boolean => {
     const next: Record<string, string> = {}
 
-    if (!localData.title.trim()) next.title = "Enter a title"
     if (!localData.providerId) next.providerId = "Select an RBT"
     if (!localData.date) next.date = "Select a date"
     if (!localData.startTime) next.startTime = "Select a start time"
@@ -251,16 +249,6 @@ export function SupervisionConfigModal({
       contentClassName="!overflow-visible"
     >
       <div className="px-7 py-6 space-y-4">
-        <FloatingInput
-          label="Title"
-          value={localData.title}
-          onChange={(v) => updateField("title", v)}
-          onBlur={() => {}}
-          hasError={!!errors.title}
-          required
-        />
-        {errors.title && <FieldError message={errors.title} />}
-
         <FloatingSelect
           label="RBT (Provider being supervised)"
           value={localData.providerId}

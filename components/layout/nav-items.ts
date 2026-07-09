@@ -114,10 +114,6 @@ export const navItems: NavItem[] = [
         href: "/applicants",
       },
       {
-        label: "Session",
-        href: "/my-company/appointment",
-      },
-      {
         label: "Billing",
         href: "/my-company/billing",
         hasDeepChildren: true,
@@ -129,7 +125,7 @@ export const navItems: NavItem[] = [
       {
         label: "Data Collection",
         href: "/data-collection",
-        hasDeepChildren: true,  
+        hasDeepChildren: true,
       },
       {
         label: "Documents",
@@ -153,6 +149,10 @@ export const navItems: NavItem[] = [
         href: "/my-company/services",
       },
       {
+        label: "Session",
+        href: "/my-company/session",
+      },
+      {
         label: "Signatures Caregiver",
         href: "/my-company/signatures-caregiver",
       },
@@ -163,7 +163,7 @@ export const navItems: NavItem[] = [
       {
         label: "Template Documents",
         href: "/template-documents",
-        hasDeepChildren: true,  
+        hasDeepChildren: true,
       },
     ],
   },

@@ -13,7 +13,7 @@ export default function EventsPage() {
     {
       title: "Appointment",
       description: "Schedule and manage client appointments",
-      href: "/my-company/appointment",
+      href: "/my-company/session",
       icon: CalendarCheck,
       module: PermissionModule.APPOINTMENT,
     },

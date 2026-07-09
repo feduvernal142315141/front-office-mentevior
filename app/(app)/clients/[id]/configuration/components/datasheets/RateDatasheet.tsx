@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
-  BarChart3, Hash, FileText,
+  BarChart3, Hash, FileText, Clock,
   Minus, Plus, CalendarCheck2,
 } from "lucide-react"
 import { addDays, format } from "date-fns"
@@ -13,18 +13,19 @@ import { updateBaselineValues } from "@/lib/modules/client-service-plan/services
 import { useClientDataCollectionValues } from "@/lib/modules/client-service-plan/hooks/use-client-data-collection-values"
 import { useClientAppointments } from "@/lib/modules/schedules/hooks/use-client-appointments"
 import { upsertClientDataCollectionValue } from "@/lib/modules/client-service-plan/services/client-data-collection-values.service"
-import { ServicePlanValueType } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
+import { ServicePlanValueType, ServicePlanUnitOfTime } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { useFrequencyDatasheet } from "./useFrequencyDatasheet"
 import { useChartDateRange } from "./useChartDateRange"
 import { useChartData } from "./useChartData"
 import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
-import { FrequencyChart } from "./FrequencyChart"
+import { RateChart } from "./RateChart"
+import { getSessionDurationInUnit, unitOfTimeLabel } from "./rate-datasheet.types"
 import {
   DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
 
-interface FrequencyDatasheetProps {
+interface RateDatasheetProps {
   clientId: string
   activeItem: ClientServicePlanCategoryMappedItem
   categoryTypeName: string
@@ -32,10 +33,12 @@ interface FrequencyDatasheetProps {
   onItemsReload?: () => Promise<void>
 }
 
-export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, onItemsReload }: FrequencyDatasheetProps) {
+export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, onItemsReload }: RateDatasheetProps) {
   const ds = useFrequencyDatasheet(activeItem.baseline)
+  const unitOfTime = (dcConfig?.unitOfTime as ServicePlanUnitOfTime) ?? ServicePlanUnitOfTime.MINUTES
+  const unitLabel = unitOfTimeLabel(unitOfTime)
 
-  // --- Compute visible days FIRST (no dependency on fetched data) ---
+  // --- Compute visible days FIRST ---
   const gapDateKeys = useMemo(() => {
     const bls = activeItem.baseline
     if (!bls || bls.length === 0) return new Set<string>()
@@ -65,8 +68,6 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     return keys
   }, [activeItem.baseline, activeItem.objetive])
 
-  // For week mode: fill to 7 visible days (extend beyond week if gaps hide some)
-  // For month/custom: show all non-gap days in range
   const visibleDays = useMemo(() => {
     const filtered = ds.rangeDays.filter((day) => !gapDateKeys.has(getDateKey(day)))
     if (ds.rangeMode !== "week") return filtered
@@ -82,7 +83,6 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     return extended
   }, [ds.rangeDays, ds.rangeMode, gapDateKeys])
 
-  // Fetch range: cover all visible days
   const fetchStart = useMemo(() => {
     const first = visibleDays[0] ?? ds.dateRange.start
     return format(first, "yyyy-MM-dd")
@@ -93,7 +93,6 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     return format(last, "yyyy-MM-dd")
   }, [visibleDays, ds.dateRange.end])
 
-  // Fetch DC values + appointments for visible range
   const dcValues = useClientDataCollectionValues({
     clientServicePlanCategoryItemId: activeItem.id,
     startDate: fetchStart,
@@ -106,21 +105,15 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     dateTo: fetchEnd,
   })
 
-  // Seed DC values from API into grid entries + snapshot atomically
+  // Seed DC values
   const seededDcRef = useRef<string | null>(null)
   useEffect(() => {
     const records = dcValues.records
-    if (records.length === 0) {
-      seededDcRef.current = null
-      return
-    }
+    if (records.length === 0) { seededDcRef.current = null; return }
     const fingerprint = records.map((r) => `${r.id}:${r.value}`).sort().join(",")
     if (seededDcRef.current === fingerprint) return
     seededDcRef.current = fingerprint
-
-    ds.seedDcRecords(
-      records.map((rec) => ({ dateKey: rec.date.slice(0, 10), value: rec.value }))
-    )
+    ds.seedDcRecords(records.map((rec) => ({ dateKey: rec.date.slice(0, 10), value: rec.value })))
   }, [dcValues.records, ds])
 
   // --- Baseline save ---
@@ -134,9 +127,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
       ds.commitBaseline()
       setBaselineSaveState("success")
       setTimeout(() => setBaselineSaveState("idle"), 1500)
-    } catch {
-      setBaselineSaveState("idle")
-    }
+    } catch { setBaselineSaveState("idle") }
   }, [ds])
 
   // --- DC values save ---
@@ -159,22 +150,17 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
       await Promise.all(promises)
       ds.commitDcValues()
       await dcValues.refetch()
-      // Reload items to pick up objective status changes from backend auto-evaluation
       await onItemsReload?.()
       setDcSaveState("success")
       setTimeout(() => setDcSaveState("idle"), 1500)
-    } catch {
-      setDcSaveState("idle")
-    }
+    } catch { setDcSaveState("idle") }
   }, [ds, clientAppointments.appointmentsByDate, activeItem.id, dcValues, onItemsReload])
 
   // Chart
   const firstBaselineDate = useMemo(() => {
     const bls = activeItem.baseline
     if (!bls || bls.length === 0) return undefined
-    const sorted = [...bls]
-      .filter((b) => b.date)
-      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
+    const sorted = [...bls].filter((b) => b.date).sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
     return sorted.length > 0 ? parseLocalDate(sorted[0].date) : undefined
   }, [activeItem.baseline])
 
@@ -191,10 +177,8 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     return extended
   }, [chartRange.chartDays, gapDateKeys])
 
-  // Aggregation method from DC config (TOTAL or AVERAGE)
   const aggregationMethod = dcConfig?.weeklyDailyValue ?? ServicePlanValueType.TOTAL
 
-  // Chart data with independent fetch + aggregation
   const chartData = useChartData({
     clientServicePlanCategoryItemId: activeItem.id,
     chartDays: extendedChartDays,
@@ -204,13 +188,10 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     gridEntries: ds.entries,
   })
 
-  // Map date → appointment status from DC records (for editable check)
   const dcStatusByDate = useMemo(() => {
     const map = new Map<string, string>()
     for (const rec of dcValues.records) {
-      if (rec.appointmentStatusName) {
-        map.set(rec.date.slice(0, 10), rec.appointmentStatusName)
-      }
+      if (rec.appointmentStatusName) map.set(rec.date.slice(0, 10), rec.appointmentStatusName)
     }
     return map
   }, [dcValues.records])
@@ -219,40 +200,26 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
 
   return (
     <div className="space-y-4">
-      {/* ─── Premium Header ─── */}
       <DatasheetHeader
-        rangeMode={ds.rangeMode}
-        periodLabel={ds.periodLabel}
-        monthYearLabel={ds.monthYearLabel}
-        dateRange={ds.dateRange}
-        staffAvatars={ds.staffAvatars}
-        staffCount={ds.staffCount}
-        minDate={ds.minDate}
-        canGoPrev={ds.canGoPrev}
-        onPrev={ds.goToPrev}
-        onNext={ds.goToNext}
-        onToday={ds.goToToday}
-        onChangeMode={ds.changeMode}
-        onGoToDate={ds.goToDate}
-        onSetRange={ds.setRange}
+        rangeMode={ds.rangeMode} periodLabel={ds.periodLabel} monthYearLabel={ds.monthYearLabel}
+        dateRange={ds.dateRange} staffAvatars={ds.staffAvatars} staffCount={ds.staffCount}
+        minDate={ds.minDate} canGoPrev={ds.canGoPrev}
+        onPrev={ds.goToPrev} onNext={ds.goToNext} onToday={ds.goToToday}
+        onChangeMode={ds.changeMode} onGoToDate={ds.goToDate} onSetRange={ds.setRange}
       />
 
-      {/* ─── Grid ─── */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
             {/* Column Headers */}
             <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
               <div className="px-4 py-3 bg-slate-50/60 border-r border-slate-100">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Measurement Row
-                </span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Measurement Row</span>
               </div>
               {visibleDays.map((day) => {
                 const key = getDateKey(day)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
-                const hasAppointment = clientAppointments.appointmentsByDate.has(key)
                 return (
                   <div key={key} className={cn(
                     "flex flex-col items-center justify-center py-3 gap-1",
@@ -262,14 +229,10 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                     <div className={cn(
                       "flex flex-col items-center justify-center rounded-full",
                       ds.rangeMode === "month" ? "w-10 h-10" : "w-14 h-14",
-                      today
-                        ? "bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white shadow-md ring-2 ring-[#037ECC]/20 ring-offset-2"
-                        : "bg-slate-100 text-slate-700"
+                      today ? "bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white shadow-md ring-2 ring-[#037ECC]/20 ring-offset-2" : "bg-slate-100 text-slate-700"
                     )}>
                       <span className={cn("font-bold leading-none", ds.rangeMode === "month" ? "text-sm" : "text-lg")}>{format(day, "dd")}</span>
-                      <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>
-                        {format(day, "MMM")}
-                      </span>
+                      <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>{format(day, "MMM")}</span>
                     </div>
                     {!isBaseline && dcStatusByDate.get(key) === "In Progress" && (
                       <div className="flex items-center gap-0.5" title="In Progress">
@@ -289,9 +252,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
-                const hasAppointment = clientAppointments.appointmentsByDate.has(key)
-                const appointmentStatus = dcStatusByDate.get(key)
-                const isInProgress = appointmentStatus === "In Progress"
+                const isInProgress = dcStatusByDate.get(key) === "In Progress"
                 const isEditable = isBaseline || isInProgress
                 return (
                   <div key={key} className={cn(
@@ -319,25 +280,44 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
               })}
             </div>
 
-            {/* Row: Occurrence Marks */}
+            {/* Row: Session Duration (read-only) */}
             <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
-              <RowLabel icon={<Hash className="h-4 w-4 text-slate-400" />} title="Occurrences" />
+              <RowLabel icon={<Clock className="h-4 w-4 text-purple-500" />} title={`Session duration (${unitLabel})`} />
               {visibleDays.map((day) => {
                 const key = getDateKey(day)
-                const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
-                const count = entry.occurrences || 0
+                const apt = clientAppointments.appointmentsByDate.get(key)
+                const duration = apt ? getSessionDurationInUnit(apt.startsAt, apt.endsAt, unitOfTime) : null
                 return (
-                  <div key={key} className={cn("px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
-                    {count > 0 ? (
-                      <div className="grid grid-cols-5 gap-1">
-                        {Array.from({ length: count }, (_, i) => (
-                          <div key={i} className="h-7 rounded-md bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-400 flex items-center justify-center">X</div>
-                        ))}
-                      </div>
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                    {duration !== null ? (
+                      <span className="text-sm font-semibold text-purple-600 tabular-nums">{duration % 1 === 0 ? duration : duration.toFixed(1)}</span>
                     ) : (
-                      <div className="flex items-center justify-center h-7"><span className="text-xs text-slate-300">—</span></div>
+                      <span className="text-xs text-slate-300">—</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Row: Rate (read-only, computed) */}
+            <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
+              <RowLabel icon={<Hash className="h-4 w-4 text-indigo-500" />} title={`Rate (occ/${unitLabel})`} />
+              {visibleDays.map((day) => {
+                const key = getDateKey(day)
+                const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
+                const entry = ds.getEntry(key)
+                const apt = clientAppointments.appointmentsByDate.get(key)
+                const duration = apt ? getSessionDurationInUnit(apt.startsAt, apt.endsAt, unitOfTime) : null
+                const rate = entry.occurrences > 0 && duration && duration > 0 ? entry.occurrences / duration : null
+                return (
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                    {rate !== null ? (
+                      <span className="text-sm font-bold text-indigo-600 tabular-nums">{rate.toFixed(2)}</span>
+                    ) : (
+                      <span className="text-xs text-slate-300">—</span>
                     )}
                   </div>
                 )
@@ -350,7 +330,6 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
               {visibleDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
-                const hasNote = entry.environmentalNote.trim().length > 0
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
                 return (
@@ -379,7 +358,15 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
       {/* Chart */}
       <div className="space-y-3">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
-        <FrequencyChart weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig} chartDays={extendedChartDays} tickInterval={chartRange.tickInterval} itemBaselines={activeItem.baseline} itemObjectives={activeItem.objetive} gapDateKeys={gapDateKeys} aggregatedData={chartData.aggregatedPoints} interval={chartRange.interval} />
+        <RateChart
+          weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig}
+          chartDays={extendedChartDays} tickInterval={chartRange.tickInterval}
+          itemBaselines={activeItem.baseline} itemObjectives={activeItem.objetive}
+          gapDateKeys={gapDateKeys} aggregatedData={chartData.aggregatedPoints}
+          interval={chartRange.interval}
+          appointmentsByDate={clientAppointments.appointmentsByDate}
+          unitOfTime={unitOfTime}
+        />
       </div>
 
       {/* Footer */}
@@ -411,4 +398,3 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     </div>
   )
 }
-

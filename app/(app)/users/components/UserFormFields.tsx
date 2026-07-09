@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import Link from "next/link"
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -182,17 +181,13 @@ export function UserFormFields({
                 <Controller
                   name="cellphone"
                   control={control}
-                  render={({ field, fieldState }) => {
-                    const [displayValue, setDisplayValue] = useState(formatPhoneInput(field.value || ""))
-
-                    return (
+                  render={({ field, fieldState }) => (
                       <div>
                         <FloatingInput
                           label="Cellphone Number"
-                          value={displayValue}
+                          value={field.value || ""}
                           onChange={(value) => {
-                            const formatted = formatPhoneInput(value, displayValue)
-                            setDisplayValue(formatted)
+                            const formatted = formatPhoneInput(value, field.value || "")
                             field.onChange(formatted)
                           }}
                           onBlur={field.onBlur}
@@ -208,8 +203,7 @@ export function UserFormFields({
                           </p>
                         )}
                       </div>
-                    )
-                  }}
+                  )}
                 />
 
                 <Controller

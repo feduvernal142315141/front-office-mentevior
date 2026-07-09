@@ -264,7 +264,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       color: data.color ?? "",
     })
 
-    // Stay on page after saving — no redirect
+    if (result) router.push(BACK_PATH)
   }, (formErrors) => {
     // eslint-disable-next-line no-console
     console.warn("[AppointmentConfigForm] validation failed:", formErrors)
