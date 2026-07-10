@@ -20,15 +20,17 @@ import {
 import { format } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { AppointmentCard } from "./AppointmentCard"
-import { AppointmentPreviewPopover } from "./AppointmentPreviewPopover"
 import { AppointmentModal } from "./AppointmentModal"
 import { DuplicateAppointmentModal } from "./DuplicateAppointmentModal"
 import { AppointmentContextMenu } from "./AppointmentContextMenu"
 import { useWeekCalendar, CALENDAR_HOURS, SLOT_HEIGHT } from "../hooks/useWeekCalendar"
 import type { CalendarScope, CalendarViewMode } from "../hooks/useWeekCalendar"
 import { useScheduleEventColors } from "@/lib/modules/schedules/hooks/use-schedule-event-colors"
+import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
 import { useAppointments } from "@/lib/store/appointments.store"
+import { useAlert } from "@/lib/contexts/alert-context"
 import { usePermission } from "@/lib/hooks/use-permission"
+import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { isToday, formatWeekRange } from "@/lib/date"
 import { cn } from "@/lib/utils"
@@ -65,10 +67,14 @@ export function WeekCalendar({
   viewMode = "client",
   scope = "provider",
 }: WeekCalendarProps) {
-  const { selectedAppointment } = useAppointments()
+  const { selectedAppointment, deleteAppointment } = useAppointments()
   const { create: canCreateSession } = usePermission()
   const eventColors = useScheduleEventColors()
+  const mutations = useAppointmentMutations()
+  const alert = useAlert()
   const canCreate = canCreateSession(PermissionModule.SCHEDULE)
+  const isAgency = scope === "agency"
+  const { users: providers } = useUsers(isAgency ? { pageSize: 100 } : undefined)
   
   const {
     weekStart,
@@ -83,6 +89,7 @@ export function WeekCalendar({
     searchQuery,
     filterStatus,
     filterLocation,
+    filterProvider,
     filteredAppointments,
     isLoadingAppointments,
     hoveredSlot,
@@ -252,13 +259,36 @@ export function WeekCalendar({
                 </option>
               ))}
             </select>
-            
-            {(searchQuery || filterStatus !== "all" || filterLocation !== "all") && (
+
+            {isAgency && (
+              <select
+                value={filterProvider}
+                onChange={(e) => actions.setFilterProvider(e.target.value)}
+                className={cn(
+                  "h-10 px-3 rounded-lg border bg-white text-sm",
+                  filterProvider !== "all"
+                    ? "border-[#037ECC] text-[#037ECC]"
+                    : "border-gray-200 text-gray-600",
+                )}
+              >
+                <option value="all">All Providers</option>
+                {providers
+                  .filter((p) => p.active && !p.terminated)
+                  .map((provider) => (
+                    <option key={provider.id} value={provider.id}>
+                      {provider.fullName}
+                    </option>
+                  ))}
+              </select>
+            )}
+
+            {(searchQuery || filterStatus !== "all" || filterLocation !== "all" || filterProvider !== "all") && (
               <button
                 onClick={() => {
                   actions.setSearchQuery("")
                   actions.setFilterStatus("all")
                   actions.setFilterLocation("all")
+                  actions.setFilterProvider("all")
                 }}
                 className="h-10 px-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1"
               >
@@ -349,7 +379,7 @@ export function WeekCalendar({
                     const dayIndex = isMobile ? selectedDay : displayIndex
                     
                     return (
-                      <div key={displayIndex} className="relative pointer-events-auto">
+                      <div key={displayIndex} className="relative pointer-events-auto overflow-visible">
                         {filteredAppointments.map((appointment) => {
                           const position = actions.getAppointmentPosition(appointment)
                           if (!position || position.dayIndex !== dayIndex) return null
@@ -357,7 +387,7 @@ export function WeekCalendar({
                           return (
                             <div
                               key={appointment.id}
-                              className="absolute left-0.5 right-0.5"
+                              className="absolute left-0.5 right-0.5 overflow-visible hover:z-[60]"
                               style={{
                                 top: `${position.top}px`,
                                 height: `${Math.max(position.height - 2, 40)}px`,
@@ -365,20 +395,26 @@ export function WeekCalendar({
                               }}
                               onContextMenu={(e) => actions.openContextMenu(e, appointment.id)}
                             >
-                              <AppointmentPreviewPopover
+                              <AppointmentCard
                                 appointment={appointment}
                                 viewMode={calendarViewMode}
                                 eventColors={eventColors}
-                                onEdit={actions.openEditModal}
-                              >
-                                <div className="h-full w-full">
-                                  <AppointmentCard
-                                    appointment={appointment}
-                                    viewMode={calendarViewMode}
-                                    eventColors={eventColors}
-                                  />
-                                </div>
-                              </AppointmentPreviewPopover>
+                                cardHeight={Math.max(position.height - 2, 40)}
+                                onClick={() => actions.openEditModal(appointment)}
+                                onDelete={(e) => {
+                                  e.stopPropagation()
+                                  alert.confirm({
+                                    title: "Delete Session",
+                                    description: "Are you sure you want to delete this session? This action cannot be undone.",
+                                    confirmText: "Delete",
+                                    cancelText: "Go Back",
+                                    onConfirm: async () => {
+                                      deleteAppointment(appointment.id)
+                                      await mutations.remove(appointment.id)
+                                    },
+                                  })
+                                }}
+                              />
                             </div>
                           )
                         })}
@@ -553,6 +589,7 @@ export function WeekCalendar({
         onClose={actions.closeDuplicateModal}
         appointment={selectedAppointment}
         rbtId={rbtId}
+        onDuplicated={actions.handleAppointmentSaved}
       />
       
       {contextMenu && (

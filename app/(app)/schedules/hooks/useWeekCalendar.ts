@@ -62,6 +62,7 @@ interface UseWeekCalendarReturn {
   searchQuery: string
   filterStatus: AppointmentStatus | "all"
   filterLocation: AppointmentLocation | "all"
+  filterProvider: string
   filteredAppointments: Appointment[]
   isLoadingAppointments: boolean
   
@@ -95,6 +96,7 @@ interface UseWeekCalendarReturn {
     setSearchQuery: (query: string) => void
     setFilterStatus: (status: AppointmentStatus | "all") => void
     setFilterLocation: (location: AppointmentLocation | "all") => void
+    setFilterProvider: (providerId: string) => void
     
     handleDragStart: (event: DragStartEvent) => void
     handleDragEnd: (event: DragEndEvent) => void
@@ -145,6 +147,7 @@ export function useWeekCalendar({
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState<AppointmentStatus | "all">("all")
   const [filterLocation, setFilterLocation] = useState<AppointmentLocation | "all">("all")
+  const [filterProvider, setFilterProvider] = useState<string>("all")
   
  
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null)
@@ -187,13 +190,17 @@ export function useWeekCalendar({
   )
   
   const myAppointments = useMemo(
-    () => appointments.filter((apt) => apt.rbtId === rbtId),
-    [appointments, rbtId]
+    () => scope === "agency" ? appointments : appointments.filter((apt) => apt.rbtId === rbtId),
+    [appointments, rbtId, scope]
   )
-  
+
   const filteredAppointments = useMemo(() => {
     return myAppointments.filter((apt) => {
-    
+
+      if (filterProvider !== "all" && apt.rbtId !== filterProvider) {
+        return false
+      }
+
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const clientName = apt.clientName?.toLowerCase() ?? ""
@@ -201,20 +208,18 @@ export function useWeekCalendar({
           return false
         }
       }
-      
-     
+
       if (filterStatus !== "all" && apt.status !== filterStatus) {
         return false
       }
-      
-    
+
       if (filterLocation !== "all" && apt.location !== filterLocation) {
         return false
       }
-      
+
       return true
     })
-  }, [myAppointments, searchQuery, filterStatus, filterLocation])
+  }, [myAppointments, searchQuery, filterStatus, filterLocation, filterProvider])
   
   const activeAppointment = useMemo(
     () => (activeId ? myAppointments.find((apt) => apt.id === activeId) ?? null : null),
@@ -463,6 +468,7 @@ export function useWeekCalendar({
     searchQuery,
     filterStatus,
     filterLocation,
+    filterProvider,
     filteredAppointments,
     isLoadingAppointments,
     
@@ -492,6 +498,7 @@ export function useWeekCalendar({
       setSearchQuery,
       setFilterStatus,
       setFilterLocation,
+      setFilterProvider,
       handleDragStart,
       handleDragEnd,
       handleStatusChange,

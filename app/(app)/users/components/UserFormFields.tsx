@@ -240,7 +240,7 @@ export function UserFormFields({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-end">
                 <div>
                   <Controller
                     name="roleId"
@@ -269,9 +269,36 @@ export function UserFormFields({
                   />
                 </div>
 
-                {isEditing && editingUser?.id && (
+                <div>
+                  <Controller
+                    name="memberUserTypeIds"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <div>
+                        <MultiSelect
+                          label="Member User Types"
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          options={memberUserTypeSelectOptions}
+                          disabled={isLoadingMemberUserTypes}
+                          hasError={!!fieldState.error}
+                          searchable
+                          tone="neutral"
+                        />
+                        {fieldState.error && (
+                          <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
+                        )}
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {isEditing && editingUser?.id && (
+                <div className="mt-6">
                   <Link href={`/users/${editingUser.id}/manager`} className="block w-full">
-                    <div className="group relative overflow-hidden cursor-pointer rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm hover:border-[#037ECC]/40 hover:shadow-lg hover:shadow-[#037ECC]/10 transition-all duration-300 h-full min-h-[112px] flex items-center">
+                    <div className="group relative overflow-hidden cursor-pointer rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm hover:border-[#037ECC]/40 hover:shadow-lg hover:shadow-[#037ECC]/10 transition-all duration-300 min-h-[112px] flex items-center">
                       <div className="absolute inset-0 bg-gradient-to-br from-[#037ECC]/0 via-[#079CFB]/0 to-[#037ECC]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                       <div className="relative px-5 py-4 w-full">
@@ -297,33 +324,8 @@ export function UserFormFields({
                       <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700" />
                     </div>
                   </Link>
-                )}
-              </div>
-
-              <div className="mt-6">
-                <Controller
-                  name="memberUserTypeIds"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <MultiSelect
-                        label="Member User Types"
-                        value={field.value || []}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        options={memberUserTypeSelectOptions}
-                        disabled={isLoadingMemberUserTypes}
-                        hasError={!!fieldState.error}
-                        searchable
-                        tone="neutral"
-                      />
-                      {fieldState.error && (
-                        <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
-                      )}
-                    </div>
-                  )}
-                />
-              </div>
+                </div>
+              )}
             </div>
 
   

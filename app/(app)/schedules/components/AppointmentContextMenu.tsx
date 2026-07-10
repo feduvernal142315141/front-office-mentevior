@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { Eye, Edit, Copy, CheckCircle, UserX, XCircle, Trash2 } from "lucide-react"
+import { Edit, Copy, UserX, XCircle, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 
@@ -15,11 +15,9 @@ interface AppointmentContextMenuProps {
 
 
 const MENU_ITEMS = [
-  { action: "view", label: "View details", icon: Eye, danger: false },
   { action: "edit", label: "Edit session", icon: Edit, danger: false },
   { action: "duplicate", label: "Duplicate session", icon: Copy, danger: false },
   { type: "separator" as const },
-  { action: "complete", label: "Mark as Completed", icon: CheckCircle, danger: false },
   { action: "noshow", label: "Mark as No Show", icon: UserX, danger: false },
   { type: "separator" as const },
   { action: "cancel", label: "Cancel session", icon: XCircle, danger: true },

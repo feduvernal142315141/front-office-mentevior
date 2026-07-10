@@ -13,9 +13,6 @@ import { SupervisionConfigModal } from "./SupervisionConfigModal"
 import {
   Clock,
   Zap,
-  CheckCircle,
-  XCircle,
-  UserX,
   Users,
   Pencil,
   ChevronRight,
@@ -109,12 +106,6 @@ export function AppointmentModal({
     rbtId,
     onSuccess: onSaved ?? onClose,
   })
-
-  const showStatusActions =
-    isEditing &&
-    appointment &&
-    onStatusChange &&
-    (appointment.status === "Scheduled" || appointment.status === "InProgress")
 
   const rbtLabel =
     rbtOptions.find((o) => o.value === formData.supervision.providerId)?.label ?? ""
@@ -429,84 +420,8 @@ export function AppointmentModal({
 
       {/* Footer */}
       <div className="space-y-3 border-t border-slate-200/80 bg-white/70 px-7 py-4 rounded-b-2xl">
-        {/* Status actions — only when editing an active appointment */}
-        {showStatusActions && appointment && onStatusChange && (
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="primary"
-              className="h-9 flex-1 gap-1.5 text-sm"
-              onClick={() => {
-                alert.confirm({
-                  title: "Complete Appointment",
-                  description:
-                    "Mark this appointment as completed? The session note will be activated.",
-                  confirmText: "Complete",
-                  cancelText: "Go Back",
-                  onConfirm: async () => {
-                    onStatusChange(appointment.id, "Completed")
-                    onClose()
-                  },
-                })
-              }}
-            >
-              <CheckCircle className="h-4 w-4" />
-              Complete
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              className="h-9 flex-1 gap-1.5 text-sm"
-              onClick={() => {
-                alert.confirm({
-                  title: "Cancel Appointment",
-                  description:
-                    "Cancel this appointment? The session note will not be activated.",
-                  confirmText: "Cancel Appointment",
-                  cancelText: "Go Back",
-                  onConfirm: async () => {
-                    onStatusChange(appointment.id, "Cancelled")
-                    onClose()
-                  },
-                })
-              }}
-            >
-              <XCircle className="h-4 w-4" />
-              Cancel Apt.
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-9 flex-1 gap-1.5 text-sm"
-              onClick={() => {
-                alert.confirm({
-                  title: "Mark as No Show",
-                  description:
-                    "The client did not attend. A No Show note may be generated per company policy.",
-                  confirmText: "Mark No Show",
-                  cancelText: "Go Back",
-                  onConfirm: async () => {
-                    onStatusChange(appointment.id, "NoShow")
-                    onClose()
-                  },
-                })
-              }}
-            >
-              <UserX className="h-4 w-4" />
-              No Show
-            </Button>
-          </div>
-        )}
-
         {/* Main actions */}
-        <div className="flex items-center justify-between">
-          {isEditing ? (
-            <Button type="button" variant="danger" onClick={handleDelete} className="h-10">
-              Delete
-            </Button>
-          ) : (
-            <div />
-          )}
+        <div className="flex items-center justify-end">
           <div className="flex gap-3">
             <Button type="button" variant="secondary" onClick={onClose} className="h-10">
               Cancel

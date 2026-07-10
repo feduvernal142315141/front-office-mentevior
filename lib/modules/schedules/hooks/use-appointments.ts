@@ -30,12 +30,6 @@ export function useScheduleAppointments({
   const [error, setError] = useState<Error | null>(null)
 
   const fetchAppointments = useCallback(async () => {
-    if (!providerId) {
-      setAppointments([])
-      setIsLoading(false)
-      return
-    }
-
     try {
       setIsLoading(true)
       setError(null)

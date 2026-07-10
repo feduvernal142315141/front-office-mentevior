@@ -1,17 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle
 } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/custom/Button"
+import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Calendar, Clock, MapPin, Briefcase } from "lucide-react"
-import type { Appointment } from "@/lib/types/appointment.types"
-import { getEventTypeLabel } from "@/lib/modules/schedules/utils/appointment-api.mapper"
+import type { Appointment, AppointmentApiPayload } from "@/lib/types/appointment.types"
+import { getEventTypeLabel, toApiEventType, toApiTime } from "@/lib/modules/schedules/utils/appointment-api.mapper"
+import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { format, parseISO, setHours, setMinutes, differenceInMinutes, addMinutes } from "date-fns"
@@ -23,6 +25,7 @@ interface DuplicateAppointmentModalProps {
   onClose: () => void
   appointment: Appointment | null
   rbtId: string
+  onDuplicated?: () => void
 }
 
 
@@ -31,77 +34,85 @@ export function DuplicateAppointmentModal({
   onClose,
   appointment,
   rbtId,
+  onDuplicated,
 }: DuplicateAppointmentModalProps) {
   const alert = useAlert()
-  const { addAppointment, checkConflict } = useAppointments()
-  
+  const mutations = useAppointmentMutations()
+  const { checkConflict } = useAppointments()
+
   const [newDate, setNewDate] = useState("")
   const [keepSameTime, setKeepSameTime] = useState(true)
   const [newTime, setNewTime] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  
+  const [dateError, setDateError] = useState("")
+
   if (!appointment) return null
-  
+
   const eventLabel =
     appointment.billingCodeName ?? getEventTypeLabel(appointment.eventType)
   const originalStart = parseISO(appointment.startsAt)
-  
-  const handleDuplicate = () => {
+
+  const handleDuplicate = async () => {
+    setDateError("")
+
     if (!newDate) {
-      alert.error("Date required", "Please select a date for the duplicated appointment")
+      setDateError("Please select a date")
       return
     }
-    
+
     const timeToUse = keepSameTime ? format(originalStart, "HH:mm") : newTime
-    
+
     if (!timeToUse) {
-      alert.error("Time required", "Please enter a time for the appointment")
+      setDateError("Please enter a time for the session")
       return
     }
-    
-    setIsSubmitting(true)
-    
-    try {
-      const [hours, minutes] = timeToUse.split(":").map(Number)
-      const duration = differenceInMinutes(
-        parseISO(appointment.endsAt), 
-        originalStart
-      )
-      
-      const startsAt = setMinutes(
-        setHours(parseISO(newDate), hours), 
-        minutes
-      ).toISOString()
-      const endsAt = addMinutes(parseISO(startsAt), duration).toISOString()
-      
-      if (checkConflict(rbtId, startsAt, endsAt)) {
-        alert.error("Schedule Conflict", "There's already an appointment at this time")
-        return
-      }
-      
-      const duplicatedAppointment: Appointment = {
-        ...appointment,
-        id: `apt-${Date.now()}`,
-        startsAt,
-        endsAt,
-        status: "Scheduled",
-        createdAt: new Date().toISOString(),
-      }
-      
-      addAppointment(duplicatedAppointment)
-      
-      alert.success("Appointment Duplicated", "The appointment has been duplicated successfully")
-    
+
+    const [hours, minutes] = timeToUse.split(":").map(Number)
+    const duration = differenceInMinutes(
+      parseISO(appointment.endsAt),
+      originalStart
+    )
+
+    const startsAt = setMinutes(
+      setHours(parseISO(newDate), hours),
+      minutes
+    ).toISOString()
+    const endsAt = addMinutes(parseISO(startsAt), duration).toISOString()
+
+    if (checkConflict(rbtId, startsAt, endsAt)) {
+      alert.error("Schedule Conflict", "There's already a session at this time")
+      return
+    }
+
+    const endTime = format(parseISO(endsAt), "HH:mm")
+
+    const payload: AppointmentApiPayload = {
+      clientAddressId: appointment.placeOfServiceAddressId || appointment.clientAddressId || "",
+      cantUnit: appointment.cantUnit ?? appointment.units ?? 0,
+      units: appointment.units ?? appointment.cantUnit ?? 0,
+      timeInit: toApiTime(timeToUse),
+      timeEnd: toApiTime(endTime),
+      date: newDate,
+      billingCodeId: appointment.billingCodeId || "",
+      typeEvent: toApiEventType(appointment.eventType ?? "session_note"),
+      providerId: appointment.rbtId || rbtId,
+      priorAuthorizationId: appointment.priorAuthorizationId || "",
+    }
+
+    if (appointment.supervision) {
+      payload.supervision = { ...appointment.supervision, date: newDate }
+    }
+
+    const createdId = await mutations.create(payload)
+
+    if (createdId) {
       setNewDate("")
       setKeepSameTime(true)
       setNewTime("")
-      
+      onDuplicated?.()
       onClose()
-    } finally {
-      setIsSubmitting(false)
     }
   }
-  
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
@@ -114,18 +125,18 @@ export function DuplicateAppointmentModal({
         showCloseButton={true}
       >
         <VisuallyHidden>
-          <DialogTitle>Duplicate Appointment</DialogTitle>
+          <DialogTitle>Duplicate Session</DialogTitle>
         </VisuallyHidden>
-        
+
         <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-b from-gray-50/50 to-transparent">
           <h2 className="text-xl font-semibold text-gray-900">
-            Duplicate Appointment
+            Duplicate Session
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Select a new date to duplicate this appointment
+            Select a new date to duplicate this session
           </p>
         </div>
-        
+
         <div className="p-6 space-y-6">
           <div className="space-y-3 p-4 bg-gray-50 rounded-xl">
             <div className="flex items-start gap-3">
@@ -137,7 +148,7 @@ export function DuplicateAppointmentModal({
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <Briefcase className="h-5 w-5 text-[#037ECC] mt-0.5" />
               <div>
@@ -147,7 +158,7 @@ export function DuplicateAppointmentModal({
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <Clock className="h-5 w-5 text-[#037ECC] mt-0.5" />
               <div>
@@ -157,7 +168,7 @@ export function DuplicateAppointmentModal({
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <MapPin className="h-5 w-5 text-[#037ECC] mt-0.5" />
               <div>
@@ -168,24 +179,17 @@ export function DuplicateAppointmentModal({
               </div>
             </div>
           </div>
-          
-          <div>
-            <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-              New Date <span className="text-[#037ECC]">*</span>
-            </label>
-            <input
-              type="date"
-              className={cn(
-                "w-full h-11 px-4 rounded-xl",
-                "border border-gray-200 bg-white",
-                "text-sm text-gray-900",
-                "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]",
-              )}
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-            />
-          </div>
-          
+
+          <PremiumDatePicker
+            label="New Date"
+            value={newDate}
+            onChange={(v) => { setNewDate(v); setDateError("") }}
+            onClear={() => setNewDate("")}
+            hasError={!!dateError}
+            errorMessage={dateError}
+            required
+          />
+
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <Checkbox
@@ -200,7 +204,7 @@ export function DuplicateAppointmentModal({
                 Keep same time ({format(originalStart, "HH:mm")})
               </label>
             </div>
-            
+
             {!keepSameTime && (
               <div className="ml-7">
                 <label className="text-xs font-medium text-gray-600 mb-1.5 block">
@@ -220,7 +224,7 @@ export function DuplicateAppointmentModal({
               </div>
             )}
           </div>
-          
+
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
             <Button
               type="button"
@@ -234,10 +238,10 @@ export function DuplicateAppointmentModal({
               type="button"
               variant="primary"
               onClick={handleDuplicate}
-              loading={isSubmitting}
+              loading={mutations.isLoading}
               className="h-10"
             >
-              Duplicate Appointment
+              Duplicate Session
             </Button>
           </div>
         </div>

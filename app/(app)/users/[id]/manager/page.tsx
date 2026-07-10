@@ -39,7 +39,7 @@ export default function UserManagerPage({ params }: UserManagerPageProps) {
         <GeneralInformationForm
           memberUserId={id}
           showProfessionalInformation={showProfessionalInformation}
-          onCancelRoute={`/users/${id}/edit`}
+          onCancelRoute="/users"
           onSuccessRoute={`/users/${id}/edit`}
         />
       ),
