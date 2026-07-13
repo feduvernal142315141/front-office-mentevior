@@ -185,6 +185,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
     interval: chartRange.interval,
     aggregationMethod,
     baselines: activeItem.baseline,
+    objectives: activeItem.objetive,
     gridEntries: ds.entries,
   })
 

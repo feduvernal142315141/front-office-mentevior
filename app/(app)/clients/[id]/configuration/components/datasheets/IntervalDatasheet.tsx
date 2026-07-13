@@ -193,6 +193,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     interval: chartRange.interval,
     aggregationMethod,
     baselines: activeItem.baseline,
+    objectives: activeItem.objetive,
     gridEntries: chartCompatibleEntries,
   })
 

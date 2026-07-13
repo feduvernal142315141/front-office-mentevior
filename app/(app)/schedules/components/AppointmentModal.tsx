@@ -457,10 +457,6 @@ export function AppointmentModal({
       rbtOptions={rbtOptions}
       rbtProvidersLoading={rbtProvidersLoading}
       rbtProvidersError={rbtProvidersError}
-      supervisionCodeOptions={supervisionCodeOptions}
-      supervisionBillingCodesLoading={supervisionBillingCodesLoading}
-      priorAuthorizationOptions={supervisionPriorAuthorizationOptions}
-      isValidatingPriorAuth={isValidatingSupervision}
     />
     </>
   )

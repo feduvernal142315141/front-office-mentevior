@@ -8,15 +8,13 @@ import {
   useSensor, 
   useSensors 
 } from "@dnd-kit/core"
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Calendar as CalendarIcon, 
-  Search, 
-  Filter, 
-  X 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Calendar as CalendarIcon,
 } from "lucide-react"
+import { useMemo } from "react"
 import { format, isSameDay, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { AppointmentCard } from "./AppointmentCard"
@@ -33,8 +31,11 @@ import { usePermission } from "@/lib/hooks/use-permission"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { isToday, formatWeekRange } from "@/lib/date"
+import { SearchInput } from "@/components/custom/SearchInput"
+import { FilterSelect } from "@/components/custom/FilterSelect"
+import { Card } from "@/components/custom/Card"
 import { cn } from "@/lib/utils"
-import type { AppointmentStatus, AppointmentLocation } from "@/lib/types/appointment.types"
+import type { AppointmentStatus } from "@/lib/types/appointment.types"
 
 
 /** Fixed card height for the agency list view (no time-grid positioning) */
@@ -56,13 +57,6 @@ const STATUS_OPTIONS: Array<{ value: AppointmentStatus | "all"; label: string }>
   { value: "NoShow", label: "No Show" },
 ]
 
-const LOCATION_OPTIONS: Array<{ value: AppointmentLocation | "all"; label: string }> = [
-  { value: "all", label: "All Locations" },
-  { value: "Clinic", label: "Clinic" },
-  { value: "Home", label: "Home" },
-  { value: "School", label: "School" },
-  { value: "Telehealth", label: "Telehealth" },
-]
 
 
 export function WeekCalendar({
@@ -77,7 +71,15 @@ export function WeekCalendar({
   const alert = useAlert()
   const canCreate = canCreateSession(PermissionModule.SCHEDULE)
   const isAgency = scope === "agency"
-  const { users: providers } = useUsers(isAgency ? { pageSize: 100 } : undefined)
+  const { users: allUsers } = useUsers({ pageSize: 100 })
+
+  // Only show users that have a role (not clients) and are active
+  const providerFilterOptions = useMemo(() => {
+    const validProviders = allUsers
+      .filter((u) => u.active && !u.terminated && u.roleName)
+      .map((u) => ({ value: u.id, label: u.fullName }))
+    return [{ value: "all", label: "All Providers" }, ...validProviders]
+  }, [allUsers])
   
   const {
     weekStart,
@@ -209,98 +211,45 @@ export function WeekCalendar({
       )}
       
       {!isMobile && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-100 shadow-sm">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search client..."
-              value={searchQuery}
-              onChange={(e) => actions.setSearchQuery(e.target.value)}
-              className={cn(
-                "w-full h-10 pl-10 pr-4 rounded-lg",
-                "border border-gray-200 bg-white",
-                "text-sm placeholder:text-gray-400",
-                "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]",
-              )}
+        <Card variant="elevated" padding="md">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <SearchInput
+                value={searchQuery}
+                onChange={actions.setSearchQuery}
+                placeholder="Search by client name..."
+              />
+            </div>
+
+            <FilterSelect
+              value={filterProvider}
+              onChange={actions.setFilterProvider}
+              options={providerFilterOptions}
+              placeholder="All Providers"
             />
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-400" />
-            
-            <select
+
+            <FilterSelect
               value={filterStatus}
-              onChange={(e) => actions.setFilterStatus(e.target.value as AppointmentStatus | "all")}
-              className={cn(
-                "h-10 px-3 rounded-lg border bg-white text-sm",
-                filterStatus !== "all"
-                  ? "border-[#037ECC] text-[#037ECC]"
-                  : "border-gray-200 text-gray-600",
-              )}
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          
-            <select
-              value={filterLocation}
-              onChange={(e) => actions.setFilterLocation(e.target.value as AppointmentLocation | "all")}
-              className={cn(
-                "h-10 px-3 rounded-lg border bg-white text-sm",
-                filterLocation !== "all"
-                  ? "border-[#037ECC] text-[#037ECC]"
-                  : "border-gray-200 text-gray-600",
-              )}
-            >
-              {LOCATION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => actions.setFilterStatus(v as AppointmentStatus | "all")}
+              options={STATUS_OPTIONS}
+              placeholder="All Status"
+            />
 
-            {isAgency && (
-              <select
-                value={filterProvider}
-                onChange={(e) => actions.setFilterProvider(e.target.value)}
-                className={cn(
-                  "h-10 px-3 rounded-lg border bg-white text-sm",
-                  filterProvider !== "all"
-                    ? "border-[#037ECC] text-[#037ECC]"
-                    : "border-gray-200 text-gray-600",
-                )}
-              >
-                <option value="all">All Providers</option>
-                {providers
-                  .filter((p) => p.active && !p.terminated)
-                  .map((provider) => (
-                    <option key={provider.id} value={provider.id}>
-                      {provider.fullName}
-                    </option>
-                  ))}
-              </select>
-            )}
-
-            {(searchQuery || filterStatus !== "all" || filterLocation !== "all" || filterProvider !== "all") && (
-              <button
+            {(searchQuery || filterStatus !== "all" || filterProvider !== "all") && (
+              <Button
+                variant="ghost"
                 onClick={() => {
                   actions.setSearchQuery("")
                   actions.setFilterStatus("all")
-                  actions.setFilterLocation("all")
                   actions.setFilterProvider("all")
                 }}
-                className="h-10 px-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1"
+                className="whitespace-nowrap h-[52px] 2xl:h-[56px]"
               >
-                <X className="h-3 w-3" />
-                Clear
-              </button>
+                Clear filters
+              </Button>
             )}
           </div>
-        </div>
+        </Card>
       )}
       
       {/* ─── Agency list view: appointments stacked vertically per day ─── */}

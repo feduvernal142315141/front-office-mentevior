@@ -15,8 +15,8 @@ import {
   setMinutes,
 } from "date-fns"
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core"
-import type { 
-  Appointment, 
+import type {
+  Appointment,
   AppointmentStatus,
   AppointmentLocation,
   AppointmentPosition,
@@ -25,11 +25,12 @@ import type {
 } from "@/lib/types/appointment.types"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useScheduleAppointments } from "@/lib/modules/schedules/hooks/use-appointments"
-import { getAppointmentById } from "@/lib/modules/schedules/services/appointments.service"
+import { getAppointmentById, updateAppointmentStatus } from "@/lib/modules/schedules/services/appointments.service"
+import { buildFilters } from "@/lib/utils/query-filters"
+import { FilterOperator } from "@/lib/models/filterOperator"
 import { getWeekDays, getWeekStart } from "@/lib/date"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { matchesLocationFilter } from "@/lib/modules/schedules/utils/schedule-display"
-import { updateAppointmentStatus } from "@/lib/modules/schedules/services/appointments.service"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export type CalendarScope = "provider" | "agency"
@@ -162,13 +163,50 @@ export function useWeekCalendar({
     return format(days[days.length - 1], "yyyy-MM-dd")
   }, [weekStart])
 
+  // All filters go as filters[] with proper type prefixes
+  const appointmentFilters = useMemo(() => {
+    const rules = []
+
+    // Provider filter
+    const effectiveProvider = scope === "agency"
+      ? (filterProvider === "all" ? null : filterProvider)
+      : rbtId
+    if (effectiveProvider) {
+      rules.push({
+        field: "providerId",
+        value: effectiveProvider,
+        operator: FilterOperator.eq,
+        type: "uuid" as const,
+      })
+    }
+
+    if (filterStatus !== "all") {
+      // Map frontend status values to backend names (with spaces)
+      const statusNameMap: Record<string, string> = {
+        InProgress: "In Progress",
+        NoShow: "No Show",
+      }
+      rules.push({
+        field: "appointmentStatus.name",
+        value: statusNameMap[filterStatus] ?? filterStatus,
+        operator: FilterOperator.relatedEqual,
+        type: "string" as const,
+      })
+    }
+
+    return buildFilters(rules, searchQuery.trim()
+      ? { fields: ["clientFullName"], search: searchQuery }
+      : undefined,
+    )
+  }, [scope, rbtId, filterProvider, filterStatus, searchQuery])
+
   const {
     appointments: fetchedAppointments,
     isLoading: isLoadingAppointments,
     error: fetchError,
     refetch: refetchAppointments,
   } = useScheduleAppointments({
-    providerId: scope === "agency" ? undefined : rbtId,
+    filters: appointmentFilters.length > 0 ? appointmentFilters : undefined,
     dateFrom,
     dateTo,
   })
@@ -218,37 +256,13 @@ export function useWeekCalendar({
     [isMobile, weekDays, selectedDay]
   )
   
-  const myAppointments = useMemo(
-    () => scope === "agency" ? appointments : appointments.filter((apt) => apt.rbtId === rbtId),
-    [appointments, rbtId, scope]
-  )
+  // All filtering is now server-side via buildFilters.
+  // myAppointments is a simple alias for the fetched data.
+  const myAppointments = appointments
 
   const filteredAppointments = useMemo(() => {
-    return myAppointments.filter((apt) => {
-
-      if (filterProvider !== "all" && apt.rbtId !== filterProvider) {
-        return false
-      }
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        const clientName = apt.clientName?.toLowerCase() ?? ""
-        if (!clientName.includes(query)) {
-          return false
-        }
-      }
-
-      if (filterStatus !== "all" && apt.status !== filterStatus) {
-        return false
-      }
-
-      if (filterLocation !== "all" && apt.location !== filterLocation) {
-        return false
-      }
-
-      return true
-    })
-  }, [myAppointments, searchQuery, filterStatus, filterLocation, filterProvider])
+    return myAppointments
+  }, [myAppointments])
   
   const activeAppointment = useMemo(
     () => (activeId ? myAppointments.find((apt) => apt.id === activeId) ?? null : null),

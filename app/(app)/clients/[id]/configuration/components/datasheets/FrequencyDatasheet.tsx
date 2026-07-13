@@ -201,6 +201,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     interval: chartRange.interval,
     aggregationMethod,
     baselines: activeItem.baseline,
+    objectives: activeItem.objetive,
     gridEntries: ds.entries,
   })
 

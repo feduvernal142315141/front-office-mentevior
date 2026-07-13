@@ -20,6 +20,7 @@ import {
 } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { validateAppointmentEventData } from "@/lib/modules/schedules/services/appointment-validate.service"
 import { usePriorAuthorizationLabel } from "@/lib/modules/schedules/hooks/use-prior-authorization-label"
+import { useApprovedBillingCodes } from "@/lib/modules/schedules/hooks/use-approved-billing-codes"
 
 interface SupervisionConfigModalProps {
   open: boolean
@@ -31,12 +32,8 @@ interface SupervisionConfigModalProps {
   mainStartTime: string
   mainEndTime: string
   rbtOptions: Array<{ value: string; label: string }>
-  supervisionCodeOptions: Array<{ value: string; label: string }>
-  supervisionBillingCodesLoading: boolean
   rbtProvidersLoading?: boolean
   rbtProvidersError?: Error | null
-  priorAuthorizationOptions?: Array<{ value: string; label: string }>
-  isValidatingPriorAuth?: boolean
 }
 
 function withDefaults(
@@ -64,13 +61,20 @@ export function SupervisionConfigModal({
   mainStartTime,
   mainEndTime,
   rbtOptions,
-  supervisionCodeOptions,
-  supervisionBillingCodesLoading,
   rbtProvidersLoading = false,
   rbtProvidersError = null,
-  priorAuthorizationOptions: parentPriorAuthOptions = [],
-  isValidatingPriorAuth: parentIsValidating = false,
 }: SupervisionConfigModalProps) {
+  // Fetch supervision billing codes + prior auth directly for this client
+  const {
+    billingCodes: supervisionBillingCodes,
+    priorAuthorization: supervisionPriorAuth,
+    isLoading: supervisionBillingCodesLoading,
+  } = useApprovedBillingCodes(open && clientId ? clientId : null, "Supervision")
+
+  const supervisionCodeOptions = useMemo(
+    () => supervisionBillingCodes.map((bc) => ({ value: bc.id, label: bc.label })),
+    [supervisionBillingCodes],
+  )
   const [localData, setLocalData] = useState<AppointmentFormData["supervision"]>(
     createEmptySupervisionForm(),
   )
@@ -82,15 +86,10 @@ export function SupervisionConfigModal({
   const { label: localPriorAuthLabel, isLoading: isLoadingLocalPriorAuthLabel } =
     usePriorAuthorizationLabel(localData.priorAuthorizationId, clientId)
 
+  // Initialize form when modal opens
   useEffect(() => {
     if (open) {
       const data = withDefaults(initialData, mainDate, mainStartTime, mainEndTime)
-
-      // Auto-select billing code if only one option available
-      if (!data.billingCodeId && supervisionCodeOptions.length === 1) {
-        data.billingCodeId = supervisionCodeOptions[0].value
-      }
-
       setLocalData(data)
       setErrors({})
       setValidationError(null)
@@ -100,7 +99,38 @@ export function SupervisionConfigModal({
         validateKey.current = ""
       }
     }
-  }, [open, initialData, mainDate, mainStartTime, mainEndTime, clientId, supervisionCodeOptions])
+  }, [open, initialData, mainDate, mainStartTime, mainEndTime, clientId])
+
+  // Auto-select billing code when options load (single option)
+  useEffect(() => {
+    if (!open || supervisionBillingCodesLoading) return
+    if (supervisionCodeOptions.length === 1) {
+      setLocalData((prev) => {
+        if (prev.billingCodeId) return prev
+        return { ...prev, billingCodeId: supervisionCodeOptions[0].value }
+      })
+    }
+  }, [open, supervisionCodeOptions, supervisionBillingCodesLoading])
+
+  // Auto-select RBT provider when only one available
+  useEffect(() => {
+    if (!open || rbtProvidersLoading) return
+    if (rbtOptions.length === 1) {
+      setLocalData((prev) => {
+        if (prev.providerId) return prev
+        return { ...prev, providerId: rbtOptions[0].value }
+      })
+    }
+  }, [open, rbtOptions, rbtProvidersLoading])
+
+  // Auto-assign prior authorization from the supervision PA
+  useEffect(() => {
+    if (!open || !supervisionPriorAuth?.id) return
+    setLocalData((prev) => {
+      if (prev.priorAuthorizationId) return prev
+      return { ...prev, priorAuthorizationId: supervisionPriorAuth.id }
+    })
+  }, [open, supervisionPriorAuth])
 
   const updateField = useCallback(
     <K extends keyof AppointmentFormData["supervision"]>(
@@ -198,7 +228,7 @@ export function SupervisionConfigModal({
 
   const billableUnits = localData.validatedUnits ?? calculateBillableUnits(durationMinutes)
 
-  const isValidatingPriorAuth = isValidatingLocal || parentIsValidating
+  const isValidatingPriorAuth = isValidatingLocal
 
   const priorAuthorizationOptions = useMemo(() => {
     if (localData.priorAuthorizationId) {
@@ -207,16 +237,28 @@ export function SupervisionConfigModal({
           value: localData.priorAuthorizationId,
           label: isLoadingLocalPriorAuthLabel
             ? "Loading prior authorization…"
-            : localPriorAuthLabel || "Prior authorization",
+            : localPriorAuthLabel ||
+              (supervisionPriorAuth?.authNumber ? `# ${supervisionPriorAuth.authNumber}` : "Prior authorization"),
         },
       ]
     }
-    return parentPriorAuthOptions
+    // Show the PA from the approved billing codes fetch if available
+    if (supervisionPriorAuth?.id) {
+      return [
+        {
+          value: supervisionPriorAuth.id,
+          label: supervisionPriorAuth.authNumber
+            ? `# ${supervisionPriorAuth.authNumber}`
+            : "Prior authorization",
+        },
+      ]
+    }
+    return []
   }, [
     localData.priorAuthorizationId,
     localPriorAuthLabel,
     isLoadingLocalPriorAuthLabel,
-    parentPriorAuthOptions,
+    supervisionPriorAuth,
   ])
 
   const validate = useCallback((): boolean => {

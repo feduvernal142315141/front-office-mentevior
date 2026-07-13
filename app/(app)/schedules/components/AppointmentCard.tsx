@@ -126,20 +126,28 @@ export function AppointmentCard({
             {[appointment.providerName, clientName].filter(Boolean).join(" | ")}
           </p>
 
-          {/* Supervision indicator */}
+          {/* Supervision sub-event details */}
           {hasSupervision && (
-            <div className="mt-0.5 flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50/70 px-1.5 py-0.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
-              <p className="text-[9px] font-semibold text-indigo-700 truncate">
-                Supervision
+            <div className="mt-1.5 rounded-lg border border-indigo-200 bg-indigo-50/60 px-2.5 py-2 space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-800">
+                  Supervision
+                </p>
+              </div>
+              <p className="text-[10px] text-indigo-700">
+                {formatTime(`2000-01-01T${appointment.supervision!.timeInit}`)}
+                {" - "}
+                {formatTime(`2000-01-01T${appointment.supervision!.timeEnd}`)}
+                {appointment.supervision!.units != null && (
+                  <span className="text-indigo-500"> ({appointment.supervision!.units} units)</span>
+                )}
               </p>
-              <p className="text-[9px] text-indigo-500 truncate">
-                {appointment.supervision!.providerName
-                  ? appointment.supervision!.providerName
-                  : formatTime(`2000-01-01T${appointment.supervision!.timeInit}`) +
-                    " - " +
-                    formatTime(`2000-01-01T${appointment.supervision!.timeEnd}`)}
-              </p>
+              {appointment.supervision!.providerName && (
+                <p className="text-[10px] text-indigo-600">
+                  {appointment.supervision!.providerName}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -270,17 +278,16 @@ export function AppointmentCard({
 
           {/* Supervision sub-event indicator */}
           {hasSupervision && (
-            <div className="mt-1 flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50/70 px-1.5 py-0.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
-              <p className="text-[9px] font-semibold text-indigo-700 truncate">
-                Supervision
-              </p>
-              <p className="text-[9px] text-indigo-500 truncate">
-                {appointment.supervision!.providerName
-                  ? appointment.supervision!.providerName
-                  : formatTime(`2000-01-01T${appointment.supervision!.timeInit}`) +
-                    " - " +
-                    formatTime(`2000-01-01T${appointment.supervision!.timeEnd}`)}
+            <div className="mt-1 rounded-md border border-indigo-200 bg-indigo-50/60 px-1.5 py-1 space-y-px">
+              <div className="flex items-center gap-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+                <p className="text-[9px] font-bold text-indigo-800">SUPERVISION</p>
+              </div>
+              <p className="text-[9px] text-indigo-600 truncate">
+                {formatTime(`2000-01-01T${appointment.supervision!.timeInit}`)}
+                {" - "}
+                {formatTime(`2000-01-01T${appointment.supervision!.timeEnd}`)}
+                {appointment.supervision!.providerName && ` · ${appointment.supervision!.providerName}`}
               </p>
             </div>
           )}

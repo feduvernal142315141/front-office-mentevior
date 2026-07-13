@@ -6,11 +6,11 @@ export type GenericFilterValue =
   | undefined;
 
 export type FilterRule = {
-  field: string;          
+  field: string;
   value: GenericFilterValue;
-  operator?: string;  
-  logic?: "AND" | "OR";  
-  type?: "string" | "number" | "boolean";
+  operator?: string;
+  logic?: "AND" | "OR";
+  type?: "string" | "number" | "boolean" | "uuid";
 };
 
 export type SearchRule = {
@@ -49,7 +49,6 @@ export function buildFilters(
     let formattedValue = "";
 
     if (rule.type === "boolean") {
-
       formattedValue = `Boolean_${String(rule.value)}`;
       output.push(`${field}__${operator}__${formattedValue}__${logic}`);
       continue;
@@ -57,6 +56,12 @@ export function buildFilters(
 
     if (rule.type === "number") {
       formattedValue = `Integer_${rule.value}`;
+      output.push(`${field}__${operator}__${formattedValue}__${logic}`);
+      continue;
+    }
+
+    if (rule.type === "uuid") {
+      formattedValue = `UUID_${rule.value}`;
       output.push(`${field}__${operator}__${formattedValue}__${logic}`);
       continue;
     }

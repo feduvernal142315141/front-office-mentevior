@@ -11,6 +11,8 @@ import type {
 } from "@/lib/types/appointment.types"
 import type { Client } from "@/lib/types/client.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
+import type { QueryModel } from "@/lib/models/queryModel"
+import { getQueryString } from "@/lib/utils/format"
 import { fromApiAppointment } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 
 function formatClientName(client: Client): string {
@@ -95,15 +97,21 @@ function parseAppointmentList(data: unknown): Appointment[] {
 }
 
 /**
- * Fetch appointments for a provider within a date range via GET /appointment.
+ * Fetch appointments via GET /appointment.
+ * Accepts filters[] (standard query-filter strings) plus dateFrom/dateTo as direct params.
  */
-export async function getAppointments(filters: AppointmentListQuery): Promise<Appointment[]> {
+export async function getAppointments(
+  opts?: { filters?: string[]; dateFrom?: string; dateTo?: string; providerId?: string },
+): Promise<Appointment[]> {
   const params = new URLSearchParams()
-  if (filters.providerId) params.set("providerId", filters.providerId)
-  if (filters.clientId) params.set("clientId", filters.clientId)
-  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom)
-  if (filters.dateTo) params.set("dateTo", filters.dateTo)
-
+  if (opts?.providerId) params.set("providerId", opts.providerId)
+  if (opts?.dateFrom) params.set("dateFrom", opts.dateFrom)
+  if (opts?.dateTo) params.set("dateTo", opts.dateTo)
+  if (opts?.filters && opts.filters.length > 0) {
+    for (const f of opts.filters) {
+      params.append("filters", f)
+    }
+  }
   const qs = params.toString()
   const url = `/appointment${qs ? `?${qs}` : ""}`
   const response = await serviceGet<ApiAppointmentItem[] | PaginatedResponse<ApiAppointmentItem>>(url)
@@ -114,6 +122,7 @@ export async function getAppointments(filters: AppointmentListQuery): Promise<Ap
 
   return enrichAppointmentsWithClientNames(parseAppointmentList(response.data))
 }
+
 
 /**
  * Fetch a single appointment by ID via GET /appointment/{id}.

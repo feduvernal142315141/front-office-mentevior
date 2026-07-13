@@ -1,8 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { getAppointments } from "@/lib/modules/schedules/services/appointments.service"
+import { buildFilters } from "@/lib/utils/query-filters"
+import { FilterOperator } from "@/lib/models/filterOperator"
 import type { Appointment } from "@/lib/types/appointment.types"
 
 interface UseClientAppointmentsParams {
@@ -26,48 +28,33 @@ export function useClientAppointments(
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const fetch = useCallback(async () => {
-    if (!clientId || !dateFrom || !dateTo) {
+  const filters = useMemo(() => {
+    if (!clientId) return null
+    return buildFilters([
+      { field: "clientId", value: clientId, operator: FilterOperator.eq, type: "uuid" },
+    ])
+  }, [clientId])
+
+  const fetchData = useCallback(async () => {
+    if (!filters || !dateFrom || !dateTo) {
       setAppointments([])
       return
     }
 
     setIsLoading(true)
     try {
-      const data = await getAppointments({ clientId, dateFrom, dateTo })
+      const data = await getAppointments({ filters, dateFrom, dateTo })
       setAppointments(data)
     } catch {
       setAppointments([])
     } finally {
       setIsLoading(false)
     }
-  }, [clientId, dateFrom, dateTo])
+  }, [filters, dateFrom, dateTo])
 
   useEffect(() => {
-    let active = true
-
-    void (async () => {
-      if (!clientId || !dateFrom || !dateTo) {
-        setAppointments([])
-        return
-      }
-
-      setIsLoading(true)
-      try {
-        const data = await getAppointments({ clientId, dateFrom, dateTo })
-        if (!active) return
-        setAppointments(data)
-      } catch {
-        if (active) setAppointments([])
-      } finally {
-        if (active) setIsLoading(false)
-      }
-    })()
-
-    return () => {
-      active = false
-    }
-  }, [clientId, dateFrom, dateTo])
+    void fetchData()
+  }, [fetchData])
 
   const appointmentsByDate = useCallback((): Map<string, Appointment> => {
     const map = new Map<string, Appointment>()
@@ -82,6 +69,6 @@ export function useClientAppointments(
     appointments,
     appointmentsByDate: appointmentsByDate(),
     isLoading,
-    refetch: fetch,
+    refetch: fetchData,
   }
 }

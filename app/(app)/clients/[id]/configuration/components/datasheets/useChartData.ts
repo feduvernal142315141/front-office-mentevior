@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { eachDayOfInterval, format } from "date-fns"
 import type { ChartInterval } from "@/lib/modules/service-plans/constants/chart.constants"
 import { ServicePlanValueType } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
-import type { ClientServicePlanItemBaseline } from "@/lib/types/client-service-plan.types"
+import type { ClientServicePlanItemBaseline, ClientServicePlanItemObjective } from "@/lib/types/client-service-plan.types"
 import { useClientDataCollectionValues } from "@/lib/modules/client-service-plan/hooks/use-client-data-collection-values"
 import {
   aggregateChartData,
@@ -19,6 +19,7 @@ interface UseChartDataParams {
   interval: ChartInterval
   aggregationMethod: ServicePlanValueType
   baselines?: ClientServicePlanItemBaseline[]
+  objectives?: ClientServicePlanItemObjective[]
   gridEntries: WeekEntries
 }
 
@@ -34,8 +35,19 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
     interval,
     aggregationMethod,
     baselines,
+    objectives,
     gridEntries,
   } = params
+
+  // Treatment starts at the first STO's startDate
+  const treatmentStartDate = useMemo(() => {
+    if (!objectives || objectives.length === 0) return null
+    const sorted = [...objectives]
+      .filter((o) => o.startDate)
+      .sort((a, b) => parseLocalDate(a.startDate).getTime() - parseLocalDate(b.startDate).getTime())
+    if (sorted.length === 0) return null
+    return parseLocalDate(sorted[0].startDate)
+  }, [objectives])
 
   // Compute fetch range from chartDays
   const fetchStart = useMemo(() => {
@@ -100,21 +112,25 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
     const sorted = [...allDateKeys].sort()
 
     return sorted.map((dateKey) => {
-      const isBaseline = baselineDateKeys.has(dateKey)
+      const isBaselineRecord = baselineDateKeys.has(dateKey)
+      // Any date before STO1 startDate is considered part of baseline phase
+      const date = parseLocalDate(dateKey)
+      const isBeforeTreatment = treatmentStartDate ? date.getTime() < treatmentStartDate.getTime() : false
+      const isBaseline = isBaselineRecord || isBeforeTreatment
 
       // Priority: grid entries (unsaved edits) > API DC values > baseline values
       let value: number | null = null
 
       if (isBaseline) {
-        // For baseline dates: use grid entry if edited, otherwise API baseline
+        // For baseline phase: use grid entry if edited, otherwise API baseline or DC value
         const gridEntry = gridEntries[dateKey]
         if (gridEntry !== undefined) {
           value = gridEntry.occurrences
         } else {
-          value = baselineValueMap.get(dateKey) ?? null
+          value = baselineValueMap.get(dateKey) ?? dcValueMap.get(dateKey) ?? null
         }
       } else {
-        // For non-baseline dates: use grid entry if edited, otherwise API DC value
+        // For treatment phase: use grid entry if edited, otherwise API DC value
         const gridEntry = gridEntries[dateKey]
         if (gridEntry !== undefined && gridEntry.occurrences > 0) {
           value = gridEntry.occurrences
@@ -127,7 +143,7 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
 
       return { dateKey, value, isBaseline, note }
     })
-  }, [chartDays, baselineDateKeys, baselineValueMap, dcValueMap, gridEntries])
+  }, [chartDays, baselineDateKeys, baselineValueMap, dcValueMap, gridEntries, treatmentStartDate])
 
   // Aggregate
   const aggregatedPoints = useMemo(

@@ -73,6 +73,15 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     }
   }, [baselines])
 
+  // ─── Earliest baseline date (min navigable date) ─────────────────────────
+
+  const minDate = useMemo(() => {
+    if (!baselines || baselines.length === 0) return undefined
+    const dates = baselines.filter((b) => b.date).map((b) => parseLocalDate(b.date))
+    if (dates.length === 0) return undefined
+    return new Date(Math.min(...dates.map((d) => d.getTime())))
+  }, [baselines])
+
   // ─── Computed range based on mode ────────────────────────────────────────
 
   const dateRange = useMemo<DateRange>(() => {
@@ -90,10 +99,12 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     }
   }, [rangeMode, anchor, customRange])
 
-  const rangeDays = useMemo<Date[]>(
-    () => eachDayOfInterval({ start: dateRange.start, end: dateRange.end }),
-    [dateRange]
-  )
+  const rangeDays = useMemo<Date[]>(() => {
+    const all = eachDayOfInterval({ start: dateRange.start, end: dateRange.end })
+    // Hide days before the first baseline date
+    if (!minDate) return all
+    return all.filter((day) => day.getTime() >= minDate.getTime())
+  }, [dateRange, minDate])
 
   // Legacy compat: weekStart = dateRange.start
   const weekStart = dateRange.start
@@ -122,15 +133,6 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
 
   const fetchStartDate = useMemo(() => format(dateRange.start, "yyyy-MM-dd"), [dateRange.start])
   const fetchEndDate = useMemo(() => format(dateRange.end, "yyyy-MM-dd"), [dateRange.end])
-
-  // ─── Earliest baseline date (min navigable date) ─────────────────────────
-
-  const minDate = useMemo(() => {
-    if (!baselines || baselines.length === 0) return undefined
-    const dates = baselines.filter((b) => b.date).map((b) => parseLocalDate(b.date))
-    if (dates.length === 0) return undefined
-    return new Date(Math.min(...dates.map((d) => d.getTime())))
-  }, [baselines])
 
   // ─── Navigation ──────────────────────────────────────────────────────────
 

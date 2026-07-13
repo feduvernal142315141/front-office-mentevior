@@ -364,7 +364,6 @@ export function useAppointmentForm({
   const isSupervisionConfigured = useMemo(() => {
     const s = formData.supervision
     return !!(
-      s.title.trim() &&
       s.providerId &&
       s.billingCodeId &&
       s.date &&
