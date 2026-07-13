@@ -5,6 +5,7 @@ import type { Appointment, AppointmentFormData, EventType } from "@/lib/types/ap
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
 import { useApprovedBillingCodes } from "@/lib/modules/schedules/hooks/use-approved-billing-codes"
+import { useAppointmentBillingCodes } from "@/lib/modules/schedules/hooks/use-appointment-billing-codes"
 import { validateAppointmentEventData } from "@/lib/modules/schedules/services/appointment-validate.service"
 import { usePriorAuthorizationLabel } from "@/lib/modules/schedules/hooks/use-prior-authorization-label"
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
@@ -47,6 +48,7 @@ interface UseAppointmentFormProps {
   defaultDate?: string
   defaultTime?: string
   rbtId: string
+  scope?: "provider" | "agency"
   onSuccess?: () => void
 }
 
@@ -70,6 +72,7 @@ export function useAppointmentForm({
   defaultDate,
   defaultTime,
   rbtId,
+  scope = "provider",
   onSuccess,
 }: UseAppointmentFormProps) {
   const alert = useAlert()
@@ -129,13 +132,25 @@ export function useAppointmentForm({
     error: mainBillingCodesError,
   } = useApprovedBillingCodes(formData.clientId || null, billingCodeType)
 
+  // Supervision billing codes: try approved (from PA) first, fallback to company config
   const {
-    billingCodes: supervisionBillingCodes,
-    isLoading: supervisionBillingCodesLoading,
+    billingCodes: approvedSupervisionCodes,
+    isLoading: approvedSupervisionLoading,
   } = useApprovedBillingCodes(
     formData.addSupervision && formData.eventType === "session_note" ? formData.clientId || null : null,
     "Supervision",
   )
+
+  const {
+    billingCodes: configSupervisionCodes,
+    isLoading: configSupervisionLoading,
+  } = useAppointmentBillingCodes({
+    context: "supervision",
+    enabled: formData.addSupervision && formData.eventType === "session_note" && approvedSupervisionCodes.length === 0 && !approvedSupervisionLoading,
+  })
+
+  const supervisionBillingCodes = approvedSupervisionCodes.length > 0 ? approvedSupervisionCodes : configSupervisionCodes
+  const supervisionBillingCodesLoading = approvedSupervisionLoading || configSupervisionLoading
 
   const durationMinutes = useMemo(
     () => calculateDurationMinutes(formData.startTime, formData.endTime),
@@ -459,6 +474,17 @@ export function useAppointmentForm({
     }
   }, [mainBillingCodes, mainBillingCodesLoading, formData.billingCodeId])
 
+  // Auto-select supervision billing code if only one available
+  useEffect(() => {
+    if (supervisionBillingCodesLoading || !formData.addSupervision) return
+    if (supervisionBillingCodes.length === 1 && !formData.supervision.billingCodeId) {
+      setFormData((prev) => ({
+        ...prev,
+        supervision: { ...prev.supervision, billingCodeId: supervisionBillingCodes[0].id },
+      }))
+    }
+  }, [supervisionBillingCodes, supervisionBillingCodesLoading, formData.addSupervision, formData.supervision.billingCodeId])
+
   useEffect(() => {
     if (skipDependentResetsRef.current > 0) {
       skipDependentResetsRef.current--
@@ -692,10 +718,15 @@ export function useAppointmentForm({
       const startsAt = new Date(`${formData.date}T${formData.startTime}`).toISOString()
       const endsAt = new Date(`${formData.date}T${formData.endTime}`).toISOString()
 
-      const hasConflict = checkConflict(providerId, startsAt, endsAt, appointment?.id)
-      if (hasConflict) {
-        alert.error("Schedule Conflict", "This time slot conflicts with another appointment")
-        return
+      // Client-side conflict detection only applies when the logged-in user IS
+      // the actual provider (e.g. an RBT scheduling their own appointments).
+      // For admins / supervisors (agency scope or non-RBT roles) the backend validates.
+      if (scope === "provider" && isRbt) {
+        const hasConflict = checkConflict(providerId, startsAt, endsAt, appointment?.id)
+        if (hasConflict) {
+          alert.error("Schedule Conflict", "This time slot conflicts with another appointment")
+          return
+        }
       }
 
       const units = formData.validatedUnits ?? calculateBillableUnits(durationMinutes)

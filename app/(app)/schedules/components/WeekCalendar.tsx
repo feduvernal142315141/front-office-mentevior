@@ -17,7 +17,7 @@ import {
   Filter, 
   X 
 } from "lucide-react"
-import { format } from "date-fns"
+import { format, isSameDay, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { AppointmentCard } from "./AppointmentCard"
 import { AppointmentModal } from "./AppointmentModal"
@@ -36,6 +36,9 @@ import { isToday, formatWeekRange } from "@/lib/date"
 import { cn } from "@/lib/utils"
 import type { AppointmentStatus, AppointmentLocation } from "@/lib/types/appointment.types"
 
+
+/** Fixed card height for the agency list view (no time-grid positioning) */
+const INLINE_CARD_HEIGHT = 90
 
 interface WeekCalendarProps {
   rbtId: string
@@ -300,6 +303,95 @@ export function WeekCalendar({
         </div>
       )}
       
+      {/* ─── Agency list view: appointments stacked vertically per day ─── */}
+      {isAgency && !isMobile ? (
+        <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+          {isLoadingAppointments && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-2xl">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#037ECC] border-t-transparent" />
+                Loading sessions...
+              </div>
+            </div>
+          )}
+          <div className="p-4 min-w-[1100px]">
+            {/* Day headers */}
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {weekDays.map((day, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "flex flex-col items-center py-3 rounded-xl transition-colors",
+                    isToday(day)
+                      ? "bg-[#037ECC] text-white"
+                      : "bg-gray-50 text-gray-700",
+                  )}
+                >
+                  <span className="text-xs font-medium uppercase opacity-80">
+                    {format(day, "EEE")}
+                  </span>
+                  <span className="text-2xl font-bold">{format(day, "d")}</span>
+                  <span className="text-xs opacity-70">{format(day, "MMM")}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Day columns with stacked appointments */}
+            <div className="grid grid-cols-7 gap-1" style={{ minHeight: "calc(100vh - 300px)" }}>
+              {weekDays.map((day, dayIndex) => {
+                const dayAppointments = filteredAppointments
+                  .filter((apt) => isSameDay(parseISO(apt.startsAt), day))
+                  .sort((a, b) => parseISO(a.startsAt).getTime() - parseISO(b.startsAt).getTime())
+
+                return (
+                  <div
+                    key={dayIndex}
+                    className="overflow-y-auto custom-scrollbar border border-gray-100 rounded-xl bg-gray-50/30 p-1 space-y-1"
+                  >
+                    {/* Add button at the top */}
+                    <button
+                      type="button"
+                      onClick={() => actions.handleSlotClick(day, 8)}
+                      className="flex items-center justify-center w-full py-1.5 text-[10px] font-medium text-gray-400 cursor-pointer hover:bg-[#037ECC]/5 hover:text-[#037ECC] rounded-lg transition-colors"
+                    >
+                      <Plus className="h-3 w-3 mr-0.5" />
+                      Add
+                    </button>
+                    {dayAppointments.map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        onContextMenu={(e) => actions.openContextMenu(e, appointment.id)}
+                      >
+                        <AppointmentCard
+                          appointment={appointment}
+                          viewMode={calendarViewMode}
+                          layout="list"
+                          eventColors={eventColors}
+                          onClick={() => actions.openEditModal(appointment)}
+                          onDelete={(e) => {
+                            e.stopPropagation()
+                            alert.confirm({
+                              title: "Delete Session",
+                              description: "Are you sure you want to delete this session? This action cannot be undone.",
+                              confirmText: "Delete",
+                              cancelText: "Go Back",
+                              onConfirm: async () => {
+                                deleteAppointment(appointment.id)
+                                await mutations.remove(appointment.id)
+                              },
+                            })
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+      /* ─── Provider time-grid view: appointments positioned by time slot ─── */
       <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         {isLoadingAppointments && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-2xl">
@@ -318,7 +410,7 @@ export function WeekCalendar({
           <div className={cn("p-4", isMobile ? "min-w-0" : "min-w-[1100px]")}>
             {!isMobile && (
               <div className="grid grid-cols-[60px_repeat(7,1fr)] gap-1 mb-2">
-                <div /> 
+                <div />
                 {weekDays.map((day, index) => (
                   <div
                     key={index}
@@ -338,7 +430,7 @@ export function WeekCalendar({
                 ))}
               </div>
             )}
-            
+
             <div className="relative">
               <div className="relative">
                 {CALENDAR_HOURS.map((hour) => (
@@ -350,11 +442,11 @@ export function WeekCalendar({
                     )}
                     style={{ height: SLOT_HEIGHT }}
                   >
-  
+
                     <div className="text-xs text-gray-400 font-medium pt-1 text-right pr-2">
                       {hour}:00
                     </div>
-                  
+
                     {displayDays.map((_, dayIndex) => (
                       <div
                         key={dayIndex}
@@ -364,7 +456,7 @@ export function WeekCalendar({
                   </div>
                 ))}
               </div>
-              
+
               <div className="absolute inset-0 pointer-events-none">
                 <div
                   className={cn(
@@ -374,16 +466,16 @@ export function WeekCalendar({
                 >
                   {!isMobile && <div />}
                   {isMobile && <div />}
-                  
+
                   {displayDays.map((_, displayIndex) => {
                     const dayIndex = isMobile ? selectedDay : displayIndex
-                    
+
                     return (
                       <div key={displayIndex} className="relative pointer-events-auto overflow-visible">
                         {filteredAppointments.map((appointment) => {
                           const position = actions.getAppointmentPosition(appointment)
                           if (!position || position.dayIndex !== dayIndex) return null
-                          
+
                           return (
                             <div
                               key={appointment.id}
@@ -423,7 +515,7 @@ export function WeekCalendar({
                   })}
                 </div>
               </div>
-              
+
               {isMobile && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="grid grid-cols-[50px_1fr] gap-1">
@@ -483,7 +575,7 @@ export function WeekCalendar({
               {!isMobile && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="grid grid-cols-[60px_repeat(7,1fr)] gap-1">
-                    <div /> 
+                    <div />
                     {weekDays.map((day, dayIndex) => (
                       <div key={dayIndex} className="relative">
                         {CALENDAR_HOURS.map((hour) => {
@@ -491,7 +583,7 @@ export function WeekCalendar({
                           const isHovered = hoveredSlot === slotId
                           const isClicked = clickedSlot === slotId
                           const hasCovering = actions.hasAppointmentCoveringSlot(dayIndex, hour)
-                          
+
                           return (
                             <div
                               key={slotId}
@@ -540,21 +632,22 @@ export function WeekCalendar({
               )}
             </div>
           </div>
-          
+
           <DragOverlay>
             {activeAppointment && (
               <div className="w-48">
-                <AppointmentCard 
+                <AppointmentCard
                   appointment={activeAppointment}
                   viewMode={calendarViewMode}
                   eventColors={eventColors}
-                  isDragOverlay 
+                  isDragOverlay
                 />
               </div>
             )}
           </DragOverlay>
         </DndContext>
       </div>
+      )}
       
       {isMobile && canCreate && (
         <button
@@ -580,6 +673,7 @@ export function WeekCalendar({
         defaultDate={modalDefaults.date}
         defaultTime={modalDefaults.time}
         rbtId={rbtId}
+        scope={scope}
         onStatusChange={actions.handleStatusChange}
         onSaved={actions.handleAppointmentSaved}
       />

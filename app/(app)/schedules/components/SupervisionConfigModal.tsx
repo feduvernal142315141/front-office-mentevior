@@ -85,6 +85,12 @@ export function SupervisionConfigModal({
   useEffect(() => {
     if (open) {
       const data = withDefaults(initialData, mainDate, mainStartTime, mainEndTime)
+
+      // Auto-select billing code if only one option available
+      if (!data.billingCodeId && supervisionCodeOptions.length === 1) {
+        data.billingCodeId = supervisionCodeOptions[0].value
+      }
+
       setLocalData(data)
       setErrors({})
       setValidationError(null)
@@ -94,7 +100,7 @@ export function SupervisionConfigModal({
         validateKey.current = ""
       }
     }
-  }, [open, initialData, mainDate, mainStartTime, mainEndTime, clientId])
+  }, [open, initialData, mainDate, mainStartTime, mainEndTime, clientId, supervisionCodeOptions])
 
   const updateField = useCallback(
     <K extends keyof AppointmentFormData["supervision"]>(
@@ -243,7 +249,7 @@ export function SupervisionConfigModal({
         if (!next) onClose()
       }}
       title="Supervision Session"
-      description="Configure the supervision sub-event for this Service Plan"
+      description="Configure the supervision sub-event for this session"
       maxWidthClassName="sm:max-w-[560px]"
       allowSelectOverflow
       contentClassName="!overflow-visible"

@@ -3,12 +3,16 @@
 import { CalendarCheck } from "lucide-react"
 import { WeekCalendar } from "./components"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 
 export default function SchedulesPage() {
   const { user } = useAuth()
   const currentUserId = user?.id ?? ""
-  const role = String(user?.role ?? "").toLowerCase()
-  const isAgencyAdmin = role.includes("admin")
+
+  // JWT doesn't carry the role — fetch the full user to get role.name
+  const { user: fullUser } = useUserById(currentUserId || null)
+  const roleName = fullUser?.role?.name ?? ""
+  const isAgencyAdmin = /admin|superadmin|supervisor|agency/i.test(roleName)
 
   return (
     <div className="p-4 md:p-8">

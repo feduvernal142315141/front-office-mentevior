@@ -47,6 +47,7 @@ interface AppointmentModalProps {
   defaultDate?: string
   defaultTime?: string
   rbtId: string
+  scope?: "provider" | "agency"
   onStatusChange?: (appointmentId: string, status: AppointmentStatus) => void
   onSaved?: () => void
 }
@@ -58,6 +59,7 @@ export function AppointmentModal({
   defaultDate,
   defaultTime,
   rbtId,
+  scope = "provider",
   onStatusChange,
   onSaved,
 }: AppointmentModalProps) {
@@ -105,6 +107,7 @@ export function AppointmentModal({
     defaultDate,
     defaultTime,
     rbtId,
+    scope,
     onSuccess: onSaved ?? onClose,
   })
 

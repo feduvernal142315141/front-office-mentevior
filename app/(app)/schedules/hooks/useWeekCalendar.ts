@@ -373,10 +373,12 @@ export function useWeekCalendar({
         break
       case "complete":
         updateAppointment(appointmentId, { status: "Completed" })
+        void updateAppointmentStatus(appointmentId, "Completed")
         alert.success("Appointment Completed", "The appointment has been marked as completed")
         break
       case "noshow":
         updateAppointment(appointmentId, { status: "NoShow" })
+        void updateAppointmentStatus(appointmentId, "NoShow")
         alert.success("No Show", "The appointment has been marked as No Show")
         break
       case "delete":
@@ -385,6 +387,7 @@ export function useWeekCalendar({
         break
       case "cancel":
         updateAppointment(appointmentId, { status: "Cancelled" })
+        void updateAppointmentStatus(appointmentId, "Cancelled")
         alert.success("Appointment Cancelled", "The appointment has been cancelled")
         break
     }
@@ -445,6 +448,7 @@ export function useWeekCalendar({
  
   const handleStatusChange = useCallback((appointmentId: string, status: AppointmentStatus) => {
     updateAppointment(appointmentId, { status })
+    void updateAppointmentStatus(appointmentId, status)
     alert.success("Status Updated", `Appointment marked as ${status}`)
   }, [updateAppointment, alert])
   
