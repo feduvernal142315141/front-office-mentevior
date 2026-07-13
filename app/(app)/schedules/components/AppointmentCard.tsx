@@ -5,6 +5,7 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { X } from "lucide-react"
 import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
+import { formatTime } from "@/lib/date"
 import {
   type CalendarViewMode,
   formatAppointmentTimeRange,
@@ -56,6 +57,7 @@ export function AppointmentCard({
   const units = formatAppointmentUnits(appointment)
   const showPeople = viewMode === "general"
   const clientName = appointment.clientName?.trim() || ""
+  const hasSupervision = !!appointment.supervision
 
   const showInline = cardHeight >= INLINE_THRESHOLD
   const needsHover = !showInline && !isDragOverlay
@@ -145,6 +147,23 @@ export function AppointmentCard({
             <p className="text-[10px] text-gray-400 truncate">
               {[appointment.providerName, appointment.clientName].filter(Boolean).join(" · ")}
             </p>
+          )}
+
+          {/* Supervision sub-event indicator */}
+          {hasSupervision && (
+            <div className="mt-1 flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50/70 px-1.5 py-0.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+              <p className="text-[9px] font-semibold text-indigo-700 truncate">
+                Supervision
+              </p>
+              <p className="text-[9px] text-indigo-500 truncate">
+                {appointment.supervision!.providerName
+                  ? appointment.supervision!.providerName
+                  : formatTime(`2000-01-01T${appointment.supervision!.timeInit}`) +
+                    " - " +
+                    formatTime(`2000-01-01T${appointment.supervision!.timeEnd}`)}
+              </p>
+            </div>
           )}
         </div>
 

@@ -6,6 +6,7 @@ import {
   createServicePlanCategory,
   deleteServicePlanCategory,
   getServicePlanCategoriesCatalog,
+  type CategoryBillingCodePayload,
   type ServicePlanCategoryCatalogOption,
   updateServicePlanCategory,
 } from "../services/service-plan-categories-catalog.service"
@@ -18,8 +19,8 @@ interface UseServicePlanCategoriesCatalogReturn {
   isDeleting: boolean
   error: Error | null
   usingFallback: boolean
-  createCategory: (name: string) => Promise<string | null>
-  editCategory: (id: string, name: string) => Promise<string | null>
+  createCategory: (name: string, billingCodes?: CategoryBillingCodePayload[]) => Promise<string | null>
+  editCategory: (id: string, name: string, billingCodes?: CategoryBillingCodePayload[]) => Promise<string | null>
   removeCategory: (id: string) => Promise<boolean>
   refreshCatalog: (force?: boolean) => Promise<void>
 }
@@ -120,14 +121,14 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
     void refreshCatalog(false)
   }, [refreshCatalog])
 
-  const createCategory = async (name: string): Promise<string | null> => {
+  const createCategory = async (name: string, billingCodes?: CategoryBillingCodePayload[]): Promise<string | null> => {
     const normalizedName = name.trim()
 
     if (normalizedName.length === 0) return null
 
     try {
       setIsCreating(true)
-      const created = await createServicePlanCategory(normalizedName)
+      const created = await createServicePlanCategory(normalizedName, billingCodes)
       const createdValue = created.option.value
 
       setOptions((current) => {
@@ -156,7 +157,7 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
     }
   }
 
-  const editCategory = async (id: string, name: string): Promise<string | null> => {
+  const editCategory = async (id: string, name: string, billingCodes?: CategoryBillingCodePayload[]): Promise<string | null> => {
     const normalizedId = id.trim()
     const normalizedName = name.trim()
 
@@ -164,7 +165,7 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
 
     try {
       setIsUpdating(true)
-      const updated = await updateServicePlanCategory(normalizedId, normalizedName)
+      const updated = await updateServicePlanCategory(normalizedId, normalizedName, billingCodes)
 
       setOptions((current) => {
         const next = current.map((option) =>

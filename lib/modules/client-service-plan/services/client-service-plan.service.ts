@@ -111,6 +111,35 @@ function normalizeClientServicePlan(raw: unknown): ClientServicePlan {
   }
 }
 
+function normalizeBillingCodes(raw: unknown): ClientServicePlanCategorySummary["billingCodes"] {
+  if (!Array.isArray(raw)) return undefined
+  return raw
+    .filter((entry) => entry && typeof entry === "object")
+    .map((entry) => {
+      const bc = entry as Record<string, unknown>
+      return {
+        id: asString(bc.id),
+        type: asString(bc.type),
+        code: asString(bc.code),
+        modifier: bc.modifier != null ? asString(bc.modifier) : null,
+      }
+    })
+}
+
+function normalizeLevelEntries(raw: unknown): ClientServicePlanCategorySummary["levels"] {
+  if (!Array.isArray(raw)) return undefined
+  return raw
+    .filter((entry) => entry && typeof entry === "object")
+    .map((entry) => {
+      const lv = entry as Record<string, unknown>
+      return {
+        id: asString(lv.id),
+        level: asString(lv.level),
+        description: asString(lv.description),
+      }
+    })
+}
+
 function normalizeClientCategorySummary(raw: unknown): ClientServicePlanCategorySummary {
   const item = raw as Record<string, unknown>
   const totalItemsRaw = item.totalItems ?? item.total_items
@@ -118,6 +147,10 @@ function normalizeClientCategorySummary(raw: unknown): ClientServicePlanCategory
     id: asString(item.id),
     categoryId: asString(item.categoryId ?? item.category_id),
     categoryName: asString(item.categoryName ?? item.category_name),
+    typeEventCatalogId: asOptionalString(item.typeEventCatalogId ?? item.type_event_catalog_id),
+    typeEventCatalogName: asOptionalString(item.typeEventCatalogName ?? item.type_event_catalog_name),
+    unitMeasurementCatalogId: asOptionalString(item.unitMeasurementCatalogId ?? item.unit_measurement_catalog_id),
+    unitMeasurementCatalogName: asOptionalString(item.unitMeasurementCatalogName ?? item.unit_measurement_catalog_name),
     canEdit: asOptionalBoolean(item.canEdit ?? item.can_edit),
     totalItems:
       typeof totalItemsRaw === "number"
@@ -126,6 +159,8 @@ function normalizeClientCategorySummary(raw: unknown): ClientServicePlanCategory
           ? Number(totalItemsRaw) || 0
           : 0,
     hasDataCollection: asOptionalBoolean(item.hasDataCollection ?? item.has_data_collection),
+    billingCodes: normalizeBillingCodes(item.billingCodes ?? item.billing_codes),
+    levels: normalizeLevelEntries(item.levels),
   }
 }
 
@@ -275,6 +310,38 @@ export async function getClientServicePlanCategories(
 
   if (response.status !== 200 || !response.data) {
     throw new Error("Failed to fetch client service plan categories")
+  }
+
+  const rawData = response.data as unknown
+  const wrapped = (rawData && typeof rawData === "object" ? rawData : {}) as {
+    entities?: unknown
+    data?: unknown
+  }
+  const entries = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray(wrapped.entities)
+      ? wrapped.entities
+      : Array.isArray(wrapped.data)
+        ? wrapped.data
+        : []
+
+  return entries
+    .map((entry) => normalizeClientCategorySummary(entry))
+    .filter((entry) => entry.categoryId.length > 0)
+}
+
+// --- Categories filtered by appointment billing code ---
+
+export async function getClientServicePlanCategoriesByAppointment(
+  clientServicePlanId: string,
+  appointmentId: string,
+): Promise<ClientServicePlanCategorySummary[]> {
+  const response = await serviceGet<unknown>(
+    `/client-service-plan/${clientServicePlanId}/appointment/${appointmentId}/category`,
+  )
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch categories filtered by appointment")
   }
 
   const rawData = response.data as unknown

@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut, serviceDelete, servicePatch } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import { getClientAddressById } from "@/lib/modules/client-addresses/services/client-addresses.service"
 import { getClientById } from "@/lib/modules/clients/services/clients.service"
@@ -202,20 +202,34 @@ export async function deleteAppointmentService(id: string): Promise<boolean> {
   return response.status === 200 || response.status === 204
 }
 
+/** Maps AppointmentStatus to the statusName expected by PATCH /appointment/status */
+function toStatusName(status: AppointmentStatus): string {
+  switch (status) {
+    case "InProgress":
+      return "In Progress"
+    case "NoShow":
+      return "No Show"
+    default:
+      return status
+  }
+}
+
 /**
- * Update appointment status (calendar UI — endpoint TBD).
+ * Update appointment status via PATCH /appointment/status.
+ * Respects backend transition rules (e.g. Scheduled → InProgress, InProgress → Completed).
  */
 export async function updateAppointmentStatus(
   id: string,
   status: AppointmentStatus,
-): Promise<Appointment | null> {
+): Promise<string | null> {
   try {
-    const response = await servicePut<{ id: string; status: AppointmentStatus }, Appointment>(
-      `/appointment/${id}`,
-      { id, status },
+    const response = await servicePatch<{ id: string; statusName: string }, string>(
+      "/appointment/status",
+      { id, statusName: toStatusName(status) },
     )
-    if (response.status === 200 && response.data) {
-      return fromApiAppointment(response.data as unknown as ApiAppointmentItem)
+    if (response.status === 200) {
+      const data = response.data as unknown
+      return typeof data === "string" ? data : id
     }
     return null
   } catch {

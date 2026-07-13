@@ -40,6 +40,8 @@ export type ObjectiveStatus = "not_started" | "in_progress" | "mastered"
 export interface DataCollectionObjectiveData {
   recordId?: string
   name: string
+  statusId?: string
+  status?: string
   startDate: string
   estimatedEndDate: string
   endDate: string

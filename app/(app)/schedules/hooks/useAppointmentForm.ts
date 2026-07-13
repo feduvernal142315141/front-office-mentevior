@@ -12,6 +12,7 @@ import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { getClientAddressById } from "@/lib/modules/client-addresses/services/client-addresses.service"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useAppointmentConfig } from "@/lib/modules/appointment-config/hooks/use-appointment-config"
 import { useAlert } from "@/lib/contexts/alert-context"
 import {
   appointmentToFormData,
@@ -99,6 +100,10 @@ export function useAppointmentForm({
         : ""
   const isRbt = normalizedRole.includes("rbt")
 
+  // Check if the Session event config allows supervision as a sub-event
+  const { config: appointmentConfig } = useAppointmentConfig()
+  const canAddSupervision = !isRbt && appointmentConfig?.allowedSubEvents === "supervision"
+
   const {
     clients,
     isLoading: clientsLoading,
@@ -128,7 +133,7 @@ export function useAppointmentForm({
     billingCodes: supervisionBillingCodes,
     isLoading: supervisionBillingCodesLoading,
   } = useApprovedBillingCodes(
-    formData.addSupervision && formData.eventType === "service_plan" ? formData.clientId || null : null,
+    formData.addSupervision && formData.eventType === "session_note" ? formData.clientId || null : null,
     "Supervision",
   )
 
@@ -467,7 +472,7 @@ export function useAppointmentForm({
       priorAuthorizationId: "",
       approvedPriorAuthorizationBillingCodeId: "",
       validatedUnits: null,
-      ...(formData.eventType !== "service_plan"
+      ...(formData.eventType !== "session_note"
         ? {
             addSupervision: false,
             supervision: createEmptySupervisionForm(),
@@ -559,7 +564,7 @@ export function useAppointmentForm({
 
   const supervisionValidateKey = useRef("")
   useEffect(() => {
-    if (!formData.addSupervision || formData.eventType !== "service_plan") return
+    if (!formData.addSupervision || formData.eventType !== "session_note") return
 
     const { clientId } = formData
     const { billingCodeId, startTime, endTime, date } = formData.supervision
@@ -761,6 +766,7 @@ export function useAppointmentForm({
     supervisionDurationMinutes,
     supervisionBillableUnits,
     isRbt,
+    canAddSupervision,
     isEditing,
     handleSubmit,
     handleDelete,

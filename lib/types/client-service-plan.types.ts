@@ -10,13 +10,26 @@ export interface ClientServicePlan {
   categories: string[]
 }
 
+export interface CategoryBillingCode {
+  id: string
+  type: string
+  code: string
+  modifier: string | null
+}
+
 export interface ClientServicePlanCategorySummary {
   id: string
   categoryId: string
   categoryName: string
+  typeEventCatalogId?: string
+  typeEventCatalogName?: string
+  unitMeasurementCatalogId?: string
+  unitMeasurementCatalogName?: string
   canEdit?: boolean
   totalItems: number
   hasDataCollection?: boolean
+  billingCodes?: CategoryBillingCode[]
+  levels?: Array<{ id: string; level: string; description: string }>
 }
 
 export interface ClientServicePlanItemBaseline {
@@ -31,6 +44,8 @@ export interface ClientServicePlanItemBaseline {
 export interface ClientServicePlanItemObjective {
   id: string
   name: string
+  statusId?: string
+  status?: string
   startDate: string
   estimatedEndDate: string | null
   endDate: string

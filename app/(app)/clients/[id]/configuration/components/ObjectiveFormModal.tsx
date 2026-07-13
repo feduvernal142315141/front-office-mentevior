@@ -43,6 +43,8 @@ export interface ObjectiveRow {
   localId: string
   recordId?: string
   name: string
+  statusId?: string
+  status?: string
   startDate: string
   estimatedEndDate: string
   endDate: string

@@ -69,16 +69,20 @@ export function RateChart({
 
   // ─── Phase markers ─────────────────────────────────────────────────────
 
-  const treatmentDateLabel = useMemo(() => {
+  const treatmentStartDate = useMemo(() => {
     const objs = itemObjectives ?? []
     if (objs.length === 0) return null
     const sorted = [...objs]
       .filter((o) => o.startDate)
       .sort((a, b) => parseLocalDate(a.startDate).getTime() - parseLocalDate(b.startDate).getTime())
     if (sorted.length === 0) return null
-    const date = parseLocalDate(sorted[0].startDate)
-    return isAggregated ? dateToPeriodLabel(date, interval) : format(date, labelFormat)
-  }, [itemObjectives, isAggregated, interval])
+    return parseLocalDate(sorted[0].startDate)
+  }, [itemObjectives])
+
+  const treatmentDateLabel = useMemo(() => {
+    if (!treatmentStartDate) return null
+    return isAggregated ? dateToPeriodLabel(treatmentStartDate, interval) : format(treatmentStartDate, labelFormat)
+  }, [treatmentStartDate, isAggregated, interval, labelFormat])
 
   const stoPhases = useMemo(() => {
     const objs = itemObjectives ?? []
@@ -159,8 +163,10 @@ export function RateChart({
       const entry = entries[key]
       const bl = baselineMap.get(key)
       const isBaselineDay = baselineDateKeys.has(key)
+      const isBeforeTreatment = treatmentStartDate ? day.getTime() < treatmentStartDate.getTime() : false
+      const isBaselinePhase = isBaselineDay || isBeforeTreatment
       const hasData = entry && entry.occurrences > 0
-      const occurrences = isBaselineDay ? null : (hasData ? entry.occurrences : null)
+      const occurrences = isBaselinePhase ? null : (hasData ? entry.occurrences : null)
 
       // Calculate rate from appointment duration
       let rate: number | null = null
@@ -175,7 +181,9 @@ export function RateChart({
         }
       }
 
-      const liveBaselineValue = isBaselineDay ? (hasData ? entry.occurrences : (bl?.value ?? null)) : null
+      const liveBaselineValue = isBaselinePhase
+        ? (hasData ? entry.occurrences : (bl?.value ?? null))
+        : null
 
       return {
         dateKey: key,
@@ -185,12 +193,12 @@ export function RateChart({
         baselineValue: liveBaselineValue,
         hasNote: (entry?.environmentalNote ?? "").trim().length > 0 || (isBaselineDay && (bl?.note ?? "").trim().length > 0),
         note: (entry?.environmentalNote ?? "").trim().length > 0 ? entry.environmentalNote : (bl?.note ?? ""),
-        isBaseline: isBaselineDay,
+        isBaseline: isBaselinePhase,
         occurrences,
         duration,
       }
     })
-  }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, appointmentsByDate, unitOfTime])
+  }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, appointmentsByDate, unitOfTime, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 

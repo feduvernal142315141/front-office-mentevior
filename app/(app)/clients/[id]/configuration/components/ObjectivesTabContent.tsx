@@ -41,6 +41,14 @@ interface ObjectivesTabContentProps {
 }
 
 function computeStatus(obj: ObjectiveRow): ObjectiveStatus {
+  // Use server-provided status when available
+  if (obj.status) {
+    const normalized = obj.status.replace(/[\s_-]/g, "").toLowerCase()
+    if (normalized === "mastered") return "mastered"
+    if (normalized === "inprogress") return "in_progress"
+    if (normalized === "notstarted") return "not_started"
+  }
+  // Fallback to date-based computation
   if (obj.endDate) return "mastered"
   if (!obj.startDate) return "not_started"
   const today = new Date()

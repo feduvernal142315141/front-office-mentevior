@@ -60,16 +60,21 @@ export function FrequencyChart({
 
   // ─── Phase markers (treatment + STO lines) ─────────────────────────────
 
-  const treatmentDateLabel = useMemo(() => {
+  // Treatment start = first STO startDate (STO1)
+  const treatmentStartDate = useMemo(() => {
     const objs = itemObjectives ?? []
     if (objs.length === 0) return null
     const sorted = [...objs]
       .filter((o) => o.startDate)
       .sort((a, b) => parseLocalDate(a.startDate).getTime() - parseLocalDate(b.startDate).getTime())
     if (sorted.length === 0) return null
-    const date = parseLocalDate(sorted[0].startDate)
-    return isAggregated ? dateToPeriodLabel(date, interval) : format(date, labelFormat)
-  }, [itemObjectives, labelFormat, isAggregated, interval])
+    return parseLocalDate(sorted[0].startDate)
+  }, [itemObjectives])
+
+  const treatmentDateLabel = useMemo(() => {
+    if (!treatmentStartDate) return null
+    return isAggregated ? dateToPeriodLabel(treatmentStartDate, interval) : format(treatmentStartDate, labelFormat)
+  }, [treatmentStartDate, labelFormat, isAggregated, interval])
 
   const stoPhases = useMemo(() => {
     const objs = itemObjectives ?? []
@@ -148,21 +153,31 @@ export function FrequencyChart({
       const entry = entries[key]
       const bl = baselineMap.get(key)
       const isBaselineDay = baselineDateKeys.has(key)
+      // Any date before STO1 startDate is considered part of the baseline phase
+      const isBeforeTreatment = treatmentStartDate ? day.getTime() < treatmentStartDate.getTime() : false
+      const isBaselinePhase = isBaselineDay || isBeforeTreatment
       const hasData = entry && entry.occurrences > 0
-      const liveBaselineValue = isBaselineDay ? (hasData ? entry.occurrences : (bl?.value ?? null)) : null
+
+      // Baseline value: show for baseline records AND any data before treatment start
+      const liveBaselineValue = isBaselinePhase
+        ? (hasData ? entry.occurrences : (bl?.value ?? null))
+        : null
+
+      // Treatment value: only show for dates ON or AFTER treatment start and not baseline records
+      const treatmentValue = !isBaselinePhase && hasData ? entry.occurrences : null
 
       return {
         dateKey: key,
         dateLabel: format(day, labelFormat),
         fullDate: format(day, "EEEE, MMM dd yyyy"),
-        occurrences: isBaselineDay ? null : (hasData ? entry.occurrences : null),
+        occurrences: treatmentValue,
         baselineValue: liveBaselineValue,
         hasNote: (entry?.environmentalNote ?? "").trim().length > 0 || (isBaselineDay && (bl?.note ?? "").trim().length > 0),
         note: (entry?.environmentalNote ?? "").trim().length > 0 ? entry.environmentalNote : (bl?.note ?? ""),
-        isBaseline: isBaselineDay,
+        isBaseline: isBaselinePhase,
       }
     })
-  }, [days, entries, baselines, labelFormat, isAggregated, aggregatedData, gapDateKeys])
+  }, [days, entries, baselines, labelFormat, isAggregated, aggregatedData, gapDateKeys, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 

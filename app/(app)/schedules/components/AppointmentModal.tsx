@@ -94,6 +94,7 @@ export function AppointmentModal({
     durationMinutes,
     billableUnits,
     isRbt,
+    canAddSupervision,
     isEditing,
     handleSubmit,
     handleDelete,
@@ -270,6 +271,7 @@ export function AppointmentModal({
                   hasError={!!errors.endTime || !!validationError}
                   required
                   allowManualInput
+                  defaultPeriod="PM"
                 />
                 <FieldError message={errors.endTime} />
               </div>
@@ -346,12 +348,12 @@ export function AppointmentModal({
           )}
         </Field>
 
-        {/* Supervision — compact card + secondary modal */}
-        {!isRbt && formData.eventType === "service_plan" && (
+        {/* Supervision — compact card + secondary modal (only if config allows supervision sub-event) */}
+        {canAddSupervision && formData.eventType === "session_note" && (
           <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-3">
             <PremiumSwitch
               label="Add Supervision"
-              description="Schedule a supervision session alongside this Service Plan event"
+              description="Schedule a supervision session alongside this Session event"
               checked={formData.addSupervision}
               onCheckedChange={(v) => {
                 updateField("addSupervision", v)

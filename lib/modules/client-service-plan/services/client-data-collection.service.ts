@@ -122,6 +122,8 @@ function normalizeBaselines(raw: unknown): DataCollectionBaselineData[] {
 interface ApiObjective {
   id?: string
   name?: string
+  statusId?: string
+  status?: string
   startDate?: string
   estimatedEndDate?: string
   endDate?: string
@@ -141,6 +143,8 @@ function normalizeObjectives(raw: unknown): DataCollectionObjectiveData[] {
       return {
         recordId: asOptionalString(o.id),
         name: asString(o.name),
+        statusId: asOptionalString(o.statusId),
+        status: asOptionalString(o.status),
         startDate: asString(o.startDate),
         estimatedEndDate: asString(o.estimatedEndDate),
         endDate: asString(o.endDate),

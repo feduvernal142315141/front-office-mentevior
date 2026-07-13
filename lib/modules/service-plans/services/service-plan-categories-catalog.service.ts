@@ -4,14 +4,29 @@ import {
   resolveCategoryIdFromUnknown,
 } from "@/lib/modules/service-plans/constants/service-plan-categories"
 
+export interface CategoryBillingCodePayload {
+  type: string
+  code: string
+  modifier?: string | null
+}
+
+export interface CategoryBillingCodeResponse {
+  id: string
+  type: string
+  code: string
+  modifier: string | null
+}
+
 export interface ServicePlanCategoryCatalogOption {
   value: string
   label: string
   canEdit?: boolean
+  billingCodes?: CategoryBillingCodeResponse[]
 }
 
 interface CreateServicePlanCategoryPayload {
   name: string
+  billingCodes?: CategoryBillingCodePayload[]
 }
 
 interface CreateServicePlanCategoryResult {
@@ -22,6 +37,7 @@ interface CreateServicePlanCategoryResult {
 interface UpdateServicePlanCategoryPayload {
   id: string
   name: string
+  billingCodes?: CategoryBillingCodePayload[]
 }
 
 function asString(value: unknown): string {
@@ -70,10 +86,26 @@ function normalizeCategoryEntry(entry: unknown): ServicePlanCategoryCatalogOptio
 
   if (value.length === 0) return null
 
+  const billingCodesRaw = raw.billingCodes ?? raw.billing_codes
+  const billingCodes = Array.isArray(billingCodesRaw)
+    ? billingCodesRaw
+        .filter((bc) => bc && typeof bc === "object")
+        .map((bc) => {
+          const item = bc as Record<string, unknown>
+          return {
+            id: asString(item.id),
+            type: asString(item.type),
+            code: asString(item.code),
+            modifier: item.modifier != null ? asString(item.modifier) : null,
+          }
+        })
+    : undefined
+
   return {
     value,
     label: label.length > 0 ? label : value,
     canEdit: Boolean(raw.canEdit ?? raw.can_edit),
+    billingCodes,
   }
 }
 
@@ -152,7 +184,8 @@ export async function getServicePlanCategoriesCatalog(): Promise<ServicePlanCate
 }
 
 export async function createServicePlanCategory(
-  name: string
+  name: string,
+  billingCodes?: CategoryBillingCodePayload[],
 ): Promise<CreateServicePlanCategoryResult> {
   const normalizedName = name.trim()
 
@@ -160,9 +193,12 @@ export async function createServicePlanCategory(
     throw new Error("Category name is required")
   }
 
-  const response = await servicePost<CreateServicePlanCategoryPayload, unknown>("/category", {
-    name: normalizedName,
-  })
+  const payload: CreateServicePlanCategoryPayload = { name: normalizedName }
+  if (billingCodes && billingCodes.length > 0) {
+    payload.billingCodes = billingCodes
+  }
+
+  const response = await servicePost<CreateServicePlanCategoryPayload, unknown>("/category", payload)
 
   if (response.status === 200 || response.status === 201) {
     const normalizedResponse = normalizeResponseCategory(response.data)
@@ -188,7 +224,8 @@ export async function createServicePlanCategory(
 
 export async function updateServicePlanCategory(
   id: string,
-  name: string
+  name: string,
+  billingCodes?: CategoryBillingCodePayload[],
 ): Promise<ServicePlanCategoryCatalogOption | null> {
   const normalizedId = id.trim()
   const normalizedName = name.trim()
@@ -201,10 +238,12 @@ export async function updateServicePlanCategory(
     throw new Error("Category name is required")
   }
 
-  const response = await servicePut<UpdateServicePlanCategoryPayload, unknown>("/category", {
-    id: normalizedId,
-    name: normalizedName,
-  })
+  const payload: UpdateServicePlanCategoryPayload = { id: normalizedId, name: normalizedName }
+  if (billingCodes) {
+    payload.billingCodes = billingCodes
+  }
+
+  const response = await servicePut<UpdateServicePlanCategoryPayload, unknown>("/category", payload)
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
     throw new Error(getResponseErrorMessage(response.data) || "Failed to update category")

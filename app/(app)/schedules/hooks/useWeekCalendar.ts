@@ -29,6 +29,7 @@ import { getAppointmentById } from "@/lib/modules/schedules/services/appointment
 import { getWeekDays, getWeekStart } from "@/lib/date"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { matchesLocationFilter } from "@/lib/modules/schedules/utils/schedule-display"
+import { updateAppointmentStatus } from "@/lib/modules/schedules/services/appointments.service"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export type CalendarScope = "provider" | "agency"
@@ -183,6 +184,34 @@ export function useWeekCalendar({
   useEffect(() => {
     setError(fetchError?.message ?? null)
   }, [fetchError, setError])
+
+  // ─── Auto-status: Scheduled→InProgress when time arrives, InProgress→Completed when time expires ───
+  useEffect(() => {
+    const autoTransition = () => {
+      const now = new Date()
+      const currentAppointments = useAppointments.getState().appointments
+
+      for (const apt of currentAppointments) {
+        if (apt.status === "Cancelled" || apt.status === "NoShow" || apt.status === "Completed") continue
+
+        const start = parseISO(apt.startsAt)
+        const end = parseISO(apt.endsAt)
+
+        if (apt.status === "Scheduled" && now >= start) {
+          updateAppointment(apt.id, { status: "InProgress" })
+          void updateAppointmentStatus(apt.id, "InProgress")
+        } else if (apt.status === "InProgress" && now >= end) {
+          updateAppointment(apt.id, { status: "Completed" })
+          void updateAppointmentStatus(apt.id, "Completed")
+        }
+      }
+    }
+
+    // Run immediately on load and then every 60 seconds
+    autoTransition()
+    const interval = setInterval(autoTransition, 60_000)
+    return () => clearInterval(interval)
+  }, [appointments, updateAppointment])
 
   const displayDays = useMemo(
     () => (isMobile ? [weekDays[selectedDay]] : weekDays),

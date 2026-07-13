@@ -60,14 +60,18 @@ export function DurationChart({
   const isAggregated = interval !== ChartInterval.DAILY && interval !== ChartInterval.SESSION && !!aggregatedData
 
   // Phase markers
-  const treatmentDateLabel = useMemo(() => {
+  const treatmentStartDate = useMemo(() => {
     const objs = itemObjectives ?? []
     if (objs.length === 0) return null
     const sorted = [...objs].filter((o) => o.startDate).sort((a, b) => parseLocalDate(a.startDate).getTime() - parseLocalDate(b.startDate).getTime())
     if (sorted.length === 0) return null
-    const date = parseLocalDate(sorted[0].startDate)
-    return isAggregated ? dateToPeriodLabel(date, interval) : format(date, labelFormat)
-  }, [itemObjectives, isAggregated, interval])
+    return parseLocalDate(sorted[0].startDate)
+  }, [itemObjectives])
+
+  const treatmentDateLabel = useMemo(() => {
+    if (!treatmentStartDate) return null
+    return isAggregated ? dateToPeriodLabel(treatmentStartDate, interval) : format(treatmentStartDate, labelFormat)
+  }, [treatmentStartDate, isAggregated, interval, labelFormat])
 
   const stoPhases = useMemo(() => {
     const objs = itemObjectives ?? []
@@ -118,19 +122,23 @@ export function DurationChart({
       const entry = entries[key]
       const bl = baselineMap.get(key)
       const isBaselineDay = baselineDateKeys.has(key)
+      const isBeforeTreatment = treatmentStartDate ? day.getTime() < treatmentStartDate.getTime() : false
+      const isBaselinePhase = isBaselineDay || isBeforeTreatment
       const hasData = entry && entry.occurrences > 0
-      const liveBaselineValue = isBaselineDay ? (hasData ? entry.occurrences : (bl?.value ?? null)) : null
+      const liveBaselineValue = isBaselinePhase
+        ? (hasData ? entry.occurrences : (bl?.value ?? null))
+        : null
 
       return {
         dateKey: key, dateLabel: format(day, labelFormat), fullDate: format(day, "EEEE, MMM dd yyyy"),
-        value: isBaselineDay ? null : (hasData ? entry.occurrences : null),
+        value: isBaselinePhase ? null : (hasData ? entry.occurrences : null),
         baselineValue: liveBaselineValue,
         hasNote: (entry?.environmentalNote ?? "").trim().length > 0 || (isBaselineDay && (bl?.note ?? "").trim().length > 0),
         note: (entry?.environmentalNote ?? "").trim().length > 0 ? entry.environmentalNote : (bl?.note ?? ""),
-        isBaseline: isBaselineDay,
+        isBaseline: isBaselinePhase,
       }
     })
-  }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys])
+  }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 
