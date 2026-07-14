@@ -240,10 +240,10 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
 
       {/* ─── Grid ─── */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-[45vh]">
           <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
-            {/* Column Headers */}
-            <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
+            {/* Column Headers — sticky on vertical scroll */}
+            <div className="grid border-b border-slate-100 sticky top-0 z-10 bg-white" style={{ gridTemplateColumns: gridCols }}>
               <div className="px-4 py-3 bg-slate-50/60 border-r border-slate-100">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Measurement Row

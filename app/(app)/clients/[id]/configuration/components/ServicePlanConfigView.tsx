@@ -99,10 +99,11 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
     [selectedItemDetail, guardedAction, setActiveCategoryId]
   )
 
-  // Clear item detail when category changes
+  // Clear item detail and dirty state when category changes
   useEffect(() => {
     setSelectedItemDetail(null)
-  }, [activeCategoryId])
+    handleItemDirtyChange(false)
+  }, [activeCategoryId, handleItemDirtyChange])
 
   // Auto-open item from Data Collection navigation
   useEffect(() => {
@@ -160,7 +161,8 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
   // Back from item detail → return to items list
   const handleItemDetailBack = useCallback(() => {
     setSelectedItemDetail(null)
-  }, [])
+    handleItemDirtyChange(false)
+  }, [handleItemDirtyChange])
 
   // Item detail saved → reload and go back
   const handleItemDetailSaved = useCallback(() => {

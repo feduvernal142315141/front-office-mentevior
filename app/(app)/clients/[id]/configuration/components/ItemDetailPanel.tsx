@@ -288,13 +288,15 @@ export function ItemDetailPanel({
   const baselinesSnapshotRef = useRef("")
   const objectivesSnapshotRef = useRef("")
 
-  // Take snapshot when data loads
+  // Take snapshot AFTER data is fully loaded and form is reset
   useEffect(() => {
-    baselinesSnapshotRef.current = JSON.stringify(baselines.map(({ localId, ...b }) => b))
-  }, [isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    objectivesSnapshotRef.current = JSON.stringify(objectives.map(({ localId, ...o }) => o))
+    if (isLoading) return
+    // Delay snapshot to next tick so reset() has taken effect
+    const timer = setTimeout(() => {
+      baselinesSnapshotRef.current = JSON.stringify(baselines.map(({ localId, ...b }) => b))
+      objectivesSnapshotRef.current = JSON.stringify(objectives.map(({ localId, ...o }) => o))
+    }, 0)
+    return () => clearTimeout(timer)
   }, [isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasBaselineChanges = useMemo(() => {
