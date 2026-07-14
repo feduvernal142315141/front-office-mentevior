@@ -31,10 +31,11 @@ import { usePermission } from "@/lib/hooks/use-permission"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { isToday, formatWeekRange } from "@/lib/date"
-import { SearchInput } from "@/components/custom/SearchInput"
 import { FilterSelect } from "@/components/custom/FilterSelect"
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { Card } from "@/components/custom/Card"
 import { cn } from "@/lib/utils"
+import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import type { AppointmentStatus } from "@/lib/types/appointment.types"
 
 
@@ -72,6 +73,7 @@ export function WeekCalendar({
   const canCreate = canCreateSession(PermissionModule.SCHEDULE)
   const isAgency = scope === "agency"
   const { users: allUsers } = useUsers({ pageSize: 100 })
+  const { clients } = useClients({ page: 0, pageSize: 200 })
 
   // Only show users that have a role (not clients) and are active
   const providerFilterOptions = useMemo(() => {
@@ -80,6 +82,13 @@ export function WeekCalendar({
       .map((u) => ({ value: u.id, label: u.fullName }))
     return [{ value: "all", label: "All Providers" }, ...validProviders]
   }, [allUsers])
+
+  const clientFilterOptions = useMemo(() => {
+    const clientOpts = clients
+      .filter((c) => c.fullName)
+      .map((c) => ({ value: c.id, label: c.fullName }))
+    return [{ value: "all", label: "All Clients" }, ...clientOpts]
+  }, [clients])
   
   const {
     weekStart,
@@ -91,7 +100,7 @@ export function WeekCalendar({
     showDuplicateModal,
     modalDefaults,
     contextMenu,
-    searchQuery,
+    filterClient,
     filterStatus,
     filterLocation,
     filterProvider,
@@ -214,10 +223,12 @@ export function WeekCalendar({
         <Card variant="elevated" padding="md">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
-              <SearchInput
-                value={searchQuery}
-                onChange={actions.setSearchQuery}
-                placeholder="Search by client name..."
+              <FloatingSelect
+                label="Client"
+                value={filterClient}
+                onChange={actions.setFilterClient}
+                options={clientFilterOptions}
+                searchable
               />
             </div>
 
@@ -235,11 +246,11 @@ export function WeekCalendar({
               placeholder="All Status"
             />
 
-            {(searchQuery || filterStatus !== "all" || filterProvider !== "all") && (
+            {(filterClient !== "all" || filterStatus !== "all" || filterProvider !== "all") && (
               <Button
                 variant="ghost"
                 onClick={() => {
-                  actions.setSearchQuery("")
+                  actions.setFilterClient("all")
                   actions.setFilterStatus("all")
                   actions.setFilterProvider("all")
                 }}

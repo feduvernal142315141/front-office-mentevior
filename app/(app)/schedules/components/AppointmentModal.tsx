@@ -1,44 +1,29 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { format, parseISO } from "date-fns"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
-import { SupervisionConfigModal } from "./SupervisionConfigModal"
 import {
   Clock,
-  Zap,
-  Users,
-  Pencil,
-  ChevronRight,
+  Shield,
   AlertTriangle,
   ExternalLink,
 } from "lucide-react"
 import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
 import { useAppointmentForm } from "../hooks/useAppointmentForm"
 import { useAlert } from "@/lib/contexts/alert-context"
+import { useApprovedBillingCodes } from "@/lib/modules/schedules/hooks/use-approved-billing-codes"
 import { formatDuration } from "@/lib/utils/unit-calculation"
 import { cn } from "@/lib/utils"
 
-// ============================================
-// Event type options
-// ============================================
-
-// Supervision is no longer a top-level event type — it is configured as a
-// sub-event of Service Plan via the "Add Supervision" toggle below.
 const EVENT_TYPES: Array<{ value: EventType; label: string }> = [
   { value: "session_note", label: "Session" },
   { value: "service_plan", label: "Service Plan" },
 ]
-
-// ============================================
-// Component
-// ============================================
 
 interface AppointmentModalProps {
   open: boolean
@@ -63,19 +48,18 @@ export function AppointmentModal({
   onStatusChange,
   onSaved,
 }: AppointmentModalProps) {
-  const alert = useAlert()
   const router = useRouter()
-  const [showSupervisionModal, setShowSupervisionModal] = useState(false)
 
   const {
     formData,
     updateField,
-    setSupervisionData,
+    updateSupervisionField,
     isSupervisionConfigured,
     errors,
     validationError,
     supervisionValidationError,
     isValidatingMain,
+    isValidatingSupervision,
     clientOptions,
     clientsLoading,
     clientsError,
@@ -84,22 +68,16 @@ export function AppointmentModal({
     billingCodeOptions,
     mainBillingCodesLoading,
     mainBillingCodesError,
-    supervisionCodeOptions,
-    supervisionBillingCodesLoading,
     priorAuthorizationOptions,
-    supervisionPriorAuthorizationOptions,
-    isLoadingPriorAuthLabel,
-    isValidatingSupervision,
     rbtOptions,
     rbtProvidersLoading,
-    rbtProvidersError,
     durationMinutes,
     billableUnits,
-    isRbt,
+    supervisionDurationMinutes,
+    supervisionBillableUnits,
     canAddSupervision,
     isEditing,
     handleSubmit,
-    handleDelete,
     isSubmitting,
     hasPriorAuthWithoutCodes,
   } = useAppointmentForm({
@@ -111,29 +89,31 @@ export function AppointmentModal({
     onSuccess: onSaved ?? onClose,
   })
 
-  const rbtLabel =
-    rbtOptions.find((o) => o.value === formData.supervision.providerId)?.label ?? ""
-  const supervisionBillingLabel =
-    supervisionCodeOptions.find((o) => o.value === formData.supervision.billingCodeId)?.label ?? ""
+  // Supervision billing codes — fetched internally
+  const {
+    billingCodes: supervisionBillingCodes,
+    priorAuthorization: supervisionPriorAuth,
+    isLoading: supervisionBillingCodesLoading,
+  } = useApprovedBillingCodes(
+    formData.addSupervision && formData.clientId ? formData.clientId : null,
+    "Supervision",
+  )
 
-  const supervisionSummary = isSupervisionConfigured
-    ? [
-        formData.supervision.title,
-        rbtLabel,
-        formData.supervision.date
-          ? format(parseISO(formData.supervision.date), "MMM d")
-          : "",
-        formData.supervision.startTime && formData.supervision.endTime
-          ? `${formData.supervision.startTime}–${formData.supervision.endTime}`
-          : "",
-        supervisionBillingLabel,
-      ]
-        .filter(Boolean)
-        .join(" · ")
-    : ""
+  const supervisionCodeOptions = supervisionBillingCodes.map((bc) => ({
+    value: bc.id,
+    label: bc.label,
+  }))
+
+  const supervisionPALabel = (() => {
+    if (formData.supervision.priorAuthorizationId) {
+      return supervisionPriorAuth?.authNumber
+        ? `# ${supervisionPriorAuth.authNumber}`
+        : "Prior authorization"
+    }
+    return ""
+  })()
 
   return (
-    <>
     <CustomModal
       open={open}
       onOpenChange={(next) => {
@@ -146,10 +126,10 @@ export function AppointmentModal({
       contentClassName="!overflow-visible"
     >
       {/* Body */}
-      <form onSubmit={handleSubmit} className="px-7 py-6 space-y-6">
+      <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5">
 
         {/* Event Type — segmented control */}
-        <Field>
+        <div>
           <FieldLabel>Event Type</FieldLabel>
           <div className="inline-flex w-full gap-1 rounded-2xl border border-slate-200/70 bg-slate-100/70 p-1">
             {EVENT_TYPES.map((et) => {
@@ -171,11 +151,11 @@ export function AppointmentModal({
               )
             })}
           </div>
-        </Field>
+        </div>
 
-        {/* Client + Address — two columns on wide screens */}
+        {/* Client + Address */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field>
+          <div>
             <FloatingSelect
               label="Client"
               value={formData.clientId}
@@ -186,16 +166,12 @@ export function AppointmentModal({
               searchable
               disabled={clientsLoading}
             />
-            {clientsLoading && (
-              <p className="mt-1.5 text-xs text-slate-400">Loading clients…</p>
-            )}
-            {clientsError && (
-              <p className="mt-1.5 text-xs text-red-500">{clientsError.message}</p>
-            )}
+            {clientsLoading && <Hint>Loading clients…</Hint>}
+            {clientsError && <HintError>{clientsError.message}</HintError>}
             <FieldError message={errors.clientId} />
-          </Field>
+          </div>
 
-          <Field>
+          <div>
             <FloatingSelect
               label="Address"
               value={formData.placeOfServiceAddressId}
@@ -203,20 +179,16 @@ export function AppointmentModal({
               options={addressOptions}
               hasError={!!errors.placeOfServiceAddressId}
               required
-              disabled={
-                addressesLoading ||
-                (!formData.clientId && !formData.placeOfServiceAddressId)
-              }
+              disabled={addressesLoading || (!formData.clientId && !formData.placeOfServiceAddressId)}
             />
-            {!formData.clientId && !formData.placeOfServiceAddressId ? (
-              <p className="mt-1.5 text-xs italic text-slate-400">Select a client first</p>
-            ) : (
-              <FieldError message={errors.placeOfServiceAddressId} />
-            )}
-          </Field>
+            {!formData.clientId && !formData.placeOfServiceAddressId
+              ? <Hint className="italic">Select a client first</Hint>
+              : <FieldError message={errors.placeOfServiceAddressId} />
+            }
+          </div>
         </div>
 
-        {/* Warning: PA exists but no billing codes for this event type */}
+        {/* Warning: PA exists but no billing codes */}
         {hasPriorAuthWithoutCodes && (
           <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
@@ -226,7 +198,7 @@ export function AppointmentModal({
                 {EVENT_TYPES.find((et) => et.value === formData.eventType)?.label ?? formData.eventType}
               </p>
               <p className="mt-0.5 text-xs text-amber-600">
-                The client has an active Prior Authorization but no billing codes for this event type. Please configure them in the client&apos;s Prior Authorization.
+                The client has an active Prior Authorization but no billing codes for this event type.
               </p>
               <button
                 type="button"
@@ -240,183 +212,169 @@ export function AppointmentModal({
           </div>
         )}
 
-        {/* Date & Time */}
-        <Field>
-          <FieldLabel>Date &amp; Time</FieldLabel>
-          <div className="space-y-3">
-            <PremiumDatePicker
-              label="Date"
-              value={formData.date}
-              onChange={(v) => updateField("date", v)}
-              onClear={() => updateField("date", "")}
-              hasError={!!errors.date}
-              errorMessage={errors.date}
-              required
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <FloatingTimePicker
-                  label="Start Time"
-                  value={formData.startTime}
-                  onChange={(v) => updateField("startTime", v)}
-                  hasError={!!errors.startTime || !!validationError}
-                  required
-                  allowManualInput
-                />
-                <FieldError message={errors.startTime} />
-              </div>
-              <div>
-                <FloatingTimePicker
-                  label="End Time"
-                  value={formData.endTime}
-                  onChange={(v) => updateField("endTime", v)}
-                  hasError={!!errors.endTime || !!validationError}
-                  required
-                  allowManualInput
-                  defaultPeriod="PM"
-                />
-                <FieldError message={errors.endTime} />
-              </div>
-            </div>
-
-            <FieldError message={validationError || errors.timeRange} />
-
-            {/* Duration & Units — read-only summary */}
-            {durationMinutes > 0 && (
-              <div className="flex flex-wrap items-center gap-4 rounded-xl border border-[#037ECC]/15 bg-gradient-to-br from-[#037ECC]/[0.06] to-[#079CFB]/[0.04] px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-[#037ECC]" />
-                  <span className="text-sm text-slate-600">
-                    Duration:{" "}
-                    <span className="font-semibold text-slate-900">
-                      {formatDuration(durationMinutes)}
-                    </span>
-                  </span>
-                </div>
-                <div className="h-4 w-px bg-[#037ECC]/20" />
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-[#037ECC]" />
-                  <span className="text-sm text-slate-600">
-                    Units:{" "}
-                    <span className="font-semibold text-[#037ECC]">
-                      {isValidatingMain ? "…" : billableUnits}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </Field>
-
-        {/* Billing Code */}
-        <Field>
-          <FloatingSelect
-            label="Billing Code"
-            value={formData.billingCodeId}
-            onChange={(v) => updateField("billingCodeId", v)}
-            options={billingCodeOptions}
-            hasError={!!errors.billingCodeId}
+        {/* Date + Billing Code — side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <PremiumDatePicker
+            label="Date"
+            value={formData.date}
+            onChange={(v) => updateField("date", v)}
+            onClear={() => updateField("date", "")}
+            hasError={!!errors.date}
+            errorMessage={errors.date}
             required
-            searchable
-            dropdownPosition="bottom"
-            disabled={!formData.clientId || mainBillingCodesLoading}
           />
-          {mainBillingCodesLoading && (
-            <p className="mt-1.5 text-xs text-slate-400">Loading billing codes…</p>
-          )}
-          {mainBillingCodesError && (
-            <p className="mt-1.5 text-xs text-red-500">{mainBillingCodesError.message}</p>
-          )}
-          <FieldError message={errors.billingCodeId} />
-        </Field>
+          <div>
+            <FloatingSelect
+              label="Billing Code"
+              value={formData.billingCodeId}
+              onChange={(v) => updateField("billingCodeId", v)}
+              options={billingCodeOptions}
+              hasError={!!errors.billingCodeId}
+              required
+              searchable
+              dropdownPosition="bottom"
+              disabled={!formData.clientId || mainBillingCodesLoading}
+            />
+            {mainBillingCodesLoading && <Hint>Loading billing codes…</Hint>}
+            {mainBillingCodesError && <HintError>{mainBillingCodesError.message}</HintError>}
+            <FieldError message={errors.billingCodeId} />
+          </div>
+        </div>
 
-        {/* Prior Authorization — populated after validation */}
-        <Field>
-          <FloatingSelect
-            label="Prior Authorization"
-            value={formData.priorAuthorizationId}
-            onChange={() => {}}
-            options={priorAuthorizationOptions}
-            disabled
-            dropdownPosition="bottom"
+        {/* Start Time + End Time — each 50% */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <FloatingTimePicker
+              label="Start Time"
+              value={formData.startTime}
+              onChange={(v) => updateField("startTime", v)}
+              hasError={!!errors.startTime || !!validationError}
+              required
+              allowManualInput
+            />
+            <FieldError message={errors.startTime} />
+          </div>
+          <div>
+            <FloatingTimePicker
+              label="End Time"
+              value={formData.endTime}
+              onChange={(v) => updateField("endTime", v)}
+              hasError={!!errors.endTime || !!validationError}
+              required
+              allowManualInput
+              defaultPeriod="PM"
+            />
+            <FieldError message={errors.endTime} />
+          </div>
+        </div>
+        <FieldError message={validationError || errors.timeRange} />
+
+        {/* Summary bar: Session Duration | Prior Authorization */}
+        {durationMinutes > 0 && (
+          <SummaryBar
+            label="Session Duration"
+            duration={formatDuration(durationMinutes)}
+            priorAuth={
+              priorAuthorizationOptions.length > 0
+                ? priorAuthorizationOptions[0].label
+                : isValidatingMain
+                  ? "Validating…"
+                  : undefined
+            }
           />
-          {isValidatingMain && (
-            <p className="mt-1.5 text-xs text-slate-400">Validating prior authorization…</p>
-          )}
-          {!isValidatingMain && !formData.priorAuthorizationId && !validationError && (
-            <p className="mt-1.5 text-xs text-slate-400">
-              Assigned automatically after billing code and time are validated
-            </p>
-          )}
-        </Field>
+        )}
 
-        {/* Supervision — compact card + secondary modal (only if config allows supervision sub-event) */}
+        {/* ─── SUPERVISION (inline) ─── */}
         {canAddSupervision && formData.eventType === "session_note" && (
-          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-3">
+          <div className="rounded-2xl border border-indigo-200/60 bg-indigo-50/30 p-4 space-y-4">
             <PremiumSwitch
               label="Add Supervision"
               description="Schedule a supervision session alongside this Session event"
               checked={formData.addSupervision}
-              onCheckedChange={(v) => {
-                updateField("addSupervision", v)
-                if (v) setShowSupervisionModal(true)
-              }}
+              onCheckedChange={(v) => updateField("addSupervision", v)}
             />
 
             {formData.addSupervision && (
-              <div
-                className={cn(
-                  "flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors",
-                  isSupervisionConfigured
-                    ? "border-[#037ECC]/20 bg-white"
-                    : "border-amber-200/80 bg-amber-50/50",
+              <div className="space-y-4 pt-1">
+                {/* RBT + Supervision Billing Code */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <FloatingSelect
+                      label="RBT (Provider)"
+                      value={formData.supervision.providerId}
+                      onChange={(v) => updateSupervisionField("providerId", v)}
+                      options={rbtOptions}
+                      hasError={!!errors.supervisionRbtId}
+                      required
+                      searchable
+                      disabled={!formData.clientId || rbtProvidersLoading}
+                    />
+                    <FieldError message={errors.supervisionRbtId} />
+                  </div>
+                  <div>
+                    <FloatingSelect
+                      label="Supervision Billing Code"
+                      value={formData.supervision.billingCodeId}
+                      onChange={(v) => updateSupervisionField("billingCodeId", v)}
+                      options={supervisionCodeOptions}
+                      hasError={!!errors.supervisionBillingCodeId}
+                      required
+                      searchable
+                      dropdownPosition="bottom"
+                      disabled={supervisionBillingCodesLoading}
+                    />
+                    <FieldError message={errors.supervisionBillingCodeId} />
+                  </div>
+                </div>
+
+                {/* Supervision Date */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <PremiumDatePicker
+                    label="Supervision Date"
+                    value={formData.supervision.date}
+                    onChange={(v) => updateSupervisionField("date", v)}
+                    onClear={() => updateSupervisionField("date", "")}
+                    hasError={!!errors["supervision.date"]}
+                    required
+                  />
+                </div>
+
+                {/* Supervision Start + End — 50/50 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <FloatingTimePicker
+                      label="Start Time"
+                      value={formData.supervision.startTime}
+                      onChange={(v) => updateSupervisionField("startTime", v)}
+                      hasError={!!errors["supervision.startTime"] || !!supervisionValidationError}
+                      required
+                      allowManualInput
+                    />
+                  </div>
+                  <div>
+                    <FloatingTimePicker
+                      label="End Time"
+                      value={formData.supervision.endTime}
+                      onChange={(v) => updateSupervisionField("endTime", v)}
+                      hasError={!!errors["supervision.endTime"] || !!supervisionValidationError}
+                      required
+                      allowManualInput
+                      defaultPeriod="PM"
+                    />
+                  </div>
+                </div>
+                <FieldError message={supervisionValidationError || errors.supervisionTimeRange} />
+                <FieldError message={errors.supervisionConfig} />
+
+                {/* Supervision summary bar */}
+                {supervisionDurationMinutes > 0 && (
+                  <SummaryBar
+                    label="Supervision Duration"
+                    duration={formatDuration(supervisionDurationMinutes)}
+                    priorAuth={supervisionPALabel || (isValidatingSupervision ? "Validating…" : undefined)}
+                    variant="indigo"
+                  />
                 )}
-              >
-                <div
-                  className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                    isSupervisionConfigured
-                      ? "bg-[#037ECC]/10 text-[#037ECC]"
-                      : "bg-amber-100 text-amber-700",
-                  )}
-                >
-                  <Users className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {isSupervisionConfigured ? "Supervision configured" : "Supervision details needed"}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs text-slate-500">
-                    {isSupervisionConfigured
-                      ? supervisionSummary
-                      : "Set RBT, schedule, and billing code for the supervision session"}
-                  </p>
-                  {supervisionValidationError && (
-                    <p className="mt-1 text-xs text-red-500">{supervisionValidationError}</p>
-                  )}
-                  <FieldError message={errors.supervisionConfig} />
-                </div>
-
-                <Button
-                  type="button"
-                  variant={isSupervisionConfigured ? "secondary" : "primary"}
-                  className="h-9 shrink-0 gap-1.5 text-sm"
-                  onClick={() => setShowSupervisionModal(true)}
-                >
-                  {isSupervisionConfigured ? (
-                    <>
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </>
-                  ) : (
-                    <>
-                      Configure
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </>
-                  )}
-                </Button>
               </div>
             )}
           </div>
@@ -424,51 +382,27 @@ export function AppointmentModal({
       </form>
 
       {/* Footer */}
-      <div className="space-y-3 border-t border-slate-200/80 bg-white/70 px-7 py-4 rounded-b-2xl">
-        {/* Main actions */}
-        <div className="flex items-center justify-end">
-          <div className="flex gap-3">
-            <Button type="button" variant="secondary" onClick={onClose} className="h-10">
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              loading={isSubmitting}
-              className="h-10 min-w-[180px]"
-              onClick={handleSubmit}
-            >
-              {isEditing ? "Update" : "Create"} Session
-            </Button>
-          </div>
-        </div>
+      <div className="flex items-center justify-end gap-3 border-t border-slate-200/80 bg-white/70 px-7 py-4 rounded-b-2xl">
+        <Button type="button" variant="secondary" onClick={onClose} className="h-10">
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="primary"
+          loading={isSubmitting}
+          className="h-10 min-w-[180px]"
+          onClick={handleSubmit}
+        >
+          {isEditing ? "Update" : "Create"} Session
+        </Button>
       </div>
     </CustomModal>
-
-    <SupervisionConfigModal
-      open={showSupervisionModal}
-      onClose={() => setShowSupervisionModal(false)}
-      onSave={setSupervisionData}
-      initialData={formData.supervision}
-      clientId={formData.clientId}
-      mainDate={formData.date}
-      mainStartTime={formData.startTime}
-      mainEndTime={formData.endTime}
-      rbtOptions={rbtOptions}
-      rbtProvidersLoading={rbtProvidersLoading}
-      rbtProvidersError={rbtProvidersError}
-    />
-    </>
   )
 }
 
 // ============================================
-// Layout helpers
+// Shared sub-components
 // ============================================
-
-function Field({ children }: { children: React.ReactNode }) {
-  return <div>{children}</div>
-}
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -481,4 +415,50 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
   return <p className="mt-1.5 text-xs text-red-500">{message}</p>
+}
+
+function Hint({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <p className={cn("mt-1.5 text-xs text-slate-400", className)}>{children}</p>
+}
+
+function HintError({ children }: { children: React.ReactNode }) {
+  return <p className="mt-1.5 text-xs text-red-500">{children}</p>
+}
+
+function SummaryBar({
+  label,
+  duration,
+  priorAuth,
+  variant = "blue",
+}: {
+  label: string
+  duration: string
+  priorAuth?: string
+  variant?: "blue" | "indigo"
+}) {
+  const colors = variant === "indigo"
+    ? { border: "border-indigo-200/40", bg: "from-indigo-500/[0.06] to-indigo-400/[0.04]", accent: "text-indigo-600", divider: "bg-indigo-300/30", label: "text-indigo-500" }
+    : { border: "border-[#037ECC]/15", bg: "from-[#037ECC]/[0.06] to-[#079CFB]/[0.04]", accent: "text-[#037ECC]", divider: "bg-[#037ECC]/20", label: "text-[#037ECC]/70" }
+
+  return (
+    <div className={cn("flex flex-wrap items-center gap-4 rounded-xl border px-4 py-2.5", colors.border, `bg-gradient-to-br ${colors.bg}`)}>
+      <span className={cn("text-[10px] font-semibold uppercase tracking-wider", colors.label)}>{label}</span>
+      <div className={cn("h-3.5 w-px", colors.divider)} />
+      <div className="flex items-center gap-1.5">
+        <Clock className={cn("h-3.5 w-3.5", colors.accent)} />
+        <span className="text-xs font-semibold text-slate-800">{duration}</span>
+      </div>
+      {priorAuth && (
+        <>
+          <div className={cn("h-3.5 w-px", colors.divider)} />
+          <div className="flex items-center gap-1.5">
+            <Shield className={cn("h-3.5 w-3.5", colors.accent)} />
+            <span className="text-xs text-slate-600 truncate max-w-[200px]">
+              {priorAuth}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  )
 }

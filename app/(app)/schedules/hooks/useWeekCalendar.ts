@@ -62,6 +62,7 @@ interface UseWeekCalendarReturn {
   contextMenu: ContextMenuState | null
   
   searchQuery: string
+  filterClient: string
   filterStatus: AppointmentStatus | "all"
   filterLocation: AppointmentLocation | "all"
   filterProvider: string
@@ -96,6 +97,7 @@ interface UseWeekCalendarReturn {
     setHoveredSlot: (slotId: string | null) => void
     
     setSearchQuery: (query: string) => void
+    setFilterClient: (clientId: string) => void
     setFilterStatus: (status: AppointmentStatus | "all") => void
     setFilterLocation: (location: AppointmentLocation | "all") => void
     setFilterProvider: (providerId: string) => void
@@ -147,6 +149,7 @@ export function useWeekCalendar({
   
 
   const [searchQuery, setSearchQuery] = useState("")
+  const [filterClient, setFilterClient] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<AppointmentStatus | "all">("all")
   const [filterLocation, setFilterLocation] = useState<AppointmentLocation | "all">("all")
   const [filterProvider, setFilterProvider] = useState<string>("all")
@@ -180,6 +183,16 @@ export function useWeekCalendar({
       })
     }
 
+    // Client filter
+    if (filterClient !== "all") {
+      rules.push({
+        field: "clientId",
+        value: filterClient,
+        operator: FilterOperator.eq,
+        type: "uuid" as const,
+      })
+    }
+
     if (filterStatus !== "all") {
       // Map frontend status values to backend names (with spaces)
       const statusNameMap: Record<string, string> = {
@@ -198,7 +211,7 @@ export function useWeekCalendar({
       ? { fields: ["clientFullName"], search: searchQuery }
       : undefined,
     )
-  }, [scope, rbtId, filterProvider, filterStatus, searchQuery])
+  }, [scope, rbtId, filterProvider, filterClient, filterStatus, searchQuery])
 
   const {
     appointments: fetchedAppointments,
@@ -513,6 +526,7 @@ export function useWeekCalendar({
     contextMenu,
     
     searchQuery,
+    filterClient,
     filterStatus,
     filterLocation,
     filterProvider,
@@ -543,6 +557,7 @@ export function useWeekCalendar({
       handleSlotClick,
       setHoveredSlot,
       setSearchQuery,
+      setFilterClient,
       setFilterStatus,
       setFilterLocation,
       setFilterProvider,
