@@ -18,14 +18,14 @@ import { useAssignClientPhysician } from "@/lib/modules/client-physicians/hooks/
 import { useRemoveClientPhysician } from "@/lib/modules/client-physicians/hooks/use-remove-client-physician"
 import { useCreateManualClientPhysician } from "@/lib/modules/client-physicians/hooks/use-create-manual-client-physician"
 import { usePhysicians } from "@/lib/modules/physicians/hooks/use-physicians"
-import { useClients } from "@/lib/modules/clients/hooks/use-clients"
+import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import { usePhysicianTypes } from "@/lib/modules/physicians/hooks/use-physician-types"
 import { usePhysicianSpecialties } from "@/lib/modules/physicians/hooks/use-physician-specialties"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import type { ClientPhysician } from "@/lib/types/client-physician.types"
 import type { Physician } from "@/lib/types/physician.types"
-import type { ClientListItem } from "@/lib/types/client.types"
+import type { ClientByLoggedUser } from "@/lib/types/client.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 import { cn } from "@/lib/utils"
 
@@ -531,12 +531,12 @@ function OtherClientsTab({
   onClose,
   onAssigned,
 }: OtherClientsTabProps) {
-  const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null)
+  const [selectedClient, setSelectedClient] = useState<ClientByLoggedUser | null>(null)
   const [clientSearch, setClientSearch] = useState("")
   const [physicianSearch, setPhysicianSearch] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-  const { clients, isLoading: isLoadingClients } = useClients({ pageSize: 200 })
+  const { clients, isLoading: isLoadingClients } = useClientsByLoggedUser({ pageSize: 200 })
   const { physicians: sourcePhysicians, isLoading: isLoadingPhysicians } = useClientPhysicians(
     selectedClient ? selectedClient.id : null
   )
@@ -644,9 +644,6 @@ function OtherClientsTab({
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{client.fullName}</p>
-                      {client.chartId && (
-                        <p className="text-xs text-slate-500 mt-0.5">Chart: {client.chartId}</p>
-                      )}
                     </div>
                     <span className="text-xs text-[#037ECC] font-medium">Select →</span>
                   </button>

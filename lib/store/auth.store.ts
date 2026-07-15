@@ -73,6 +73,7 @@ function decodeUserFromToken(accessToken: string): User {
     name: decoded.fullName,
     role,
     permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [],
+    memberUserTypes: Array.isArray(decoded.memberUserTypes) ? decoded.memberUserTypes : [],
     requiredOptions: parseRequiredOptions(decoded.requiredOptions),
     expiresAt: new Date(decoded.exp * 1000).toISOString(),
   }
@@ -402,3 +403,4 @@ export const selectToken = (state: AuthStore) => state.accessToken
 export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated
 export const selectHydrated = (state: AuthStore) => state.hydrated
 export const selectRequiredOptions = (state: AuthStore) => state.user?.requiredOptions ?? DEFAULT_REQUIRED_OPTIONS
+export const selectMemberUserTypes = (state: AuthStore) => state.user?.memberUserTypes ?? []

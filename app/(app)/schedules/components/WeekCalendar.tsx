@@ -35,7 +35,7 @@ import { FilterSelect } from "@/components/custom/FilterSelect"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { Card } from "@/components/custom/Card"
 import { cn } from "@/lib/utils"
-import { useClients } from "@/lib/modules/clients/hooks/use-clients"
+import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import type { AppointmentStatus } from "@/lib/types/appointment.types"
 
 
@@ -73,7 +73,7 @@ export function WeekCalendar({
   const canCreate = canCreateSession(PermissionModule.SCHEDULE)
   const isAgency = scope === "agency"
   const { users: allUsers } = useUsers({ pageSize: 100 })
-  const { clients } = useClients({ page: 0, pageSize: 200 })
+  const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
 
   // Only show users that have a role (not clients) and are active
   const providerFilterOptions = useMemo(() => {

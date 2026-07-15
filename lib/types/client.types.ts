@@ -58,6 +58,11 @@ export interface UpdateClientDto {
   status?: boolean
 }
 
+export interface ClientByLoggedUser {
+  id: string
+  fullName: string
+}
+
 export interface CreateClientResponse {
   id: string
 }

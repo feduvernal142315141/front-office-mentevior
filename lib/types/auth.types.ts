@@ -12,6 +12,7 @@ export interface User {
   name: string
   role: Role
   permissions: string[]
+  memberUserTypes: string[]
   requiredOptions: RequiredOptions
   expiresAt: string
 }

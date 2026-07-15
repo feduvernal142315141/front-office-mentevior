@@ -1,6 +1,7 @@
 import type { QueryModel } from "@/lib/models/queryModel"
 import type {
   Client,
+  ClientByLoggedUser,
   ClientListItem,
   CreateClientDto,
   UpdateClientDto,
@@ -43,6 +44,30 @@ export async function getClients(query: QueryModel): Promise<{
       rbt: client.rbt ?? client.rbtName ?? "",
     })),
     totalCount: paginatedData.pagination?.total || 0
+  }
+}
+
+export async function getClientsByLoggedUser(query: QueryModel): Promise<{
+  clients: ClientByLoggedUser[]
+  totalCount: number
+}> {
+  const response = await serviceGet<PaginatedResponse<ClientByLoggedUser>>(`/client/by-logged-user${
+    query ? `?${getQueryString(query)}` : ''
+  }`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch clients")
+  }
+
+  const paginatedData = response.data as unknown as PaginatedResponse<ClientByLoggedUser>
+
+  if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
+    return { clients: [], totalCount: 0 }
+  }
+
+  return {
+    clients: paginatedData.entities,
+    totalCount: (paginatedData.pagination as any)?.totalAmount ?? paginatedData.pagination?.total ?? 0,
   }
 }
 
