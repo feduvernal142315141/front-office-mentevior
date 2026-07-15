@@ -317,7 +317,7 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
                     {activeItem.itemName}
                   </h3>
                   {activeItem.description && (
-                    <p className="text-sm text-slate-500 mt-0.5 line-clamp-2 break-words leading-relaxed">
+                    <p className="text-xs text-slate-400 mt-0.5 line-clamp-1 break-words">
                       {activeItem.description}
                     </p>
                   )}

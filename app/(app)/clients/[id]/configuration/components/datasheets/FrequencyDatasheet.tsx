@@ -219,7 +219,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
   const gridCols = `200px repeat(${visibleDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* ─── Premium Header ─── */}
       <DatasheetHeader
         rangeMode={ds.rangeMode}
@@ -240,7 +240,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
 
       {/* ─── Grid ─── */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[45vh]">
+        <div className="overflow-x-auto overflow-y-auto max-h-[min(35vh,300px)]">
           <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
             {/* Column Headers — sticky on vertical scroll */}
             <div className="grid border-b border-slate-100 sticky top-0 z-10 bg-white" style={{ gridTemplateColumns: gridCols }}>
@@ -378,7 +378,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
       </AnimatePresence>
 
       {/* Chart */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
         <FrequencyChart weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig} chartDays={extendedChartDays} tickInterval={chartRange.tickInterval} itemBaselines={activeItem.baseline} itemObjectives={activeItem.objetive} gapDateKeys={gapDateKeys} aggregatedData={chartData.aggregatedPoints} interval={chartRange.interval} />
       </div>

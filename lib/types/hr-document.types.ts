@@ -29,6 +29,7 @@ export interface HRDocumentListItem {
 export interface HRDocumentCatalogItem {
   id: string
   name: string
+  subGroup?: string
 }
 
 export interface CreateHRDocumentDto {

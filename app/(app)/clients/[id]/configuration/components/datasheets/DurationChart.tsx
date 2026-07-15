@@ -198,7 +198,7 @@ export function DurationChart({
   const PX_PER_POINT = isAggregated ? 60 : 30
   const needsScroll = pointCount > (isAggregated ? 30 : 60)
   const chartWidth = needsScroll ? pointCount * PX_PER_POINT : undefined
-  const chartHeight = 320
+  const chartHeight = 260
   const fontSize = pointCount > 90 ? 8 : pointCount > 30 ? 9 : 10
 
   const intervalLabel = isAggregated

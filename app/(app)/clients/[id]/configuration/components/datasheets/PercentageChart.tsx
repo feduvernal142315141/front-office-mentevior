@@ -111,7 +111,7 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
   const PX_PER_POINT = 30
   const needsScroll = days.length > 60
   const chartWidth = needsScroll ? days.length * PX_PER_POINT : undefined
-  const chartHeight = 320
+  const chartHeight = 260
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">

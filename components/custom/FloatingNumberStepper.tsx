@@ -99,15 +99,23 @@ export function FloatingNumberStepper({
             <Minus className="w-3.5 h-3.5" />
           </button>
 
-          <input
-            ref={inputRef}
-            type="number"
-            value={displayValue}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onChange={handleInputChange}
-            className="flex-1 min-w-0 h-full bg-transparent text-center text-[15px] 2xl:text-[16px] font-semibold text-gray-900 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
+          <div className="flex-1 min-w-0 relative flex items-center">
+            <input
+              ref={inputRef}
+              type="number"
+              value={displayValue}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              onChange={handleInputChange}
+              className={cn(
+                "min-w-0 w-full h-full bg-transparent text-center text-[15px] 2xl:text-[16px] font-semibold text-gray-900 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                suffix && "pr-5"
+              )}
+            />
+            {suffix && (
+              <span className="absolute right-0 text-sm font-medium text-slate-400 pointer-events-none">{suffix}</span>
+            )}
+          </div>
 
           <button
             type="button"
@@ -120,10 +128,6 @@ export function FloatingNumberStepper({
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
-
-          {suffix && (
-            <span className="shrink-0 pr-2 text-sm font-medium text-slate-500">{suffix}</span>
-          )}
         </div>
 
         <label

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Search, Loader2, Check, X } from "lucide-react"
 import { Checkbox } from "@/components/custom/Checkbox"
 import { Button } from "@/components/custom/Button"
@@ -15,13 +15,18 @@ interface SearchCatalogStepProps {
   onClose: () => void
 }
 
+interface GroupedDocuments {
+  groupName: string
+  documents: HRDocumentCatalogItem[]
+}
+
 export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  
+
   const { data, isLoading } = useHRDocumentsCatalog("HR")
   const catalogDocuments = data?.catalogDocuments || []
 
@@ -33,6 +38,23 @@ export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps
     if (!searchTerm.trim()) return true
     return doc.name.toLowerCase().includes(searchTerm.toLowerCase())
   })
+
+  const groupedDocuments = useMemo((): GroupedDocuments[] => {
+    const groups = new Map<string, HRDocumentCatalogItem[]>()
+
+    for (const doc of filteredDocuments) {
+      const groupName = doc.subGroup || "Other"
+      const existing = groups.get(groupName) || []
+      existing.push(doc)
+      groups.set(groupName, existing)
+    }
+
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([groupName, documents]) => ({ groupName, documents }))
+  }, [filteredDocuments])
+
+  const hasGroups = groupedDocuments.some(g => g.groupName !== "Other") || groupedDocuments.length > 1
 
   const toggleSelection = (id: string) => {
     setSelectedIds(prev => {
@@ -68,13 +90,13 @@ export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps
       const selectedDocument = catalogDocuments.find((c: HRDocumentCatalogItem) => selectedIds.has(c.id))
       if (selectedDocument) {
         onClose()
-        
+
         const params = new URLSearchParams({
           mode: "catalog",
           catalogId: selectedDocument.id,
           name: selectedDocument.name,
         })
-        
+
         router.push(`/hr-documents/create?${params.toString()}`)
       }
     } else {
@@ -82,12 +104,12 @@ export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps
       setIsSubmitting(true)
       try {
         const selectedCatalogIds = Array.from(selectedIds)
-  
+
         await bulkCreateHRDocuments({ catalogIds: selectedCatalogIds, documentCategory: "HR" })
-        
+
         toast.success(`${selectedCatalogIds.length} documents added successfully`)
         onSuccess()
-        
+
       } catch (error) {
         console.error("Error creating bulk documents:", error)
         const errorMessage = error instanceof Error ? error.message : "Failed to add documents"
@@ -99,11 +121,47 @@ export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps
   }
 
   const selectedCount = selectedIds.size
-  const buttonText = selectedCount === 0 
-    ? "Add Document" 
-    : selectedCount === 1 
-      ? "Add Document" 
+  const buttonText = selectedCount === 0
+    ? "Add Document"
+    : selectedCount === 1
+      ? "Add Document"
       : `Add ${selectedCount} Documents`
+
+  const renderDocumentItem = (document: HRDocumentCatalogItem) => {
+    const isSelected = selectedIds.has(document.id)
+
+    return (
+      <div
+        key={document.id}
+        className={`
+          p-4
+          transition-colors
+          ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"}
+        `}
+      >
+        <div className="flex items-start gap-4">
+          <div className="pt-1">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => toggleSelection(document.id)}
+              size="md"
+            />
+          </div>
+
+          <div
+            className="flex-1 min-w-0 cursor-pointer"
+            onClick={() => toggleSelection(document.id)}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-lg font-semibold ${isSelected ? "text-blue-700" : "text-gray-900"}`}>
+                {document.name}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -186,43 +244,29 @@ export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps
               {searchTerm ? "No documents found. Try a different search term." : "No documents available in catalog."}
             </p>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {filteredDocuments.map((document) => {
-              const isSelected = selectedIds.has(document.id)
-              
-              return (
-                <div
-                  key={document.id}
-                  className={`
-                    p-4
-                    transition-colors
-                    ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"}
-                  `}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="pt-1">
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleSelection(document.id)}
-                        size="md"
-                      />
-                    </div>
-                    
-                    <div 
-                      className="flex-1 min-w-0 cursor-pointer"
-                      onClick={() => toggleSelection(document.id)}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-lg font-semibold ${isSelected ? "text-blue-700" : "text-gray-900"}`}>
-                          {document.name}
-                        </span>
-                      </div>
-                    </div>
+        ) : hasGroups ? (
+          <div>
+            {groupedDocuments.map((group) => (
+              <div key={group.groupName}>
+                <div className="sticky top-0 z-10 px-4 py-2.5 bg-gradient-to-r from-slate-100 to-gray-50 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                      {group.groupName}
+                    </span>
+                    <span className="text-xs text-gray-400 font-medium">
+                      ({group.documents.length})
+                    </span>
                   </div>
                 </div>
-              )
-            })}
+                <div className="divide-y divide-gray-100">
+                  {group.documents.map(renderDocumentItem)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {filteredDocuments.map(renderDocumentItem)}
           </div>
         )}
       </div>
@@ -236,7 +280,7 @@ export function SearchCatalogStep({ onSuccess, onClose }: SearchCatalogStepProps
               </span>
             )}
           </div>
-          
+
           <Button
             onClick={handleSubmit}
             disabled={selectedCount === 0 || isSubmitting}

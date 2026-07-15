@@ -71,7 +71,14 @@ export function buildGeneratedObjectiveName(input: GenerateObjectiveNameInput): 
     : valueSmartCriteria.trim() || "—"
   const durationValue = valueDuration.trim() || "—"
 
-  return `STO#${index}: ${client} will decrease ${target} to ${operator} ${criteriaValue} per ${criteriaPeriod} for ${durationValue} ${durationPeriod}`
+  // Unit label based on type (e.g. "occurrences", "%")
+  const unitLabel = typeUsesIntegerDisplay(dataCollectionTypeName) ? "occurrences" : ""
+
+  // Pluralize duration period (e.g. "week" → "weeks")
+  const durationNum = Number(durationValue)
+  const pluralDurationPeriod = durationNum !== 1 ? `${durationPeriod}s` : durationPeriod
+
+  return `STO#${index}: ${client} will reduce ${target} to ${operator} ${criteriaValue}${unitLabel ? ` ${unitLabel}` : ""} per ${criteriaPeriod} for ${durationValue} consecutive ${pluralDurationPeriod}.`
 }
 
 export function buildGeneratedObjectiveNames(

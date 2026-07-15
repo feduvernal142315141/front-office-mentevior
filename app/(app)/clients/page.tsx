@@ -4,6 +4,8 @@ import Link from "next/link"
 import { UserCog, Plus } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { ClientsTable } from "./components/ClientsTable"
+import { PermissionGate } from "@/components/layout/PermissionGate"
+import { PermissionModule, PermissionAction } from "@/lib/utils/permissions-new"
 
 export default function ClientsPage() {
   return (
@@ -24,12 +26,14 @@ export default function ClientsPage() {
             </div>
           </div>
 
-          <Link href="/clients/create">
-            <Button variant="primary" className="gap-2 flex items-center">
-              <Plus className="w-4 h-4" />
-              Add Client
-            </Button>
-          </Link>
+          <PermissionGate module={PermissionModule.CLIENTS} action={PermissionAction.CREATE}>
+            <Link href="/clients/create">
+              <Button variant="primary" className="gap-2 flex items-center">
+                <Plus className="w-4 h-4" />
+                Add Client
+              </Button>
+            </Link>
+          </PermissionGate>
         </div>
 
         <ClientsTable />

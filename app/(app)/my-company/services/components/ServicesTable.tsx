@@ -7,7 +7,6 @@ import { SearchInput } from "@/components/custom/SearchInput"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { Button } from "@/components/custom/Button"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { useServicesTable } from "../hooks/useServicesTable"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
@@ -18,7 +17,6 @@ export function ServicesTable() {
   const {
     data,
     isLoading,
-    isToggling,
     error,
     counts,
     actions,
@@ -140,13 +138,12 @@ export function ServicesTable() {
         ) : (
           <>
             <div className="hidden xl:block px-3 pt-3">
-              <div className="grid grid-cols-[40px_minmax(260px,1.2fr)_160px_160px_150px_90px] items-center gap-4 px-5 py-3 border border-slate-200 rounded-2xl bg-gradient-to-b from-[#037ECC]/[0.04] to-[#037ECC]/[0.02]">
+              <div className="grid grid-cols-[40px_minmax(260px,1.2fr)_160px_160px_150px] items-center gap-4 px-5 py-3 border border-slate-200 rounded-2xl bg-gradient-to-b from-[#037ECC]/[0.04] to-[#037ECC]/[0.02]">
                 <div />
                 <div className="text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Service</div>
                 <div className="justify-self-center text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Credentials</div>
                 <div className="justify-self-center text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Billing Codes</div>
                 <div className="justify-self-center text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Status</div>
-                <div className="justify-self-center text-xs font-semibold text-[#037ECC] uppercase tracking-wider">Active</div>
               </div>
             </div>
 
@@ -163,7 +160,7 @@ export function ServicesTable() {
                     key={service.id}
                     className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-shadow hover:shadow-md"
                   >
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 sm:px-5 xl:grid xl:grid-cols-[40px_minmax(260px,1.2fr)_160px_160px_150px_90px] xl:gap-4">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 sm:px-5 xl:grid xl:grid-cols-[40px_minmax(260px,1.2fr)_160px_160px_150px] xl:gap-4">
                       <button
                         type="button"
                         onClick={() => toggleExpanded(service.id)}
@@ -211,16 +208,6 @@ export function ServicesTable() {
                         </Badge>
                       </div>
 
-                      <div className="ml-auto xl:ml-0 xl:justify-self-center" data-row-no-click="true">
-                        <Switch
-                          checked={service.active}
-                          disabled={isToggling}
-                          onCheckedChange={(checked) => {
-                            void actions.toggleService(service, checked)
-                          }}
-                          aria-label={`Toggle ${service.name}`}
-                        />
-                      </div>
                     </div>
 
                     {isExpanded && (

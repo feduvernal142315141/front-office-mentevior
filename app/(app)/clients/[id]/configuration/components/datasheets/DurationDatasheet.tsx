@@ -192,7 +192,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
       />
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[45vh]">
+        <div className="overflow-x-auto overflow-y-auto max-h-[min(35vh,340px)]">
           <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
             {/* Column Headers */}
             <div className="grid border-b border-slate-100 sticky top-0 z-10 bg-white" style={{ gridTemplateColumns: gridCols }}>

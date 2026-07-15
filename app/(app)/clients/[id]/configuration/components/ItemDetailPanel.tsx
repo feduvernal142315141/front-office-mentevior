@@ -13,7 +13,6 @@ import {
 } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
 
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -550,42 +549,10 @@ export function ItemDetailPanel({
       </div>
 
       {/* ── Content ── */}
-      <div className="px-6 py-6 space-y-6">
-        {/* Teaching Method + Description */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-          <FloatingSelect
-            label="Teaching Method"
-            value={teachingMethod}
-            onChange={setTeachingMethod}
-            options={teachingMethodOptions}
-            searchable
-            disabled={isLoadingTeachingMethods}
-          />
-          <div className="space-y-1">
-            <Controller
-              name="topography"
-              control={control}
-              render={({ field }) => (
-                <FloatingTextarea
-                  label="Description"
-                  required
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  hasError={!!errors.topography}
-                  rows={2}
-                />
-              )}
-            />
-            <FieldErrorText message={errors.topography?.message} />
-          </div>
-        </div>
-
-        {/* ── Data Collection ── */}
-        <div>
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Data Collection</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Type */}
+      <div className="px-6 py-5 space-y-5">
+        {/* All fields in one grid: Type + conditional fields + Teaching Method (last) + Description (full width) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Type — always first */}
           <div className="space-y-1">
             <Controller
               name="type"
@@ -606,6 +573,28 @@ export function ItemDetailPanel({
             />
             <FieldErrorText message={errors.type?.message} />
           </div>
+
+          {/* Frequency → Weekly / Daily value */}
+          {typeRequiresWeeklyDaily(resolvedType.name) &&
+            !typeRequiresUnitOfTime(resolvedType.name) && (
+              <div className="space-y-1">
+                <Controller
+                  name="weeklyDailyValue"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingSelect
+                      label="Weekly / Daily Value"
+                      value={field.value ?? ServicePlanValueType.TOTAL}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
+                      hasError={!!errors.weeklyDailyValue}
+                    />
+                  )}
+                />
+                <FieldErrorText message={errors.weeklyDailyValue?.message} />
+              </div>
+            )}
 
           {/* Rate → Unit of time + Weekly value */}
           {typeRequiresUnitOfTime(resolvedType.name) && (
@@ -646,28 +635,6 @@ export function ItemDetailPanel({
               </div>
             </>
           )}
-
-          {/* Frequency → Weekly / Daily value */}
-          {typeRequiresWeeklyDaily(resolvedType.name) &&
-            !typeRequiresUnitOfTime(resolvedType.name) && (
-              <div className="space-y-1">
-                <Controller
-                  name="weeklyDailyValue"
-                  control={control}
-                  render={({ field }) => (
-                    <FloatingSelect
-                      label="Weekly / Daily Value"
-                      value={field.value ?? ServicePlanValueType.TOTAL}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
-                      hasError={!!errors.weeklyDailyValue}
-                    />
-                  )}
-                />
-                <FieldErrorText message={errors.weeklyDailyValue?.message} />
-              </div>
-            )}
 
           {/* Measurement log */}
           {isMeasurementLogType && (
@@ -884,6 +851,35 @@ export function ItemDetailPanel({
               </div>
             </>
           )}
+
+          {/* Teaching Method — always last in the grid */}
+          <FloatingSelect
+            label="Teaching Method"
+            value={teachingMethod}
+            onChange={setTeachingMethod}
+            options={teachingMethodOptions}
+            searchable
+            disabled={isLoadingTeachingMethods}
+          />
+
+          {/* Description — full width row */}
+          <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+            <Controller
+              name="topography"
+              control={control}
+              render={({ field }) => (
+                <FloatingTextarea
+                  label="Description"
+                  required
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  hasError={!!errors.topography}
+                  rows={2}
+                />
+              )}
+            />
+            <FieldErrorText message={errors.topography?.message} />
           </div>
         </div>
 
@@ -898,7 +894,10 @@ export function ItemDetailPanel({
             </h3>
             <Button
               type="button"
-              onClick={() => handleBaselinesChange([...baselines, createEmptyBaseline()])}
+              onClick={() => {
+                const lastPeriod = baselines.length > 0 ? baselines[baselines.length - 1].periodCatalogId : ""
+                handleBaselinesChange([...baselines, { ...createEmptyBaseline(), periodCatalogId: lastPeriod }])
+              }}
               className="gap-1.5 text-sm h-8 px-3"
               disabled={!watchedType}
             >
@@ -957,23 +956,16 @@ export function ItemDetailPanel({
               >
                 Cancel
               </Button>
-              <motion.div
-                animate={
-                  hasUnsavedChanges
-                    ? { scale: [1, 1.05, 1] }
-                    : { scale: 1 }
-                }
-                transition={
-                  hasUnsavedChanges
-                    ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
-                    : {}
-                }
+              <Button
+                type="submit"
+                variant="primary"
+                loading={isSaving}
+                disabled={!hasUnsavedChanges && !isSaving}
+                className="gap-2"
               >
-                <Button type="submit" variant="primary" loading={isSaving} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  {isSaving ? "Saving..." : "Save"}
-                </Button>
-              </motion.div>
+                <Save className="h-4 w-4" />
+                {isSaving ? "Saving..." : "Save"}
+              </Button>
             </div>
           </div>
         </div>

@@ -37,7 +37,7 @@ export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig }: 
 
       {/* Grid */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[45vh]">
+        <div className="overflow-x-auto overflow-y-auto max-h-[min(35vh,340px)]">
           <div className="min-w-[1120px]">
             {/* Column Headers */}
             <div className="grid grid-cols-[200px_repeat(7,minmax(130px,1fr))] border-b border-slate-100 sticky top-0 z-10 bg-white">

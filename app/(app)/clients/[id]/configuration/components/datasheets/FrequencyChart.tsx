@@ -242,7 +242,7 @@ export function FrequencyChart({
   const PX_PER_POINT = isAggregated ? 60 : 30
   const needsScroll = pointCount > (isAggregated ? 30 : 60)
   const chartWidth = needsScroll ? pointCount * PX_PER_POINT : undefined
-  const chartHeight = 320
+  const chartHeight = 240
   const fontSize = pointCount > 90 ? 8 : pointCount > 30 ? 9 : 10
 
   // ─── Interval label for header ─────────────────────────────────────────
@@ -253,7 +253,7 @@ export function FrequencyChart({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h4 className="text-sm font-semibold text-slate-700">
             Chart

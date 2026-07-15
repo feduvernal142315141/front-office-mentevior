@@ -311,7 +311,7 @@ export function GenerateObjectivesModal({
       allowSelectOverflow
       contentClassName="!overflow-visible"
     >
-      <div className="px-6 py-5 space-y-5 max-h-[calc(85vh-140px)] overflow-y-auto custom-scrollbar">
+      <div className="px-6 py-5 space-y-5 max-h-[calc(85vh-140px)] min-h-[520px] overflow-y-auto custom-scrollbar">
         {/* Generation mode + quantity or percentage stepper */}
         <div className="grid grid-cols-2 gap-4">
           <FloatingSelect
@@ -334,7 +334,7 @@ export function GenerateObjectivesModal({
             />
           ) : (
             <FloatingNumberStepper
-              label="Percentage from Start Value"
+              label="Percentage"
               value={form.percentageFromStart}
               onChange={(val) => update("percentageFromStart", val)}
               min={0}

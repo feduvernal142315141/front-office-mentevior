@@ -131,21 +131,41 @@ export function ObjectivesTabContent({
     setFormOpen(true)
   }, [])
 
+  const buildMasteryCriteriaName = useCallback(
+    (obj: ObjectiveRow): string => {
+      const OPERATOR_PHRASE: Record<string, string> = {
+        GT: "greater than", GTE: "greater or equal to", EQ: "equal to",
+        LT: "less than", LTE: "less or equal to",
+      }
+      const client = clientFirstName?.trim() || "Client"
+      const target = targetName?.trim() || "target behavior"
+      const op = OPERATOR_PHRASE[obj.operatorSmartCriteria] ?? obj.operatorSmartCriteria.toLowerCase()
+      const value = obj.valueSmartCriteria || "0"
+      const numValue = Number(value)
+      const unitLabel = numValue === 1 ? "occurrence" : "occurrences"
+      const criteriaPeriod = periodMap.get(obj.periodSmartCriteriaCatalogId)?.toLowerCase() ?? "period"
+      const durValue = obj.valueDuration || "1"
+
+      return `Mastery criteria: ${client} will reduce ${target} to ${value} ${unitLabel} per ${criteriaPeriod} for ${durValue} consecutive sessions.`
+    },
+    [clientFirstName, targetName, periodMap],
+  )
+
   const handleSave = useCallback(
     (saved: ObjectiveRow) => {
       const exists = objectives.some((o) => o.localId === saved.localId)
       if (exists) {
         onChange(objectives.map((o) => (o.localId === saved.localId ? saved : o)))
       } else {
-        // Auto-prefix with STO#N if the name doesn't already start with "STO#"
-        const nextNumber = objectives.length + 1
-        const prefixed = saved.name.startsWith("STO#")
-          ? saved
-          : { ...saved, name: `STO#${nextNumber}: ${saved.name}` }
-        onChange([...objectives, prefixed])
+        // Build name automatically if empty or not already prefixed
+        let finalName = saved.name.trim()
+        if (!finalName || (!finalName.startsWith("STO#") && !finalName.startsWith("Mastery"))) {
+          finalName = buildMasteryCriteriaName(saved)
+        }
+        onChange([...objectives, { ...saved, name: finalName }])
       }
     },
-    [objectives, onChange]
+    [objectives, onChange, buildMasteryCriteriaName]
   )
 
   const handleDelete = useCallback(
@@ -171,16 +191,23 @@ export function ObjectivesTabContent({
 
   const getSmartCriteriaSummary = useCallback(
     (obj: ObjectiveRow): string => {
-      const op = OPERATOR_SMART_CRITERIA_OPTIONS.find(
+      const opLabel = OPERATOR_SMART_CRITERIA_OPTIONS.find(
         (o) => o.value === obj.operatorSmartCriteria
       )?.label ?? obj.operatorSmartCriteria
+      const OPERATOR_PHRASE: Record<string, string> = {
+        ">": "greater than", ">=": "greater or equal to", "=": "equal to",
+        "<": "less than", "<=": "less or equal to",
+      }
+      const op = OPERATOR_PHRASE[opLabel] ?? opLabel
       const period = periodMap.get(obj.periodSmartCriteriaCatalogId) ?? ""
       const durPeriod = periodMap.get(obj.periodDurationCatalogId) ?? ""
+      const durNum = Number(obj.valueDuration)
+      const pluralDur = durNum !== 1 ? `${durPeriod.toLowerCase()}s` : durPeriod.toLowerCase()
       const parts: string[] = []
       if (op && obj.valueSmartCriteria) parts.push(`${op} ${obj.valueSmartCriteria}`)
       if (period) parts.push(`per ${period.toLowerCase()}`)
-      if (obj.valueDuration && durPeriod) parts.push(`for ${obj.valueDuration} ${durPeriod.toLowerCase()}s`)
-      return parts.length > 0 ? parts.join(" ") : ""
+      if (obj.valueDuration && durPeriod) parts.push(`for ${obj.valueDuration} ${pluralDur}`)
+      return parts.length > 0 ? parts.join(" ") + "." : ""
     },
     [periodMap]
   )
