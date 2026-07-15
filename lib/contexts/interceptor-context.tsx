@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, ReactNode } from "react"
+import { createContext, useContext, useState, useRef, ReactNode } from "react"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { getLoginUrl } from "@/lib/utils/company-identifier"
 
@@ -24,6 +24,7 @@ const InterceptorContext = createContext<InterceptorContextType | undefined>(und
 
 export function InterceptorProvider({ children }: { children: ReactNode }) {
   const alert = useAlert()
+  const isHandlingUnauthorized = useRef(false)
 
   const [isLoading, setIsLoading] = useState(false)
   const [activeRequests, setActiveRequests] = useState(0)
@@ -100,6 +101,10 @@ export function InterceptorProvider({ children }: { children: ReactNode }) {
   }
 
   const handleUnauthorized = () => {
+    // Guard: evitar múltiples llamadas concurrentes (ej: varias requests 401 simultáneas)
+    if (isHandlingUnauthorized.current) return
+    isHandlingUnauthorized.current = true
+
     alert.warning(
       "Session Expired",
       "Your session has expired. You will be redirected to the login page."

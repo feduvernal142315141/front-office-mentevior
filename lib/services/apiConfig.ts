@@ -22,6 +22,32 @@ export const setInterceptorHandlers = (handlers: Partial<InterceptorHandlers>) =
     interceptorHandlers = {...interceptorHandlers, ...handlers}
 }
 
+// ============================================
+// 401 RETRY - Cola de requests pendientes
+// ============================================
+let isRefreshingToken = false
+let failedQueue: Array<{
+    resolve: (token: string) => void
+    reject: () => void
+}> = []
+
+const processQueue = (token: string | null) => {
+    failedQueue.forEach(({ resolve, reject }) => {
+        if (token) {
+            resolve(token)
+        } else {
+            reject()
+        }
+    })
+    failedQueue = []
+}
+
+// Rutas de auth que NO deben triggear retry en 401
+const SKIP_RETRY_ROUTES = [
+    '/auth/login',
+    '/auth/refresh-token',
+]
+
 // Crear instancia de axios
 const apiInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -81,16 +107,72 @@ apiInstance.interceptors.response.use(
 
         return response
     },
-    (error: AxiosError) => {
+    async (error: AxiosError) => {
 
         interceptorHandlers.onLoadingEnd?.()
 
         if (error.response) {
             const status = error.response.status
             const data = error.response.data as any
-
             const skipNotification = !!(error.config as any)?.skipNotification
+            const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
+            // ============================================
+            // 401 - Intentar refresh + retry automático
+            // ============================================
+            if (status === 401) {
+                const isSkipRoute = SKIP_RETRY_ROUTES.some((path) => originalRequest?.url?.includes(path))
+
+                // Si es ruta de auth o ya se reintentó, no hacer retry
+                if (isSkipRoute || originalRequest?._retry) {
+                    return Promise.reject(error)
+                }
+
+                // Si ya hay un refresh en curso, encolar esta request
+                if (isRefreshingToken) {
+                    return new Promise((resolve, reject) => {
+                        failedQueue.push({
+                            resolve: (token: string) => {
+                                originalRequest!.headers.Authorization = `Bearer ${token}`
+                                originalRequest!._retry = true
+                                resolve(apiInstance(originalRequest!))
+                            },
+                            reject: () => reject(error),
+                        })
+                    })
+                }
+
+                // Primer 401: intentar refresh
+                originalRequest._retry = true
+                isRefreshingToken = true
+
+                try {
+                    const success = await useAuthStore.getState().refresh()
+                    const newToken = useAuthStore.getState().accessToken
+
+                    if (success && newToken) {
+                        // Refresh exitoso: reintentar request original y resolver cola
+                        processQueue(newToken)
+                        originalRequest.headers.Authorization = `Bearer ${newToken}`
+                        return apiInstance(originalRequest)
+                    }
+
+                    // Refresh falló: rechazar cola y notificar
+                    processQueue(null)
+                    interceptorHandlers.onUnauthorized?.()
+                    return Promise.reject(error)
+                } catch (refreshError) {
+                    processQueue(null)
+                    interceptorHandlers.onUnauthorized?.()
+                    return Promise.reject(error)
+                } finally {
+                    isRefreshingToken = false
+                }
+            }
+
+            // ============================================
+            // Otros códigos de error
+            // ============================================
             switch (status) {
                 case 400: {
                     if (!skipNotification) {
@@ -103,21 +185,6 @@ apiInstance.interceptors.response.use(
                     }
                     break
                 }
-
-                case 401:
-                    // Solo mostrar el AlertDialog, no el toast (evita notificación duplicada)
-                    if (!error.request.responseURL.includes('auth/login')) {
-                        console.error('🔴 401 Unauthorized Error Details:', {
-                            url: error.request.responseURL,
-                            method: error.config?.method,
-                            headers: error.config?.headers,
-                            response: data,
-                            message: data?.message || 'No message provided'
-                        })
-                        interceptorHandlers.onUnauthorized?.()
-                    }
-                    console.error('Error 401 - Unauthorized:', data)
-                    break
 
                 case 403:
                     const message403 = data?.message || 'You do not have permission to perform this action.'

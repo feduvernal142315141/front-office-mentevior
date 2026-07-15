@@ -8,7 +8,8 @@ import { createRefreshTokenWorker } from "@/lib/workers/refresh-token-worker"
 import { getLoginUrl } from "@/lib/utils/company-identifier"
 
 let workerInstance: Worker | null = null
-let isRefreshing = false
+let refreshPromise: Promise<boolean> | null = null
+let visibilityHandler: (() => void) | null = null
 
 
 function parseExpiresIn(expiresIn: string, fromTimestamp?: number): number {
@@ -100,7 +101,7 @@ interface AuthStore extends AuthState {
   // Actions
   login: (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => Promise<boolean>
   logout: () => void
-  refresh: () => Promise<void>
+  refresh: () => Promise<boolean>
   
   // Worker control
   initWorker: () => void
@@ -204,65 +205,62 @@ export const useAuthStore = create<AuthStore>()(
       // ============================================
       // REFRESH TOKEN
       // ============================================
-      refresh: async () => {
-        const state = get()
-
-        // Prevenir múltiples refreshes simultáneos
-        if (isRefreshing || !state.refreshToken) {
-          return
+      refresh: async (): Promise<boolean> => {
+        // Deduplicar: si ya hay un refresh en curso, devolver la misma promise
+        if (refreshPromise) {
+          return refreshPromise
         }
 
-        isRefreshing = true
+        const state = get()
+        if (!state.refreshToken) return false
 
         // Detener worker temporalmente
         get().stopWorker()
 
-        try {
-          const response = await serviceRefreshToken({
-            refreshToken: state.refreshToken,
-          })
+        refreshPromise = (async () => {
+          try {
+            const response = await serviceRefreshToken({
+              refreshToken: state.refreshToken!,
+            })
 
-          if (response?.status !== 200) {
-            console.error("[AuthStore] Refresh failed:", response?.status)
-            
-            // Solo logout en errores de autenticación
-            if (response?.status === 401 || response?.status === 403) {
-              get().logout()
-            } else {
-              // Reintentar más tarde
-              setTimeout(() => {
-                get().initWorker()
-              }, 10000)
+            if (response?.status !== 200) {
+              console.error("[AuthStore] Refresh failed:", response?.status)
+
+              if (response?.status !== 401 && response?.status !== 403) {
+                // Error no-auth (500, network, etc): reintentar más tarde
+                setTimeout(() => get().initWorker(), 10000)
+              }
+              return false
             }
-            return
+
+            const data: RefreshTokenResponse = response.data
+
+            const user = decodeUserFromToken(data.accessToken)
+
+            set({
+              user,
+              accessToken: data.accessToken,
+              accessTokenExpiresAt: getTokenExpiration(data.accessToken),
+              refreshToken: data.refreshToken,
+              refreshTokenExpiresAt: parseExpiresIn(data.refreshExpiresIn),
+              isAuthenticated: true,
+            })
+
+            // Actualizar cookie del servidor
+            await updateServerCookie(data.accessToken)
+
+            // Reiniciar worker con nuevos tiempos
+            get().initWorker()
+            return true
+          } catch (error) {
+            console.error("[AuthStore] Refresh error:", error)
+            return false
+          } finally {
+            refreshPromise = null
           }
+        })()
 
-          const data: RefreshTokenResponse = response.data
-
-          const user = decodeUserFromToken(data.accessToken)
-
-          const newState = {
-            user,
-            accessToken: data.accessToken,
-            accessTokenExpiresAt: getTokenExpiration(data.accessToken),
-            refreshToken: data.refreshToken,
-            refreshTokenExpiresAt: parseExpiresIn(data.refreshExpiresIn),
-            isAuthenticated: true,
-          }
-
-          set(newState)
-
-          // Actualizar cookie del servidor
-          await updateServerCookie(data.accessToken)
-
-          // Reiniciar worker con nuevos tiempos
-          get().initWorker()
-        } catch (error) {
-          console.error("[AuthStore] Refresh error:", error)
-          get().logout()
-        } finally {
-          isRefreshing = false
-        }
+        return refreshPromise
       },
 
       // ============================================
@@ -285,7 +283,14 @@ export const useAuthStore = create<AuthStore>()(
 
             switch (type) {
               case "NEEDS_REFRESH":
-                get().refresh()
+                get().refresh().then((success) => {
+                  if (!success) {
+                    get().logout()
+                    if (typeof window !== "undefined") {
+                      window.location.href = getLoginUrl()
+                    }
+                  }
+                })
                 break
 
               case "SESSION_EXPIRED":
@@ -303,6 +308,27 @@ export const useAuthStore = create<AuthStore>()(
           workerInstance.onerror = (error) => {
             console.error("[AuthStore] Worker error:", error)
           }
+        }
+
+        // Registrar handler de visibilidad para tabs en background
+        if (typeof document !== "undefined" && !visibilityHandler) {
+          visibilityHandler = () => {
+            if (document.visibilityState !== "visible") return
+            const s = get()
+            if (!s.isAuthenticated) return
+
+            const now = Date.now()
+            if (s.refreshTokenExpiresAt && s.refreshTokenExpiresAt <= now) {
+              get().logout()
+              window.location.href = getLoginUrl()
+              return
+            }
+            // Si access token expiró o está por expirar, refrescar inmediatamente
+            if (s.accessTokenExpiresAt && s.accessTokenExpiresAt <= now + 30000) {
+              get().refresh()
+            }
+          }
+          document.addEventListener("visibilitychange", visibilityHandler)
         }
 
         // Enviar tiempos de expiración al worker
@@ -326,6 +352,10 @@ export const useAuthStore = create<AuthStore>()(
           workerInstance.postMessage({ type: "CLEAR" })
           workerInstance.terminate()
           workerInstance = null
+        }
+        if (typeof document !== "undefined" && visibilityHandler) {
+          document.removeEventListener("visibilitychange", visibilityHandler)
+          visibilityHandler = null
         }
       },
 

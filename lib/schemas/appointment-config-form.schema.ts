@@ -58,6 +58,7 @@ export const appointmentConfigSchema = z.object({
 
   // ── Appearance ───────────────────────────────────────────────────────────────
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").or(z.literal("")),
+  noteExpirationDate: z.string(),
 })
 
 export type AppointmentConfigFormValues = z.infer<typeof appointmentConfigSchema>
@@ -101,4 +102,5 @@ export const getAppointmentConfigDefaults = (): AppointmentConfigFormValues => (
 
   // Appearance
   color: "",
+  noteExpirationDate: "",
 })

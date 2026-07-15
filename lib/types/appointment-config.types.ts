@@ -16,6 +16,7 @@ export interface AppointmentConfig {
   allowedCredentials: boolean
   allowedSubEvents: string | null
   color: string
+  noteExpirationDate: number | null
   maxNumberLocations: number
   requiredBillingCode: boolean
   requiredSignature: boolean
@@ -55,6 +56,7 @@ export interface UpsertAppointmentConfigDto {
   allowedCredentials: boolean
   allowedSubEvents: string | null
   color: string
+  noteExpirationDate: number | null
   maxNumberLocations: number
   requiredBillingCode: boolean
   requiredSignature: boolean

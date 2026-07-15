@@ -14,6 +14,13 @@ import { FloatingColorPicker } from "@/components/custom/FloatingColorPicker"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MultiSelect } from "@/components/custom/MultiSelect"
 import { useUpsertAppointmentConfig } from "@/lib/modules/appointment-config/hooks/use-upsert-appointment-config"
+
+const NOTE_EXPIRATION_OPTIONS = [
+  { label: "48 hrs", value: "2" },
+  { label: "72 hrs", value: "3" },
+  { label: "1 week", value: "7" },
+  { label: "2 weeks", value: "14" },
+]
 import { useFocusFirstError } from "@/lib/hooks/use-focus-first-error"
 import { useTimingCatalog } from "@/lib/modules/timing/hooks/use-timing-catalog"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
@@ -193,6 +200,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
 
       // Appearance
       color: config.color ?? "",
+      noteExpirationDate: config.noteExpirationDate != null ? String(config.noteExpirationDate) : "",
     })
   }, [config, form])
 
@@ -258,6 +266,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
 
       // Appearance
       color: data.color ?? "",
+      noteExpirationDate: data.noteExpirationDate ? Number(data.noteExpirationDate) : null,
     })
 
     if (result) router.push(COMPANY_PATH)
@@ -433,6 +442,17 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                     onBlur={() => form.trigger("color")}
                     hasError={!!errors.color}
                   />
+                </div>
+                <div className="w-full">
+                  <FloatingSelect
+                    label="Note expiration"
+                    value={w.noteExpirationDate}
+                    onChange={(v) => setValue("noteExpirationDate", v)}
+                    onBlur={() => form.trigger("noteExpirationDate")}
+                    hasError={!!errors.noteExpirationDate}
+                    options={NOTE_EXPIRATION_OPTIONS}
+                  />
+                  {renderFieldError(errors.noteExpirationDate?.message)}
                 </div>
               </div>
 

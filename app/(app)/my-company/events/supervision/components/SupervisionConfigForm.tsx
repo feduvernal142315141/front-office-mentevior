@@ -289,6 +289,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
                     onChange={(v) => setValue("endTime", v)}
                     onBlur={() => form.trigger("endTime")}
                     hasError={!!errors.endTime}
+                    defaultPeriod="PM"
                     allowManualInput
                     required
                   />

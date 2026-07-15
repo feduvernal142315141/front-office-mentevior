@@ -2,8 +2,9 @@
 
 /**
  * AUTH INITIALIZER
- * Componente que inicializa el auth store en el cliente
- * Debe montarse en el layout principal
+ * Componente que inicializa el auth store en el cliente.
+ * El worker se inicializa en onRehydrateStorage del store,
+ * este componente solo asegura que el store se monte en el cliente.
  */
 
 import { useEffect } from "react"
@@ -11,14 +12,9 @@ import { useAuthStore } from "@/lib/store/auth.store"
 
 export function AuthInitializer() {
   useEffect(() => {
-    // El store ya se hidrata automáticamente con el middleware persist
-    // Este componente solo asegura que se monte en el cliente
-    const state = useAuthStore.getState()
-    
-    if (state.hydrated && state.isAuthenticated) {
-      // Iniciar worker si hay sesión
-      state.initWorker()
-    }
+    // El store se hidrata automáticamente con el middleware persist.
+    // onRehydrateStorage ya inicializa el worker si hay sesión válida.
+    useAuthStore.getState()
   }, [])
 
   return null

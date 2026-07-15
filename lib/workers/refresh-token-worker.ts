@@ -111,7 +111,9 @@ self.onmessage = function(event) {
 export const createRefreshTokenWorker = (): Worker => {
   const blob = new Blob([workerScript], { type: 'application/javascript' });
   const workerUrl = URL.createObjectURL(blob);
-  return new Worker(workerUrl);
+  const worker = new Worker(workerUrl);
+  URL.revokeObjectURL(workerUrl);
+  return worker;
 };
 
 export default createRefreshTokenWorker;

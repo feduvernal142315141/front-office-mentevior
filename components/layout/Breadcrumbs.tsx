@@ -136,6 +136,9 @@ export function Breadcrumbs() {
     filteredSegments = filteredSegments.filter((segment) => segment !== "new")
   }
 
+  // Remove "events" segment — children (supervision, service-plan) show directly under Company Configuration
+  filteredSegments = filteredSegments.filter((segment) => segment !== "events")
+
   const isPayerCreateBySourceRoute =
     filteredSegments.length >= 5 &&
     filteredSegments[0] === "my-company" &&
