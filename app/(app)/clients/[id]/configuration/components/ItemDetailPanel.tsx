@@ -96,6 +96,65 @@ function stripPersistedLevelIds(config: DataCollectionConfig): DataCollectionCon
   return { ...config, levels: config.levels.map(({ recordId: _r, ...l }) => l) }
 }
 
+/** Build form defaults with type-conditional fields already cleaned (matches UI). */
+function buildItemFormValues(
+  config: DataCollectionConfig,
+  itemConfig: ItemDataCollectionConfig | null,
+  typeName: string,
+  typeGroup: string,
+): ClientDataCollectionFormValues {
+  const values: ClientDataCollectionFormValues = {
+    type: config.type ?? "",
+    weeklyDailyValue: config.weeklyDailyValue ?? ServicePlanValueType.TOTAL,
+    dailyValue: config.dailyValue ?? ServicePlanValueType.TOTAL,
+    unitMeasurementCatalogId: config.unitMeasurementCatalogId ?? "",
+    intervalLength: config.intervalLength ?? 30,
+    unitOfTime: config.unitOfTime ?? ServicePlanUnitOfTime.SECONDS,
+    suggestedNumberOfRecordings: config.suggestedNumberOfRecordings ?? 10,
+    cumulative: config.cumulative ?? false,
+    levels: config.levels ?? [],
+    topography: itemConfig?.topography ?? "",
+    active: itemConfig?.active ?? true,
+    chart: resolveChartConfig(config.chart),
+  }
+
+  if (
+    !typeRequiresWeeklyDaily(typeName) &&
+    !typeRequiresDailyAndWeekly(typeName) &&
+    !typeIsMeasurementLog(typeName)
+  ) {
+    values.weeklyDailyValue = undefined
+  }
+  if (!typeRequiresDailyAndWeekly(typeName) && !typeIsMeasurementLog(typeName)) {
+    values.dailyValue = undefined
+  }
+  if (!typeIsMeasurementLog(typeName)) {
+    values.unitMeasurementCatalogId = undefined
+  }
+  if (!typeRequiresInterval(typeGroup)) {
+    values.intervalLength = undefined
+  }
+  if (!typeRequiresInterval(typeGroup) && !typeRequiresDailyAndWeekly(typeName)) {
+    values.suggestedNumberOfRecordings = undefined
+  }
+  if (
+    !typeRequiresUnitOfTime(typeName) &&
+    !typeRequiresDailyAndWeekly(typeName) &&
+    !typeRequiresInterval(typeGroup)
+  ) {
+    values.unitOfTime = undefined
+  }
+  if (!typeHasCumulativeValueToggles(typeGroup)) {
+    values.cumulative = undefined
+  }
+
+  return values
+}
+
+function snapshotRows<T extends { localId: string }>(rows: T[]): string {
+  return JSON.stringify(rows.map(({ localId: _id, ...rest }) => rest))
+}
+
 function fromISO(d: string): string {
   if (!d) return ""
   return d.includes("T") ? d.split("T")[0] : d
@@ -190,6 +249,7 @@ export function ItemDetailPanel({
     watch,
     setValue,
     reset,
+    getValues,
     formState: { errors, isDirty: isFormDirty },
   } = useForm<ClientDataCollectionFormValues>({
     resolver: zodResolver(formSchema),
@@ -212,6 +272,7 @@ export function ItemDetailPanel({
   // --- Load config ---
   const loadConfig = useCallback(async () => {
     setIsLoading(true)
+    setInitialized(false)
     try {
       const itemData = await getClientItemDataCollection(clientServicePlanCategoryItemId)
       if (itemData) {
@@ -248,6 +309,7 @@ export function ItemDetailPanel({
         const catData = await getClientCategoryDataCollection(categoryId)
         setConfig(catData ? stripPersistedLevelIds(catData) : null)
         setItemConfig(null)
+        setTeachingMethod("")
         setBaselines([])
         setObjectives([])
       }
@@ -264,51 +326,91 @@ export function ItemDetailPanel({
     void loadConfig()
   }, [loadConfig])
 
-  // Sync form when config loads
-  useEffect(() => {
-    if (!config) return
-    reset({
-      type: config.type ?? "",
-      weeklyDailyValue: config.weeklyDailyValue ?? ServicePlanValueType.TOTAL,
-      dailyValue: config.dailyValue ?? ServicePlanValueType.TOTAL,
-      unitMeasurementCatalogId: config.unitMeasurementCatalogId ?? "",
-      intervalLength: config.intervalLength ?? 30,
-      unitOfTime: config.unitOfTime ?? ServicePlanUnitOfTime.SECONDS,
-      suggestedNumberOfRecordings: config.suggestedNumberOfRecordings ?? 10,
-      cumulative: config.cumulative ?? false,
-      levels: config.levels ?? [],
-      topography: itemConfig?.topography ?? "",
-      active: itemConfig?.active ?? true,
-      chart: resolveChartConfig(config.chart),
-    })
-  }, [config, itemConfig, reset])
-
   // --- Dirty state tracking ---
   const baselinesSnapshotRef = useRef("")
   const objectivesSnapshotRef = useRef("")
+  const teachingMethodSnapshotRef = useRef("")
 
-  // Take snapshot AFTER data is fully loaded and form is reset
+  // While false, hasUnsavedChanges stays false (no footer flash on enter).
+  const [initialized, setInitialized] = useState(false)
+  const baselinesRef = useRef(baselines)
+  const objectivesRef = useRef(objectives)
+  const teachingMethodRef = useRef(teachingMethod)
+  baselinesRef.current = baselines
+  objectivesRef.current = objectives
+  teachingMethodRef.current = teachingMethod
+
+  const catalogsReady = !isLoadingCatalog && !isLoadingTeachingMethods
+
+  // Single bootstrap: reset form to final defaults only when config + catalogs are ready,
+  // then snapshot baselines/objectives and enable dirty tracking after child mounts settle.
   useEffect(() => {
-    if (isLoading) return
-    // Delay snapshot to next tick so reset() has taken effect
-    const timer = setTimeout(() => {
-      baselinesSnapshotRef.current = JSON.stringify(baselines.map(({ localId, ...b }) => b))
-      objectivesSnapshotRef.current = JSON.stringify(objectives.map(({ localId, ...o }) => o))
-    }, 0)
-    return () => clearTimeout(timer)
-  }, [isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (isLoading || !config || !catalogsReady) {
+      setInitialized(false)
+      return
+    }
+
+    const typeItem = typeItemsMap.get(config.type ?? "")
+    const values = buildItemFormValues(
+      config,
+      itemConfig,
+      typeItem?.name ?? "",
+      typeItem?.group ?? "",
+    )
+
+    reset(values)
+    baselinesSnapshotRef.current = snapshotRows(baselinesRef.current)
+    objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
+    teachingMethodSnapshotRef.current = teachingMethodRef.current
+    setInitialized(false)
+
+    let cancelled = false
+    let raf2 = 0
+    // Wait 2 frames so Controllers/Selects can mount against these defaults
+    // without counting as dirty, then re-baseline and enable tracking.
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        if (cancelled) return
+        reset(getValues())
+        baselinesSnapshotRef.current = snapshotRows(baselinesRef.current)
+        objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
+        teachingMethodSnapshotRef.current = teachingMethodRef.current
+        setInitialized(true)
+      })
+    })
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+      setInitialized(false)
+    }
+  }, [
+    isLoading,
+    config,
+    itemConfig,
+    catalogsReady,
+    typeItemsMap,
+    reset,
+    getValues,
+  ])
 
   const hasBaselineChanges = useMemo(() => {
-    if (!baselinesSnapshotRef.current && baselines.length === 0) return false
-    return JSON.stringify(baselines.map(({ localId, ...b }) => b)) !== baselinesSnapshotRef.current
-  }, [baselines])
+    if (!initialized) return false
+    return snapshotRows(baselines) !== baselinesSnapshotRef.current
+  }, [baselines, initialized])
 
   const hasObjectiveChanges = useMemo(() => {
-    if (!objectivesSnapshotRef.current && objectives.length === 0) return false
-    return JSON.stringify(objectives.map(({ localId, ...o }) => o)) !== objectivesSnapshotRef.current
-  }, [objectives])
+    if (!initialized) return false
+    return snapshotRows(objectives) !== objectivesSnapshotRef.current
+  }, [objectives, initialized])
 
-  const hasUnsavedChanges = isFormDirty || hasBaselineChanges || hasObjectiveChanges
+  const hasTeachingMethodChanges =
+    initialized && teachingMethod !== teachingMethodSnapshotRef.current
+
+  const hasUnsavedChanges =
+    initialized &&
+    (isFormDirty || hasBaselineChanges || hasObjectiveChanges || hasTeachingMethodChanges)
 
   useEffect(() => {
     onDirtyChange?.(hasUnsavedChanges)
@@ -355,38 +457,48 @@ export function ItemDetailPanel({
   const { groups: unitMeasurementGroups, isLoading: isLoadingUnitMeasurement } =
     useUnitMeasurementCatalog(isMeasurementLogType)
 
-  // Reset fields when type changes
+  // Clear conditional fields only when the user changes type (after init).
+  // Initial cleanup is done inside buildItemFormValues to keep defaults in sync.
+  const prevTypeRef = useRef<string | null>(null)
   useEffect(() => {
+    if (!initialized) {
+      prevTypeRef.current = watchedType
+      return
+    }
+    if (prevTypeRef.current === watchedType) return
+    prevTypeRef.current = watchedType
+
+    const opts = { shouldDirty: true } as const
     if (
       !typeRequiresWeeklyDaily(resolvedType.name) &&
       !typeRequiresDailyAndWeekly(resolvedType.name) &&
       !typeIsMeasurementLog(resolvedType.name)
     ) {
-      setValue("weeklyDailyValue", undefined)
+      setValue("weeklyDailyValue", undefined, opts)
     }
     if (!typeRequiresDailyAndWeekly(resolvedType.name) && !typeIsMeasurementLog(resolvedType.name)) {
-      setValue("dailyValue", undefined)
+      setValue("dailyValue", undefined, opts)
     }
     if (!typeIsMeasurementLog(resolvedType.name)) {
-      setValue("unitMeasurementCatalogId", undefined)
+      setValue("unitMeasurementCatalogId", undefined, opts)
     }
     if (!typeRequiresInterval(resolvedType.group)) {
-      setValue("intervalLength", undefined)
+      setValue("intervalLength", undefined, opts)
     }
     if (!typeRequiresInterval(resolvedType.group) && !typeRequiresDailyAndWeekly(resolvedType.name)) {
-      setValue("suggestedNumberOfRecordings", undefined)
+      setValue("suggestedNumberOfRecordings", undefined, opts)
     }
     if (
       !typeRequiresUnitOfTime(resolvedType.name) &&
       !typeRequiresDailyAndWeekly(resolvedType.name) &&
       !typeRequiresInterval(resolvedType.group)
     ) {
-      setValue("unitOfTime", undefined)
+      setValue("unitOfTime", undefined, opts)
     }
     if (!typeHasCumulativeValueToggles(resolvedType.group)) {
-      setValue("cumulative", undefined)
+      setValue("cumulative", undefined, opts)
     }
-  }, [resolvedType, setValue])
+  }, [watchedType, resolvedType, initialized, setValue])
 
   // --- Delete level ---
   const handleDeleteLevel = async (level: DataCollectionLevel) => {
@@ -462,8 +574,9 @@ export function ItemDetailPanel({
       })
 
       // Reset dirty state BEFORE navigating away
-      baselinesSnapshotRef.current = JSON.stringify(baselines.map(({ localId, ...b }) => b))
-      objectivesSnapshotRef.current = JSON.stringify(objectives.map(({ localId, ...o }) => o))
+      baselinesSnapshotRef.current = snapshotRows(baselines)
+      objectivesSnapshotRef.current = snapshotRows(objectives)
+      teachingMethodSnapshotRef.current = teachingMethod
       reset(values)
 
       toast.success("Item configuration saved")

@@ -12,6 +12,7 @@ export interface SupervisionConfig {
   allowSignature: boolean
   allowedCredentials: boolean
   color: string
+  noteExpirationDate: number | null
   maxNumberLocations: number
   requiredBillingCode: boolean
   requiredSignature: boolean
@@ -47,6 +48,7 @@ export interface UpsertSupervisionConfigDto {
   allowSignature: boolean
   allowedCredentials: boolean
   color: string
+  noteExpirationDate: number | null
   maxNumberLocations: number
   requiredBillingCode: boolean
   requiredSignature: boolean

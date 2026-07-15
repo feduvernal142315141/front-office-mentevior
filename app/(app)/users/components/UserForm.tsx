@@ -29,6 +29,8 @@ export function UserForm({ userId = null }: UserFormProps) {
     user,
     memberUserTypes,
     isLoadingMemberUserTypes,
+    billingCodeOptions,
+    isLoadingBillingCodes,
   } = useUserForm({ userId })
 
   if (isEditing && isLoadingUser) {
@@ -53,6 +55,8 @@ export function UserForm({ userId = null }: UserFormProps) {
           editingUser={user}
           memberUserTypeOptions={memberUserTypes}
           isLoadingMemberUserTypes={isLoadingMemberUserTypes}
+          billingCodeOptions={billingCodeOptions}
+          isLoadingBillingCodes={isLoadingBillingCodes}
         />
       </form>
     </FormProvider>

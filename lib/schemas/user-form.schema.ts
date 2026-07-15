@@ -32,6 +32,7 @@ export const userFormSchema = z.object({
   active: z.boolean().optional(),
   terminated: z.boolean().optional(),
   memberUserTypeIds: z.array(z.string()).optional().default([]),
+  billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),
 })
 
 export type UserFormValues = z.infer<typeof userFormSchema>
@@ -46,4 +47,5 @@ export const getUserFormDefaults = (): UserFormValues => ({
   active: true,
   terminated: false,
   memberUserTypeIds: [],
+  billingCodes: [],
 })

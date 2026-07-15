@@ -56,6 +56,7 @@ export const servicePlanConfigSchema = z.object({
   // ── Rounding ─────────────────────────────────────────────────────────────────
   // ── Appearance ───────────────────────────────────────────────────────────────
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").or(z.literal("")),
+  noteExpirationDate: z.string(),
 })
 
 export type ServicePlanConfigFormValues = z.infer<typeof servicePlanConfigSchema>
@@ -97,4 +98,5 @@ export const getServicePlanConfigDefaults = (): ServicePlanConfigFormValues => (
   // Rounding
   // Appearance
   color: "",
+  noteExpirationDate: "",
 })

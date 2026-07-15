@@ -14,6 +14,7 @@ export interface MemberUser {
   memberUserTypeIds?: string[]
   /** Backend response uses this field name */
   memberUserTypesIds?: string[]
+  billingCodes?: string[]
 }
 
 export interface CreateMemberUserDto {
@@ -24,6 +25,7 @@ export interface CreateMemberUserDto {
   hiringDate: string
   roleId: string
   memberUserTypeIds?: string[]
+  billingCodes: string[]
 }
 
 export interface UpdateMemberUserDto {
@@ -37,6 +39,7 @@ export interface UpdateMemberUserDto {
   active?: boolean
   terminated?: boolean
   memberUserTypeIds?: string[]
+  billingCodes?: string[]
 }
 
 export interface CreateMemberUserResponse {

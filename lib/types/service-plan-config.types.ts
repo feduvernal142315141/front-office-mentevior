@@ -12,6 +12,7 @@ export interface ServicePlanConfig {
   allowSignature: boolean
   allowedCredentials: boolean
   color: string
+  noteExpirationDate: number | null
   maxNumberLocations: number
   requiredBillingCode: boolean
   requiredSignature: boolean
@@ -47,6 +48,7 @@ export interface UpsertServicePlanConfigDto {
   allowSignature: boolean
   allowedCredentials: boolean
   color: string
+  noteExpirationDate: number | null
   maxNumberLocations: number
   requiredBillingCode: boolean
   requiredSignature: boolean

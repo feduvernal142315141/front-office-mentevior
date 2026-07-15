@@ -56,6 +56,7 @@ export const supervisionConfigSchema = z.object({
   // ── Rounding ─────────────────────────────────────────────────────────────────
   // ── Appearance ───────────────────────────────────────────────────────────────
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").or(z.literal("")),
+  noteExpirationDate: z.string(),
 })
 
 export type SupervisionConfigFormValues = z.infer<typeof supervisionConfigSchema>
@@ -97,4 +98,5 @@ export const getSupervisionConfigDefaults = (): SupervisionConfigFormValues => (
   // Rounding
   // Appearance
   color: "",
+  noteExpirationDate: "",
 })

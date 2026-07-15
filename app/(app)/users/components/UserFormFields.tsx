@@ -26,6 +26,8 @@ interface UserFormFieldsProps {
   editingUser: any
   memberUserTypeOptions: Array<{ id: string; name: string }>
   isLoadingMemberUserTypes: boolean
+  billingCodeOptions: Array<{ value: string; label: string; tagLabel?: string }>
+  isLoadingBillingCodes: boolean
 }
 
 export function UserFormFields({
@@ -38,6 +40,8 @@ export function UserFormFields({
   editingUser,
   memberUserTypeOptions,
   isLoadingMemberUserTypes,
+  billingCodeOptions,
+  isLoadingBillingCodes,
 }: UserFormFieldsProps) {
   const { control, setValue } = useFormContext()
 
@@ -285,6 +289,34 @@ export function UserFormFields({
                           hasError={!!fieldState.error}
                           searchable
                           tone="neutral"
+                        />
+                        {fieldState.error && (
+                          <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
+                        )}
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-end mt-6">
+                <div className="lg:col-span-2">
+                  <Controller
+                    name="billingCodes"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <div>
+                        <MultiSelect
+                          label="Billing Codes"
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          options={billingCodeOptions}
+                          disabled={isLoadingBillingCodes}
+                          hasError={!!fieldState.error}
+                          searchable
+                          tone="neutral"
+                          required
                         />
                         {fieldState.error && (
                           <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>

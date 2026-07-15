@@ -10,6 +10,8 @@ import { userFormSchema, getUserFormDefaults, type UserFormValues } from "@/lib/
 import type { CreateMemberUserDto, UpdateMemberUserDto } from "@/lib/types/user.types"
 import { useRoles } from "@/lib/modules/roles/hooks/use-roles"
 import { useMemberUserTypeCatalog } from "@/lib/modules/member-user-types/hooks/use-member-user-type-catalog"
+import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 import { isoToLocalDate } from "@/lib/date"
 import { formatPhoneInput } from "@/lib/utils/phone-format"
 
@@ -28,6 +30,8 @@ interface UseUserFormReturn {
   user: any
   memberUserTypes: Array<{ id: string; name: string }>
   isLoadingMemberUserTypes: boolean
+  billingCodeOptions: Array<{ value: string; label: string; tagLabel: string }>
+  isLoadingBillingCodes: boolean
   
   onSubmit: (data: UserFormValues) => Promise<void>
   isSubmitting: boolean
@@ -47,7 +51,14 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
   const { user, isLoading: isLoadingUser } = useUserById(userId)
   const { roles, isLoading: isLoadingRoles } = useRoles()
   const { memberUserTypes, isLoading: isLoadingMemberUserTypes } = useMemberUserTypeCatalog()
-  
+  const { billingCodes, isLoading: isLoadingBillingCodes } = useBillingCodes({ page: 0, pageSize: 0 })
+
+  const billingCodeOptions = billingCodes.map((bc) => ({
+    value: bc.id,
+    label: formatBillingCodeDisplay({ type: bc.type, code: bc.code, modifier: bc.modifier }),
+    tagLabel: bc.modifier?.trim() ? `${bc.code} (${bc.modifier.trim()})` : bc.code,
+  }))
+
   const isSubmitting = isCreating || isUpdating
 
   const form = useForm<UserFormValues>({
@@ -67,6 +78,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         active: user.active ?? true,
         terminated: user.terminated ?? false,
         memberUserTypeIds: user.memberUserTypesIds || user.memberUserTypeIds || [],
+        billingCodes: user.billingCodes || [],
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,6 +97,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         active: data.active,
         terminated: data.terminated,
         memberUserTypeIds: data.memberUserTypeIds,
+        billingCodes: data.billingCodes,
       }
       
       const result = await update(dto)
@@ -103,6 +116,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         hiringDate: data.hiringDate,
         roleId: data.roleId,
         memberUserTypeIds: data.memberUserTypeIds || [],
+        billingCodes: data.billingCodes,
       }
       
       const result = await create(dto)
@@ -131,6 +145,8 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
     user,
     memberUserTypes,
     isLoadingMemberUserTypes,
+    billingCodeOptions,
+    isLoadingBillingCodes,
     onSubmit,
     isSubmitting,
     actions,
