@@ -58,16 +58,10 @@ export function AppointmentCard({
   const clientName = appointment.clientName?.trim() || ""
   const hasSupervision = !!appointment.supervision
 
-  // Format supervision billing code labels
+  // Supervision billing code labels from API response
   const sup = appointment.supervision
-  // Session BC: try supervision response fields, fallback to parent appointment's billingCodeName
-  const supSessionBC = sup?.billingCodeCode
-    ? [sup.billingCodeCode, sup.billingCodeModifier ? `(${sup.billingCodeModifier})` : ""].filter(Boolean).join(" ")
-    : appointment.billingCodeName || null
-  // Supervision BC: from supervision response fields
-  const supBillingBC = sup?.supervisionBillingCodeCode
-    ? [sup.supervisionBillingCodeCode, sup.supervisionBillingCodeModifier ? `(${sup.supervisionBillingCodeModifier})` : ""].filter(Boolean).join(" ")
-    : null
+  const supSessionBC = sup?.billingCode || null
+  const supBillingBC = sup?.supervisionBillingCode || null
 
   const handleMenuClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()

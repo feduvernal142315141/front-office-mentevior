@@ -69,12 +69,10 @@ export interface AppointmentSupervisionApiPayload {
   endAt?: string
   /** Separate supervision billing code */
   supervisionBillingCodeId?: string
-  /** Session billing code display name (from API response) */
-  billingCodeCode?: string
-  billingCodeModifier?: string
-  /** Supervision billing code display name (from API response) */
-  supervisionBillingCodeCode?: string
-  supervisionBillingCodeModifier?: string
+  /** Session billing code label — e.g. "CPT 97155" */
+  billingCode?: string
+  /** Supervision billing code label — e.g. "CPT 97153 (XP)" */
+  supervisionBillingCode?: string
   /** Whether the sub-event is active */
   active?: boolean
   /** Status catalog UUID */
