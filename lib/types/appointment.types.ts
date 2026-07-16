@@ -48,7 +48,7 @@ export interface ValidateEventDataResponse {
   priorAuthorizationId: string
 }
 
-/** Supervision sub-event payload for POST/PUT /appointment and GET /appointment/{id} */
+/** Supervision sub-event payload — used in GET responses and as nested object in Appointment */
 export interface AppointmentSupervisionApiPayload {
   title: string
   timeInit: string
@@ -59,6 +59,28 @@ export interface AppointmentSupervisionApiPayload {
   priorAuthorizationId: string
   providerId: string
   providerName?: string
+  /** Sub-event UUID — present in GET responses */
+  id?: string
+  /** Parent appointment UUID */
+  appointmentId?: string
+  /** UTC ISO 8601 start timestamp (calculated by backend) */
+  startAt?: string
+  /** UTC ISO 8601 end timestamp (calculated by backend) */
+  endAt?: string
+  /** Separate supervision billing code */
+  supervisionBillingCodeId?: string
+  /** Session billing code display name (from API response) */
+  billingCodeCode?: string
+  billingCodeModifier?: string
+  /** Supervision billing code display name (from API response) */
+  supervisionBillingCodeCode?: string
+  supervisionBillingCodeModifier?: string
+  /** Whether the sub-event is active */
+  active?: boolean
+  /** Status catalog UUID */
+  appointmentStatusId?: string
+  /** Readable status: "Scheduled" | "In Progress" | "Completed" | "Cancelled" | "No Show" */
+  appointmentStatusName?: string
 }
 
 /** Item returned by GET /appointment */
@@ -305,6 +327,8 @@ export interface ContextMenuState {
   x: number
   y: number
   appointmentId: string
+  /** When true, the menu shows supervision-specific actions */
+  isSupervision?: boolean
 }
 
 /**

@@ -64,20 +64,6 @@ export function buildAppointmentApiPayload(
     priorAuthorizationId: form.priorAuthorizationId,
   }
 
-  if (form.addSupervision && form.supervision.billingCodeId) {
-    const supUnits = form.supervision.validatedUnits ?? units
-    payload.supervision = {
-      title: form.supervision.title.trim() || "Supervision",
-      timeInit: toApiTime(form.supervision.startTime),
-      timeEnd: toApiTime(form.supervision.endTime),
-      date: form.supervision.date || form.date,
-      billingCodeId: form.supervision.billingCodeId,
-      units: supUnits,
-      priorAuthorizationId: form.supervision.priorAuthorizationId,
-      providerId: form.supervision.providerId || providerId,
-    }
-  }
-
   return payload
 }
 

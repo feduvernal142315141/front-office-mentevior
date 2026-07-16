@@ -14,16 +14,19 @@ import {
   Plus,
   Calendar as CalendarIcon,
 } from "lucide-react"
-import { useMemo } from "react"
+import { useCallback, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { format, isSameDay, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { AppointmentCard } from "./AppointmentCard"
 import { AppointmentModal } from "./AppointmentModal"
 import { DuplicateAppointmentModal } from "./DuplicateAppointmentModal"
+import { SupervisionConfigModal } from "./SupervisionConfigModal"
 import { AppointmentContextMenu } from "./AppointmentContextMenu"
 import { useWeekCalendar, CALENDAR_HOURS, SLOT_HEIGHT } from "../hooks/useWeekCalendar"
 import type { CalendarScope, CalendarViewMode } from "../hooks/useWeekCalendar"
 import { useScheduleEventColors } from "@/lib/modules/schedules/hooks/use-schedule-event-colors"
+import { buildSessionNoteUrl, buildDataCollectionUrl } from "@/lib/modules/schedules/utils/schedule-display"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAlert } from "@/lib/contexts/alert-context"
@@ -65,6 +68,7 @@ export function WeekCalendar({
   viewMode = "client",
   scope = "provider",
 }: WeekCalendarProps) {
+  const router = useRouter()
   const { selectedAppointment, deleteAppointment } = useAppointments()
   const { create: canCreateSession } = usePermission()
   const eventColors = useScheduleEventColors()
@@ -98,6 +102,8 @@ export function WeekCalendar({
     activeAppointment,
     showModal,
     showDuplicateModal,
+    showSupervisionModal,
+    supervisionAppointment,
     modalDefaults,
     contextMenu,
     filterClient,
@@ -113,6 +119,51 @@ export function WeekCalendar({
     actions,
   } = useWeekCalendar({ rbtId, viewMode, scope })
   
+  // Resolve the appointment behind the context menu for status-aware rendering
+  const contextMenuAppointment = contextMenu
+    ? filteredAppointments.find((apt) => apt.id === contextMenu.appointmentId)
+    : null
+
+  // Unified menu action handler — navigation + delete-with-confirm + delegate to hook
+  const handleMenuAction = useCallback(
+    (action: string, appointmentId: string) => {
+      const appointment = useAppointments.getState().appointments.find(
+        (apt) => apt.id === appointmentId,
+      )
+
+      if ((action === "session_note" || action === "sup_session_note") && appointment) {
+        router.push(buildSessionNoteUrl(appointment))
+        actions.closeContextMenu()
+        return
+      }
+
+      if ((action === "data_collection" || action === "sup_data_collection") && appointment) {
+        router.push(buildDataCollectionUrl(appointment))
+        actions.closeContextMenu()
+        return
+      }
+
+      if (action === "delete") {
+        actions.closeContextMenu()
+        alert.confirm({
+          title: "Delete Session",
+          description:
+            "Are you sure you want to delete this session? This action cannot be undone.",
+          confirmText: "Delete",
+          cancelText: "Go Back",
+          onConfirm: async () => {
+            deleteAppointment(appointmentId)
+            await mutations.remove(appointmentId)
+          },
+        })
+        return
+      }
+
+      actions.handleContextMenuAction(action, appointmentId)
+    },
+    [router, actions, alert, deleteAppointment, mutations],
+  )
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -328,19 +379,8 @@ export function WeekCalendar({
                           layout="list"
                           eventColors={eventColors}
                           onClick={() => actions.openEditModal(appointment)}
-                          onDelete={(e) => {
-                            e.stopPropagation()
-                            alert.confirm({
-                              title: "Delete Session",
-                              description: "Are you sure you want to delete this session? This action cannot be undone.",
-                              confirmText: "Delete",
-                              cancelText: "Go Back",
-                              onConfirm: async () => {
-                                deleteAppointment(appointment.id)
-                                await mutations.remove(appointment.id)
-                              },
-                            })
-                          }}
+                          onOpenMenu={(x, y) => actions.openMenuAt(x, y, appointment.id)}
+                          onOpenSupervisionMenu={(x, y) => actions.openSupervisionMenuAt(x, y, appointment.id)}
                         />
                       </div>
                     ))}
@@ -453,19 +493,8 @@ export function WeekCalendar({
                                 eventColors={eventColors}
                                 cardHeight={Math.max(position.height - 2, 40)}
                                 onClick={() => actions.openEditModal(appointment)}
-                                onDelete={(e) => {
-                                  e.stopPropagation()
-                                  alert.confirm({
-                                    title: "Delete Session",
-                                    description: "Are you sure you want to delete this session? This action cannot be undone.",
-                                    confirmText: "Delete",
-                                    cancelText: "Go Back",
-                                    onConfirm: async () => {
-                                      deleteAppointment(appointment.id)
-                                      await mutations.remove(appointment.id)
-                                    },
-                                  })
-                                }}
+                                onOpenMenu={(x, y) => actions.openMenuAt(x, y, appointment.id)}
+                                onOpenSupervisionMenu={(x, y) => actions.openSupervisionMenuAt(x, y, appointment.id)}
                               />
                             </div>
                           )
@@ -645,13 +674,23 @@ export function WeekCalendar({
         rbtId={rbtId}
         onDuplicated={actions.handleAppointmentSaved}
       />
-      
+
+      <SupervisionConfigModal
+        open={showSupervisionModal}
+        onClose={actions.closeSupervisionModal}
+        onSaved={actions.handleAppointmentSaved}
+        appointment={supervisionAppointment}
+      />
+
       {contextMenu && (
         <AppointmentContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
           appointmentId={contextMenu.appointmentId}
-          onAction={actions.handleContextMenuAction}
+          appointmentStatus={contextMenuAppointment?.status}
+          hasSupervision={!!contextMenuAppointment?.supervision}
+          isSupervision={contextMenu.isSupervision}
+          onAction={handleMenuAction}
           onClose={actions.closeContextMenu}
         />
       )}

@@ -57,6 +57,8 @@ interface UseWeekCalendarReturn {
   
   showModal: boolean
   showDuplicateModal: boolean
+  showSupervisionModal: boolean
+  supervisionAppointment: Appointment | null
   showDetailDrawer: boolean
   modalDefaults: AppointmentModalDefaults
   contextMenu: ContextMenuState | null
@@ -86,10 +88,14 @@ interface UseWeekCalendarReturn {
     closeDetailDrawer: () => void
     openEditModal: (appointment: Appointment) => void
     openDuplicateModal: (appointment: Appointment) => void
+    openSupervisionModal: (appointment: Appointment) => void
+    closeSupervisionModal: () => void
     closeModal: () => void
     closeDuplicateModal: () => void
     
     openContextMenu: (e: React.MouseEvent, appointmentId: string) => void
+    openMenuAt: (x: number, y: number, appointmentId: string) => void
+    openSupervisionMenuAt: (x: number, y: number, appointmentId: string) => void
     closeContextMenu: () => void
     handleContextMenuAction: (action: string, appointmentId: string) => void
     
@@ -143,6 +149,8 @@ export function useWeekCalendar({
 
   const [showModal, setShowModal] = useState(false)
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
+  const [showSupervisionModal, setShowSupervisionModal] = useState(false)
+  const [supervisionAppointment, setSupervisionAppointment] = useState<Appointment | null>(null)
   const [showDetailDrawer, setShowDetailDrawer] = useState(false)
   const [modalDefaults, setModalDefaults] = useState<AppointmentModalDefaults>({})
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -370,6 +378,20 @@ export function useWeekCalendar({
     setShowDuplicateModal(false)
     setSelectedAppointment(null)
   }, [setSelectedAppointment])
+
+  const openSupervisionModal = useCallback(
+    async (appointment: Appointment) => {
+      const full = await loadAppointmentDetails(appointment)
+      setSupervisionAppointment(full)
+      setShowSupervisionModal(true)
+    },
+    [loadAppointmentDetails],
+  )
+
+  const closeSupervisionModal = useCallback(() => {
+    setShowSupervisionModal(false)
+    setSupervisionAppointment(null)
+  }, [])
   
  
   const openContextMenu = useCallback((e: React.MouseEvent, appointmentId: string) => {
@@ -377,6 +399,14 @@ export function useWeekCalendar({
     setContextMenu({ x: e.clientX, y: e.clientY, appointmentId })
   }, [])
   
+  const openMenuAt = useCallback((x: number, y: number, appointmentId: string) => {
+    setContextMenu({ x, y, appointmentId })
+  }, [])
+
+  const openSupervisionMenuAt = useCallback((x: number, y: number, appointmentId: string) => {
+    setContextMenu({ x, y, appointmentId, isSupervision: true })
+  }, [])
+
   const closeContextMenu = useCallback(() => {
     setContextMenu(null)
   }, [])
@@ -397,6 +427,9 @@ export function useWeekCalendar({
       case "duplicate":
         setSelectedAppointment(appointment)
         setShowDuplicateModal(true)
+        break
+      case "supervision":
+        void openSupervisionModal(appointment)
         break
       case "complete":
         updateAppointment(appointmentId, { status: "Completed" })
@@ -420,7 +453,7 @@ export function useWeekCalendar({
     }
 
     setContextMenu(null)
-  }, [myAppointments, setSelectedAppointment, deleteAppointment, updateAppointment, alert, loadAppointmentDetails])
+  }, [myAppointments, setSelectedAppointment, deleteAppointment, updateAppointment, alert, loadAppointmentDetails, openSupervisionModal])
   
   
   const handleSlotClick = useCallback((date: Date, hour: number) => {
@@ -521,6 +554,8 @@ export function useWeekCalendar({
     
     showModal,
     showDuplicateModal,
+    showSupervisionModal,
+    supervisionAppointment,
     showDetailDrawer,
     modalDefaults,
     contextMenu,
@@ -549,9 +584,13 @@ export function useWeekCalendar({
       closeDetailDrawer,
       openEditModal,
       openDuplicateModal,
+      openSupervisionModal,
+      closeSupervisionModal,
       closeModal,
       closeDuplicateModal,
       openContextMenu,
+      openMenuAt,
+      openSupervisionMenuAt,
       closeContextMenu,
       handleContextMenuAction,
       handleSlotClick,

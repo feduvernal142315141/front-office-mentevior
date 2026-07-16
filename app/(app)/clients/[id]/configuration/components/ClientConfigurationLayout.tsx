@@ -1,11 +1,12 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ClipboardList, BarChart3, Sliders, ArrowLeft } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { useClientServicePlanById } from "@/lib/modules/client-service-plan/hooks/use-client-service-plan-by-id"
+import { useClientServicePlan } from "@/lib/modules/client-service-plan/hooks/use-client-service-plan"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/custom/Button"
@@ -20,15 +21,32 @@ import { DataCollectionContent, type NavigateToItemRequest } from "./DataCollect
 interface ClientConfigurationLayoutProps {
   clientId: string
   clientServicePlanId: string | null
+  initialSection?: string
 }
 
-export function ClientConfigurationLayout({ clientId, clientServicePlanId }: ClientConfigurationLayoutProps) {
+export function ClientConfigurationLayout({ clientId, clientServicePlanId, initialSection }: ClientConfigurationLayoutProps) {
   const router = useRouter()
   const { client, isLoading } = useClientById(clientId)
   const alert = useAlert()
-  const [activeSectionId, setActiveSectionId] = useState("service-plan")
-  const [spId, setSpId] = useState<string | null>(clientServicePlanId)
+
+  // When navigating with section=data-collection but no spId, resolve it from the client
+  const needsSpLookup = initialSection === "data-collection" && !clientServicePlanId
+  const { clientServicePlan: resolvedPlan } = useClientServicePlan(needsSpLookup ? clientId : "")
+  const resolvedSpId = clientServicePlanId ?? resolvedPlan?.id ?? null
+
+  const [activeSectionId, setActiveSectionId] = useState(
+    initialSection === "data-collection" && clientServicePlanId ? "data-collection" : "service-plan",
+  )
+  const [spId, setSpId] = useState<string | null>(resolvedSpId)
   const { clientServicePlan } = useClientServicePlanById(spId ?? "")
+
+  // Once the resolved spId arrives, switch to data-collection
+  useEffect(() => {
+    if (needsSpLookup && resolvedPlan?.id && !spId) {
+      setSpId(resolvedPlan.id)
+      setActiveSectionId("data-collection")
+    }
+  }, [needsSpLookup, resolvedPlan?.id, spId])
   const [autoOpenItem, setAutoOpenItem] = useState<NavigateToItemRequest | null>(null)
   const isItemDirtyRef = useRef(false)
 

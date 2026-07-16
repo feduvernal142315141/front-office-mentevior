@@ -1,9 +1,8 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { X } from "lucide-react"
+import { MoreVertical } from "lucide-react"
 import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
 import { formatTime } from "@/lib/date"
 import {
@@ -12,8 +11,6 @@ import {
   getAppointmentBillingCodeLabel,
   getCalendarEventTypeLabel,
   getEventColor,
-  buildSessionNoteUrl,
-  buildDataCollectionUrl,
   formatAppointmentUnits,
 } from "@/lib/modules/schedules/utils/schedule-display"
 import { cn } from "@/lib/utils"
@@ -26,9 +23,6 @@ const STATUS_STYLES: Record<AppointmentStatus, string> = {
   NoShow: "bg-gray-50 text-gray-700 border-gray-200",
 }
 
-/** Minimum card height (px) to show details + buttons inline */
-const INLINE_THRESHOLD = 140
-
 type CardLayout = "grid" | "list"
 
 interface AppointmentCardProps {
@@ -38,7 +32,8 @@ interface AppointmentCardProps {
   eventColors?: Partial<Record<EventType, string>>
   cardHeight?: number
   onClick?: () => void
-  onDelete?: (e: React.MouseEvent) => void
+  onOpenMenu?: (x: number, y: number) => void
+  onOpenSupervisionMenu?: (x: number, y: number) => void
   isDragOverlay?: boolean
 }
 
@@ -49,10 +44,10 @@ export function AppointmentCard({
   eventColors,
   cardHeight = 0,
   onClick,
-  onDelete,
+  onOpenMenu,
+  onOpenSupervisionMenu,
   isDragOverlay = false,
 }: AppointmentCardProps) {
-  const router = useRouter()
   const eventType = appointment.eventType ?? "session_note"
   const eventColor = getEventColor(eventType, eventColors)
   const eventLabel = getCalendarEventTypeLabel(eventType)
@@ -63,7 +58,50 @@ export function AppointmentCard({
   const clientName = appointment.clientName?.trim() || ""
   const hasSupervision = !!appointment.supervision
 
-  // List layout: used in agency view — shows all info, floating hover buttons
+  // Format supervision billing code labels
+  const sup = appointment.supervision
+  // Session BC: try supervision response fields, fallback to parent appointment's billingCodeName
+  const supSessionBC = sup?.billingCodeCode
+    ? [sup.billingCodeCode, sup.billingCodeModifier ? `(${sup.billingCodeModifier})` : ""].filter(Boolean).join(" ")
+    : appointment.billingCodeName || null
+  // Supervision BC: from supervision response fields
+  const supBillingBC = sup?.supervisionBillingCodeCode
+    ? [sup.supervisionBillingCodeCode, sup.supervisionBillingCodeModifier ? `(${sup.supervisionBillingCodeModifier})` : ""].filter(Boolean).join(" ")
+    : null
+
+  const handleMenuClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+    const rect = e.currentTarget.getBoundingClientRect()
+    onOpenMenu?.(rect.right, rect.bottom + 4)
+  }
+
+  const handleSupervisionMenuClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+    const rect = e.currentTarget.getBoundingClientRect()
+    onOpenSupervisionMenu?.(rect.right, rect.bottom + 4)
+  }
+
+  // ─── Menu trigger button (shared between layouts) ───
+  const menuButton = onOpenMenu && (
+    <button
+      type="button"
+      onClick={handleMenuClick}
+      className={cn(
+        "absolute right-1 top-1 z-10",
+        "p-1 rounded-md",
+        "opacity-100",
+        "transition-all duration-150",
+        "hover:bg-gray-100",
+        "text-gray-400 hover:text-gray-600",
+      )}
+    >
+      <MoreVertical className="h-3.5 w-3.5" />
+    </button>
+  )
+
+  // ─── List layout ───────────────────────────────────────────────────
   if (layout === "list") {
     return (
       <div
@@ -81,21 +119,12 @@ export function AppointmentCard({
         style={{ borderLeftColor: eventColor }}
         onClick={onClick}
       >
-        {/* Delete X */}
-        {onDelete && (
-          <button
-            type="button"
-            onClick={onDelete}
-            className="absolute right-1.5 top-1 z-10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 p-0.5 rounded-full hover:bg-red-100"
-          >
-            <X className="h-3 w-3 text-red-500" />
-          </button>
-        )}
+        {menuButton}
 
-        <div className="px-2.5 py-2 space-y-0.5">
-          {/* Row 1: Time range */}
-          <div className="flex items-center gap-1.5">
-            <p className="text-[11px] font-semibold text-gray-800">
+        <div className="px-2.5 py-2 pr-7 space-y-0.5">
+          {/* Row 1: Time range + status */}
+          <div className="flex items-center justify-between gap-1.5">
+            <p className="text-[11px] font-semibold text-gray-800 truncate">
               {formatAppointmentTimeRange(appointment)}
             </p>
             <span
@@ -128,7 +157,24 @@ export function AppointmentCard({
 
           {/* Supervision sub-event details */}
           {hasSupervision && (
-            <div className="mt-1.5 rounded-lg border border-indigo-200 bg-indigo-50/60 px-2.5 py-2 space-y-0.5">
+            <div className="group/sup relative mt-1.5 rounded-lg border border-indigo-200 bg-indigo-50/60 px-2.5 py-2 space-y-0.5">
+              {/* Supervision ⋮ menu */}
+              {onOpenSupervisionMenu && (
+                <button
+                  type="button"
+                  onClick={handleSupervisionMenuClick}
+                  className={cn(
+                    "absolute right-1 top-1 z-10",
+                    "p-0.5 rounded-md",
+                    "opacity-100",
+                    "transition-all duration-150",
+                    "hover:bg-indigo-200/60",
+                    "text-indigo-400 hover:text-indigo-700",
+                  )}
+                >
+                  <MoreVertical className="h-3 w-3" />
+                </button>
+              )}
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-2 rounded-full bg-indigo-500 flex-shrink-0" />
                 <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-800">
@@ -136,44 +182,25 @@ export function AppointmentCard({
                 </p>
               </div>
               <p className="text-[10px] text-indigo-700">
-                {formatTime(`2000-01-01T${appointment.supervision!.timeInit}`)}
+                {formatTime(`2000-01-01T${sup!.timeInit}`)}
                 {" - "}
-                {formatTime(`2000-01-01T${appointment.supervision!.timeEnd}`)}
-                {appointment.supervision!.units != null && (
-                  <span className="text-indigo-500"> ({appointment.supervision!.units} units)</span>
+                {formatTime(`2000-01-01T${sup!.timeEnd}`)}
+                {sup!.units != null && (
+                  <span className="text-indigo-500"> ({sup!.units} units)</span>
                 )}
               </p>
-              {appointment.supervision!.providerName && (
+              {(supSessionBC || supBillingBC) && (
                 <p className="text-[10px] text-indigo-600">
-                  {appointment.supervision!.providerName}
+                  {[supSessionBC, supBillingBC].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              {sup!.providerName && (
+                <p className="text-[10px] text-indigo-500">
+                  {sup!.providerName}
                 </p>
               )}
             </div>
           )}
-        </div>
-
-        {/* Floating action buttons on hover */}
-        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover/card:opacity-100 transition-all duration-200 pointer-events-none group-hover/card:pointer-events-auto">
-          <button
-            type="button"
-            className="px-2.5 py-1 text-[9px] font-semibold text-white bg-slate-800 rounded-md shadow-lg hover:bg-slate-700 transition-colors whitespace-nowrap"
-            onClick={(e) => {
-              e.stopPropagation()
-              router.push(buildSessionNoteUrl(appointment))
-            }}
-          >
-            Session Note
-          </button>
-          <button
-            type="button"
-            className="px-2.5 py-1 text-[9px] font-semibold text-white bg-[#2563EB] rounded-md shadow-lg hover:bg-[#1d4ed8] transition-colors whitespace-nowrap"
-            onClick={(e) => {
-              e.stopPropagation()
-              router.push(buildDataCollectionUrl(appointment))
-            }}
-          >
-            Data Collection
-          </button>
         </div>
 
         {/* Bottom color bar */}
@@ -185,10 +212,7 @@ export function AppointmentCard({
     )
   }
 
-  // Grid layout (default): time-grid positioned cards
-  const showInline = cardHeight >= INLINE_THRESHOLD
-  const needsHover = !showInline && !isDragOverlay
-
+  // ─── Grid layout ───────────────────────────────────────────────────
   const {
     attributes,
     listeners,
@@ -227,25 +251,10 @@ export function AppointmentCard({
       )}
       onClick={onClick}
     >
-      {/* Delete button */}
-      {onDelete && (
-        <button
-          type="button"
-          onClick={onDelete}
-          className={cn(
-            "absolute right-1.5 top-1 z-10",
-            "opacity-0 group-hover/card:opacity-100",
-            "transition-opacity duration-200",
-            "p-0.5 rounded-full hover:bg-red-100",
-          )}
-        >
-          <X className="h-3 w-3 text-red-500" />
-        </button>
-      )}
+      {menuButton}
 
       {/* Card body */}
-      <div className="h-full overflow-hidden px-2.5 pt-5 pb-1.5 flex flex-col">
-        {/* Header info */}
+      <div className="h-full overflow-hidden px-2.5 pr-7 pt-5 pb-1.5 flex flex-col">
         <div>
           <div className="flex items-center gap-1 mb-0.5">
             <p className="text-[10px] font-medium text-gray-700 truncate">
@@ -278,108 +287,42 @@ export function AppointmentCard({
 
           {/* Supervision sub-event indicator */}
           {hasSupervision && (
-            <div className="mt-1 rounded-md border border-indigo-200 bg-indigo-50/60 px-1.5 py-1 space-y-px">
+            <div className="group/sup relative mt-1 rounded-md border border-indigo-200 bg-indigo-50/60 px-1.5 py-1 space-y-px">
+              {onOpenSupervisionMenu && (
+                <button
+                  type="button"
+                  onClick={handleSupervisionMenuClick}
+                  className={cn(
+                    "absolute right-0.5 top-0.5 z-10",
+                    "p-0.5 rounded",
+                    "opacity-100",
+                    "transition-all duration-150",
+                    "hover:bg-indigo-200/60",
+                    "text-indigo-400 hover:text-indigo-700",
+                  )}
+                >
+                  <MoreVertical className="h-2.5 w-2.5" />
+                </button>
+              )}
               <div className="flex items-center gap-1">
                 <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
                 <p className="text-[9px] font-bold text-indigo-800">SUPERVISION</p>
               </div>
               <p className="text-[9px] text-indigo-600 truncate">
-                {formatTime(`2000-01-01T${appointment.supervision!.timeInit}`)}
+                {formatTime(`2000-01-01T${sup!.timeInit}`)}
                 {" - "}
-                {formatTime(`2000-01-01T${appointment.supervision!.timeEnd}`)}
-                {appointment.supervision!.providerName && ` · ${appointment.supervision!.providerName}`}
+                {formatTime(`2000-01-01T${sup!.timeEnd}`)}
+                {sup!.providerName && ` · ${sup!.providerName}`}
               </p>
+              {(supSessionBC || supBillingBC) && (
+                <p className="text-[9px] text-indigo-500 truncate">
+                  {[supSessionBC, supBillingBC].filter(Boolean).join(" · ")}
+                </p>
+              )}
             </div>
           )}
         </div>
-
-        {/* Inline details + buttons — when card is tall enough */}
-        {showInline && (
-          <div className="mt-auto pt-1.5">
-            <div className="flex items-center gap-2 mb-2 text-[10px] text-gray-500">
-              {units != null && (
-                <span><span className="font-semibold text-gray-700">{units}</span> units</span>
-              )}
-              <span className="truncate">{billingCode}</span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-1.5">
-              <button
-                type="button"
-                className="h-7 text-[10px] font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-colors text-center"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push(buildSessionNoteUrl(appointment))
-                }}
-              >
-                Session Note
-              </button>
-              <button
-                type="button"
-                className="h-7 text-[10px] font-semibold text-white bg-[#2563EB] rounded-lg hover:bg-[#1d4ed8] transition-colors text-center"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push(buildDataCollectionUrl(appointment))
-                }}
-              >
-                Data Collection
-              </button>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Hover panel — only when card is too small */}
-      {needsHover && (
-        <div
-          className={cn(
-            "absolute left-[-1px] right-[-1px] bottom-0 z-20",
-            "translate-y-full",
-            "opacity-0 pointer-events-none",
-            "group-hover/card:opacity-100 group-hover/card:pointer-events-auto",
-            "transition-all duration-200 ease-out",
-          )}
-        >
-          <div
-            className="bg-white rounded-b-xl border border-t-0 border-gray-200 shadow-[0_12px_32px_rgba(0,0,0,0.14)]"
-            style={{ borderLeftColor: eventColor, borderLeftWidth: 3 }}
-          >
-            <div className="flex items-center gap-3 px-3 py-2 border-t border-gray-100">
-              {units != null && (
-                <span className="text-[10px] text-gray-500">
-                  <span className="font-semibold text-gray-700">{units}</span> units
-                </span>
-              )}
-              <span className="text-[10px] text-gray-500 truncate">
-                {billingCode}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-1.5 px-2.5 pb-2.5 pt-1">
-              <button
-                type="button"
-                className="h-7 text-[10px] font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-colors text-center"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push(buildSessionNoteUrl(appointment))
-                }}
-              >
-                Session Note
-              </button>
-              <button
-                type="button"
-                className="h-7 text-[10px] font-semibold text-white bg-[#2563EB] rounded-lg hover:bg-[#1d4ed8] transition-colors text-center"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push(buildDataCollectionUrl(appointment))
-                }}
-              >
-                Data Collection
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bottom color bar */}
       <div

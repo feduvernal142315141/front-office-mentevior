@@ -6,7 +6,6 @@ import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
-import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import {
   Clock,
   Shield,
@@ -15,8 +14,6 @@ import {
 } from "lucide-react"
 import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
 import { useAppointmentForm } from "../hooks/useAppointmentForm"
-import { useAlert } from "@/lib/contexts/alert-context"
-import { useApprovedBillingCodes } from "@/lib/modules/schedules/hooks/use-approved-billing-codes"
 import { formatDuration } from "@/lib/utils/unit-calculation"
 import { cn } from "@/lib/utils"
 
@@ -53,13 +50,9 @@ export function AppointmentModal({
   const {
     formData,
     updateField,
-    updateSupervisionField,
-    isSupervisionConfigured,
     errors,
     validationError,
-    supervisionValidationError,
     isValidatingMain,
-    isValidatingSupervision,
     clientOptions,
     clientsLoading,
     clientsError,
@@ -69,13 +62,8 @@ export function AppointmentModal({
     mainBillingCodesLoading,
     mainBillingCodesError,
     priorAuthorizationOptions,
-    rbtOptions,
-    rbtProvidersLoading,
     durationMinutes,
     billableUnits,
-    supervisionDurationMinutes,
-    supervisionBillableUnits,
-    canAddSupervision,
     isEditing,
     handleSubmit,
     isSubmitting,
@@ -88,30 +76,6 @@ export function AppointmentModal({
     scope,
     onSuccess: onSaved ?? onClose,
   })
-
-  // Supervision billing codes — fetched internally
-  const {
-    billingCodes: supervisionBillingCodes,
-    priorAuthorization: supervisionPriorAuth,
-    isLoading: supervisionBillingCodesLoading,
-  } = useApprovedBillingCodes(
-    formData.addSupervision && formData.clientId ? formData.clientId : null,
-    "Supervision",
-  )
-
-  const supervisionCodeOptions = supervisionBillingCodes.map((bc) => ({
-    value: bc.id,
-    label: bc.label,
-  }))
-
-  const supervisionPALabel = (() => {
-    if (formData.supervision.priorAuthorizationId) {
-      return supervisionPriorAuth?.authNumber
-        ? `# ${supervisionPriorAuth.authNumber}`
-        : "Prior authorization"
-    }
-    return ""
-  })()
 
   return (
     <CustomModal
@@ -284,101 +248,6 @@ export function AppointmentModal({
           />
         )}
 
-        {/* ─── SUPERVISION (inline) ─── */}
-        {canAddSupervision && formData.eventType === "session_note" && (
-          <div className="rounded-2xl border border-indigo-200/60 bg-indigo-50/30 p-4 space-y-4">
-            <PremiumSwitch
-              label="Add Supervision"
-              description="Schedule a supervision session alongside this Session event"
-              checked={formData.addSupervision}
-              onCheckedChange={(v) => updateField("addSupervision", v)}
-            />
-
-            {formData.addSupervision && (
-              <div className="space-y-4 pt-1">
-                {/* RBT + Supervision Billing Code */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <FloatingSelect
-                      label="RBT (Provider)"
-                      value={formData.supervision.providerId}
-                      onChange={(v) => updateSupervisionField("providerId", v)}
-                      options={rbtOptions}
-                      hasError={!!errors.supervisionRbtId}
-                      required
-                      searchable
-                      disabled={!formData.clientId || rbtProvidersLoading}
-                    />
-                    <FieldError message={errors.supervisionRbtId} />
-                  </div>
-                  <div>
-                    <FloatingSelect
-                      label="Supervision Billing Code"
-                      value={formData.supervision.billingCodeId}
-                      onChange={(v) => updateSupervisionField("billingCodeId", v)}
-                      options={supervisionCodeOptions}
-                      hasError={!!errors.supervisionBillingCodeId}
-                      required
-                      searchable
-                      dropdownPosition="bottom"
-                      disabled={supervisionBillingCodesLoading}
-                    />
-                    <FieldError message={errors.supervisionBillingCodeId} />
-                  </div>
-                </div>
-
-                {/* Supervision Date */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <PremiumDatePicker
-                    label="Supervision Date"
-                    value={formData.supervision.date}
-                    onChange={(v) => updateSupervisionField("date", v)}
-                    onClear={() => updateSupervisionField("date", "")}
-                    hasError={!!errors["supervision.date"]}
-                    required
-                  />
-                </div>
-
-                {/* Supervision Start + End — 50/50 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <FloatingTimePicker
-                      label="Start Time"
-                      value={formData.supervision.startTime}
-                      onChange={(v) => updateSupervisionField("startTime", v)}
-                      hasError={!!errors["supervision.startTime"] || !!supervisionValidationError}
-                      required
-                      allowManualInput
-                    />
-                  </div>
-                  <div>
-                    <FloatingTimePicker
-                      label="End Time"
-                      value={formData.supervision.endTime}
-                      onChange={(v) => updateSupervisionField("endTime", v)}
-                      hasError={!!errors["supervision.endTime"] || !!supervisionValidationError}
-                      required
-                      allowManualInput
-                      defaultPeriod="PM"
-                    />
-                  </div>
-                </div>
-                <FieldError message={supervisionValidationError || errors.supervisionTimeRange} />
-                <FieldError message={errors.supervisionConfig} />
-
-                {/* Supervision summary bar */}
-                {supervisionDurationMinutes > 0 && (
-                  <SummaryBar
-                    label="Supervision Duration"
-                    duration={formatDuration(supervisionDurationMinutes)}
-                    priorAuth={supervisionPALabel || (isValidatingSupervision ? "Validating…" : undefined)}
-                    variant="indigo"
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </form>
 
       {/* Footer */}

@@ -74,12 +74,7 @@ export function buildSessionNoteUrl(appointment: Appointment): string {
 }
 
 export function buildDataCollectionUrl(appointment: Appointment): string {
-  const params = new URLSearchParams({
-    clientId: appointment.clientId,
-    date: appointment.date ?? format(parseISO(appointment.startsAt), "yyyy-MM-dd"),
-    appointmentId: appointment.id,
-  })
-  return `/data-collection/onsite-collection?${params.toString()}`
+  return `/clients/${appointment.clientId}/configuration?section=data-collection`
 }
 
 export function matchesLocationFilter(
