@@ -7,16 +7,23 @@ import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appoi
 import { useApprovedBillingCodes } from "@/lib/modules/schedules/hooks/use-approved-billing-codes"
 import { validateAppointmentEventData } from "@/lib/modules/schedules/services/appointment-validate.service"
 import { usePriorAuthorizationLabel } from "@/lib/modules/schedules/hooks/use-prior-authorization-label"
+import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { getClientAddressById } from "@/lib/modules/client-addresses/services/client-addresses.service"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useAppointmentConfig } from "@/lib/modules/appointment-config/hooks/use-appointment-config"
 import { useAlert } from "@/lib/contexts/alert-context"
+import { canHaveInlineSupervision } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
+import { createSubEvent } from "@/lib/modules/schedules/services/appointment-sub-event.service"
 import {
   appointmentToFormData,
   buildAppointmentApiPayload,
   buildMainValidateKey,
+  buildSupervisionValidateKey,
+  createEmptySupervisionForm,
   toApiEventType,
+  toApiTime,
   toValidateTime,
 } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import {
@@ -39,6 +46,8 @@ function eventTypeToBillingCodeType(eventType: EventType): string {
 
 interface UseAppointmentFormProps {
   appointment?: Appointment | null
+  /** Parent appointment for "Add New Session" flow */
+  parentAppointment?: Appointment | null
   defaultDate?: string
   defaultTime?: string
   rbtId: string
@@ -58,21 +67,12 @@ const getInitialFormData = (defaultDate?: string, defaultTime?: string): Appoint
   approvedPriorAuthorizationBillingCodeId: "",
   validatedUnits: null,
   addSupervision: false,
-  supervision: {
-    title: "",
-    providerId: "",
-    billingCodeId: "",
-    date: "",
-    startTime: "",
-    endTime: "",
-    priorAuthorizationId: "",
-    approvedPriorAuthorizationBillingCodeId: "",
-    validatedUnits: null,
-  },
+  supervision: createEmptySupervisionForm(),
 })
 
 export function useAppointmentForm({
   appointment,
+  parentAppointment,
   defaultDate,
   defaultTime,
   rbtId,
@@ -89,11 +89,15 @@ export function useAppointmentForm({
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [supervisionValidationError, setSupervisionValidationError] = useState<string | null>(null)
   const [isValidatingMain, setIsValidatingMain] = useState(false)
+  const [isValidatingSupervision, setIsValidatingSupervision] = useState(false)
   const skipDependentResetsRef = useRef(0)
   const mainValidateKey = useRef("")
+  const supervisionValidateKey = useRef("")
 
   const isEditing = !!appointment
+  const isNewSessionMode = !!parentAppointment && !appointment
   const providerId = user?.id ?? rbtId
 
   const userRole = (user as { role?: { name?: string } | string })?.role
@@ -105,11 +109,19 @@ export function useAppointmentForm({
         : ""
   const isRbt = normalizedRole.includes("rbt")
 
+  const { config: appointmentConfig } = useAppointmentConfig()
+  const canAddSupervision = !isRbt && appointmentConfig?.allowedSubEvents === "supervision"
+
   const {
     clients,
     isLoading: clientsLoading,
     error: clientsError,
   } = useClientsByLoggedUser({ page: 0, pageSize: 100 })
+
+  const {
+    providers: clientProviders,
+    isLoading: clientProvidersLoading,
+  } = useProvidersByClient(formData.clientId || null)
 
   const { addresses, isLoading: addressesLoading } = useClientAddresses(
     formData.clientId || null,
@@ -124,6 +136,40 @@ export function useAppointmentForm({
     error: mainBillingCodesError,
   } = useApprovedBillingCodes(formData.clientId || null, billingCodeType)
 
+  // ─── Determine if selected BC allows inline supervision ───
+  const selectedBillingCodeLabel = useMemo(() => {
+    const bc = mainBillingCodes.find((b) => b.id === formData.billingCodeId)
+    return bc?.label ?? ""
+  }, [mainBillingCodes, formData.billingCodeId])
+
+  const showSupervisionSwitch = canAddSupervision && canHaveInlineSupervision(selectedBillingCodeLabel)
+
+  // Supervision billing codes — from prior authorization, same as SupervisionConfigModal
+  const {
+    billingCodes: supervisionBillingCodes,
+    isLoading: supervisionBillingCodesLoading,
+  } = useApprovedBillingCodes(
+    showSupervisionSwitch && formData.clientId ? formData.clientId : null,
+    "Supervision",
+  )
+
+  const supervisionCodeOptions = useMemo(
+    () => supervisionBillingCodes.map((bc) => ({ value: bc.id, label: bc.label })),
+    [supervisionBillingCodes],
+  )
+
+  // ─── RBT provider options ───
+  const rbtOptions = useMemo(
+    () =>
+      clientProviders
+        .filter((provider) => provider.active && !provider.terminated && provider.userId)
+        .map((provider) => ({
+          value: provider.userId,
+          label: provider.fullName,
+        })),
+    [clientProviders],
+  )
+
   const durationMinutes = useMemo(
     () => calculateDurationMinutes(formData.startTime, formData.endTime),
     [formData.startTime, formData.endTime],
@@ -132,8 +178,19 @@ export function useAppointmentForm({
   const billableUnits =
     formData.validatedUnits ?? calculateBillableUnits(durationMinutes)
 
+  const supervisionDurationMinutes = useMemo(
+    () => calculateDurationMinutes(formData.supervision.startTime, formData.supervision.endTime),
+    [formData.supervision.startTime, formData.supervision.endTime],
+  )
+
+  const supervisionBillableUnits =
+    formData.supervision.validatedUnits ?? calculateBillableUnits(supervisionDurationMinutes)
+
   const { label: priorAuthorizationLabel, isLoading: isLoadingPriorAuthLabel } =
     usePriorAuthorizationLabel(formData.priorAuthorizationId, formData.clientId)
+
+  const { label: supervisionPriorAuthLabel } =
+    usePriorAuthorizationLabel(formData.supervision.priorAuthorizationId, formData.clientId)
 
   const priorAuthorizationOptions = useMemo(() => {
     if (!formData.priorAuthorizationId) return []
@@ -178,10 +235,14 @@ export function useAppointmentForm({
     return options
   }, [addresses, formData.placeOfServiceAddressId, appointment?.addressLabel])
 
-  const billingCodeOptions = useMemo(
-    () => mainBillingCodes.map((bc) => ({ value: bc.id, label: bc.label })),
-    [mainBillingCodes],
-  )
+  const billingCodeOptions = useMemo(() => {
+    const options = mainBillingCodes.map((bc) => ({ value: bc.id, label: bc.label }))
+    // In "Add New Session" mode, only show 97155 codes
+    if (isNewSessionMode) {
+      return options.filter((opt) => /\b97155\b/.test(opt.label))
+    }
+    return options
+  }, [mainBillingCodes, isNewSessionMode])
 
   const clientOptions = useMemo(
     () => clients.map((c) => ({ value: c.id, label: c.fullName })),
@@ -198,6 +259,8 @@ export function useAppointmentForm({
           next.priorAuthorizationId = ""
           next.approvedPriorAuthorizationBillingCodeId = ""
           next.validatedUnits = null
+          next.addSupervision = false
+          next.supervision = createEmptySupervisionForm()
         }
         if (
           field === "startTime" ||
@@ -208,6 +271,11 @@ export function useAppointmentForm({
           next.priorAuthorizationId = ""
           next.approvedPriorAuthorizationBillingCodeId = ""
           next.validatedUnits = null
+        }
+        // Reset supervision when billing code changes
+        if (field === "billingCodeId") {
+          next.addSupervision = false
+          next.supervision = createEmptySupervisionForm()
         }
         return next
       })
@@ -231,6 +299,38 @@ export function useAppointmentForm({
     [],
   )
 
+  const updateSupervisionField = useCallback(
+    <K extends keyof AppointmentFormData["supervision"]>(
+      field: K,
+      value: AppointmentFormData["supervision"][K],
+    ) => {
+      setFormData((prev) => ({
+        ...prev,
+        supervision: { ...prev.supervision, [field]: value },
+      }))
+      setErrors((prev) => {
+        const next = { ...prev }
+        delete next[`supervision.${field}`]
+        delete next.supervisionBillingCodeId
+        delete next.supervisionRbtId
+        if (field === "startTime" || field === "endTime" || field === "date") {
+          delete next.supervisionTimeRange
+        }
+        return next
+      })
+      if (field === "startTime" || field === "endTime" || field === "date") {
+        setSupervisionValidationError(null)
+        supervisionValidateKey.current = ""
+      }
+    },
+    [],
+  )
+
+  const isSupervisionConfigured = useMemo(() => {
+    const s = formData.supervision
+    return !!(s.providerId && s.billingCodeId && s.date && s.startTime && s.endTime)
+  }, [formData.supervision])
+
   // ─── Effects ───
 
   useEffect(() => {
@@ -243,13 +343,28 @@ export function useAppointmentForm({
       } else {
         mainValidateKey.current = ""
       }
+    } else if (parentAppointment) {
+      // "Add New Session" — pre-fill from parent appointment
+      const toFormTime = (v?: string) => (v && v.length >= 5 ? v.slice(0, 5) : v ?? "")
+      skipDependentResetsRef.current = 2
+      setFormData({
+        ...getInitialFormData(),
+        eventType: "session_note",
+        clientId: parentAppointment.clientId ?? "",
+        placeOfServiceAddressId: parentAppointment.placeOfServiceAddressId ?? parentAppointment.clientAddressId ?? "",
+        date: parentAppointment.date ?? "",
+        startTime: toFormTime(parentAppointment.timeInit) || "",
+        endTime: toFormTime(parentAppointment.timeEnd) || "",
+      })
+      mainValidateKey.current = ""
     } else {
       setFormData(getInitialFormData(defaultDate, defaultTime))
       mainValidateKey.current = ""
     }
     setErrors({})
     setValidationError(null)
-  }, [appointment, defaultDate, defaultTime])
+    setSupervisionValidationError(null)
+  }, [appointment, parentAppointment, defaultDate, defaultTime])
 
   useEffect(() => {
     if (isEditing) return
@@ -287,13 +402,9 @@ export function useAppointmentForm({
         skipDependentResetsRef.current = 1
         setFormData((prev) => ({ ...prev, clientId: address.clientId }))
       })
-      .catch(() => {
-        // keep address selected even if client lookup fails
-      })
+      .catch(() => {})
 
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [isEditing, formData.clientId, formData.placeOfServiceAddressId])
 
   useEffect(() => {
@@ -302,7 +413,6 @@ export function useAppointmentForm({
     }
   }, [addresses, addressesLoading, formData.placeOfServiceAddressId])
 
-  // Auto-assign prior authorization from active PA only when it has billing codes
   useEffect(() => {
     if (!activePriorAuth || mainBillingCodes.length === 0) {
       setFormData((prev) => {
@@ -317,13 +427,12 @@ export function useAppointmentForm({
     }))
   }, [activePriorAuth, mainBillingCodes.length])
 
-  // Auto-select billing code if only one available
   useEffect(() => {
     if (mainBillingCodesLoading) return
-    if (mainBillingCodes.length === 1 && !formData.billingCodeId) {
-      setFormData((prev) => ({ ...prev, billingCodeId: mainBillingCodes[0].id }))
+    if (billingCodeOptions.length === 1 && !formData.billingCodeId) {
+      setFormData((prev) => ({ ...prev, billingCodeId: billingCodeOptions[0].value }))
     }
-  }, [mainBillingCodes, mainBillingCodesLoading, formData.billingCodeId])
+  }, [billingCodeOptions, mainBillingCodesLoading, formData.billingCodeId])
 
   // Reset billing code on event type change
   useEffect(() => {
@@ -339,17 +448,58 @@ export function useAppointmentForm({
       priorAuthorizationId: "",
       approvedPriorAuthorizationBillingCodeId: "",
       validatedUnits: null,
+      addSupervision: false,
+      supervision: createEmptySupervisionForm(),
     }))
     setValidationError(null)
+    setSupervisionValidationError(null)
     mainValidateKey.current = ""
   }, [formData.eventType, isEditing])
+
+  // Auto-populate supervision date/times from main when toggled on
+  useEffect(() => {
+    if (!formData.addSupervision) {
+      setFormData((prev) => ({ ...prev, supervision: createEmptySupervisionForm() }))
+      setSupervisionValidationError(null)
+      return
+    }
+    setFormData((prev) => ({
+      ...prev,
+      supervision: {
+        ...prev.supervision,
+        date: prev.supervision.date || prev.date,
+        startTime: prev.supervision.startTime || prev.startTime,
+        endTime: prev.supervision.endTime || prev.endTime,
+      },
+    }))
+  }, [formData.addSupervision])
+
+  // Auto-select single supervision billing code
+  useEffect(() => {
+    if (supervisionBillingCodesLoading || !formData.addSupervision) return
+    if (supervisionCodeOptions.length === 1 && !formData.supervision.billingCodeId) {
+      setFormData((prev) => ({
+        ...prev,
+        supervision: { ...prev.supervision, billingCodeId: supervisionCodeOptions[0].value },
+      }))
+    }
+  }, [supervisionCodeOptions, supervisionBillingCodesLoading, formData.addSupervision, formData.supervision.billingCodeId])
+
+  // Auto-select single RBT provider for supervision
+  useEffect(() => {
+    if (clientProvidersLoading || !formData.addSupervision) return
+    if (rbtOptions.length === 1 && !formData.supervision.providerId) {
+      setFormData((prev) => ({
+        ...prev,
+        supervision: { ...prev.supervision, providerId: rbtOptions[0].value },
+      }))
+    }
+  }, [rbtOptions, clientProvidersLoading, formData.addSupervision, formData.supervision.providerId])
 
   // Main validation effect
   useEffect(() => {
     const { clientId, billingCodeId, startTime, endTime, date, eventType } = formData
-    if (!clientId || !billingCodeId || !startTime || !endTime || !date) {
-      return
-    }
+    if (!clientId || !billingCodeId || !startTime || !endTime || !date) return
 
     const key = buildMainValidateKey({ clientId, billingCodeId, startTime, endTime, date, eventType })
     if (key === mainValidateKey.current) return
@@ -372,8 +522,7 @@ export function useAppointmentForm({
           ...prev,
           validatedUnits: result.unitsToUse,
           priorAuthorizationId: result.priorAuthorizationId,
-          approvedPriorAuthorizationBillingCodeId:
-            result.approvedPriorAuthorizationBillingCodeId,
+          approvedPriorAuthorizationBillingCodeId: result.approvedPriorAuthorizationBillingCodeId,
         }))
       } catch (err) {
         if (cancelled) return
@@ -390,17 +539,63 @@ export function useAppointmentForm({
       }
     }
     void run()
-    return () => {
-      cancelled = true
+    return () => { cancelled = true }
+  }, [formData.clientId, formData.billingCodeId, formData.startTime, formData.endTime, formData.date, formData.eventType])
+
+  // Supervision validation effect — validates using the SESSION billing code (parent), not supervision BC
+  useEffect(() => {
+    if (!formData.addSupervision) return
+
+    const { clientId, billingCodeId: sessionBillingCodeId } = formData
+    const { startTime, endTime, date } = formData.supervision
+    if (!clientId || !sessionBillingCodeId || !startTime || !endTime || !date) return
+
+    const key = buildSupervisionValidateKey(clientId, { billingCodeId: sessionBillingCodeId, startTime, endTime, date })
+    if (key === supervisionValidateKey.current) return
+    supervisionValidateKey.current = key
+
+    let cancelled = false
+    const run = async () => {
+      try {
+        setIsValidatingSupervision(true)
+        setSupervisionValidationError(null)
+        const result = await validateAppointmentEventData({
+          clientId,
+          billingCodeId: sessionBillingCodeId,
+          startTime: toValidateTime(startTime),
+          endTime: toValidateTime(endTime),
+          appointmentTypeEvent: "Supervision",
+        })
+        if (cancelled) return
+        setFormData((prev) => ({
+          ...prev,
+          supervision: {
+            ...prev.supervision,
+            validatedUnits: result.unitsToUse,
+            priorAuthorizationId: result.priorAuthorizationId,
+            approvedPriorAuthorizationBillingCodeId: result.approvedPriorAuthorizationBillingCodeId,
+          },
+        }))
+      } catch (err) {
+        if (cancelled) return
+        supervisionValidateKey.current = ""
+        setFormData((prev) => ({
+          ...prev,
+          supervision: {
+            ...prev.supervision,
+            validatedUnits: null,
+            priorAuthorizationId: "",
+            approvedPriorAuthorizationBillingCodeId: "",
+          },
+        }))
+        setSupervisionValidationError(err instanceof Error ? err.message : "Supervision validation failed")
+      } finally {
+        if (!cancelled) setIsValidatingSupervision(false)
+      }
     }
-  }, [
-    formData.clientId,
-    formData.billingCodeId,
-    formData.startTime,
-    formData.endTime,
-    formData.date,
-    formData.eventType,
-  ])
+    void run()
+    return () => { cancelled = true }
+  }, [formData.addSupervision, formData.clientId, formData.billingCodeId, formData.supervision.startTime, formData.supervision.endTime, formData.supervision.date])
 
   // ─── Validation & Submit ───
 
@@ -422,21 +617,34 @@ export function useAppointmentForm({
       newErrors.billingCodeId = "Select a billing code"
     }
 
+    // In "Add New Session" mode, prevent selecting the same billing code as the parent
+    if (isNewSessionMode && parentAppointment?.billingCodeId && formData.billingCodeId === parentAppointment.billingCodeId) {
+      newErrors.billingCodeId = "Cannot select the same billing code as the parent session"
+    }
+
     if (validationError) {
       newErrors.timeRange = validationError
     }
 
+    // Supervision validation (only when switch is on and BC allows it)
+    if (formData.addSupervision && showSupervisionSwitch) {
+      if (!formData.supervision.providerId) newErrors.supervisionRbtId = "Select a provider"
+      // supervisionBillingCodeId is optional
+      if (!formData.supervision.date) newErrors["supervision.date"] = "Select a supervision date"
+      if (!formData.supervision.startTime) newErrors["supervision.startTime"] = "Select supervision start time"
+      if (!formData.supervision.endTime) newErrors["supervision.endTime"] = "Select supervision end time"
+      if (supervisionValidationError) newErrors.supervisionTimeRange = supervisionValidationError
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }, [formData, validationError])
+  }, [formData, validationError, supervisionValidationError, showSupervisionSwitch, isNewSessionMode, parentAppointment])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
 
-      if (!validateForm()) {
-        return
-      }
+      if (!validateForm()) return
 
       const startsAt = new Date(`${formData.date}T${formData.startTime}`).toISOString()
       const endsAt = new Date(`${formData.date}T${formData.endTime}`).toISOString()
@@ -452,13 +660,36 @@ export function useAppointmentForm({
       const units = formData.validatedUnits ?? calculateBillableUnits(durationMinutes)
       const apiPayload = buildAppointmentApiPayload(formData, providerId, units)
 
+      let appointmentId: string | null = null
+
       if (isEditing && appointment) {
-        const id = await mutations.update({ ...apiPayload, id: appointment.id })
-        if (id) onSuccess?.()
+        appointmentId = await mutations.update({ ...apiPayload, id: appointment.id })
       } else {
-        const id = await mutations.create(apiPayload)
-        if (id) onSuccess?.()
+        appointmentId = await mutations.create(apiPayload)
       }
+
+      if (!appointmentId) return
+
+      // Create supervision sub-event if switch is on
+      if (formData.addSupervision && showSupervisionSwitch && isSupervisionConfigured) {
+        try {
+          const supUnits = formData.supervision.validatedUnits ?? calculateBillableUnits(supervisionDurationMinutes)
+          await createSubEvent({
+            appointmentId,
+            timeInit: toApiTime(formData.supervision.startTime),
+            timeEnd: toApiTime(formData.supervision.endTime),
+            date: formData.supervision.date || formData.date,
+            billingCodeId: formData.supervision.billingCodeId,
+            supervisionBillingCodeId: formData.supervision.billingCodeId,
+            units: supUnits,
+            providerId: formData.supervision.providerId || providerId,
+          })
+        } catch {
+          alert.error("Supervision Error", "Appointment created but supervision sub-event failed. You can add it later from the menu.")
+        }
+      }
+
+      onSuccess?.()
     },
     [
       validateForm,
@@ -467,10 +698,13 @@ export function useAppointmentForm({
       appointment,
       isEditing,
       durationMinutes,
+      supervisionDurationMinutes,
       checkConflict,
       mutations,
       alert,
       onSuccess,
+      showSupervisionSwitch,
+      isSupervisionConfigured,
     ],
   )
 
@@ -485,9 +719,12 @@ export function useAppointmentForm({
   return {
     formData,
     updateField,
+    updateSupervisionField,
     errors,
     validationError,
+    supervisionValidationError,
     isValidatingMain,
+    isValidatingSupervision,
     clientOptions,
     clientsLoading,
     clientsError,
@@ -503,6 +740,15 @@ export function useAppointmentForm({
     hasPriorAuthWithoutCodes,
     durationMinutes,
     billableUnits,
+    supervisionDurationMinutes,
+    supervisionBillableUnits,
+    supervisionCodeOptions,
+    supervisionBillingCodesLoading,
+    supervisionPriorAuthLabel,
+    rbtOptions,
+    rbtProvidersLoading: clientProvidersLoading,
+    showSupervisionSwitch,
+    isNewSessionMode,
     isRbt,
     isEditing,
     handleSubmit,

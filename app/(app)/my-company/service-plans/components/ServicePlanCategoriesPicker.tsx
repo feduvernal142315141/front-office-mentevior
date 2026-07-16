@@ -4,6 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Pencil, Search, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/custom/Button"
+import { MultiSelect } from "@/components/custom/MultiSelect"
+import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
+import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
+import {
+  getServicePlanCategoryById,
+  type CategoryBillingCodePayload,
+} from "@/lib/modules/service-plans/services/service-plan-categories-catalog.service"
 
 interface ServicePlanCategoryOption {
   value: string
@@ -15,8 +22,8 @@ interface ServicePlanCategoriesPickerProps {
   value: string[]
   onChange: (next: string[]) => void
   options: ServicePlanCategoryOption[]
-  onCreateCategory: (name: string) => Promise<string | null>
-  onEditCategory: (id: string, name: string) => Promise<string | null>
+  onCreateCategory: (name: string, billingCodes?: CategoryBillingCodePayload[]) => Promise<string | null>
+  onEditCategory: (id: string, name: string, billingCodes?: CategoryBillingCodePayload[]) => Promise<string | null>
   onDeleteCategory: (id: string) => Promise<boolean>
   isCreatingCategory?: boolean
   isUpdatingCategory?: boolean
@@ -49,7 +56,27 @@ export function ServicePlanCategoriesPicker({
   const [newCategoryName, setNewCategoryName] = useState("")
   const [editingCategoryValue, setEditingCategoryValue] = useState<string | null>(null)
   const [pendingScrollCategoryValue, setPendingScrollCategoryValue] = useState<string | null>(null)
+  const [selectedBillingCodeIds, setSelectedBillingCodeIds] = useState<string[]>([])
   const categoryButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+  // Fetch company billing codes catalog
+  const {
+    billingCodes: allBillingCodes,
+    isLoading: billingCodesLoading,
+  } = useBillingCodes({ page: 0, pageSize: 100 })
+
+  const billingCodeOptions = useMemo(
+    () =>
+      allBillingCodes.map((bc) => ({
+        value: bc.id,
+        label: formatBillingCodeDisplay({ type: bc.type, code: bc.code, modifier: bc.modifier }),
+        tagLabel: bc.modifier?.trim() ? `${bc.code} (${bc.modifier.trim()})` : bc.code,
+        type: bc.type,
+        code: bc.code,
+        modifier: bc.modifier,
+      })),
+    [allBillingCodes],
+  )
 
   const normalizedQuery = normalizeQuery(query)
 
@@ -112,16 +139,30 @@ export function ServicePlanCategoriesPicker({
     setQuery("")
     setNewCategoryName("")
     setEditingCategoryValue(null)
+    setSelectedBillingCodeIds([])
     setIsAddingCategory(true)
   }
 
-  const handleStartEditCategory = (option: ServicePlanCategoryOption) => {
+  const handleStartEditCategory = async (option: ServicePlanCategoryOption) => {
     if (disabled || !option.canEdit) return
 
     setQuery("")
     setNewCategoryName(option.label)
     setEditingCategoryValue(option.value)
     setIsAddingCategory(true)
+
+    // Fetch category details to populate billing codes
+    try {
+      const category = await getServicePlanCategoryById(option.value)
+      if (category?.billingCodes && category.billingCodes.length > 0) {
+        const ids = category.billingCodes.map((bc) => bc.id)
+        setSelectedBillingCodeIds(ids)
+      } else {
+        setSelectedBillingCodeIds([])
+      }
+    } catch {
+      setSelectedBillingCodeIds([])
+    }
   }
 
   const handleCancelAddCategory = () => {
@@ -129,15 +170,29 @@ export function ServicePlanCategoriesPicker({
 
     setNewCategoryName("")
     setEditingCategoryValue(null)
+    setSelectedBillingCodeIds([])
     setIsAddingCategory(false)
+  }
+
+  const buildBillingCodesPayload = (): CategoryBillingCodePayload[] | undefined => {
+    if (selectedBillingCodeIds.length === 0) return undefined
+    return billingCodeOptions
+      .filter((bc) => selectedBillingCodeIds.includes(bc.value))
+      .map((bc) => ({
+        type: bc.type,
+        code: bc.code,
+        modifier: bc.modifier || null,
+      }))
   }
 
   const handleSaveCategory = async () => {
     if (!canSaveCategory) return
 
+    const billingCodes = buildBillingCodesPayload()
+
     const savedCategoryValue = editingCategoryValue
-      ? await onEditCategory(editingCategoryValue, newCategoryName.trim())
-      : await onCreateCategory(newCategoryName.trim())
+      ? await onEditCategory(editingCategoryValue, newCategoryName.trim(), billingCodes)
+      : await onCreateCategory(newCategoryName.trim(), billingCodes)
 
     if (!savedCategoryValue) return
 
@@ -149,6 +204,7 @@ export function ServicePlanCategoriesPicker({
 
     setNewCategoryName("")
     setEditingCategoryValue(null)
+    setSelectedBillingCodeIds([])
     setQuery("")
     setIsAddingCategory(false)
   }
@@ -166,6 +222,7 @@ export function ServicePlanCategoriesPicker({
     if (editingCategoryValue === option.value) {
       setNewCategoryName("")
       setEditingCategoryValue(null)
+      setSelectedBillingCodeIds([])
       setIsAddingCategory(false)
     }
   }
@@ -232,7 +289,8 @@ export function ServicePlanCategoriesPicker({
       </div>
 
       {isAddingCategory ? (
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="mt-4 space-y-3">
+          {/* Category name */}
           <input
             type="text"
             value={newCategoryName}
@@ -244,9 +302,9 @@ export function ServicePlanCategoriesPicker({
               }
             }}
             disabled={disabled || isSavingCategory}
-            placeholder="Name"
+            placeholder="Category name"
             className={cn(
-              "h-10 w-full rounded-xl border bg-white px-3 text-sm text-slate-900 sm:w-[90%]",
+              "h-10 w-full rounded-xl border bg-white px-3 text-sm text-slate-900",
               "placeholder:text-slate-400",
               "transition-colors focus:outline-none focus:ring-2",
               "disabled:cursor-not-allowed disabled:bg-slate-100",
@@ -256,11 +314,24 @@ export function ServicePlanCategoriesPicker({
             )}
           />
 
-          <div className="flex items-center gap-2 sm:justify-end">
+          {/* Billing codes multiselect */}
+          <MultiSelect
+            label="Billing Codes"
+            value={selectedBillingCodeIds}
+            onChange={setSelectedBillingCodeIds}
+            options={billingCodeOptions}
+            searchable
+            searchPlaceholder="Search billing codes..."
+            disabled={disabled || isSavingCategory || billingCodesLoading}
+            tone="neutral"
+          />
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
               onClick={handleCancelAddCategory}
-               disabled={disabled || isSavingCategory}
+              disabled={disabled || isSavingCategory}
               className={cn(
                 "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300",
@@ -280,7 +351,7 @@ export function ServicePlanCategoriesPicker({
               disabled={!canSaveCategory}
               className="h-8 px-3 text-xs"
             >
-               {isSavingCategory ? "Saving..." : "Save"}
+              {isSavingCategory ? "Saving..." : "Save"}
             </Button>
           </div>
         </div>

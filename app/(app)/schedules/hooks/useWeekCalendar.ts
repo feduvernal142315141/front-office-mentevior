@@ -59,6 +59,7 @@ interface UseWeekCalendarReturn {
   showDuplicateModal: boolean
   showSupervisionModal: boolean
   supervisionAppointment: Appointment | null
+  parentAppointment: Appointment | null
   showDetailDrawer: boolean
   modalDefaults: AppointmentModalDefaults
   contextMenu: ContextMenuState | null
@@ -90,6 +91,7 @@ interface UseWeekCalendarReturn {
     openDuplicateModal: (appointment: Appointment) => void
     openSupervisionModal: (appointment: Appointment) => void
     closeSupervisionModal: () => void
+    openNewSessionFromParent: (appointment: Appointment) => void
     closeModal: () => void
     closeDuplicateModal: () => void
     
@@ -151,6 +153,7 @@ export function useWeekCalendar({
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
   const [showSupervisionModal, setShowSupervisionModal] = useState(false)
   const [supervisionAppointment, setSupervisionAppointment] = useState<Appointment | null>(null)
+  const [parentAppointment, setParentAppointment] = useState<Appointment | null>(null)
   const [showDetailDrawer, setShowDetailDrawer] = useState(false)
   const [modalDefaults, setModalDefaults] = useState<AppointmentModalDefaults>({})
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -366,6 +369,7 @@ export function useWeekCalendar({
   const closeModal = useCallback(() => {
     setShowModal(false)
     setSelectedAppointment(null)
+    setParentAppointment(null)
     setModalDefaults({})
   }, [setSelectedAppointment])
 
@@ -392,7 +396,18 @@ export function useWeekCalendar({
     setShowSupervisionModal(false)
     setSupervisionAppointment(null)
   }, [])
-  
+
+  const openNewSessionFromParent = useCallback(
+    async (appointment: Appointment) => {
+      const full = await loadAppointmentDetails(appointment)
+      setParentAppointment(full)
+      setSelectedAppointment(null)
+      setModalDefaults({})
+      setShowModal(true)
+    },
+    [loadAppointmentDetails, setSelectedAppointment],
+  )
+
  
   const openContextMenu = useCallback((e: React.MouseEvent, appointmentId: string) => {
     e.preventDefault()
@@ -556,6 +571,7 @@ export function useWeekCalendar({
     showDuplicateModal,
     showSupervisionModal,
     supervisionAppointment,
+    parentAppointment,
     showDetailDrawer,
     modalDefaults,
     contextMenu,
@@ -586,6 +602,7 @@ export function useWeekCalendar({
       openDuplicateModal,
       openSupervisionModal,
       closeSupervisionModal,
+      openNewSessionFromParent,
       closeModal,
       closeDuplicateModal,
       openContextMenu,

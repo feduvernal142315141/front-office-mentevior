@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 
 // ============================================
@@ -80,6 +80,12 @@ export async function updateSubEvent(
   }
 
   return payload.appointmentId
+}
+
+/** DELETE /appointment-sub-event/{id} — soft delete a supervision sub-event */
+export async function deleteSubEvent(id: string): Promise<boolean> {
+  const response = await serviceDelete(`/appointment-sub-event/${id}`)
+  return response.status === 200 || response.status === 201
 }
 
 /** GET /appointment-sub-event/{id} — fetch a single supervision sub-event */

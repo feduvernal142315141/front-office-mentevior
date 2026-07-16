@@ -20,8 +20,12 @@ interface AppointmentContextMenuProps {
   appointmentId: string
   appointmentStatus?: AppointmentStatus
   hasSupervision?: boolean
-  /** When true, shows supervision-specific items instead of appointment items */
+  /** "add_supervision" | "add_new_session" | "none" — determined by parent billing code */
+  billingCodeAction?: "add_supervision" | "add_new_session" | "none"
+  /** When true, shows sub-event-specific items instead of appointment items */
   isSupervision?: boolean
+  /** Parent billing code action — helps differentiate supervision vs session/supervision menus */
+  parentBillingCodeAction?: "add_supervision" | "add_new_session" | "none"
   onAction: (action: string, appointmentId: string) => void
   onClose: () => void
 }
@@ -39,61 +43,95 @@ interface MenuSection {
   items: MenuItem[]
 }
 
-function buildSupervisionSections(): MenuSection[] {
+function buildSupervisionSections(parentBillingCodeAction?: string): MenuSection[] {
+  // Parent is 97153/97152 → sub-event is a "Session / Supervision" → "Edit Session"
+  const isSessionSupervision = parentBillingCodeAction === "add_new_session"
+
+  const deleteLabel = isSessionSupervision ? "Delete Session" : "Delete Supervision"
+
   return [
-    {
-      label: "Navigate",
-      items: [
-        { action: "sup_session_note", label: "Session Note", icon: FileText },
-        { action: "sup_data_collection", label: "Data Collection", icon: BarChart3 },
-      ],
-    },
     {
       label: "Actions",
       items: [
-        { action: "supervision", label: "Edit Supervision", icon: Pencil },
+        {
+          action: isSessionSupervision ? "edit_session_supervision" : "supervision",
+          label: isSessionSupervision ? "Edit Session" : "Edit Supervision",
+          icon: Pencil,
+        },
+        {
+          action: "delete_sub_event",
+          label: deleteLabel,
+          icon: Trash2,
+          danger: true,
+        },
+      ],
+    },
+    {
+      label: "Navigate",
+      items: [
+        { action: "sup_data_collection", label: "Data Collection", icon: BarChart3 },
+        { action: "sup_session_note", label: "Session Note", icon: FileText },
       ],
     },
   ]
 }
 
-function buildSections(hasSupervision?: boolean): MenuSection[] {
+function buildSections(
+  hasSupervision?: boolean,
+  billingCodeAction?: "add_supervision" | "add_new_session" | "none",
+): MenuSection[] {
+  const actionItems: MenuItem[] = []
+
+  // Only show add actions when parent doesn't already have a sub-event
+  if (!hasSupervision) {
+    // 97153/97152 codes → Add New Session
+    if (billingCodeAction === "add_new_session") {
+      actionItems.push({
+        action: "add_new_session",
+        label: "Add New Session",
+        icon: Users,
+      })
+    }
+
+    // 97155 codes → Add Supervision
+    if (billingCodeAction === "add_supervision") {
+      actionItems.push({
+        action: "supervision",
+        label: "Add Supervision",
+        icon: Users,
+      })
+    }
+  }
+
+  actionItems.push(
+    {
+      action: "cancel",
+      label: "Cancel Session",
+      icon: XCircle,
+      danger: true,
+      hideForStatus: ["Completed", "Cancelled", "NoShow"],
+    },
+    { action: "delete", label: "Delete Session", icon: Trash2, danger: true },
+    { action: "duplicate", label: "Duplicate Session", icon: Copy },
+    { action: "edit", label: "Edit Session", icon: Pencil },
+    {
+      action: "noshow",
+      label: "Mark as No Show",
+      icon: UserX,
+      hideForStatus: ["Completed", "Cancelled", "NoShow"],
+    },
+  )
+
   return [
+    {
+      label: "Actions",
+      items: actionItems,
+    },
     {
       label: "Navigate",
       items: [
-        { action: "session_note", label: "Session Note", icon: FileText },
         { action: "data_collection", label: "Data Collection", icon: BarChart3 },
-      ],
-    },
-    {
-      label: "Actions",
-      items: [
-        { action: "edit", label: "Edit Session", icon: Pencil },
-        { action: "duplicate", label: "Duplicate Session", icon: Copy },
-        {
-          action: "supervision",
-          label: hasSupervision ? "Edit Supervision" : "Add Supervision",
-          icon: Users,
-        },
-      ],
-    },
-    {
-      items: [
-        {
-          action: "noshow",
-          label: "Mark as No Show",
-          icon: UserX,
-          hideForStatus: ["Completed", "Cancelled", "NoShow"],
-        },
-        {
-          action: "cancel",
-          label: "Cancel Session",
-          icon: XCircle,
-          danger: true,
-          hideForStatus: ["Completed", "Cancelled", "NoShow"],
-        },
-        { action: "delete", label: "Delete Session", icon: Trash2, danger: true },
+        { action: "session_note", label: "Session Note", icon: FileText },
       ],
     },
   ]
@@ -105,13 +143,15 @@ export function AppointmentContextMenu({
   appointmentId,
   appointmentStatus,
   hasSupervision,
+  billingCodeAction,
   isSupervision,
+  parentBillingCodeAction,
   onAction,
   onClose,
 }: AppointmentContextMenuProps) {
   const SECTIONS = useMemo(
-    () => (isSupervision ? buildSupervisionSections() : buildSections(hasSupervision)),
-    [isSupervision, hasSupervision],
+    () => (isSupervision ? buildSupervisionSections(parentBillingCodeAction) : buildSections(hasSupervision, billingCodeAction)),
+    [isSupervision, parentBillingCodeAction, hasSupervision, billingCodeAction],
   )
   const menuRef = useRef<HTMLDivElement>(null)
 

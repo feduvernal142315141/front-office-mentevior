@@ -6,6 +6,7 @@ import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import {
   Clock,
   Shield,
@@ -26,6 +27,8 @@ interface AppointmentModalProps {
   open: boolean
   onClose: () => void
   appointment?: Appointment | null
+  /** Parent appointment for "Add New Session" flow (from 97153/97152 context menu) */
+  parentAppointment?: Appointment | null
   defaultDate?: string
   defaultTime?: string
   rbtId: string
@@ -38,6 +41,7 @@ export function AppointmentModal({
   open,
   onClose,
   appointment,
+  parentAppointment,
   defaultDate,
   defaultTime,
   rbtId,
@@ -50,9 +54,12 @@ export function AppointmentModal({
   const {
     formData,
     updateField,
+    updateSupervisionField,
     errors,
     validationError,
+    supervisionValidationError,
     isValidatingMain,
+    isValidatingSupervision,
     clientOptions,
     clientsLoading,
     clientsError,
@@ -64,12 +71,22 @@ export function AppointmentModal({
     priorAuthorizationOptions,
     durationMinutes,
     billableUnits,
+    supervisionDurationMinutes,
+    supervisionBillableUnits,
+    supervisionCodeOptions,
+    supervisionBillingCodesLoading,
+    supervisionPriorAuthLabel,
+    rbtOptions,
+    rbtProvidersLoading,
+    showSupervisionSwitch,
+    isNewSessionMode,
     isEditing,
     handleSubmit,
     isSubmitting,
     hasPriorAuthWithoutCodes,
   } = useAppointmentForm({
     appointment,
+    parentAppointment,
     defaultDate,
     defaultTime,
     rbtId,
@@ -83,8 +100,8 @@ export function AppointmentModal({
       onOpenChange={(next) => {
         if (!next) onClose()
       }}
-      title={isEditing ? "Edit Session" : "New Session"}
-      description="Complete the details to schedule this session"
+      title={isEditing ? "Edit Session" : isNewSessionMode ? "New Session" : "New Session"}
+      description={isNewSessionMode ? `New session for ${parentAppointment?.clientName ?? "client"}` : "Complete the details to schedule this session"}
       maxWidthClassName="sm:max-w-[760px]"
       allowSelectOverflow
       contentClassName="!overflow-visible"
@@ -92,30 +109,32 @@ export function AppointmentModal({
       {/* Body */}
       <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5">
 
-        {/* Event Type — segmented control */}
-        <div>
-          <FieldLabel>Event Type</FieldLabel>
-          <div className="inline-flex w-full gap-1 rounded-2xl border border-slate-200/70 bg-slate-100/70 p-1">
-            {EVENT_TYPES.map((et) => {
-              const isSelected = formData.eventType === et.value
-              return (
-                <button
-                  key={et.value}
-                  type="button"
-                  onClick={() => updateField("eventType", et.value)}
-                  className={cn(
-                    "flex-1 h-11 rounded-xl text-sm font-semibold transition-all duration-200",
-                    isSelected
-                      ? "bg-white text-[#037ECC] shadow-[0_2px_8px_rgba(3,126,204,0.18)] ring-1 ring-[#037ECC]/15"
-                      : "text-slate-500 hover:text-slate-700",
-                  )}
-                >
-                  {et.label}
-                </button>
-              )
-            })}
+        {/* Event Type — segmented control (hidden in new session mode) */}
+        {!isNewSessionMode && (
+          <div>
+            <FieldLabel>Event Type</FieldLabel>
+            <div className="inline-flex w-full gap-1 rounded-2xl border border-slate-200/70 bg-slate-100/70 p-1">
+              {EVENT_TYPES.map((et) => {
+                const isSelected = formData.eventType === et.value
+                return (
+                  <button
+                    key={et.value}
+                    type="button"
+                    onClick={() => updateField("eventType", et.value)}
+                    className={cn(
+                      "flex-1 h-11 rounded-xl text-sm font-semibold transition-all duration-200",
+                      isSelected
+                        ? "bg-white text-[#037ECC] shadow-[0_2px_8px_rgba(3,126,204,0.18)] ring-1 ring-[#037ECC]/15"
+                        : "text-slate-500 hover:text-slate-700",
+                    )}
+                  >
+                    {et.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Client + Address */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -128,10 +147,10 @@ export function AppointmentModal({
               hasError={!!errors.clientId}
               required
               searchable
-              disabled={clientsLoading}
+              disabled={isNewSessionMode || clientsLoading}
             />
-            {clientsLoading && <Hint>Loading clients…</Hint>}
-            {clientsError && <HintError>{clientsError.message}</HintError>}
+            {!isNewSessionMode && clientsLoading && <Hint>Loading clients…</Hint>}
+            {!isNewSessionMode && clientsError && <HintError>{clientsError.message}</HintError>}
             <FieldError message={errors.clientId} />
           </div>
 
@@ -143,9 +162,9 @@ export function AppointmentModal({
               options={addressOptions}
               hasError={!!errors.placeOfServiceAddressId}
               required
-              disabled={addressesLoading || (!formData.clientId && !formData.placeOfServiceAddressId)}
+              disabled={isNewSessionMode || addressesLoading || (!formData.clientId && !formData.placeOfServiceAddressId)}
             />
-            {!formData.clientId && !formData.placeOfServiceAddressId
+            {!isNewSessionMode && !formData.clientId && !formData.placeOfServiceAddressId
               ? <Hint className="italic">Select a client first</Hint>
               : <FieldError message={errors.placeOfServiceAddressId} />
             }
@@ -182,10 +201,11 @@ export function AppointmentModal({
             label="Date"
             value={formData.date}
             onChange={(v) => updateField("date", v)}
-            onClear={() => updateField("date", "")}
+            onClear={isNewSessionMode ? undefined : () => updateField("date", "")}
             hasError={!!errors.date}
             errorMessage={errors.date}
             required
+            disabled={isNewSessionMode}
           />
           <div>
             <FloatingSelect
@@ -215,6 +235,7 @@ export function AppointmentModal({
               hasError={!!errors.startTime || !!validationError}
               required
               allowManualInput
+              disabled={isNewSessionMode}
             />
             <FieldError message={errors.startTime} />
           </div>
@@ -227,6 +248,7 @@ export function AppointmentModal({
               required
               allowManualInput
               defaultPeriod="PM"
+              disabled={isNewSessionMode}
             />
             <FieldError message={errors.endTime} />
           </div>
@@ -246,6 +268,98 @@ export function AppointmentModal({
                   : undefined
             }
           />
+        )}
+
+        {/* ─── SUPERVISION (inline, only for 97155 codes) ─── */}
+        {showSupervisionSwitch && (
+          <div className="rounded-2xl border border-indigo-200/60 bg-indigo-50/30 p-4 space-y-4">
+            <PremiumSwitch
+              label="Add Supervision"
+              checked={formData.addSupervision}
+              onCheckedChange={(v) => updateField("addSupervision", v)}
+            />
+
+            {formData.addSupervision && (
+              <div className="space-y-4 pt-1">
+                {/* Provider + Supervision Billing Code */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <FloatingSelect
+                      label="Provider (Supervisor)"
+                      value={formData.supervision.providerId}
+                      onChange={(v) => updateSupervisionField("providerId", v)}
+                      options={rbtOptions}
+                      hasError={!!errors.supervisionRbtId}
+                      required
+                      searchable
+                      disabled={!formData.clientId || rbtProvidersLoading}
+                    />
+                    <FieldError message={errors.supervisionRbtId} />
+                  </div>
+                  <div>
+                    <FloatingSelect
+                      label="Supervision Billing Code"
+                      value={formData.supervision.billingCodeId}
+                      onChange={(v) => updateSupervisionField("billingCodeId", v)}
+                      options={supervisionCodeOptions}
+                      searchable
+                      dropdownPosition="bottom"
+                      disabled={supervisionBillingCodesLoading}
+                    />
+                  </div>
+                </div>
+
+                {/* Supervision Date */}
+                <PremiumDatePicker
+                  label="Supervision Date"
+                  value={formData.supervision.date}
+                  onChange={(v) => updateSupervisionField("date", v)}
+                  hasError={!!errors["supervision.date"]}
+                  required
+                />
+
+                {/* Supervision Start + End */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <FloatingTimePicker
+                      label="Start Time"
+                      value={formData.supervision.startTime}
+                      onChange={(v) => updateSupervisionField("startTime", v)}
+                      hasError={!!errors["supervision.startTime"] || !!supervisionValidationError}
+                      required
+                      allowManualInput
+                    />
+                  </div>
+                  <div>
+                    <FloatingTimePicker
+                      label="End Time"
+                      value={formData.supervision.endTime}
+                      onChange={(v) => updateSupervisionField("endTime", v)}
+                      hasError={!!errors["supervision.endTime"] || !!supervisionValidationError}
+                      required
+                      allowManualInput
+                      defaultPeriod="PM"
+                    />
+                  </div>
+                </div>
+                <FieldError message={supervisionValidationError || errors.supervisionTimeRange} />
+
+                {/* Supervision summary bar */}
+                {supervisionDurationMinutes > 0 && (
+                  <SummaryBar
+                    label="Supervision Duration"
+                    duration={formatDuration(supervisionDurationMinutes)}
+                    priorAuth={
+                      isValidatingSupervision
+                        ? "Validating…"
+                        : supervisionPriorAuthLabel || undefined
+                    }
+                    variant="indigo"
+                  />
+                )}
+              </div>
+            )}
+          </div>
         )}
 
       </form>

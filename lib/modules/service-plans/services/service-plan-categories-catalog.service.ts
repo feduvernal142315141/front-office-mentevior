@@ -183,6 +183,21 @@ export async function getServicePlanCategoriesCatalog(): Promise<ServicePlanCate
   })
 }
 
+/** GET /category/{id} — fetch a single category by ID with its billing codes */
+export async function getServicePlanCategoryById(
+  id: string,
+): Promise<ServicePlanCategoryCatalogOption | null> {
+  const response = await serviceGet<unknown>(`/category/${id}`)
+
+  if (response.status !== 200 || !response.data) return null
+
+  const raw = response.data as unknown
+  if (!raw || raw === null) return null
+
+  const normalized = normalizeCategoryEntry(raw)
+  return normalized
+}
+
 export async function createServicePlanCategory(
   name: string,
   billingCodes?: CategoryBillingCodePayload[],

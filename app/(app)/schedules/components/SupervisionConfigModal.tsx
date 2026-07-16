@@ -27,6 +27,8 @@ import {
   updateSubEvent,
 } from "@/lib/modules/schedules/services/appointment-sub-event.service"
 import { useAlert } from "@/lib/contexts/alert-context"
+import { canHaveInlineSupervision } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
+import { getAppointmentBillingCodeLabel } from "@/lib/modules/schedules/utils/schedule-display"
 
 // ============================================
 // Types
@@ -87,6 +89,11 @@ export function SupervisionConfigModal({
   const alert = useAlert()
   const isEditing = !!appointment?.supervision
   const clientId = appointment?.clientId ?? ""
+  // If the parent appointment already has a billing code, auto-use it and hide the session BC select
+  const parentHasBillingCode = !!appointment?.billingCodeId
+  // Parent is 97155 → true supervision; parent is 97153/97152 → session/supervision
+  const parentBillingCodeLabel = appointment ? getAppointmentBillingCodeLabel(appointment) : ""
+  const isSessionSupervision = parentHasBillingCode && !canHaveInlineSupervision(parentBillingCodeLabel)
 
   // ─── Data fetching ───
 
@@ -153,7 +160,9 @@ export function SupervisionConfigModal({
       const sup = appointment.supervision
       const data: SupervisionFormData = {
         providerId: sup.providerId ?? "",
-        sessionBillingCodeId: sup.billingCodeId ?? "",
+        sessionBillingCodeId: parentHasBillingCode
+          ? appointment.billingCodeId ?? ""
+          : sup.billingCodeId ?? "",
         supervisionBillingCodeId: sup.supervisionBillingCodeId ?? "",
         date: sup.date ?? appointment.date ?? "",
         startTime: toFormTime(sup.timeInit),
@@ -169,8 +178,11 @@ export function SupervisionConfigModal({
         validateKey.current = ""
       }
     } else {
+      // Auto-populate from parent appointment
       setLocalData({
         ...createEmptyForm(),
+        sessionBillingCodeId: appointment.billingCodeId ?? "",
+        providerId: appointment.rbtId ?? "",
         date: appointment.date ?? "",
         startTime: toFormTime(appointment.timeInit) || "",
         endTime: toFormTime(appointment.timeEnd) || "",
@@ -229,9 +241,9 @@ export function SupervisionConfigModal({
     <K extends keyof SupervisionFormData>(field: K, value: SupervisionFormData[K]) => {
       setLocalData((prev) => {
         const next = { ...prev, [field]: value }
-        // Reset validation when supervision billing code or time changes
+        // Reset validation when session billing code or time changes
         if (
-          field === "supervisionBillingCodeId" ||
+          field === "sessionBillingCodeId" ||
           field === "startTime" ||
           field === "endTime" ||
           field === "date"
@@ -254,7 +266,7 @@ export function SupervisionConfigModal({
         field === "startTime" ||
         field === "endTime" ||
         field === "date" ||
-        field === "supervisionBillingCodeId"
+        field === "sessionBillingCodeId"
       ) {
         setValidationError(null)
       }
@@ -262,14 +274,14 @@ export function SupervisionConfigModal({
     [],
   )
 
-  // ─── Async validation (validates supervision billing code against PA) ───
+  // ─── Async validation (validates session billing code against PA) ───
   useEffect(() => {
     if (!open || !clientId) return
 
-    const { supervisionBillingCodeId, startTime, endTime, date } = localData
-    if (!supervisionBillingCodeId || !startTime || !endTime || !date) return
+    const { sessionBillingCodeId, startTime, endTime, date } = localData
+    if (!sessionBillingCodeId || !startTime || !endTime || !date) return
 
-    const key = buildKey(clientId, { supervisionBillingCodeId, startTime, endTime, date })
+    const key = buildKey(clientId, { sessionBillingCodeId, startTime, endTime, date })
     if (key === validateKey.current) return
     validateKey.current = key
 
@@ -280,7 +292,7 @@ export function SupervisionConfigModal({
         setValidationError(null)
         const result = await validateAppointmentEventData({
           clientId,
-          billingCodeId: supervisionBillingCodeId,
+          billingCodeId: sessionBillingCodeId,
           startTime: toValidateTime(startTime),
           endTime: toValidateTime(endTime),
           appointmentTypeEvent: "Supervision",
@@ -311,7 +323,7 @@ export function SupervisionConfigModal({
     return () => {
       cancelled = true
     }
-  }, [open, clientId, localData.supervisionBillingCodeId, localData.startTime, localData.endTime, localData.date])
+  }, [open, clientId, localData.sessionBillingCodeId, localData.startTime, localData.endTime, localData.date])
 
   // ─── Computed values ───
   const durationMinutes = useMemo(
@@ -357,7 +369,6 @@ export function SupervisionConfigModal({
 
     if (!localData.providerId) next.providerId = "Select a provider"
     if (!localData.sessionBillingCodeId) next.sessionBillingCodeId = "Select a session billing code"
-    if (!localData.supervisionBillingCodeId) next.supervisionBillingCodeId = "Select a supervision billing code"
     if (!localData.date) next.date = "Select a date"
     if (!localData.startTime) next.startTime = "Select a start time"
     if (!localData.endTime) next.endTime = "Select an end time"
@@ -415,75 +426,70 @@ export function SupervisionConfigModal({
       onOpenChange={(next) => {
         if (!next) onClose()
       }}
-      title={isEditing ? "Edit Supervision" : "Add Supervision"}
+      title={
+        isEditing
+          ? isSessionSupervision ? "Edit Session" : "Edit Supervision"
+          : isSessionSupervision ? "Add Session" : "Add Supervision"
+      }
       description={
         appointment?.clientName
-          ? `Supervision for ${appointment.clientName}`
-          : "Configure the supervision sub-event for this session"
+          ? `${isSessionSupervision ? "Session" : "Supervision"} for ${appointment.clientName}`
+          : "Configure the sub-event for this session"
       }
       maxWidthClassName="sm:max-w-[560px]"
       allowSelectOverflow
       contentClassName="!overflow-visible"
+      onOpenAutoFocus={(e) => e.preventDefault()}
     >
       <div className="px-7 py-6 space-y-4">
-        {/* Session Billing Code (billingCodeId) */}
-        <FloatingSelect
-          label="Session Billing Code"
-          value={localData.sessionBillingCodeId}
-          onChange={(v) => updateField("sessionBillingCodeId", v)}
-          options={sessionCodeOptions}
-          hasError={!!errors.sessionBillingCodeId}
-          required
-          searchable
-          disabled={sessionBillingCodesLoading}
-        />
-        {sessionBillingCodesLoading && <Hint>Loading session billing codes…</Hint>}
-        <FieldError message={errors.sessionBillingCodeId} />
+        {/* Session Billing Code — hidden when parent already has one (97155) */}
+        {!parentHasBillingCode && (
+          <>
+            <FloatingSelect
+              label="Session Billing Code"
+              value={localData.sessionBillingCodeId}
+              onChange={(v) => updateField("sessionBillingCodeId", v)}
+              options={sessionCodeOptions}
+              hasError={!!errors.sessionBillingCodeId}
+              required
+              searchable
+              disabled={sessionBillingCodesLoading}
+            />
+            {sessionBillingCodesLoading && <Hint>Loading session billing codes…</Hint>}
+            <FieldError message={errors.sessionBillingCodeId} />
+          </>
+        )}
 
-        {/* Supervision Billing Code (supervisionBillingCodeId) */}
+        {/* Supervision Billing Code (optional) */}
         <FloatingSelect
           label="Supervision Billing Code"
           value={localData.supervisionBillingCodeId}
           onChange={(v) => updateField("supervisionBillingCodeId", v)}
           options={supervisionCodeOptions}
-          hasError={!!errors.supervisionBillingCodeId}
-          required
           searchable
           dropdownPosition="bottom"
           disabled={supervisionBillingCodesLoading}
         />
         {supervisionBillingCodesLoading && <Hint>Loading supervision billing codes…</Hint>}
-        <FieldError message={errors.supervisionBillingCodeId} />
 
         {/* Provider */}
         <FloatingSelect
           label="Provider (Supervisor)"
           value={localData.providerId}
-          onChange={(v) => updateField("providerId", v)}
+          onChange={() => {}}
           options={rbtOptions}
-          hasError={!!errors.providerId}
-          required
-          searchable
-          disabled={!clientId || rbtProvidersLoading}
+          disabled
         />
-        {rbtProvidersLoading && <Hint>Loading providers…</Hint>}
-        {rbtProvidersError && <HintError>{rbtProvidersError.message}</HintError>}
-        {!rbtProvidersLoading && clientId && rbtOptions.length === 0 && (
-          <Hint>No providers assigned to this client</Hint>
-        )}
-        <FieldError message={errors.providerId} />
 
         {/* Date */}
         <PremiumDatePicker
           label="Supervision Date"
           value={localData.date}
-          onChange={(v) => updateField("date", v)}
-          hasError={!!errors.date}
-          errorMessage={errors.date}
-          required
+          onChange={() => {}}
+          disabled
         />
 
-        {/* Time range */}
+        {/* Time range — editable */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <FloatingTimePicker
@@ -562,7 +568,7 @@ export function SupervisionConfigModal({
           loading={isSubmitting}
           className="h-10 min-w-[160px]"
         >
-          {isEditing ? "Update" : "Add"} Supervision
+          {isEditing ? "Update" : "Add"} {isSessionSupervision ? "Session" : "Supervision"}
         </Button>
       </div>
     </CustomModal>
@@ -575,9 +581,9 @@ export function SupervisionConfigModal({
 
 function buildKey(
   clientId: string,
-  data: Pick<SupervisionFormData, "supervisionBillingCodeId" | "startTime" | "endTime" | "date">,
+  data: Pick<SupervisionFormData, "sessionBillingCodeId" | "startTime" | "endTime" | "date">,
 ): string {
-  return `${clientId}|${data.supervisionBillingCodeId}|${data.startTime}|${data.endTime}|${data.date}|supervision`
+  return `${clientId}|${data.sessionBillingCodeId}|${data.startTime}|${data.endTime}|${data.date}|supervision`
 }
 
 function FieldError({ message }: { message?: string }) {

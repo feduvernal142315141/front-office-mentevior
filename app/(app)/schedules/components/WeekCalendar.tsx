@@ -27,7 +27,10 @@ import { useWeekCalendar, CALENDAR_HOURS, SLOT_HEIGHT } from "../hooks/useWeekCa
 import type { CalendarScope, CalendarViewMode } from "../hooks/useWeekCalendar"
 import { useScheduleEventColors } from "@/lib/modules/schedules/hooks/use-schedule-event-colors"
 import { buildSessionNoteUrl, buildDataCollectionUrl } from "@/lib/modules/schedules/utils/schedule-display"
+import { getBillingCodeAction } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
+import { deleteSubEvent } from "@/lib/modules/schedules/services/appointment-sub-event.service"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
+import { getAppointmentById } from "@/lib/modules/schedules/services/appointments.service"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { usePermission } from "@/lib/hooks/use-permission"
@@ -104,6 +107,7 @@ export function WeekCalendar({
     showDuplicateModal,
     showSupervisionModal,
     supervisionAppointment,
+    parentAppointment,
     modalDefaults,
     contextMenu,
     filterClient,
@@ -124,6 +128,10 @@ export function WeekCalendar({
     ? filteredAppointments.find((apt) => apt.id === contextMenu.appointmentId)
     : null
 
+  const contextMenuBillingCodeAction = contextMenuAppointment
+    ? getBillingCodeAction(contextMenuAppointment.billingCodeName)
+    : "none"
+
   // Unified menu action handler — navigation + delete-with-confirm + delegate to hook
   const handleMenuAction = useCallback(
     (action: string, appointmentId: string) => {
@@ -140,6 +148,47 @@ export function WeekCalendar({
       if ((action === "data_collection" || action === "sup_data_collection") && appointment) {
         router.push(buildDataCollectionUrl(appointment))
         actions.closeContextMenu()
+        return
+      }
+
+      // Delete sub-event (supervision or session/supervision)
+      if (action === "delete_sub_event" && appointment?.supervision) {
+        actions.closeContextMenu()
+        // Resolve sub-event ID: try from list data, fallback to GET detail
+        const resolveSubEventId = async (): Promise<string | null> => {
+          if (appointment.supervision?.id) return appointment.supervision.id
+          const full = await getAppointmentById(appointment.id)
+          return full?.supervision?.id ?? null
+        }
+        alert.confirm({
+          title: "Delete Sub-Event",
+          description: "Are you sure you want to delete this sub-event? This action cannot be undone.",
+          confirmText: "Delete",
+          cancelText: "Go Back",
+          onConfirm: async () => {
+            const subEventId = await resolveSubEventId()
+            if (!subEventId) {
+              alert.error("Error", "Could not find the sub-event ID")
+              return
+            }
+            await deleteSubEvent(subEventId)
+            actions.handleAppointmentSaved()
+          },
+        })
+        return
+      }
+
+      // "Edit Session" for session/supervision sub-events (parent is 97153/97152)
+      if (action === "edit_session_supervision" && appointment) {
+        actions.closeContextMenu()
+        actions.openSupervisionModal(appointment)
+        return
+      }
+
+      // "Add New Session" for 97153/97152 — open appointment modal with parent context
+      if (action === "add_new_session" && appointment) {
+        actions.closeContextMenu()
+        actions.openNewSessionFromParent(appointment)
         return
       }
 
@@ -659,6 +708,7 @@ export function WeekCalendar({
         open={showModal}
         onClose={actions.closeModal}
         appointment={selectedAppointment}
+        parentAppointment={parentAppointment}
         defaultDate={modalDefaults.date}
         defaultTime={modalDefaults.time}
         rbtId={rbtId}
@@ -689,7 +739,9 @@ export function WeekCalendar({
           appointmentId={contextMenu.appointmentId}
           appointmentStatus={contextMenuAppointment?.status}
           hasSupervision={!!contextMenuAppointment?.supervision}
+          billingCodeAction={contextMenuBillingCodeAction}
           isSupervision={contextMenu.isSupervision}
+          parentBillingCodeAction={contextMenu.isSupervision ? contextMenuBillingCodeAction : undefined}
           onAction={handleMenuAction}
           onClose={actions.closeContextMenu}
         />

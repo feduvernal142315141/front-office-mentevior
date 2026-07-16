@@ -13,6 +13,7 @@ import {
   getEventColor,
   formatAppointmentUnits,
 } from "@/lib/modules/schedules/utils/schedule-display"
+import { canHaveInlineSupervision } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
 import { cn } from "@/lib/utils"
 
 const STATUS_STYLES: Record<AppointmentStatus, string> = {
@@ -62,6 +63,15 @@ export function AppointmentCard({
   const sup = appointment.supervision
   const supSessionBC = sup?.billingCode || null
   const supBillingBC = sup?.supervisionBillingCode || null
+
+  // Differentiate sub-event style based on parent billing code
+  // 97155 parent → "SUPERVISION" (indigo) — it's a BCBA session with sub-event
+  // 97153/97152 parent → "BCBA SESSION" (teal) — it's an RBT session with linked BCBA
+  const isBcbaSubEvent = canHaveInlineSupervision(billingCode)
+  const subEventLabel = isBcbaSubEvent ? "SUPERVISION" : "SESSION / SUPERVISION"
+  const subEventStyles = isBcbaSubEvent
+    ? { border: "border-indigo-200", bg: "bg-indigo-50/60", dot: "bg-indigo-500", title: "text-indigo-800", text: "text-indigo-700", textMuted: "text-indigo-600", textSoft: "text-indigo-500", menuHoverBg: "hover:bg-indigo-200/60", menuText: "text-indigo-400", menuHover: "hover:text-indigo-700" }
+    : { border: "border-teal-200", bg: "bg-teal-50/60", dot: "bg-teal-500", title: "text-teal-800", text: "text-teal-700", textMuted: "text-teal-600", textSoft: "text-teal-500", menuHoverBg: "hover:bg-teal-200/60", menuText: "text-teal-400", menuHover: "hover:text-teal-700" }
 
   const handleMenuClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
@@ -149,10 +159,9 @@ export function AppointmentCard({
             {[appointment.providerName, clientName].filter(Boolean).join(" | ")}
           </p>
 
-          {/* Supervision sub-event details */}
+          {/* Sub-event details */}
           {hasSupervision && (
-            <div className="group/sup relative mt-1.5 rounded-lg border border-indigo-200 bg-indigo-50/60 px-2.5 py-2 space-y-0.5">
-              {/* Supervision ⋮ menu */}
+            <div className={cn("group/sup relative mt-1.5 rounded-lg border px-2.5 py-2 space-y-0.5", subEventStyles.border, subEventStyles.bg)}>
               {onOpenSupervisionMenu && (
                 <button
                   type="button"
@@ -162,34 +171,34 @@ export function AppointmentCard({
                     "p-0.5 rounded-md",
                     "opacity-100",
                     "transition-all duration-150",
-                    "hover:bg-indigo-200/60",
-                    "text-indigo-400 hover:text-indigo-700",
+                    subEventStyles.menuHoverBg,
+                    subEventStyles.menuText, subEventStyles.menuHover,
                   )}
                 >
                   <MoreVertical className="h-3 w-3" />
                 </button>
               )}
               <div className="flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full bg-indigo-500 flex-shrink-0" />
-                <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-800">
-                  Supervision
+                <div className={cn("h-2 w-2 rounded-full flex-shrink-0", subEventStyles.dot)} />
+                <p className={cn("text-[10px] font-bold uppercase tracking-wide", subEventStyles.title)}>
+                  {subEventLabel}
                 </p>
               </div>
-              <p className="text-[10px] text-indigo-700">
+              <p className={cn("text-[10px]", subEventStyles.text)}>
                 {formatTime(`2000-01-01T${sup!.timeInit}`)}
                 {" - "}
                 {formatTime(`2000-01-01T${sup!.timeEnd}`)}
                 {sup!.units != null && (
-                  <span className="text-indigo-500"> ({sup!.units} units)</span>
+                  <span className={subEventStyles.textSoft}> ({sup!.units} units)</span>
                 )}
               </p>
               {(supSessionBC || supBillingBC) && (
-                <p className="text-[10px] text-indigo-600">
+                <p className={cn("text-[10px]", subEventStyles.textMuted)}>
                   {[supSessionBC, supBillingBC].filter(Boolean).join(" · ")}
                 </p>
               )}
               {sup!.providerName && (
-                <p className="text-[10px] text-indigo-500">
+                <p className={cn("text-[10px]", subEventStyles.textSoft)}>
                   {sup!.providerName}
                 </p>
               )}
@@ -279,9 +288,9 @@ export function AppointmentCard({
             </p>
           )}
 
-          {/* Supervision sub-event indicator */}
+          {/* Sub-event indicator */}
           {hasSupervision && (
-            <div className="group/sup relative mt-1 rounded-md border border-indigo-200 bg-indigo-50/60 px-1.5 py-1 space-y-px">
+            <div className={cn("group/sup relative mt-1 rounded-md border px-1.5 py-1 space-y-px", subEventStyles.border, subEventStyles.bg)}>
               {onOpenSupervisionMenu && (
                 <button
                   type="button"
@@ -291,25 +300,25 @@ export function AppointmentCard({
                     "p-0.5 rounded",
                     "opacity-100",
                     "transition-all duration-150",
-                    "hover:bg-indigo-200/60",
-                    "text-indigo-400 hover:text-indigo-700",
+                    subEventStyles.menuHoverBg,
+                    subEventStyles.menuText, subEventStyles.menuHover,
                   )}
                 >
                   <MoreVertical className="h-2.5 w-2.5" />
                 </button>
               )}
               <div className="flex items-center gap-1">
-                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
-                <p className="text-[9px] font-bold text-indigo-800">SUPERVISION</p>
+                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", subEventStyles.dot)} />
+                <p className={cn("text-[9px] font-bold", subEventStyles.title)}>{subEventLabel}</p>
               </div>
-              <p className="text-[9px] text-indigo-600 truncate">
+              <p className={cn("text-[9px] truncate", subEventStyles.textMuted)}>
                 {formatTime(`2000-01-01T${sup!.timeInit}`)}
                 {" - "}
                 {formatTime(`2000-01-01T${sup!.timeEnd}`)}
                 {sup!.providerName && ` · ${sup!.providerName}`}
               </p>
               {(supSessionBC || supBillingBC) && (
-                <p className="text-[9px] text-indigo-500 truncate">
+                <p className={cn("text-[9px] truncate", subEventStyles.textSoft)}>
                   {[supSessionBC, supBillingBC].filter(Boolean).join(" · ")}
                 </p>
               )}
