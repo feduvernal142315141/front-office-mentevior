@@ -5,6 +5,7 @@ const API_KEY_TO_HREF: Record<string, string> = {
   service: "/my-company/services",
   servicePlan: "/my-company/service-plans",
   appointment: "/my-company/session",
+  supervision: "/my-company/events/supervision",
   billingCode: "/my-company/billing",
   credentials: "/my-company/credentials",
   physician: "/my-company/physicians",

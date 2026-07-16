@@ -155,8 +155,17 @@ export function ServicePlanCategoriesPicker({
     try {
       const category = await getServicePlanCategoryById(option.value)
       if (category?.billingCodes && category.billingCodes.length > 0) {
-        const ids = category.billingCodes.map((bc) => bc.id)
-        setSelectedBillingCodeIds(ids)
+        // Match by code + modifier since category BC ids differ from company BC ids
+        const matchedIds = category.billingCodes
+          .map((catBc) => {
+            const mod = (catBc.modifier ?? "").trim().toLowerCase()
+            return billingCodeOptions.find((opt) => {
+              const optMod = (opt.modifier ?? "").trim().toLowerCase()
+              return opt.code === catBc.code && optMod === mod
+            })?.value
+          })
+          .filter((id): id is string => !!id)
+        setSelectedBillingCodeIds(matchedIds)
       } else {
         setSelectedBillingCodeIds([])
       }
