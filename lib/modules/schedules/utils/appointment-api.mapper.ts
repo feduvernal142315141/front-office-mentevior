@@ -64,7 +64,10 @@ export function buildAppointmentApiPayload(
     typeEvent: toApiEventType(form.eventType),
     providerId,
     priorAuthorizationId: form.priorAuthorizationId,
-    parentAppointmentId: parentAppointmentId ?? null,
+  }
+
+  if (parentAppointmentId) {
+    payload.parentAppointmentId = parentAppointmentId
   }
 
   return payload
