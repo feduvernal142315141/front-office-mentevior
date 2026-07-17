@@ -275,13 +275,16 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     }
   }, [onChange])
 
-  // Auto-commit when both segments have a complete value
+  // Auto-commit when both segments have a complete value (only if it differs from current)
   useEffect(() => {
     if (!allowManualInput) return
-    if (hours12.length === 2 && minutes.length === 2) {
-      commitValue(hours12, minutes, period)
+    if (hours12.length !== 2 || minutes.length !== 2) return
+
+    const next = formatTimeTo24h(`${hours12}:${minutes} ${period}`)
+    if (next && next !== value) {
+      onChange(next)
     }
-  }, [allowManualInput, hours12, minutes, period, commitValue])
+  }, [allowManualInput, hours12, minutes, period, value, onChange])
 
   // Handle focus leaving the entire component
   const handleContainerBlur = useCallback((e: React.FocusEvent) => {
