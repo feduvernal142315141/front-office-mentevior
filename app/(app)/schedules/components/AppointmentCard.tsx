@@ -59,10 +59,11 @@ export function AppointmentCard({
   const clientName = appointment.clientName?.trim() || ""
   const hasSupervision = !!appointment.supervision
 
-  // Supervision billing code labels from API response
+  // Supervision billing code labels from API response (deduplicated)
   const sup = appointment.supervision
   const supSessionBC = sup?.billingCode || null
   const supBillingBC = sup?.supervisionBillingCode || null
+  const supBillingCodes = [...new Set([supSessionBC, supBillingBC].filter(Boolean))]
 
   // Differentiate sub-event style based on parent billing code
   // 97155 parent → "SUPERVISION" (indigo) — it's a BCBA session with sub-event
@@ -188,13 +189,10 @@ export function AppointmentCard({
                 {formatTime(`2000-01-01T${sup!.timeInit}`)}
                 {" - "}
                 {formatTime(`2000-01-01T${sup!.timeEnd}`)}
-                {sup!.units != null && (
-                  <span className={subEventStyles.textSoft}> ({sup!.units} units)</span>
-                )}
               </p>
-              {(supSessionBC || supBillingBC) && (
+              {supBillingCodes.length > 0 && (
                 <p className={cn("text-[10px]", subEventStyles.textMuted)}>
-                  {[supSessionBC, supBillingBC].filter(Boolean).join(" · ")}
+                  {supBillingCodes.join(" · ")}
                 </p>
               )}
               {sup!.providerName && (
@@ -317,9 +315,9 @@ export function AppointmentCard({
                 {formatTime(`2000-01-01T${sup!.timeEnd}`)}
                 {sup!.providerName && ` · ${sup!.providerName}`}
               </p>
-              {(supSessionBC || supBillingBC) && (
+              {supBillingCodes.length > 0 && (
                 <p className={cn("text-[9px] truncate", subEventStyles.textSoft)}>
-                  {[supSessionBC, supBillingBC].filter(Boolean).join(" · ")}
+                  {supBillingCodes.join(" · ")}
                 </p>
               )}
             </div>
