@@ -235,6 +235,8 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
   const hourInputRef = useRef<HTMLInputElement>(null)
   const minuteInputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
 
   const [selectedHour, selectedMinute] = value ? value.split(":") : ["", ""]
   const hasValue = allowManualInput ? (hours12.length > 0 || minutes.length > 0) : Boolean(value)
@@ -282,9 +284,9 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
 
     const next = formatTimeTo24h(`${hours12}:${minutes} ${period}`)
     if (next && next !== value) {
-      onChange(next)
+      onChangeRef.current(next)
     }
-  }, [allowManualInput, hours12, minutes, period, value, onChange])
+  }, [allowManualInput, hours12, minutes, period, value])
 
   // Handle focus leaving the entire component
   const handleContainerBlur = useCallback((e: React.FocusEvent) => {
