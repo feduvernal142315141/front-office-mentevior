@@ -307,7 +307,8 @@ export function ItemDetailPanel({
         )
       } else {
         const catData = await getClientCategoryDataCollection(categoryId)
-        setConfig(catData ? stripPersistedLevelIds(catData) : null)
+        const fallback: DataCollectionConfig = { type: "", levels: [] }
+        setConfig(catData ? stripPersistedLevelIds(catData) : fallback)
         setItemConfig(null)
         setTeachingMethod("")
         setBaselines([])
