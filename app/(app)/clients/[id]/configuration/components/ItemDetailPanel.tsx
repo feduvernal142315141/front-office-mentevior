@@ -470,15 +470,20 @@ export function ItemDetailPanel({
     prevTypeRef.current = watchedType
 
     const opts = { shouldDirty: true } as const
+    const currentValues = getValues()
     if (
       !typeRequiresWeeklyDaily(resolvedType.name) &&
       !typeRequiresDailyAndWeekly(resolvedType.name) &&
       !typeIsMeasurementLog(resolvedType.name)
     ) {
       setValue("weeklyDailyValue", undefined, opts)
+    } else if (!currentValues.weeklyDailyValue) {
+      setValue("weeklyDailyValue", ServicePlanValueType.TOTAL, opts)
     }
     if (!typeRequiresDailyAndWeekly(resolvedType.name) && !typeIsMeasurementLog(resolvedType.name)) {
       setValue("dailyValue", undefined, opts)
+    } else if (!currentValues.dailyValue) {
+      setValue("dailyValue", ServicePlanValueType.TOTAL, opts)
     }
     if (!typeIsMeasurementLog(resolvedType.name)) {
       setValue("unitMeasurementCatalogId", undefined, opts)
