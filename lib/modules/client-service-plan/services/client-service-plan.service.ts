@@ -257,7 +257,10 @@ function extractSingleClientServicePlan(data: unknown): ClientServicePlan | null
 // --- Client Service Plan CRUD ---
 
 export async function getClientServicePlanByClientId(clientId: string): Promise<ClientServicePlan | null> {
-  const filters = encodeURIComponent(JSON.stringify([{ field: "clientId", value: clientId }]))
+  const filters = encodeURIComponent(JSON.stringify([
+    { field: "clientId", value: clientId },
+    { field: "active", value: true },
+  ]))
   const response = await serviceGet<unknown>(
     `/client-service-plan?filters=${filters}&page=0&pageSize=1`
   )

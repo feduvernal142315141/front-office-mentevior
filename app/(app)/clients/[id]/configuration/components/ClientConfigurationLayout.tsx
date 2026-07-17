@@ -35,18 +35,25 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
   const resolvedSpId = clientServicePlanId ?? resolvedPlan?.id ?? null
 
   const [activeSectionId, setActiveSectionId] = useState(
-    initialSection === "data-collection" && clientServicePlanId ? "data-collection" : "service-plan",
+    initialSection === "data-collection" ? "data-collection" : "service-plan",
   )
   const [spId, setSpId] = useState<string | null>(resolvedSpId)
   const { clientServicePlan } = useClientServicePlanById(spId ?? "")
 
-  // Once the resolved spId arrives, switch to data-collection
+  // Once the resolved spId arrives (async), update state and switch to data-collection
   useEffect(() => {
     if (needsSpLookup && resolvedPlan?.id && !spId) {
       setSpId(resolvedPlan.id)
       setActiveSectionId("data-collection")
     }
   }, [needsSpLookup, resolvedPlan?.id, spId])
+
+  // Sync spId when resolvedSpId arrives after initial render
+  useEffect(() => {
+    if (resolvedSpId && !spId) {
+      setSpId(resolvedSpId)
+    }
+  }, [resolvedSpId, spId])
   const [autoOpenItem, setAutoOpenItem] = useState<NavigateToItemRequest | null>(null)
   const isItemDirtyRef = useRef(false)
 
