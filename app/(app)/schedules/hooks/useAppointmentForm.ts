@@ -636,6 +636,16 @@ export function useAppointmentForm({
     if (success) onSuccess?.()
   }, [appointment, mutations, onSuccess])
 
+  // True when all fields for validation are filled but priorAuthorizationId hasn't been resolved yet
+  const pendingValidation =
+    !!formData.clientId &&
+    !!formData.billingCodeId &&
+    !!formData.startTime &&
+    !!formData.endTime &&
+    !!formData.date &&
+    !formData.priorAuthorizationId &&
+    !validationError
+
   return {
     formData,
     updateField,
@@ -643,6 +653,7 @@ export function useAppointmentForm({
     errors,
     validationError,
     isValidatingMain,
+    pendingValidation,
     clientOptions,
     clientsLoading,
     clientsError,

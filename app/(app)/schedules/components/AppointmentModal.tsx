@@ -58,6 +58,7 @@ export function AppointmentModal({
     errors,
     validationError,
     isValidatingMain,
+    pendingValidation,
     clientOptions,
     clientsLoading,
     clientsError,
@@ -317,7 +318,7 @@ export function AppointmentModal({
           type="submit"
           variant="primary"
           loading={isSubmitting}
-          disabled={isValidatingMain}
+          disabled={isValidatingMain || pendingValidation}
           className="h-10 min-w-[180px]"
           onClick={handleSubmit}
         >
