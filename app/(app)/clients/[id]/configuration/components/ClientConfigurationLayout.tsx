@@ -158,7 +158,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
             {activeSectionId === "service-plan" && (
               <ServicePlanContent
                 clientId={clientId}
-                clientServicePlanId={clientServicePlanId}
+                clientServicePlanId={spId}
                 onServicePlanAssigned={setSpId}
                 autoOpenItem={autoOpenItem}
                 onAutoOpenItemConsumed={() => setAutoOpenItem(null)}
