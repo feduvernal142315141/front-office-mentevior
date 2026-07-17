@@ -86,6 +86,7 @@ export function DuplicateAppointmentModal({
     const endTime = format(parseISO(endsAt), "HH:mm")
 
     const payload: AppointmentApiPayload = {
+      clientId: appointment.clientId || "",
       clientAddressId: appointment.placeOfServiceAddressId || appointment.clientAddressId || "",
       cantUnit: appointment.cantUnit ?? appointment.units ?? 0,
       units: appointment.units ?? appointment.cantUnit ?? 0,

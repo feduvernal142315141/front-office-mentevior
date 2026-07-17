@@ -124,6 +124,7 @@ export interface AppointmentListQuery {
 /** POST /appointment and PUT /appointment request body */
 export interface AppointmentApiPayload {
   id?: string
+  clientId: string
   clientAddressId: string
   cantUnit: number
   units: number
@@ -134,6 +135,7 @@ export interface AppointmentApiPayload {
   typeEvent: AppointmentTypeEvent
   providerId: string
   priorAuthorizationId: string
+  parentAppointmentId?: string | null
   supervision?: AppointmentSupervisionApiPayload
 }
 

@@ -658,7 +658,8 @@ export function useAppointmentForm({
       }
 
       const units = formData.validatedUnits ?? calculateBillableUnits(durationMinutes)
-      const apiPayload = buildAppointmentApiPayload(formData, providerId, units)
+      const parentId = parentAppointment?.id ?? null
+      const apiPayload = buildAppointmentApiPayload(formData, providerId, units, parentId)
 
       let appointmentId: string | null = null
 

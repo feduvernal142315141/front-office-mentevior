@@ -50,8 +50,10 @@ export function buildAppointmentApiPayload(
   form: AppointmentFormData,
   providerId: string,
   units: number,
+  parentAppointmentId?: string | null,
 ): AppointmentApiPayload {
   const payload: AppointmentApiPayload = {
+    clientId: form.clientId,
     clientAddressId: form.placeOfServiceAddressId,
     cantUnit: units,
     units,
@@ -62,6 +64,7 @@ export function buildAppointmentApiPayload(
     typeEvent: toApiEventType(form.eventType),
     providerId,
     priorAuthorizationId: form.priorAuthorizationId,
+    parentAppointmentId: parentAppointmentId ?? null,
   }
 
   return payload
