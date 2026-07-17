@@ -1,25 +1,15 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
-import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
-import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
-import { Clock, Zap } from "lucide-react"
 import type { Appointment } from "@/lib/types/appointment.types"
 import {
   calculateBillableUnits,
   calculateDurationMinutes,
-  formatDuration,
 } from "@/lib/utils/unit-calculation"
-import {
-  toApiTime,
-  toValidateTime,
-} from "@/lib/modules/schedules/utils/appointment-api.mapper"
-import { validateAppointmentEventData } from "@/lib/modules/schedules/services/appointment-validate.service"
-import { usePriorAuthorizationLabel } from "@/lib/modules/schedules/hooks/use-prior-authorization-label"
-import { useApprovedBillingCodes } from "@/lib/modules/schedules/hooks/use-approved-billing-codes"
+import { toApiTime } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
 import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
 import {
@@ -36,36 +26,15 @@ import { getAppointmentBillingCodeLabel } from "@/lib/modules/schedules/utils/sc
 
 interface SupervisionFormData {
   providerId: string
-  /** Session billing code → POST billingCodeId */
-  sessionBillingCodeId: string
   /** Supervision billing code → POST supervisionBillingCodeId */
   supervisionBillingCodeId: string
-  date: string
-  startTime: string
-  endTime: string
-  priorAuthorizationId: string
-  approvedPriorAuthorizationBillingCodeId: string
-  validatedUnits: number | null
 }
 
 function createEmptyForm(): SupervisionFormData {
   return {
     providerId: "",
-    sessionBillingCodeId: "",
     supervisionBillingCodeId: "",
-    date: "",
-    startTime: "",
-    endTime: "",
-    priorAuthorizationId: "",
-    approvedPriorAuthorizationBillingCodeId: "",
-    validatedUnits: null,
   }
-}
-
-/** Convert HH:mm:ss → HH:mm */
-function toFormTime(value?: string): string {
-  if (!value) return ""
-  return value.length >= 5 ? value.slice(0, 5) : value
 }
 
 // ============================================
@@ -89,23 +58,11 @@ export function SupervisionConfigModal({
   const alert = useAlert()
   const isEditing = !!appointment?.supervision
   const clientId = appointment?.clientId ?? ""
-  // If the parent appointment already has a billing code, auto-use it and hide the session BC select
-  const parentHasBillingCode = !!appointment?.billingCodeId
-  // Parent is 97155 → true supervision; parent is 97153/97152 → session/supervision
   const parentBillingCodeLabel = appointment ? getAppointmentBillingCodeLabel(appointment) : ""
-  const isSessionSupervision = parentHasBillingCode && !canHaveInlineSupervision(parentBillingCodeLabel)
+  const isSessionSupervision = !!appointment?.billingCodeId && !canHaveInlineSupervision(parentBillingCodeLabel)
 
   // ─── Data fetching ───
 
-  // Session billing codes (for billingCodeId in POST) — from prior authorization
-  const {
-    billingCodes: sessionBillingCodes,
-    priorAuthorization: sessionPriorAuth,
-    isLoading: sessionBillingCodesLoading,
-  } = useApprovedBillingCodes(open && clientId ? clientId : null, "Session")
-
-  // Supervision billing codes (for supervisionBillingCodeId in POST)
-  // Same endpoint as supervision config: /billing-code?page=0&pageSize=0&filters=type__EQ__Supervision__AND
   const {
     billingCodes: supervisionBillingCodesRaw,
     isLoading: supervisionBillingCodesLoading,
@@ -114,7 +71,6 @@ export function SupervisionConfigModal({
   const {
     providers: clientProviders,
     isLoading: rbtProvidersLoading,
-    error: rbtProvidersError,
   } = useProvidersByClient(open && clientId ? clientId : null)
 
   const rbtOptions = useMemo(
@@ -123,11 +79,6 @@ export function SupervisionConfigModal({
         .filter((p) => p.active && !p.terminated && p.userId)
         .map((p) => ({ value: p.userId, label: p.fullName })),
     [clientProviders],
-  )
-
-  const sessionCodeOptions = useMemo(
-    () => sessionBillingCodes.map((bc) => ({ value: bc.id, label: bc.label })),
-    [sessionBillingCodes],
   )
 
   const supervisionCodeOptions = useMemo(
@@ -144,13 +95,7 @@ export function SupervisionConfigModal({
   // ─── Form state ───
   const [localData, setLocalData] = useState<SupervisionFormData>(createEmptyForm())
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [validationError, setValidationError] = useState<string | null>(null)
-  const [isValidating, setIsValidating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const validateKey = useRef("")
-
-  const { label: localPriorAuthLabel, isLoading: isLoadingPriorAuthLabel } =
-    usePriorAuthorizationLabel(localData.priorAuthorizationId, clientId)
 
   // ─── Initialize form when modal opens ───
   useEffect(() => {
@@ -158,52 +103,16 @@ export function SupervisionConfigModal({
 
     if (isEditing && appointment.supervision) {
       const sup = appointment.supervision
-      const data: SupervisionFormData = {
-        providerId: sup.providerId ?? "",
-        sessionBillingCodeId: parentHasBillingCode
-          ? appointment.billingCodeId ?? ""
-          : sup.billingCodeId ?? "",
-        supervisionBillingCodeId: sup.supervisionBillingCodeId ?? "",
-        date: sup.date ?? appointment.date ?? "",
-        startTime: toFormTime(sup.timeInit),
-        endTime: toFormTime(sup.timeEnd),
-        priorAuthorizationId: sup.priorAuthorizationId ?? "",
-        approvedPriorAuthorizationBillingCodeId: "",
-        validatedUnits: sup.units ?? null,
-      }
-      setLocalData(data)
-      if (data.validatedUnits != null && clientId) {
-        validateKey.current = buildKey(clientId, data)
-      } else {
-        validateKey.current = ""
-      }
-    } else {
-      // Auto-populate from parent appointment
       setLocalData({
-        ...createEmptyForm(),
-        sessionBillingCodeId: appointment.billingCodeId ?? "",
-        providerId: appointment.rbtId ?? "",
-        date: appointment.date ?? "",
-        startTime: toFormTime(appointment.timeInit) || "",
-        endTime: toFormTime(appointment.timeEnd) || "",
+        providerId: sup.providerId ?? "",
+        supervisionBillingCodeId: sup.supervisionBillingCodeId ?? "",
       })
-      validateKey.current = ""
+    } else {
+      setLocalData(createEmptyForm())
     }
 
     setErrors({})
-    setValidationError(null)
-  }, [open, appointment, isEditing, clientId])
-
-  // ─── Auto-select single session billing code ───
-  useEffect(() => {
-    if (!open || sessionBillingCodesLoading) return
-    if (sessionCodeOptions.length === 1) {
-      setLocalData((prev) => {
-        if (prev.sessionBillingCodeId) return prev
-        return { ...prev, sessionBillingCodeId: sessionCodeOptions[0].value }
-      })
-    }
-  }, [open, sessionCodeOptions, sessionBillingCodesLoading])
+  }, [open, appointment, isEditing])
 
   // ─── Auto-select single supervision billing code ───
   useEffect(() => {
@@ -227,173 +136,45 @@ export function SupervisionConfigModal({
     }
   }, [open, rbtOptions, rbtProvidersLoading])
 
-  // ─── Auto-assign prior authorization (from session PA) ───
-  useEffect(() => {
-    if (!open || !sessionPriorAuth?.id) return
-    setLocalData((prev) => {
-      if (prev.priorAuthorizationId) return prev
-      return { ...prev, priorAuthorizationId: sessionPriorAuth.id }
-    })
-  }, [open, sessionPriorAuth])
-
   // ─── Field update ───
   const updateField = useCallback(
     <K extends keyof SupervisionFormData>(field: K, value: SupervisionFormData[K]) => {
-      setLocalData((prev) => {
-        const next = { ...prev, [field]: value }
-        // Reset validation when session billing code or time changes
-        if (
-          field === "sessionBillingCodeId" ||
-          field === "startTime" ||
-          field === "endTime" ||
-          field === "date"
-        ) {
-          next.priorAuthorizationId = ""
-          next.approvedPriorAuthorizationBillingCodeId = ""
-          next.validatedUnits = null
-        }
-        return next
-      })
+      setLocalData((prev) => ({ ...prev, [field]: value }))
       setErrors((prev) => {
         const next = { ...prev }
         delete next[field]
-        if (field === "startTime" || field === "endTime" || field === "date") {
-          delete next.timeRange
-        }
         return next
       })
-      if (
-        field === "startTime" ||
-        field === "endTime" ||
-        field === "date" ||
-        field === "sessionBillingCodeId"
-      ) {
-        setValidationError(null)
-      }
     },
     [],
   )
 
-  // ─── Async validation (validates session billing code against PA) ───
-  useEffect(() => {
-    if (!open || !clientId) return
-
-    const { sessionBillingCodeId, startTime, endTime, date } = localData
-    if (!sessionBillingCodeId || !startTime || !endTime || !date) return
-
-    const key = buildKey(clientId, { sessionBillingCodeId, startTime, endTime, date })
-    if (key === validateKey.current) return
-    validateKey.current = key
-
-    let cancelled = false
-    const run = async () => {
-      try {
-        setIsValidating(true)
-        setValidationError(null)
-        const result = await validateAppointmentEventData({
-          clientId,
-          billingCodeId: sessionBillingCodeId,
-          startTime: toValidateTime(startTime),
-          endTime: toValidateTime(endTime),
-          appointmentTypeEvent: "Supervision",
-        })
-        if (cancelled) return
-        setLocalData((prev) => ({
-          ...prev,
-          validatedUnits: result.unitsToUse,
-          priorAuthorizationId: result.priorAuthorizationId,
-          approvedPriorAuthorizationBillingCodeId:
-            result.approvedPriorAuthorizationBillingCodeId,
-        }))
-      } catch (err) {
-        if (cancelled) return
-        validateKey.current = ""
-        setLocalData((prev) => ({
-          ...prev,
-          validatedUnits: null,
-          priorAuthorizationId: "",
-          approvedPriorAuthorizationBillingCodeId: "",
-        }))
-        setValidationError(err instanceof Error ? err.message : "Validation failed")
-      } finally {
-        if (!cancelled) setIsValidating(false)
-      }
-    }
-    void run()
-    return () => {
-      cancelled = true
-    }
-  }, [open, clientId, localData.sessionBillingCodeId, localData.startTime, localData.endTime, localData.date])
-
-  // ─── Computed values ───
-  const durationMinutes = useMemo(
-    () => calculateDurationMinutes(localData.startTime, localData.endTime),
-    [localData.startTime, localData.endTime],
-  )
-
-  const billableUnits = localData.validatedUnits ?? calculateBillableUnits(durationMinutes)
-
-  const priorAuthorizationOptions = useMemo(() => {
-    if (localData.priorAuthorizationId) {
-      return [
-        {
-          value: localData.priorAuthorizationId,
-          label: isLoadingPriorAuthLabel
-            ? "Loading prior authorization…"
-            : localPriorAuthLabel ||
-              (sessionPriorAuth?.authNumber ? `# ${sessionPriorAuth.authNumber}` : "Prior authorization"),
-        },
-      ]
-    }
-    if (sessionPriorAuth?.id) {
-      return [
-        {
-          value: sessionPriorAuth.id,
-          label: sessionPriorAuth.authNumber
-            ? `# ${sessionPriorAuth.authNumber}`
-            : "Prior authorization",
-        },
-      ]
-    }
-    return []
-  }, [
-    localData.priorAuthorizationId,
-    localPriorAuthLabel,
-    isLoadingPriorAuthLabel,
-    sessionPriorAuth,
-  ])
-
   // ─── Validation ───
   const validate = useCallback((): boolean => {
     const next: Record<string, string> = {}
-
     if (!localData.providerId) next.providerId = "Select a provider"
-    if (!localData.sessionBillingCodeId) next.sessionBillingCodeId = "Select a session billing code"
-    if (!localData.date) next.date = "Select a date"
-    if (!localData.startTime) next.startTime = "Select a start time"
-    if (!localData.endTime) next.endTime = "Select an end time"
-    if (localData.startTime && localData.endTime && durationMinutes <= 0) {
-      next.endTime = "End time must be after start time"
-    }
-    if (validationError) next.timeRange = validationError
-
     setErrors(next)
     return Object.keys(next).length === 0
-  }, [localData, durationMinutes, validationError])
+  }, [localData])
 
   // ─── Submit ───
   const handleSave = async () => {
     if (!validate() || !appointment) return
 
+    const durationMinutes = calculateDurationMinutes(
+      appointment.timeInit?.slice(0, 5) ?? "",
+      appointment.timeEnd?.slice(0, 5) ?? "",
+    )
+    const units = calculateBillableUnits(durationMinutes)
+
     setIsSubmitting(true)
     try {
-      const units = localData.validatedUnits ?? calculateBillableUnits(durationMinutes)
       const payload = {
         appointmentId: appointment.id,
-        timeInit: toApiTime(localData.startTime),
-        timeEnd: toApiTime(localData.endTime),
-        date: localData.date,
-        billingCodeId: localData.sessionBillingCodeId,
+        timeInit: toApiTime(appointment.timeInit?.slice(0, 5) ?? ""),
+        timeEnd: toApiTime(appointment.timeEnd?.slice(0, 5) ?? ""),
+        date: appointment.date ?? "",
+        billingCodeId: appointment.billingCodeId ?? "",
         supervisionBillingCodeId: localData.supervisionBillingCodeId,
         units,
         providerId: localData.providerId,
@@ -442,23 +223,18 @@ export function SupervisionConfigModal({
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
       <div className="px-7 py-6 space-y-4">
-        {/* Session Billing Code — hidden when parent already has one (97155) */}
-        {!parentHasBillingCode && (
-          <>
-            <FloatingSelect
-              label="Session Billing Code"
-              value={localData.sessionBillingCodeId}
-              onChange={(v) => updateField("sessionBillingCodeId", v)}
-              options={sessionCodeOptions}
-              hasError={!!errors.sessionBillingCodeId}
-              required
-              searchable
-              disabled={sessionBillingCodesLoading}
-            />
-            {sessionBillingCodesLoading && <Hint>Loading session billing codes…</Hint>}
-            <FieldError message={errors.sessionBillingCodeId} />
-          </>
-        )}
+        {/* Provider */}
+        <FloatingSelect
+          label="Provider (Supervisor)"
+          value={localData.providerId}
+          onChange={(v) => updateField("providerId", v)}
+          options={rbtOptions}
+          hasError={!!errors.providerId}
+          required
+          searchable
+          disabled={rbtProvidersLoading}
+        />
+        <FieldError message={errors.providerId} />
 
         {/* Supervision Billing Code (optional) */}
         <FloatingSelect
@@ -470,90 +246,6 @@ export function SupervisionConfigModal({
           dropdownPosition="bottom"
           disabled={supervisionBillingCodesLoading}
         />
-        {supervisionBillingCodesLoading && <Hint>Loading supervision billing codes…</Hint>}
-
-        {/* Provider */}
-        <FloatingSelect
-          label="Provider (Supervisor)"
-          value={localData.providerId}
-          onChange={() => {}}
-          options={rbtOptions}
-          disabled
-        />
-
-        {/* Date */}
-        <PremiumDatePicker
-          label="Supervision Date"
-          value={localData.date}
-          onChange={() => {}}
-          disabled
-        />
-
-        {/* Time range — editable */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <FloatingTimePicker
-              label="Start Time"
-              value={localData.startTime}
-              onChange={(v) => updateField("startTime", v)}
-              hasError={!!errors.startTime || !!validationError}
-              required
-              allowManualInput
-            />
-            <FieldError message={errors.startTime} />
-          </div>
-          <div>
-            <FloatingTimePicker
-              label="End Time"
-              value={localData.endTime}
-              onChange={(v) => updateField("endTime", v)}
-              hasError={!!errors.endTime || !!validationError}
-              required
-              allowManualInput
-            />
-            <FieldError message={errors.endTime} />
-          </div>
-        </div>
-        <FieldError message={validationError || errors.timeRange} />
-
-        {/* Duration + Units summary */}
-        {durationMinutes > 0 && (
-          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-[#037ECC]/15 bg-gradient-to-br from-[#037ECC]/[0.06] to-[#079CFB]/[0.04] px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-[#037ECC]" />
-              <span className="text-sm text-slate-600">
-                Duration:{" "}
-                <span className="font-semibold text-slate-900">
-                  {formatDuration(durationMinutes)}
-                </span>
-              </span>
-            </div>
-            <div className="h-4 w-px bg-[#037ECC]/20" />
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-[#037ECC]" />
-              <span className="text-sm text-slate-600">
-                Units:{" "}
-                <span className="font-semibold text-[#037ECC]">
-                  {isValidating ? "…" : billableUnits}
-                </span>
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Prior Authorization (readonly, auto-assigned) */}
-        <FloatingSelect
-          label="Prior Authorization"
-          value={localData.priorAuthorizationId}
-          onChange={() => {}}
-          options={priorAuthorizationOptions}
-          disabled
-          dropdownPosition="bottom"
-        />
-        {isValidating && <Hint>Validating prior authorization…</Hint>}
-        {!isValidating && !localData.priorAuthorizationId && !validationError && (
-          <Hint>Assigned automatically after billing code and time are validated</Hint>
-        )}
       </div>
 
       {/* Footer */}
@@ -579,22 +271,7 @@ export function SupervisionConfigModal({
 // Helpers
 // ============================================
 
-function buildKey(
-  clientId: string,
-  data: Pick<SupervisionFormData, "sessionBillingCodeId" | "startTime" | "endTime" | "date">,
-): string {
-  return `${clientId}|${data.sessionBillingCodeId}|${data.startTime}|${data.endTime}|${data.date}|supervision`
-}
-
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
   return <p className="mt-1.5 text-xs text-red-500">{message}</p>
-}
-
-function Hint({ children }: { children: React.ReactNode }) {
-  return <p className="mt-1.5 text-xs text-slate-400">{children}</p>
-}
-
-function HintError({ children }: { children: React.ReactNode }) {
-  return <p className="mt-1.5 text-xs text-red-500">{children}</p>
 }
