@@ -235,15 +235,20 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
   const hourInputRef = useRef<HTMLInputElement>(null)
   const minuteInputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
+
+  // Refs to avoid stale closures in callbacks
+  const stateRef = useRef({ hours12, minutes, period })
+  stateRef.current = { hours12, minutes, period }
 
   const [selectedHour, selectedMinute] = value ? value.split(":") : ["", ""]
   const hasValue = allowManualInput ? (hours12.length > 0 || minutes.length > 0) : Boolean(value)
 
-  // Sync from external value → segments
+  // Sync from external value → segments (only when value actually changes)
+  const prevValueRef = useRef(value)
   useEffect(() => {
     if (!allowManualInput) return
+    if (value === prevValueRef.current) return
+    prevValueRef.current = value
 
     if (!value) {
       setHours12("")
@@ -260,60 +265,70 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     setHours12(h)
     setMinutes(m)
     setPeriod(parsedPeriod === "PM" ? "PM" : "AM")
-  }, [allowManualInput, value])
+  }, [allowManualInput, value, defaultPeriod])
 
-  // Commit segments → 24h value
-  const commitValue = useCallback((h: string, m: string, p: "AM" | "PM") => {
-    if (!h && !m) {
-      onChange("")
-      return
-    }
+  // Also sync on first mount / when modal opens with a value
+  useEffect(() => {
+    if (!allowManualInput || !value) return
+    const formatted12h = formatTimeTo12h(value)
+    if (!formatted12h) return
+    const [timePart, parsedPeriod] = formatted12h.split(" ")
+    const [h, m] = timePart.split(":")
+    setHours12(h)
+    setMinutes(m)
+    setPeriod(parsedPeriod === "PM" ? "PM" : "AM")
+    prevValueRef.current = value
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-    const hVal = h || "12"
-    const mVal = m || "00"
-    const normalized = formatTimeTo24h(`${hVal}:${mVal} ${p}`)
-    if (normalized) {
-      onChange(normalized)
+  /** Try to commit the current segments to the parent as a 24h value */
+  const tryCommit = useCallback((h: string, m: string, p: "AM" | "PM") => {
+    if (h.length !== 2 || m.length !== 2) return
+    const next = formatTimeTo24h(`${h}:${m} ${p}`)
+    if (next && next !== prevValueRef.current) {
+      prevValueRef.current = next
+      onChange(next)
     }
   }, [onChange])
 
-  // Auto-commit when both segments have a complete value (only if it differs from current)
-  useEffect(() => {
-    if (!allowManualInput) return
-    if (hours12.length !== 2 || minutes.length !== 2) return
+  /** Update hours and try to commit */
+  const handleHoursChange = useCallback((h: string) => {
+    setHours12(h)
+    tryCommit(h, stateRef.current.minutes, stateRef.current.period)
+  }, [tryCommit])
 
-    const next = formatTimeTo24h(`${hours12}:${minutes} ${period}`)
-    if (next && next !== value) {
-      onChangeRef.current(next)
-    }
-  }, [allowManualInput, hours12, minutes, period, value])
+  /** Update minutes and try to commit */
+  const handleMinutesChange = useCallback((m: string) => {
+    setMinutes(m)
+    tryCommit(stateRef.current.hours12, m, stateRef.current.period)
+  }, [tryCommit])
 
   // Handle focus leaving the entire component
   const handleContainerBlur = useCallback((e: React.FocusEvent) => {
-    // Check if focus moved outside the container
     const container = containerRef.current
     if (!container) return
     const relatedTarget = e.relatedTarget as Node | null
     if (relatedTarget && container.contains(relatedTarget)) return
 
-    // Focus left the component
     setIsFocused(false)
 
-    // Normalize empty segments
-    const h = hours12 || ""
-    const m = minutes || ""
+    const { hours12: h, minutes: m, period: p } = stateRef.current
     if (h || m) {
       const hNorm = h ? clampAndPad(h, 1, 12) : ""
       const mNorm = m ? clampAndPad(m, 0, 59) : "00"
       if (hNorm) {
         setHours12(hNorm)
         setMinutes(mNorm)
-        commitValue(hNorm, mNorm, period)
+        const next = formatTimeTo24h(`${hNorm}:${mNorm} ${p}`)
+        if (next && next !== prevValueRef.current) {
+          prevValueRef.current = next
+          onChange(next)
+        }
       }
     }
 
     onBlur?.()
-  }, [hours12, minutes, period, commitValue, onBlur])
+  }, [onChange, onBlur])
 
   // Scroll to selected hour/minute when dropdown opens
   useEffect(() => {
@@ -371,7 +386,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
             <SegmentInput
               ref={hourInputRef}
               value={hours12}
-              onChange={setHours12}
+              onChange={handleHoursChange}
               onFocus={() => setIsFocused(true)}
               onBlur={() => {}}
               onNext={() => minuteInputRef.current?.focus()}
@@ -390,7 +405,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
             <SegmentInput
               ref={minuteInputRef}
               value={minutes}
-              onChange={setMinutes}
+              onChange={handleMinutesChange}
               onFocus={() => setIsFocused(true)}
               onBlur={() => {}}
               onPrev={() => hourInputRef.current?.focus()}
@@ -411,7 +426,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
                 tabIndex={-1}
                 onClick={() => {
                   setPeriod("AM")
-                  if (hours12) commitValue(hours12, minutes || "00", "AM")
+                  tryCommit(hours12, minutes || "00", "AM")
                 }}
                 className={cn(
                   "h-7 w-9 rounded-md text-[11px] font-bold tracking-wide transition-all duration-150",
@@ -428,7 +443,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
                 tabIndex={-1}
                 onClick={() => {
                   setPeriod("PM")
-                  if (hours12) commitValue(hours12, minutes || "00", "PM")
+                  tryCommit(hours12, minutes || "00", "PM")
                 }}
                 className={cn(
                   "h-7 w-9 rounded-md text-[11px] font-bold tracking-wide transition-all duration-150",
