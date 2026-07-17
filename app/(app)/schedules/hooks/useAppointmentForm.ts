@@ -225,9 +225,9 @@ export function useAppointmentForm({
 
   const billingCodeOptions = useMemo(() => {
     const options = mainBillingCodes.map((bc) => ({ value: bc.id, label: bc.label }))
-    // In "Add New Session" mode, only show 97155 codes
+    // In "Add New Session" mode, only show 97155 codes excluding HN (behaves like 97153)
     if (isNewSessionMode) {
-      return options.filter((opt) => /\b97155\b/.test(opt.label))
+      return options.filter((opt) => /\b97155\b/.test(opt.label) && !/\(HN\)/i.test(opt.label))
     }
     return options
   }, [mainBillingCodes, isNewSessionMode])
