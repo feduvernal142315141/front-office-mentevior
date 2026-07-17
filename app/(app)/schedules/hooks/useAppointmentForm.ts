@@ -45,6 +45,8 @@ function eventTypeToBillingCodeType(eventType: EventType): string {
 }
 
 interface UseAppointmentFormProps {
+  /** Whether the modal is open — used to reset form state on re-open */
+  open?: boolean
   appointment?: Appointment | null
   /** Parent appointment for "Add New Session" flow */
   parentAppointment?: Appointment | null
@@ -71,6 +73,7 @@ const getInitialFormData = (defaultDate?: string, defaultTime?: string): Appoint
 })
 
 export function useAppointmentForm({
+  open,
   appointment,
   parentAppointment,
   defaultDate,
@@ -364,7 +367,7 @@ export function useAppointmentForm({
     setErrors({})
     setValidationError(null)
     setSupervisionValidationError(null)
-  }, [appointment, parentAppointment, defaultDate, defaultTime])
+  }, [open, appointment, parentAppointment, defaultDate, defaultTime])
 
   useEffect(() => {
     if (isEditing) return

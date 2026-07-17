@@ -85,6 +85,7 @@ export function AppointmentModal({
     isSubmitting,
     hasPriorAuthWithoutCodes,
   } = useAppointmentForm({
+    open,
     appointment,
     parentAppointment,
     defaultDate,
@@ -235,7 +236,6 @@ export function AppointmentModal({
               hasError={!!errors.startTime || !!validationError}
               required
               allowManualInput
-              disabled={isNewSessionMode}
             />
             <FieldError message={errors.startTime} />
           </div>
@@ -248,7 +248,6 @@ export function AppointmentModal({
               required
               allowManualInput
               defaultPeriod="PM"
-              disabled={isNewSessionMode}
             />
             <FieldError message={errors.endTime} />
           </div>
