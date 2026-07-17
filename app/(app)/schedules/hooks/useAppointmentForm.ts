@@ -240,6 +240,9 @@ export function useAppointmentForm({
   const updateField = useCallback(
     <K extends keyof AppointmentFormData>(field: K, value: AppointmentFormData[K]) => {
       setFormData((prev) => {
+        // Skip no-op updates to avoid resetting derived state
+        if (prev[field] === value) return prev
+
         const next = { ...prev, [field]: value }
         if (field === "clientId") {
           next.placeOfServiceAddressId = ""
