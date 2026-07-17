@@ -183,10 +183,10 @@ export function useAppointmentForm({
   const priorAuthorizationOptions = useMemo(() => {
     if (!formData.priorAuthorizationId) return []
     const activeLabel = activePriorAuth?.authNumber
-      ? `# ${activePriorAuth.authNumber}`
+      ? `PA # ${activePriorAuth.authNumber}`
       : ""
     const fallbackLabel = appointment?.priorAuthorizationNumber
-      ? `# ${appointment.priorAuthorizationNumber}`
+      ? `PA # ${appointment.priorAuthorizationNumber}`
       : ""
     return [
       {
