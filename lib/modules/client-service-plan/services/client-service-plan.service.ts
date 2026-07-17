@@ -262,7 +262,7 @@ export async function getClientServicePlanByClientId(clientId: string): Promise<
     { field: "active", value: true },
   ]))
   const response = await serviceGet<unknown>(
-    `/client-service-plan?filters=${filters}&page=0&pageSize=1`
+    `/client-service-plan?filters=${filters}&page=0&pageSize=100`
   )
 
   if (response.status === 404) return null
@@ -274,7 +274,8 @@ export async function getClientServicePlanByClientId(clientId: string): Promise<
   const entries = extractCollectionEntries(response.data)
   if (entries.length === 0) return null
 
-  return normalizeClientServicePlan(entries[0])
+  // Return the last active entry (most recently created) to handle duplicate clones
+  return normalizeClientServicePlan(entries[entries.length - 1])
 }
 
 export async function getClientServicePlanById(id: string): Promise<ClientServicePlan | null> {
