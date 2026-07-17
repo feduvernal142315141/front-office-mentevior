@@ -632,16 +632,11 @@ export function useAppointmentForm({
     // Supervision validation (only when switch is on and BC allows it)
     if (formData.addSupervision && showSupervisionSwitch) {
       if (!formData.supervision.providerId) newErrors.supervisionRbtId = "Select a provider"
-      // supervisionBillingCodeId is optional
-      if (!formData.supervision.date) newErrors["supervision.date"] = "Select a supervision date"
-      if (!formData.supervision.startTime) newErrors["supervision.startTime"] = "Select supervision start time"
-      if (!formData.supervision.endTime) newErrors["supervision.endTime"] = "Select supervision end time"
-      if (supervisionValidationError) newErrors.supervisionTimeRange = supervisionValidationError
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }, [formData, validationError, supervisionValidationError, showSupervisionSwitch, isNewSessionMode, parentAppointment])
+  }, [formData, validationError, showSupervisionSwitch, isNewSessionMode, parentAppointment])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -675,18 +670,17 @@ export function useAppointmentForm({
       if (!appointmentId) return
 
       // Create supervision sub-event if switch is on
-      if (formData.addSupervision && showSupervisionSwitch && isSupervisionConfigured) {
+      if (formData.addSupervision && showSupervisionSwitch && formData.supervision.providerId) {
         try {
-          const supUnits = formData.supervision.validatedUnits ?? calculateBillableUnits(supervisionDurationMinutes)
           await createSubEvent({
             appointmentId,
-            timeInit: toApiTime(formData.supervision.startTime),
-            timeEnd: toApiTime(formData.supervision.endTime),
-            date: formData.supervision.date || formData.date,
+            timeInit: toApiTime(formData.startTime),
+            timeEnd: toApiTime(formData.endTime),
+            date: formData.date,
             billingCodeId: formData.supervision.billingCodeId,
             supervisionBillingCodeId: formData.supervision.billingCodeId,
-            units: supUnits,
-            providerId: formData.supervision.providerId || providerId,
+            units,
+            providerId: formData.supervision.providerId,
           })
         } catch {
           alert.error("Supervision Error", "Appointment created but supervision sub-event failed. You can add it later from the menu.")

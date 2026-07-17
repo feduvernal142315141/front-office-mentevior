@@ -57,9 +57,7 @@ export function AppointmentModal({
     updateSupervisionField,
     errors,
     validationError,
-    supervisionValidationError,
     isValidatingMain,
-    isValidatingSupervision,
     clientOptions,
     clientsLoading,
     clientsError,
@@ -70,12 +68,8 @@ export function AppointmentModal({
     mainBillingCodesError,
     priorAuthorizationOptions,
     durationMinutes,
-    billableUnits,
-    supervisionDurationMinutes,
-    supervisionBillableUnits,
     supervisionCodeOptions,
     supervisionBillingCodesLoading,
-    supervisionPriorAuthLabel,
     rbtOptions,
     rbtProvidersLoading,
     showSupervisionSwitch,
@@ -307,55 +301,6 @@ export function AppointmentModal({
                     />
                   </div>
                 </div>
-
-                {/* Supervision Date */}
-                <PremiumDatePicker
-                  label="Supervision Date"
-                  value={formData.supervision.date}
-                  onChange={(v) => updateSupervisionField("date", v)}
-                  hasError={!!errors["supervision.date"]}
-                  required
-                />
-
-                {/* Supervision Start + End */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <FloatingTimePicker
-                      label="Start Time"
-                      value={formData.supervision.startTime}
-                      onChange={(v) => updateSupervisionField("startTime", v)}
-                      hasError={!!errors["supervision.startTime"] || !!supervisionValidationError}
-                      required
-                      allowManualInput
-                    />
-                  </div>
-                  <div>
-                    <FloatingTimePicker
-                      label="End Time"
-                      value={formData.supervision.endTime}
-                      onChange={(v) => updateSupervisionField("endTime", v)}
-                      hasError={!!errors["supervision.endTime"] || !!supervisionValidationError}
-                      required
-                      allowManualInput
-                      defaultPeriod="PM"
-                    />
-                  </div>
-                </div>
-                <FieldError message={supervisionValidationError || errors.supervisionTimeRange} />
-
-                {/* Supervision summary bar */}
-                {supervisionDurationMinutes > 0 && (
-                  <SummaryBar
-                    label="Supervision Duration"
-                    duration={formatDuration(supervisionDurationMinutes)}
-                    priorAuth={
-                      isValidatingSupervision
-                        ? "Validating…"
-                        : supervisionPriorAuthLabel || undefined
-                    }
-                    variant="indigo"
-                  />
-                )}
               </div>
             )}
           </div>
