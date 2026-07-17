@@ -608,8 +608,18 @@ export function useAppointmentForm({
             units,
             providerId: formData.supervision.providerId,
           })
-        } catch {
-          alert.error("Supervision Error", "Appointment created but supervision sub-event failed. You can add it later from the menu.")
+        } catch (err) {
+          // Rollback: delete the appointment that was just created
+          if (!isEditing) {
+            try {
+              await mutations.remove(appointmentId)
+            } catch {
+              // silent — best-effort rollback
+            }
+          }
+          const message = err instanceof Error ? err.message : "Failed to create supervision"
+          alert.error("Supervision Error", message)
+          return
         }
       }
 
