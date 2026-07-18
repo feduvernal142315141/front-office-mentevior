@@ -155,10 +155,11 @@ const SegmentInput = forwardRef<HTMLInputElement, SegmentInputProps>(function Se
       inputMode="numeric"
       autoComplete="off"
       value={value}
-      readOnly
       placeholder={placeholder}
       disabled={disabled}
       aria-label={ariaLabel}
+      onChange={() => {/* handled by onKeyDown */}}
+      onClick={(e) => (e.target as HTMLInputElement).select()}
       onFocus={(e) => {
         bufferRef.current = ""
         e.target.select()
@@ -170,11 +171,11 @@ const SegmentInput = forwardRef<HTMLInputElement, SegmentInputProps>(function Se
       }}
       onKeyDown={handleKeyDown}
       className={cn(
-        "w-[28px] text-center bg-transparent outline-none",
+        "w-[28px] text-center bg-transparent outline-none caret-transparent",
         "text-[15px] 2xl:text-[16px] font-medium tabular-nums tracking-wide",
         "text-[var(--color-login-text-primary)]",
         "placeholder:text-slate-300 placeholder:font-normal",
-        "select-all cursor-default",
+        "select-all cursor-text",
         "rounded-md transition-colors duration-100",
         "focus:bg-[#037ECC]/10",
       )}
