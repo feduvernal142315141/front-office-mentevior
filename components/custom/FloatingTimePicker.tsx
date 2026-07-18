@@ -2,186 +2,39 @@
 
 import { cn } from "@/lib/utils"
 import { Clock } from "lucide-react"
-import { forwardRef, useCallback, useEffect, useRef, useState, type ForwardedRef } from "react"
+import { forwardRef, useEffect, useRef, useState, type ForwardedRef } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { formatTimeTo12h, formatTimeTo24h } from "@/lib/utils/time-format"
 
 // ============================================
-// Segmented time input helpers
+// Masked input helpers
 // ============================================
 
-/** Clamp a numeric string to [min, max] and pad to 2 digits */
-function clampAndPad(value: string, min: number, max: number): string {
-  const n = parseInt(value, 10)
-  if (Number.isNaN(n)) return String(min).padStart(2, "0")
-  return String(Math.min(Math.max(n, min), max)).padStart(2, "0")
+/** Apply hh:mm mask preserving cursor position */
+function applyMask(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 4)
+  if (digits.length <= 2) return digits
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`
 }
 
-// ============================================
-// SegmentInput — a single HH or MM field
-// ============================================
+/** Normalize on blur: clamp hours 1-12, minutes 0-59, pad with zeros */
+function normalizeTime(raw: string): string {
+  const digits = raw.replace(/\D/g, "")
+  if (digits.length === 0) return ""
 
-interface SegmentInputProps {
-  value: string
-  onChange: (v: string) => void
-  onFocus: () => void
-  onBlur: () => void
-  /** Move focus to the next segment */
-  onNext?: () => void
-  /** Move focus to the previous segment */
-  onPrev?: () => void
-  min: number
-  max: number
-  placeholder: string
-  disabled?: boolean
-  "aria-label"?: string
+  let h = digits.length >= 2 ? digits.slice(0, 2) : digits.padStart(2, "0")
+  let m = digits.length > 2 ? digits.slice(2).padEnd(2, "0") : "00"
+
+  let hNum = parseInt(h, 10)
+  let mNum = parseInt(m, 10)
+
+  if (isNaN(hNum) || hNum === 0) hNum = 12
+  if (hNum > 12) hNum = 12
+  if (isNaN(mNum) || mNum < 0) mNum = 0
+  if (mNum > 59) mNum = 59
+
+  return `${String(hNum).padStart(2, "0")}:${String(mNum).padStart(2, "0")}`
 }
-
-const SegmentInput = forwardRef<HTMLInputElement, SegmentInputProps>(function SegmentInput({
-  value,
-  onChange,
-  onFocus,
-  onBlur,
-  onNext,
-  onPrev,
-  min,
-  max,
-  placeholder,
-  disabled,
-  "aria-label": ariaLabel,
-}, segmentRef) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const bufferRef = useRef("")
-
-  const commitBuffer = useCallback(() => {
-    const buf = bufferRef.current
-    if (!buf) return
-    onChange(clampAndPad(buf, min, max))
-    bufferRef.current = ""
-  }, [onChange, min, max])
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const { key } = e
-
-    if (key === "Tab") {
-      commitBuffer()
-      return // let browser handle Tab naturally
-    }
-
-    if (key === "ArrowRight" || key === ":") {
-      e.preventDefault()
-      commitBuffer()
-      onNext?.()
-      return
-    }
-
-    if (key === "ArrowLeft") {
-      e.preventDefault()
-      commitBuffer()
-      onPrev?.()
-      return
-    }
-
-    if (key === "ArrowUp") {
-      e.preventDefault()
-      const n = parseInt(value || String(min), 10)
-      const next = n >= max ? min : n + 1
-      onChange(String(next).padStart(2, "0"))
-      bufferRef.current = ""
-      return
-    }
-
-    if (key === "ArrowDown") {
-      e.preventDefault()
-      const n = parseInt(value || String(min), 10)
-      const next = n <= min ? max : n - 1
-      onChange(String(next).padStart(2, "0"))
-      bufferRef.current = ""
-      return
-    }
-
-    if (key === "Backspace" || key === "Delete") {
-      e.preventDefault()
-      if (bufferRef.current.length > 0) {
-        bufferRef.current = bufferRef.current.slice(0, -1)
-        if (bufferRef.current.length === 0) {
-          onChange("")
-        } else {
-          onChange(clampAndPad(bufferRef.current, min, max))
-        }
-      } else {
-        onChange("")
-        onPrev?.()
-      }
-      return
-    }
-
-    // Only allow digits
-    if (!/^\d$/.test(key)) {
-      e.preventDefault()
-      return
-    }
-
-    e.preventDefault()
-    const buf = bufferRef.current + key
-
-    if (buf.length >= 2) {
-      onChange(clampAndPad(buf, min, max))
-      bufferRef.current = ""
-      onNext?.()
-    } else {
-      // If first digit already determines the value must be single-digit range
-      // e.g. for hours (1-12): typing "2"-"9" immediately completes to "02"-"09"
-      const firstDigit = parseInt(buf, 10)
-      if (firstDigit > Math.floor(max / 10)) {
-        onChange(clampAndPad(buf, min, max))
-        bufferRef.current = ""
-        onNext?.()
-      } else {
-        bufferRef.current = buf
-        // Show the partial digit as preview
-        onChange(buf.padStart(2, "0"))
-      }
-    }
-  }
-
-  return (
-    <input
-      ref={(node) => {
-        inputRef.current = node
-        setForwardedRef(segmentRef, node)
-      }}
-      type="text"
-      inputMode="numeric"
-      autoComplete="off"
-      value={value}
-      placeholder={placeholder}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onChange={() => {/* handled by onKeyDown */}}
-      onClick={(e) => (e.target as HTMLInputElement).select()}
-      onFocus={(e) => {
-        bufferRef.current = ""
-        e.target.select()
-        onFocus()
-      }}
-      onBlur={() => {
-        commitBuffer()
-        onBlur()
-      }}
-      onKeyDown={handleKeyDown}
-      className={cn(
-        "w-[28px] text-center bg-transparent outline-none caret-transparent",
-        "text-[15px] 2xl:text-[16px] font-medium tabular-nums tracking-wide",
-        "text-[var(--color-login-text-primary)]",
-        "placeholder:text-slate-300 placeholder:font-normal",
-        "select-all cursor-text",
-        "rounded-md transition-colors duration-100",
-        "focus:bg-[#037ECC]/10",
-      )}
-    />
-  )
-})
 
 // ============================================
 // Main component
@@ -228,108 +81,103 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
   const hourRef = useRef<HTMLDivElement>(null)
   const minuteRef = useRef<HTMLDivElement>(null)
 
-  // Segmented state
-  const [hours12, setHours12] = useState("")
-  const [minutes, setMinutes] = useState("")
+  // Manual input state
+  const [displayValue, setDisplayValue] = useState("")
   const [period, setPeriod] = useState<"AM" | "PM">(defaultPeriod)
-
-  const hourInputRef = useRef<HTMLInputElement>(null)
-  const minuteInputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  // Refs to avoid stale closures in callbacks
-  const stateRef = useRef({ hours12, minutes, period })
-  stateRef.current = { hours12, minutes, period }
+  const inputRef = useRef<HTMLInputElement>(null)
+  const prevValueRef = useRef(value)
 
   const [selectedHour, selectedMinute] = value ? value.split(":") : ["", ""]
-  const hasValue = allowManualInput ? (hours12.length > 0 || minutes.length > 0) : Boolean(value)
+  const hasValue = allowManualInput ? displayValue.length > 0 : Boolean(value)
 
-  // Sync from external value → segments (only when value actually changes)
-  const prevValueRef = useRef(value)
+  // Sync from external 24h value → display (12h)
   useEffect(() => {
     if (!allowManualInput) return
     if (value === prevValueRef.current) return
     prevValueRef.current = value
 
     if (!value) {
-      setHours12("")
-      setMinutes("")
+      setDisplayValue("")
       setPeriod(defaultPeriod)
       return
     }
 
-    const formatted12h = formatTimeTo12h(value)
-    if (!formatted12h) return
+    const formatted = formatTimeTo12h(value)
+    if (!formatted) return
 
-    const [timePart, parsedPeriod] = formatted12h.split(" ")
-    const [h, m] = timePart.split(":")
-    setHours12(h)
-    setMinutes(m)
-    setPeriod(parsedPeriod === "PM" ? "PM" : "AM")
+    const [timePart, p] = formatted.split(" ")
+    setDisplayValue(timePart)
+    setPeriod(p === "PM" ? "PM" : "AM")
   }, [allowManualInput, value, defaultPeriod])
 
-  // Also sync on first mount / when modal opens with a value
+  // First mount sync
   useEffect(() => {
     if (!allowManualInput || !value) return
-    const formatted12h = formatTimeTo12h(value)
-    if (!formatted12h) return
-    const [timePart, parsedPeriod] = formatted12h.split(" ")
-    const [h, m] = timePart.split(":")
-    setHours12(h)
-    setMinutes(m)
-    setPeriod(parsedPeriod === "PM" ? "PM" : "AM")
+    const formatted = formatTimeTo12h(value)
+    if (!formatted) return
+    const [timePart, p] = formatted.split(" ")
+    setDisplayValue(timePart)
+    setPeriod(p === "PM" ? "PM" : "AM")
     prevValueRef.current = value
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  /** Try to commit the current segments to the parent as a 24h value */
-  const tryCommit = useCallback((h: string, m: string, p: "AM" | "PM") => {
-    if (h.length !== 2 || m.length !== 2) return
-    const next = formatTimeTo24h(`${h}:${m} ${p}`)
-    if (next && next !== prevValueRef.current) {
-      prevValueRef.current = next
-      onChange(next)
+  /** Commit the current display value + period to parent as 24h */
+  const commitValue = (text: string, p: "AM" | "PM") => {
+    const normalized = normalizeTime(text)
+    if (!normalized) {
+      if (prevValueRef.current) {
+        prevValueRef.current = ""
+        onChange("")
+      }
+      return
     }
-  }, [onChange])
 
-  /** Update hours and try to commit */
-  const handleHoursChange = useCallback((h: string) => {
-    setHours12(h)
-    tryCommit(h, stateRef.current.minutes, stateRef.current.period)
-  }, [tryCommit])
+    setDisplayValue(normalized)
+    const val24 = formatTimeTo24h(`${normalized} ${p}`)
+    if (val24 && val24 !== prevValueRef.current) {
+      prevValueRef.current = val24
+      onChange(val24)
+    }
+  }
 
-  /** Update minutes and try to commit */
-  const handleMinutesChange = useCallback((m: string) => {
-    setMinutes(m)
-    tryCommit(stateRef.current.hours12, m, stateRef.current.period)
-  }, [tryCommit])
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    const masked = applyMask(raw)
+    setDisplayValue(masked)
 
-  // Handle focus leaving the entire component
-  const handleContainerBlur = useCallback((e: React.FocusEvent) => {
-    const container = containerRef.current
-    if (!container) return
-    const relatedTarget = e.relatedTarget as Node | null
-    if (relatedTarget && container.contains(relatedTarget)) return
-
-    setIsFocused(false)
-
-    const { hours12: h, minutes: m, period: p } = stateRef.current
-    if (h || m) {
-      const hNorm = h ? clampAndPad(h, 1, 12) : ""
-      const mNorm = m ? clampAndPad(m, 0, 59) : "00"
-      if (hNorm) {
-        setHours12(hNorm)
-        setMinutes(mNorm)
-        const next = formatTimeTo24h(`${hNorm}:${mNorm} ${p}`)
-        if (next && next !== prevValueRef.current) {
-          prevValueRef.current = next
-          onChange(next)
+    // Auto-commit when we have a full hh:mm (5 chars)
+    if (masked.length === 5) {
+      const normalized = normalizeTime(masked)
+      if (normalized) {
+        setDisplayValue(normalized)
+        const val24 = formatTimeTo24h(`${normalized} ${period}`)
+        if (val24 && val24 !== prevValueRef.current) {
+          prevValueRef.current = val24
+          onChange(val24)
         }
       }
     }
+  }
 
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow: digits, backspace, delete, arrows, tab, home, end, colon
+    const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab", ":"]
+    if (allowed.includes(e.key)) return
+    if (e.metaKey || e.ctrlKey) return
+    if (!/^\d$/.test(e.key)) e.preventDefault()
+  }
+
+  const handleInputBlur = () => {
+    setIsFocused(false)
+    commitValue(displayValue, period)
     onBlur?.()
-  }, [onChange, onBlur])
+  }
+
+  const handlePeriodClick = (p: "AM" | "PM") => {
+    setPeriod(p)
+    commitValue(displayValue, p)
+  }
 
   // Scroll to selected hour/minute when dropdown opens
   useEffect(() => {
@@ -350,111 +198,98 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     onChange(`${hour}:${minute}`)
   }
 
-  const displayValue = hasValue ? `${selectedHour} : ${selectedMinute}` : ""
+  const popoverDisplayValue = hasValue ? `${selectedHour} : ${selectedMinute}` : ""
 
+  // ─── Manual input mode ───
   if (allowManualInput) {
     return (
       <div className="w-full">
-        <div
-          ref={(node) => {
-            containerRef.current = node
-            setForwardedRef(ref, node)
-          }}
-          onBlur={handleContainerBlur}
-          className={cn(
-            "relative w-full h-[52px] 2xl:h-[56px] rounded-[16px]",
-            "flex items-center gap-0",
-            "bg-gradient-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
-            "border transition-all duration-200 ease-out",
-            hasError
-              ? "border-2 border-red-500/70"
-              : isFocused
-                ? "border-[hsl(var(--primary))] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_0_0_4px_hsl(var(--primary)/0.12),0_6px_14px_hsl(var(--primary)/0.18)] -translate-y-[1px] bg-gradient-to-b from-white to-[hsl(240_20%_99%)]"
-                : "border-[hsl(240_20%_88%/0.6)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(15,23,42,0.04)] hover:border-[hsl(240_35%_75%/0.6)]",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          {/* Clock icon */}
-          <div className="pl-4 pr-2 flex items-center pointer-events-none">
-            <Clock className={cn(
-              "w-4 h-4 transition-colors",
-              isFocused ? "text-[#037ECC]" : "text-slate-400"
-            )} />
-          </div>
+        <div className="relative w-full">
+          {/* Hidden peer for floating label CSS */}
+          <input
+            aria-hidden
+            readOnly
+            tabIndex={-1}
+            value={displayValue}
+            placeholder=" "
+            className="sr-only peer"
+          />
 
-          {/* Segmented time input: [HH] : [MM] */}
-          <div className="flex items-center gap-0.5 flex-1 min-w-0">
-            <SegmentInput
-              ref={hourInputRef}
-              value={hours12}
-              onChange={handleHoursChange}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => {}}
-              onNext={() => minuteInputRef.current?.focus()}
-              min={1}
-              max={12}
-              placeholder="hh"
-              disabled={disabled}
-              aria-label="Hours"
-            />
-            <span className={cn(
-              "text-[15px] 2xl:text-[16px] font-medium select-none",
-              hours12 || minutes ? "text-[var(--color-login-text-primary)]" : "text-slate-300"
-            )}>
-              :
-            </span>
-            <SegmentInput
-              ref={minuteInputRef}
-              value={minutes}
-              onChange={handleMinutesChange}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => {}}
-              onPrev={() => hourInputRef.current?.focus()}
-              min={0}
-              max={59}
-              placeholder="mm"
-              disabled={disabled}
-              aria-label="Minutes"
-            />
-          </div>
+          {/* Container */}
+          <div
+            className={cn(
+              "w-full h-[52px] 2xl:h-[56px] rounded-[16px]",
+              "flex items-center gap-0",
+              "bg-gradient-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
+              "border transition-all duration-200 ease-out",
+              hasError
+                ? "border-2 border-red-500/70"
+                : isFocused
+                  ? "border-[hsl(var(--primary))] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_0_0_4px_hsl(var(--primary)/0.12),0_6px_14px_hsl(var(--primary)/0.18)] -translate-y-[1px] bg-gradient-to-b from-white to-[hsl(240_20%_99%)]"
+                  : "border-[hsl(240_20%_88%/0.6)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(15,23,42,0.04)] hover:border-[hsl(240_35%_75%/0.6)]",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            {/* Clock icon */}
+            <div className="pl-4 pr-2 flex items-center pointer-events-none">
+              <Clock className={cn(
+                "w-4 h-4 transition-colors",
+                isFocused ? "text-[#037ECC]" : "text-slate-400"
+              )} />
+            </div>
 
-          {/* AM / PM toggle */}
-          <div className="flex items-center gap-0.5 pr-3">
-            <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
-              <button
-                type="button"
-                disabled={disabled}
-                tabIndex={-1}
-                onClick={() => {
-                  setPeriod("AM")
-                  tryCommit(hours12, minutes || "00", "AM")
-                }}
-                className={cn(
-                  "h-7 w-9 rounded-md text-[11px] font-bold tracking-wide transition-all duration-150",
-                  period === "AM"
-                    ? "bg-[#037ECC] text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
-                AM
-              </button>
-              <button
-                type="button"
-                disabled={disabled}
-                tabIndex={-1}
-                onClick={() => {
-                  setPeriod("PM")
-                  tryCommit(hours12, minutes || "00", "PM")
-                }}
-                className={cn(
-                  "h-7 w-9 rounded-md text-[11px] font-bold tracking-wide transition-all duration-150",
-                  period === "PM"
-                    ? "bg-[#037ECC] text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
-                PM
-              </button>
+            {/* Single masked input */}
+            <input
+              ref={(node) => {
+                inputRef.current = node
+                setForwardedRef(ref, node)
+              }}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={displayValue}
+              onChange={handleInputChange}
+              onKeyDown={handleInputKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={handleInputBlur}
+              placeholder={isFocused ? "hh:mm" : ""}
+              disabled={disabled}
+              maxLength={5}
+              className="flex-1 min-w-0 bg-transparent text-[15px] 2xl:text-[16px] font-medium tabular-nums tracking-wide text-[var(--color-login-text-primary)] outline-none placeholder:text-slate-300 placeholder:font-normal"
+            />
+
+            {/* AM / PM toggle */}
+            <div className="flex items-center gap-0.5 pr-3">
+              <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
+                <button
+                  type="button"
+                  disabled={disabled}
+                  tabIndex={-1}
+                  onClick={() => handlePeriodClick("AM")}
+                  className={cn(
+                    "h-7 w-9 rounded-md text-[11px] font-bold tracking-wide transition-all duration-150",
+                    period === "AM"
+                      ? "bg-[#037ECC] text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  )}
+                >
+                  AM
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  tabIndex={-1}
+                  onClick={() => handlePeriodClick("PM")}
+                  className={cn(
+                    "h-7 w-9 rounded-md text-[11px] font-bold tracking-wide transition-all duration-150",
+                    period === "PM"
+                      ? "bg-[#037ECC] text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  )}
+                >
+                  PM
+                </button>
+              </div>
             </div>
           </div>
 
@@ -478,6 +313,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     )
   }
 
+  // ─── Popover mode (non-manual) ───
   return (
     <div className="w-full">
       <Popover
@@ -523,7 +359,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
               {hasValue && (
                 <>
                   <Clock className="w-4 h-4 text-[#037ECC] shrink-0" />
-                  <span>{displayValue}</span>
+                  <span>{popoverDisplayValue}</span>
                 </>
               )}
             </button>
