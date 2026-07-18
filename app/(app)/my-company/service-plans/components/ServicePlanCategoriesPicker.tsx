@@ -93,7 +93,7 @@ export function ServicePlanCategoriesPicker({
 
   const canSelectAll = filteredOptions.length > 0
   const isSavingCategory = isCreatingCategory || isUpdatingCategory || isDeletingCategory
-  const canSaveCategory = newCategoryName.trim().length > 0 && !disabled && !isSavingCategory
+  const canSaveCategory = newCategoryName.trim().length > 0 && selectedBillingCodeIds.length > 0 && !disabled && !isSavingCategory
 
   useEffect(() => {
     if (!pendingScrollCategoryValue || isAddingCategory) return
@@ -333,7 +333,12 @@ export function ServicePlanCategoriesPicker({
             searchPlaceholder="Search billing codes..."
             disabled={disabled || isSavingCategory || billingCodesLoading}
             tone="neutral"
+            required
+            hasError={selectedBillingCodeIds.length === 0 && newCategoryName.trim().length > 0}
           />
+          {selectedBillingCodeIds.length === 0 && newCategoryName.trim().length > 0 && (
+            <p className="text-xs text-red-500">Billing Codes is required</p>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-2 justify-end">
