@@ -100,7 +100,15 @@ export function DuplicateAppointmentModal({
     }
 
     if (appointment.supervision) {
-      payload.supervision = { ...appointment.supervision, date: newDate }
+      payload.supervision = {
+        timeInit: appointment.supervision.timeInit,
+        timeEnd: appointment.supervision.timeEnd,
+        date: newDate,
+        billingCodeId: appointment.supervision.billingCodeId,
+        supervisionBillingCodeId: appointment.supervision.supervisionBillingCodeId,
+        units: appointment.supervision.units,
+        providerId: appointment.supervision.providerId,
+      }
     }
 
     const createdId = await mutations.create(payload)

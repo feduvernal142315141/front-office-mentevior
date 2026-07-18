@@ -38,6 +38,7 @@ export interface ValidateEventDataRequest {
   billingCodeId: string
   startTime: string
   endTime: string
+  date: string
   appointmentTypeEvent: AppointmentTypeEvent
 }
 
@@ -122,6 +123,19 @@ export interface AppointmentListQuery {
   dateTo?: string
 }
 
+/** Supervision payload sent inside POST/PUT /appointment request body */
+export interface SupervisionRequestPayload {
+  /** Sub-event UUID — send on update to target an existing sub-event */
+  id?: string
+  timeInit: string
+  timeEnd: string
+  date: string
+  billingCodeId: string
+  supervisionBillingCodeId?: string
+  units: number
+  providerId: string
+}
+
 /** POST /appointment and PUT /appointment request body */
 export interface AppointmentApiPayload {
   id?: string
@@ -137,7 +151,7 @@ export interface AppointmentApiPayload {
   providerId: string
   priorAuthorizationId: string
   parentAppointmentId?: string | null
-  supervision?: AppointmentSupervisionApiPayload
+  supervision?: SupervisionRequestPayload
 }
 
 /**

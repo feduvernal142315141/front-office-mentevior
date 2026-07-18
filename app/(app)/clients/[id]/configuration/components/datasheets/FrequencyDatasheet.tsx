@@ -320,8 +320,25 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
               })}
             </div>
 
-            {/* Row: Occurrence Marks */}
+            {/* Row: Environmental Changes */}
             <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
+              <RowLabel icon={<FileText className="h-4 w-4 text-teal-500" />} title="Environmental changes" badge="Affects Chart Phase Lines" badgeColor="teal" />
+              {visibleDays.map((day) => {
+                const key = getDateKey(day)
+                const entry = ds.getEntry(key)
+                const hasNote = entry.environmentalNote.trim().length > 0
+                const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
+                return (
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} />
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Row: Occurrence Marks */}
+            <div className="grid" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<Hash className="h-4 w-4 text-slate-400" />} title="Occurrences" />
               {visibleDays.map((day) => {
                 const key = getDateKey(day)
@@ -340,23 +357,6 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                     ) : (
                       <div className="flex items-center justify-center h-7"><span className="text-xs text-slate-300">—</span></div>
                     )}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Row: Environmental Changes */}
-            <div className="grid" style={{ gridTemplateColumns: gridCols }}>
-              <RowLabel icon={<FileText className="h-4 w-4 text-teal-500" />} title="Environmental changes" badge="Affects Chart Phase Lines" badgeColor="teal" />
-              {visibleDays.map((day) => {
-                const key = getDateKey(day)
-                const entry = ds.getEntry(key)
-                const hasNote = entry.environmentalNote.trim().length > 0
-                const today = ds.isToday(day)
-                const isBaseline = ds.isBaselineDate(key)
-                return (
-                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
-                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} />
                   </div>
                 )
               })}

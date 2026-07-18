@@ -6,7 +6,6 @@ import { ClipboardList, BarChart3, Sliders, ArrowLeft } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { useClientServicePlanById } from "@/lib/modules/client-service-plan/hooks/use-client-service-plan-by-id"
-import { useClientServicePlan } from "@/lib/modules/client-service-plan/hooks/use-client-service-plan"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/custom/Button"
@@ -29,31 +28,11 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
   const { client, isLoading } = useClientById(clientId)
   const alert = useAlert()
 
-  // When navigating with section=data-collection but no spId, resolve it from the client
-  const needsSpLookup = initialSection === "data-collection" && !clientServicePlanId
-  const { clientServicePlan: resolvedPlan } = useClientServicePlan(needsSpLookup ? clientId : "")
-  const resolvedSpId = clientServicePlanId ?? resolvedPlan?.id ?? null
-
   const [activeSectionId, setActiveSectionId] = useState(
     initialSection === "data-collection" ? "data-collection" : "service-plan",
   )
-  const [spId, setSpId] = useState<string | null>(resolvedSpId)
+  const [spId, setSpId] = useState<string | null>(clientServicePlanId)
   const { clientServicePlan } = useClientServicePlanById(spId ?? "")
-
-  // Once the resolved spId arrives (async), update state and switch to data-collection
-  useEffect(() => {
-    if (needsSpLookup && resolvedPlan?.id && !spId) {
-      setSpId(resolvedPlan.id)
-      setActiveSectionId("data-collection")
-    }
-  }, [needsSpLookup, resolvedPlan?.id, spId])
-
-  // Sync spId when resolvedSpId arrives after initial render
-  useEffect(() => {
-    if (resolvedSpId && !spId) {
-      setSpId(resolvedSpId)
-    }
-  }, [resolvedSpId, spId])
   const [autoOpenItem, setAutoOpenItem] = useState<NavigateToItemRequest | null>(null)
   const isItemDirtyRef = useRef(false)
 

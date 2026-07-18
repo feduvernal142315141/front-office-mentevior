@@ -15,7 +15,7 @@ import { useAuth } from "@/lib/hooks/use-auth"
 import { useAppointmentConfig } from "@/lib/modules/appointment-config/hooks/use-appointment-config"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { canHaveInlineSupervision } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
-import { createSubEvent } from "@/lib/modules/schedules/services/appointment-sub-event.service"
+import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
 import {
   appointmentToFormData,
   buildAppointmentApiPayload,
@@ -143,18 +143,25 @@ export function useAppointmentForm({
 
   const showSupervisionSwitch = canAddSupervision && canHaveInlineSupervision(selectedBillingCodeLabel)
 
-  // Supervision billing codes — from prior authorization, same as SupervisionConfigModal
+  // Supervision billing codes — from catalog, NOT from PA (XP codes don't have authorized units)
   const {
-    billingCodes: supervisionBillingCodes,
+    billingCodes: supervisionBillingCodesRaw,
     isLoading: supervisionBillingCodesLoading,
-  } = useApprovedBillingCodes(
-    showSupervisionSwitch && formData.clientId ? formData.clientId : null,
-    "Supervision",
+  } = useBillingCodes(
+    showSupervisionSwitch
+      ? { page: 0, pageSize: 0, filters: ["type__EQ__Supervision__AND"] }
+      : undefined,
   )
 
   const supervisionCodeOptions = useMemo(
-    () => supervisionBillingCodes.map((bc) => ({ value: bc.id, label: bc.label })),
-    [supervisionBillingCodes],
+    () =>
+      supervisionBillingCodesRaw.map((bc) => ({
+        value: bc.id,
+        label: [bc.type, bc.code, bc.modifier ? `(${bc.modifier})` : ""]
+          .filter(Boolean)
+          .join(" "),
+      })),
+    [supervisionBillingCodesRaw],
   )
 
   // ─── RBT provider options ───
@@ -499,6 +506,7 @@ export function useAppointmentForm({
           billingCodeId,
           startTime: toValidateTime(startTime),
           endTime: toValidateTime(endTime),
+          date,
           appointmentTypeEvent: toApiEventType(eventType),
         })
         if (cancelled) return
@@ -585,6 +593,22 @@ export function useAppointmentForm({
       const parentId = parentAppointment?.id ?? null
       const apiPayload = buildAppointmentApiPayload(formData, providerId, units, parentId)
 
+      // Attach supervision to the same request (backend handles it transactionally)
+      if (formData.addSupervision && showSupervisionSwitch && formData.supervision.providerId) {
+        apiPayload.supervision = {
+          ...(isEditing && appointment?.supervision?.id
+            ? { id: appointment.supervision.id }
+            : {}),
+          timeInit: toApiTime(formData.startTime),
+          timeEnd: toApiTime(formData.endTime),
+          date: formData.date,
+          billingCodeId: formData.supervision.billingCodeId,
+          supervisionBillingCodeId: formData.supervision.billingCodeId,
+          units,
+          providerId: formData.supervision.providerId,
+        }
+      }
+
       let appointmentId: string | null = null
 
       if (isEditing && appointment) {
@@ -594,34 +618,6 @@ export function useAppointmentForm({
       }
 
       if (!appointmentId) return
-
-      // Create supervision sub-event if switch is on
-      if (formData.addSupervision && showSupervisionSwitch && formData.supervision.providerId) {
-        try {
-          await createSubEvent({
-            appointmentId,
-            timeInit: toApiTime(formData.startTime),
-            timeEnd: toApiTime(formData.endTime),
-            date: formData.date,
-            billingCodeId: formData.supervision.billingCodeId,
-            supervisionBillingCodeId: formData.supervision.billingCodeId,
-            units,
-            providerId: formData.supervision.providerId,
-          })
-        } catch (err) {
-          // Rollback: delete the appointment that was just created
-          if (!isEditing) {
-            try {
-              await mutations.remove(appointmentId)
-            } catch {
-              // silent — best-effort rollback
-            }
-          }
-          const message = err instanceof Error ? err.message : "Failed to create supervision"
-          alert.error("Supervision Error", message)
-          return
-        }
-      }
 
       onSuccess?.()
     },
@@ -637,7 +633,6 @@ export function useAppointmentForm({
       alert,
       onSuccess,
       showSupervisionSwitch,
-      isSupervisionConfigured,
     ],
   )
 

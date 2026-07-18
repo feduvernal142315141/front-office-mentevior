@@ -146,6 +146,11 @@ export function WeekCalendar({
       }
 
       if ((action === "data_collection" || action === "sup_data_collection") && appointment) {
+        if (!appointment.clientServicePlanId) {
+          alert.error("No Service Plan", "This client does not have a service plan configured. Please assign one before accessing Data Collection.")
+          actions.closeContextMenu()
+          return
+        }
         router.push(buildDataCollectionUrl(appointment))
         actions.closeContextMenu()
         return
