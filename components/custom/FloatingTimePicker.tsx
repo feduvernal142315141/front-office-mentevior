@@ -156,14 +156,22 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     return `${h}:${m}`
   }
 
-  /** Map cursor position in display string to slot index (skip colon) */
+  /** Map cursor position in display string to slot index (skip colon at pos 2) */
   const cursorToSlot = (pos: number): number => {
+    // Display: [0]H [1]H [2]: [3]M [4]M
+    // Slots:   0    1         2    3
     if (pos <= 0) return 0
     if (pos === 1) return 1
-    if (pos === 2) return 2 // at or just before colon → slot 2
-    if (pos === 3) return 2 // just after colon → slot 2
+    if (pos === 2) return 1 // right before colon → still hour slot 1
+    if (pos === 3) return 2 // right after colon → minute slot 0
     if (pos === 4) return 3
     return 3
+  }
+
+  /** Map slot index back to cursor position in display (accounting for colon) */
+  const slotToCursor = (slot: number): number => {
+    // Slots 0,1 → positions 0,1; Slots 2,3 → positions 3,4
+    return slot >= 2 ? slot + 1 : slot
   }
 
   const autoCommit = (display: string) => {
@@ -195,20 +203,17 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     if (e.key === "Backspace") {
       e.preventDefault()
       const slots = toSlots(displayValue)
-      const slotIdx = cursorToSlot(pos)
-
-      // Find the slot at or before cursor to delete
-      let targetSlot = slotIdx
-      if (slots[targetSlot] === "" && targetSlot > 0) targetSlot--
-      if (slots[targetSlot] === "" && targetSlot > 0) targetSlot--
+      // Backspace deletes the slot BEFORE the cursor
+      let targetSlot = cursorToSlot(pos) - 1
+      // If that slot is empty, search further back
+      while (targetSlot >= 0 && slots[targetSlot] === "") targetSlot--
 
       if (targetSlot >= 0) {
         slots[targetSlot] = ""
         const next = fromSlots(slots)
         setDisplayValue(next)
-        // Set cursor at the deleted position
         requestAnimationFrame(() => {
-          const newPos = targetSlot >= 2 ? targetSlot + 1 : targetSlot // account for colon
+          const newPos = slotToCursor(targetSlot)
           input.setSelectionRange(newPos, newPos)
         })
       }
@@ -224,7 +229,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
         const next = fromSlots(slots)
         setDisplayValue(next)
         requestAnimationFrame(() => {
-          const newPos = slotIdx >= 2 ? slotIdx + 1 : slotIdx
+          const newPos = slotToCursor(slotIdx)
           input.setSelectionRange(newPos, newPos)
         })
       }
@@ -241,12 +246,10 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
         const next = fromSlots(slots)
         setDisplayValue(next)
         autoCommit(next)
-        // Move cursor to next position
+        // Move cursor to next slot
+        const nextSlot = Math.min(slotIdx + 1, 3)
         requestAnimationFrame(() => {
-          let newPos = slotIdx + 1
-          if (newPos === 2) newPos = 3 // skip colon
-          if (newPos > 4) newPos = 5
-          else if (newPos >= 2) newPos++ // account for colon offset
+          const newPos = slotToCursor(nextSlot)
           input.setSelectionRange(newPos, newPos)
         })
       }
