@@ -257,15 +257,22 @@ function extractSingleClientServicePlan(data: unknown): ClientServicePlan | null
 // --- Client Service Plan CRUD ---
 
 export async function getClientServicePlanByClientId(clientId: string): Promise<ClientServicePlan | null> {
-  // Get the clientServicePlanId from the client record first
-  const clientResponse = await serviceGet<unknown>(`/client/${clientId}`)
-  if (clientResponse.status !== 200 || !clientResponse.data) return null
+  // Use the same filter format the backend expects (field__EQ__value__AND)
+  const response = await serviceGet<unknown>(
+    `/client-service-plan?page=0&pageSize=10&filters=clientId__EQ__${clientId}__AND,active__EQ__Boolean_true__AND`
+  )
 
-  const clientData = clientResponse.data as Record<string, unknown>
-  const spId = asString(clientData.clientServicePlanId ?? "")
-  if (!spId) return null
+  if (response.status === 404) return null
 
-  return getClientServicePlanById(spId)
+  if (response.status !== 200 || !response.data) {
+    throw new Error("Failed to fetch client service plan")
+  }
+
+  const entries = extractCollectionEntries(response.data)
+  if (entries.length === 0) return null
+
+  // Return the last active entry (most recently created)
+  return normalizeClientServicePlan(entries[entries.length - 1])
 }
 
 export async function getClientServicePlanById(id: string): Promise<ClientServicePlan | null> {
