@@ -17,16 +17,26 @@ function applyMask(raw: string): string {
   return `${digits.slice(0, 2)}:${digits.slice(2)}`
 }
 
-/** Normalize on blur: clamp hours 1-12, minutes 0-59, pad with zeros */
+/** Normalize on blur: clamp hours 1-12, minutes 0-59, pad with zeros.
+ *  Colon-aware so intermediate gap states like "1:32" are read correctly. */
 function normalizeTime(raw: string): string {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length === 0) return ""
+  let hd: string
+  let md: string
+  if (raw.includes(":")) {
+    const [hPart = "", mPart = ""] = raw.split(":")
+    hd = hPart.replace(/\D/g, "").slice(0, 2)
+    md = mPart.replace(/\D/g, "").slice(0, 2)
+  } else {
+    const digits = raw.replace(/\D/g, "")
+    if (digits.length === 0) return ""
+    hd = digits.slice(0, 2)
+    md = digits.slice(2, 4)
+  }
 
-  let h = digits.length >= 2 ? digits.slice(0, 2) : digits.padStart(2, "0")
-  let m = digits.length > 2 ? digits.slice(2).padEnd(2, "0") : "00"
+  if (!hd && !md) return ""
 
-  let hNum = parseInt(h, 10)
-  let mNum = parseInt(m, 10)
+  let hNum = parseInt(hd === "" ? "0" : hd, 10)
+  let mNum = parseInt(md === "" ? "0" : md.padEnd(2, "0"), 10)
 
   if (isNaN(hNum) || hNum === 0) hNum = 12
   if (hNum > 12) hNum = 12
@@ -141,8 +151,15 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     }
   }
 
-  /** Convert display "HH:MM" to 4-slot array, e.g. "12:32" → ["1","2","3","2"] */
+  /** Convert display to 4-slot array, colon-aware so gaps are preserved.
+   *  "12:32" → ["1","2","3","2"], "1:32" → ["1","","3","2"], "12" → ["1","2","",""] */
   const toSlots = (display: string): string[] => {
+    if (display.includes(":")) {
+      const [hPart = "", mPart = ""] = display.split(":")
+      const h = hPart.replace(/\D/g, "")
+      const m = mPart.replace(/\D/g, "")
+      return [h[0] ?? "", h[1] ?? "", m[0] ?? "", m[1] ?? ""]
+    }
     const digits = display.replace(/\D/g, "")
     return [digits[0] ?? "", digits[1] ?? "", digits[2] ?? "", digits[3] ?? ""]
   }
@@ -156,22 +173,27 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     return `${h}:${m}`
   }
 
-  /** Map cursor position in display string to slot index (skip colon at pos 2) */
-  const cursorToSlot = (pos: number): number => {
-    // Display: [0]H [1]H [2]: [3]M [4]M
-    // Slots:   0    1         2    3
-    if (pos <= 0) return 0
-    if (pos === 1) return 1
-    if (pos === 2) return 1 // right before colon → still hour slot 1
-    if (pos === 3) return 2 // right after colon → minute slot 0
-    if (pos === 4) return 3
-    return 3
+  /** Count digit chars to the left of the caret → index of the slot to write next. */
+  const digitsBeforeCaret = (display: string, pos: number): number =>
+    display.slice(0, pos).replace(/\D/g, "").length
+
+  /** Caret position right after the nth digit (no colon skip). n <= 0 → 0. */
+  const caretAfterDigit = (display: string, n: number): number => {
+    if (n <= 0) return 0
+    let count = 0
+    for (let i = 0; i < display.length; i++) {
+      if (/\d/.test(display[i]!)) {
+        count++
+        if (count === n) return i + 1
+      }
+    }
+    return display.length
   }
 
-  /** Map slot index back to cursor position in display (accounting for colon) */
-  const slotToCursor = (slot: number): number => {
-    // Slots 0,1 → positions 0,1; Slots 2,3 → positions 3,4
-    return slot >= 2 ? slot + 1 : slot
+  /** Same as caretAfterDigit but jumps past a trailing colon so typing flows into minutes. */
+  const caretAfterDigitSkipColon = (display: string, n: number): number => {
+    const p = caretAfterDigit(display, n)
+    return display[p] === ":" ? p + 1 : p
   }
 
   const autoCommit = (display: string) => {
@@ -203,8 +225,8 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     if (e.key === "Backspace") {
       e.preventDefault()
       const slots = toSlots(displayValue)
-      // Backspace deletes the slot BEFORE the cursor
-      let targetSlot = cursorToSlot(pos) - 1
+      // Backspace deletes the digit immediately to the LEFT of the caret
+      let targetSlot = digitsBeforeCaret(displayValue, pos) - 1
       // If that slot is empty, search further back
       while (targetSlot >= 0 && slots[targetSlot] === "") targetSlot--
 
@@ -213,7 +235,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
         const next = fromSlots(slots)
         setDisplayValue(next)
         requestAnimationFrame(() => {
-          const newPos = slotToCursor(targetSlot)
+          const newPos = caretAfterDigit(next, targetSlot)
           input.setSelectionRange(newPos, newPos)
         })
       }
@@ -223,13 +245,14 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     if (e.key === "Delete") {
       e.preventDefault()
       const slots = toSlots(displayValue)
-      const slotIdx = cursorToSlot(pos)
+      // Delete removes the digit at/to the RIGHT of the caret
+      const slotIdx = digitsBeforeCaret(displayValue, pos)
       if (slotIdx < 4 && slots[slotIdx] !== "") {
         slots[slotIdx] = ""
         const next = fromSlots(slots)
         setDisplayValue(next)
         requestAnimationFrame(() => {
-          const newPos = slotToCursor(slotIdx)
+          const newPos = caretAfterDigit(next, slotIdx)
           input.setSelectionRange(newPos, newPos)
         })
       }
@@ -239,17 +262,17 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     if (/^\d$/.test(e.key)) {
       e.preventDefault()
       const slots = toSlots(displayValue)
-      const slotIdx = cursorToSlot(pos)
+      // Slot to write = number of digits already to the left of the caret.
+      // So after 2 hour digits the caret naturally flows into the minutes.
+      const slotIdx = digitsBeforeCaret(displayValue, pos)
 
-      if (slotIdx < 4) {
+      if (slotIdx <= 3) {
         slots[slotIdx] = e.key
         const next = fromSlots(slots)
         setDisplayValue(next)
         autoCommit(next)
-        // Move cursor to next slot
-        const nextSlot = Math.min(slotIdx + 1, 3)
         requestAnimationFrame(() => {
-          const newPos = slotToCursor(nextSlot)
+          const newPos = caretAfterDigitSkipColon(next, slotIdx + 1)
           input.setSelectionRange(newPos, newPos)
         })
       }
