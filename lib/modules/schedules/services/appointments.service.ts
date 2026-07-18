@@ -98,20 +98,15 @@ function parseAppointmentList(data: unknown): Appointment[] {
 
 /**
  * Fetch appointments via GET /appointment.
- * Accepts filters[] (standard query-filter strings) plus dateFrom/dateTo as direct params.
+ * Requires startDate/endDate (inclusive range). Response is a flat array.
  */
 export async function getAppointments(
   opts?: { filters?: string[]; dateFrom?: string; dateTo?: string; providerId?: string },
 ): Promise<Appointment[]> {
   const params = new URLSearchParams()
   if (opts?.providerId) params.set("providerId", opts.providerId)
-  if (opts?.dateFrom) params.set("dateFrom", opts.dateFrom)
-  if (opts?.dateTo) params.set("dateTo", opts.dateTo)
-  if (opts?.filters && opts.filters.length > 0) {
-    for (const f of opts.filters) {
-      params.append("filters", f)
-    }
-  }
+  if (opts?.dateFrom) params.set("startDate", opts.dateFrom)
+  if (opts?.dateTo) params.set("endDate", opts.dateTo)
   const qs = params.toString()
   const url = `/appointment${qs ? `?${qs}` : ""}`
   const response = await serviceGet<ApiAppointmentItem[] | PaginatedResponse<ApiAppointmentItem>>(url)

@@ -217,6 +217,7 @@ export function fromApiAppointment(api: ApiAppointmentItem): Appointment {
     id: api.id,
     rbtId: api.providerId ?? "",
     clientId: api.clientId ?? "",
+    clientServicePlanId: api.clientServicePlanId ?? null,
     clientName: api.clientFullName ?? api.clientName,
     serviceId: "",
     location: "Clinic",

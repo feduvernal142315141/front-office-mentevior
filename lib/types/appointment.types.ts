@@ -87,6 +87,7 @@ export interface ApiAppointmentItem {
   clientAddressId?: string
   clientAddressNickName?: string
   clientId?: string
+  clientServicePlanId?: string | null
   clientFullName?: string
   clientName?: string
   clientAddressName?: string
@@ -155,6 +156,7 @@ export interface Appointment {
   id: string
   rbtId: string
   clientId: string
+  clientServicePlanId?: string | null
   serviceId: string
   bcbaId?: string
   location: AppointmentLocation
