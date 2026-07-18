@@ -141,14 +141,34 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value
-    const masked = applyMask(raw)
-    setDisplayValue(masked)
+  /** Convert display "HH:MM" to 4-slot array, e.g. "12:32" → ["1","2","3","2"] */
+  const toSlots = (display: string): string[] => {
+    const digits = display.replace(/\D/g, "")
+    return [digits[0] ?? "", digits[1] ?? "", digits[2] ?? "", digits[3] ?? ""]
+  }
 
-    // Auto-commit when we have a full hh:mm (5 chars)
-    if (masked.length === 5) {
-      const normalized = normalizeTime(masked)
+  /** Convert 4-slot array back to display string */
+  const fromSlots = (slots: string[]): string => {
+    const h = `${slots[0]}${slots[1]}`.replace(/ /g, "")
+    const m = `${slots[2]}${slots[3]}`.replace(/ /g, "")
+    if (!h && !m) return ""
+    if (!m) return h
+    return `${h}:${m}`
+  }
+
+  /** Map cursor position in display string to slot index (skip colon) */
+  const cursorToSlot = (pos: number): number => {
+    if (pos <= 0) return 0
+    if (pos === 1) return 1
+    if (pos === 2) return 2 // at or just before colon → slot 2
+    if (pos === 3) return 2 // just after colon → slot 2
+    if (pos === 4) return 3
+    return 3
+  }
+
+  const autoCommit = (display: string) => {
+    if (display.length === 5) {
+      const normalized = normalizeTime(display)
       if (normalized) {
         setDisplayValue(normalized)
         const val24 = formatTimeTo24h(`${normalized} ${period}`)
@@ -160,12 +180,85 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
     }
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Fallback for paste or mobile keyboards — just apply simple mask
+    const raw = e.target.value
+    const masked = applyMask(raw)
+    setDisplayValue(masked)
+    autoCommit(masked)
+  }
+
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Allow: digits, backspace, delete, arrows, tab, home, end, colon
-    const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab", ":"]
-    if (allowed.includes(e.key)) return
-    if (e.metaKey || e.ctrlKey) return
-    if (!/^\d$/.test(e.key)) e.preventDefault()
+    const input = e.currentTarget
+    const pos = input.selectionStart ?? 0
+
+    if (e.key === "Backspace") {
+      e.preventDefault()
+      const slots = toSlots(displayValue)
+      const slotIdx = cursorToSlot(pos)
+
+      // Find the slot at or before cursor to delete
+      let targetSlot = slotIdx
+      if (slots[targetSlot] === "" && targetSlot > 0) targetSlot--
+      if (slots[targetSlot] === "" && targetSlot > 0) targetSlot--
+
+      if (targetSlot >= 0) {
+        slots[targetSlot] = ""
+        const next = fromSlots(slots)
+        setDisplayValue(next)
+        // Set cursor at the deleted position
+        requestAnimationFrame(() => {
+          const newPos = targetSlot >= 2 ? targetSlot + 1 : targetSlot // account for colon
+          input.setSelectionRange(newPos, newPos)
+        })
+      }
+      return
+    }
+
+    if (e.key === "Delete") {
+      e.preventDefault()
+      const slots = toSlots(displayValue)
+      const slotIdx = cursorToSlot(pos)
+      if (slotIdx < 4 && slots[slotIdx] !== "") {
+        slots[slotIdx] = ""
+        const next = fromSlots(slots)
+        setDisplayValue(next)
+        requestAnimationFrame(() => {
+          const newPos = slotIdx >= 2 ? slotIdx + 1 : slotIdx
+          input.setSelectionRange(newPos, newPos)
+        })
+      }
+      return
+    }
+
+    if (/^\d$/.test(e.key)) {
+      e.preventDefault()
+      const slots = toSlots(displayValue)
+      const slotIdx = cursorToSlot(pos)
+
+      if (slotIdx < 4) {
+        slots[slotIdx] = e.key
+        const next = fromSlots(slots)
+        setDisplayValue(next)
+        autoCommit(next)
+        // Move cursor to next position
+        requestAnimationFrame(() => {
+          let newPos = slotIdx + 1
+          if (newPos === 2) newPos = 3 // skip colon
+          if (newPos > 4) newPos = 5
+          else if (newPos >= 2) newPos++ // account for colon offset
+          input.setSelectionRange(newPos, newPos)
+        })
+      }
+      return
+    }
+
+    // Allow navigation keys
+    const allowed = ["ArrowLeft", "ArrowRight", "Home", "End", "Tab"]
+    if (allowed.includes(e.key) || e.metaKey || e.ctrlKey) return
+
+    // Block everything else
+    e.preventDefault()
   }
 
   const handleInputBlur = () => {
