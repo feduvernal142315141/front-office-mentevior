@@ -16,9 +16,10 @@ interface PercentageDatasheetProps {
   activeItem: ClientServicePlanCategoryMappedItem
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
+  appointmentId?: string
 }
 
-export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig }: PercentageDatasheetProps) {
+export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig, appointmentId }: PercentageDatasheetProps) {
   const ds = usePercentageDatasheet()
   const chartRange = useChartDateRange()
 

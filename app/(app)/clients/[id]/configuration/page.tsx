@@ -13,6 +13,7 @@ export default function ClientConfigurationPage({ params }: ClientConfigurationP
   const searchParams = useSearchParams()
   const spId = searchParams.get("spId") ?? null
   const section = searchParams.get("section") ?? undefined
+  const appointmentId = searchParams.get("appointmentId") ?? undefined
 
-  return <ClientConfigurationLayout key={id} clientId={id} clientServicePlanId={spId} initialSection={section} />
+  return <ClientConfigurationLayout key={id} clientId={id} clientServicePlanId={spId} initialSection={section} appointmentId={appointmentId} />
 }

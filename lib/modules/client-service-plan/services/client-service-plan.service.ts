@@ -305,9 +305,13 @@ export async function updateClientServicePlan(dto: UpdateClientServicePlanDto): 
 // --- Categories ---
 
 export async function getClientServicePlanCategories(
-  clientServicePlanId: string
+  clientServicePlanId: string,
+  appointmentId?: string,
 ): Promise<ClientServicePlanCategorySummary[]> {
-  const response = await serviceGet<unknown>(`/client-service-plan/${clientServicePlanId}/category`)
+  const url = appointmentId
+    ? `/client-service-plan/${clientServicePlanId}/category?appointmentId=${appointmentId}`
+    : `/client-service-plan/${clientServicePlanId}/category`
+  const response = await serviceGet<unknown>(url)
 
   if (response.status !== 200 || !response.data) {
     throw new Error("Failed to fetch client service plan categories")

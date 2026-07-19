@@ -32,7 +32,8 @@ function sortCategoriesByName(
 }
 
 export function useClientServicePlanConfiguration(
-  spId: string
+  spId: string,
+  appointmentId?: string,
 ): UseClientServicePlanConfigurationResult {
   const [clientServicePlan, setClientServicePlan] = useState<ClientServicePlan | null>(null)
   const [categories, setCategories] = useState<ClientServicePlanCategorySummary[]>([])
@@ -42,9 +43,9 @@ export function useClientServicePlanConfiguration(
 
   const reloadCategories = useCallback(async () => {
     if (!clientServicePlan?.id) return
-    const categoryData = await getClientServicePlanCategories(clientServicePlan.id)
+    const categoryData = await getClientServicePlanCategories(clientServicePlan.id, appointmentId)
     setCategories(sortCategoriesByName(categoryData))
-  }, [clientServicePlan?.id])
+  }, [clientServicePlan?.id, appointmentId])
 
   const reloadClientServicePlan = useCallback(async () => {
     if (!spId) return
@@ -70,7 +71,7 @@ export function useClientServicePlanConfiguration(
 
         setClientServicePlan(plan)
 
-        const categoryData = await getClientServicePlanCategories(plan.id)
+        const categoryData = await getClientServicePlanCategories(plan.id, appointmentId)
         if (!active) return
         setCategories(sortCategoriesByName(categoryData))
       } catch (err) {

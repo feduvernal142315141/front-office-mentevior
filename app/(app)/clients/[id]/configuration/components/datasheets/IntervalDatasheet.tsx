@@ -28,10 +28,11 @@ interface IntervalDatasheetProps {
   activeItem: ClientServicePlanCategoryMappedItem
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
+  appointmentId?: string
   onItemsReload?: () => Promise<void>
 }
 
-export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, onItemsReload }: IntervalDatasheetProps) {
+export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, onItemsReload }: IntervalDatasheetProps) {
   const numberOfIntervals = dcConfig?.suggestedNumberOfRecordings ?? 10
   const intervalLength = dcConfig?.intervalLength ?? 10
   const unitOfTime = dcConfig?.unitOfTime ?? "SECONDS"

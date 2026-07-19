@@ -30,10 +30,11 @@ interface RateDatasheetProps {
   activeItem: ClientServicePlanCategoryMappedItem
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
+  appointmentId?: string
   onItemsReload?: () => Promise<void>
 }
 
-export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, onItemsReload }: RateDatasheetProps) {
+export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, onItemsReload }: RateDatasheetProps) {
   const ds = useFrequencyDatasheet(activeItem.baseline)
   const unitOfTime = (dcConfig?.unitOfTime as ServicePlanUnitOfTime) ?? ServicePlanUnitOfTime.MINUTES
   const unitLabel = unitOfTimeLabel(unitOfTime)

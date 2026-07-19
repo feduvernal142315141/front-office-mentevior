@@ -28,10 +28,11 @@ interface DurationDatasheetProps {
   activeItem: ClientServicePlanCategoryMappedItem
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
+  appointmentId?: string
   onItemsReload?: () => Promise<void>
 }
 
-export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, onItemsReload }: DurationDatasheetProps) {
+export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, onItemsReload }: DurationDatasheetProps) {
   const numberOfRecordings = dcConfig?.suggestedNumberOfRecordings ?? 10
   const unitOfTime = dcConfig?.unitOfTime ?? "SECONDS"
   const unitLabel = unitOfTime === "SECONDS" ? "Seconds" : unitOfTime === "MINUTES" ? "Minutes" : unitOfTime === "HOURS" ? "Hours" : "Days"

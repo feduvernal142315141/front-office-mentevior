@@ -27,14 +27,16 @@ export interface NavigateToItemRequest {
 interface DataCollectionContentProps {
   clientId: string
   clientServicePlanId: string
+  appointmentId?: string
   onNavigateToItem?: (request: NavigateToItemRequest) => void
 }
 
-export function DataCollectionContent({ clientId, clientServicePlanId, onNavigateToItem }: DataCollectionContentProps) {
+export function DataCollectionContent({ clientId, clientServicePlanId, appointmentId, onNavigateToItem }: DataCollectionContentProps) {
   return (
     <DataCollectionView
       clientId={clientId}
       clientServicePlanId={clientServicePlanId}
+      appointmentId={appointmentId}
       onNavigateToItem={onNavigateToItem}
     />
   )
@@ -45,17 +47,18 @@ export function DataCollectionContent({ clientId, clientServicePlanId, onNavigat
 interface DataCollectionViewProps {
   clientId: string
   clientServicePlanId: string
+  appointmentId?: string
   onNavigateToItem?: (request: NavigateToItemRequest) => void
 }
 
-function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }: DataCollectionViewProps) {
+function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNavigateToItem }: DataCollectionViewProps) {
   const {
     categories,
     activeCategoryId,
     activeCategory,
     isLoading,
     setActiveCategoryId,
-  } = useClientServicePlanConfiguration(clientServicePlanId)
+  } = useClientServicePlanConfiguration(clientServicePlanId, appointmentId)
 
   const { itemsMap: typeEventMap } = useTypeEventCatalog()
 
@@ -262,7 +265,7 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
     <div
       className={cn(
         "space-y-5",
-        isFullscreen && "fixed inset-0 z-50 bg-white overflow-y-auto px-8 py-6 pb-16",
+        isFullscreen && "fixed inset-0 z-[60] bg-white overflow-y-auto px-8 py-6 pb-8",
       )}
     >
       {/* Fullscreen header bar */}
@@ -425,15 +428,15 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
                 <>
                   {/* Collection UI — varies by type */}
                   {categoryTypeName === "Frequency/Count" || categoryTypeName === "Frequency" ? (
-                    <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} onItemsReload={reloadItems} />
+                    <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
                   ) : categoryTypeName === "Rate" ? (
-                    <RateDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} onItemsReload={reloadItems} />
+                    <RateDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
                   ) : categoryTypeGroup === "Time-sampling" ? (
-                    <IntervalDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName ?? ""} dcConfig={dcConfig} onItemsReload={reloadItems} />
+                    <IntervalDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName ?? ""} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
                   ) : categoryTypeName === "Percentage of Opportunities" ? (
-                    <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} />
+                    <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} />
                   ) : categoryTypeName && typeRequiresDailyAndWeekly(categoryTypeName) ? (
-                    <DurationDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} onItemsReload={reloadItems} />
+                    <DurationDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
                   ) : (
                     <div className="rounded-xl border border-dashed border-slate-300 bg-gradient-to-br from-slate-50/80 to-white px-6 py-12 text-center">
                       <div className="inline-flex p-3 rounded-full bg-slate-100 mb-3">

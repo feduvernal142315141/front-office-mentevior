@@ -29,10 +29,11 @@ interface FrequencyDatasheetProps {
   activeItem: ClientServicePlanCategoryMappedItem
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
+  appointmentId?: string
   onItemsReload?: () => Promise<void>
 }
 
-export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, onItemsReload }: FrequencyDatasheetProps) {
+export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, onItemsReload }: FrequencyDatasheetProps) {
   const ds = useFrequencyDatasheet(activeItem.baseline)
 
   // --- Compute visible days FIRST (no dependency on fetched data) ---
