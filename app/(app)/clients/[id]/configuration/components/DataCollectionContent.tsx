@@ -262,7 +262,7 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
     <div
       className={cn(
         "space-y-5",
-        isFullscreen && "fixed inset-0 z-50 bg-white overflow-auto px-8 py-6",
+        isFullscreen && "fixed inset-0 z-50 bg-white overflow-y-auto px-8 py-6 pb-16",
       )}
     >
       {/* Fullscreen header bar */}

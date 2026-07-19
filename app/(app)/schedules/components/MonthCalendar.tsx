@@ -3,7 +3,7 @@
 import { useMemo, useState, useRef, useCallback, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { format, isSameMonth, parseISO } from "date-fns"
-import { Clock, User } from "lucide-react"
+import { Clock, User, MoreVertical } from "lucide-react"
 import type { Appointment, AppointmentStatus } from "@/lib/types/appointment.types"
 import { formatTime, isToday } from "@/lib/date"
 import { getAppointmentBillingCodeLabel } from "@/lib/modules/schedules/utils/schedule-display"
@@ -32,7 +32,9 @@ interface MonthCalendarProps {
   monthDays: Date[]
   appointments: Appointment[]
   isLoading: boolean
+  isMenuOpen: boolean
   onDayClick: (date: Date) => void
+  onAppointmentMenu?: (x: number, y: number, appointmentId: string) => void
 }
 
 export function MonthCalendar({
@@ -40,7 +42,9 @@ export function MonthCalendar({
   monthDays,
   appointments,
   isLoading,
+  isMenuOpen,
   onDayClick,
+  onAppointmentMenu,
 }: MonthCalendarProps) {
   const month = parseISO(monthStart)
 
@@ -112,6 +116,8 @@ export function MonthCalendar({
                   today={today}
                   appointments={dayAppointments}
                   onClick={() => onDayClick(day)}
+                  onAppointmentMenu={onAppointmentMenu}
+                  isMenuOpen={isMenuOpen}
                 />
               )
             })}
@@ -132,13 +138,16 @@ interface MonthDayCellProps {
   today: boolean
   appointments: Appointment[]
   onClick: () => void
+  onAppointmentMenu?: (x: number, y: number, appointmentId: string) => void
+  isMenuOpen: boolean
 }
 
-function MonthDayCell({ day, dateKey, count, inMonth, today, appointments, onClick }: MonthDayCellProps) {
+function MonthDayCell({ day, dateKey, count, inMonth, today, appointments, onClick, onAppointmentMenu, isMenuOpen }: MonthDayCellProps) {
   const [showPopover, setShowPopover] = useState(false)
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({})
   const cellRef = useRef<HTMLButtonElement>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hadMenuRef = useRef(false)
 
   const handleMouseEnter = useCallback(() => {
     if (count === 0) return
@@ -147,9 +156,21 @@ function MonthDayCell({ day, dateKey, count, inMonth, today, appointments, onCli
   }, [count])
 
   const handleMouseLeave = useCallback(() => {
+    if (isMenuOpen) {
+      hadMenuRef.current = true
+      return // keep popover while context menu is active
+    }
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => setShowPopover(false), 150)
-  }, [])
+  }, [isMenuOpen])
+
+  // When the context menu closes (isMenuOpen goes false), close the popover too
+  useEffect(() => {
+    if (!isMenuOpen && hadMenuRef.current) {
+      hadMenuRef.current = false
+      setShowPopover(false)
+    }
+  }, [isMenuOpen])
 
   // Compute portal position when popover opens
   useEffect(() => {
@@ -171,7 +192,7 @@ function MonthDayCell({ day, dateKey, count, inMonth, today, appointments, onCli
       top = rect.bottom + 8 + window.scrollY
     }
 
-    setPopoverStyle({ position: "absolute", top, left, width: popoverW, zIndex: 9999 })
+    setPopoverStyle({ position: "absolute", top, left, width: popoverW, zIndex: 90 })
   }, [showPopover])
 
   return (
@@ -237,7 +258,7 @@ function MonthDayCell({ day, dateKey, count, inMonth, today, appointments, onCli
           {/* Session list */}
           <div className="max-h-[240px] overflow-y-auto divide-y divide-slate-100">
             {appointments.map((apt) => (
-              <SessionPreviewRow key={apt.id} appointment={apt} />
+              <SessionPreviewRow key={apt.id} appointment={apt} onMenu={onAppointmentMenu} />
             ))}
           </div>
 
@@ -256,24 +277,47 @@ function MonthDayCell({ day, dateKey, count, inMonth, today, appointments, onCli
 
 // ─── Session row inside popover ───
 
-function SessionPreviewRow({ appointment }: { appointment: Appointment }) {
+function SessionPreviewRow({
+  appointment,
+  onMenu,
+}: {
+  appointment: Appointment
+  onMenu?: (x: number, y: number, appointmentId: string) => void
+}) {
   const billingCode = getAppointmentBillingCodeLabel(appointment)
   const status = appointment.status ?? "Scheduled"
   const timeRange = `${formatTime(appointment.startsAt)} – ${formatTime(appointment.endsAt)}`
 
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    onMenu?.(rect.right, rect.bottom, appointment.id)
+  }
+
   return (
-    <div className="px-4 py-2.5 hover:bg-slate-50/60 transition-colors">
-      {/* Top: Time + Status */}
+    <div className="group/row px-4 py-2.5 hover:bg-slate-50/60 transition-colors">
+      {/* Top: Time + Status + Menu */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
           <Clock className="h-3 w-3 text-slate-400" />
           {timeRange}
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_DOT[status])} />
-          <span className="text-[11px] font-medium text-slate-500">
-            {STATUS_LABEL[status]}
-          </span>
+        <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_DOT[status])} />
+            <span className="text-[11px] font-medium text-slate-500">
+              {STATUS_LABEL[status]}
+            </span>
+          </div>
+          {onMenu && (
+            <button
+              type="button"
+              onClick={handleMenuClick}
+              className="opacity-0 group-hover/row:opacity-100 ml-1 p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+            >
+              <MoreVertical className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

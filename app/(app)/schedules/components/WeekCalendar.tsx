@@ -360,6 +360,8 @@ export function WeekCalendar({
             actions.goToDate(date)
             actions.setCalendarView("week")
           }}
+          onAppointmentMenu={actions.openMenuAt}
+          isMenuOpen={!!contextMenu}
         />
       )}
 
