@@ -5,6 +5,53 @@ import type {
   UpdateAppointmentNotePayload,
 } from "@/lib/types/appointment-note.types"
 
+function parseTeachingMethod(data: Record<string, unknown>) {
+  // Nested object: { teachingMethod: { id, name } }
+  if (data.teachingMethod && typeof data.teachingMethod === "object") {
+    const tm = data.teachingMethod as Record<string, unknown>
+    const id = String(tm.id ?? "")
+    return id ? { id, name: String(tm.name ?? "") } : null
+  }
+  // Flat fields: { teachingMethodId, teachingMethodName }
+  const tmId = String(data.teachingMethodId ?? "")
+  return tmId
+    ? { id: tmId, name: String(data.teachingMethodName ?? "") }
+    : null
+}
+
+function parseParticipant(p: Record<string, unknown>) {
+  // New structure: { memberUserTypeId, memberUserTypeName, relationshipId, relationshipName }
+  if (p.memberUserTypeId || p.relationshipId) {
+    return {
+      id: String(p.id ?? ""),
+      memberUserTypeId: p.memberUserTypeId ? String(p.memberUserTypeId) : null,
+      memberUserTypeName: p.memberUserTypeName ? String(p.memberUserTypeName) : null,
+      relationshipId: p.relationshipId ? String(p.relationshipId) : null,
+      relationshipName: p.relationshipName ? String(p.relationshipName) : null,
+    }
+  }
+  // Fallback: legacy { catalogId, catalogType, catalogName }
+  const catalogType = String(p.catalogType ?? "")
+  const catalogId = String(p.catalogId ?? "")
+  const catalogName = String(p.catalogName ?? "")
+  if (catalogType === "Member User Type") {
+    return {
+      id: String(p.id ?? ""),
+      memberUserTypeId: catalogId,
+      memberUserTypeName: catalogName,
+      relationshipId: null,
+      relationshipName: null,
+    }
+  }
+  return {
+    id: String(p.id ?? ""),
+    memberUserTypeId: null,
+    memberUserTypeName: null,
+    relationshipId: catalogId,
+    relationshipName: catalogName,
+  }
+}
+
 /**
  * Fetch the appointment note by appointment ID.
  * GET /appointment/{appointmentId}/note
@@ -29,23 +76,13 @@ export async function getAppointmentNote(
   return {
     id: String(data.id ?? ""),
     appointmentId: String(data.appointmentId ?? appointmentId),
-    teachingMethodList: Array.isArray(data.teachingMethodList)
-      ? data.teachingMethodList.map((item: Record<string, unknown>) => ({
-          id: String(item.id ?? ""),
-          name: String(item.name ?? ""),
-        }))
-      : [],
+    teachingMethod: parseTeachingMethod(data),
     reasonCaregiverNotPresent: String(data.reasonCaregiverNotPresent ?? ""),
     medicalConcerns: String(data.medicalConcerns ?? ""),
     crisisInvolved: Boolean(data.crisisInvolved),
     sessionSummary: String(data.sessionSummary ?? ""),
     participants: Array.isArray(data.participants)
-      ? data.participants.map((p: Record<string, unknown>) => ({
-          id: String(p.id ?? ""),
-          catalogId: String(p.catalogId ?? ""),
-          catalogType: String(p.catalogType ?? "") as "Member User Type" | "Relationship",
-          catalogName: String(p.catalogName ?? ""),
-        }))
+      ? data.participants.map((p: Record<string, unknown>) => parseParticipant(p))
       : [],
     antecedentInterventionList: Array.isArray(data.antecedentInterventionList)
       ? data.antecedentInterventionList.map((item: Record<string, unknown>) => ({
@@ -57,6 +94,20 @@ export async function getAppointmentNote(
       ? data.consequenceInterventionList.map((item: Record<string, unknown>) => ({
           id: String(item.id ?? ""),
           name: String(item.name ?? ""),
+        }))
+      : [],
+    categories: Array.isArray(data.categories)
+      ? data.categories.map((cat: Record<string, unknown>) => ({
+          id: String(cat.id ?? ""),
+          name: String(cat.name ?? ""),
+          items: Array.isArray(cat.items)
+            ? cat.items.map((item: Record<string, unknown>) => ({
+                id: String(item.id ?? ""),
+                name: String(item.name ?? ""),
+                dataCollectionId: item.dataCollectionId ? String(item.dataCollectionId) : null,
+                value: typeof item.value === "number" ? item.value : null,
+              }))
+            : [],
         }))
       : [],
   }

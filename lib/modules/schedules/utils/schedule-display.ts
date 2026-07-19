@@ -67,6 +67,9 @@ export function buildSessionNoteUrl(appointment: Appointment): string {
     clientId: appointment.clientId,
     date: appointment.date ?? format(parseISO(appointment.startsAt), "yyyy-MM-dd"),
   })
+  if (appointment.billingCodeName) {
+    params.set("billingCode", appointment.billingCodeName)
+  }
   if (isAppointmentInProgress(appointment)) {
     params.set("mode", "readonly")
   }

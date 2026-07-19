@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Sheet, Loader2, AlertTriangle, Maximize2, Minimize2, X } from "lucide-react"
+import { Sheet, Loader2, AlertTriangle, Maximize2, Minimize2, X, FileDown } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useClientServicePlanConfiguration } from "../../service-plan/hooks/useClientServicePlanConfiguration"
@@ -17,6 +17,8 @@ import { IntervalDatasheet } from "./datasheets/IntervalDatasheet"
 import { DurationDatasheet } from "./datasheets/DurationDatasheet"
 import { typeRequiresDailyAndWeekly } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import { Button } from "@/components/custom/Button"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
+import { exportElementToPdf } from "@/lib/utils/export-to-pdf"
 
 export interface NavigateToItemRequest {
   categoryId: string
@@ -73,6 +75,9 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNa
   const [itemDcConfig, setItemDcConfig] = useState<DataCollectionConfig | null>(null)
   const [isLoadingItemDc, setIsLoadingItemDc] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportPdfUrl, setExportPdfUrl] = useState<string | null>(null)
+  const exportRef = useRef<HTMLDivElement>(null)
 
   // ESC key to exit fullscreen
   useEffect(() => {
@@ -248,6 +253,25 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNa
     [items, activeItemId]
   )
 
+  const handleExportPdf = useCallback(async () => {
+    if (!exportRef.current || isExporting) return
+    setIsExporting(true)
+    try {
+      const itemName = activeItem?.itemName ?? "DataCollection"
+      const categoryName = activeCategory?.categoryName ?? ""
+      const url = await exportElementToPdf(exportRef.current, {
+        fileName: `${categoryName} - ${itemName}.pdf`,
+        orientation: "landscape",
+      })
+      setExportPdfUrl(url)
+    } catch (err) {
+      console.error("Export PDF error:", err)
+      toast.error("Failed to generate PDF")
+    } finally {
+      setIsExporting(false)
+    }
+  }, [isExporting, activeItem, activeCategory])
+
   const itemHasBaseline = useMemo(() => {
     if (!activeItem) return false
     return Array.isArray(activeItem.baseline) && activeItem.baseline.length > 0
@@ -282,14 +306,25 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNa
               </>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setIsFullscreen(false)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-800 transition-colors"
-          >
-            <Minimize2 className="h-4 w-4" />
-            Exit Fullscreen
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              disabled={isExporting}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#037ECC]/30 bg-[#037ECC]/5 text-sm font-medium text-[#037ECC] hover:bg-[#037ECC]/10 transition-colors disabled:opacity-50"
+            >
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              {isExporting ? "Exporting..." : "Export PDF"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(false)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-800 transition-colors"
+            >
+              <Minimize2 className="h-4 w-4" />
+              Exit Fullscreen
+            </button>
+          </div>
         </div>
       )}
 
@@ -364,7 +399,7 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNa
 
           {/* Active Item Content Area */}
           {activeItem && (
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+            <div ref={exportRef} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-base font-semibold text-slate-800 whitespace-normal break-words">
@@ -434,7 +469,7 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNa
                   ) : categoryTypeGroup === "Time-sampling" ? (
                     <IntervalDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName ?? ""} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
                   ) : categoryTypeName === "Percentage of Opportunities" ? (
-                    <PercentageDatasheet activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} />
+                    <PercentageDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
                   ) : categoryTypeName && typeRequiresDailyAndWeekly(categoryTypeName) ? (
                     <DurationDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
                   ) : (
@@ -456,6 +491,18 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNa
               )}
             </div>
           )}
+      {/* PDF Viewer */}
+      {exportPdfUrl && (
+        <DocumentViewer
+          open
+          onClose={() => {
+            URL.revokeObjectURL(exportPdfUrl)
+            setExportPdfUrl(null)
+          }}
+          documentUrl={exportPdfUrl}
+          fileName={`${activeCategory?.categoryName ?? "DataCollection"} - ${activeItem?.itemName ?? "Export"}.pdf`}
+        />
+      )}
     </div>
   )
 }

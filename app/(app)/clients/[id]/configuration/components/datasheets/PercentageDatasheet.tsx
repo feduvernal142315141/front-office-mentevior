@@ -1,108 +1,320 @@
 "use client"
 
-import { CalendarDays, ChevronLeft, ChevronRight, Target, CheckCircle2, Percent, UserCircle, FileText, Minus, Plus } from "lucide-react"
-import { format } from "date-fns"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  Target, CheckCircle2, Percent, FileText,
+  Minus, Plus, CalendarCheck2,
+} from "lucide-react"
+import { addDays, format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { FloatingInput } from "@/components/custom/FloatingInput"
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
-import { usePercentageDatasheet } from "./usePercentageDatasheet"
+import { updateBaselineValues } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
+import { useClientDataCollectionValues } from "@/lib/modules/client-service-plan/hooks/use-client-data-collection-values"
+import { useClientAppointments } from "@/lib/modules/schedules/hooks/use-client-appointments"
+import { upsertClientDataCollectionValue } from "@/lib/modules/client-service-plan/services/client-data-collection-values.service"
+import { ServicePlanValueType } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
+import { useFrequencyDatasheet } from "./useFrequencyDatasheet"
 import { useChartDateRange } from "./useChartDateRange"
+import { useChartData } from "./useChartData"
 import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
-import { getDateKey, calculatePercentage } from "./percentage-datasheet.types"
+import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { PercentageChart } from "./PercentageChart"
+import {
+  DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
+} from "./shared-datasheet-components"
+import { ActiveObjectiveBanner } from "./ActiveObjectiveBanner"
 
 interface PercentageDatasheetProps {
+  clientId: string
   activeItem: ClientServicePlanCategoryMappedItem
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
   appointmentId?: string
+  onItemsReload?: () => Promise<void>
 }
 
-export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig, appointmentId }: PercentageDatasheetProps) {
-  const ds = usePercentageDatasheet()
-  const chartRange = useChartDateRange()
+export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, onItemsReload }: PercentageDatasheetProps) {
+  const ds = useFrequencyDatasheet(activeItem.baseline)
+
+  // --- Compute visible days (same pattern as FrequencyDatasheet) ---
+  const gapDateKeys = useMemo(() => {
+    const bls = activeItem.baseline
+    if (!bls || bls.length === 0) return new Set<string>()
+    const blDates = bls.filter((b) => b.date).map((b) => parseLocalDate(b.date))
+    if (blDates.length === 0) return new Set<string>()
+    const blDateKeys = new Set(blDates.map((d) => getDateKey(d)))
+    const firstBlTime = Math.min(...blDates.map((d) => d.getTime()))
+    const lastBlTime = Math.max(...blDates.map((d) => d.getTime()))
+    const objs = activeItem.objetive
+    const stoTimes = (objs ?? []).filter((o) => o.startDate).map((o) => parseLocalDate(o.startDate).getTime())
+    const endBoundary = stoTimes.length > 0 ? Math.min(...stoTimes) : lastBlTime + 1
+    if (endBoundary <= firstBlTime) return new Set<string>()
+    const keys = new Set<string>()
+    const cursor = new Date(firstBlTime)
+    cursor.setDate(cursor.getDate() + 1)
+    while (cursor.getTime() <= lastBlTime) {
+      const key = getDateKey(cursor)
+      if (!blDateKeys.has(key)) keys.add(key)
+      cursor.setDate(cursor.getDate() + 1)
+    }
+    const gapCursor = new Date(lastBlTime)
+    gapCursor.setDate(gapCursor.getDate() + 1)
+    while (gapCursor.getTime() < endBoundary) {
+      keys.add(getDateKey(gapCursor))
+      gapCursor.setDate(gapCursor.getDate() + 1)
+    }
+    return keys
+  }, [activeItem.baseline, activeItem.objetive])
+
+  const visibleDays = useMemo(() => {
+    const filtered = ds.rangeDays.filter((day) => !gapDateKeys.has(getDateKey(day)))
+    if (ds.rangeMode !== "week") return filtered
+    const needed = 7 - filtered.length
+    if (needed <= 0) return filtered
+    const lastRangeDay = ds.rangeDays[ds.rangeDays.length - 1]
+    const extended = [...filtered]
+    let cursor = lastRangeDay
+    while (extended.length < 7) {
+      cursor = addDays(cursor, 1)
+      if (!gapDateKeys.has(getDateKey(cursor))) extended.push(cursor)
+    }
+    return extended
+  }, [ds.rangeDays, ds.rangeMode, gapDateKeys])
+
+  const fetchStart = useMemo(() => {
+    const first = visibleDays[0] ?? ds.dateRange.start
+    return format(first, "yyyy-MM-dd")
+  }, [visibleDays, ds.dateRange.start])
+
+  const fetchEnd = useMemo(() => {
+    const last = visibleDays[visibleDays.length - 1] ?? ds.dateRange.end
+    return format(last, "yyyy-MM-dd")
+  }, [visibleDays, ds.dateRange.end])
+
+  // Fetch DC values + appointments
+  const dcValues = useClientDataCollectionValues({
+    clientServicePlanCategoryItemId: activeItem.id,
+    startDate: fetchStart,
+    endDate: fetchEnd,
+  })
+
+  const clientAppointments = useClientAppointments({
+    clientId,
+    dateFrom: fetchStart,
+    dateTo: fetchEnd,
+  })
+
+  // Seed DC values into grid
+  const seededDcRef = useRef<string | null>(null)
+  useEffect(() => {
+    const records = dcValues.records
+    if (records.length === 0) {
+      seededDcRef.current = null
+      return
+    }
+    const fingerprint = records.map((r) => `${r.id}:${r.value}`).sort().join(",")
+    if (seededDcRef.current === fingerprint) return
+    seededDcRef.current = fingerprint
+    ds.seedDcRecords(
+      records.map((rec) => ({ dateKey: rec.date.slice(0, 10), value: rec.value }))
+    )
+  }, [dcValues.records, ds])
+
+  // --- Baseline save ---
+  const [baselineSaveState, setBaselineSaveState] = useState<"idle" | "saving" | "success">("idle")
+  const handleSaveBaseline = useCallback(async () => {
+    const changed = ds.getChangedBaselines()
+    if (changed.length === 0) return
+    setBaselineSaveState("saving")
+    try {
+      await updateBaselineValues(changed)
+      ds.commitBaseline()
+      setBaselineSaveState("success")
+      setTimeout(() => setBaselineSaveState("idle"), 1500)
+    } catch {
+      setBaselineSaveState("idle")
+    }
+  }, [ds])
+
+  // --- DC values save ---
+  const [dcSaveState, setDcSaveState] = useState<"idle" | "saving" | "success">("idle")
+  const handleSaveDcValues = useCallback(async () => {
+    const changedKeys = ds.getChangedDcDateKeys()
+    if (changedKeys.length === 0) return
+    setDcSaveState("saving")
+    try {
+      const promises = changedKeys.map((dateKey) => {
+        const appointment = clientAppointments.appointmentsByDate.get(dateKey)
+        const resolvedAppointmentId = appointmentId ?? appointment?.id ?? null
+        const entry = ds.getEntry(dateKey)
+        return upsertClientDataCollectionValue({
+          clientServicePlanCategoryItemId: activeItem.id,
+          appointmentId: resolvedAppointmentId,
+          date: dateKey,
+          value: entry.occurrences,
+        })
+      })
+      await Promise.all(promises)
+      ds.commitDcValues()
+      await dcValues.refetch()
+      await onItemsReload?.()
+      setDcSaveState("success")
+      setTimeout(() => setDcSaveState("idle"), 1500)
+    } catch {
+      setDcSaveState("idle")
+    }
+  }, [ds, clientAppointments.appointmentsByDate, activeItem.id, dcValues, onItemsReload])
+
+  // Chart
+  const firstBaselineDate = useMemo(() => {
+    const bls = activeItem.baseline
+    if (!bls || bls.length === 0) return undefined
+    const sorted = [...bls]
+      .filter((b) => b.date)
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
+    return sorted.length > 0 ? parseLocalDate(sorted[0].date) : undefined
+  }, [activeItem.baseline])
+
+  const chartRange = useChartDateRange("1W", firstBaselineDate)
+  const extendedChartDays = useMemo(() => {
+    const original = chartRange.chartDays
+    const gapCount = original.filter((day) => gapDateKeys.has(getDateKey(day))).length
+    if (gapCount === 0) return original
+    const lastDay = original[original.length - 1]
+    const extended = [...original]
+    let cursor = lastDay
+    let added = 0
+    while (added < gapCount) { cursor = addDays(cursor, 1); extended.push(cursor); added++ }
+    return extended
+  }, [chartRange.chartDays, gapDateKeys])
+
+  const aggregationMethod = dcConfig?.weeklyDailyValue ?? ServicePlanValueType.TOTAL
+
+  const chartData = useChartData({
+    clientServicePlanCategoryItemId: activeItem.id,
+    chartDays: extendedChartDays,
+    interval: chartRange.interval,
+    aggregationMethod,
+    baselines: activeItem.baseline,
+    objectives: activeItem.objetive,
+    gridEntries: ds.entries,
+  })
+
+  // Convert frequency entries to percentage entries for PercentageChart
+  const percentageEntries = useMemo(() => {
+    const result: Record<string, { trials: { result: "yes" | "no" | null }[]; numberOfTrials: number; initials: string; environmentalNote: string }> = {}
+    for (const [key, entry] of Object.entries(ds.entries)) {
+      const val = entry.occurrences
+      result[key] = {
+        trials: [{ result: val > 0 ? "yes" : null }],
+        numberOfTrials: 100,
+        initials: "",
+        environmentalNote: entry.environmentalNote,
+      }
+      // Simulate percentage: val out of 100 as yes trials
+      if (val > 0) {
+        const yesCount = Math.min(val, 100)
+        result[key].trials = Array.from({ length: 100 }, (_, i) => ({
+          result: (i < yesCount ? "yes" : "no") as "yes" | "no" | null,
+        }))
+      }
+    }
+    return result
+  }, [ds.entries])
+
+  const gridCols = `200px repeat(${visibleDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
       <DatasheetHeader
-        monthYearLabel={ds.monthYearLabel}
+        rangeMode={ds.rangeMode}
         periodLabel={ds.periodLabel}
+        monthYearLabel={ds.monthYearLabel}
+        dateRange={ds.dateRange}
         staffAvatars={ds.staffAvatars}
         staffCount={ds.staffCount}
-        onPrev={ds.goToPrevWeek}
-        onNext={ds.goToNextWeek}
-        onToday={ds.goToCurrentWeek}
+        minDate={ds.minDate}
+        canGoPrev={ds.canGoPrev}
+        onPrev={ds.goToPrev}
+        onNext={ds.goToNext}
+        onToday={ds.goToToday}
+        onChangeMode={ds.changeMode}
+        onGoToDate={ds.goToDate}
+        onSetRange={ds.setRange}
       />
 
       {/* Grid */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[min(35vh,340px)]">
-          <div className="min-w-[1120px]">
+        <div className="overflow-x-auto overflow-y-auto max-h-[min(35vh,300px)]">
+          <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
             {/* Column Headers */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(130px,1fr))] border-b border-slate-100 sticky top-0 z-10 bg-white">
+            <div className="grid border-b border-slate-100 sticky top-0 z-10 bg-white" style={{ gridTemplateColumns: gridCols }}>
               <div className="px-4 py-3 bg-slate-50/60 border-r border-slate-100">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Measurement Row</span>
               </div>
-              {ds.weekDays.map((day) => {
+              {visibleDays.map((day) => {
+                const key = getDateKey(day)
                 const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
                 return (
-                  <div key={getDateKey(day)} className={cn("flex items-center justify-center py-3", today && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn(
+                    "flex flex-col items-center justify-center py-3 gap-1",
+                    isBaseline && "bg-red-50/60",
+                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                  )}>
                     <div className={cn(
-                      "flex flex-col items-center justify-center w-14 h-14 rounded-full",
+                      "flex flex-col items-center justify-center rounded-full",
+                      ds.rangeMode === "month" ? "w-10 h-10" : "w-14 h-14",
                       today
                         ? "bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white shadow-md ring-2 ring-[#037ECC]/20 ring-offset-2"
                         : "bg-slate-100 text-slate-700"
                     )}>
-                      <span className="text-lg font-bold leading-none">{format(day, "dd")}</span>
-                      <span className={cn("text-[10px] font-semibold uppercase leading-none mt-0.5", today ? "text-white/80" : "text-slate-400")}>
+                      <span className={cn("font-bold leading-none", ds.rangeMode === "month" ? "text-sm" : "text-lg")}>{format(day, "dd")}</span>
+                      <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>
                         {format(day, "MMM")}
                       </span>
                     </div>
+                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.status === "InProgress" && (
+                      <div className="flex items-center gap-0.5" title="In Progress">
+                        <CalendarCheck2 className="h-3 w-3 text-emerald-500" />
+                      </div>
+                    )}
                   </div>
                 )
               })}
             </div>
 
-            {/* Row: Number of Trials */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(130px,1fr))] border-b border-slate-100">
-              <RowLabel
-                icon={<Target className="h-4 w-4 text-[#037ECC]" />}
-                title="Number of Trials"
-                badge="Configurable"
-                badgeColor="blue"
-              />
-              {ds.weekDays.map((day) => {
+            {/* Row: Percentage Value (input) */}
+            <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
+              <RowLabel icon={<Percent className="h-4 w-4 text-[#037ECC]" />} title="Percentage (%)" badge="Mandatory Field" badgeColor="blue" />
+              {visibleDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
+                const appointment = clientAppointments.appointmentsByDate.get(key)
+                const isInProgress = appointment?.status === "InProgress"
+                const isEditable = isBaseline || isInProgress
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", today && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn(
+                    "flex items-center justify-center px-2 py-3",
+                    isBaseline && "bg-red-50/60",
+                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                    !isEditable && "opacity-40",
+                  )}>
                     <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1">
-                      <button
-                        type="button"
-                        onClick={() => ds.decrementTrials(key)}
-                        disabled={entry.numberOfTrials <= 1}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30"
-                      >
+                      <button type="button" onClick={() => ds.decrementOccurrences(key)} disabled={entry.occurrences === 0 || !isEditable}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400">
                         <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
                       </button>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={entry.numberOfTrials}
-                        onChange={(e) => {
-                          const v = e.target.value.replace(/\D/g, "")
-                          if (v) ds.setNumberOfTrials(key, parseInt(v, 10))
-                        }}
-                        className="h-8 w-10 rounded-lg bg-white border border-slate-200 text-center text-sm font-semibold text-slate-800 tabular-nums outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => ds.incrementTrials(key)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-blue-50 hover:text-[#037ECC]"
-                      >
+                      <input type="text" inputMode="numeric" value={entry.occurrences || ""} disabled={!isEditable}
+                        onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); ds.setOccurrences(key, v === "" ? 0 : Math.min(parseInt(v, 10), 100)) }}
+                        className="h-8 w-12 rounded-lg bg-white border border-slate-200 text-center text-sm font-semibold text-slate-800 tabular-nums outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+                        placeholder="0" />
+                      <button type="button" onClick={() => ds.incrementOccurrences(key)} disabled={!isEditable || entry.occurrences >= 100}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-blue-50 hover:text-[#037ECC] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400">
                         <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
                       </button>
                     </div>
@@ -111,121 +323,45 @@ export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig, ap
               })}
             </div>
 
-            {/* Row: Trials (Yes/No toggles) */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(130px,1fr))] border-b border-slate-100">
-              <RowLabel
-                icon={<CheckCircle2 className="h-4 w-4 text-slate-400" />}
-                title="Trials"
-                badge="Yes / No per trial"
-                badgeColor="slate"
-              />
-              {ds.weekDays.map((day) => {
+            {/* Row: Environmental Changes */}
+            <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
+              <RowLabel icon={<FileText className="h-4 w-4 text-teal-500" />} title="Environmental changes" badge="Affects Chart Phase Lines" badgeColor="teal" />
+              {visibleDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
                 return (
-                  <div key={key} className={cn("px-2 py-3", today && "bg-[#037ECC]/[0.03]")}>
-                    <div className="grid grid-cols-5 gap-1">
-                      {entry.trials.map((trial, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => ds.toggleTrial(key, idx)}
-                          title={`Trial #${idx + 1}: ${trial.result ?? "Not answered"}`}
-                          className={cn(
-                            "h-7 rounded-md text-[10px] font-bold transition-all duration-150 border",
-                            trial.result === "yes" && "bg-emerald-500 border-emerald-500 text-white shadow-sm",
-                            trial.result === "no" && "bg-red-50 border-red-200 text-red-600",
-                            trial.result === null && "bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-100"
-                          )}
-                        >
-                          {trial.result === "yes" ? "Y" : trial.result === "no" ? "N" : `#${idx + 1}`}
-                        </button>
-                      ))}
-                    </div>
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} />
                   </div>
                 )
               })}
             </div>
 
-            {/* Row: Percentage (auto-calculated, read-only) */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(130px,1fr))] border-b border-slate-100">
-              <RowLabel
-                icon={<Percent className="h-4 w-4 text-[#037ECC]" />}
-                title="Percentage"
-                badge="Auto-calculated"
-                badgeColor="blue"
-              />
-              {ds.weekDays.map((day) => {
+            {/* Row: Percentage Display */}
+            <div className="grid" style={{ gridTemplateColumns: gridCols }}>
+              <RowLabel icon={<Target className="h-4 w-4 text-slate-400" />} title="Display" />
+              {visibleDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
-                const pct = calculatePercentage(entry)
                 const today = ds.isToday(day)
+                const isBaseline = ds.isBaselineDate(key)
+                const val = entry.occurrences
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-3 py-3", today && "bg-[#037ECC]/[0.03]")}>
-                    {pct !== null ? (
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                    {val > 0 ? (
                       <span className={cn(
-                        "text-xl font-bold tabular-nums",
-                        pct >= 60
+                        "text-lg font-bold tabular-nums",
+                        val >= 60
                           ? "bg-gradient-to-r from-emerald-500 to-emerald-600 bg-clip-text text-transparent"
                           : "text-slate-700"
                       )}>
-                        {pct}%
+                        {val}%
                       </span>
                     ) : (
-                      <span className="text-lg text-slate-300 font-medium">—</span>
+                      <span className="text-sm text-slate-300">—</span>
                     )}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Row: Collector Initials */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(130px,1fr))] border-b border-slate-100">
-              <RowLabel
-                icon={<UserCircle className="h-4 w-4 text-slate-400" />}
-                title="Collector Initials"
-              />
-              {ds.weekDays.map((day) => {
-                const key = getDateKey(day)
-                const entry = ds.getEntry(key)
-                const today = ds.isToday(day)
-                return (
-                  <div key={key} className={cn("flex items-center justify-center px-3 py-3", today && "bg-[#037ECC]/[0.03]")}>
-                    <FloatingInput
-                      label="Initials"
-                      value={entry.initials}
-                      onChange={(v) => ds.setInitials(key, v)}
-                      onBlur={() => {}}
-                      maxLength={3}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Row: Environmental Changes */}
-            <div className="grid grid-cols-[200px_repeat(7,minmax(130px,1fr))]">
-              <RowLabel
-                icon={<FileText className="h-4 w-4 text-teal-500" />}
-                title="Environmental changes"
-                badge="Affects Chart Phase Lines"
-                badgeColor="teal"
-              />
-              {ds.weekDays.map((day) => {
-                const key = getDateKey(day)
-                const entry = ds.getEntry(key)
-                const hasNote = entry.environmentalNote.trim().length > 0
-                const today = ds.isToday(day)
-                return (
-                  <div key={key} className={cn("flex items-center justify-center px-3 py-3", today && "bg-[#037ECC]/[0.03]")}>
-                    <FloatingInput
-                      label="Add note..."
-                      value={entry.environmentalNote}
-                      onChange={(v) => ds.setNote(key, v)}
-                      onBlur={() => {}}
-                      isSuccess={hasNote}
-                    />
                   </div>
                 )
               })}
@@ -234,22 +370,27 @@ export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig, ap
         </div>
       </div>
 
+      {/* Save Bars */}
+      <AnimatePresence>
+        {ds.hasBaselineChanges && (
+          <SaveBar label="Unsaved baseline changes" sublabel="You have modified baseline values" saveLabel="Save Baseline" saveState={baselineSaveState} onSave={handleSaveBaseline} onDiscard={ds.resetBaseline} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {ds.hasDcChanges && (
+          <SaveBar label="Unsaved data collection changes" sublabel="You have modified session values" saveLabel="Save Data Collection" saveState={dcSaveState} onSave={handleSaveDcValues} onDiscard={ds.resetDcValues} accentColor="emerald" />
+        )}
+      </AnimatePresence>
+
       {/* Chart */}
-      <div className="space-y-3">
-        <ChartDateRangeToolbar
-          preset={chartRange.preset}
-          rangeLabel={chartRange.rangeLabel}
-          isAtToday={chartRange.isAtToday}
-          onPresetChange={chartRange.setPreset}
-          onPrev={chartRange.goToPrev}
-          onNext={chartRange.goToNext}
-          onToday={chartRange.goToToday}
-        />
+      <div className="space-y-2">
+        <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
+        <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <PercentageChart
           weekDays={ds.weekDays}
-          entries={ds.entries}
+          entries={percentageEntries}
           dcConfig={dcConfig}
-          chartDays={chartRange.chartDays}
+          chartDays={extendedChartDays}
           tickInterval={chartRange.tickInterval}
         />
       </div>
@@ -258,96 +399,28 @@ export function PercentageDatasheet({ activeItem, categoryTypeName, dcConfig, ap
       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white shadow-sm px-5 py-3.5">
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Weekly Avg</span>
-            <span className="text-xl font-bold tabular-nums leading-tight bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-              {ds.weeklyAveragePercentage > 0 ? `${ds.weeklyAveragePercentage}%` : "—"}
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              {ds.rangeMode === "month" ? "Monthly Avg" : "Weekly Avg"}
             </span>
+            <span className="text-xl font-bold text-slate-800 tabular-nums leading-tight">{ds.weeklyTotal === 0 ? "—" : `${ds.weeklyTotal}%`}</span>
           </div>
-
           <div className="h-9 w-px bg-slate-200" />
-
           <div className="flex flex-col">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Monthly Avg</span>
-            <span className="text-xl font-bold tabular-nums leading-tight text-slate-800">
-              {ds.monthlyAveragePercentage > 0 ? `${ds.monthlyAveragePercentage}%` : "—"}
+            <span className="text-xl font-bold tabular-nums leading-tight bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              {ds.monthlyAverage === 0 ? "—" : `${ds.monthlyAverage.toFixed(1)}%`}
             </span>
           </div>
         </div>
-
         {ds.eventsLoggedCount > 0 && (
           <div className="flex items-center gap-1.5 rounded-full bg-teal-50 px-3 py-1.5 border border-teal-200/60">
             <FileText className="h-3.5 w-3.5 text-teal-500" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-teal-600">
-              {ds.eventsLoggedCount} event{ds.eventsLoggedCount !== 1 ? "s" : ""} logged
-            </span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-teal-600">{ds.eventsLoggedCount} event{ds.eventsLoggedCount !== 1 ? "s" : ""} logged</span>
           </div>
         )}
       </div>
-    </div>
-  )
-}
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-function DatasheetHeader({
-  monthYearLabel, periodLabel, staffAvatars, staffCount, onPrev, onNext, onToday,
-}: {
-  monthYearLabel: string; periodLabel: string; staffAvatars: string[]; staffCount: number
-  onPrev: () => void; onNext: () => void; onToday: () => void
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white shadow-sm px-5 py-3.5">
-      <div className="flex items-center gap-2.5">
-        <CalendarDays className="h-5 w-5 text-[#037ECC]" />
-        <span className="text-base font-bold text-slate-800">{monthYearLabel}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <button type="button" onClick={onPrev} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-[#037ECC]/30 hover:text-[#037ECC] hover:shadow-sm">
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <span className="text-sm font-medium text-slate-600 px-1">Period: {periodLabel}</span>
-        <button type="button" onClick={onNext} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-[#037ECC]/30 hover:text-[#037ECC] hover:shadow-sm">
-          <ChevronRight className="h-4 w-4" />
-        </button>
-        <button type="button" onClick={onToday} className="ml-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all hover:border-[#037ECC]/30 hover:text-[#037ECC] hover:shadow-sm">
-          Today
-        </button>
-      </div>
-      <div className="flex items-center gap-2">
-        {staffAvatars.length > 0 && (
-          <div className="flex -space-x-1.5">
-            {staffAvatars.map((initials) => (
-              <div key={initials} className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-[10px] font-bold text-white ring-2 ring-white" title={initials}>
-                {initials}
-              </div>
-            ))}
-          </div>
-        )}
-        {staffCount > 0 && <span className="text-xs font-medium text-slate-500">{staffCount} Staff Recording</span>}
-      </div>
-    </div>
-  )
-}
-
-function RowLabel({ icon, title, badge, badgeColor }: {
-  icon: React.ReactNode; title: string; badge?: string; badgeColor?: "blue" | "teal" | "slate"
-}) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-white border-r border-slate-100 sticky left-0 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.04)]">
-      <div className="shrink-0">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-700 leading-tight">{title}</p>
-        {badge && (
-          <span className={cn(
-            "text-[10px] font-semibold leading-none mt-0.5 inline-block",
-            badgeColor === "blue" && "text-[#037ECC]",
-            badgeColor === "teal" && "text-teal-500",
-            badgeColor === "slate" && "text-slate-400"
-          )}>
-            {badge}
-          </span>
-        )}
-      </div>
+      <EnvironmentalChangesLegend entries={ds.entries} />
     </div>
   )
 }

@@ -22,6 +22,7 @@ import { DurationChart } from "./DurationChart"
 import {
   DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
+import { ActiveObjectiveBanner } from "./ActiveObjectiveBanner"
 
 interface DurationDatasheetProps {
   clientId: string
@@ -325,6 +326,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
       {/* Chart */}
       <div className="space-y-3">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
+        <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <DurationChart
           weekDays={ds.weekDays} entries={chartCompatibleEntries} dcConfig={dcConfig}
           chartDays={extendedChartDays} tickInterval={chartRange.tickInterval}

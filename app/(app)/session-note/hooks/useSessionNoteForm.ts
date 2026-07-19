@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import type {
   AppointmentNote,
+  AppointmentNoteCategory,
   UpdateAppointmentNotePayload,
   AppointmentNoteParticipantPayload,
 } from "@/lib/types/appointment-note.types"
@@ -15,7 +16,7 @@ import { useInterventionCatalogs } from "@/lib/modules/appointment-notes/hooks/u
 
 export interface SessionNoteFormData {
   noteId: string
-  teachingMethodIds: string[]
+  teachingMethodId: string
   reasonCaregiverNotPresent: string
   medicalConcerns: string
   crisisInvolved: boolean
@@ -27,7 +28,7 @@ export interface SessionNoteFormData {
 
 const EMPTY_FORM: SessionNoteFormData = {
   noteId: "",
-  teachingMethodIds: [],
+  teachingMethodId: "",
   reasonCaregiverNotPresent: "",
   medicalConcerns: "",
   crisisInvolved: false,
@@ -40,14 +41,14 @@ const EMPTY_FORM: SessionNoteFormData = {
 function noteToFormData(note: AppointmentNote): SessionNoteFormData {
   return {
     noteId: note.id,
-    teachingMethodIds: note.teachingMethodList.map((t) => t.id),
+    teachingMethodId: note.teachingMethod?.id ?? "",
     reasonCaregiverNotPresent: note.reasonCaregiverNotPresent,
     medicalConcerns: note.medicalConcerns,
     crisisInvolved: note.crisisInvolved,
     sessionSummary: note.sessionSummary,
     participants: note.participants.map((p) => ({
-      catalogId: p.catalogId,
-      catalogType: p.catalogType,
+      memberUserTypeId: p.memberUserTypeId,
+      relationshipId: p.relationshipId,
     })),
     antecedentInterventionIds: note.antecedentInterventionList.map((i) => i.id),
     consequenceInterventionIds: note.consequenceInterventionList.map((i) => i.id),
@@ -59,7 +60,7 @@ interface UseSessionNoteFormProps {
   clientId: string | null
 }
 
-export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFormProps) {
+export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   const { note, isLoading: noteLoading, error: noteError, refetch } = useAppointmentNote(appointmentId)
   const mutation = useAppointmentNoteMutation()
 
@@ -91,10 +92,15 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
     [],
   )
 
-  const addParticipant = useCallback((catalogId: string, catalogType: "Member User Type" | "Relationship") => {
+  const addParticipant = useCallback((type: "memberUserType" | "relationship") => {
     setFormData((prev) => ({
       ...prev,
-      participants: [...prev.participants, { catalogId, catalogType }],
+      participants: [
+        ...prev.participants,
+        type === "memberUserType"
+          ? { memberUserTypeId: "", relationshipId: null }
+          : { memberUserTypeId: null, relationshipId: "" },
+      ],
     }))
   }, [])
 
@@ -105,12 +111,16 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
     }))
   }, [])
 
-  const updateParticipantCatalogId = useCallback((index: number, catalogId: string) => {
+  const updateParticipantValue = useCallback((index: number, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      participants: prev.participants.map((p, i) =>
-        i === index ? { ...p, catalogId } : p,
-      ),
+      participants: prev.participants.map((p, i) => {
+        if (i !== index) return p
+        if (p.memberUserTypeId !== null) {
+          return { ...p, memberUserTypeId: value }
+        }
+        return { ...p, relationshipId: value }
+      }),
     }))
   }, [])
 
@@ -119,7 +129,7 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
 
     const payload: UpdateAppointmentNotePayload = {
       id: formData.noteId,
-      teachingMethodIds: formData.teachingMethodIds,
+      teachingMethodId: formData.teachingMethodId || null,
       reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
       medicalConcerns: formData.medicalConcerns,
       crisisInvolved: formData.crisisInvolved,
@@ -145,11 +155,6 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
     [relationships],
   )
 
-  const teachingMethodItems = useMemo(
-    () => teachingMethodOptions.map((o) => ({ id: o.value, name: o.label })),
-    [teachingMethodOptions],
-  )
-
   const antecedentItems = useMemo(
     () => antecedentInterventions.map((i) => ({ id: i.id, name: i.name })),
     [antecedentInterventions],
@@ -160,6 +165,11 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
     [consequenceInterventions],
   )
 
+  const categories: AppointmentNoteCategory[] = useMemo(
+    () => note?.categories ?? [],
+    [note],
+  )
+
   const isLoadingCatalogs =
     teachingMethodsLoading || memberUserTypesLoading || relationshipsLoading || interventionsLoading
 
@@ -168,7 +178,7 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
     updateField,
     addParticipant,
     removeParticipant,
-    updateParticipantCatalogId,
+    updateParticipantValue,
     handleSubmit,
     note,
     isLoadingNote: noteLoading,
@@ -176,10 +186,12 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
     isSaving: mutation.isLoading,
     isLoadingCatalogs,
     // Catalog options
-    teachingMethodItems,
+    teachingMethodOptions,
     memberUserTypeOptions,
     relationshipOptions,
     antecedentItems,
     consequenceItems,
+    // Read-only data
+    categories,
   }
 }

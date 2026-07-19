@@ -12,23 +12,25 @@ export default function SessionNotePage() {
 
   const appointmentId = searchParams.get("appointmentId")
   const clientId = searchParams.get("clientId")
+  const billingCode = searchParams.get("billingCode")
 
   const {
     formData,
     updateField,
     addParticipant,
     removeParticipant,
-    updateParticipantCatalogId,
+    updateParticipantValue,
     handleSubmit,
     isLoadingNote,
     noteError,
     isSaving,
     isLoadingCatalogs,
-    teachingMethodItems,
+    teachingMethodOptions,
     memberUserTypeOptions,
     relationshipOptions,
     antecedentItems,
     consequenceItems,
+    categories,
   } = useSessionNoteForm({ appointmentId, clientId })
 
   if (!appointmentId) {
@@ -51,8 +53,8 @@ export default function SessionNotePage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="px-6 py-6">
+      <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Button
@@ -65,11 +67,18 @@ export default function SessionNotePage() {
           <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
             <NotebookPen className="h-8 w-8 text-[#037ECC]" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-              Session Note
-            </h1>
-            <p className="text-slate-600 mt-1">Document the session details and interventions</p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+                Session Note
+              </h1>
+              <p className="text-slate-600 mt-1">Document the session details and interventions</p>
+            </div>
+            {billingCode && (
+              <span className="inline-flex items-center rounded-full bg-[#037ECC]/10 px-3 py-1 text-xs font-semibold text-[#037ECC] border border-[#037ECC]/20">
+                {billingCode}
+              </span>
+            )}
           </div>
         </div>
 
@@ -92,21 +101,23 @@ export default function SessionNotePage() {
 
         {/* Form */}
         {!isLoadingNote && !noteError && (
-          <SessionNoteForm
-            formData={formData}
-            updateField={updateField}
-            addParticipant={addParticipant}
-            removeParticipant={removeParticipant}
-            updateParticipantCatalogId={updateParticipantCatalogId}
-            onSubmit={handleSubmit}
-            isSaving={isSaving}
-            isLoadingCatalogs={isLoadingCatalogs}
-            teachingMethodItems={teachingMethodItems}
-            memberUserTypeOptions={memberUserTypeOptions}
-            relationshipOptions={relationshipOptions}
-            antecedentItems={antecedentItems}
-            consequenceItems={consequenceItems}
-          />
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmit() }} noValidate>
+            <SessionNoteForm
+              formData={formData}
+              updateField={updateField}
+              addParticipant={addParticipant}
+              removeParticipant={removeParticipant}
+              updateParticipantValue={updateParticipantValue}
+              isSaving={isSaving}
+              isLoadingCatalogs={isLoadingCatalogs}
+              teachingMethodOptions={teachingMethodOptions}
+              memberUserTypeOptions={memberUserTypeOptions}
+              relationshipOptions={relationshipOptions}
+              antecedentItems={antecedentItems}
+              consequenceItems={consequenceItems}
+              categories={categories}
+            />
+          </form>
         )}
       </div>
     </div>

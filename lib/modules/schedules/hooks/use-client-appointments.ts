@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 
-import { getAppointments } from "@/lib/modules/schedules/services/appointments.service"
-import { buildFilters } from "@/lib/utils/query-filters"
-import { FilterOperator } from "@/lib/models/filterOperator"
+import { getAppointmentsByClient } from "@/lib/modules/schedules/services/appointments.service"
 import type { Appointment } from "@/lib/types/appointment.types"
 
 interface UseClientAppointmentsParams {
@@ -28,51 +26,40 @@ export function useClientAppointments(
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const filters = useMemo(() => {
-    if (!clientId) return null
-    return buildFilters([
-      { field: "clientId", value: clientId, operator: FilterOperator.eq, type: "uuid" },
-    ])
-  }, [clientId])
-
   const fetchData = useCallback(async () => {
-    if (!filters || !dateFrom || !dateTo) {
+    if (!clientId || !dateFrom || !dateTo) {
       setAppointments([])
       return
     }
 
     setIsLoading(true)
     try {
-      const data = await getAppointments({ filters, dateFrom, dateTo })
+      const data = await getAppointmentsByClient(clientId, dateFrom, dateTo)
       setAppointments(data)
     } catch {
       setAppointments([])
     } finally {
       setIsLoading(false)
     }
-  }, [filters, dateFrom, dateTo])
+  }, [clientId, dateFrom, dateTo])
 
   useEffect(() => {
     void fetchData()
   }, [fetchData])
 
-  const appointmentsByDate = useCallback((): Map<string, Appointment> => {
+  const appointmentsByDate = useMemo((): Map<string, Appointment> => {
     const map = new Map<string, Appointment>()
     for (const apt of appointments) {
       const date = apt.date ?? apt.startsAt?.slice(0, 10)
       if (!date) continue
-      const existing = map.get(date)
-      // Prioritize InProgress over other statuses
-      if (!existing || apt.status === "InProgress") {
-        map.set(date, apt)
-      }
+      map.set(date, apt)
     }
     return map
   }, [appointments])
 
   return {
     appointments,
-    appointmentsByDate: appointmentsByDate(),
+    appointmentsByDate,
     isLoading,
     refetch: fetchData,
   }

@@ -22,6 +22,7 @@ import { PercentageChart } from "./PercentageChart"
 import {
   DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
+import { ActiveObjectiveBanner } from "./ActiveObjectiveBanner"
 
 interface IntervalDatasheetProps {
   clientId: string
@@ -373,6 +374,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
       {/* Chart - reuse PercentageChart */}
       <div className="space-y-3">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
+        <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <PercentageChart
           weekDays={ds.weekDays}
           entries={(() => {

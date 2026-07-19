@@ -120,6 +120,26 @@ export async function getAppointments(
 
 
 /**
+ * Fetch in-progress appointments for a client via GET /appointment/by-client.
+ * Returns only appointments whose effective status is "In Progress" within the date range.
+ */
+export async function getAppointmentsByClient(
+  clientId: string,
+  startDate: string,
+  endDate: string,
+): Promise<Appointment[]> {
+  const params = new URLSearchParams({ clientId, startDate, endDate })
+  const url = `/appointment/by-client?${params.toString()}`
+  const response = await serviceGet<ApiAppointmentItem[]>(url)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to fetch client appointments"))
+  }
+
+  return parseAppointmentList(response.data)
+}
+
+/**
  * Fetch a single appointment by ID via GET /appointment/{id}.
  */
 export async function getAppointmentById(id: string): Promise<Appointment | null> {

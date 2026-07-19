@@ -66,13 +66,6 @@ function buildSupervisionSections(parentBillingCodeAction?: string): MenuSection
         },
       ],
     },
-    {
-      label: "Navigate",
-      items: [
-        { action: "sup_data_collection", label: "Data Collection", icon: BarChart3 },
-        { action: "sup_session_note", label: "Session Note", icon: FileText },
-      ],
-    },
   ]
 }
 

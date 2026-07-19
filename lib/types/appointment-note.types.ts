@@ -12,9 +12,10 @@ export interface AppointmentNoteTeachingMethod {
 /** Participant in the appointment note */
 export interface AppointmentNoteParticipant {
   id: string
-  catalogId: string
-  catalogType: "Member User Type" | "Relationship"
-  catalogName: string
+  memberUserTypeId: string | null
+  memberUserTypeName: string | null
+  relationshipId: string | null
+  relationshipName: string | null
 }
 
 /** Intervention item (antecedent or consequence) */
@@ -23,11 +24,26 @@ export interface AppointmentNoteIntervention {
   name: string
 }
 
+/** A single item within a category (goal/program) */
+export interface AppointmentNoteCategoryItem {
+  id: string
+  name: string
+  dataCollectionId: string | null
+  value: number | null
+}
+
+/** A category grouping items from the service plan */
+export interface AppointmentNoteCategory {
+  id: string
+  name: string
+  items: AppointmentNoteCategoryItem[]
+}
+
 /** Full appointment note response from GET /appointment/{id}/note */
 export interface AppointmentNote {
   id: string
   appointmentId: string
-  teachingMethodList: AppointmentNoteTeachingMethod[]
+  teachingMethod: AppointmentNoteTeachingMethod | null
   reasonCaregiverNotPresent: string
   medicalConcerns: string
   crisisInvolved: boolean
@@ -35,18 +51,19 @@ export interface AppointmentNote {
   participants: AppointmentNoteParticipant[]
   antecedentInterventionList: AppointmentNoteIntervention[]
   consequenceInterventionList: AppointmentNoteIntervention[]
+  categories: AppointmentNoteCategory[]
 }
 
 /** Participant payload for PUT /appointment/note */
 export interface AppointmentNoteParticipantPayload {
-  catalogId: string
-  catalogType: "Member User Type" | "Relationship"
+  memberUserTypeId: string | null
+  relationshipId: string | null
 }
 
 /** Request body for PUT /appointment/note */
 export interface UpdateAppointmentNotePayload {
   id: string
-  teachingMethodIds?: string[]
+  teachingMethodId?: string | null
   reasonCaregiverNotPresent?: string
   medicalConcerns?: string
   crisisInvolved?: boolean

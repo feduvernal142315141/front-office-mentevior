@@ -24,6 +24,7 @@ import { getSessionDurationInUnit, unitOfTimeLabel } from "./rate-datasheet.type
 import {
   DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
+import { ActiveObjectiveBanner } from "./ActiveObjectiveBanner"
 
 interface RateDatasheetProps {
   clientId: string
@@ -361,6 +362,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
       {/* Chart */}
       <div className="space-y-3">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
+        <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <RateChart
           weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig}
           chartDays={extendedChartDays} tickInterval={chartRange.tickInterval}
