@@ -100,11 +100,16 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
 
   useEffect(() => {
     if (note) {
-      setFormData(noteToFormData(note))
+      const data = noteToFormData(note)
+      // Default teaching method to first catalog item if not set
+      if (!data.teachingMethodId && teachingMethodOptions.length > 0) {
+        data.teachingMethodId = teachingMethodOptions[0].value
+      }
+      setFormData(data)
     } else {
       setFormData(EMPTY_FORM)
     }
-  }, [note])
+  }, [note, teachingMethodOptions])
 
   const updateField = useCallback(
     <K extends keyof SessionNoteFormData>(field: K, value: SessionNoteFormData[K]) => {
