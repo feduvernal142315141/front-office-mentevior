@@ -147,11 +147,7 @@ export function useAppointmentForm({
   const {
     billingCodes: supervisionBillingCodesRaw,
     isLoading: supervisionBillingCodesLoading,
-  } = useBillingCodes(
-    showSupervisionSwitch
-      ? { page: 0, pageSize: 0, filters: ["type__EQ__Supervision__AND"] }
-      : undefined,
-  )
+  } = useBillingCodes({ page: 0, pageSize: 0, filters: ["type__EQ__Supervision__AND"] })
 
   const supervisionCodeOptions = useMemo(
     () =>
