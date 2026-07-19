@@ -72,7 +72,7 @@ export function SessionNoteForm({
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                 <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{recipient.name}</span></div>
-                <div><span className="text-slate-400">DOB:</span> <span className="font-medium text-slate-800">{recipient.dateOfBirth}</span></div>
+                <div><span className="text-slate-400">Date of Birth:</span> <span className="font-medium text-slate-800">{recipient.dateOfBirth}</span></div>
                 <div><span className="text-slate-400">Insurance:</span> <span className="font-medium text-slate-800">{recipient.insuranceNumber}</span></div>
                 <div><span className="text-slate-400">Diagnosis:</span> <span className="font-medium text-slate-800">{recipient.diagnosis}</span></div>
               </div>
@@ -83,11 +83,6 @@ export function SessionNoteForm({
               <div className="flex items-center gap-2 mb-3">
                 <Building2 className="h-4 w-4 text-[#037ECC]" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Provider</span>
-                {billingCodes && (
-                  <span className="ml-auto inline-flex items-center rounded-full bg-[#037ECC]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#037ECC]">
-                    {billingCodes}
-                  </span>
-                )}
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                 <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{provider.name}</span></div>
