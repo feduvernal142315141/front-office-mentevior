@@ -89,18 +89,12 @@ export interface AppointmentNoteParticipantPayload {
   catalogType: AppointmentNoteParticipantCatalogType
 }
 
-/** Category item payload for PUT /appointment/note */
-export interface UpdateAppointmentNoteCategoryItemPayload {
-  id: string
-  dataCollectionId?: string | null
+/** Data collection item payload for PUT /appointment/note */
+export interface UpdateAppointmentNoteDataCollectionItem {
+  dataCollectionId: string | null
+  clientServicePlanCategoryItemId: string
   value: number | null
   environmentalChange: string | null
-}
-
-/** Category payload for PUT /appointment/note */
-export interface UpdateAppointmentNoteCategoryPayload {
-  id: string
-  items: UpdateAppointmentNoteCategoryItemPayload[]
 }
 
 /** Request body for PUT /appointment/note */
@@ -115,7 +109,7 @@ export interface UpdateAppointmentNotePayload {
   participants?: AppointmentNoteParticipantPayload[]
   antecedentInterventionIds?: string[]
   consequenceInterventionIds?: string[]
-  categories?: UpdateAppointmentNoteCategoryPayload[]
+  dataCollectionItems?: UpdateAppointmentNoteDataCollectionItem[]
 }
 
 /** Catalog item for antecedent/consequence interventions */

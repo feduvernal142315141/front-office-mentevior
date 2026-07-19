@@ -334,8 +334,7 @@ export function useAppointmentForm({
         mainValidateKey.current = ""
       }
     } else if (parentAppointment) {
-      // "Add New Session" — pre-fill from parent appointment
-      const toFormTime = (v?: string) => (v && v.length >= 5 ? v.slice(0, 5) : v ?? "")
+      // "Add New Session" — pre-fill client/address from parent, use current time
       skipDependentResetsRef.current = 2
       setFormData({
         ...getInitialFormData(),
@@ -343,8 +342,8 @@ export function useAppointmentForm({
         clientId: parentAppointment.clientId ?? "",
         placeOfServiceAddressId: parentAppointment.placeOfServiceAddressId ?? parentAppointment.clientAddressId ?? "",
         date: parentAppointment.date ?? "",
-        startTime: toFormTime(parentAppointment.timeInit) || "",
-        endTime: toFormTime(parentAppointment.timeEnd) || "",
+        startTime: roundToNearest15Minutes(),
+        endTime: "",
       })
       mainValidateKey.current = ""
     } else {

@@ -1,8 +1,12 @@
 "use client"
 
+import { useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { ArrowLeft, NotebookPen } from "lucide-react"
+import { ArrowLeft, NotebookPen, FileDown, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/custom/Button"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
+import { getAppointmentNotePdfUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
 import { SessionNoteForm } from "./components/SessionNoteForm"
 import { useSessionNoteForm } from "./hooks/useSessionNoteForm"
 
@@ -34,6 +38,22 @@ export default function SessionNotePage() {
     provider,
     billingCodes: noteBillingCodes,
   } = useSessionNoteForm({ appointmentId, clientId })
+
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+
+  const handlePreviewPdf = useCallback(async () => {
+    if (!appointmentId || isGeneratingPdf) return
+    setIsGeneratingPdf(true)
+    try {
+      const url = await getAppointmentNotePdfUrl(appointmentId)
+      setPdfUrl(url)
+    } catch {
+      toast.error("Failed to generate PDF preview")
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }, [appointmentId, isGeneratingPdf])
 
   if (!appointmentId) {
     return (
@@ -82,6 +102,19 @@ export default function SessionNotePage() {
               </span>
             )}
           </div>
+          {/* Preview PDF button */}
+          <div className="ml-auto">
+            <Button
+              type="button"
+              variant="secondary"
+              className="gap-2"
+              onClick={handlePreviewPdf}
+              disabled={isGeneratingPdf || isLoadingNote}
+            >
+              {isGeneratingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              {isGeneratingPdf ? "Generating..." : "Preview PDF"}
+            </Button>
+          </div>
         </div>
 
         {/* Loading state */}
@@ -123,6 +156,19 @@ export default function SessionNotePage() {
           </form>
         )}
       </div>
+
+      {/* PDF Viewer */}
+      {pdfUrl && (
+        <DocumentViewer
+          open
+          onClose={() => {
+            URL.revokeObjectURL(pdfUrl)
+            setPdfUrl(null)
+          }}
+          documentUrl={pdfUrl}
+          fileName="Appointment Note.pdf"
+        />
+      )}
     </div>
   )
 }

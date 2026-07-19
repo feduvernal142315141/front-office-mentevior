@@ -413,7 +413,7 @@ export function WeekCalendar({
                     {/* Add button at the top */}
                     <button
                       type="button"
-                      onClick={() => actions.handleSlotClick(day, 8)}
+                      onClick={() => actions.handleSlotClick(day, new Date().getHours())}
                       className="flex items-center justify-center w-full py-1.5 text-[10px] font-medium text-gray-400 cursor-pointer hover:bg-[#037ECC]/5 hover:text-[#037ECC] rounded-lg transition-colors"
                     >
                       <Plus className="h-3 w-3 mr-0.5" />

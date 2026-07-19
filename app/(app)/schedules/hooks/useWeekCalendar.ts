@@ -433,7 +433,11 @@ export function useWeekCalendar({
       const full = await loadAppointmentDetails(appointment)
       setParentAppointment(full)
       setSelectedAppointment(null)
-      setModalDefaults({})
+      const now = new Date()
+      setModalDefaults({
+        date: format(now, "yyyy-MM-dd"),
+        time: format(now, "HH:mm"),
+      })
       setShowModal(true)
     },
     [loadAppointmentDetails, setSelectedAppointment],

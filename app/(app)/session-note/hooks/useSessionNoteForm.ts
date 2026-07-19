@@ -148,19 +148,18 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
         return { catalogId, catalogType: item?.type ?? "Member User Type" }
       })
 
-    // Build categories payload from note structure + edited form values
-    const categories = note.categories.map((cat) => ({
-      id: cat.id,
-      items: cat.items.map((item) => {
+    // Build flat dataCollectionItems from all categories
+    const dataCollectionItems = note.categories.flatMap((cat) =>
+      cat.items.map((item) => {
         const edited = formData.categoryItems[item.id]
         return {
-          id: item.id,
-          dataCollectionId: item.dataCollectionId ?? undefined,
+          dataCollectionId: item.dataCollectionId ?? null,
+          clientServicePlanCategoryItemId: item.id,
           value: edited?.value ?? item.value,
           environmentalChange: edited?.environmentalChange?.trim() || null,
         }
-      }),
-    }))
+      })
+    )
 
     const payload: UpdateAppointmentNotePayload = {
       id: formData.noteId,
@@ -173,7 +172,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
       participants,
       antecedentInterventionIds: formData.antecedentInterventionIds,
       consequenceInterventionIds: formData.consequenceInterventionIds,
-      categories,
+      dataCollectionItems,
     }
 
     const id = await mutation.update(payload)

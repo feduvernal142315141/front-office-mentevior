@@ -176,3 +176,27 @@ export async function updateAppointmentNote(
   if (typeof data === "string") return data
   return payload.id
 }
+
+/**
+ * Get appointment note PDF preview as a blob URL.
+ * GET /reports/appointment-note/preview?appointmentId={id}
+ */
+export async function getAppointmentNotePdfUrl(
+  appointmentId: string,
+): Promise<string> {
+  const response = await serviceGet<unknown>(
+    `/reports/appointment-note/preview?appointmentId=${appointmentId}`,
+  )
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to generate PDF preview"))
+  }
+
+  const raw = response.data as Record<string, unknown>
+  const base64 = (raw.fileBase64 ?? raw.data ?? "") as string
+  if (!base64) throw new Error("Empty PDF response")
+
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+  const blob = new Blob([bytes], { type: "application/pdf" })
+  return URL.createObjectURL(blob)
+}
