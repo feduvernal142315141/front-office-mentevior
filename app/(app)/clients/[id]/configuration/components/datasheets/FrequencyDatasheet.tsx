@@ -149,11 +149,12 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     try {
       const promises = changedKeys.map((dateKey) => {
         const appointment = clientAppointments.appointmentsByDate.get(dateKey)
-        if (!appointment) return Promise.resolve()
+        const resolvedAppointmentId = appointmentId ?? appointment?.id ?? null
         const entry = ds.getEntry(dateKey)
         return upsertClientDataCollectionValue({
           clientServicePlanCategoryItemId: activeItem.id,
-          appointmentId: appointment.id,
+          appointmentId: resolvedAppointmentId,
+          date: dateKey,
           value: entry.occurrences,
         })
       })

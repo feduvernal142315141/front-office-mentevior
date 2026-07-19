@@ -1,7 +1,8 @@
 /** PUT /client-data-collection — request body */
 export interface UpsertClientDataCollectionDto {
   clientServicePlanCategoryItemId: string
-  appointmentId: string
+  appointmentId: string | null
+  date: string
   value: number
 }
 

@@ -113,13 +113,14 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     try {
       const promises = changedKeys.map((dateKey) => {
         const appointment = clientAppointments.appointmentsByDate.get(dateKey)
-        if (!appointment) return Promise.resolve()
+        const resolvedAppointmentId = appointmentId ?? appointment?.id ?? null
         const entry = ds.getEntry(dateKey)
         const agg = calculateDailyAggregate(entry, dailyValueMethod)
         if (agg === null) return Promise.resolve()
         return upsertClientDataCollectionValue({
           clientServicePlanCategoryItemId: activeItem.id,
-          appointmentId: appointment.id,
+          appointmentId: resolvedAppointmentId,
+          date: dateKey,
           value: Math.round(agg * 100) / 100,
         })
       })
