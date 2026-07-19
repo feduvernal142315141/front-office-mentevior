@@ -1,7 +1,11 @@
 import {
   startOfWeek,
   endOfWeek,
+  startOfMonth,
+  endOfMonth,
   addDays,
+  addMonths,
+  subMonths,
   format,
   isToday as isTodayFns,
   addMinutes as addMinutesFns,
@@ -42,6 +46,40 @@ export function formatWeekRange(weekStart: string): string {
   const start = parseISO(weekStart)
   const end = addDays(start, 6)
   return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`
+}
+
+export function getMonthStart(date?: string | Date): string {
+  const d = date ? (typeof date === "string" ? parseISO(date) : date) : new Date()
+  return startOfMonth(d).toISOString()
+}
+
+export function getMonthDays(monthStart: string): Date[] {
+  const start = parseISO(monthStart)
+  const monthEnd = endOfMonth(start)
+  // Grid starts on the Sunday of the week containing the 1st
+  const gridStart = startOfWeek(start, { weekStartsOn: 0 })
+  // Grid ends on the Saturday of the week containing the last day
+  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })
+
+  const days: Date[] = []
+  let current = gridStart
+  while (current <= gridEnd) {
+    days.push(current)
+    current = addDays(current, 1)
+  }
+  return days
+}
+
+export function formatMonthLabel(monthStart: string): string {
+  return format(parseISO(monthStart), "MMMM yyyy")
+}
+
+export function getNextMonth(monthStart: string): string {
+  return addMonths(parseISO(monthStart), 1).toISOString()
+}
+
+export function getPrevMonth(monthStart: string): string {
+  return subMonths(parseISO(monthStart), 1).toISOString()
 }
 
 export function isToday(date: string | Date): boolean {

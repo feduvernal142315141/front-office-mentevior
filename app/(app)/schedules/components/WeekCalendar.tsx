@@ -14,6 +14,8 @@ import {
   Plus,
   Calendar as CalendarIcon,
 } from "lucide-react"
+import { CalendarToolbar } from "./CalendarToolbar"
+import { MonthCalendar } from "./MonthCalendar"
 import { useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { format, isSameDay, parseISO } from "date-fns"
@@ -98,7 +100,10 @@ export function WeekCalendar({
   }, [clients])
   
   const {
+    calendarView,
     weekStart,
+    monthStart,
+    monthDays,
     weekDays,
     displayDays,
     selectedDay,
@@ -227,15 +232,14 @@ export function WeekCalendar({
   return (
     <div className="space-y-4 min-h-screen">
       {isMobile ? (
-  
         <div className="flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-gray-100 shadow-sm">
           <button
-            onClick={actions.goToPrevWeek}
+            onClick={actions.goToPrev}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <ChevronLeft className="h-5 w-5 text-gray-600" />
           </button>
-          
+
           <div className="text-center">
             <div className="text-base font-semibold text-gray-900">
               {format(weekDays[selectedDay], "EEEE d")}
@@ -244,63 +248,34 @@ export function WeekCalendar({
               {format(weekDays[selectedDay], "MMMM yyyy")}
             </div>
           </div>
-          
+
           <button
             onClick={actions.goToToday}
             className="px-3 py-1.5 text-sm font-medium text-[#037ECC] hover:bg-[#037ECC]/5 rounded-lg transition-colors"
           >
             Today
           </button>
-          
+
           <button
-            onClick={actions.goToNextWeek}
+            onClick={actions.goToNext}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <ChevronRight className="h-5 w-5 text-gray-600" />
           </button>
         </div>
       ) : (
-
-        <div className="flex items-center justify-between px-6 py-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={actions.goToPrevWeek}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <ChevronLeft className="h-5 w-5 text-gray-600" />
-            </button>
-            
-            <button
-              onClick={actions.goToToday}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <CalendarIcon className="h-4 w-4" />
-              Today
-            </button>
-            
-            <button
-              onClick={actions.goToNextWeek}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <ChevronRight className="h-5 w-5 text-gray-600" />
-            </button>
-          </div>
-          
-          <h2 className="text-lg font-semibold text-gray-900">
-            Week of {formatWeekRange(weekStart)}
-          </h2>
-          
-          {canCreate && (
-            <Button
-              variant="primary"
-              onClick={() => actions.openNewAppointmentModal()}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Session
-            </Button>
-          )}
-        </div>
+        <CalendarToolbar
+          calendarView={calendarView}
+          weekStart={weekStart}
+          monthStart={monthStart}
+          canCreate={canCreate}
+          onViewChange={actions.setCalendarView}
+          onPrev={actions.goToPrev}
+          onNext={actions.goToNext}
+          onToday={actions.goToToday}
+          onDateSelect={actions.goToDate}
+          onNewSession={() => actions.openNewAppointmentModal()}
+        />
       )}
       
       {isMobile && (
@@ -327,7 +302,7 @@ export function WeekCalendar({
       {!isMobile && (
         <Card variant="elevated" padding="md">
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <FloatingSelect
                 label="Client"
                 value={filterClient}
@@ -337,19 +312,25 @@ export function WeekCalendar({
               />
             </div>
 
-            <FilterSelect
-              value={filterProvider}
-              onChange={actions.setFilterProvider}
-              options={providerFilterOptions}
-              placeholder="All Providers"
-            />
+            <div className="flex-1 min-w-0">
+              <FilterSelect
+                value={filterProvider}
+                onChange={actions.setFilterProvider}
+                options={providerFilterOptions}
+                placeholder="All Providers"
+                fullWidth
+              />
+            </div>
 
-            <FilterSelect
-              value={filterStatus}
-              onChange={(v) => actions.setFilterStatus(v as AppointmentStatus | "all")}
-              options={STATUS_OPTIONS}
-              placeholder="All Status"
-            />
+            <div className="flex-1 min-w-0">
+              <FilterSelect
+                value={filterStatus}
+                onChange={(v) => actions.setFilterStatus(v as AppointmentStatus | "all")}
+                options={STATUS_OPTIONS}
+                placeholder="All Status"
+                fullWidth
+              />
+            </div>
 
             {(filterClient !== "all" || filterStatus !== "all" || filterProvider !== "all") && (
               <Button
@@ -368,8 +349,22 @@ export function WeekCalendar({
         </Card>
       )}
       
+      {/* ─── Month grid view ─── */}
+      {calendarView === "month" && !isMobile && (
+        <MonthCalendar
+          monthStart={monthStart}
+          monthDays={monthDays}
+          appointments={filteredAppointments}
+          isLoading={isLoadingAppointments}
+          onDayClick={(date) => {
+            actions.goToDate(date)
+            actions.setCalendarView("week")
+          }}
+        />
+      )}
+
       {/* ─── Agency list view: appointments stacked vertically per day ─── */}
-      {isAgency && !isMobile ? (
+      {calendarView === "week" && !isMobile && isAgency ? (
         <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
           {isLoadingAppointments && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-2xl">
@@ -444,7 +439,7 @@ export function WeekCalendar({
             </div>
           </div>
         </div>
-      ) : (
+      ) : calendarView === "week" && !isMobile ? (
       /* ─── Provider time-grid view: appointments positioned by time slot ─── */
       <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         {isLoadingAppointments && (
@@ -690,7 +685,7 @@ export function WeekCalendar({
           </DragOverlay>
         </DndContext>
       </div>
-      )}
+      ) : null}
       
       {isMobile && canCreate && (
         <button

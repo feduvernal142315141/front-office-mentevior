@@ -28,13 +28,14 @@ import { useScheduleAppointments } from "@/lib/modules/schedules/hooks/use-appoi
 import { getAppointmentById, updateAppointmentStatus } from "@/lib/modules/schedules/services/appointments.service"
 import { buildFilters } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
-import { getWeekDays, getWeekStart } from "@/lib/date"
+import { getWeekDays, getWeekStart, getMonthStart, getMonthDays, getNextMonth, getPrevMonth } from "@/lib/date"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { matchesLocationFilter } from "@/lib/modules/schedules/utils/schedule-display"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export type CalendarScope = "provider" | "agency"
 export type CalendarViewMode = "general" | "client"
+export type CalendarView = "week" | "month"
 
 
 export const CALENDAR_HOURS = Array.from({ length: 13 }, (_, i) => i + 7) 
@@ -48,7 +49,10 @@ interface UseWeekCalendarProps {
 
 interface UseWeekCalendarReturn {
 
+  calendarView: CalendarView
   weekStart: string
+  monthStart: string
+  monthDays: Date[]
   weekDays: Date[]
   displayDays: Date[]
   selectedDay: number
@@ -79,9 +83,11 @@ interface UseWeekCalendarReturn {
   viewMode: CalendarViewMode
   
   actions: {
-    goToPrevWeek: () => void
-    goToNextWeek: () => void
+    setCalendarView: (view: CalendarView) => void
+    goToPrev: () => void
+    goToNext: () => void
     goToToday: () => void
+    goToDate: (date: Date) => void
     setSelectedDay: (day: number) => void
     
     openNewAppointmentModal: (defaults?: AppointmentModalDefaults) => void
@@ -144,7 +150,9 @@ export function useWeekCalendar({
   } = useAppointments()
   
 
+  const [calendarView, setCalendarView] = useState<CalendarView>("week")
   const [weekStart, setWeekStart] = useState(getWeekStart())
+  const [monthStart, setMonthStart] = useState(getMonthStart())
   const [selectedDay, setSelectedDay] = useState(0)
   const [activeId, setActiveId] = useState<string | null>(null)
   
@@ -171,11 +179,22 @@ export function useWeekCalendar({
   
  
   const weekDays = useMemo(() => getWeekDays(weekStart), [weekStart])
-  const dateFrom = useMemo(() => format(parseISO(weekStart), "yyyy-MM-dd"), [weekStart])
+  const monthDays = useMemo(() => getMonthDays(monthStart), [monthStart])
+
+  const dateFrom = useMemo(() => {
+    if (calendarView === "month") {
+      return format(monthDays[0], "yyyy-MM-dd")
+    }
+    return format(parseISO(weekStart), "yyyy-MM-dd")
+  }, [calendarView, weekStart, monthDays])
+
   const dateTo = useMemo(() => {
+    if (calendarView === "month") {
+      return format(monthDays[monthDays.length - 1], "yyyy-MM-dd")
+    }
     const days = getWeekDays(weekStart)
     return format(days[days.length - 1], "yyyy-MM-dd")
-  }, [weekStart])
+  }, [calendarView, weekStart, monthDays])
 
   // All filters go as filters[] with proper type prefixes
   const appointmentFilters = useMemo(() => {
@@ -294,18 +313,30 @@ export function useWeekCalendar({
   )
   
   
-  const goToPrevWeek = useCallback(() => {
-    const current = parseISO(weekStart)
-    setWeekStart(subWeeks(current, 1).toISOString())
-  }, [weekStart])
-  
-  const goToNextWeek = useCallback(() => {
-    const current = parseISO(weekStart)
-    setWeekStart(addWeeks(current, 1).toISOString())
-  }, [weekStart])
-  
+  const goToPrev = useCallback(() => {
+    if (calendarView === "month") {
+      setMonthStart(getPrevMonth(monthStart))
+    } else {
+      setWeekStart(subWeeks(parseISO(weekStart), 1).toISOString())
+    }
+  }, [calendarView, weekStart, monthStart])
+
+  const goToNext = useCallback(() => {
+    if (calendarView === "month") {
+      setMonthStart(getNextMonth(monthStart))
+    } else {
+      setWeekStart(addWeeks(parseISO(weekStart), 1).toISOString())
+    }
+  }, [calendarView, weekStart, monthStart])
+
   const goToToday = useCallback(() => {
     setWeekStart(getWeekStart())
+    setMonthStart(getMonthStart())
+  }, [])
+
+  const goToDate = useCallback((date: Date) => {
+    setWeekStart(getWeekStart(date))
+    setMonthStart(getMonthStart(date))
   }, [])
   
 
@@ -560,7 +591,10 @@ export function useWeekCalendar({
 
   return {
 
+    calendarView,
     weekStart,
+    monthStart,
+    monthDays,
     weekDays,
     displayDays,
     selectedDay,
@@ -591,9 +625,11 @@ export function useWeekCalendar({
     viewMode,
     
     actions: {
-      goToPrevWeek,
-      goToNextWeek,
+      setCalendarView,
+      goToPrev,
+      goToNext,
       goToToday,
+      goToDate,
       setSelectedDay,
       openNewAppointmentModal,
       openDetailDrawer,
