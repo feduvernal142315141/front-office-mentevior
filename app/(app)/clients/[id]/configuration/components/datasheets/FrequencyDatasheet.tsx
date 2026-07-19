@@ -116,12 +116,12 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
       seededDcRef.current = null
       return
     }
-    const fingerprint = records.map((r) => `${r.id}:${r.value}`).sort().join(",")
+    const fingerprint = records.map((r) => `${r.id}:${r.value}:${r.environmentalChange ?? ""}`).sort().join(",")
     if (seededDcRef.current === fingerprint) return
     seededDcRef.current = fingerprint
 
     ds.seedDcRecords(
-      records.map((rec) => ({ dateKey: rec.date.slice(0, 10), value: rec.value }))
+      records.map((rec) => ({ dateKey: rec.date.slice(0, 10), value: rec.value, environmentalChange: rec.environmentalChange }))
     )
   }, [dcValues.records, ds])
 
@@ -157,6 +157,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
           appointmentId: resolvedAppointmentId,
           date: dateKey,
           value: entry.occurrences,
+          environmentalChange: entry.environmentalNote.trim() || null,
         })
       })
       await Promise.all(promises)

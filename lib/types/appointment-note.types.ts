@@ -9,13 +9,15 @@ export interface AppointmentNoteTeachingMethod {
   name: string
 }
 
-/** Participant in the appointment note */
+/** Participant catalog type */
+export type AppointmentNoteParticipantCatalogType = "Relationship" | "Member User Type"
+
+/** Participant in the appointment note GET response */
 export interface AppointmentNoteParticipant {
   id: string
-  memberUserTypeId: string | null
-  memberUserTypeName: string | null
-  relationshipId: string | null
-  relationshipName: string | null
+  catalogId: string
+  catalogType: AppointmentNoteParticipantCatalogType
+  catalogName: string
 }
 
 /** Intervention item (antecedent or consequence) */
@@ -30,6 +32,7 @@ export interface AppointmentNoteCategoryItem {
   name: string
   dataCollectionId: string | null
   value: number | null
+  environmentalChange: string | null
 }
 
 /** A category grouping items from the service plan */
@@ -39,10 +42,36 @@ export interface AppointmentNoteCategory {
   items: AppointmentNoteCategoryItem[]
 }
 
+/** Recipient details (client info) from GET note response */
+export interface AppointmentNoteRecipient {
+  name: string
+  dateOfBirth: string
+  insuranceNumber: string
+  diagnosis: string
+}
+
+/** Provider details from GET note response */
+export interface AppointmentNoteProvider {
+  name: string
+  credential: string
+  npi: string
+  mpi: string
+}
+
+/** Modality from GET note response */
+export interface AppointmentNoteModality {
+  id: string
+  name: string
+}
+
 /** Full appointment note response from GET /appointment/{id}/note */
 export interface AppointmentNote {
   id: string
   appointmentId: string
+  recipient: AppointmentNoteRecipient | null
+  provider: AppointmentNoteProvider | null
+  billingCodes: string | null
+  modality: AppointmentNoteModality | null
   teachingMethod: AppointmentNoteTeachingMethod | null
   reasonCaregiverNotPresent: string
   medicalConcerns: string
@@ -56,14 +85,15 @@ export interface AppointmentNote {
 
 /** Participant payload for PUT /appointment/note */
 export interface AppointmentNoteParticipantPayload {
-  memberUserTypeId: string | null
-  relationshipId: string | null
+  catalogId: string
+  catalogType: AppointmentNoteParticipantCatalogType
 }
 
 /** Request body for PUT /appointment/note */
 export interface UpdateAppointmentNotePayload {
   id: string
   teachingMethodId?: string | null
+  modalityId?: string | null
   reasonCaregiverNotPresent?: string
   medicalConcerns?: string
   crisisInvolved?: boolean
@@ -75,6 +105,19 @@ export interface UpdateAppointmentNotePayload {
 
 /** Catalog item for antecedent/consequence interventions */
 export interface InterventionCatalogItem {
+  id: string
+  name: string
+}
+
+/** Participant catalog item from GET /appointment-note-participant/catalogs */
+export interface ParticipantCatalogItem {
+  id: string
+  name: string
+  type: AppointmentNoteParticipantCatalogType
+}
+
+/** Modality catalog item from GET /modality/catalog */
+export interface ModalityCatalogItem {
   id: string
   name: string
 }

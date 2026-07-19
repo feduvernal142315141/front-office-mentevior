@@ -137,7 +137,7 @@ export function useDurationDatasheet(
   }, [numberOfRecordings])
 
   // Seed DC records
-  const seedDcRecords = useCallback((records: { dateKey: string; value: number }[]) => {
+  const seedDcRecords = useCallback((records: { dateKey: string; value: number; environmentalChange?: string | null }[]) => {
     setEntries((prev) => {
       const next = { ...prev }
       for (const rec of records) {
@@ -146,7 +146,7 @@ export function useDurationDatasheet(
         // Value = aggregate, put in first recording
         const recordings: (number | null)[] = Array.from({ length: numberOfRecordings }, () => null)
         recordings[0] = rec.value
-        next[rec.dateKey] = { ...existing, recordings, numberOfRecordings }
+        next[rec.dateKey] = { ...existing, recordings, numberOfRecordings, environmentalNote: rec.environmentalChange ?? existing.environmentalNote }
       }
       return next
     })
@@ -156,6 +156,7 @@ export function useDurationDatasheet(
       if (baselineDateKeys.has(rec.dateKey)) continue
       const entry = createEmptyDurationDayEntry(numberOfRecordings)
       entry.recordings[0] = rec.value
+      entry.environmentalNote = rec.environmentalChange ?? ""
       snapshot[rec.dateKey] = entry
     }
     setOriginalDcEntries(snapshot)
@@ -182,6 +183,7 @@ export function useDurationDatasheet(
       const currentAgg = current ? calculateDailyAggregate(current, dailyValueMethod) : null
       const originalAgg = original ? calculateDailyAggregate(original, dailyValueMethod) : null
       if (currentAgg !== originalAgg) return true
+      if ((current?.environmentalNote ?? "") !== (original?.environmentalNote ?? "")) return true
     }
     return false
   }, [entries, originalDcEntries, baselineDateKeys, dailyValueMethod])
@@ -211,7 +213,8 @@ export function useDurationDatasheet(
       const original = originalDcEntries[key]
       const currentAgg = current ? calculateDailyAggregate(current, dailyValueMethod) : null
       const originalAgg = original ? calculateDailyAggregate(original, dailyValueMethod) : null
-      if (currentAgg !== originalAgg) changed.push(key)
+      const noteChanged = (current?.environmentalNote ?? "") !== (original?.environmentalNote ?? "")
+      if (currentAgg !== originalAgg || noteChanged) changed.push(key)
     }
     return changed
   }, [entries, originalDcEntries, baselineDateKeys, dailyValueMethod])

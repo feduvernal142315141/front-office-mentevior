@@ -5,7 +5,8 @@ function extractCatalogEntries(data: unknown): InterventionCatalogItem[] {
   const entries: unknown[] = (() => {
     if (Array.isArray(data)) return data
     if (data && typeof data === "object") {
-      const wrapped = data as { entities?: unknown; data?: unknown }
+      const wrapped = data as { items?: unknown; entities?: unknown; data?: unknown }
+      if (Array.isArray(wrapped.items)) return wrapped.items
       if (Array.isArray(wrapped.entities)) return wrapped.entities
       if (Array.isArray(wrapped.data)) return wrapped.data
     }

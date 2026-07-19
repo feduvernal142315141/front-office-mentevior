@@ -2,53 +2,93 @@ import { serviceGet, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import type {
   AppointmentNote,
+  AppointmentNoteParticipantCatalogType,
   UpdateAppointmentNotePayload,
 } from "@/lib/types/appointment-note.types"
 
 function parseTeachingMethod(data: Record<string, unknown>) {
-  // Nested object: { teachingMethod: { id, name } }
   if (data.teachingMethod && typeof data.teachingMethod === "object") {
     const tm = data.teachingMethod as Record<string, unknown>
     const id = String(tm.id ?? "")
     return id ? { id, name: String(tm.name ?? "") } : null
   }
-  // Flat fields: { teachingMethodId, teachingMethodName }
   const tmId = String(data.teachingMethodId ?? "")
-  return tmId
-    ? { id: tmId, name: String(data.teachingMethodName ?? "") }
-    : null
+  return tmId ? { id: tmId, name: String(data.teachingMethodName ?? "") } : null
+}
+
+function parseModality(data: Record<string, unknown>) {
+  if (data.modality && typeof data.modality === "object") {
+    const m = data.modality as Record<string, unknown>
+    const id = String(m.id ?? "")
+    return id ? { id, name: String(m.name ?? "") } : null
+  }
+  return null
+}
+
+function parseRecipient(data: Record<string, unknown>) {
+  if (data.recipient && typeof data.recipient === "object") {
+    const r = data.recipient as Record<string, unknown>
+    return {
+      name: String(r.name ?? ""),
+      dateOfBirth: String(r.dateOfBirth ?? ""),
+      insuranceNumber: String(r.insuranceNumber ?? ""),
+      diagnosis: String(r.diagnosis ?? ""),
+    }
+  }
+  return null
+}
+
+function parseProvider(data: Record<string, unknown>) {
+  if (data.provider && typeof data.provider === "object") {
+    const p = data.provider as Record<string, unknown>
+    return {
+      name: String(p.name ?? ""),
+      credential: String(p.credential ?? ""),
+      npi: String(p.npi ?? ""),
+      mpi: String(p.mpi ?? ""),
+    }
+  }
+  return null
+}
+
+function parseCatalogType(raw: unknown): AppointmentNoteParticipantCatalogType {
+  const s = String(raw ?? "")
+  if (s.toLowerCase().includes("relationship")) return "Relationship"
+  return "Member User Type"
 }
 
 function parseParticipant(p: Record<string, unknown>) {
-  // New structure: { memberUserTypeId, memberUserTypeName, relationshipId, relationshipName }
-  if (p.memberUserTypeId || p.relationshipId) {
+  // Backend may use catalogId/catalogType or memberUserTypeId/relationshipId
+  if (p.catalogId) {
     return {
       id: String(p.id ?? ""),
-      memberUserTypeId: p.memberUserTypeId ? String(p.memberUserTypeId) : null,
-      memberUserTypeName: p.memberUserTypeName ? String(p.memberUserTypeName) : null,
-      relationshipId: p.relationshipId ? String(p.relationshipId) : null,
-      relationshipName: p.relationshipName ? String(p.relationshipName) : null,
+      catalogId: String(p.catalogId),
+      catalogType: parseCatalogType(p.catalogType),
+      catalogName: String(p.catalogName ?? p.name ?? ""),
     }
   }
-  // Fallback: legacy { catalogId, catalogType, catalogName }
-  const catalogType = String(p.catalogType ?? "")
-  const catalogId = String(p.catalogId ?? "")
-  const catalogName = String(p.catalogName ?? "")
-  if (catalogType === "Member User Type") {
+  // Fallback: memberUserTypeId/relationshipId → convert to catalog format
+  if (p.memberUserTypeId) {
     return {
       id: String(p.id ?? ""),
-      memberUserTypeId: catalogId,
-      memberUserTypeName: catalogName,
-      relationshipId: null,
-      relationshipName: null,
+      catalogId: String(p.memberUserTypeId),
+      catalogType: "Member User Type" as AppointmentNoteParticipantCatalogType,
+      catalogName: String(p.memberUserTypeName ?? ""),
+    }
+  }
+  if (p.relationshipId) {
+    return {
+      id: String(p.id ?? ""),
+      catalogId: String(p.relationshipId),
+      catalogType: "Relationship" as AppointmentNoteParticipantCatalogType,
+      catalogName: String(p.relationshipName ?? ""),
     }
   }
   return {
     id: String(p.id ?? ""),
-    memberUserTypeId: null,
-    memberUserTypeName: null,
-    relationshipId: catalogId,
-    relationshipName: catalogName,
+    catalogId: "",
+    catalogType: "Member User Type" as AppointmentNoteParticipantCatalogType,
+    catalogName: "",
   }
 }
 
@@ -68,14 +108,16 @@ export async function getAppointmentNote(
   if (!response.data) return null
 
   const raw = response.data as Record<string, unknown>
-
-  // Handle wrapped responses
   const data = (raw.entity ?? raw.data ?? raw) as Record<string, unknown>
   if (!data || !data.id) return null
 
   return {
     id: String(data.id ?? ""),
     appointmentId: String(data.appointmentId ?? appointmentId),
+    recipient: parseRecipient(data),
+    provider: parseProvider(data),
+    billingCodes: typeof data.billingCodes === "string" ? data.billingCodes : null,
+    modality: parseModality(data),
     teachingMethod: parseTeachingMethod(data),
     reasonCaregiverNotPresent: String(data.reasonCaregiverNotPresent ?? ""),
     medicalConcerns: String(data.medicalConcerns ?? ""),
@@ -106,6 +148,7 @@ export async function getAppointmentNote(
                 name: String(item.name ?? ""),
                 dataCollectionId: item.dataCollectionId ? String(item.dataCollectionId) : null,
                 value: typeof item.value === "number" ? item.value : null,
+                environmentalChange: typeof item.environmentalChange === "string" ? item.environmentalChange : null,
               }))
             : [],
         }))

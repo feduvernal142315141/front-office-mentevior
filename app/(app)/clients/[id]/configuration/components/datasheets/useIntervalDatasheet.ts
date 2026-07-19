@@ -171,18 +171,17 @@ export function useIntervalDatasheet(
   }, [numberOfIntervals])
 
   // Seed DC records from API
-  const seedDcRecords = useCallback((records: { dateKey: string; value: number }[]) => {
+  const seedDcRecords = useCallback((records: { dateKey: string; value: number; environmentalChange?: string | null }[]) => {
     setEntries((prev) => {
       const next = { ...prev }
       for (const rec of records) {
         if (baselineDateKeys.has(rec.dateKey)) continue
         const existing = next[rec.dateKey] ?? createEmptyIntervalDayEntry(numberOfIntervals)
-        // Value = count of positive intervals
         const positiveCount = Math.min(rec.value, numberOfIntervals)
         const intervals: IntervalValue[] = Array.from({ length: numberOfIntervals }, (_, i) =>
           i < positiveCount ? "+" : "-"
         )
-        next[rec.dateKey] = { ...existing, intervals, numberOfIntervals }
+        next[rec.dateKey] = { ...existing, intervals, numberOfIntervals, environmentalNote: rec.environmentalChange ?? existing.environmentalNote }
       }
       return next
     })
@@ -196,6 +195,7 @@ export function useIntervalDatasheet(
       )
       const entry = createEmptyIntervalDayEntry(numberOfIntervals)
       entry.intervals = intervals
+      entry.environmentalNote = rec.environmentalChange ?? ""
       snapshot[rec.dateKey] = entry
     }
     setOriginalDcEntries(snapshot)
@@ -223,6 +223,7 @@ export function useIntervalDatasheet(
       const currentCount = current ? countPositive(current) : 0
       const originalCount = original ? countPositive(original) : 0
       if (currentCount !== originalCount) return true
+      if ((current?.environmentalNote ?? "") !== (original?.environmentalNote ?? "")) return true
     }
     return false
   }, [entries, originalDcEntries, baselineDateKeys])
@@ -252,7 +253,8 @@ export function useIntervalDatasheet(
       const original = originalDcEntries[key]
       const currentCount = current ? countPositive(current) : 0
       const originalCount = original ? countPositive(original) : 0
-      if (currentCount !== originalCount) changed.push(key)
+      const noteChanged = (current?.environmentalNote ?? "") !== (original?.environmentalNote ?? "")
+      if (currentCount !== originalCount || noteChanged) changed.push(key)
     }
     return changed
   }, [entries, originalDcEntries, baselineDateKeys])

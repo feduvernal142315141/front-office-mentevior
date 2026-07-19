@@ -101,7 +101,7 @@ function parseAppointmentList(data: unknown): Appointment[] {
  * Requires startDate/endDate (inclusive range). Response is a flat array.
  */
 export async function getAppointments(
-  opts?: { filters?: string[]; dateFrom?: string; dateTo?: string; providerId?: string },
+  opts?: { filters?: string[]; dateFrom?: string; dateTo?: string; providerId?: string } | { dateFrom?: string; dateTo?: string; providerId?: string },
 ): Promise<Appointment[]> {
   const params = new URLSearchParams()
   if (opts?.providerId) params.set("providerId", opts.providerId)

@@ -405,22 +405,23 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
   const [originalDcEntries, setOriginalDcEntries] = useState<WeekEntries>({})
 
   /** Seed DC records from API: sets entries + snapshot atomically so hasDcChanges stays false */
-  const seedDcRecords = useCallback((dcDateValues: { dateKey: string; value: number }[]) => {
+  const seedDcRecords = useCallback((dcDateValues: { dateKey: string; value: number; environmentalChange?: string | null }[]) => {
     const snap: WeekEntries = {}
-    const valuesToSet: { dateKey: string; value: number }[] = []
-    for (const { dateKey, value } of dcDateValues) {
+    const valuesToSet: { dateKey: string; value: number; environmentalChange?: string | null }[] = []
+    for (const { dateKey, value, environmentalChange } of dcDateValues) {
       if (baselineDateKeys.has(dateKey)) continue
-      snap[dateKey] = { occurrences: value, initials: "", environmentalNote: "" }
-      valuesToSet.push({ dateKey, value })
+      const note = environmentalChange ?? ""
+      snap[dateKey] = { occurrences: value, initials: "", environmentalNote: note }
+      valuesToSet.push({ dateKey, value, environmentalChange })
     }
     // Update entries and snapshot in same React batch
     setEntries((prev) => {
       const next = { ...prev }
-      for (const { dateKey, value } of valuesToSet) {
+      for (const { dateKey, value, environmentalChange } of valuesToSet) {
         next[dateKey] = {
           occurrences: Math.max(0, Math.floor(value)),
           initials: prev[dateKey]?.initials ?? "",
-          environmentalNote: prev[dateKey]?.environmentalNote ?? "",
+          environmentalNote: environmentalChange ?? prev[dateKey]?.environmentalNote ?? "",
         }
       }
       return next
@@ -432,9 +433,8 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     for (const [key, entry] of Object.entries(entries)) {
       if (baselineDateKeys.has(key)) continue
       const original = originalDcEntries[key]
-      const currentVal = entry.occurrences
-      const originalVal = original?.occurrences ?? 0
-      if (currentVal !== originalVal) return true
+      if (entry.occurrences !== (original?.occurrences ?? 0)) return true
+      if ((entry.environmentalNote ?? "") !== (original?.environmentalNote ?? "")) return true
     }
     return false
   }, [entries, baselineDateKeys, originalDcEntries])
@@ -471,9 +471,9 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     for (const [key, entry] of Object.entries(entries)) {
       if (baselineDateKeys.has(key)) continue
       const original = originalDcEntries[key]
-      const currentVal = entry.occurrences
-      const originalVal = original?.occurrences ?? 0
-      if (currentVal !== originalVal) changed.push(key)
+      const valueChanged = entry.occurrences !== (original?.occurrences ?? 0)
+      const noteChanged = (entry.environmentalNote ?? "") !== (original?.environmentalNote ?? "")
+      if (valueChanged || noteChanged) changed.push(key)
     }
     return changed
   }, [entries, baselineDateKeys, originalDcEntries])

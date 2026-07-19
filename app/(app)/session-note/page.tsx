@@ -17,20 +17,20 @@ export default function SessionNotePage() {
   const {
     formData,
     updateField,
-    addParticipant,
-    removeParticipant,
-    updateParticipantValue,
     handleSubmit,
     isLoadingNote,
     noteError,
     isSaving,
     isLoadingCatalogs,
     teachingMethodOptions,
-    memberUserTypeOptions,
-    relationshipOptions,
+    modalityOptions,
+    participantCatalog,
     antecedentItems,
     consequenceItems,
     categories,
+    recipient,
+    provider,
+    billingCodes: noteBillingCodes,
   } = useSessionNoteForm({ appointmentId, clientId })
 
   if (!appointmentId) {
@@ -105,17 +105,16 @@ export default function SessionNotePage() {
             <SessionNoteForm
               formData={formData}
               updateField={updateField}
-              addParticipant={addParticipant}
-              removeParticipant={removeParticipant}
-              updateParticipantValue={updateParticipantValue}
               isSaving={isSaving}
               isLoadingCatalogs={isLoadingCatalogs}
               teachingMethodOptions={teachingMethodOptions}
-              memberUserTypeOptions={memberUserTypeOptions}
-              relationshipOptions={relationshipOptions}
+              participantCatalog={participantCatalog}
               antecedentItems={antecedentItems}
               consequenceItems={consequenceItems}
               categories={categories}
+              recipient={recipient}
+              provider={provider}
+              billingCodes={noteBillingCodes}
             />
           </form>
         )}

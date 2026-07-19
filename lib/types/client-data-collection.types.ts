@@ -4,6 +4,7 @@ export interface UpsertClientDataCollectionDto {
   appointmentId: string | null
   date: string
   value: number
+  environmentalChange?: string | null
 }
 
 /** GET /client-data-collection — query params */
@@ -22,4 +23,5 @@ export interface ClientDataCollectionRecord {
   date: string // YYYY-MM-DD
   appointmentStatusId?: string
   appointmentStatusName?: string
+  environmentalChange?: string | null
 }

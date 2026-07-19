@@ -112,10 +112,10 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
   useEffect(() => {
     const records = dcValues.records
     if (records.length === 0) { seededDcRef.current = null; return }
-    const fingerprint = records.map((r) => `${r.id}:${r.value}`).sort().join(",")
+    const fingerprint = records.map((r) => `${r.id}:${r.value}:${r.environmentalChange ?? ""}`).sort().join(",")
     if (seededDcRef.current === fingerprint) return
     seededDcRef.current = fingerprint
-    ds.seedDcRecords(records.map((rec) => ({ dateKey: rec.date.slice(0, 10), value: rec.value })))
+    ds.seedDcRecords(records.map((rec) => ({ dateKey: rec.date.slice(0, 10), value: rec.value, environmentalChange: rec.environmentalChange })))
   }, [dcValues.records, ds])
 
   // --- Baseline save ---
@@ -148,6 +148,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
           appointmentId: resolvedAppointmentId,
           date: dateKey,
           value: entry.occurrences,
+          environmentalChange: entry.environmentalNote.trim() || null,
         })
       })
       await Promise.all(promises)

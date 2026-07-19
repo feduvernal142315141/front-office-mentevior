@@ -4,24 +4,28 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import type {
   AppointmentNote,
   AppointmentNoteCategory,
+  AppointmentNoteRecipient,
+  AppointmentNoteProvider,
+  AppointmentNoteModality,
   UpdateAppointmentNotePayload,
   AppointmentNoteParticipantPayload,
 } from "@/lib/types/appointment-note.types"
 import { useAppointmentNote } from "@/lib/modules/appointment-notes/hooks/use-appointment-note"
 import { useAppointmentNoteMutation } from "@/lib/modules/appointment-notes/hooks/use-appointment-note-mutation"
 import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-method-catalog"
-import { useMemberUserTypeCatalog } from "@/lib/modules/member-user-types/hooks/use-member-user-type-catalog"
-import { useRelationshipCatalog } from "@/lib/modules/relationships/hooks/use-relationship-catalog"
 import { useInterventionCatalogs } from "@/lib/modules/appointment-notes/hooks/use-intervention-catalogs"
+import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
+import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
 
 export interface SessionNoteFormData {
   noteId: string
   teachingMethodId: string
+  modalityId: string
   reasonCaregiverNotPresent: string
   medicalConcerns: string
   crisisInvolved: boolean
   sessionSummary: string
-  participants: AppointmentNoteParticipantPayload[]
+  participantIds: string[]
   antecedentInterventionIds: string[]
   consequenceInterventionIds: string[]
 }
@@ -29,11 +33,12 @@ export interface SessionNoteFormData {
 const EMPTY_FORM: SessionNoteFormData = {
   noteId: "",
   teachingMethodId: "",
+  modalityId: "",
   reasonCaregiverNotPresent: "",
   medicalConcerns: "",
   crisisInvolved: false,
   sessionSummary: "",
-  participants: [],
+  participantIds: [],
   antecedentInterventionIds: [],
   consequenceInterventionIds: [],
 }
@@ -42,14 +47,12 @@ function noteToFormData(note: AppointmentNote): SessionNoteFormData {
   return {
     noteId: note.id,
     teachingMethodId: note.teachingMethod?.id ?? "",
+    modalityId: note.modality?.id ?? "",
     reasonCaregiverNotPresent: note.reasonCaregiverNotPresent,
     medicalConcerns: note.medicalConcerns,
     crisisInvolved: note.crisisInvolved,
     sessionSummary: note.sessionSummary,
-    participants: note.participants.map((p) => ({
-      memberUserTypeId: p.memberUserTypeId,
-      relationshipId: p.relationshipId,
-    })),
+    participantIds: note.participants.map((p) => p.catalogId),
     antecedentInterventionIds: note.antecedentInterventionList.map((i) => i.id),
     consequenceInterventionIds: note.consequenceInterventionList.map((i) => i.id),
   }
@@ -66,8 +69,8 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
 
   // Catalogs
   const { selectOptions: teachingMethodOptions, isLoading: teachingMethodsLoading } = useTeachingMethodCatalog()
-  const { memberUserTypes, isLoading: memberUserTypesLoading } = useMemberUserTypeCatalog()
-  const { relationships, isLoading: relationshipsLoading } = useRelationshipCatalog()
+  const { selectOptions: modalityOptions, isLoading: modalityLoading } = useModalityCatalog()
+  const { items: participantCatalog, isLoading: participantsLoading } = useParticipantCatalog()
   const {
     antecedentInterventions,
     consequenceInterventions,
@@ -76,7 +79,6 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
 
   const [formData, setFormData] = useState<SessionNoteFormData>(EMPTY_FORM)
 
-  // Populate form when note loads
   useEffect(() => {
     if (note) {
       setFormData(noteToFormData(note))
@@ -92,49 +94,25 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     [],
   )
 
-  const addParticipant = useCallback((type: "memberUserType" | "relationship") => {
-    setFormData((prev) => ({
-      ...prev,
-      participants: [
-        ...prev.participants,
-        type === "memberUserType"
-          ? { memberUserTypeId: "", relationshipId: null }
-          : { memberUserTypeId: null, relationshipId: "" },
-      ],
-    }))
-  }, [])
-
-  const removeParticipant = useCallback((index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      participants: prev.participants.filter((_, i) => i !== index),
-    }))
-  }, [])
-
-  const updateParticipantValue = useCallback((index: number, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      participants: prev.participants.map((p, i) => {
-        if (i !== index) return p
-        if (p.memberUserTypeId !== null) {
-          return { ...p, memberUserTypeId: value }
-        }
-        return { ...p, relationshipId: value }
-      }),
-    }))
-  }, [])
-
   const handleSubmit = useCallback(async () => {
     if (!formData.noteId) return null
+
+    const participants: AppointmentNoteParticipantPayload[] = formData.participantIds
+      .filter(Boolean)
+      .map((catalogId) => {
+        const item = participantCatalog.find((c) => c.id === catalogId)
+        return { catalogId, catalogType: item?.type ?? "Member User Type" }
+      })
 
     const payload: UpdateAppointmentNotePayload = {
       id: formData.noteId,
       teachingMethodId: formData.teachingMethodId || null,
+      modalityId: formData.modalityId || null,
       reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
       medicalConcerns: formData.medicalConcerns,
       crisisInvolved: formData.crisisInvolved,
       sessionSummary: formData.sessionSummary,
-      participants: formData.participants,
+      participants,
       antecedentInterventionIds: formData.antecedentInterventionIds,
       consequenceInterventionIds: formData.consequenceInterventionIds,
     }
@@ -142,18 +120,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     const id = await mutation.update(payload)
     if (id) void refetch()
     return id
-  }, [formData, mutation, refetch])
-
-  // Select options for catalogs
-  const memberUserTypeOptions = useMemo(
-    () => memberUserTypes.map((t) => ({ value: t.id, label: t.name })),
-    [memberUserTypes],
-  )
-
-  const relationshipOptions = useMemo(
-    () => relationships.map((r) => ({ value: r.id, label: r.name })),
-    [relationships],
-  )
+  }, [formData, mutation, refetch, participantCatalog])
 
   const antecedentItems = useMemo(
     () => antecedentInterventions.map((i) => ({ id: i.id, name: i.name })),
@@ -165,33 +132,32 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     [consequenceInterventions],
   )
 
-  const categories: AppointmentNoteCategory[] = useMemo(
-    () => note?.categories ?? [],
-    [note],
-  )
+  const categories: AppointmentNoteCategory[] = useMemo(() => note?.categories ?? [], [note])
+  const recipient: AppointmentNoteRecipient | null = note?.recipient ?? null
+  const provider: AppointmentNoteProvider | null = note?.provider ?? null
+  const billingCodes: string | null = note?.billingCodes ?? null
+  const noteModality: AppointmentNoteModality | null = note?.modality ?? null
 
-  const isLoadingCatalogs =
-    teachingMethodsLoading || memberUserTypesLoading || relationshipsLoading || interventionsLoading
+  const isLoadingCatalogs = teachingMethodsLoading || modalityLoading || participantsLoading || interventionsLoading
 
   return {
     formData,
     updateField,
-    addParticipant,
-    removeParticipant,
-    updateParticipantValue,
     handleSubmit,
     note,
     isLoadingNote: noteLoading,
     noteError,
     isSaving: mutation.isLoading,
     isLoadingCatalogs,
-    // Catalog options
     teachingMethodOptions,
-    memberUserTypeOptions,
-    relationshipOptions,
+    modalityOptions,
+    participantCatalog,
     antecedentItems,
     consequenceItems,
-    // Read-only data
     categories,
+    recipient,
+    provider,
+    billingCodes,
+    noteModality,
   }
 }

@@ -76,6 +76,7 @@ function normalizeRecords(data: unknown): ClientDataCollectionRecord[] {
         date,
         appointmentStatusId: asString(rec.appointmentStatusId) || undefined,
         appointmentStatusName: asString(rec.appointmentStatusName) || undefined,
+        environmentalChange: typeof rec.environmentalChange === "string" ? rec.environmentalChange : null,
       }
     })
     .filter((r): r is ClientDataCollectionRecord => r !== null)
