@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Sheet, Loader2, AlertTriangle } from "lucide-react"
+import { Sheet, Loader2, AlertTriangle, Maximize2, Minimize2, X } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useClientServicePlanConfiguration } from "../../service-plan/hooks/useClientServicePlanConfiguration"
@@ -69,6 +69,27 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
   const [itemTypeId, setItemTypeId] = useState<string | null>(null)
   const [itemDcConfig, setItemDcConfig] = useState<DataCollectionConfig | null>(null)
   const [isLoadingItemDc, setIsLoadingItemDc] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  // ESC key to exit fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false)
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [isFullscreen])
+
+  // Lock body scroll in fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => { document.body.style.overflow = "" }
+  }, [isFullscreen])
 
   // Effective type: item-level overrides category-level
   const effectiveTypeId = itemTypeId ?? catTypeId
@@ -238,7 +259,37 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
   }
 
   return (
-    <div className="space-y-5">
+    <div
+      className={cn(
+        "space-y-5",
+        isFullscreen && "fixed inset-0 z-50 bg-white overflow-auto px-8 py-6",
+      )}
+    >
+      {/* Fullscreen header bar */}
+      {isFullscreen && (
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-900">Data Collection</h2>
+            {activeItem && (
+              <>
+                <span className="text-slate-300">/</span>
+                <span className="text-sm font-medium text-slate-600">{activeCategory?.categoryName}</span>
+                <span className="text-slate-300">/</span>
+                <span className="text-sm font-semibold text-[#037ECC]">{activeItem.itemName}</span>
+              </>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsFullscreen(false)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-800 transition-colors"
+          >
+            <Minimize2 className="h-4 w-4" />
+            Exit Fullscreen
+          </button>
+        </div>
+      )}
+
       {/* Category Pills */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {categories.map((cat) => {
@@ -322,15 +373,25 @@ function DataCollectionView({ clientId, clientServicePlanId, onNavigateToItem }:
                     </p>
                   )}
                 </div>
-                {categoryTypeName ? (
-                  <span className="shrink-0 inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700">
-                    {categoryTypeName}
-                  </span>
-                ) : (
-                  <span className="shrink-0 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-medium text-amber-600">
-                    No type configured
-                  </span>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {categoryTypeName ? (
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700">
+                      {categoryTypeName}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-medium text-amber-600">
+                      No type configured
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsFullscreen((v) => !v)}
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-[#037ECC] hover:border-[#037ECC]/30 transition-colors"
+                    title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                  >
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* Baseline required alert */}
