@@ -273,7 +273,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                         {format(day, "MMM")}
                       </span>
                     </div>
-                    {!isBaseline && dcStatusByDate.get(key) === "In Progress" && (
+                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.status === "InProgress" && (
                       <div className="flex items-center gap-0.5" title="In Progress">
                         <CalendarCheck2 className="h-3 w-3 text-emerald-500" />
                       </div>
@@ -291,9 +291,8 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
-                const hasAppointment = clientAppointments.appointmentsByDate.has(key)
-                const appointmentStatus = dcStatusByDate.get(key)
-                const isInProgress = appointmentStatus === "In Progress"
+                const appointment = clientAppointments.appointmentsByDate.get(key)
+                const isInProgress = appointment?.status === "InProgress"
                 const isEditable = isBaseline || isInProgress
                 return (
                   <div key={key} className={cn(

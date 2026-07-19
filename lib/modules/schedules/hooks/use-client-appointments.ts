@@ -60,7 +60,12 @@ export function useClientAppointments(
     const map = new Map<string, Appointment>()
     for (const apt of appointments) {
       const date = apt.date ?? apt.startsAt?.slice(0, 10)
-      if (date) map.set(date, apt)
+      if (!date) continue
+      const existing = map.get(date)
+      // Prioritize InProgress over other statuses
+      if (!existing || apt.status === "InProgress") {
+        map.set(date, apt)
+      }
     }
     return map
   }, [appointments])

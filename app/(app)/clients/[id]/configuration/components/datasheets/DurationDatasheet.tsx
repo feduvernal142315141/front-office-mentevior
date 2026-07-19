@@ -210,7 +210,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                       <span className={cn("font-bold leading-none", ds.rangeMode === "month" ? "text-sm" : "text-lg")}>{format(day, "dd")}</span>
                       <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>{format(day, "MMM")}</span>
                     </div>
-                    {!isBaseline && dcStatusByDate.get(key) === "In Progress" && (
+                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.status === "InProgress" && (
                       <div className="flex items-center gap-0.5" title="In Progress"><CalendarCheck2 className="h-3 w-3 text-emerald-500" /></div>
                     )}
                   </div>
@@ -227,7 +227,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                   const entry = ds.getEntry(key)
                   const today = ds.isToday(day)
                   const isBaseline = ds.isBaselineDate(key)
-                  const isInProgress = dcStatusByDate.get(key) === "In Progress"
+                  const isInProgress = clientAppointments.appointmentsByDate.get(key)?.status === "InProgress"
                   const isEditable = isBaseline || isInProgress
                   const value = entry.recordings[idx]
                   return (
