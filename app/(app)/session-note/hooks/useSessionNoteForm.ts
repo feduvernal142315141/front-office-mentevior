@@ -17,6 +17,11 @@ import { useInterventionCatalogs } from "@/lib/modules/appointment-notes/hooks/u
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
 
+export interface CategoryItemFormData {
+  value: number | null
+  environmentalChange: string
+}
+
 export interface SessionNoteFormData {
   noteId: string
   teachingMethodId: string
@@ -28,6 +33,8 @@ export interface SessionNoteFormData {
   participantIds: string[]
   antecedentInterventionIds: string[]
   consequenceInterventionIds: string[]
+  /** Editable category items keyed by item id */
+  categoryItems: Record<string, CategoryItemFormData>
 }
 
 const EMPTY_FORM: SessionNoteFormData = {
@@ -41,9 +48,20 @@ const EMPTY_FORM: SessionNoteFormData = {
   participantIds: [],
   antecedentInterventionIds: [],
   consequenceInterventionIds: [],
+  categoryItems: {},
 }
 
 function noteToFormData(note: AppointmentNote): SessionNoteFormData {
+  const categoryItems: Record<string, CategoryItemFormData> = {}
+  for (const cat of note.categories) {
+    for (const item of cat.items) {
+      categoryItems[item.id] = {
+        value: item.value,
+        environmentalChange: item.environmentalChange ?? "",
+      }
+    }
+  }
+
   return {
     noteId: note.id,
     teachingMethodId: note.teachingMethod?.id ?? "",
@@ -55,6 +73,7 @@ function noteToFormData(note: AppointmentNote): SessionNoteFormData {
     participantIds: note.participants.map((p) => p.catalogId),
     antecedentInterventionIds: note.antecedentInterventionList.map((i) => i.id),
     consequenceInterventionIds: note.consequenceInterventionList.map((i) => i.id),
+    categoryItems,
   }
 }
 
@@ -94,8 +113,28 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     [],
   )
 
+  const updateItemValue = useCallback((itemId: string, value: number | null) => {
+    setFormData((prev) => ({
+      ...prev,
+      categoryItems: {
+        ...prev.categoryItems,
+        [itemId]: { ...prev.categoryItems[itemId], value },
+      },
+    }))
+  }, [])
+
+  const updateItemEnvironmentalChange = useCallback((itemId: string, text: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      categoryItems: {
+        ...prev.categoryItems,
+        [itemId]: { ...prev.categoryItems[itemId], environmentalChange: text },
+      },
+    }))
+  }, [])
+
   const handleSubmit = useCallback(async () => {
-    if (!formData.noteId) return null
+    if (!formData.noteId || !note) return null
 
     const participants: AppointmentNoteParticipantPayload[] = formData.participantIds
       .filter(Boolean)
@@ -103,6 +142,20 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
         const item = participantCatalog.find((c) => c.id === catalogId)
         return { catalogId, catalogType: item?.type ?? "Member User Type" }
       })
+
+    // Build categories payload from note structure + edited form values
+    const categories = note.categories.map((cat) => ({
+      id: cat.id,
+      items: cat.items.map((item) => {
+        const edited = formData.categoryItems[item.id]
+        return {
+          id: item.id,
+          dataCollectionId: item.dataCollectionId ?? undefined,
+          value: edited?.value ?? item.value,
+          environmentalChange: edited?.environmentalChange?.trim() || null,
+        }
+      }),
+    }))
 
     const payload: UpdateAppointmentNotePayload = {
       id: formData.noteId,
@@ -115,12 +168,13 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
       participants,
       antecedentInterventionIds: formData.antecedentInterventionIds,
       consequenceInterventionIds: formData.consequenceInterventionIds,
+      categories,
     }
 
     const id = await mutation.update(payload)
     if (id) void refetch()
     return id
-  }, [formData, mutation, refetch, participantCatalog])
+  }, [formData, note, mutation, refetch, participantCatalog])
 
   const antecedentItems = useMemo(
     () => antecedentInterventions.map((i) => ({ id: i.id, name: i.name })),
@@ -143,6 +197,8 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   return {
     formData,
     updateField,
+    updateItemValue,
+    updateItemEnvironmentalChange,
     handleSubmit,
     note,
     isLoadingNote: noteLoading,

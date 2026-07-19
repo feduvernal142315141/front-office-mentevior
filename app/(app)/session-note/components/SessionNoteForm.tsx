@@ -24,6 +24,8 @@ import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
 interface SessionNoteFormProps {
   formData: SessionNoteFormData
   updateField: <K extends keyof SessionNoteFormData>(field: K, value: SessionNoteFormData[K]) => void
+  updateItemValue: (itemId: string, value: number | null) => void
+  updateItemEnvironmentalChange: (itemId: string, text: string) => void
   isSaving: boolean
   isLoadingCatalogs: boolean
   teachingMethodOptions: { value: string; label: string }[]
@@ -39,6 +41,8 @@ interface SessionNoteFormProps {
 export function SessionNoteForm({
   formData,
   updateField,
+  updateItemValue,
+  updateItemEnvironmentalChange,
   isSaving,
   isLoadingCatalogs,
   teachingMethodOptions,
@@ -128,9 +132,15 @@ export function SessionNoteForm({
         ) : (
           <div className="space-y-2">
             {categoriesWithItems.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {categoriesWithItems.map((category) => (
-                  <CategoryCard key={category.id} category={category} />
+                  <CategoryCard
+                    key={category.id}
+                    category={category}
+                    categoryItems={formData.categoryItems}
+                    onValueChange={updateItemValue}
+                    onEnvChangeChange={updateItemEnvironmentalChange}
+                  />
                 ))}
               </div>
             )}
@@ -196,7 +206,12 @@ function Section({ icon, title, subtitle, children }: { icon: React.ReactNode; t
   )
 }
 
-function CategoryCard({ category }: { category: AppointmentNoteCategory }) {
+function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChange }: {
+  category: AppointmentNoteCategory
+  categoryItems: Record<string, { value: number | null; environmentalChange: string }>
+  onValueChange: (itemId: string, value: number | null) => void
+  onEnvChangeChange: (itemId: string, text: string) => void
+}) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 bg-white border-b border-slate-100">
@@ -205,16 +220,42 @@ function CategoryCard({ category }: { category: AppointmentNoteCategory }) {
         <span className="inline-flex items-center justify-center rounded-full bg-[#037ECC]/10 text-[#037ECC] text-[10px] font-bold h-5 min-w-[20px] px-1.5">{category.items.length}</span>
       </div>
       <div className="divide-y divide-slate-100">
-        {category.items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between px-4 py-2.5">
-            <span className="text-sm text-slate-700">{item.name}</span>
-            {item.value !== null ? (
-              <span className="inline-flex items-center justify-center rounded-full bg-[#037ECC]/10 text-[#037ECC] text-xs font-bold tabular-nums h-6 min-w-[28px] px-2">{item.value}</span>
-            ) : (
-              <span className="text-xs text-slate-300">{"\u2014"}</span>
-            )}
-          </div>
-        ))}
+        {category.items.map((item) => {
+          const edited = categoryItems[item.id]
+          const currentValue = edited?.value ?? item.value
+          const currentEnv = edited?.environmentalChange ?? item.environmentalChange ?? ""
+          return (
+            <div key={item.id} className="px-4 py-3 space-y-2">
+              <span className="text-sm font-medium text-slate-700 block">{item.name}</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase text-slate-400">Value</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={currentValue ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9.]/g, "")
+                      onValueChange(item.id, raw === "" ? null : parseFloat(raw))
+                    }}
+                    placeholder="—"
+                    className="h-7 w-16 rounded-lg border border-slate-200 bg-white text-center text-sm font-semibold tabular-nums text-slate-800 outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all"
+                  />
+                </div>
+                <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] font-semibold uppercase text-slate-400 shrink-0">Env.</span>
+                  <input
+                    type="text"
+                    value={currentEnv}
+                    onChange={(e) => onEnvChangeChange(item.id, e.target.value)}
+                    placeholder="Environmental change..."
+                    className="h-7 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all placeholder:text-slate-300"
+                  />
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

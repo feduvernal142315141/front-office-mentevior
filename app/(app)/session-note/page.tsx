@@ -17,6 +17,8 @@ export default function SessionNotePage() {
   const {
     formData,
     updateField,
+    updateItemValue,
+    updateItemEnvironmentalChange,
     handleSubmit,
     isLoadingNote,
     noteError,
@@ -105,6 +107,8 @@ export default function SessionNotePage() {
             <SessionNoteForm
               formData={formData}
               updateField={updateField}
+              updateItemValue={updateItemValue}
+              updateItemEnvironmentalChange={updateItemEnvironmentalChange}
               isSaving={isSaving}
               isLoadingCatalogs={isLoadingCatalogs}
               teachingMethodOptions={teachingMethodOptions}
