@@ -247,7 +247,7 @@ export async function getAppointmentNotes(params?: {
     throw new Error(getApiErrorMessage(response?.data, "Failed to fetch appointment notes"))
   }
 
-  const raw = response.data as Record<string, unknown>
+  const raw = response.data as unknown as Record<string, unknown>
   const entities = (Array.isArray(raw.entities) ? raw.entities : []) as Record<string, unknown>[]
   const pagination = (raw.pagination ?? { page: 0, pageSize: 10, total: 0 }) as PaginatedResponse<AppointmentNoteSummary>["pagination"]
 
