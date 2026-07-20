@@ -22,9 +22,10 @@ interface ClientConfigurationLayoutProps {
   clientServicePlanId: string | null
   initialSection?: string
   appointmentId?: string
+  appointmentDate?: string
 }
 
-export function ClientConfigurationLayout({ clientId, clientServicePlanId, initialSection, appointmentId }: ClientConfigurationLayoutProps) {
+export function ClientConfigurationLayout({ clientId, clientServicePlanId, initialSection, appointmentId, appointmentDate }: ClientConfigurationLayoutProps) {
   const router = useRouter()
   const { client, isLoading } = useClientById(clientId)
   const alert = useAlert()
@@ -154,7 +155,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
             )}
 
             {activeSectionId === "data-collection" && spId && (
-              <DataCollectionContent clientId={clientId} clientServicePlanId={spId} appointmentId={appointmentId} onNavigateToItem={handleNavigateToItem} />
+              <DataCollectionContent clientId={clientId} clientServicePlanId={spId} appointmentId={appointmentId} appointmentDate={appointmentDate} onNavigateToItem={handleNavigateToItem} />
             )}
           </div>
         </div>

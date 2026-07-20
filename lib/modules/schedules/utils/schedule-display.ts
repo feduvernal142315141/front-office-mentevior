@@ -77,7 +77,8 @@ export function buildSessionNoteUrl(appointment: Appointment): string {
 }
 
 export function buildDataCollectionUrl(appointment: Appointment): string {
-  return `/clients/${appointment.clientId}/configuration?section=data-collection&spId=${appointment.clientServicePlanId}&appointmentId=${appointment.id}`
+  const base = `/clients/${appointment.clientId}/configuration?section=data-collection&spId=${appointment.clientServicePlanId}&appointmentId=${appointment.id}`
+  return appointment.date ? `${base}&appointmentDate=${appointment.date}` : base
 }
 
 export function matchesLocationFilter(

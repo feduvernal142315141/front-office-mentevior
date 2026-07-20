@@ -7,6 +7,7 @@ import type {
   AppointmentNoteRecipient,
   AppointmentNoteProvider,
   AppointmentNoteModality,
+  AppointmentNoteServiceDetails,
   UpdateAppointmentNotePayload,
   AppointmentNoteParticipantPayload,
 } from "@/lib/types/appointment-note.types"
@@ -16,6 +17,10 @@ import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hook
 import { useInterventionCatalogs } from "@/lib/modules/appointment-notes/hooks/use-intervention-catalogs"
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
+import { useSignature } from "@/lib/modules/signature/hooks/use-signature"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { getCaregiverSignatureConfig } from "@/lib/services/caregiver-signature-config.service"
+import type { SignatureType } from "@/lib/types/caregiver-signature-config.types"
 
 export interface CategoryItemFormData {
   value: number | null
@@ -85,6 +90,19 @@ interface UseSessionNoteFormProps {
 export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   const { note, isLoading: noteLoading, error: noteError, refetch } = useAppointmentNote(appointmentId)
   const mutation = useAppointmentNoteMutation()
+  const { user } = useAuth()
+
+  // Provider signature
+  const { signature: providerSignature } = useSignature(user?.id ?? null, !!user?.id)
+  const providerSignatureUrl = providerSignature?.url ?? null
+
+  // Caregiver signature config
+  const [caregiverSignatureType, setCaregiverSignatureType] = useState<SignatureType | null>(null)
+  useEffect(() => {
+    getCaregiverSignatureConfig()
+      .then((config) => setCaregiverSignatureType(config?.signatureType ?? null))
+      .catch(() => setCaregiverSignatureType(null))
+  }, [])
 
   // Catalogs
   const { selectOptions: teachingMethodOptions, isLoading: teachingMethodsLoading } = useTeachingMethodCatalog()
@@ -138,8 +156,33 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     }))
   }, [])
 
+  const [itemErrors, setItemErrors] = useState<Set<string>>(new Set())
+
   const handleSubmit = useCallback(async () => {
     if (!formData.noteId || !note) return null
+
+    // Validate that all data collection items have a value
+    const missing = new Set<string>()
+    for (const cat of note.categories) {
+      for (const item of cat.items) {
+        const edited = formData.categoryItems[item.id]
+        const value = edited?.value ?? item.value
+        if (value == null) missing.add(item.id)
+      }
+    }
+    if (missing.size > 0) {
+      setItemErrors(missing)
+      const firstId = [...missing][0]
+      setTimeout(() => {
+        const el = document.querySelector<HTMLInputElement>(`[data-item-value="${firstId}"]`)
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" })
+          setTimeout(() => el.focus(), 300)
+        }
+      }, 50)
+      return null
+    }
+    setItemErrors(new Set())
 
     const participants: AppointmentNoteParticipantPayload[] = formData.participantIds
       .filter(Boolean)
@@ -193,6 +236,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   const categories: AppointmentNoteCategory[] = useMemo(() => note?.categories ?? [], [note])
   const recipient: AppointmentNoteRecipient | null = note?.recipient ?? null
   const provider: AppointmentNoteProvider | null = note?.provider ?? null
+  const serviceDetails: AppointmentNoteServiceDetails | null = note?.serviceDetails ?? null
   const billingCodes: string | null = note?.billingCodes ?? null
   const noteModality: AppointmentNoteModality | null = note?.modality ?? null
 
@@ -217,7 +261,11 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     categories,
     recipient,
     provider,
+    serviceDetails,
     billingCodes,
     noteModality,
+    itemErrors,
+    providerSignatureUrl,
+    caregiverSignatureType,
   }
 }

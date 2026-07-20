@@ -125,7 +125,7 @@ function getPeriodInfo(
 ): { key: string; label: string; start: Date } {
   switch (interval) {
     case "WEEKLY": {
-      const weekStart = startOfWeek(date, { weekStartsOn: 1 })
+      const weekStart = startOfWeek(date, { weekStartsOn: 0 })
       return {
         key: format(weekStart, "yyyy-MM-dd"),
         label: `Wk ${format(weekStart, "MM/dd")}`,

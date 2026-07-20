@@ -175,7 +175,7 @@ export function MultiSelectWithSearch({
               key={item.id}
               className="inline-flex items-center gap-1 rounded-full border border-[#037ECC]/20 bg-[#037ECC]/8 px-2.5 py-0.5 text-xs font-medium text-[#037ECC]"
             >
-              <span className="max-w-[160px] truncate">{item.name.replace(FILL_IN_BLANK_PATTERN, "___")}</span>
+              <span>{item.name.replace(FILL_IN_BLANK_PATTERN, "___")}</span>
               <button
                 type="button"
                 onClick={() => removeChip(item.id)}

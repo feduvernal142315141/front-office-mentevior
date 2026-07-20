@@ -79,6 +79,7 @@ export function AppointmentModal({
     handleSubmit,
     isSubmitting,
     hasPriorAuthWithoutCodes,
+    billableUnits,
   } = useAppointmentForm({
     open,
     appointment,
@@ -89,6 +90,12 @@ export function AppointmentModal({
     scope,
     onSuccess: onSaved ?? onClose,
   })
+
+  const isLockedStatus = isEditing && (
+    appointment?.status === "Completed" ||
+    appointment?.status === "Cancelled" ||
+    appointment?.status === "NoShow"
+  )
 
   return (
     <CustomModal
@@ -254,6 +261,7 @@ export function AppointmentModal({
           <SummaryBar
             label="Session Duration"
             duration={formatDuration(durationMinutes)}
+            units={billableUnits}
             priorAuth={
               priorAuthorizationOptions.length > 0
                 ? priorAuthorizationOptions[0].label
@@ -310,20 +318,32 @@ export function AppointmentModal({
       </form>
 
       {/* Footer */}
-      <div className="flex items-center justify-end gap-3 border-t border-slate-200/80 bg-white/70 px-7 py-4 rounded-b-2xl">
-        <Button type="button" variant="secondary" onClick={onClose} className="h-10">
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          loading={isSubmitting}
-          disabled={isValidatingMain || pendingValidation}
-          className="h-10 min-w-[180px]"
-          onClick={handleSubmit}
-        >
-          {isEditing ? "Update" : "Create"} Session
-        </Button>
+      <div className="border-t border-slate-200/80 bg-white/70 px-7 py-4 rounded-b-2xl space-y-2">
+        {isLockedStatus && (
+          <p className="text-xs font-medium text-amber-600 text-right">
+            This appointment cannot be edited because it is {appointment?.status === "NoShow" ? "No Show" : appointment?.status}.
+          </p>
+        )}
+        {validationError && !isLockedStatus && (
+          <p className="text-xs font-medium text-red-600 text-right">
+            {validationError}
+          </p>
+        )}
+        <div className="flex items-center justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose} className="h-10">
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={isSubmitting}
+            disabled={isLockedStatus || isValidatingMain || pendingValidation || !!validationError}
+            className="h-10 min-w-[180px]"
+            onClick={handleSubmit}
+          >
+            {isEditing ? "Update" : "Create"} Session
+          </Button>
+        </div>
       </div>
     </CustomModal>
   )
@@ -357,11 +377,13 @@ function HintError({ children }: { children: React.ReactNode }) {
 function SummaryBar({
   label,
   duration,
+  units,
   priorAuth,
   variant = "blue",
 }: {
   label: string
   duration: string
+  units?: number | null
   priorAuth?: string
   variant?: "blue" | "indigo"
 }) {
@@ -377,6 +399,14 @@ function SummaryBar({
         <Clock className={cn("h-3.5 w-3.5", colors.accent)} />
         <span className="text-xs font-semibold text-slate-800">{duration}</span>
       </div>
+      {units != null && (
+        <>
+          <div className={cn("h-3.5 w-px", colors.divider)} />
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-slate-800">{units} units</span>
+          </div>
+        </>
+      )}
       {priorAuth && (
         <>
           <div className={cn("h-3.5 w-px", colors.divider)} />

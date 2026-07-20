@@ -63,14 +63,6 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
       }
     }
     setEntries(seeded)
-
-    // Navigate to the week of the most recent baseline
-    const sorted = [...baselines]
-      .filter((b) => b.date)
-      .sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime())
-    if (sorted.length > 0) {
-      setAnchor(parseLocalDate(sorted[0].date))
-    }
   }, [baselines])
 
   // ─── Earliest baseline date (min navigable date) ─────────────────────────
@@ -94,8 +86,8 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     }
     // week (default)
     return {
-      start: startOfWeek(anchor, { weekStartsOn: 1 }),
-      end: endOfWeek(anchor, { weekStartsOn: 1 }),
+      start: startOfWeek(anchor, { weekStartsOn: 0 }),
+      end: endOfWeek(anchor, { weekStartsOn: 0 }),
     }
   }, [rangeMode, anchor, customRange])
 
@@ -151,7 +143,7 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
       })
     } else {
       const prev = addWeeks(anchor, -1)
-      if (minDate && startOfWeek(prev, { weekStartsOn: 1 }) < startOfWeek(minDate, { weekStartsOn: 1 })) return
+      if (minDate && startOfWeek(prev, { weekStartsOn: 0 }) < startOfWeek(minDate, { weekStartsOn: 0 })) return
       setAnchor(prev)
     }
   }, [rangeMode, customRange, anchor, minDate])
@@ -186,7 +178,7 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
     if (rangeMode === "custom" && customRange) {
       return customRange.start > minDate
     }
-    return startOfWeek(anchor, { weekStartsOn: 1 }) > startOfWeek(minDate, { weekStartsOn: 1 })
+    return startOfWeek(anchor, { weekStartsOn: 0 }) > startOfWeek(minDate, { weekStartsOn: 0 })
   }, [minDate, rangeMode, anchor, customRange])
 
   // Jump to a specific date (sets anchor)
@@ -332,12 +324,19 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
 
   // Mutable snapshot of baseline values for dirty detection — updated on save
   const [originalBaselineEntries, setOriginalBaselineEntries] = useState<WeekEntries>({})
+  const seededBaselineSnapRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!baselines || baselines.length === 0) {
+      seededBaselineSnapRef.current = null
       setOriginalBaselineEntries({})
       return
     }
+    // Same fingerprint guard as the entries seed — stay in sync
+    const fingerprint = baselines.map((b) => b.id).sort().join(",")
+    if (seededBaselineSnapRef.current === fingerprint) return
+    seededBaselineSnapRef.current = fingerprint
+
     const snap: WeekEntries = {}
     for (const bl of baselines) {
       if (!bl.date || bl.value == null) continue
@@ -358,7 +357,7 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
       if (!original && !current) continue
       if (!original || !current) return true
       if (original.occurrences !== current.occurrences) return true
-      if (original.environmentalNote !== current.environmentalNote) return true
+      if ((original.environmentalNote ?? "") !== (current.environmentalNote ?? "")) return true
     }
     return false
   }, [baselineDateKeys, originalBaselineEntries, entries])

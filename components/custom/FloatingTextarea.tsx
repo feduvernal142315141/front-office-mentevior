@@ -13,6 +13,7 @@ interface Props {
   rows?: number
   disabled?: boolean
   required?: boolean
+  className?: string
 }
 
 export function FloatingTextarea({
@@ -26,6 +27,7 @@ export function FloatingTextarea({
   rows = 4,
   disabled,
   required,
+  className: extraClassName,
 }: Props) {
   return (
     <div className="w-full">
@@ -42,7 +44,6 @@ export function FloatingTextarea({
             `
             peer
             premium-input
-            min-h-[100px]
             px-4 py-3
             rounded-[16px]
             text-[15px] 2xl:text-[16px]
@@ -50,8 +51,10 @@ export function FloatingTextarea({
 
             placeholder:text-transparent
           `,
-            hasError && "premium-input-error"
+            hasError && "premium-input-error",
+            extraClassName,
           )}
+          style={{ minHeight: `${Math.max(100, rows * 24 + 24)}px` }}
         />
 
         <label

@@ -33,6 +33,18 @@ export interface AppointmentNoteCategoryItem {
   dataCollectionId: string | null
   value: number | null
   environmentalChange: string | null
+  type: string | null
+}
+
+/** Summary item from GET /appointment/note (paginated list) */
+export interface AppointmentNoteSummary {
+  id: string
+  appointmentId: string
+  clientName: string
+  providerName: string
+  date: string
+  billingCodeId: string
+  billingCode: string
 }
 
 /** A category grouping items from the service plan */
@@ -58,6 +70,14 @@ export interface AppointmentNoteProvider {
   mpi: string
 }
 
+/** Service details resolved from the appointment */
+export interface AppointmentNoteServiceDetails {
+  date: string | null
+  placeOfService: string | null
+  timeInOut: string | null
+  hours: string | null
+}
+
 /** Modality from GET note response */
 export interface AppointmentNoteModality {
   id: string
@@ -70,6 +90,7 @@ export interface AppointmentNote {
   appointmentId: string
   recipient: AppointmentNoteRecipient | null
   provider: AppointmentNoteProvider | null
+  serviceDetails: AppointmentNoteServiceDetails | null
   billingCodes: string | null
   modality: AppointmentNoteModality | null
   teachingMethod: AppointmentNoteTeachingMethod | null

@@ -30,15 +30,17 @@ interface DataCollectionContentProps {
   clientId: string
   clientServicePlanId: string
   appointmentId?: string
+  appointmentDate?: string
   onNavigateToItem?: (request: NavigateToItemRequest) => void
 }
 
-export function DataCollectionContent({ clientId, clientServicePlanId, appointmentId, onNavigateToItem }: DataCollectionContentProps) {
+export function DataCollectionContent({ clientId, clientServicePlanId, appointmentId, appointmentDate, onNavigateToItem }: DataCollectionContentProps) {
   return (
     <DataCollectionView
       clientId={clientId}
       clientServicePlanId={clientServicePlanId}
       appointmentId={appointmentId}
+      appointmentDate={appointmentDate}
       onNavigateToItem={onNavigateToItem}
     />
   )
@@ -50,10 +52,11 @@ interface DataCollectionViewProps {
   clientId: string
   clientServicePlanId: string
   appointmentId?: string
+  appointmentDate?: string
   onNavigateToItem?: (request: NavigateToItemRequest) => void
 }
 
-function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNavigateToItem }: DataCollectionViewProps) {
+function DataCollectionView({ clientId, clientServicePlanId, appointmentId, appointmentDate, onNavigateToItem }: DataCollectionViewProps) {
   const {
     categories,
     activeCategoryId,
@@ -463,15 +466,15 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, onNa
                 <>
                   {/* Collection UI — varies by type */}
                   {categoryTypeName === "Frequency/Count" || categoryTypeName === "Frequency" ? (
-                    <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
+                    <FrequencyDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} appointmentDate={appointmentDate} onItemsReload={reloadItems} />
                   ) : categoryTypeName === "Rate" ? (
-                    <RateDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
+                    <RateDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} appointmentDate={appointmentDate} onItemsReload={reloadItems} />
                   ) : categoryTypeGroup === "Time-sampling" ? (
-                    <IntervalDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName ?? ""} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
+                    <IntervalDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName ?? ""} dcConfig={dcConfig} appointmentId={appointmentId} appointmentDate={appointmentDate} onItemsReload={reloadItems} />
                   ) : categoryTypeName === "Percentage of Opportunities" ? (
-                    <PercentageDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
+                    <PercentageDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} appointmentDate={appointmentDate} onItemsReload={reloadItems} />
                   ) : categoryTypeName && typeRequiresDailyAndWeekly(categoryTypeName) ? (
-                    <DurationDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} onItemsReload={reloadItems} />
+                    <DurationDatasheet clientId={clientId} activeItem={activeItem} categoryTypeName={categoryTypeName} dcConfig={dcConfig} appointmentId={appointmentId} appointmentDate={appointmentDate} onItemsReload={reloadItems} />
                   ) : (
                     <div className="rounded-xl border border-dashed border-slate-300 bg-gradient-to-br from-slate-50/80 to-white px-6 py-12 text-center">
                       <div className="inline-flex p-3 rounded-full bg-slate-100 mb-3">

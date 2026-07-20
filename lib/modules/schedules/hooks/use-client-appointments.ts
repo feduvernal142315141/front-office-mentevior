@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { getAppointmentsByClient } from "@/lib/modules/schedules/services/appointments.service"
 import type { Appointment } from "@/lib/types/appointment.types"
@@ -25,21 +25,29 @@ export function useClientAppointments(
   const { clientId, dateFrom, dateTo } = params
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const requestIdRef = useRef(0)
 
   const fetchData = useCallback(async () => {
     if (!clientId || !dateFrom || !dateTo) {
-      setAppointments([])
       return
     }
 
+    const id = ++requestIdRef.current
     setIsLoading(true)
     try {
       const data = await getAppointmentsByClient(clientId, dateFrom, dateTo)
-      setAppointments(data)
+      // Only apply if this is still the latest request (prevents stale responses)
+      if (id === requestIdRef.current) {
+        setAppointments(data)
+      }
     } catch {
-      setAppointments([])
+      if (id === requestIdRef.current) {
+        setAppointments([])
+      }
     } finally {
-      setIsLoading(false)
+      if (id === requestIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [clientId, dateFrom, dateTo])
 

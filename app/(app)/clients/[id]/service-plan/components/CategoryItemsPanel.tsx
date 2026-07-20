@@ -127,8 +127,10 @@ export function CategoryItemsPanel({
             </div>
             {items.map((item) => {
               const tmName = item.teachingMethodId ? teachingMethodMap.get(item.teachingMethodId) : undefined
-              const typeId = item.dataCollection?.typeEventCatalogId
-              const tName = typeId ? typeEventMap.get(typeId)?.name : undefined
+              const typeId = item.dataCollection?.typeEventCatalogId ?? activeCategory.typeEventCatalogId
+              const tName = typeId
+                ? (typeEventMap.get(typeId)?.name ?? activeCategory.typeEventCatalogName)
+                : undefined
               return (
                 <MappedItemRow
                   key={item.id}

@@ -221,31 +221,45 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const pos = input.selectionStart ?? 0
+    const selEnd = input.selectionEnd ?? 0
 
-    if (e.key === "Backspace") {
+    if (e.key === "Backspace" || e.key === "Delete") {
       e.preventDefault()
-      const slots = toSlots(displayValue)
-      // Backspace deletes the digit immediately to the LEFT of the caret
-      let targetSlot = digitsBeforeCaret(displayValue, pos) - 1
-      // If that slot is empty, search further back
-      while (targetSlot >= 0 && slots[targetSlot] === "") targetSlot--
 
-      if (targetSlot >= 0) {
-        slots[targetSlot] = ""
-        const next = fromSlots(slots)
+      // When there is a selection range, clear the selected content
+      if (pos !== selEnd) {
+        const before = displayValue.slice(0, pos).replace(/\D/g, "")
+        const after = displayValue.slice(selEnd).replace(/\D/g, "")
+        const next = applyMask(before + after)
         setDisplayValue(next)
         requestAnimationFrame(() => {
-          const newPos = caretAfterDigit(next, targetSlot)
+          const newPos = Math.min(pos, next.length)
           input.setSelectionRange(newPos, newPos)
         })
+        return
       }
-      return
-    }
 
-    if (e.key === "Delete") {
-      e.preventDefault()
+      if (e.key === "Backspace") {
+        const slots = toSlots(displayValue)
+        // Backspace deletes the digit immediately to the LEFT of the caret
+        let targetSlot = digitsBeforeCaret(displayValue, pos) - 1
+        // If that slot is empty, search further back
+        while (targetSlot >= 0 && slots[targetSlot] === "") targetSlot--
+
+        if (targetSlot >= 0) {
+          slots[targetSlot] = ""
+          const next = fromSlots(slots)
+          setDisplayValue(next)
+          requestAnimationFrame(() => {
+            const newPos = caretAfterDigit(next, targetSlot)
+            input.setSelectionRange(newPos, newPos)
+          })
+        }
+        return
+      }
+
+      // Delete key (no selection)
       const slots = toSlots(displayValue)
-      // Delete removes the digit at/to the RIGHT of the caret
       const slotIdx = digitsBeforeCaret(displayValue, pos)
       if (slotIdx < 4 && slots[slotIdx] !== "") {
         slots[slotIdx] = ""

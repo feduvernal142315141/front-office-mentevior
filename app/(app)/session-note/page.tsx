@@ -8,6 +8,7 @@ import { Button } from "@/components/custom/Button"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { getAppointmentNotePdfUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
 import { SessionNoteForm } from "./components/SessionNoteForm"
+import { SessionNotesTable } from "./components/SessionNotesTable"
 import { useSessionNoteForm } from "./hooks/useSessionNoteForm"
 
 export default function SessionNotePage() {
@@ -17,6 +18,36 @@ export default function SessionNotePage() {
   const appointmentId = searchParams.get("appointmentId")
   const clientId = searchParams.get("clientId")
   const billingCode = searchParams.get("billingCode")
+
+  // ─── List view (no appointmentId) ───
+  if (!appointmentId) {
+    return (
+      <div className="px-6 py-6">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
+              <NotebookPen className="h-8 w-8 text-[#037ECC]" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+                Session Notes
+              </h1>
+              <p className="text-slate-600 mt-1">View and manage all session notes</p>
+            </div>
+          </div>
+          <SessionNotesTable />
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Form view (with appointmentId) ───
+  return <SessionNoteFormView appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
+}
+
+// Extracted to a separate component so hooks are not called conditionally
+function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
+  const router = useRouter()
 
   const {
     formData,
@@ -36,7 +67,12 @@ export default function SessionNotePage() {
     categories,
     recipient,
     provider,
+    serviceDetails,
     billingCodes: noteBillingCodes,
+    noteModality,
+    itemErrors,
+    providerSignatureUrl,
+    caregiverSignatureType,
   } = useSessionNoteForm({ appointmentId, clientId })
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
@@ -55,24 +91,13 @@ export default function SessionNotePage() {
     }
   }, [appointmentId, isGeneratingPdf])
 
-  if (!appointmentId) {
-    return (
-      <div className="p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-            <NotebookPen className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-slate-800 mb-2">No Appointment Selected</h2>
-            <p className="text-slate-600 mb-6">
-              Please open a session note from the calendar by clicking the &quot;Session Note&quot; button on an appointment.
-            </p>
-            <Button variant="secondary" onClick={() => router.push("/schedules")}>
-              Go to Calendar
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const handleSaveAndRedirect = useCallback(async () => {
+    const result = await handleSubmit()
+    if (result) {
+      toast.success("Session note saved")
+      router.push("/session-note")
+    }
+  }, [handleSubmit, router])
 
   return (
     <div className="px-6 py-6">
@@ -82,7 +107,7 @@ export default function SessionNotePage() {
           <Button
             variant="secondary"
             className="h-10 w-10 p-0"
-            onClick={() => router.back()}
+            onClick={() => router.push("/session-note")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -136,7 +161,7 @@ export default function SessionNotePage() {
 
         {/* Form */}
         {!isLoadingNote && !noteError && (
-          <form onSubmit={(e) => { e.preventDefault(); handleSubmit() }} noValidate>
+          <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
             <SessionNoteForm
               formData={formData}
               updateField={updateField}
@@ -151,7 +176,12 @@ export default function SessionNotePage() {
               categories={categories}
               recipient={recipient}
               provider={provider}
+              serviceDetails={serviceDetails}
               billingCodes={noteBillingCodes}
+              modality={noteModality}
+              itemErrors={itemErrors}
+              providerSignatureUrl={providerSignatureUrl}
+              caregiverSignatureType={caregiverSignatureType}
             />
           </form>
         )}

@@ -208,6 +208,11 @@ export function DataCollectionForm({
 
   // Reset type-specific fields when type changes
   useEffect(() => {
+    // Don't clear fields while the type catalog is still loading —
+    // resolvedType.name is empty until the catalog resolves, which
+    // would incorrectly wipe out values that were already set.
+    if (!resolvedType.name) return
+
     // weeklyDailyValue is used by Frequency, Rate, Duration-like and Measurement log.
     if (
       !typeRequiresWeeklyDaily(resolvedType.name) &&

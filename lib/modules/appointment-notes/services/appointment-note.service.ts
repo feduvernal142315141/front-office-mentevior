@@ -3,8 +3,10 @@ import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import type {
   AppointmentNote,
   AppointmentNoteParticipantCatalogType,
+  AppointmentNoteSummary,
   UpdateAppointmentNotePayload,
 } from "@/lib/types/appointment-note.types"
+import type { PaginatedResponse } from "@/lib/types/response.types"
 
 function parseTeachingMethod(data: Record<string, unknown>) {
   if (data.teachingMethod && typeof data.teachingMethod === "object") {
@@ -46,6 +48,19 @@ function parseProvider(data: Record<string, unknown>) {
       credential: String(p.credential ?? ""),
       npi: String(p.npi ?? ""),
       mpi: String(p.mpi ?? ""),
+    }
+  }
+  return null
+}
+
+function parseServiceDetails(data: Record<string, unknown>) {
+  if (data.serviceDetails && typeof data.serviceDetails === "object") {
+    const sd = data.serviceDetails as Record<string, unknown>
+    return {
+      date: typeof sd.date === "string" ? sd.date : null,
+      placeOfService: typeof sd.placeOfService === "string" ? sd.placeOfService : null,
+      timeInOut: typeof sd.timeInOut === "string" ? sd.timeInOut : null,
+      hours: typeof sd.hours === "string" ? sd.hours : null,
     }
   }
   return null
@@ -116,6 +131,7 @@ export async function getAppointmentNote(
     appointmentId: String(data.appointmentId ?? appointmentId),
     recipient: parseRecipient(data),
     provider: parseProvider(data),
+    serviceDetails: parseServiceDetails(data),
     billingCodes: typeof data.billingCodes === "string" ? data.billingCodes : null,
     modality: parseModality(data),
     teachingMethod: parseTeachingMethod(data),
@@ -149,6 +165,7 @@ export async function getAppointmentNote(
                 dataCollectionId: item.dataCollectionId ? String(item.dataCollectionId) : null,
                 value: typeof item.value === "number" ? item.value : null,
                 environmentalChange: typeof item.environmentalChange === "string" ? item.environmentalChange : null,
+                type: typeof item.type === "string" ? item.type : null,
               }))
             : [],
         }))
@@ -199,4 +216,51 @@ export async function getAppointmentNotePdfUrl(
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
   const blob = new Blob([bytes], { type: "application/pdf" })
   return URL.createObjectURL(blob)
+}
+
+/**
+ * Fetch paginated list of appointment notes.
+ * GET /appointment/note
+ */
+export async function getAppointmentNotes(params?: {
+  filters?: string[]
+  orders?: string[]
+  page?: number
+  pageSize?: number
+}): Promise<PaginatedResponse<AppointmentNoteSummary>> {
+  const qs = new URLSearchParams()
+  if (params?.filters?.length) {
+    for (const f of params.filters) qs.append("filters", f)
+  }
+  if (params?.orders?.length) {
+    for (const o of params.orders) qs.append("orders", o)
+  }
+  if (params?.page !== undefined) qs.set("page", String(params.page))
+  if (params?.pageSize !== undefined) qs.set("pageSize", String(params.pageSize))
+  const query = qs.toString()
+
+  const response = await serviceGet<PaginatedResponse<AppointmentNoteSummary>>(
+    `/appointment/note${query ? `?${query}` : ""}`,
+  )
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to fetch appointment notes"))
+  }
+
+  const raw = response.data as Record<string, unknown>
+  const entities = (Array.isArray(raw.entities) ? raw.entities : []) as Record<string, unknown>[]
+  const pagination = (raw.pagination ?? { page: 0, pageSize: 10, total: 0 }) as PaginatedResponse<AppointmentNoteSummary>["pagination"]
+
+  return {
+    entities: entities.map((e) => ({
+      id: String(e.id ?? ""),
+      appointmentId: String(e.appointmentId ?? ""),
+      clientName: String(e.clientName ?? ""),
+      providerName: String(e.providerName ?? ""),
+      date: String(e.date ?? ""),
+      billingCodeId: String(e.billingCodeId ?? ""),
+      billingCode: String(e.billingCode ?? ""),
+    })),
+    pagination,
+  }
 }

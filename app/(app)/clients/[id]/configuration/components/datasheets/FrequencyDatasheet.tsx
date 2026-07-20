@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   BarChart3, Hash, FileText,
-  Minus, Plus, CalendarCheck2,
+  Minus, Plus, CalendarCheck2, ChevronLeft, ChevronRight,
 } from "lucide-react"
 import { addDays, format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -31,10 +31,11 @@ interface FrequencyDatasheetProps {
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
   appointmentId?: string
+  appointmentDate?: string
   onItemsReload?: () => Promise<void>
 }
 
-export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, onItemsReload }: FrequencyDatasheetProps) {
+export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, appointmentDate, onItemsReload }: FrequencyDatasheetProps) {
   const ds = useFrequencyDatasheet(activeItem.baseline)
 
   // --- Compute visible days FIRST (no dependency on fetched data) ---
@@ -84,16 +85,43 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     return extended
   }, [ds.rangeDays, ds.rangeMode, gapDateKeys])
 
-  // Fetch range: cover all visible days
+  // Baseline days outside the current week range (prepended as collapsible columns)
+  const baselineDays = useMemo(() => {
+    const bls = activeItem.baseline
+    if (!bls || bls.length === 0) return []
+    const rangeStart = ds.dateRange.start
+    return bls
+      .filter((b) => b.date)
+      .map((b) => parseLocalDate(b.date))
+      .filter((d) => d < rangeStart)
+      .sort((a, b) => a.getTime() - b.getTime())
+  }, [activeItem.baseline, ds.dateRange.start])
+
+  // Week days = the visible days from the current range
+  const weekDays = visibleDays
+  const [baselineCollapsed, setBaselineCollapsed] = useState(false)
+  const displayDays = useMemo(
+    () => (baselineCollapsed ? weekDays : [...baselineDays, ...weekDays]),
+    [baselineCollapsed, baselineDays, weekDays],
+  )
+  const hasBaselineDays = baselineDays.length > 0
+
+  // Fetch range: cover baselineDays + dateRange + extended visibleDays
   const fetchStart = useMemo(() => {
-    const first = visibleDays[0] ?? ds.dateRange.start
-    return format(first, "yyyy-MM-dd")
-  }, [visibleDays, ds.dateRange.start])
+    const rangeStart = ds.dateRange.start
+    const firstBaseline = baselineDays[0]
+    const firstVisible = visibleDays[0]
+    const candidates = [rangeStart, firstBaseline, firstVisible].filter(Boolean) as Date[]
+    const earliest = candidates.reduce((min, d) => (d < min ? d : min), rangeStart)
+    return format(earliest, "yyyy-MM-dd")
+  }, [ds.dateRange.start, baselineDays, visibleDays])
 
   const fetchEnd = useMemo(() => {
-    const last = visibleDays[visibleDays.length - 1] ?? ds.dateRange.end
-    return format(last, "yyyy-MM-dd")
-  }, [visibleDays, ds.dateRange.end])
+    const rangeEnd = ds.dateRange.end
+    const lastVisible = visibleDays[visibleDays.length - 1]
+    const latest = lastVisible && lastVisible > rangeEnd ? lastVisible : rangeEnd
+    return format(latest, "yyyy-MM-dd")
+  }, [ds.dateRange.end, visibleDays])
 
   // Fetch DC values + appointments for visible range
   const dcValues = useClientDataCollectionValues({
@@ -162,6 +190,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
       })
       await Promise.all(promises)
       ds.commitDcValues()
+      seededDcRef.current = null
       await dcValues.refetch()
       // Reload items to pick up objective status changes from backend auto-evaluation
       await onItemsReload?.()
@@ -220,7 +249,8 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
     return map
   }, [dcValues.records])
 
-  const gridCols = `200px repeat(${visibleDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
+  const toggleColWidth = hasBaselineDays ? "36px " : ""
+  const gridCols = `200px ${toggleColWidth}repeat(${displayDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
 
   return (
     <div className="space-y-3">
@@ -253,7 +283,21 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                   Measurement Row
                 </span>
               </div>
-              {visibleDays.map((day) => {
+              {hasBaselineDays && (
+                <button
+                  type="button"
+                  onClick={() => setBaselineCollapsed((v) => !v)}
+                  className="flex items-center justify-center border-r border-slate-100 bg-red-50/40 hover:bg-red-50 transition-colors"
+                  title={baselineCollapsed ? `Show ${baselineDays.length} baseline days` : "Hide baselines"}
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    {baselineCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-red-400" /> : <ChevronLeft className="h-3.5 w-3.5 text-red-400" />}
+                    <span className="text-[9px] font-bold text-red-400 uppercase">BL</span>
+                    {baselineCollapsed && <span className="text-[9px] font-semibold text-red-300">{baselineDays.length}</span>}
+                  </div>
+                </button>
+              )}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
@@ -276,8 +320,8 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                         {format(day, "MMM")}
                       </span>
                     </div>
-                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.status === "InProgress" && (
-                      <div className="flex items-center gap-0.5" title="In Progress">
+                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.blocked === false && (
+                      <div className="flex items-center gap-0.5" title="Editable">
                         <CalendarCheck2 className="h-3 w-3 text-emerald-500" />
                       </div>
                     )}
@@ -289,29 +333,36 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
             {/* Row: Number of Occurrences */}
             <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<BarChart3 className="h-4 w-4 text-[#037ECC]" />} title="Number of occurrences" badge="Mandatory Field" badgeColor="blue" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
                 const appointment = clientAppointments.appointmentsByDate.get(key)
-                const isInProgress = appointment?.status === "InProgress"
-                const isEditable = isBaseline || isInProgress
+                const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
                 return (
                   <div key={key} className={cn(
                     "flex items-center justify-center px-2 py-3",
                     isBaseline && "bg-red-50/60",
                     today && !isBaseline && "bg-[#037ECC]/[0.03]",
-                    !isEditable && "opacity-40",
+                    !isEditable && "opacity-30",
+                    isEditable && !isBaseline && "bg-emerald-50/40",
                   )}>
-                    <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1">
+                    <div className={cn(
+                      "flex items-center gap-1 rounded-xl p-1",
+                      isEditable ? "border border-emerald-200 bg-white shadow-sm" : "border border-slate-200 bg-slate-50/80",
+                    )}>
                       <button type="button" onClick={() => ds.decrementOccurrences(key)} disabled={entry.occurrences === 0 || !isEditable}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400">
                         <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
                       </button>
                       <input type="text" inputMode="numeric" value={entry.occurrences || ""} disabled={!isEditable}
                         onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); ds.setOccurrences(key, v === "" ? 0 : parseInt(v, 10)) }}
-                        className="h-8 w-10 rounded-lg bg-white border border-slate-200 text-center text-sm font-semibold text-slate-800 tabular-nums outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+                        className={cn(
+                          "h-8 w-10 rounded-lg text-center text-sm font-semibold tabular-nums outline-none transition-all",
+                          isEditable ? "bg-white border border-emerald-200 text-slate-800 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15" : "bg-slate-50 border border-slate-200 text-slate-400",
+                        )}
                         placeholder="0" />
                       <button type="button" onClick={() => ds.incrementOccurrences(key)} disabled={!isEditable}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-blue-50 hover:text-[#037ECC] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400">
@@ -326,15 +377,17 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
             {/* Row: Environmental Changes */}
             <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<FileText className="h-4 w-4 text-teal-500" />} title="Environmental changes" badge="Affects Chart Phase Lines" badgeColor="teal" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
-                const hasNote = entry.environmentalNote.trim().length > 0
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
+                const appointment = clientAppointments.appointmentsByDate.get(key)
+                const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
                 return (
                   <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
-                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} />
+                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} disabled={!isEditable} />
                   </div>
                 )
               })}
@@ -343,7 +396,8 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
             {/* Row: Occurrence Marks */}
             <div className="grid" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<Hash className="h-4 w-4 text-slate-400" />} title="Occurrences" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)

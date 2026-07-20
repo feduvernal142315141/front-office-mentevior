@@ -13,7 +13,7 @@ import {
 
 export function usePercentageDatasheet() {
   const [weekStart, setWeekStart] = useState<Date>(() =>
-    startOfWeek(new Date(), { weekStartsOn: 1 })
+    startOfWeek(new Date(), { weekStartsOn: 0 })
   )
   const [entries, setEntries] = useState<PercentageWeekEntries>({})
 
@@ -32,7 +32,7 @@ export function usePercentageDatasheet() {
   const goToPrevWeek = useCallback(() => setWeekStart((w) => addWeeks(w, -1)), [])
   const goToNextWeek = useCallback(() => setWeekStart((w) => addWeeks(w, 1)), [])
   const goToCurrentWeek = useCallback(
-    () => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 })),
+    () => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 0 })),
     []
   )
 

@@ -30,10 +30,11 @@ interface DurationDatasheetProps {
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
   appointmentId?: string
+  appointmentDate?: string
   onItemsReload?: () => Promise<void>
 }
 
-export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, onItemsReload }: DurationDatasheetProps) {
+export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, appointmentDate, onItemsReload }: DurationDatasheetProps) {
   const numberOfRecordings = dcConfig?.suggestedNumberOfRecordings ?? 10
   const unitOfTime = dcConfig?.unitOfTime ?? "SECONDS"
   const unitLabel = unitOfTime === "SECONDS" ? "Seconds" : unitOfTime === "MINUTES" ? "Minutes" : unitOfTime === "HOURS" ? "Hours" : "Days"
@@ -78,8 +79,19 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     return extended
   }, [ds.rangeDays, ds.rangeMode, gapDateKeys])
 
-  const fetchStart = useMemo(() => format(visibleDays[0] ?? ds.dateRange.start, "yyyy-MM-dd"), [visibleDays, ds.dateRange.start])
-  const fetchEnd = useMemo(() => format(visibleDays[visibleDays.length - 1] ?? ds.dateRange.end, "yyyy-MM-dd"), [visibleDays, ds.dateRange.end])
+  const fetchStart = useMemo(() => {
+    const rangeStart = ds.dateRange.start
+    const firstVisible = visibleDays[0]
+    const earliest = firstVisible && firstVisible < rangeStart ? firstVisible : rangeStart
+    return format(earliest, "yyyy-MM-dd")
+  }, [ds.dateRange.start, visibleDays])
+
+  const fetchEnd = useMemo(() => {
+    const rangeEnd = ds.dateRange.end
+    const lastVisible = visibleDays[visibleDays.length - 1]
+    const latest = lastVisible && lastVisible > rangeEnd ? lastVisible : rangeEnd
+    return format(latest, "yyyy-MM-dd")
+  }, [ds.dateRange.end, visibleDays])
 
   const dcValues = useClientDataCollectionValues({ clientServicePlanCategoryItemId: activeItem.id, startDate: fetchStart, endDate: fetchEnd })
   const clientAppointments = useClientAppointments({ clientId, dateFrom: fetchStart, dateTo: fetchEnd })
@@ -128,6 +140,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
       })
       await Promise.all(promises)
       ds.commitDcValues()
+      seededDcRef.current = null
       await dcValues.refetch()
       await onItemsReload?.()
       setDcSaveState("success")
@@ -213,8 +226,8 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                       <span className={cn("font-bold leading-none", ds.rangeMode === "month" ? "text-sm" : "text-lg")}>{format(day, "dd")}</span>
                       <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>{format(day, "MMM")}</span>
                     </div>
-                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.status === "InProgress" && (
-                      <div className="flex items-center gap-0.5" title="In Progress"><CalendarCheck2 className="h-3 w-3 text-emerald-500" /></div>
+                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.blocked === false && (
+                      <div className="flex items-center gap-0.5" title="Editable"><CalendarCheck2 className="h-3 w-3 text-emerald-500" /></div>
                     )}
                   </div>
                 )
@@ -230,11 +243,11 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                   const entry = ds.getEntry(key)
                   const today = ds.isToday(day)
                   const isBaseline = ds.isBaselineDate(key)
-                  const isInProgress = clientAppointments.appointmentsByDate.get(key)?.status === "InProgress"
-                  const isEditable = isBaseline || isInProgress
+                  const appointment = clientAppointments.appointmentsByDate.get(key)
+                  const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
                   const value = entry.recordings[idx]
                   return (
-                    <div key={key} className={cn("flex items-center justify-center px-2 py-2", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]", !isEditable && "opacity-40")}>
+                    <div key={key} className={cn("flex items-center justify-center px-2 py-2", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]", !isEditable && "opacity-30", isEditable && !isBaseline && "bg-emerald-50/40")}>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -246,7 +259,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                           const num = parseFloat(raw)
                           if (!isNaN(num)) ds.setRecording(key, idx, num)
                         }}
-                        className="h-8 w-16 rounded-lg bg-white border border-slate-200 text-center text-sm font-semibold text-slate-800 tabular-nums outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+                        className={cn("h-8 w-16 rounded-lg text-center text-sm font-semibold tabular-nums outline-none transition-all", isEditable ? "bg-white border border-emerald-200 text-slate-800 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15" : "bg-slate-50 border border-slate-200 text-slate-400")}
                         placeholder="—"
                       />
                     </div>
@@ -301,9 +314,11 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
+                const noteAppt = clientAppointments.appointmentsByDate.get(key)
+                const isNoteEditable = isBaseline || (noteAppt != null && !(noteAppt.blocked ?? false))
                 return (
                   <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
-                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} />
+                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} disabled={!isNoteEditable} />
                   </div>
                 )
               })}

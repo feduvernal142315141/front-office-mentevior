@@ -139,7 +139,7 @@ export function WeekCalendar({
 
   // Unified menu action handler — navigation + delete-with-confirm + delegate to hook
   const handleMenuAction = useCallback(
-    (action: string, appointmentId: string) => {
+    async (action: string, appointmentId: string) => {
       const appointment = useAppointments.getState().appointments.find(
         (apt) => apt.id === appointmentId,
       )
@@ -151,12 +151,24 @@ export function WeekCalendar({
       }
 
       if ((action === "data_collection" || action === "sup_data_collection") && appointment) {
-        if (!appointment.clientServicePlanId) {
+        // If the appointment doesn't have clientServicePlanId, try fetching the full appointment
+        let resolvedAppointment = appointment
+        if (!resolvedAppointment.clientServicePlanId) {
+          try {
+            const full = await getAppointmentById(resolvedAppointment.id)
+            if (full?.clientServicePlanId) {
+              resolvedAppointment = full
+            }
+          } catch {
+            // ignore fetch error, proceed with original
+          }
+        }
+        if (!resolvedAppointment.clientServicePlanId) {
           alert.error("No Service Plan", "This client does not have a service plan configured. Please assign one before accessing Data Collection.")
           actions.closeContextMenu()
           return
         }
-        router.push(buildDataCollectionUrl(appointment))
+        router.push(buildDataCollectionUrl(resolvedAppointment))
         actions.closeContextMenu()
         return
       }

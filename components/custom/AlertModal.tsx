@@ -87,12 +87,12 @@ export function AlertModal({ alert, onClose, onConfirm }: AlertModalProps) {
   `
 
   const titleClassName = isError
-    ? "text-[20px] font-bold leading-tight tracking-tight text-[hsl(var(--foreground))]"
+    ? "text-base font-bold leading-tight tracking-tight text-[hsl(var(--foreground))]"
     : isSuccess
-      ? "text-[20px] font-semibold leading-tight tracking-tight text-[hsl(var(--foreground)/0.92)]"
-      : "text-[20px] font-semibold leading-tight tracking-tight text-[hsl(var(--foreground))]"
+      ? "text-base font-semibold leading-tight tracking-tight text-[hsl(var(--foreground)/0.92)]"
+      : "text-base font-semibold leading-tight tracking-tight text-[hsl(var(--foreground))]"
 
-  const bodyClassName = "mt-1.5 text-[15px] leading-relaxed text-[hsl(var(--muted-foreground))] break-words"
+  const bodyClassName = "mt-1.5 text-sm leading-relaxed text-[hsl(var(--muted-foreground))] break-words"
 
   const primaryButtonClassName = isError
     ? "min-w-[140px] shadow-[0_10px_26px_-14px_hsl(var(--primary)/0.55)]"

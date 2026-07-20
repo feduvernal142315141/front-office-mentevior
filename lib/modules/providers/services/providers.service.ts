@@ -160,3 +160,24 @@ export async function updateProvider(data: UpdateProviderDto): Promise<void> {
     throw new Error(err?.message || "Failed to update provider")
   }
 }
+
+export async function getProvidersByClientIdExcludingLoggedUser(
+  clientId: string,
+  params?: { page?: number; pageSize?: number }
+): Promise<ClientProvider[]> {
+  const query = new URLSearchParams()
+  if (params?.page !== undefined) query.set("page", String(params.page))
+  if (params?.pageSize !== undefined) query.set("pageSize", String(params.pageSize))
+  const qs = query.toString()
+
+  const response = await serviceGet<PaginatedResponse<ClientProvider>>(
+    `/client/providers-by-client-id/${clientId}/excluding-logged-user${qs ? `?${qs}` : ""}`
+  )
+
+  if (response.status === 404) return []
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch providers")
+  }
+
+  return normalizeProvidersResponse(response.data)
+}

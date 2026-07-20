@@ -120,8 +120,8 @@ export async function getAppointments(
 
 
 /**
- * Fetch in-progress appointments for a client via GET /appointment/by-client.
- * Returns only appointments whose effective status is "In Progress" within the date range.
+ * Fetch appointments for a client via GET /appointment/by-client.
+ * Returns all appointments (any status) with the `blocked` field.
  */
 export async function getAppointmentsByClient(
   clientId: string,

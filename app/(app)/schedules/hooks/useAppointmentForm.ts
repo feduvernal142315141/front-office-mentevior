@@ -7,7 +7,7 @@ import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appoi
 import { useApprovedBillingCodes } from "@/lib/modules/schedules/hooks/use-approved-billing-codes"
 import { validateAppointmentEventData } from "@/lib/modules/schedules/services/appointment-validate.service"
 import { usePriorAuthorizationLabel } from "@/lib/modules/schedules/hooks/use-prior-authorization-label"
-import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
+import { useProvidersExcludingLoggedUser } from "@/lib/modules/providers/hooks/use-providers-excluding-logged-user"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { getClientAddressById } from "@/lib/modules/client-addresses/services/client-addresses.service"
@@ -120,7 +120,7 @@ export function useAppointmentForm({
   const {
     providers: clientProviders,
     isLoading: clientProvidersLoading,
-  } = useProvidersByClient(formData.clientId || null)
+  } = useProvidersExcludingLoggedUser(formData.clientId || null)
 
   const { addresses, isLoading: addressesLoading } = useClientAddresses(
     formData.clientId || null,

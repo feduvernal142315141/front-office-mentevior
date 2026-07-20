@@ -1,8 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import {
   Users, BookOpen, AlertTriangle, Stethoscope,
-  Target, BarChart3, User, Building2,
+  Target, BarChart3, User, Building2, ClipboardList, PenTool, CheckCircle2,
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
@@ -16,9 +17,13 @@ import type {
   AppointmentNoteCategory,
   AppointmentNoteRecipient,
   AppointmentNoteProvider,
+  AppointmentNoteServiceDetails,
+  AppointmentNoteModality,
   ParticipantCatalogItem,
 } from "@/lib/types/appointment-note.types"
 import { cn } from "@/lib/utils"
+import type { SignatureType } from "@/lib/types/caregiver-signature-config.types"
+import { SignaturePad } from "@/components/custom/SignaturePad"
 import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
 
 interface SessionNoteFormProps {
@@ -35,7 +40,12 @@ interface SessionNoteFormProps {
   categories: AppointmentNoteCategory[]
   recipient: AppointmentNoteRecipient | null
   provider: AppointmentNoteProvider | null
+  serviceDetails: AppointmentNoteServiceDetails | null
   billingCodes: string | null
+  modality: AppointmentNoteModality | null
+  itemErrors?: Set<string>
+  providerSignatureUrl?: string | null
+  caregiverSignatureType?: SignatureType | null
 }
 
 export function SessionNoteForm({
@@ -52,7 +62,12 @@ export function SessionNoteForm({
   categories,
   recipient,
   provider,
+  serviceDetails,
   billingCodes,
+  modality,
+  itemErrors,
+  providerSignatureUrl,
+  caregiverSignatureType,
 }: SessionNoteFormProps) {
   const categoriesWithItems = categories.filter((c) => c.items.length > 0)
   const categoriesEmpty = categories.filter((c) => c.items.length === 0)
@@ -60,7 +75,7 @@ export function SessionNoteForm({
   const participantItems = participantCatalog.map((p) => ({ id: p.id, name: p.name }))
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-32">
       {/* ─── Context Header: Recipient + Provider ─── */}
       {(recipient || provider) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -93,6 +108,38 @@ export function SessionNoteForm({
             </div>
           )}
         </div>
+      )}
+
+      {/* ─── Service Details ─── */}
+      {(serviceDetails || billingCodes || modality) && (
+        <Section icon={<ClipboardList className="h-4 w-4" />} title="Service Details">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Date</span>
+              <span className="text-sm font-medium text-slate-800">{serviceDetails?.date ?? "—"}</span>
+            </div>
+            <div>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Place of Service</span>
+              <span className="text-sm font-medium text-slate-800">{serviceDetails?.placeOfService ?? "—"}</span>
+            </div>
+            <div>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Time In/Out</span>
+              <span className="text-sm font-medium text-slate-800">{serviceDetails?.timeInOut ?? "—"}</span>
+            </div>
+            <div>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Hours</span>
+              <span className="text-sm font-medium text-slate-800">{serviceDetails?.hours ?? "—"}</span>
+            </div>
+            <div>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Modality</span>
+              <span className="text-sm font-medium text-slate-800">{modality?.name ?? "—"}</span>
+            </div>
+            <div>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Billing Codes</span>
+              <span className="text-sm font-medium text-slate-800">{billingCodes ?? "—"}</span>
+            </div>
+          </div>
+        </Section>
       )}
 
       {/* ─── Row 1: Teaching Method + Session Details (side by side) ─── */}
@@ -135,6 +182,7 @@ export function SessionNoteForm({
                     categoryItems={formData.categoryItems}
                     onValueChange={updateItemValue}
                     onEnvChangeChange={updateItemEnvironmentalChange}
+                    itemErrors={itemErrors}
                   />
                 ))}
               </div>
@@ -176,8 +224,16 @@ export function SessionNoteForm({
 
       {/* ─── Row 4: Session Summary (full width) ─── */}
       <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
-        <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={4} />
+        <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} />
       </Section>
+
+      {/* ─── Row 5: Signatures ─── */}
+      <SignatureSection
+        provider={provider}
+        providerSignatureUrl={providerSignatureUrl}
+        serviceDate={serviceDetails?.date}
+        caregiverSignatureType={caregiverSignatureType}
+      />
 
       <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText="Save Session Note" />
     </div>
@@ -201,11 +257,12 @@ function Section({ icon, title, subtitle, children }: { icon: React.ReactNode; t
   )
 }
 
-function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChange }: {
+function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChange, itemErrors }: {
   category: AppointmentNoteCategory
   categoryItems: Record<string, { value: number | null; environmentalChange: string }>
   onValueChange: (itemId: string, value: number | null) => void
   onEnvChangeChange: (itemId: string, text: string) => void
+  itemErrors?: Set<string>
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden">
@@ -219,23 +276,42 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
           const edited = categoryItems[item.id]
           const currentValue = edited?.value ?? item.value
           const currentEnv = edited?.environmentalChange ?? item.environmentalChange ?? ""
+          const hasError = itemErrors?.has(item.id)
           return (
             <div key={item.id} className="px-4 py-3 space-y-2">
-              <span className="text-sm font-medium text-slate-700 block">{item.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                {item.type && (
+                  <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                    {item.type}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-semibold uppercase text-slate-400">Value</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={currentValue ?? ""}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/[^0-9.]/g, "")
-                      onValueChange(item.id, raw === "" ? null : parseFloat(raw))
-                    }}
-                    placeholder="—"
-                    className="h-7 w-16 rounded-lg border border-slate-200 bg-white text-center text-sm font-semibold tabular-nums text-slate-800 outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all"
-                  />
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold uppercase text-slate-400">Value</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      data-item-value={item.id}
+                      value={currentValue ?? ""}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9.]/g, "")
+                        onValueChange(item.id, raw === "" ? null : parseFloat(raw))
+                      }}
+                      placeholder="—"
+                      className={cn(
+                        "h-7 w-16 rounded-lg border bg-white text-center text-sm font-semibold tabular-nums text-slate-800 outline-none transition-all",
+                        hasError
+                          ? "border-red-400 ring-1 ring-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                          : "border-slate-200 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15",
+                      )}
+                    />
+                  </div>
+                  {hasError && (
+                    <span className="text-[10px] font-medium text-red-500">Value is required</span>
+                  )}
                 </div>
                 <div className="flex-1 flex items-center gap-1.5 min-w-0">
                   <span className="text-[10px] font-semibold uppercase text-slate-400 shrink-0">Env.</span>
@@ -256,3 +332,123 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
+function SignatureSection({ provider, providerSignatureUrl, serviceDate, caregiverSignatureType }: {
+  provider: AppointmentNoteProvider | null
+  providerSignatureUrl?: string | null
+  serviceDate?: string | null
+  caregiverSignatureType?: SignatureType | null
+}) {
+  const [caregiverChecked, setCaregiverChecked] = useState(false)
+
+  return (
+    <Section icon={<PenTool className="h-4 w-4" />} title="Signatures">
+      <div className="space-y-6">
+        {/* Certification text */}
+        <p className="text-sm italic text-slate-600">
+          By signing below, I certify that I provided the above services following all applicable policies and procedures
+        </p>
+
+        {/* Provider signature — read only */}
+        <div className="grid grid-cols-3 gap-6">
+          {/* Name / Credential */}
+          <div className="space-y-2">
+            <div className="min-h-[60px] flex flex-col justify-end">
+              <p className="text-sm font-semibold text-slate-800">{provider?.name ?? "—"}</p>
+              <p className="text-xs text-slate-500">{provider?.credential ?? ""}</p>
+            </div>
+            <div className="border-t border-slate-300" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Provider Name / Credential</span>
+          </div>
+
+          {/* Signature image */}
+          <div className="space-y-2">
+            <div className="min-h-[60px] flex items-end justify-center">
+              {providerSignatureUrl ? (
+                <img
+                  src={providerSignatureUrl}
+                  alt="Provider signature"
+                  className="max-h-[56px] max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-slate-400 italic">No signature on file</span>
+              )}
+            </div>
+            <div className="border-t border-slate-300" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Signature</span>
+          </div>
+
+          {/* Date */}
+          <div className="space-y-2">
+            <div className="min-h-[60px] flex flex-col justify-end">
+              <p className="text-sm font-semibold text-slate-800">{serviceDate ?? "—"}</p>
+            </div>
+            <div className="border-t border-slate-300" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Date</span>
+          </div>
+        </div>
+
+        {/* Caregiver confirmation */}
+        {caregiverSignatureType === "CHECKMARK" && (
+          <div className="border-t border-slate-100 pt-5">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle2 className="h-4 w-4 text-[#037ECC]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Caregiver Confirmation</span>
+            </div>
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={caregiverChecked}
+                onChange={(e) => setCaregiverChecked(e.target.checked)}
+                className="mt-0.5 h-5 w-5 rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 cursor-pointer"
+              />
+              <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
+                Caregiver confirms participation in this session
+              </span>
+            </label>
+          </div>
+        )}
+
+        {caregiverSignatureType === "SIGNATURE" && (
+          <CaregiverSignaturePad />
+        )}
+      </div>
+    </Section>
+  )
+}
+
+function CaregiverSignaturePad() {
+  const pad = SignaturePad({ width: 600, height: 180 })
+
+  return (
+    <div className="border-t border-slate-100 pt-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <PenTool className="h-4 w-4 text-[#037ECC]" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Caregiver Signature</span>
+        </div>
+        {pad.hasDrawn && (
+          <button
+            type="button"
+            onClick={pad.clear}
+            className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      <div className="flex flex-col items-center gap-3">
+        <canvas
+          {...pad.canvasProps}
+          className={cn(
+            pad.canvasProps.className,
+            "w-full max-w-[600px] rounded-xl border-2 border-slate-200 bg-white cursor-crosshair",
+            "hover:border-[#037ECC]/30 transition-colors",
+          )}
+        />
+        {!pad.hasDrawn && (
+          <p className="text-xs text-slate-400">Draw caregiver signature above</p>
+        )}
+      </div>
+    </div>
+  )
+}

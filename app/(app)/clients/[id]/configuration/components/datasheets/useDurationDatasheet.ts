@@ -72,7 +72,7 @@ export function useDurationDatasheet(
   // Date range
   const dateRange = useMemo(() => {
     if (rangeMode === "week") {
-      return { start: startOfWeek(anchorDate, { weekStartsOn: 1 }), end: endOfWeek(anchorDate, { weekStartsOn: 1 }) }
+      return { start: startOfWeek(anchorDate, { weekStartsOn: 0 }), end: endOfWeek(anchorDate, { weekStartsOn: 0 }) }
     }
     return { start: startOfMonth(anchorDate), end: endOfMonth(anchorDate) }
   }, [anchorDate, rangeMode])
@@ -85,7 +85,7 @@ export function useDurationDatasheet(
   }, [dateRange])
 
   const weekDays = useMemo(() => {
-    const start = startOfWeek(anchorDate, { weekStartsOn: 1 })
+    const start = startOfWeek(anchorDate, { weekStartsOn: 0 })
     return Array.from({ length: 7 }, (_, i) => addDays(start, i))
   }, [anchorDate])
 

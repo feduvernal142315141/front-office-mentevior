@@ -32,10 +32,11 @@ interface RateDatasheetProps {
   categoryTypeName: string
   dcConfig: DataCollectionConfig | null
   appointmentId?: string
+  appointmentDate?: string
   onItemsReload?: () => Promise<void>
 }
 
-export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, onItemsReload }: RateDatasheetProps) {
+export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, appointmentDate, onItemsReload }: RateDatasheetProps) {
   const ds = useFrequencyDatasheet(activeItem.baseline)
   const unitOfTime = (dcConfig?.unitOfTime as ServicePlanUnitOfTime) ?? ServicePlanUnitOfTime.MINUTES
   const unitLabel = unitOfTimeLabel(unitOfTime)
@@ -86,14 +87,18 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
   }, [ds.rangeDays, ds.rangeMode, gapDateKeys])
 
   const fetchStart = useMemo(() => {
-    const first = visibleDays[0] ?? ds.dateRange.start
-    return format(first, "yyyy-MM-dd")
-  }, [visibleDays, ds.dateRange.start])
+    const rangeStart = ds.dateRange.start
+    const firstVisible = visibleDays[0]
+    const earliest = firstVisible && firstVisible < rangeStart ? firstVisible : rangeStart
+    return format(earliest, "yyyy-MM-dd")
+  }, [ds.dateRange.start, visibleDays])
 
   const fetchEnd = useMemo(() => {
-    const last = visibleDays[visibleDays.length - 1] ?? ds.dateRange.end
-    return format(last, "yyyy-MM-dd")
-  }, [visibleDays, ds.dateRange.end])
+    const rangeEnd = ds.dateRange.end
+    const lastVisible = visibleDays[visibleDays.length - 1]
+    const latest = lastVisible && lastVisible > rangeEnd ? lastVisible : rangeEnd
+    return format(latest, "yyyy-MM-dd")
+  }, [ds.dateRange.end, visibleDays])
 
   const dcValues = useClientDataCollectionValues({
     clientServicePlanCategoryItemId: activeItem.id,
@@ -153,6 +158,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
       })
       await Promise.all(promises)
       ds.commitDcValues()
+      seededDcRef.current = null
       await dcValues.refetch()
       await onItemsReload?.()
       setDcSaveState("success")
@@ -239,8 +245,8 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
                       <span className={cn("font-bold leading-none", ds.rangeMode === "month" ? "text-sm" : "text-lg")}>{format(day, "dd")}</span>
                       <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>{format(day, "MMM")}</span>
                     </div>
-                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.status === "InProgress" && (
-                      <div className="flex items-center gap-0.5" title="In Progress">
+                    {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.blocked === false && (
+                      <div className="flex items-center gap-0.5" title="Editable">
                         <CalendarCheck2 className="h-3 w-3 text-emerald-500" />
                       </div>
                     )}
@@ -257,23 +263,24 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
-                const isInProgress = clientAppointments.appointmentsByDate.get(key)?.status === "InProgress"
-                const isEditable = isBaseline || isInProgress
+                const appointment = clientAppointments.appointmentsByDate.get(key)
+                const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
                 return (
                   <div key={key} className={cn(
                     "flex items-center justify-center px-2 py-3",
                     isBaseline && "bg-red-50/60",
                     today && !isBaseline && "bg-[#037ECC]/[0.03]",
-                    !isEditable && "opacity-40",
+                    !isEditable && "opacity-30",
+                    isEditable && !isBaseline && "bg-emerald-50/40",
                   )}>
-                    <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1">
+                    <div className={cn("flex items-center gap-1 rounded-xl p-1", isEditable ? "border border-emerald-200 bg-white shadow-sm" : "border border-slate-200 bg-slate-50/80")}>
                       <button type="button" onClick={() => ds.decrementOccurrences(key)} disabled={entry.occurrences === 0 || !isEditable}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400">
                         <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
                       </button>
                       <input type="text" inputMode="numeric" value={entry.occurrences || ""} disabled={!isEditable}
                         onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); ds.setOccurrences(key, v === "" ? 0 : parseInt(v, 10)) }}
-                        className="h-8 w-10 rounded-lg bg-white border border-slate-200 text-center text-sm font-semibold text-slate-800 tabular-nums outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+                        className={cn("h-8 w-10 rounded-lg text-center text-sm font-semibold tabular-nums outline-none transition-all", isEditable ? "bg-white border border-emerald-200 text-slate-800 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15" : "bg-slate-50 border border-slate-200 text-slate-400")}
                         placeholder="0" />
                       <button type="button" onClick={() => ds.incrementOccurrences(key)} disabled={!isEditable}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-blue-50 hover:text-[#037ECC] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400">
@@ -337,9 +344,11 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
+                const noteAppt = clientAppointments.appointmentsByDate.get(key)
+                const isNoteEditable = isBaseline || (noteAppt != null && !(noteAppt.blocked ?? false))
                 return (
                   <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
-                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} />
+                    <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} disabled={!isNoteEditable} />
                   </div>
                 )
               })}

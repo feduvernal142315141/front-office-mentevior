@@ -67,7 +67,7 @@ export function DatasheetHeader({
 
   const selectedWeekRange = useMemo(() => {
     if (!selectedDay) return null
-    const weekStart = startOfWeek(selectedDay, { weekStartsOn: 1 })
+    const weekStart = startOfWeek(selectedDay, { weekStartsOn: 0 })
     const weekEnd = addDays(weekStart, 6)
     return { start: weekStart, end: weekEnd }
   }, [selectedDay])
@@ -245,18 +245,21 @@ export function DatasheetHeader({
 
 // ─── Shared sub-components ───────────────────────────────────────────────────
 
-export function NoteButton({ value, onChange, dateLabel }: { value: string; onChange: (v: string) => void; dateLabel: string }) {
+export function NoteButton({ value, onChange, dateLabel, disabled }: { value: string; onChange: (v: string) => void; dateLabel: string; disabled?: boolean }) {
   const hasNote = value.trim().length > 0
   return (
     <Popover>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild disabled={disabled}>
         <button
           type="button"
+          disabled={disabled}
           className={cn(
             "relative flex items-center justify-center rounded-xl border transition-all",
-            hasNote
-              ? "h-9 w-full border-teal-200 bg-teal-50/80 text-teal-600 hover:border-teal-300 hover:bg-teal-50"
-              : "h-9 w-full border-slate-200 bg-slate-50/60 text-slate-400 hover:border-slate-300 hover:bg-white hover:text-slate-500",
+            disabled
+              ? "h-9 w-full border-slate-200 bg-slate-50/60 text-slate-300 cursor-not-allowed opacity-30"
+              : hasNote
+                ? "h-9 w-full border-teal-200 bg-teal-50/80 text-teal-600 hover:border-teal-300 hover:bg-teal-50"
+                : "h-9 w-full border-slate-200 bg-slate-50/60 text-slate-400 hover:border-slate-300 hover:bg-white hover:text-slate-500",
           )}
         >
           {hasNote ? (

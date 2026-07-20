@@ -11,7 +11,7 @@ import {
 } from "@/lib/utils/unit-calculation"
 import { toApiTime } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
-import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-providers-by-client"
+import { useProvidersExcludingLoggedUser } from "@/lib/modules/providers/hooks/use-providers-excluding-logged-user"
 import {
   createSubEvent,
   updateSubEvent,
@@ -71,7 +71,7 @@ export function SupervisionConfigModal({
   const {
     providers: clientProviders,
     isLoading: rbtProvidersLoading,
-  } = useProvidersByClient(open && clientId ? clientId : null)
+  } = useProvidersExcludingLoggedUser(open && clientId ? clientId : null)
 
   const rbtOptions = useMemo(
     () =>

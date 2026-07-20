@@ -212,6 +212,11 @@ export function ClientDataCollectionForm({
     useUnitMeasurementCatalog(isMeasurementLogType)
 
   useEffect(() => {
+    // Don't clear fields while the type catalog is still loading —
+    // resolvedType.name is empty until the catalog resolves, which
+    // would incorrectly wipe out values that were already set.
+    if (!resolvedType.name) return
+
     if (
       !typeRequiresWeeklyDaily(resolvedType.name) &&
       !typeRequiresDailyAndWeekly(resolvedType.name) &&
