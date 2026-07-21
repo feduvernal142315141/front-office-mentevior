@@ -3,7 +3,7 @@
 import { useState } from "react"
 import {
   Users, BookOpen, AlertTriangle, Stethoscope,
-  Target, BarChart3, User, Building2, ClipboardList, PenTool, CheckCircle2,
+  Target, BarChart3, User, Building2, ClipboardList, PenTool, CheckCircle2, PenLine,
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
@@ -22,7 +22,7 @@ import type {
   ParticipantCatalogItem,
 } from "@/lib/types/appointment-note.types"
 import { cn } from "@/lib/utils"
-import { useSignaturePad } from "@/components/custom/SignaturePad"
+import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
 import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
 
 interface SessionNoteFormProps {
@@ -256,11 +256,13 @@ export function SessionNoteForm({
         provider={provider}
         providerSignatureUrl={providerSignatureUrl}
         serviceDate={serviceDetails?.date}
+        serviceTime={serviceDetails?.timeInOut}
         useCheckmarkSignature={useCheckmarkSignature}
         caregiverChecked={caregiverSignatureChecked}
         onCaregiverCheckedChange={onCaregiverCheckedChange}
         onCaregiverSignatureChange={onCaregiverSignatureChange}
         caregiverSignatureImage={caregiverSignatureImage}
+        notCanEdit={notCanEdit}
       />
 
       <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText="Save Session Note" disabled={blocked && notCanEdit} />
@@ -361,145 +363,161 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage }: {
+function SignatureSection({ provider, providerSignatureUrl, serviceDate, serviceTime, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
   provider: AppointmentNoteProvider | null
   providerSignatureUrl?: string | null
   serviceDate?: string | null
+  serviceTime?: string | null
   useCheckmarkSignature?: boolean
   caregiverChecked?: boolean
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
+  notCanEdit?: boolean
 }) {
+  const [editorOpen, setEditorOpen] = useState(false)
+
+  const handleSaveSignature = (base64: string) => {
+    onCaregiverSignatureChange?.(`data:image/png;base64,${base64}`)
+  }
+
   return (
     <Section icon={<PenTool className="h-4 w-4" />} title="Signatures">
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Certification text */}
         <p className="text-sm italic text-slate-600">
           By signing below, I certify that I provided the above services following all applicable policies and procedures
         </p>
 
-        {/* Provider info — read only */}
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <div className="min-h-[40px] flex flex-col justify-end">
+        {/* ─── Document-style signature block ─── */}
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+
+          {/* Row 1 — Provider */}
+          <div className="grid grid-cols-2 border-b border-slate-100">
+            {/* Provider name */}
+            <div className="px-6 py-5 border-r border-slate-100">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Provider Name / Credential</span>
               <p className="text-sm font-semibold text-slate-800">{provider?.name ?? "—"}</p>
-              <p className="text-xs text-slate-500">{provider?.credential ?? ""}</p>
+              {provider?.credential && (
+                <p className="text-xs text-slate-500 mt-0.5">{provider.credential}</p>
+              )}
             </div>
-            <div className="border-t border-slate-300" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Provider Name / Credential</span>
+            {/* Provider signature */}
+            <div className="px-6 py-5">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Signature</span>
+              <div className="relative min-h-[64px] flex items-end pb-3">
+                {providerSignatureUrl ? (
+                  <img
+                    src={providerSignatureUrl}
+                    alt="Provider signature"
+                    className="max-h-[52px] max-w-full object-contain"
+                  />
+                ) : (
+                  <span className="text-xs text-slate-300 italic">No signature on file</span>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 border-b border-slate-300/50" />
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <div className="min-h-[40px] flex flex-col justify-end">
+
+          {/* Row 2 — Caregiver */}
+          <div className="grid grid-cols-2 border-b border-slate-100">
+            {/* Caregiver info */}
+            <div className="px-6 py-5 border-r border-slate-100">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Caregiver</span>
+              {useCheckmarkSignature ? (
+                <label className="flex items-start gap-2.5 cursor-pointer group mt-1">
+                  <input
+                    type="checkbox"
+                    checked={caregiverChecked ?? false}
+                    onChange={(e) => onCaregiverCheckedChange?.(e.target.checked)}
+                    disabled={notCanEdit}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 cursor-pointer disabled:opacity-50"
+                  />
+                  <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
+                    Caregiver confirms participation in this session
+                  </span>
+                </label>
+              ) : (
+                <p className="text-sm text-slate-600 mt-1">Caregiver Signature</p>
+              )}
+            </div>
+            {/* Caregiver signature */}
+            <div className="px-6 py-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  {useCheckmarkSignature ? "Confirmation" : "Signature"}
+                </span>
+                {!useCheckmarkSignature && !notCanEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setEditorOpen(true)}
+                    className={cn(
+                      "h-7 w-7 rounded-lg border border-slate-200 bg-white inline-flex items-center justify-center",
+                      "text-slate-500 hover:text-[#037ECC] hover:border-[#037ECC]/40 transition-all duration-150",
+                    )}
+                    title="Edit signature"
+                    aria-label="Edit caregiver signature"
+                  >
+                    <PenLine className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="relative min-h-[64px] flex items-end pb-3">
+                {useCheckmarkSignature ? (
+                  caregiverChecked ? (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      <span className="text-sm font-medium text-emerald-700">Confirmed</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-300 italic">Pending confirmation</span>
+                  )
+                ) : caregiverSignatureImage ? (
+                  <img
+                    src={caregiverSignatureImage}
+                    alt="Caregiver signature"
+                    className="max-h-[52px] max-w-full object-contain"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => !notCanEdit && setEditorOpen(true)}
+                    disabled={notCanEdit}
+                    className="text-xs text-slate-300 italic hover:text-[#037ECC] transition-colors disabled:hover:text-slate-300"
+                  >
+                    Click to sign
+                  </button>
+                )}
+                {!useCheckmarkSignature && (
+                  <div className="absolute bottom-0 left-0 right-0 border-b border-slate-300/50" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3 — Date / Time */}
+          <div className="grid grid-cols-2">
+            <div className="px-6 py-4 border-r border-slate-100">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Date</span>
               <p className="text-sm font-semibold text-slate-800">{serviceDate ?? "—"}</p>
             </div>
-            <div className="border-t border-slate-300" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Date</span>
+            <div className="px-6 py-4">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Time</span>
+              <p className="text-sm font-semibold text-slate-800">{serviceTime ?? "—"}</p>
+            </div>
           </div>
         </div>
 
-        {/* Caregiver — checkmark mode */}
-        {useCheckmarkSignature && (
-          <div className="border-t border-slate-100 pt-5">
-            <div className="flex items-center gap-2 mb-4">
-              <CheckCircle2 className="h-4 w-4 text-[#037ECC]" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Caregiver Confirmation</span>
-            </div>
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={caregiverChecked ?? false}
-                onChange={(e) => onCaregiverCheckedChange?.(e.target.checked)}
-                className="mt-0.5 h-5 w-5 rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 cursor-pointer"
-              />
-              <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
-                Caregiver confirms participation in this session
-              </span>
-            </label>
-          </div>
-        )}
-
-        {/* Caregiver — electronic signature mode */}
+        {/* Signature Editor Modal (caregiver) */}
         {!useCheckmarkSignature && (
-          <CaregiverSignaturePad savedImage={caregiverSignatureImage} onSignatureChange={onCaregiverSignatureChange} />
+          <SignatureEditorModal
+            open={editorOpen}
+            onOpenChange={setEditorOpen}
+            onSave={handleSaveSignature}
+          />
         )}
       </div>
     </Section>
-  )
-}
-
-function CaregiverSignaturePad({ savedImage, onSignatureChange }: { savedImage?: string | null; onSignatureChange?: (base64: string | null) => void }) {
-  const [forceRedraw, setForceRedraw] = useState(false)
-  const showPad = forceRedraw || !savedImage
-  const pad = useSignaturePad({
-    onDrawEnd: () => {
-      setTimeout(() => {
-        onSignatureChange?.(pad.toDataURL("image/png"))
-      }, 0)
-    },
-  })
-
-  const handleClear = () => {
-    pad.clear()
-    onSignatureChange?.(null)
-  }
-
-  const handleReDraw = () => {
-    setForceRedraw(true)
-    onSignatureChange?.(null)
-  }
-
-  return (
-    <div className="border-t border-slate-100 pt-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <PenTool className="h-4 w-4 text-[#037ECC]" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Caregiver Signature</span>
-        </div>
-        <div className="flex items-center gap-3">
-          {!showPad && savedImage && (
-            <button type="button" onClick={handleReDraw} className="text-xs font-medium text-[#037ECC] hover:text-[#037ECC]/80 transition-colors">
-              Re-sign
-            </button>
-          )}
-          {showPad && pad.hasDrawn && (
-            <button type="button" onClick={handleClear} className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors">
-              Clear
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Saved signature preview */}
-      {!showPad && savedImage && (
-        <div className="flex items-center justify-center rounded-2xl border-2 border-emerald-200 bg-white p-6" style={{ minHeight: "280px" }}>
-          <img src={savedImage} alt="Caregiver signature" className="max-h-[240px] max-w-full object-contain" />
-        </div>
-      )}
-
-      {/* Draw pad */}
-      {showPad && (
-        <div className="relative overflow-hidden rounded-2xl">
-          <canvas
-            ref={pad.canvasRef}
-            className={cn(
-              "rounded-2xl border-2 bg-white touch-none select-none cursor-crosshair transition-colors w-full",
-              pad.hasDrawn ? "border-emerald-200" : "border-slate-200 hover:border-[#037ECC]/30",
-            )}
-            style={{ height: "280px" }}
-          />
-          {/* Signature line */}
-          <div className="absolute bottom-12 left-10 right-10 border-b border-slate-300/50" />
-          <div className="absolute bottom-8 left-10">
-            <span className="text-[10px] text-slate-300 uppercase tracking-wider">Caregiver signature</span>
-          </div>
-          {!pad.hasDrawn && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-base text-slate-200 select-none tracking-wide">Sign here</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
   )
 }
