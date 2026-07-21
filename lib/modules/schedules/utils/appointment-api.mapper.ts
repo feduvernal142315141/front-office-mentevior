@@ -240,6 +240,7 @@ export function fromApiAppointment(api: ApiAppointmentItem): Appointment {
     timeInit: api.timeInit,
     timeEnd: api.timeEnd,
     blocked: Boolean(api.blocked),
+    notCanEdit: Boolean(api.notCanEdit),
     addSupervision: !!api.supervision,
     supervision: api.supervision,
     supervisionRbtId: api.supervision?.providerId,

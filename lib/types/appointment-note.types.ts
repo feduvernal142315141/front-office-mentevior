@@ -105,6 +105,8 @@ export interface AppointmentNote {
   useCheckmarkSignature: boolean
   caregiverSignatureImage: string | null
   caregiverSignatureChecked: boolean | null
+  blocked: boolean
+  notCanEdit: boolean
 }
 
 /** Participant payload for PUT /appointment/note */

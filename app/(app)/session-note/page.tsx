@@ -77,6 +77,8 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     setCaregiverChecked,
     caregiverSignatureImage,
     setCaregiverSignatureImage,
+    noteBlocked,
+    noteNotCanEdit,
   } = useSessionNoteForm({ appointmentId, clientId })
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
@@ -191,6 +193,8 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
               onCaregiverCheckedChange={setCaregiverChecked}
               onCaregiverSignatureChange={setCaregiverSignatureImage}
               caregiverSignatureImage={caregiverSignatureImage}
+              blocked={noteBlocked}
+              notCanEdit={noteNotCanEdit}
             />
           </form>
         )}

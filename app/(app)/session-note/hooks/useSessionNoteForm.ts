@@ -275,5 +275,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     setCaregiverChecked,
     caregiverSignatureImage,
     setCaregiverSignatureImage,
+    noteBlocked: note?.blocked ?? false,
+    noteNotCanEdit: note?.notCanEdit ?? false,
   }
 }

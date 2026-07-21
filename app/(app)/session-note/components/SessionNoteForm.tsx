@@ -50,6 +50,8 @@ interface SessionNoteFormProps {
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
+  blocked?: boolean
+  notCanEdit?: boolean
 }
 
 export function SessionNoteForm({
@@ -77,6 +79,8 @@ export function SessionNoteForm({
   onCaregiverCheckedChange,
   onCaregiverSignatureChange,
   caregiverSignatureImage,
+  blocked,
+  notCanEdit,
 }: SessionNoteFormProps) {
   const categoriesWithItems = categories.filter((c) => c.items.length > 0)
   const categoriesEmpty = categories.filter((c) => c.items.length === 0)
@@ -160,7 +164,7 @@ export function SessionNoteForm({
             onChange={(val) => updateField("teachingMethodId", val)}
             options={teachingMethodOptions}
             searchable
-            disabled={isLoadingCatalogs}
+            disabled={isLoadingCatalogs || notCanEdit}
           />
         </Section>
 
@@ -170,15 +174,15 @@ export function SessionNoteForm({
             value={formData.modalityId}
             onChange={(val) => updateField("modalityId", val)}
             options={modalityOptions}
-            disabled={isLoadingCatalogs}
+            disabled={isLoadingCatalogs || notCanEdit}
           />
         </Section>
 
         <Section icon={<Stethoscope className="h-4 w-4" />} title="Session Details">
           <div className="space-y-3">
-            <FloatingInput label="Reason Caregiver Not Present" value={formData.reasonCaregiverNotPresent} onChange={(v) => updateField("reasonCaregiverNotPresent", v)} onBlur={() => {}} />
-            <FloatingInput label="Medical Concerns" value={formData.medicalConcerns} onChange={(v) => updateField("medicalConcerns", v)} onBlur={() => {}} />
-            <PremiumSwitch label="Crisis Involved" description="Was there a crisis during this session?" checked={formData.crisisInvolved} onCheckedChange={(v) => updateField("crisisInvolved", v)} compact />
+            <FloatingInput label="Reason Caregiver Not Present" value={formData.reasonCaregiverNotPresent} onChange={(v) => updateField("reasonCaregiverNotPresent", v)} onBlur={() => {}} disabled={notCanEdit} />
+            <FloatingInput label="Medical Concerns" value={formData.medicalConcerns} onChange={(v) => updateField("medicalConcerns", v)} onBlur={() => {}} disabled={notCanEdit} />
+            <PremiumSwitch label="Crisis Involved" description="Was there a crisis during this session?" checked={formData.crisisInvolved} onCheckedChange={(v) => updateField("crisisInvolved", v)} compact disabled={notCanEdit} />
           </div>
         </Section>
       </div>
@@ -202,6 +206,7 @@ export function SessionNoteForm({
                     onValueChange={updateItemValue}
                     onEnvChangeChange={updateItemEnvironmentalChange}
                     itemErrors={itemErrors}
+                    disabled={blocked}
                   />
                 ))}
               </div>
@@ -229,21 +234,21 @@ export function SessionNoteForm({
             items={participantItems}
             selectedIds={formData.participantIds}
             onChange={(ids) => updateField("participantIds", ids)}
-            disabled={isLoadingCatalogs}
+            disabled={isLoadingCatalogs || notCanEdit}
           />
         </Section>
 
         <Section icon={<AlertTriangle className="h-4 w-4" />} title="Interventions">
           <div className="space-y-3">
-            <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs} />
-            <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs} />
+            <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs || notCanEdit} />
+            <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs || notCanEdit} />
           </div>
         </Section>
       </div>
 
       {/* ─── Row 4: Session Summary (full width) ─── */}
       <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
-        <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} />
+        <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} disabled={notCanEdit} />
       </Section>
 
       {/* ─── Row 5: Signatures ─── */}
@@ -258,7 +263,7 @@ export function SessionNoteForm({
         caregiverSignatureImage={caregiverSignatureImage}
       />
 
-      <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText="Save Session Note" />
+      <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText="Save Session Note" disabled={blocked && notCanEdit} />
     </div>
   )
 }
@@ -280,12 +285,13 @@ function Section({ icon, title, subtitle, children }: { icon: React.ReactNode; t
   )
 }
 
-function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChange, itemErrors }: {
+function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChange, itemErrors, disabled }: {
   category: AppointmentNoteCategory
   categoryItems: Record<string, { value: number | null; environmentalChange: string }>
   onValueChange: (itemId: string, value: number | null) => void
   onEnvChangeChange: (itemId: string, text: string) => void
   itemErrors?: Set<string>
+  disabled?: boolean
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden">
@@ -311,6 +317,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
                       type="text"
                       inputMode="numeric"
                       data-item-value={item.id}
+                      disabled={disabled}
                       value={currentValue ?? ""}
                       onChange={(e) => {
                         const raw = e.target.value.replace(/[^0-9.]/g, "")
@@ -318,7 +325,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
                       }}
                       placeholder="—"
                       className={cn(
-                        "h-7 w-16 rounded-lg border bg-white text-center text-sm font-semibold tabular-nums text-slate-800 outline-none transition-all",
+                        "h-7 w-16 rounded-lg border bg-white text-center text-sm font-semibold tabular-nums text-slate-800 outline-none transition-all disabled:bg-slate-50 disabled:text-slate-400",
                         hasError
                           ? "border-red-400 ring-1 ring-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200"
                           : "border-slate-200 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15",
@@ -334,9 +341,10 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
                   <input
                     type="text"
                     value={currentEnv}
+                    disabled={disabled}
                     onChange={(e) => onEnvChangeChange(item.id, e.target.value)}
                     placeholder="Environmental change..."
-                    className="h-7 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all placeholder:text-slate-300"
+                    className="h-7 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all placeholder:text-slate-300 disabled:bg-slate-50 disabled:text-slate-400"
                   />
                 </div>
                 {item.type && (

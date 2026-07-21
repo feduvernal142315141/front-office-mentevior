@@ -113,6 +113,7 @@ export interface ApiAppointmentItem {
   status?: string
   active?: boolean
   blocked?: boolean
+  notCanEdit?: boolean
   supervision?: AppointmentSupervisionApiPayload
 }
 
@@ -205,6 +206,7 @@ export interface Appointment {
   supervisionBillingCodeIds?: string[]
   requiresCaregiverSignature?: boolean
   blocked?: boolean
+  notCanEdit?: boolean
 }
 
 /**
