@@ -31,38 +31,48 @@ export function useSignaturePad(options?: UseSignaturePadOptions): UseSignatureP
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    // Already bound to this exact canvas element — skip
     if (boundCanvasRef.current === canvas) return
 
-    // Destroy previous pad if canvas changed
-    if (padRef.current) {
-      padRef.current.off()
-      padRef.current = null
+    const initPad = () => {
+      const c = canvasRef.current
+      if (!c || boundCanvasRef.current === c) return
+
+      const rect = c.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) {
+        requestAnimationFrame(initPad)
+        return
+      }
+
+      if (padRef.current) {
+        padRef.current.off()
+        padRef.current = null
+      }
+
+      boundCanvasRef.current = c
+
+      const ratio = Math.max(window.devicePixelRatio || 1, 1)
+      c.width = rect.width * ratio
+      c.height = rect.height * ratio
+      const ctx = c.getContext("2d")
+      if (ctx) ctx.scale(ratio, ratio)
+
+      const pad = new SignaturePadLib(c, {
+        minWidth: options?.minWidth ?? 0.6,
+        maxWidth: options?.maxWidth ?? 2.2,
+        penColor: options?.penColor ?? "#0f172a",
+        velocityFilterWeight: 0.7,
+        throttle: 0,
+      })
+
+      pad.addEventListener("endStroke", () => {
+        setHasDrawn(!pad.isEmpty())
+        onDrawEndRef.current?.()
+      })
+
+      padRef.current = pad
     }
 
-    boundCanvasRef.current = canvas
-
-    const ratio = Math.max(window.devicePixelRatio || 1, 1)
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * ratio
-    canvas.height = rect.height * ratio
-    const ctx = canvas.getContext("2d")
-    if (ctx) ctx.scale(ratio, ratio)
-
-    const pad = new SignaturePadLib(canvas, {
-      minWidth: options?.minWidth ?? 0.6,
-      maxWidth: options?.maxWidth ?? 2.2,
-      penColor: options?.penColor ?? "#0f172a",
-      velocityFilterWeight: 0.7,
-      throttle: 0,
-    })
-
-    pad.addEventListener("endStroke", () => {
-      setHasDrawn(!pad.isEmpty())
-      onDrawEndRef.current?.()
-    })
-
-    padRef.current = pad
+    initPad()
   })
 
   useEffect(() => {
@@ -73,7 +83,10 @@ export function useSignaturePad(options?: UseSignaturePadOptions): UseSignatureP
   }, [options?.disabled])
 
   const clear = useCallback(() => {
-    padRef.current?.clear()
+    if (padRef.current) {
+      padRef.current.clear()
+    }
+    boundCanvasRef.current = null
     setHasDrawn(false)
   }, [])
 

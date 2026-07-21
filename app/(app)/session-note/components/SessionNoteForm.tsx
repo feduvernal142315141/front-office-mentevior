@@ -371,10 +371,10 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
           By signing below, I certify that I provided the above services following all applicable policies and procedures
         </p>
 
-        {/* Provider signature — read only */}
-        <div className="grid grid-cols-3 gap-6">
+        {/* Provider info — read only */}
+        <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
-            <div className="min-h-[60px] flex flex-col justify-end">
+            <div className="min-h-[40px] flex flex-col justify-end">
               <p className="text-sm font-semibold text-slate-800">{provider?.name ?? "—"}</p>
               <p className="text-xs text-slate-500">{provider?.credential ?? ""}</p>
             </div>
@@ -382,18 +382,7 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Provider Name / Credential</span>
           </div>
           <div className="space-y-2">
-            <div className="min-h-[60px] flex items-end justify-center">
-              {providerSignatureUrl ? (
-                <img src={providerSignatureUrl} alt="Provider signature" className="max-h-[56px] max-w-full object-contain" />
-              ) : (
-                <span className="text-xs text-slate-400 italic">No signature on file</span>
-              )}
-            </div>
-            <div className="border-t border-slate-300" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Signature</span>
-          </div>
-          <div className="space-y-2">
-            <div className="min-h-[60px] flex flex-col justify-end">
+            <div className="min-h-[40px] flex flex-col justify-end">
               <p className="text-sm font-semibold text-slate-800">{serviceDate ?? "—"}</p>
             </div>
             <div className="border-t border-slate-300" />
@@ -482,7 +471,7 @@ function CaregiverSignaturePad({ savedImage, onSignatureChange }: { savedImage?:
 
       {/* Draw pad */}
       {showPad && (
-        <div className="relative">
+        <div className="relative overflow-hidden rounded-2xl">
           <canvas
             ref={pad.canvasRef}
             className={cn(
