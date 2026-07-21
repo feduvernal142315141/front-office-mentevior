@@ -12,6 +12,7 @@ import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { getClientAddressById } from "@/lib/modules/client-addresses/services/client-addresses.service"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { useAppointmentConfig } from "@/lib/modules/appointment-config/hooks/use-appointment-config"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { canHaveInlineSupervision } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
@@ -28,7 +29,7 @@ import {
 import {
   calculateBillableUnits,
   calculateDurationMinutes,
-  roundToNearest15Minutes,
+  getCurrentTime,
 } from "@/lib/utils/unit-calculation"
 
 /** Maps form eventType to the billingCodeType query param for the approved-billing-codes endpoint */
@@ -61,7 +62,7 @@ const getInitialFormData = (defaultDate?: string, defaultTime?: string): Appoint
   clientId: "",
   placeOfServiceAddressId: "",
   date: defaultDate || "",
-  startTime: defaultTime || roundToNearest15Minutes(),
+  startTime: defaultTime || getCurrentTime(),
   endTime: "",
   billingCodeId: "",
   priorAuthorizationId: "",
@@ -99,14 +100,16 @@ export function useAppointmentForm({
   const isNewSessionMode = !!parentAppointment && !appointment
   const providerId = user?.id ?? rbtId
 
-  const userRole = (user as { role?: { name?: string } | string })?.role
-  const normalizedRole =
-    typeof userRole === "string"
-      ? userRole.replace(/[\s_-]/g, "").toLowerCase()
-      : typeof userRole === "object" && userRole?.name
-        ? userRole.name.replace(/[\s_-]/g, "").toLowerCase()
-        : ""
+  // JWT role comes as "Unknown" — fetch full user to get actual role.name
+  const { user: fullUser } = useUserById(user?.id || null)
+  const roleName = fullUser?.role?.name ?? ""
+  const normalizedRole = roleName.replace(/[\s_-]/g, "").toLowerCase()
   const isRbt = normalizedRole.includes("rbt")
+  const isAdmin = /admin|superadmin/i.test(roleName)
+
+  // ─── Assign to another provider (admin only) ───
+  const [assignToOther, setAssignToOther] = useState(false)
+  const [selectedProviderId, setSelectedProviderId] = useState("")
 
   const { config: appointmentConfig } = useAppointmentConfig()
   const canAddSupervision = !isRbt && appointmentConfig?.allowedSubEvents === "supervision"
@@ -171,6 +174,11 @@ export function useAppointmentForm({
         })),
     [clientProviders],
   )
+
+  // ─── Effective provider (assign-to-other override) ───
+  const effectiveProviderId = (isAdmin && assignToOther && selectedProviderId)
+    ? selectedProviderId
+    : providerId
 
   const durationMinutes = useMemo(
     () => calculateDurationMinutes(formData.startTime, formData.endTime),
@@ -255,6 +263,7 @@ export function useAppointmentForm({
           next.validatedUnits = null
           next.addSupervision = false
           next.supervision = createEmptySupervisionForm()
+          setSelectedProviderId("")
         }
         if (
           field === "startTime" ||
@@ -333,6 +342,14 @@ export function useAppointmentForm({
       } else {
         mainValidateKey.current = ""
       }
+      // If appointment provider differs from logged-in user, activate assign-to-other
+      if (isAdmin && appointment.rbtId && appointment.rbtId !== providerId) {
+        setAssignToOther(true)
+        setSelectedProviderId(appointment.rbtId)
+      } else {
+        setAssignToOther(false)
+        setSelectedProviderId("")
+      }
     } else if (parentAppointment) {
       // "Add New Session" — pre-fill client/address from parent, use current time
       skipDependentResetsRef.current = 2
@@ -342,13 +359,15 @@ export function useAppointmentForm({
         clientId: parentAppointment.clientId ?? "",
         placeOfServiceAddressId: parentAppointment.placeOfServiceAddressId ?? parentAppointment.clientAddressId ?? "",
         date: parentAppointment.date ?? "",
-        startTime: roundToNearest15Minutes(),
+        startTime: getCurrentTime(),
         endTime: "",
       })
       mainValidateKey.current = ""
     } else {
       setFormData(getInitialFormData(defaultDate, defaultTime))
       mainValidateKey.current = ""
+      setAssignToOther(false)
+      setSelectedProviderId("")
     }
     setErrors({})
     setValidationError(null)
@@ -558,6 +577,11 @@ export function useAppointmentForm({
       newErrors.timeRange = validationError
     }
 
+    // Assign-to-other validation
+    if (isAdmin && assignToOther && !selectedProviderId) {
+      newErrors.assignedProviderId = "Select a provider"
+    }
+
     // Supervision validation (only when switch is on and BC allows it)
     if (formData.addSupervision && showSupervisionSwitch) {
       if (!formData.supervision.providerId) newErrors.supervisionRbtId = "Select a provider"
@@ -577,7 +601,7 @@ export function useAppointmentForm({
       const endsAt = new Date(`${formData.date}T${formData.endTime}`).toISOString()
 
       if (scope === "provider" && isRbt) {
-        const hasConflict = checkConflict(providerId, startsAt, endsAt, appointment?.id)
+        const hasConflict = checkConflict(effectiveProviderId, startsAt, endsAt, appointment?.id)
         if (hasConflict) {
           alert.error("Schedule Conflict", "This time slot conflicts with another appointment")
           return
@@ -586,7 +610,7 @@ export function useAppointmentForm({
 
       const units = formData.validatedUnits ?? calculateBillableUnits(durationMinutes)
       const parentId = parentAppointment?.id ?? null
-      const apiPayload = buildAppointmentApiPayload(formData, providerId, units, parentId)
+      const apiPayload = buildAppointmentApiPayload(formData, effectiveProviderId, units, parentId)
 
       // Attach supervision to the same request (backend handles it transactionally)
       if (formData.addSupervision && showSupervisionSwitch && formData.supervision.providerId) {
@@ -619,7 +643,7 @@ export function useAppointmentForm({
     [
       validateForm,
       formData,
-      providerId,
+      effectiveProviderId,
       appointment,
       isEditing,
       durationMinutes,
@@ -679,7 +703,14 @@ export function useAppointmentForm({
     showSupervisionSwitch,
     isNewSessionMode,
     isRbt,
+    isAdmin,
     isEditing,
+    assignToOther,
+    setAssignToOther,
+    selectedProviderId,
+    setSelectedProviderId,
+    providerOptions: rbtOptions,
+    providerOptionsLoading: clientProvidersLoading,
     handleSubmit,
     handleDelete,
     isSubmitting: mutations.isLoading,

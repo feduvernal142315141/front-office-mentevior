@@ -67,7 +67,7 @@ export function useApprovedBillingCodes(
         setPriorAuthorization(null)
       } else {
         setPriorAuthorization(data)
-        setBillingCodes(data.billingCodes.map(mapApprovedToConfigItem))
+        setBillingCodes((data.billingCodes ?? []).map(mapApprovedToConfigItem))
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to load approved billing codes"))

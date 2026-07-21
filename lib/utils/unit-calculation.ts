@@ -47,6 +47,14 @@ export function calculateDurationMinutes(startTime: string, endTime: string): nu
 }
 
 /**
+ * Returns the current time as "HH:mm" (24h) without rounding.
+ */
+export function getCurrentTime(): string {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+}
+
+/**
  * Returns the current time (or a given date) rounded to the nearest 15-minute slot.
  * Output format: "HH:mm" (24h).
  */

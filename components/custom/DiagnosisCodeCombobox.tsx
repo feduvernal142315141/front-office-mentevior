@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { useDiagnosisCatalogSearch } from "@/lib/modules/diagnoses/hooks/use-diagnosis-catalog-search"
 import type { DiagnosisCatalogItem } from "@/lib/types/diagnosis-catalog.types"
 
-const MIN_SEARCH = 2
+const MIN_SEARCH = 1
 
 interface DiagnosisCodeComboboxProps {
   value: string

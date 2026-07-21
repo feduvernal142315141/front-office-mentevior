@@ -10,8 +10,8 @@ import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import {
   Clock,
   Shield,
-  AlertTriangle,
   ExternalLink,
+  UserCog,
 } from "lucide-react"
 import type { Appointment, AppointmentStatus, EventType } from "@/lib/types/appointment.types"
 import { useAppointmentForm } from "../hooks/useAppointmentForm"
@@ -75,7 +75,15 @@ export function AppointmentModal({
     rbtProvidersLoading,
     showSupervisionSwitch,
     isNewSessionMode,
+    isRbt,
+    isAdmin,
     isEditing,
+    assignToOther,
+    setAssignToOther,
+    selectedProviderId,
+    setSelectedProviderId,
+    providerOptions,
+    providerOptionsLoading,
     handleSubmit,
     isSubmitting,
     hasPriorAuthWithoutCodes,
@@ -174,27 +182,63 @@ export function AppointmentModal({
           </div>
         </div>
 
-        {/* Warning: PA exists but no billing codes */}
-        {hasPriorAuthWithoutCodes && (
-          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-amber-800">
-                No billing codes configured for{" "}
-                {EVENT_TYPES.find((et) => et.value === formData.eventType)?.label ?? formData.eventType}
-              </p>
-              <p className="mt-0.5 text-xs text-amber-600">
-                The client has an active Prior Authorization but no billing codes for this event type.
-              </p>
-              <button
-                type="button"
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-200"
-                onClick={() => router.push(`/clients/${formData.clientId}/profile`)}
-              >
-                Go to Prior Authorization
-                <ExternalLink className="h-3 w-3" />
-              </button>
-            </div>
+        {/* ─── Assign to another provider (admin only) ─── */}
+        {isAdmin && formData.clientId && (
+          <div className="rounded-2xl border border-blue-200/60 bg-blue-50/30 p-4 space-y-4">
+            <PremiumSwitch
+              label="Assign to another provider"
+              description="Create this session on behalf of another provider"
+              checked={assignToOther}
+              onCheckedChange={(v) => {
+                setAssignToOther(v)
+                if (!v) setSelectedProviderId("")
+              }}
+              disabled={isLockedStatus}
+            />
+
+            {assignToOther && (
+              <div className="pt-1">
+                {providerOptionsLoading && <Hint>Loading providers…</Hint>}
+
+                {!providerOptionsLoading && providerOptions.length === 0 && formData.clientId && (
+                  <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">
+                    <UserCog className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-amber-800">
+                        No providers assigned to this client
+                      </p>
+                      <p className="mt-0.5 text-xs text-amber-600">
+                        You need to assign providers to this client before you can create a session on their behalf.
+                      </p>
+                      <button
+                        type="button"
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-200"
+                        onClick={() => router.push(`/clients/${formData.clientId}/configuration`)}
+                      >
+                        Go to Client Configuration
+                        <ExternalLink className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!providerOptionsLoading && providerOptions.length > 0 && (
+                  <>
+                    <FloatingSelect
+                      label="Provider"
+                      value={selectedProviderId}
+                      onChange={(v) => setSelectedProviderId(v)}
+                      options={providerOptions}
+                      hasError={!!errors.assignedProviderId}
+                      required
+                      searchable
+                      disabled={!formData.clientId || isLockedStatus}
+                    />
+                    <FieldError message={errors.assignedProviderId} />
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -224,6 +268,11 @@ export function AppointmentModal({
             />
             {mainBillingCodesLoading && <Hint>Loading billing codes…</Hint>}
             {mainBillingCodesError && <HintError>{mainBillingCodesError.message}</HintError>}
+            {hasPriorAuthWithoutCodes && (
+              <Hint className="text-amber-600">
+                The client has an active Prior Authorization but no billing codes for this event type.
+              </Hint>
+            )}
             <FieldError message={errors.billingCodeId} />
           </div>
         </div>

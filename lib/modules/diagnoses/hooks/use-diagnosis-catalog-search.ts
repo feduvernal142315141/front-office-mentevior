@@ -5,7 +5,7 @@ import type { DiagnosisCatalogItem } from "@/lib/types/diagnosis-catalog.types"
 import { buildFilters } from "@/lib/utils/query-filters"
 import { getDiagnosisCatalog } from "../services/diagnoses-catalog.service"
 
-const MIN_SEARCH_LENGTH = 2
+const MIN_SEARCH_LENGTH = 1
 const INITIAL_PAGE_SIZE = 100
 const SEARCH_PAGE_SIZE = 20
 const DEBOUNCE_MS = 250
