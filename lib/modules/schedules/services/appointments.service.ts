@@ -260,3 +260,25 @@ export async function updateAppointmentStatus(
     return null
   }
 }
+
+/**
+ * Toggle edit-lock flags (blocked / notCanEdit) via PATCH /appointment/edit-locks.
+ * The backend flips both flags to their opposite value on each call.
+ */
+export async function toggleAppointmentEditLocks(
+  appointmentId: string,
+): Promise<string | null> {
+  try {
+    const response = await servicePatch<{ id: string }, string>(
+      "/appointment/edit-locks",
+      { id: appointmentId },
+    )
+    if (response.status === 200) {
+      const data = response.data as unknown
+      return typeof data === "string" ? data : appointmentId
+    }
+    return null
+  } catch {
+    return null
+  }
+}

@@ -277,5 +277,6 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     setCaregiverSignatureImage,
     noteBlocked: note?.blocked ?? false,
     noteNotCanEdit: note?.notCanEdit ?? false,
+    refetchNote: refetch,
   }
 }

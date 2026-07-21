@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { FileText, Trash2 } from "lucide-react"
+import { Edit2, Trash2 } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { AppointmentNoteSummary } from "@/lib/types/appointment-note.types"
 import { useAppointmentNotes } from "@/lib/modules/appointment-notes/hooks/use-appointment-notes"
@@ -151,22 +151,20 @@ export function useSessionNotesTable() {
             type="button"
             onClick={() => handleOpenNote(note.appointmentId, note.billingCode)}
             className={cn(
-              "group/open relative h-9 px-3",
-              "inline-flex items-center gap-1.5 rounded-xl",
+              "group/edit relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
               "bg-gradient-to-b from-blue-50 to-blue-100/80",
               "border border-blue-200/60 shadow-sm shadow-blue-900/5",
-              "text-xs font-medium text-blue-600",
               "hover:from-blue-100 hover:to-blue-200/90",
               "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
               "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
               "transition-all duration-200 ease-out",
               "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2",
             )}
-            title="Open session note"
-            aria-label="Open session note"
+            title="Edit session note"
+            aria-label="Edit session note"
           >
-            <FileText className="h-3.5 w-3.5" />
-            Open
+            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
           <button
             type="button"

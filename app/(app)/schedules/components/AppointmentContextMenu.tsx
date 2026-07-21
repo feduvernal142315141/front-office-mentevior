@@ -10,6 +10,8 @@ import {
   XCircle,
   Trash2,
   Users,
+  Lock,
+  LockOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AppointmentStatus } from "@/lib/types/appointment.types"
@@ -26,6 +28,10 @@ interface AppointmentContextMenuProps {
   isSupervision?: boolean
   /** Parent billing code action — helps differentiate supervision vs session/supervision menus */
   parentBillingCodeAction?: "add_supervision" | "add_new_session" | "none"
+  /** Whether the appointment is currently locked (blocked or notCanEdit) */
+  isLocked?: boolean
+  /** Whether the current user can toggle edit locks */
+  canToggleLock?: boolean
   onAction: (action: string, appointmentId: string) => void
   onClose: () => void
 }
@@ -72,6 +78,8 @@ function buildSupervisionSections(parentBillingCodeAction?: string): MenuSection
 function buildSections(
   hasSupervision?: boolean,
   billingCodeAction?: "add_supervision" | "add_new_session" | "none",
+  isLocked?: boolean,
+  canToggleLock?: boolean,
 ): MenuSection[] {
   const actionItems: MenuItem[] = []
 
@@ -115,7 +123,7 @@ function buildSections(
     },
   )
 
-  return [
+  const sections: MenuSection[] = [
     {
       label: "Actions",
       items: actionItems,
@@ -128,6 +136,20 @@ function buildSections(
       ],
     },
   ]
+
+  if (canToggleLock) {
+    sections.push({
+      items: [
+        {
+          action: "toggle_edit_lock",
+          label: isLocked ? "Unlock Editing" : "Lock Editing",
+          icon: isLocked ? LockOpen : Lock,
+        },
+      ],
+    })
+  }
+
+  return sections
 }
 
 export function AppointmentContextMenu({
@@ -139,12 +161,14 @@ export function AppointmentContextMenu({
   billingCodeAction,
   isSupervision,
   parentBillingCodeAction,
+  isLocked,
+  canToggleLock,
   onAction,
   onClose,
 }: AppointmentContextMenuProps) {
   const SECTIONS = useMemo(
-    () => (isSupervision ? buildSupervisionSections(parentBillingCodeAction) : buildSections(hasSupervision, billingCodeAction)),
-    [isSupervision, parentBillingCodeAction, hasSupervision, billingCodeAction],
+    () => (isSupervision ? buildSupervisionSections(parentBillingCodeAction) : buildSections(hasSupervision, billingCodeAction, isLocked, canToggleLock)),
+    [isSupervision, parentBillingCodeAction, hasSupervision, billingCodeAction, isLocked, canToggleLock],
   )
   const menuRef = useRef<HTMLDivElement>(null)
 

@@ -32,9 +32,10 @@ import { buildSessionNoteUrl, buildDataCollectionUrl } from "@/lib/modules/sched
 import { getBillingCodeAction } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
 import { deleteSubEvent } from "@/lib/modules/schedules/services/appointment-sub-event.service"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
-import { getAppointmentById } from "@/lib/modules/schedules/services/appointments.service"
+import { getAppointmentById, toggleAppointmentEditLocks } from "@/lib/modules/schedules/services/appointments.service"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { getCurrentTime } from "@/lib/utils/unit-calculation"
+import { toast } from "sonner"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
@@ -76,11 +77,12 @@ export function WeekCalendar({
 }: WeekCalendarProps) {
   const router = useRouter()
   const { selectedAppointment, deleteAppointment } = useAppointments()
-  const { create: canCreateSession } = usePermission()
+  const { create: canCreateSession, block: canBlockAppointment } = usePermission()
   const eventColors = useScheduleEventColors()
   const mutations = useAppointmentMutations()
   const alert = useAlert()
   const canCreate = canCreateSession(PermissionModule.SCHEDULE)
+  const canToggleLock = canBlockAppointment(PermissionModule.APPOINTMENT)
   const isAgency = scope === "agency"
   const { users: allUsers } = useUsers({ pageSize: 100 })
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
@@ -212,6 +214,22 @@ export function WeekCalendar({
       if (action === "add_new_session" && appointment) {
         actions.closeContextMenu()
         actions.openNewSessionFromParent(appointment)
+        return
+      }
+
+      if (action === "toggle_edit_lock") {
+        actions.closeContextMenu()
+        try {
+          const result = await toggleAppointmentEditLocks(appointmentId)
+          if (result) {
+            actions.handleAppointmentSaved()
+            toast.success(appointment?.blocked || appointment?.notCanEdit ? "Editing unlocked" : "Editing locked")
+          } else {
+            toast.error("Failed to toggle edit lock")
+          }
+        } catch {
+          toast.error("Failed to toggle edit lock")
+        }
         return
       }
 
@@ -757,6 +775,8 @@ export function WeekCalendar({
           billingCodeAction={contextMenuBillingCodeAction}
           isSupervision={contextMenu.isSupervision}
           parentBillingCodeAction={contextMenu.isSupervision ? contextMenuBillingCodeAction : undefined}
+          isLocked={!!(contextMenuAppointment?.blocked || contextMenuAppointment?.notCanEdit)}
+          canToggleLock={canToggleLock}
           onAction={handleMenuAction}
           onClose={actions.closeContextMenu}
         />
