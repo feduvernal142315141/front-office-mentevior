@@ -22,8 +22,7 @@ import type {
   ParticipantCatalogItem,
 } from "@/lib/types/appointment-note.types"
 import { cn } from "@/lib/utils"
-import type { SignatureType } from "@/lib/types/caregiver-signature-config.types"
-import { SignaturePad } from "@/components/custom/SignaturePad"
+import { useSignaturePad } from "@/components/custom/SignaturePad"
 import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
 
 interface SessionNoteFormProps {
@@ -43,9 +42,14 @@ interface SessionNoteFormProps {
   serviceDetails: AppointmentNoteServiceDetails | null
   billingCodes: string | null
   modality: AppointmentNoteModality | null
+  modalityOptions: { value: string; label: string }[]
   itemErrors?: Set<string>
   providerSignatureUrl?: string | null
-  caregiverSignatureType?: SignatureType | null
+  useCheckmarkSignature?: boolean
+  caregiverSignatureChecked?: boolean
+  onCaregiverCheckedChange?: (checked: boolean) => void
+  onCaregiverSignatureChange?: (base64: string | null) => void
+  caregiverSignatureImage?: string | null
 }
 
 export function SessionNoteForm({
@@ -65,9 +69,14 @@ export function SessionNoteForm({
   serviceDetails,
   billingCodes,
   modality,
+  modalityOptions,
   itemErrors,
   providerSignatureUrl,
-  caregiverSignatureType,
+  useCheckmarkSignature,
+  caregiverSignatureChecked,
+  onCaregiverCheckedChange,
+  onCaregiverSignatureChange,
+  caregiverSignatureImage,
 }: SessionNoteFormProps) {
   const categoriesWithItems = categories.filter((c) => c.items.length > 0)
   const categoriesEmpty = categories.filter((c) => c.items.length === 0)
@@ -142,8 +151,8 @@ export function SessionNoteForm({
         </Section>
       )}
 
-      {/* ─── Row 1: Teaching Method + Session Details (side by side) ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* ─── Row 1: Teaching Method + Modality + Session Details ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <Section icon={<BookOpen className="h-4 w-4" />} title="Teaching Method">
           <FloatingSelect
             label="Teaching Method"
@@ -151,6 +160,16 @@ export function SessionNoteForm({
             onChange={(val) => updateField("teachingMethodId", val)}
             options={teachingMethodOptions}
             searchable
+            disabled={isLoadingCatalogs}
+          />
+        </Section>
+
+        <Section icon={<ClipboardList className="h-4 w-4" />} title="Modality">
+          <FloatingSelect
+            label="Modality"
+            value={formData.modalityId}
+            onChange={(val) => updateField("modalityId", val)}
+            options={modalityOptions}
             disabled={isLoadingCatalogs}
           />
         </Section>
@@ -232,7 +251,11 @@ export function SessionNoteForm({
         provider={provider}
         providerSignatureUrl={providerSignatureUrl}
         serviceDate={serviceDetails?.date}
-        caregiverSignatureType={caregiverSignatureType}
+        useCheckmarkSignature={useCheckmarkSignature}
+        caregiverChecked={caregiverSignatureChecked}
+        onCaregiverCheckedChange={onCaregiverCheckedChange}
+        onCaregiverSignatureChange={onCaregiverSignatureChange}
+        caregiverSignatureImage={caregiverSignatureImage}
       />
 
       <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText="Save Session Note" />
@@ -279,14 +302,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
           const hasError = itemErrors?.has(item.id)
           return (
             <div key={item.id} className="px-4 py-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-slate-700">{item.name}</span>
-                {item.type && (
-                  <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-                    {item.type}
-                  </span>
-                )}
-              </div>
+              <span className="text-sm font-medium text-slate-700 block">{item.name}</span>
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-1.5">
@@ -323,6 +339,11 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
                     className="h-7 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all placeholder:text-slate-300"
                   />
                 </div>
+                {item.type && (
+                  <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 shrink-0">
+                    {item.type}
+                  </span>
+                )}
               </div>
             </div>
           )
@@ -332,14 +353,16 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, serviceDate, caregiverSignatureType }: {
+function SignatureSection({ provider, providerSignatureUrl, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage }: {
   provider: AppointmentNoteProvider | null
   providerSignatureUrl?: string | null
   serviceDate?: string | null
-  caregiverSignatureType?: SignatureType | null
+  useCheckmarkSignature?: boolean
+  caregiverChecked?: boolean
+  onCaregiverCheckedChange?: (checked: boolean) => void
+  onCaregiverSignatureChange?: (base64: string | null) => void
+  caregiverSignatureImage?: string | null
 }) {
-  const [caregiverChecked, setCaregiverChecked] = useState(false)
-
   return (
     <Section icon={<PenTool className="h-4 w-4" />} title="Signatures">
       <div className="space-y-6">
@@ -350,7 +373,6 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, caregiv
 
         {/* Provider signature — read only */}
         <div className="grid grid-cols-3 gap-6">
-          {/* Name / Credential */}
           <div className="space-y-2">
             <div className="min-h-[60px] flex flex-col justify-end">
               <p className="text-sm font-semibold text-slate-800">{provider?.name ?? "—"}</p>
@@ -359,16 +381,10 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, caregiv
             <div className="border-t border-slate-300" />
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Provider Name / Credential</span>
           </div>
-
-          {/* Signature image */}
           <div className="space-y-2">
             <div className="min-h-[60px] flex items-end justify-center">
               {providerSignatureUrl ? (
-                <img
-                  src={providerSignatureUrl}
-                  alt="Provider signature"
-                  className="max-h-[56px] max-w-full object-contain"
-                />
+                <img src={providerSignatureUrl} alt="Provider signature" className="max-h-[56px] max-w-full object-contain" />
               ) : (
                 <span className="text-xs text-slate-400 italic">No signature on file</span>
               )}
@@ -376,8 +392,6 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, caregiv
             <div className="border-t border-slate-300" />
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Signature</span>
           </div>
-
-          {/* Date */}
           <div className="space-y-2">
             <div className="min-h-[60px] flex flex-col justify-end">
               <p className="text-sm font-semibold text-slate-800">{serviceDate ?? "—"}</p>
@@ -387,8 +401,8 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, caregiv
           </div>
         </div>
 
-        {/* Caregiver confirmation */}
-        {caregiverSignatureType === "CHECKMARK" && (
+        {/* Caregiver — checkmark mode */}
+        {useCheckmarkSignature && (
           <div className="border-t border-slate-100 pt-5">
             <div className="flex items-center gap-2 mb-4">
               <CheckCircle2 className="h-4 w-4 text-[#037ECC]" />
@@ -397,8 +411,8 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, caregiv
             <label className="flex items-start gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                checked={caregiverChecked}
-                onChange={(e) => setCaregiverChecked(e.target.checked)}
+                checked={caregiverChecked ?? false}
+                onChange={(e) => onCaregiverCheckedChange?.(e.target.checked)}
                 className="mt-0.5 h-5 w-5 rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 cursor-pointer"
               />
               <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
@@ -408,16 +422,35 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, caregiv
           </div>
         )}
 
-        {caregiverSignatureType === "SIGNATURE" && (
-          <CaregiverSignaturePad />
+        {/* Caregiver — electronic signature mode */}
+        {!useCheckmarkSignature && (
+          <CaregiverSignaturePad savedImage={caregiverSignatureImage} onSignatureChange={onCaregiverSignatureChange} />
         )}
       </div>
     </Section>
   )
 }
 
-function CaregiverSignaturePad() {
-  const pad = SignaturePad({ width: 600, height: 180 })
+function CaregiverSignaturePad({ savedImage, onSignatureChange }: { savedImage?: string | null; onSignatureChange?: (base64: string | null) => void }) {
+  const [forceRedraw, setForceRedraw] = useState(false)
+  const showPad = forceRedraw || !savedImage
+  const pad = useSignaturePad({
+    onDrawEnd: () => {
+      setTimeout(() => {
+        onSignatureChange?.(pad.toDataURL("image/png"))
+      }, 0)
+    },
+  })
+
+  const handleClear = () => {
+    pad.clear()
+    onSignatureChange?.(null)
+  }
+
+  const handleReDraw = () => {
+    setForceRedraw(true)
+    onSignatureChange?.(null)
+  }
 
   return (
     <div className="border-t border-slate-100 pt-5">
@@ -426,29 +459,50 @@ function CaregiverSignaturePad() {
           <PenTool className="h-4 w-4 text-[#037ECC]" />
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Caregiver Signature</span>
         </div>
-        {pad.hasDrawn && (
-          <button
-            type="button"
-            onClick={pad.clear}
-            className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-      <div className="flex flex-col items-center gap-3">
-        <canvas
-          {...pad.canvasProps}
-          className={cn(
-            pad.canvasProps.className,
-            "w-full max-w-[600px] rounded-xl border-2 border-slate-200 bg-white cursor-crosshair",
-            "hover:border-[#037ECC]/30 transition-colors",
+        <div className="flex items-center gap-3">
+          {!showPad && savedImage && (
+            <button type="button" onClick={handleReDraw} className="text-xs font-medium text-[#037ECC] hover:text-[#037ECC]/80 transition-colors">
+              Re-sign
+            </button>
           )}
-        />
-        {!pad.hasDrawn && (
-          <p className="text-xs text-slate-400">Draw caregiver signature above</p>
-        )}
+          {showPad && pad.hasDrawn && (
+            <button type="button" onClick={handleClear} className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors">
+              Clear
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Saved signature preview */}
+      {!showPad && savedImage && (
+        <div className="flex items-center justify-center rounded-2xl border-2 border-emerald-200 bg-white p-6" style={{ minHeight: "280px" }}>
+          <img src={savedImage} alt="Caregiver signature" className="max-h-[240px] max-w-full object-contain" />
+        </div>
+      )}
+
+      {/* Draw pad */}
+      {showPad && (
+        <div className="relative">
+          <canvas
+            ref={pad.canvasRef}
+            className={cn(
+              "rounded-2xl border-2 bg-white touch-none select-none cursor-crosshair transition-colors w-full",
+              pad.hasDrawn ? "border-emerald-200" : "border-slate-200 hover:border-[#037ECC]/30",
+            )}
+            style={{ height: "280px" }}
+          />
+          {/* Signature line */}
+          <div className="absolute bottom-12 left-10 right-10 border-b border-slate-300/50" />
+          <div className="absolute bottom-8 left-10">
+            <span className="text-[10px] text-slate-300 uppercase tracking-wider">Caregiver signature</span>
+          </div>
+          {!pad.hasDrawn && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="text-base text-slate-200 select-none tracking-wide">Sign here</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -13,9 +13,11 @@ export async function getModalityCatalog(): Promise<ModalityCatalogItem[]> {
   const data = response.data as unknown
   const arr = Array.isArray(data)
     ? data
-    : Array.isArray((data as { items?: unknown }).items)
-      ? (data as { items: unknown[] }).items
-      : []
+    : Array.isArray((data as { entities?: unknown }).entities)
+      ? (data as { entities: unknown[] }).entities
+      : Array.isArray((data as { items?: unknown }).items)
+        ? (data as { items: unknown[] }).items
+        : []
 
   return arr
     .map((item: unknown) => {

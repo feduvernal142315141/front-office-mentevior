@@ -170,6 +170,9 @@ export async function getAppointmentNote(
             : [],
         }))
       : [],
+    useCheckmarkSignature: Boolean(data.useCheckmarkSignature),
+    caregiverSignatureImage: typeof data.caregiverSignatureImage === "string" ? data.caregiverSignatureImage : null,
+    caregiverSignatureChecked: typeof data.caregiverSignatureChecked === "boolean" ? data.caregiverSignatureChecked : null,
   }
 }
 

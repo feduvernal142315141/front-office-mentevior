@@ -19,8 +19,6 @@ import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
 import { useSignature } from "@/lib/modules/signature/hooks/use-signature"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { getCaregiverSignatureConfig } from "@/lib/services/caregiver-signature-config.service"
-import type { SignatureType } from "@/lib/types/caregiver-signature-config.types"
 
 export interface CategoryItemFormData {
   value: number | null
@@ -96,13 +94,17 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   const { signature: providerSignature } = useSignature(user?.id ?? null, !!user?.id)
   const providerSignatureUrl = providerSignature?.url ?? null
 
-  // Caregiver signature config
-  const [caregiverSignatureType, setCaregiverSignatureType] = useState<SignatureType | null>(null)
+  // Caregiver signature state — initialized from persisted values
+  const useCheckmarkSignature = note?.useCheckmarkSignature ?? false
+  const [caregiverSignatureChecked, setCaregiverChecked] = useState(false)
+  const [caregiverSignatureImage, setCaregiverSignatureImage] = useState<string | null>(null)
+
+  // Sync persisted signature values when note loads
   useEffect(() => {
-    getCaregiverSignatureConfig()
-      .then((config) => setCaregiverSignatureType(config?.signatureType ?? null))
-      .catch(() => setCaregiverSignatureType(null))
-  }, [])
+    if (!note) return
+    if (note.caregiverSignatureChecked != null) setCaregiverChecked(note.caregiverSignatureChecked)
+    if (note.caregiverSignatureImage != null) setCaregiverSignatureImage(note.caregiverSignatureImage)
+  }, [note])
 
   // Catalogs
   const { selectOptions: teachingMethodOptions, isLoading: teachingMethodsLoading } = useTeachingMethodCatalog()
@@ -216,6 +218,8 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
       antecedentInterventionIds: formData.antecedentInterventionIds,
       consequenceInterventionIds: formData.consequenceInterventionIds,
       dataCollectionItems,
+      caregiverSignatureImage: caregiverSignatureImage || null,
+      caregiverSignatureChecked: useCheckmarkSignature ? caregiverSignatureChecked : null,
     }
 
     const id = await mutation.update(payload)
@@ -266,6 +270,10 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     noteModality,
     itemErrors,
     providerSignatureUrl,
-    caregiverSignatureType,
+    useCheckmarkSignature,
+    caregiverSignatureChecked,
+    setCaregiverChecked,
+    caregiverSignatureImage,
+    setCaregiverSignatureImage,
   }
 }

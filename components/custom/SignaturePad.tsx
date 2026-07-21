@@ -1,168 +1,109 @@
 "use client"
 
-import { useRef, useEffect, useCallback, useState, type MouseEvent, type TouchEvent } from "react"
+import { useRef, useEffect, useCallback, useState } from "react"
+import SignaturePadLib from "signature_pad"
 import { cn } from "@/lib/utils"
-import { SIGNATURE_CANVAS_CONFIG } from "@/lib/constants/credentials.constants"
 
-interface SignaturePadProps {
-  width?: number
-  height?: number
-  lineWidth?: number
-  strokeColor?: string
+interface UseSignaturePadOptions {
+  minWidth?: number
+  maxWidth?: number
+  penColor?: string
   disabled?: boolean
-  onDrawStart?: () => void
   onDrawEnd?: () => void
-  className?: string
 }
 
-export interface SignaturePadRef {
+interface UseSignaturePadReturn {
+  canvasRef: React.RefObject<HTMLCanvasElement | null>
+  hasDrawn: boolean
   clear: () => void
   isEmpty: () => boolean
   toDataURL: (type?: string) => string
 }
 
-export function SignaturePad({
-  width = SIGNATURE_CANVAS_CONFIG.width,
-  height = SIGNATURE_CANVAS_CONFIG.height,
-  lineWidth = SIGNATURE_CANVAS_CONFIG.lineWidth,
-  strokeColor = SIGNATURE_CANVAS_CONFIG.strokeColor,
-  disabled = false,
-  onDrawStart,
-  onDrawEnd,
-  className,
-}: SignaturePadProps & { ref?: React.Ref<SignaturePadRef> }) {
+export function useSignaturePad(options?: UseSignaturePadOptions): UseSignaturePadReturn {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const isDrawingRef = useRef(false)
-  const hasDrawnRef = useRef(false)
+  const padRef = useRef<SignaturePadLib | null>(null)
+  const boundCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const [hasDrawn, setHasDrawn] = useState(false)
+  const onDrawEndRef = useRef(options?.onDrawEnd)
+  onDrawEndRef.current = options?.onDrawEnd
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    // Already bound to this exact canvas element — skip
+    if (boundCanvasRef.current === canvas) return
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    // Destroy previous pad if canvas changed
+    if (padRef.current) {
+      padRef.current.off()
+      padRef.current = null
+    }
 
-    ctx.lineWidth = lineWidth
-    ctx.lineCap = SIGNATURE_CANVAS_CONFIG.lineCap
-    ctx.strokeStyle = strokeColor
-  }, [lineWidth, strokeColor])
+    boundCanvasRef.current = canvas
 
-  const getPointerPosition = (
-    event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>
-  ) => {
-    const canvas = canvasRef.current
-    if (!canvas) return null
-
+    const ratio = Math.max(window.devicePixelRatio || 1, 1)
     const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    if ("touches" in event) {
-      const touch = event.touches[0] || event.changedTouches[0]
-      if (!touch) return null
-      return {
-        x: (touch.clientX - rect.left) * scaleX,
-        y: (touch.clientY - rect.top) * scaleY,
-      }
-    }
-
-    return {
-      x: (event.clientX - rect.left) * scaleX,
-      y: (event.clientY - rect.top) * scaleY,
-    }
-  }
-
-  const startDrawing = (
-    event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>
-  ) => {
-    if (disabled) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-
+    canvas.width = rect.width * ratio
+    canvas.height = rect.height * ratio
     const ctx = canvas.getContext("2d")
-    const point = getPointerPosition(event)
-    if (!ctx || !point) return
+    if (ctx) ctx.scale(ratio, ratio)
 
-    isDrawingRef.current = true
-    ctx.beginPath()
-    ctx.moveTo(point.x, point.y)
-    onDrawStart?.()
-  }
+    const pad = new SignaturePadLib(canvas, {
+      minWidth: options?.minWidth ?? 0.6,
+      maxWidth: options?.maxWidth ?? 2.2,
+      penColor: options?.penColor ?? "#0f172a",
+      velocityFilterWeight: 0.7,
+      throttle: 0,
+    })
 
-  const draw = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current || disabled) return
+    pad.addEventListener("endStroke", () => {
+      setHasDrawn(!pad.isEmpty())
+      onDrawEndRef.current?.()
+    })
 
-    const canvas = canvasRef.current
-    if (!canvas) return
+    padRef.current = pad
+  })
 
-    const ctx = canvas.getContext("2d")
-    const point = getPointerPosition(event)
-    if (!ctx || !point) return
-
-    ctx.lineTo(point.x, point.y)
-    ctx.stroke()
-    if (!hasDrawnRef.current) {
-      hasDrawnRef.current = true
-      setHasDrawn(true)
-    }
-  }
-
-  const stopDrawing = () => {
-    if (isDrawingRef.current) {
-      isDrawingRef.current = false
-      onDrawEnd?.()
-    }
-  }
+  useEffect(() => {
+    const pad = padRef.current
+    if (!pad) return
+    if (options?.disabled) pad.off()
+    else pad.on()
+  }, [options?.disabled])
 
   const clear = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    hasDrawnRef.current = false
+    padRef.current?.clear()
     setHasDrawn(false)
   }, [])
 
-  const isEmpty = useCallback(() => {
-    return !hasDrawnRef.current
-  }, [])
+  const isEmpty = useCallback(() => padRef.current?.isEmpty() ?? true, [])
 
   const toDataURL = useCallback((type: string = "image/png") => {
-    const canvas = canvasRef.current
-    if (!canvas) return ""
-    return canvas.toDataURL(type)
+    if (!padRef.current || padRef.current.isEmpty()) return ""
+    return padRef.current.toDataURL(type)
   }, [])
 
-  return {
-    canvasProps: {
-      ref: canvasRef,
-      width,
-      height,
-      className: cn(
-        "rounded-lg border border-gray-200 bg-white touch-none",
-        disabled && "opacity-60 cursor-not-allowed",
-        className
-      ),
-      onMouseDown: startDrawing,
-      onMouseMove: draw,
-      onMouseUp: stopDrawing,
-      onMouseLeave: stopDrawing,
-      onTouchStart: startDrawing,
-      onTouchMove: draw,
-      onTouchEnd: stopDrawing,
-    },
-    clear,
-    isEmpty,
-    toDataURL,
-    hasDrawn,
-  }
+  return { canvasRef, hasDrawn, clear, isEmpty, toDataURL }
 }
 
-export function useSignaturePad(props?: Omit<SignaturePadProps, "className">) {
-  return SignaturePad(props || {})
+// Legacy export — kept for backward compatibility with credentials signature
+export function SignaturePad(props: UseSignaturePadOptions & { width?: number; height?: number; className?: string }) {
+  const pad = useSignaturePad(props)
+  return {
+    canvasProps: {
+      ref: pad.canvasRef,
+      width: props.width ?? 820,
+      height: props.height ?? 260,
+      className: cn(
+        "rounded-lg border border-gray-200 bg-white touch-none select-none",
+        props.disabled ? "opacity-60 cursor-not-allowed" : "cursor-crosshair",
+        props.className,
+      ),
+    },
+    clear: pad.clear,
+    isEmpty: pad.isEmpty,
+    toDataURL: pad.toDataURL,
+    hasDrawn: pad.hasDrawn,
+  }
 }

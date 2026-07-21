@@ -72,7 +72,11 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     noteModality,
     itemErrors,
     providerSignatureUrl,
-    caregiverSignatureType,
+    useCheckmarkSignature,
+    caregiverSignatureChecked,
+    setCaregiverChecked,
+    caregiverSignatureImage,
+    setCaregiverSignatureImage,
   } = useSessionNoteForm({ appointmentId, clientId })
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
@@ -170,6 +174,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
               isSaving={isSaving}
               isLoadingCatalogs={isLoadingCatalogs}
               teachingMethodOptions={teachingMethodOptions}
+              modalityOptions={modalityOptions}
               participantCatalog={participantCatalog}
               antecedentItems={antecedentItems}
               consequenceItems={consequenceItems}
@@ -181,7 +186,11 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
               modality={noteModality}
               itemErrors={itemErrors}
               providerSignatureUrl={providerSignatureUrl}
-              caregiverSignatureType={caregiverSignatureType}
+              useCheckmarkSignature={useCheckmarkSignature}
+              caregiverSignatureChecked={caregiverSignatureChecked}
+              onCaregiverCheckedChange={setCaregiverChecked}
+              onCaregiverSignatureChange={setCaregiverSignatureImage}
+              caregiverSignatureImage={caregiverSignatureImage}
             />
           </form>
         )}

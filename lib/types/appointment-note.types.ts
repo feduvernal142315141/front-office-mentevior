@@ -102,6 +102,9 @@ export interface AppointmentNote {
   antecedentInterventionList: AppointmentNoteIntervention[]
   consequenceInterventionList: AppointmentNoteIntervention[]
   categories: AppointmentNoteCategory[]
+  useCheckmarkSignature: boolean
+  caregiverSignatureImage: string | null
+  caregiverSignatureChecked: boolean | null
 }
 
 /** Participant payload for PUT /appointment/note */
@@ -131,6 +134,8 @@ export interface UpdateAppointmentNotePayload {
   antecedentInterventionIds?: string[]
   consequenceInterventionIds?: string[]
   dataCollectionItems?: UpdateAppointmentNoteDataCollectionItem[]
+  caregiverSignatureImage?: string | null
+  caregiverSignatureChecked?: boolean | null
 }
 
 /** Catalog item for antecedent/consequence interventions */
