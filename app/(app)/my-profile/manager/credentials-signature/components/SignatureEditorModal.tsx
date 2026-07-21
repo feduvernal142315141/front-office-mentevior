@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { Checkbox } from "@/components/custom/Checkbox"
-import { useSignaturePad } from "@/components/custom/SignaturePad"
+import { SignaturePad } from "@/components/custom/SignaturePad"
 import { SIGNATURE_AGREEMENT_TEXT } from "@/lib/constants/credentials.constants"
 
 interface SignatureEditorModalProps {
@@ -23,7 +23,7 @@ export function SignatureEditorModal({
   isSaving = false,
 }: SignatureEditorModalProps) {
   const [agreementAccepted, setAgreementAccepted] = useState(false)
-  const { canvasProps, clear, isEmpty, toDataURL, hasDrawn } = useSignaturePad({
+  const { canvasProps, clear, isEmpty, toDataURL, hasDrawn } = SignaturePad({
     disabled,
   })
 
