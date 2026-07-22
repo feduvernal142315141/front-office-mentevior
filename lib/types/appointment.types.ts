@@ -207,6 +207,7 @@ export interface Appointment {
   requiresCaregiverSignature?: boolean
   blocked?: boolean
   notCanEdit?: boolean
+  noteStatus?: import("./appointment-note.types").NoteStatus
 }
 
 /**

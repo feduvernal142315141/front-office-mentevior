@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import {
-  Users, BookOpen, AlertTriangle, Stethoscope,
+  BookOpen, AlertTriangle, Stethoscope,
   Target, BarChart3, User, Building2, ClipboardList, PenTool, CheckCircle2, PenLine,
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -13,6 +13,8 @@ import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch
 import { Button } from "@/components/custom/Button"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import type { RecommendationCatalogItem } from "@/lib/types/client-service-plan.types"
+import type { NoteStatus } from "@/lib/types/appointment-note.types"
+import { deriveNoteStatusInfo } from "../hooks/useNoteStatus"
 import type {
   AppointmentNoteCategory,
   AppointmentNoteRecipient,
@@ -50,8 +52,7 @@ interface SessionNoteFormProps {
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
-  blocked?: boolean
-  notCanEdit?: boolean
+  noteStatus?: NoteStatus
 }
 
 export function SessionNoteForm({
@@ -79,9 +80,13 @@ export function SessionNoteForm({
   onCaregiverCheckedChange,
   onCaregiverSignatureChange,
   caregiverSignatureImage,
-  blocked,
-  notCanEdit,
+  noteStatus = "read",
 }: SessionNoteFormProps) {
+  const statusInfo = deriveNoteStatusInfo(noteStatus, false)
+  const formDisabled = !statusInfo.isFormEditable
+  const dataCollectionDisabled = !statusInfo.isDataCollectionEditable
+  const saveDisabled = !statusInfo.canSave
+
   const categoriesWithItems = categories.filter((c) => c.items.length > 0)
   const categoriesEmpty = categories.filter((c) => c.items.length === 0)
 
@@ -151,34 +156,40 @@ export function SessionNoteForm({
         </Section>
       )}
 
-      {/* ─── Row 1: Teaching Method + Modality + Session Details ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Section icon={<BookOpen className="h-4 w-4" />} title="Teaching Method">
-          <FloatingSelect
-            label="Teaching Method"
-            value={formData.teachingMethodId}
-            onChange={(val) => updateField("teachingMethodId", val)}
-            options={teachingMethodOptions}
-            searchable
-            disabled={isLoadingCatalogs || notCanEdit}
-          />
-        </Section>
-
-        <Section icon={<ClipboardList className="h-4 w-4" />} title="Modality">
-          <FloatingSelect
-            label="Modality"
-            value={formData.modalityId}
-            onChange={(val) => updateField("modalityId", val)}
-            options={modalityOptions}
-            disabled={isLoadingCatalogs || notCanEdit}
-          />
+      {/* ─── Row 1: Teaching Method & Modality + Session Details ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Section icon={<BookOpen className="h-4 w-4" />} title="Teaching Method, Modality & Participants">
+          <div className="space-y-4">
+            <FloatingSelect
+              label="Teaching Method"
+              value={formData.teachingMethodId}
+              onChange={(val) => updateField("teachingMethodId", val)}
+              options={teachingMethodOptions}
+              searchable
+              disabled={isLoadingCatalogs || formDisabled}
+            />
+            <FloatingSelect
+              label="Modality"
+              value={formData.modalityId}
+              onChange={(val) => updateField("modalityId", val)}
+              options={modalityOptions}
+              disabled={isLoadingCatalogs || formDisabled}
+            />
+            <MultiSelectWithSearch
+              label="Participants"
+              items={participantItems}
+              selectedIds={formData.participantIds}
+              onChange={(ids) => updateField("participantIds", ids)}
+              disabled={isLoadingCatalogs || formDisabled}
+            />
+          </div>
         </Section>
 
         <Section icon={<Stethoscope className="h-4 w-4" />} title="Session Details">
           <div className="space-y-3">
-            <FloatingInput label="Reason Caregiver Not Present" value={formData.reasonCaregiverNotPresent} onChange={(v) => updateField("reasonCaregiverNotPresent", v)} onBlur={() => {}} disabled={notCanEdit} />
-            <FloatingInput label="Medical Concerns" value={formData.medicalConcerns} onChange={(v) => updateField("medicalConcerns", v)} onBlur={() => {}} disabled={notCanEdit} />
-            <PremiumSwitch label="Crisis Involved" description="Was there a crisis during this session?" checked={formData.crisisInvolved} onCheckedChange={(v) => updateField("crisisInvolved", v)} compact disabled={notCanEdit} />
+            <FloatingInput label="Reason Caregiver Not Present" value={formData.reasonCaregiverNotPresent} onChange={(v) => updateField("reasonCaregiverNotPresent", v)} onBlur={() => {}} disabled={formDisabled} />
+            <FloatingInput label="Medical Concerns" value={formData.medicalConcerns} onChange={(v) => updateField("medicalConcerns", v)} onBlur={() => {}} disabled={formDisabled} />
+            <PremiumSwitch label="Crisis Involved" description="Was there a crisis during this session?" checked={formData.crisisInvolved} onCheckedChange={(v) => updateField("crisisInvolved", v)} compact disabled={formDisabled} />
           </div>
         </Section>
       </div>
@@ -202,7 +213,7 @@ export function SessionNoteForm({
                     onValueChange={updateItemValue}
                     onEnvChangeChange={updateItemEnvironmentalChange}
                     itemErrors={itemErrors}
-                    disabled={blocked}
+                    disabled={dataCollectionDisabled}
                   />
                 ))}
               </div>
@@ -222,29 +233,17 @@ export function SessionNoteForm({
         )}
       </Section>
 
-      {/* ─── Row 3: Participants + Interventions (side by side) ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Section icon={<Users className="h-4 w-4" />} title="Participants">
-          <MultiSelectWithSearch
-            label="Participants"
-            items={participantItems}
-            selectedIds={formData.participantIds}
-            onChange={(ids) => updateField("participantIds", ids)}
-            disabled={isLoadingCatalogs || notCanEdit}
-          />
-        </Section>
-
-        <Section icon={<AlertTriangle className="h-4 w-4" />} title="Interventions">
-          <div className="space-y-3">
-            <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs || notCanEdit} />
-            <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs || notCanEdit} />
-          </div>
-        </Section>
-      </div>
+      {/* ─── Row 3: Interventions ─── */}
+      <Section icon={<AlertTriangle className="h-4 w-4" />} title="Interventions">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} />
+          <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} />
+        </div>
+      </Section>
 
       {/* ─── Row 4: Session Summary (full width) ─── */}
       <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
-        <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} disabled={notCanEdit} />
+        <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} disabled={formDisabled} />
       </Section>
 
       {/* ─── Row 5: Signatures ─── */}
@@ -257,10 +256,10 @@ export function SessionNoteForm({
         onCaregiverCheckedChange={onCaregiverCheckedChange}
         onCaregiverSignatureChange={onCaregiverSignatureChange}
         caregiverSignatureImage={caregiverSignatureImage}
-        notCanEdit={notCanEdit}
+        notCanEdit={formDisabled}
       />
 
-      <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText="Save Session Note" disabled={blocked && notCanEdit} />
+      <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText={noteStatus === "read" ? "Save Data Collection" : "Save Session Note"} disabled={saveDisabled} />
     </div>
   )
 }

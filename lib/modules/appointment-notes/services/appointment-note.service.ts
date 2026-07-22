@@ -1,12 +1,24 @@
-import { serviceGet, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePut, servicePatch } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import type {
   AppointmentNote,
   AppointmentNoteParticipantCatalogType,
   AppointmentNoteSummary,
+  NoteStatus,
   UpdateAppointmentNotePayload,
 } from "@/lib/types/appointment-note.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
+
+function parseNoteStatus(data: Record<string, unknown>): NoteStatus {
+  const raw = String(data.noteStatus ?? data.status ?? "").toLowerCase()
+  if (raw === "active" || raw === "close" || raw === "lock" || raw === "read") return raw
+  // Legacy fallback: derive from blocked/notCanEdit
+  const blocked = Boolean(data.blocked)
+  const notCanEdit = Boolean(data.notCanEdit)
+  if (blocked && notCanEdit) return "lock"
+  if (blocked || notCanEdit) return "close"
+  return "active"
+}
 
 function parseTeachingMethod(data: Record<string, unknown>) {
   if (data.teachingMethod && typeof data.teachingMethod === "object") {
@@ -173,6 +185,7 @@ export async function getAppointmentNote(
     useCheckmarkSignature: Boolean(data.useCheckmarkSignature),
     caregiverSignatureImage: typeof data.caregiverSignatureImage === "string" ? data.caregiverSignatureImage : null,
     caregiverSignatureChecked: typeof data.caregiverSignatureChecked === "boolean" ? data.caregiverSignatureChecked : null,
+    noteStatus: parseNoteStatus(data),
     blocked: Boolean(data.blocked),
     notCanEdit: Boolean(data.notCanEdit),
   }
@@ -265,7 +278,32 @@ export async function getAppointmentNotes(params?: {
       date: String(e.date ?? ""),
       billingCodeId: String(e.billingCodeId ?? ""),
       billingCode: String(e.billingCode ?? ""),
+      noteStatus: parseNoteStatus(e as Record<string, unknown>),
     })),
     pagination,
+  }
+}
+
+/**
+ * Change note status (admin action).
+ * PATCH /appointment/note/status
+ * Supports transitions: close → lock, close → active
+ */
+export async function updateNoteStatus(
+  noteId: string,
+  newStatus: "lock" | "active",
+): Promise<string | null> {
+  try {
+    const response = await servicePatch<{ id: string; status: string }, string>(
+      "/appointment/note/status",
+      { id: noteId, status: newStatus },
+    )
+    if (response.status === 200) {
+      const data = response.data as unknown
+      return typeof data === "string" ? data : noteId
+    }
+    return null
+  } catch {
+    return null
   }
 }

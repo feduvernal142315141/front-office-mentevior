@@ -3,6 +3,9 @@
 // Types for the Session Note module
 // ============================================
 
+/** Possible status values for a session note */
+export type NoteStatus = "read" | "active" | "close" | "lock"
+
 /** Teaching method item in the appointment note response */
 export interface AppointmentNoteTeachingMethod {
   id: string
@@ -45,6 +48,7 @@ export interface AppointmentNoteSummary {
   date: string
   billingCodeId: string
   billingCode: string
+  noteStatus?: NoteStatus
 }
 
 /** A category grouping items from the service plan */
@@ -105,8 +109,11 @@ export interface AppointmentNote {
   useCheckmarkSignature: boolean
   caregiverSignatureImage: string | null
   caregiverSignatureChecked: boolean | null
-  blocked: boolean
-  notCanEdit: boolean
+  noteStatus: NoteStatus
+  /** @deprecated Use noteStatus instead */
+  blocked?: boolean
+  /** @deprecated Use noteStatus instead */
+  notCanEdit?: boolean
 }
 
 /** Participant payload for PUT /appointment/note */

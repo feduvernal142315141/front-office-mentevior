@@ -32,7 +32,7 @@ import { buildSessionNoteUrl, buildDataCollectionUrl } from "@/lib/modules/sched
 import { getBillingCodeAction } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
 import { deleteSubEvent } from "@/lib/modules/schedules/services/appointment-sub-event.service"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
-import { getAppointmentById, toggleAppointmentEditLocks } from "@/lib/modules/schedules/services/appointments.service"
+import { getAppointmentById } from "@/lib/modules/schedules/services/appointments.service"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { getCurrentTime } from "@/lib/utils/unit-calculation"
 import { toast } from "sonner"
@@ -217,18 +217,22 @@ export function WeekCalendar({
         return
       }
 
-      if (action === "toggle_edit_lock") {
+      if (action === "note_lock" || action === "note_activate") {
         actions.closeContextMenu()
-        try {
-          const result = await toggleAppointmentEditLocks(appointmentId)
-          if (result) {
-            actions.handleAppointmentSaved()
-            toast.success(appointment?.blocked || appointment?.notCanEdit ? "Editing unlocked" : "Editing locked")
-          } else {
-            toast.error("Failed to toggle edit lock")
-          }
-        } catch {
-          toast.error("Failed to toggle edit lock")
+        const newStatus = action === "note_lock" ? "lock" : "active"
+        const doUpdate = async () => {
+          try {
+            const noteData = await import("@/lib/modules/appointment-notes/services/appointment-note.service").then(m => m.getAppointmentNote(appointmentId))
+            if (!noteData) { toast.error("No note found for this appointment"); return }
+            const result = await import("@/lib/modules/appointment-notes/services/appointment-note.service").then(m => m.updateNoteStatus(noteData.id, newStatus as "lock" | "active"))
+            if (result) { actions.handleAppointmentSaved(); toast.success(newStatus === "lock" ? "Note locked and sent to billing" : "Note re-activated for editing") }
+            else toast.error(`Failed to ${newStatus === "lock" ? "lock" : "re-activate"} note`)
+          } catch { toast.error("Failed to update note status") }
+        }
+        if (action === "note_lock") {
+          alert.confirm({ title: "Lock Note for Billing", description: "This action is permanent. The note will be sent to billing and cannot be unlocked.", confirmText: "Lock", cancelText: "Cancel", onConfirm: doUpdate })
+        } else {
+          void doUpdate()
         }
         return
       }
@@ -775,7 +779,7 @@ export function WeekCalendar({
           billingCodeAction={contextMenuBillingCodeAction}
           isSupervision={contextMenu.isSupervision}
           parentBillingCodeAction={contextMenu.isSupervision ? contextMenuBillingCodeAction : undefined}
-          isLocked={!!(contextMenuAppointment?.blocked || contextMenuAppointment?.notCanEdit)}
+          noteStatus={contextMenuAppointment?.noteStatus}
           canToggleLock={canToggleLock}
           onAction={handleMenuAction}
           onClose={actions.closeContextMenu}

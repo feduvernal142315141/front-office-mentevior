@@ -2,16 +2,17 @@
 
 import { useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { ArrowLeft, NotebookPen, FileDown, Loader2, Lock, LockOpen } from "lucide-react"
+import { ArrowLeft, NotebookPen, FileDown, Loader2, Lock, LockOpen, BookOpen, PenLine, Clock } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/custom/Button"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
-import { getAppointmentNotePdfUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
-import { toggleAppointmentEditLocks } from "@/lib/modules/schedules/services/appointments.service"
+import { getAppointmentNotePdfUrl, updateNoteStatus } from "@/lib/modules/appointment-notes/services/appointment-note.service"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { useAlert } from "@/lib/contexts/alert-context"
+import { deriveNoteStatusInfo } from "./hooks/useNoteStatus"
 import { SessionNoteForm } from "./components/SessionNoteForm"
 import { SessionNotesTable } from "./components/SessionNotesTable"
 import { useSessionNoteForm } from "./hooks/useSessionNoteForm"
@@ -53,14 +54,15 @@ export default function SessionNotePage() {
 // Extracted to a separate component so hooks are not called conditionally
 function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
   const router = useRouter()
+  const alert = useAlert()
   const { user } = useAuth()
   const { user: fullUser } = useUserById(user?.id || null)
   const { block: canBlock } = usePermission()
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
   const hasBlockPermission = canBlock(PermissionModule.APPOINTMENT)
-  const canToggleLock = isAdmin && hasBlockPermission
+  const canAdminAction = isAdmin && hasBlockPermission
 
-  const [isTogglingLock, setIsTogglingLock] = useState(false)
+  const [isChangingStatus, setIsChangingStatus] = useState(false)
 
   const {
     formData,
@@ -90,10 +92,12 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     setCaregiverChecked,
     caregiverSignatureImage,
     setCaregiverSignatureImage,
-    noteBlocked,
-    noteNotCanEdit,
+    noteStatus,
+    noteId,
     refetchNote,
   } = useSessionNoteForm({ appointmentId, clientId })
+
+  const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
@@ -111,25 +115,34 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     }
   }, [appointmentId, isGeneratingPdf])
 
-  const isLocked = noteBlocked || noteNotCanEdit
-
-  const handleToggleLock = useCallback(async () => {
-    if (!appointmentId || isTogglingLock) return
-    setIsTogglingLock(true)
-    try {
-      const result = await toggleAppointmentEditLocks(appointmentId)
-      if (result) {
-        await refetchNote()
-        toast.success(isLocked ? "Editing unlocked" : "Editing locked")
-      } else {
-        toast.error("Failed to toggle edit lock")
-      }
-    } catch {
-      toast.error("Failed to toggle edit lock")
-    } finally {
-      setIsTogglingLock(false)
+  const handleNoteStatusChange = useCallback(async (newStatus: "lock" | "active") => {
+    if (!noteId || isChangingStatus) return
+    if (newStatus === "lock") {
+      alert.confirm({
+        title: "Lock Note for Billing",
+        description: "This action is permanent. The note will be sent to billing and cannot be unlocked.",
+        confirmText: "Lock",
+        cancelText: "Cancel",
+        onConfirm: async () => {
+          setIsChangingStatus(true)
+          try {
+            const result = await updateNoteStatus(noteId, "lock")
+            if (result) { await refetchNote(); toast.success("Note locked and sent to billing") }
+            else toast.error("Failed to lock note")
+          } catch { toast.error("Failed to lock note") }
+          finally { setIsChangingStatus(false) }
+        },
+      })
+      return
     }
-  }, [appointmentId, isTogglingLock, refetchNote, isLocked])
+    setIsChangingStatus(true)
+    try {
+      const result = await updateNoteStatus(noteId, "active")
+      if (result) { await refetchNote(); toast.success("Note re-activated for editing") }
+      else toast.error("Failed to re-activate note")
+    } catch { toast.error("Failed to re-activate note") }
+    finally { setIsChangingStatus(false) }
+  }, [noteId, isChangingStatus, refetchNote, alert])
 
   const handleSaveAndRedirect = useCallback(async () => {
     const result = await handleSubmit()
@@ -182,63 +195,13 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
           </div>
         </div>
 
-        {/* Edit Lock Banner */}
-        {!isLoadingNote && !noteError && (isLocked || canToggleLock) && (
-          <div className={`
-            flex items-center gap-4 px-5 py-3.5 rounded-2xl border mb-6
-            transition-all duration-300 ease-out
-            ${isLocked
-              ? "border-amber-200/80 bg-gradient-to-r from-amber-50/90 to-amber-100/50 shadow-[0_2px_12px_rgba(245,158,11,0.08)]"
-              : "border-[#037ECC]/20 bg-gradient-to-r from-[#037ECC]/[0.04] to-[#079CFB]/[0.04] shadow-[0_2px_12px_rgba(3,126,204,0.06)]"
-            }
-          `}>
-            <div className={`
-              flex items-center justify-center h-10 w-10 rounded-xl shrink-0
-              ${isLocked
-                ? "bg-amber-100 border border-amber-200/60"
-                : "bg-[#037ECC]/10 border border-[#037ECC]/20"
-              }
-            `}>
-              {isLocked
-                ? <Lock className="h-4.5 w-4.5 text-amber-600" />
-                : <LockOpen className="h-4.5 w-4.5 text-[#037ECC]" />
-              }
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-semibold ${isLocked ? "text-amber-800" : "text-[#037ECC]"}`}>
-                {isLocked ? "This session note is locked for editing" : "Editing is enabled"}
-              </p>
-              <p className={`text-xs mt-0.5 ${isLocked ? "text-amber-600/80" : "text-[#037ECC]/60"}`}>
-                {isLocked
-                  ? "Editing has been restricted by the system"
-                  : "You can lock it again when you're done"
-                }
-              </p>
-            </div>
-            {canToggleLock && (
-              <Button
-                type="button"
-                variant="secondary"
-                className={`
-                  shrink-0 h-9 px-4 text-xs font-semibold gap-2 rounded-xl
-                  ${isLocked
-                    ? "border-amber-300 text-amber-700 hover:bg-amber-100 hover:border-amber-400"
-                    : "border-[#037ECC]/30 text-[#037ECC] hover:bg-[#037ECC]/10 hover:border-[#037ECC]/50"
-                  }
-                `}
-                onClick={handleToggleLock}
-                disabled={isTogglingLock}
-              >
-                {isTogglingLock
-                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  : isLocked
-                    ? <LockOpen className="h-3.5 w-3.5" />
-                    : <Lock className="h-3.5 w-3.5" />
-                }
-                {isLocked ? "Unlock Editing" : "Lock Editing"}
-              </Button>
-            )}
-          </div>
+        {/* Note Status Banner */}
+        {!isLoadingNote && !noteError && (
+          <NoteStatusBanner
+            statusInfo={statusInfo}
+            isChangingStatus={isChangingStatus}
+            onStatusChange={handleNoteStatusChange}
+          />
         )}
 
         {/* Loading state */}
@@ -286,8 +249,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
               onCaregiverCheckedChange={setCaregiverChecked}
               onCaregiverSignatureChange={setCaregiverSignatureImage}
               caregiverSignatureImage={caregiverSignatureImage}
-              blocked={noteBlocked}
-              notCanEdit={noteNotCanEdit}
+              noteStatus={noteStatus}
             />
           </form>
         )}
@@ -304,6 +266,64 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
           documentUrl={pdfUrl}
           fileName="Appointment Note.pdf"
         />
+      )}
+    </div>
+  )
+}
+
+// ============================================
+// Note Status Banner
+// ============================================
+
+const BANNER_CONFIG = {
+  info:    { border: "border-[#037ECC]/20", bg: "from-[#037ECC]/[0.04] to-[#079CFB]/[0.04]", shadow: "shadow-[0_2px_12px_rgba(3,126,204,0.06)]", iconBg: "bg-[#037ECC]/10 border-[#037ECC]/20", title: "text-[#037ECC]", desc: "text-[#037ECC]/60" },
+  success: { border: "border-emerald-200/80", bg: "from-emerald-50/90 to-emerald-100/50", shadow: "shadow-[0_2px_12px_rgba(16,185,129,0.08)]", iconBg: "bg-emerald-100 border-emerald-200/60", title: "text-emerald-800", desc: "text-emerald-600/80" },
+  warning: { border: "border-amber-200/80", bg: "from-amber-50/90 to-amber-100/50", shadow: "shadow-[0_2px_12px_rgba(245,158,11,0.08)]", iconBg: "bg-amber-100 border-amber-200/60", title: "text-amber-800", desc: "text-amber-600/80" },
+  danger:  { border: "border-red-200/80", bg: "from-red-50/90 to-red-100/50", shadow: "shadow-[0_2px_12px_rgba(239,68,68,0.08)]", iconBg: "bg-red-100 border-red-200/60", title: "text-red-800", desc: "text-red-600/80" },
+} as const
+
+const BANNER_ICONS = { read: BookOpen, active: PenLine, close: Clock, lock: Lock } as const
+
+function NoteStatusBanner({ statusInfo, isChangingStatus, onStatusChange }: {
+  statusInfo: import("./hooks/useNoteStatus").NoteStatusInfo
+  isChangingStatus: boolean
+  onStatusChange: (status: "lock" | "active") => void
+}) {
+  const colors = BANNER_CONFIG[statusInfo.bannerVariant]
+  const Icon = BANNER_ICONS[statusInfo.status]
+
+  return (
+    <div className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl border mb-6 transition-all duration-300 ease-out bg-gradient-to-r ${colors.border} ${colors.bg} ${colors.shadow}`}>
+      <div className={`flex items-center justify-center h-10 w-10 rounded-xl shrink-0 border ${colors.iconBg}`}>
+        <Icon className={`h-4 w-4 ${colors.title}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-semibold ${colors.title}`}>{statusInfo.bannerMessage}</p>
+        <p className={`text-xs mt-0.5 ${colors.desc}`}>{statusInfo.bannerDescription}</p>
+      </div>
+      {statusInfo.canActivate && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="shrink-0 h-9 px-4 text-xs font-semibold gap-2 rounded-xl border-amber-300 text-amber-700 hover:bg-amber-100 hover:border-amber-400"
+          onClick={() => onStatusChange("active")}
+          disabled={isChangingStatus}
+        >
+          {isChangingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LockOpen className="h-3.5 w-3.5" />}
+          Re-Activate
+        </Button>
+      )}
+      {statusInfo.canLock && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="shrink-0 h-9 px-4 text-xs font-semibold gap-2 rounded-xl border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400"
+          onClick={() => onStatusChange("lock")}
+          disabled={isChangingStatus}
+        >
+          {isChangingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+          Lock for Billing
+        </Button>
       )}
     </div>
   )

@@ -30,8 +30,11 @@ export interface ApprovedBillingCodesResponse {
 export async function getApprovedBillingCodesByClient(
   clientId: string,
   billingCodeType: string = "Session",
+  providerId?: string,
 ): Promise<ApprovedBillingCodesResponse | null> {
-  const url = `/prior-authorizations/approved-billing-codes/by-client/${clientId}?billingCodeType=${encodeURIComponent(billingCodeType)}`
+  const params = new URLSearchParams({ billingCodeType })
+  if (providerId) params.set("providerId", providerId)
+  const url = `/prior-authorizations/approved-billing-codes/by-client/${clientId}?${params.toString()}`
   const response = await serviceGetSilent<ApprovedBillingCodesResponse | null>(url)
 
   if (response.status !== 200) {

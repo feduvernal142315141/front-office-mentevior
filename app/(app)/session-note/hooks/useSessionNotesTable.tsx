@@ -142,6 +142,24 @@ export function useSessionNotesTable() {
       ),
     },
     {
+      key: "noteStatus",
+      header: "Status",
+      render: (note) => {
+        const config: Record<string, { label: string; className: string }> = {
+          read: { label: "Read Only", className: "bg-blue-50 border-blue-100 text-blue-700" },
+          active: { label: "Active", className: "bg-emerald-50 border-emerald-100 text-emerald-700" },
+          close: { label: "Closed", className: "bg-amber-50 border-amber-100 text-amber-700" },
+          lock: { label: "Locked", className: "bg-red-50 border-red-100 text-red-700" },
+        }
+        const s = config[note.noteStatus ?? "read"] ?? config.read
+        return (
+          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${s.className}`}>
+            {s.label}
+          </span>
+        )
+      },
+    },
+    {
       key: "actions",
       header: "Actions",
       align: "right",

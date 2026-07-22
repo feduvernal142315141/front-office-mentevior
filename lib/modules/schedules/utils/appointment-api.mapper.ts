@@ -241,6 +241,14 @@ export function fromApiAppointment(api: ApiAppointmentItem): Appointment {
     timeEnd: api.timeEnd,
     blocked: Boolean(api.blocked),
     notCanEdit: Boolean(api.notCanEdit),
+    noteStatus: (() => {
+      const raw = String((api as unknown as Record<string, unknown>).noteStatus ?? "").toLowerCase()
+      if (raw === "active" || raw === "close" || raw === "lock" || raw === "read") return raw
+      const b = Boolean(api.blocked), n = Boolean(api.notCanEdit)
+      if (b && n) return "lock" as const
+      if (b || n) return "close" as const
+      return "active" as const
+    })(),
     addSupervision: !!api.supervision,
     supervision: api.supervision,
     supervisionRbtId: api.supervision?.providerId,

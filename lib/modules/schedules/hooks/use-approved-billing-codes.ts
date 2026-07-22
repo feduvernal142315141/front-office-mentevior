@@ -44,6 +44,7 @@ function mapApprovedToConfigItem(item: ApprovedBillingCodeItem): ConfigBillingCo
 export function useApprovedBillingCodes(
   clientId: string | null,
   billingCodeType: string = "Session",
+  providerId?: string | null,
 ): ApprovedBillingCodesResult {
   const [billingCodes, setBillingCodes] = useState<ConfigBillingCodeItem[]>([])
   const [priorAuthorization, setPriorAuthorization] = useState<ApprovedBillingCodesResponse | null>(null)
@@ -60,7 +61,7 @@ export function useApprovedBillingCodes(
     try {
       setIsLoading(true)
       setError(null)
-      const data = await getApprovedBillingCodesByClient(clientId, billingCodeType)
+      const data = await getApprovedBillingCodesByClient(clientId, billingCodeType, providerId || undefined)
 
       if (data === null) {
         setBillingCodes([])
@@ -76,7 +77,7 @@ export function useApprovedBillingCodes(
     } finally {
       setIsLoading(false)
     }
-  }, [clientId, billingCodeType])
+  }, [clientId, billingCodeType, providerId])
 
   useEffect(() => {
     void fetchCodes()

@@ -163,6 +163,10 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   const handleSubmit = useCallback(async () => {
     if (!formData.noteId || !note) return null
 
+    const status = note.noteStatus
+    // Prevent save on close/lock statuses
+    if (status === "close" || status === "lock") return null
+
     // Validate that all data collection items have a value
     const missing = new Set<string>()
     for (const cat of note.categories) {
@@ -186,13 +190,6 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     }
     setItemErrors(new Set())
 
-    const participants: AppointmentNoteParticipantPayload[] = formData.participantIds
-      .filter(Boolean)
-      .map((catalogId) => {
-        const item = participantCatalog.find((c) => c.id === catalogId)
-        return { catalogId, catalogType: item?.type ?? "Member User Type" }
-      })
-
     // Build flat dataCollectionItems from all categories
     const dataCollectionItems = note.categories.flatMap((cat) =>
       cat.items.map((item) => {
@@ -206,20 +203,33 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
       })
     )
 
+    const isReadOnly = status === "read"
+
+    const participants: AppointmentNoteParticipantPayload[] = isReadOnly
+      ? []
+      : formData.participantIds
+          .filter(Boolean)
+          .map((catalogId) => {
+            const item = participantCatalog.find((c) => c.id === catalogId)
+            return { catalogId, catalogType: item?.type ?? "Member User Type" }
+          })
+
     const payload: UpdateAppointmentNotePayload = {
       id: formData.noteId,
-      teachingMethodId: formData.teachingMethodId || null,
-      modalityId: formData.modalityId || null,
-      reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
-      medicalConcerns: formData.medicalConcerns,
-      crisisInvolved: formData.crisisInvolved,
-      sessionSummary: formData.sessionSummary,
-      participants,
-      antecedentInterventionIds: formData.antecedentInterventionIds,
-      consequenceInterventionIds: formData.consequenceInterventionIds,
       dataCollectionItems,
       caregiverSignatureImage: caregiverSignatureImage || null,
       caregiverSignatureChecked: useCheckmarkSignature ? caregiverSignatureChecked : null,
+      ...(isReadOnly ? {} : {
+        teachingMethodId: formData.teachingMethodId || null,
+        modalityId: formData.modalityId || null,
+        reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
+        medicalConcerns: formData.medicalConcerns,
+        crisisInvolved: formData.crisisInvolved,
+        sessionSummary: formData.sessionSummary,
+        participants,
+        antecedentInterventionIds: formData.antecedentInterventionIds,
+        consequenceInterventionIds: formData.consequenceInterventionIds,
+      }),
     }
 
     const id = await mutation.update(payload)
@@ -275,8 +285,8 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     setCaregiverChecked,
     caregiverSignatureImage,
     setCaregiverSignatureImage,
-    noteBlocked: note?.blocked ?? false,
-    noteNotCanEdit: note?.notCanEdit ?? false,
+    noteStatus: note?.noteStatus ?? "read",
+    noteId: note?.id ?? null,
     refetchNote: refetch,
   }
 }

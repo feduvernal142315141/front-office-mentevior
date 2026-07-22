@@ -129,6 +129,11 @@ export function useAppointmentForm({
     formData.clientId || null,
   )
 
+  // ─── Effective provider (assign-to-other override) ───
+  const effectiveProviderId = (isAdmin && assignToOther && selectedProviderId)
+    ? selectedProviderId
+    : providerId
+
   const billingCodeType = eventTypeToBillingCodeType(formData.eventType)
   const {
     billingCodes: mainBillingCodes,
@@ -136,7 +141,7 @@ export function useAppointmentForm({
     hasPriorAuthWithoutCodes,
     isLoading: mainBillingCodesLoading,
     error: mainBillingCodesError,
-  } = useApprovedBillingCodes(formData.clientId || null, billingCodeType)
+  } = useApprovedBillingCodes(formData.clientId || null, billingCodeType, effectiveProviderId)
 
   // ─── Determine if selected BC allows inline supervision ───
   const selectedBillingCodeLabel = useMemo(() => {
@@ -174,11 +179,6 @@ export function useAppointmentForm({
         })),
     [clientProviders],
   )
-
-  // ─── Effective provider (assign-to-other override) ───
-  const effectiveProviderId = (isAdmin && assignToOther && selectedProviderId)
-    ? selectedProviderId
-    : providerId
 
   const durationMinutes = useMemo(
     () => calculateDurationMinutes(formData.startTime, formData.endTime),
