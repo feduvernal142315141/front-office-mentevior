@@ -126,7 +126,7 @@ export function SessionNoteForm({
       {/* ─── Service Details ─── */}
       {(serviceDetails || billingCodes || modality) && (
         <Section icon={<ClipboardList className="h-4 w-4" />} title="Service Details">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <div>
               <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Date</span>
               <span className="text-sm font-medium text-slate-800">{serviceDetails?.date ?? "—"}</span>
@@ -134,6 +134,10 @@ export function SessionNoteForm({
             <div>
               <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Place of Service</span>
               <span className="text-sm font-medium text-slate-800">{serviceDetails?.placeOfService ?? "—"}</span>
+            </div>
+            <div>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Time In/Out</span>
+              <span className="text-sm font-medium text-slate-800">{serviceDetails?.timeInOut ?? "—"}</span>
             </div>
             <div>
               <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Hours</span>
@@ -248,7 +252,6 @@ export function SessionNoteForm({
         provider={provider}
         providerSignatureUrl={providerSignatureUrl}
         serviceDate={serviceDetails?.date}
-        serviceTime={serviceDetails?.timeInOut}
         useCheckmarkSignature={useCheckmarkSignature}
         caregiverChecked={caregiverSignatureChecked}
         onCaregiverCheckedChange={onCaregiverCheckedChange}
@@ -355,11 +358,10 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, serviceDate, serviceTime, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
+function SignatureSection({ provider, providerSignatureUrl, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
   provider: AppointmentNoteProvider | null
   providerSignatureUrl?: string | null
   serviceDate?: string | null
-  serviceTime?: string | null
   useCheckmarkSignature?: boolean
   caregiverChecked?: boolean
   onCaregiverCheckedChange?: (checked: boolean) => void
@@ -488,16 +490,10 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, service
             </div>
           </div>
 
-          {/* Row 3 — Date / Time */}
-          <div className="grid grid-cols-2">
-            <div className="px-6 py-4 border-r border-slate-100">
-              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Date</span>
-              <p className="text-sm font-semibold text-slate-800">{serviceDate ?? "—"}</p>
-            </div>
-            <div className="px-6 py-4">
-              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Time</span>
-              <p className="text-sm font-semibold text-slate-800">{serviceTime ?? "—"}</p>
-            </div>
+          {/* Row 3 — Date */}
+          <div className="px-6 py-4">
+            <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Date</span>
+            <p className="text-sm font-semibold text-slate-800">{serviceDate ?? "—"}</p>
           </div>
         </div>
 
