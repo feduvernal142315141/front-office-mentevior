@@ -126,7 +126,7 @@ export function SessionNoteForm({
       {/* ─── Service Details ─── */}
       {(serviceDetails || billingCodes || modality) && (
         <Section icon={<ClipboardList className="h-4 w-4" />} title="Service Details">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
               <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Date</span>
               <span className="text-sm font-medium text-slate-800">{serviceDetails?.date ?? "—"}</span>
@@ -136,16 +136,8 @@ export function SessionNoteForm({
               <span className="text-sm font-medium text-slate-800">{serviceDetails?.placeOfService ?? "—"}</span>
             </div>
             <div>
-              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Time In/Out</span>
-              <span className="text-sm font-medium text-slate-800">{serviceDetails?.timeInOut ?? "—"}</span>
-            </div>
-            <div>
               <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Hours</span>
               <span className="text-sm font-medium text-slate-800">{serviceDetails?.hours ?? "—"}</span>
-            </div>
-            <div>
-              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Modality</span>
-              <span className="text-sm font-medium text-slate-800">{modality?.name ?? "—"}</span>
             </div>
             <div>
               <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Billing Codes</span>
