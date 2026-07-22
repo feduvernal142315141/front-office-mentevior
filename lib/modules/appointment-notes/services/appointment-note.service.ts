@@ -60,6 +60,7 @@ function parseProvider(data: Record<string, unknown>) {
       credential: String(p.credential ?? ""),
       npi: String(p.npi ?? ""),
       mpi: String(p.mpi ?? ""),
+      sign: String(p.sign ?? ""),
     }
   }
   return null

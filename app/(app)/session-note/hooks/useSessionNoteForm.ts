@@ -17,8 +17,6 @@ import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hook
 import { useInterventionCatalogs } from "@/lib/modules/appointment-notes/hooks/use-intervention-catalogs"
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
-import { useSignature } from "@/lib/modules/signature/hooks/use-signature"
-import { useAuth } from "@/lib/hooks/use-auth"
 
 export interface CategoryItemFormData {
   value: number | null
@@ -88,11 +86,10 @@ interface UseSessionNoteFormProps {
 export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   const { note, isLoading: noteLoading, error: noteError, refetch } = useAppointmentNote(appointmentId)
   const mutation = useAppointmentNoteMutation()
-  const { user } = useAuth()
 
-  // Provider signature
-  const { signature: providerSignature, save: saveProviderSignature, isSaving: isProviderSignatureSaving } = useSignature(user?.id ?? null, !!user?.id)
-  const providerSignatureUrl = providerSignature?.url ?? null
+  // Provider signature — from note response (presigned URL), edits stored locally until save
+  const [providerSignatureImage, setProviderSignatureImage] = useState<string | null>(null)
+  const providerSignatureUrl = providerSignatureImage || note?.provider?.sign || null
 
   // Caregiver signature state — initialized from persisted values
   const useCheckmarkSignature = note?.useCheckmarkSignature ?? false
@@ -227,6 +224,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
       dataCollectionItems,
       caregiverSignatureImage: caregiverSignatureImage || null,
       caregiverSignatureChecked: useCheckmarkSignature ? caregiverSignatureChecked : null,
+      providerSignatureImage: providerSignatureImage || null,
       ...(isReadOnly ? {} : {
         teachingMethodId: formData.teachingMethodId || null,
         modalityId: formData.modalityId || null,
@@ -288,8 +286,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     noteModality,
     itemErrors,
     providerSignatureUrl,
-    saveProviderSignature,
-    isProviderSignatureSaving,
+    setProviderSignatureImage,
     useCheckmarkSignature,
     caregiverSignatureChecked,
     setCaregiverChecked,

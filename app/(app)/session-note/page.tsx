@@ -88,8 +88,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     noteModality,
     itemErrors,
     providerSignatureUrl,
-    saveProviderSignature,
-    isProviderSignatureSaving,
+    setProviderSignatureImage,
     useCheckmarkSignature,
     caregiverSignatureChecked,
     setCaregiverChecked,
@@ -247,8 +246,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
               modality={noteModality}
               itemErrors={itemErrors}
               providerSignatureUrl={providerSignatureUrl}
-              onProviderSignatureSave={saveProviderSignature}
-              isProviderSaving={isProviderSignatureSaving}
+              onProviderSignatureChange={setProviderSignatureImage}
               useCheckmarkSignature={useCheckmarkSignature}
               caregiverSignatureChecked={caregiverSignatureChecked}
               onCaregiverCheckedChange={setCaregiverChecked}

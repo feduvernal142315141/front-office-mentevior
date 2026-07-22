@@ -72,6 +72,7 @@ export interface AppointmentNoteProvider {
   credential: string
   npi: string
   mpi: string
+  sign: string
 }
 
 /** Service details resolved from the appointment */
@@ -145,6 +146,7 @@ export interface UpdateAppointmentNotePayload {
   dataCollectionItems?: UpdateAppointmentNoteDataCollectionItem[]
   caregiverSignatureImage?: string | null
   caregiverSignatureChecked?: boolean | null
+  providerSignatureImage?: string | null
 }
 
 /** Catalog item for antecedent/consequence interventions */

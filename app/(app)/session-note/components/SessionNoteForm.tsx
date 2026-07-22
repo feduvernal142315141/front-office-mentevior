@@ -47,8 +47,7 @@ interface SessionNoteFormProps {
   modalityOptions: { value: string; label: string }[]
   itemErrors?: Set<string>
   providerSignatureUrl?: string | null
-  onProviderSignatureSave?: (base64: string) => void
-  isProviderSaving?: boolean
+  onProviderSignatureChange?: (base64: string | null) => void
   useCheckmarkSignature?: boolean
   caregiverSignatureChecked?: boolean
   onCaregiverCheckedChange?: (checked: boolean) => void
@@ -77,8 +76,7 @@ export function SessionNoteForm({
   modalityOptions,
   itemErrors,
   providerSignatureUrl,
-  onProviderSignatureSave,
-  isProviderSaving,
+  onProviderSignatureChange,
   useCheckmarkSignature,
   caregiverSignatureChecked,
   onCaregiverCheckedChange,
@@ -254,8 +252,7 @@ export function SessionNoteForm({
       <SignatureSection
         provider={provider}
         providerSignatureUrl={providerSignatureUrl}
-        onProviderSignatureSave={onProviderSignatureSave}
-        isProviderSaving={isProviderSaving}
+        onProviderSignatureChange={onProviderSignatureChange}
         serviceDate={serviceDetails?.date}
         useCheckmarkSignature={useCheckmarkSignature}
         caregiverChecked={caregiverSignatureChecked}
@@ -363,11 +360,10 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureSave, isProviderSaving, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
+function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
   provider: AppointmentNoteProvider | null
   providerSignatureUrl?: string | null
-  onProviderSignatureSave?: (base64: string) => void
-  isProviderSaving?: boolean
+  onProviderSignatureChange?: (base64: string | null) => void
   serviceDate?: string | null
   useCheckmarkSignature?: boolean
   caregiverChecked?: boolean
@@ -384,7 +380,7 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureS
   }
 
   const handleSaveProviderSignature = (base64: string) => {
-    onProviderSignatureSave?.(base64)
+    onProviderSignatureChange?.(`data:image/png;base64,${base64}`)
     setProviderEditorOpen(false)
   }
 
@@ -538,7 +534,6 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureS
           open={providerEditorOpen}
           onOpenChange={setProviderEditorOpen}
           onSave={handleSaveProviderSignature}
-          isSaving={isProviderSaving}
         />
 
         {/* Signature Editor Modal (caregiver) */}
