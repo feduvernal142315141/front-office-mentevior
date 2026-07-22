@@ -47,6 +47,8 @@ interface SessionNoteFormProps {
   modalityOptions: { value: string; label: string }[]
   itemErrors?: Set<string>
   providerSignatureUrl?: string | null
+  onProviderSignatureSave?: (base64: string) => void
+  isProviderSaving?: boolean
   useCheckmarkSignature?: boolean
   caregiverSignatureChecked?: boolean
   onCaregiverCheckedChange?: (checked: boolean) => void
@@ -75,6 +77,8 @@ export function SessionNoteForm({
   modalityOptions,
   itemErrors,
   providerSignatureUrl,
+  onProviderSignatureSave,
+  isProviderSaving,
   useCheckmarkSignature,
   caregiverSignatureChecked,
   onCaregiverCheckedChange,
@@ -250,6 +254,8 @@ export function SessionNoteForm({
       <SignatureSection
         provider={provider}
         providerSignatureUrl={providerSignatureUrl}
+        onProviderSignatureSave={onProviderSignatureSave}
+        isProviderSaving={isProviderSaving}
         serviceDate={serviceDetails?.date}
         useCheckmarkSignature={useCheckmarkSignature}
         caregiverChecked={caregiverSignatureChecked}
@@ -357,9 +363,11 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
+function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureSave, isProviderSaving, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
   provider: AppointmentNoteProvider | null
   providerSignatureUrl?: string | null
+  onProviderSignatureSave?: (base64: string) => void
+  isProviderSaving?: boolean
   serviceDate?: string | null
   useCheckmarkSignature?: boolean
   caregiverChecked?: boolean
@@ -369,9 +377,15 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
   notCanEdit?: boolean
 }) {
   const [editorOpen, setEditorOpen] = useState(false)
+  const [providerEditorOpen, setProviderEditorOpen] = useState(false)
 
   const handleSaveSignature = (base64: string) => {
     onCaregiverSignatureChange?.(`data:image/png;base64,${base64}`)
+  }
+
+  const handleSaveProviderSignature = (base64: string) => {
+    onProviderSignatureSave?.(base64)
+    setProviderEditorOpen(false)
   }
 
   return (
@@ -383,13 +397,13 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
         </p>
 
         {/* ─── Document-style signature block ─── */}
-        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+        <div className="rounded-2xl border border-[#037ECC]/20 bg-white overflow-hidden">
 
           {/* Row 1 — Provider */}
-          <div className="grid grid-cols-2 border-b border-slate-100">
+          <div className="grid grid-cols-2 border-b border-[#037ECC]/10">
             {/* Provider name */}
-            <div className="px-6 py-5 border-r border-slate-100">
-              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Provider Name / Credential</span>
+            <div className="px-6 py-5 border-r border-[#037ECC]/10">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Provider Name / Credential</span>
               <p className="text-sm font-semibold text-slate-800">{provider?.name ?? "—"}</p>
               {provider?.credential && (
                 <p className="text-xs text-slate-500 mt-0.5">{provider.credential}</p>
@@ -397,27 +411,50 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
             </div>
             {/* Provider signature */}
             <div className="px-6 py-5">
-              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Signature</span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">Signature</span>
+                {!notCanEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setProviderEditorOpen(true)}
+                    className={cn(
+                      "h-7 w-7 rounded-lg border border-slate-200 bg-white inline-flex items-center justify-center",
+                      "text-slate-500 hover:text-[#037ECC] hover:border-[#037ECC]/40 transition-all duration-150",
+                    )}
+                    title="Edit signature"
+                    aria-label="Edit provider signature"
+                  >
+                    <PenLine className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
               <div className="relative min-h-[64px] flex items-end pb-3">
                 {providerSignatureUrl ? (
                   <img
                     src={providerSignatureUrl}
                     alt="Provider signature"
-                    className="max-h-[52px] max-w-full object-contain"
+                    className="max-h-[52px] max-w-full object-contain contrast-150 brightness-50"
                   />
                 ) : (
-                  <span className="text-xs text-slate-300 italic">No signature on file</span>
+                  <button
+                    type="button"
+                    onClick={() => !notCanEdit && setProviderEditorOpen(true)}
+                    disabled={notCanEdit}
+                    className="text-xs text-slate-300 italic hover:text-[#037ECC] transition-colors disabled:hover:text-slate-300"
+                  >
+                    Click to sign
+                  </button>
                 )}
-                <div className="absolute bottom-0 left-0 right-0 border-b border-slate-300/50" />
+                <div className="absolute bottom-0 left-0 right-0 border-b border-[#037ECC]/20" />
               </div>
             </div>
           </div>
 
           {/* Row 2 — Caregiver */}
-          <div className="grid grid-cols-2 border-b border-slate-100">
+          <div className="grid grid-cols-2 border-b border-[#037ECC]/10">
             {/* Caregiver info */}
-            <div className="px-6 py-5 border-r border-slate-100">
-              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Caregiver</span>
+            <div className="px-6 py-5 border-r border-[#037ECC]/10">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Caregiver</span>
               {useCheckmarkSignature ? (
                 <label className="flex items-start gap-2.5 cursor-pointer group mt-1">
                   <input
@@ -438,7 +475,7 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
             {/* Caregiver signature */}
             <div className="px-6 py-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">
                   {useCheckmarkSignature ? "Confirmation" : "Signature"}
                 </span>
                 {!useCheckmarkSignature && !notCanEdit && (
@@ -470,7 +507,7 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
                   <img
                     src={caregiverSignatureImage}
                     alt="Caregiver signature"
-                    className="max-h-[52px] max-w-full object-contain"
+                    className="max-h-[52px] max-w-full object-contain contrast-150 brightness-50"
                   />
                 ) : (
                   <button
@@ -483,7 +520,7 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
                   </button>
                 )}
                 {!useCheckmarkSignature && (
-                  <div className="absolute bottom-0 left-0 right-0 border-b border-slate-300/50" />
+                  <div className="absolute bottom-0 left-0 right-0 border-b border-[#037ECC]/20" />
                 )}
               </div>
             </div>
@@ -491,10 +528,18 @@ function SignatureSection({ provider, providerSignatureUrl, serviceDate, useChec
 
           {/* Row 3 — Date */}
           <div className="px-6 py-4">
-            <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Date</span>
+            <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-1">Date</span>
             <p className="text-sm font-semibold text-slate-800">{serviceDate ?? "—"}</p>
           </div>
         </div>
+
+        {/* Signature Editor Modal (provider) */}
+        <SignatureEditorModal
+          open={providerEditorOpen}
+          onOpenChange={setProviderEditorOpen}
+          onSave={handleSaveProviderSignature}
+          isSaving={isProviderSaving}
+        />
 
         {/* Signature Editor Modal (caregiver) */}
         {!useCheckmarkSignature && (

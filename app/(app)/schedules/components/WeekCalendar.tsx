@@ -219,20 +219,28 @@ export function WeekCalendar({
 
       if (action === "note_lock" || action === "note_activate") {
         actions.closeContextMenu()
-        const newStatus = action === "note_lock" ? "lock" : "active"
-        const doUpdate = async () => {
-          try {
-            const noteData = await import("@/lib/modules/appointment-notes/services/appointment-note.service").then(m => m.getAppointmentNote(appointmentId))
-            if (!noteData) { toast.error("No note found for this appointment"); return }
-            const result = await import("@/lib/modules/appointment-notes/services/appointment-note.service").then(m => m.updateNoteStatus(noteData.id, newStatus as "lock" | "active"))
-            if (result) { actions.handleAppointmentSaved(); toast.success(newStatus === "lock" ? "Note locked and sent to billing" : "Note re-activated for editing") }
-            else toast.error(`Failed to ${newStatus === "lock" ? "lock" : "re-activate"} note`)
-          } catch { toast.error("Failed to update note status") }
-        }
         if (action === "note_lock") {
-          alert.confirm({ title: "Lock Note for Billing", description: "This action is permanent. The note will be sent to billing and cannot be unlocked.", confirmText: "Lock", cancelText: "Cancel", onConfirm: doUpdate })
+          alert.confirm({
+            title: "Lock Note for Billing",
+            description: "This action is permanent. The note will be sent to billing and cannot be unlocked.",
+            confirmText: "Lock",
+            cancelText: "Cancel",
+            onConfirm: async () => {
+              try {
+                const { lockAppointmentNote } = await import("@/lib/modules/appointment-notes/services/appointment-note.service")
+                const result = await lockAppointmentNote(appointmentId)
+                if (result) { actions.handleAppointmentSaved(); toast.success("Note locked and sent to billing") }
+                else toast.error("Failed to lock note")
+              } catch { toast.error("Failed to lock note") }
+            },
+          })
         } else {
-          void doUpdate()
+          try {
+            const { toggleAppointmentEditLocks } = await import("@/lib/modules/schedules/services/appointments.service")
+            const result = await toggleAppointmentEditLocks(appointmentId)
+            if (result) { actions.handleAppointmentSaved(); toast.success("Note re-activated for editing") }
+            else toast.error("Failed to re-activate note")
+          } catch { toast.error("Failed to re-activate note") }
         }
         return
       }

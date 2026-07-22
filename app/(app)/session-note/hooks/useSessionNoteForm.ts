@@ -91,7 +91,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   const { user } = useAuth()
 
   // Provider signature
-  const { signature: providerSignature } = useSignature(user?.id ?? null, !!user?.id)
+  const { signature: providerSignature, save: saveProviderSignature, isSaving: isProviderSignatureSaving } = useSignature(user?.id ?? null, !!user?.id)
   const providerSignatureUrl = providerSignature?.url ?? null
 
   // Caregiver signature state — initialized from persisted values
@@ -146,6 +146,14 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
         [itemId]: { ...prev.categoryItems[itemId], value },
       },
     }))
+    if (value != null) {
+      setItemErrors((prev) => {
+        if (!prev.has(itemId)) return prev
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
+    }
   }, [])
 
   const updateItemEnvironmentalChange = useCallback((itemId: string, text: string) => {
@@ -280,6 +288,8 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     noteModality,
     itemErrors,
     providerSignatureUrl,
+    saveProviderSignature,
+    isProviderSignatureSaving,
     useCheckmarkSignature,
     caregiverSignatureChecked,
     setCaregiverChecked,

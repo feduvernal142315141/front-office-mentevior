@@ -6,7 +6,8 @@ import { ArrowLeft, NotebookPen, FileDown, Loader2, Lock, LockOpen, BookOpen, Pe
 import { toast } from "sonner"
 import { Button } from "@/components/custom/Button"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
-import { getAppointmentNotePdfUrl, updateNoteStatus } from "@/lib/modules/appointment-notes/services/appointment-note.service"
+import { getAppointmentNotePdfUrl, lockAppointmentNote } from "@/lib/modules/appointment-notes/services/appointment-note.service"
+import { toggleAppointmentEditLocks } from "@/lib/modules/schedules/services/appointments.service"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { usePermission } from "@/lib/hooks/use-permission"
@@ -87,6 +88,8 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     noteModality,
     itemErrors,
     providerSignatureUrl,
+    saveProviderSignature,
+    isProviderSignatureSaving,
     useCheckmarkSignature,
     caregiverSignatureChecked,
     setCaregiverChecked,
@@ -116,7 +119,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
   }, [appointmentId, isGeneratingPdf])
 
   const handleNoteStatusChange = useCallback(async (newStatus: "lock" | "active") => {
-    if (!noteId || isChangingStatus) return
+    if (!appointmentId || isChangingStatus) return
     if (newStatus === "lock") {
       alert.confirm({
         title: "Lock Note for Billing",
@@ -126,7 +129,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
         onConfirm: async () => {
           setIsChangingStatus(true)
           try {
-            const result = await updateNoteStatus(noteId, "lock")
+            const result = await lockAppointmentNote(appointmentId)
             if (result) { await refetchNote(); toast.success("Note locked and sent to billing") }
             else toast.error("Failed to lock note")
           } catch { toast.error("Failed to lock note") }
@@ -137,12 +140,12 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     }
     setIsChangingStatus(true)
     try {
-      const result = await updateNoteStatus(noteId, "active")
+      const result = await toggleAppointmentEditLocks(appointmentId)
       if (result) { await refetchNote(); toast.success("Note re-activated for editing") }
       else toast.error("Failed to re-activate note")
     } catch { toast.error("Failed to re-activate note") }
     finally { setIsChangingStatus(false) }
-  }, [noteId, isChangingStatus, refetchNote, alert])
+  }, [appointmentId, isChangingStatus, refetchNote, alert])
 
   const handleSaveAndRedirect = useCallback(async () => {
     const result = await handleSubmit()
@@ -244,6 +247,8 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
               modality={noteModality}
               itemErrors={itemErrors}
               providerSignatureUrl={providerSignatureUrl}
+              onProviderSignatureSave={saveProviderSignature}
+              isProviderSaving={isProviderSignatureSaving}
               useCheckmarkSignature={useCheckmarkSignature}
               caregiverSignatureChecked={caregiverSignatureChecked}
               onCaregiverCheckedChange={setCaregiverChecked}

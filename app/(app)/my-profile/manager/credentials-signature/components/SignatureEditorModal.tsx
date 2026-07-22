@@ -54,8 +54,7 @@ export function SignatureEditorModal({
       maxWidthClassName="sm:max-w-[860px]"
     >
       <div className="p-6 space-y-4">
-        <canvas {...canvasProps} className="w-full rounded-lg border border-gray-200 bg-white touch-none" />
-
+        {/* Step 1 — Agreement (must accept before signing) */}
         <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-4">
           <p className="text-xs text-blue-900 leading-relaxed mb-3">
             {SIGNATURE_AGREEMENT_TEXT}
@@ -68,8 +67,25 @@ export function SignatureEditorModal({
           />
         </div>
 
+        {/* Step 2 — Signature canvas (enabled only after agreement) */}
+        <div className="relative">
+          <canvas
+            {...canvasProps}
+            className={`w-full rounded-lg border bg-white touch-none transition-opacity duration-200 ${
+              agreementAccepted ? "border-gray-200" : "border-gray-100 opacity-50 pointer-events-none"
+            }`}
+          />
+          {!agreementAccepted && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-medium text-slate-400 bg-white/80 px-3 py-1.5 rounded-lg">
+                Accept the agreement above to sign
+              </span>
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="secondary" onClick={handleClear} disabled={isSaving}>
+          <Button variant="secondary" onClick={handleClear} disabled={isSaving || !agreementAccepted}>
             Clear
           </Button>
           <Button

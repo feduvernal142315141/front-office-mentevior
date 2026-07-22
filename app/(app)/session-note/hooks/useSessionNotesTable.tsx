@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Edit2, Trash2 } from "lucide-react"
+import { Edit2, FileDown, Trash2 } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { AppointmentNoteSummary } from "@/lib/types/appointment-note.types"
 import { useAppointmentNotes } from "@/lib/modules/appointment-notes/hooks/use-appointment-notes"
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 
 export function useSessionNotesTable() {
   const router = useRouter()
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
   // Filters
@@ -25,6 +25,9 @@ export function useSessionNotesTable() {
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+
+  // PDF Preview
+  const [previewAppointmentId, setPreviewAppointmentId] = useState<string | null>(null)
 
   const filters = useMemo(() => {
     const rules: FilterRule[] = []
@@ -80,20 +83,20 @@ export function useSessionNotesTable() {
 
   const { notes, pagination, isLoading, error } = useAppointmentNotes({
     filters,
-    page,
+    page: page - 1,
     pageSize,
   })
 
   const hasActiveFilters = !!(filterDate || filterClient.trim() || filterProvider.trim() || filterBillingCode.trim())
 
-  const handleDateChange = (v: string) => { setFilterDate(v); setPage(0) }
-  const handleClientChange = (v: string) => { setFilterClient(v); setPage(0) }
-  const handleProviderChange = (v: string) => { setFilterProvider(v); setPage(0) }
-  const handleBillingCodeChange = (v: string) => { setFilterBillingCode(v); setPage(0) }
+  const handleDateChange = (v: string) => { setFilterDate(v); setPage(1) }
+  const handleClientChange = (v: string) => { setFilterClient(v); setPage(1) }
+  const handleProviderChange = (v: string) => { setFilterProvider(v); setPage(1) }
+  const handleBillingCodeChange = (v: string) => { setFilterBillingCode(v); setPage(1) }
 
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize)
-    setPage(0)
+    setPage(1)
   }
 
   const clearFilters = useCallback(() => {
@@ -101,7 +104,7 @@ export function useSessionNotesTable() {
     setFilterClient("")
     setFilterProvider("")
     setFilterBillingCode("")
-    setPage(0)
+    setPage(1)
   }, [])
 
   const handleOpenNote = useCallback((appointmentId: string, billingCode: string) => {
@@ -165,6 +168,25 @@ export function useSessionNotesTable() {
       align: "right",
       render: (note) => (
         <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setPreviewAppointmentId(note.appointmentId)}
+            className={cn(
+              "group/pdf relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
+              "bg-gradient-to-b from-slate-50 to-slate-100/80",
+              "border border-slate-200/60 shadow-sm shadow-slate-900/5",
+              "hover:from-slate-100 hover:to-slate-200/90",
+              "hover:border-slate-300/80 hover:shadow-md hover:shadow-slate-900/10",
+              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+              "transition-all duration-200 ease-out",
+              "focus:outline-none focus:ring-2 focus:ring-slate-500/30 focus:ring-offset-2",
+            )}
+            title="Preview PDF"
+            aria-label="Preview PDF"
+          >
+            <FileDown className="w-4 h-4 text-slate-600 group-hover/pdf:text-slate-800 transition-colors duration-200" />
+          </button>
           <button
             type="button"
             onClick={() => handleOpenNote(note.appointmentId, note.billingCode)}
@@ -235,6 +257,8 @@ export function useSessionNotesTable() {
     clearFilters,
     deleteTarget,
     setDeleteTarget,
+    previewAppointmentId,
+    setPreviewAppointmentId,
     handleOpenNote,
   }
 }

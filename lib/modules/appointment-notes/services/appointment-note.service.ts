@@ -285,22 +285,21 @@ export async function getAppointmentNotes(params?: {
 }
 
 /**
- * Change note status (admin action).
- * PATCH /appointment/note/status
- * Supports transitions: close → lock, close → active
+ * Lock an appointment note (admin action).
+ * PATCH /appointment/note/lock
+ * Only allowed when appointment is Completed and note status is Close.
  */
-export async function updateNoteStatus(
-  noteId: string,
-  newStatus: "lock" | "active",
+export async function lockAppointmentNote(
+  appointmentId: string,
 ): Promise<string | null> {
   try {
-    const response = await servicePatch<{ id: string; status: string }, string>(
-      "/appointment/note/status",
-      { id: noteId, status: newStatus },
+    const response = await servicePatch<{ appointmentId: string }, string>(
+      "/appointment/note/lock",
+      { appointmentId },
     )
     if (response.status === 200) {
       const data = response.data as unknown
-      return typeof data === "string" ? data : noteId
+      return typeof data === "string" ? data : appointmentId
     }
     return null
   } catch {

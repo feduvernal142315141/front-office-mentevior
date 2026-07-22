@@ -1,5 +1,8 @@
 "use client"
 
+import { useState, useCallback, useEffect } from "react"
+import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { useSessionNotesTable } from "../hooks/useSessionNotesTable"
 import { CustomTable } from "@/components/custom/CustomTable"
 import { Card } from "@/components/custom/Card"
@@ -7,6 +10,8 @@ import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
+import { getAppointmentNotePdfUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
 
 export function SessionNotesTable() {
   const {
@@ -20,8 +25,32 @@ export function SessionNotesTable() {
     clearFilters,
     deleteTarget,
     setDeleteTarget,
+    previewAppointmentId,
+    setPreviewAppointmentId,
     handleOpenNote,
   } = useSessionNotesTable()
+
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+
+  const handlePreviewPdf = useCallback(async (appointmentId: string) => {
+    if (isGeneratingPdf) return
+    setIsGeneratingPdf(true)
+    try {
+      const url = await getAppointmentNotePdfUrl(appointmentId)
+      setPdfUrl(url)
+    } catch {
+      toast.error("Failed to generate PDF preview")
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }, [isGeneratingPdf])
+
+  useEffect(() => {
+    if (previewAppointmentId) {
+      handlePreviewPdf(previewAppointmentId)
+    }
+  }, [previewAppointmentId])
 
   if (error) {
     return (
@@ -106,6 +135,19 @@ export function SessionNotesTable() {
         itemName={deleteTarget?.name ?? ""}
         isDeleting={false}
       />
+
+      {pdfUrl && (
+        <DocumentViewer
+          open
+          onClose={() => {
+            URL.revokeObjectURL(pdfUrl)
+            setPdfUrl(null)
+            setPreviewAppointmentId(null)
+          }}
+          documentUrl={pdfUrl}
+          fileName="Appointment Note.pdf"
+        />
+      )}
     </div>
   )
 }
