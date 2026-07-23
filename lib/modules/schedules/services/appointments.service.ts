@@ -107,6 +107,9 @@ export async function getAppointments(
   if (opts?.providerId) params.set("providerId", opts.providerId)
   if (opts?.dateFrom) params.set("startDate", opts.dateFrom)
   if (opts?.dateTo) params.set("endDate", opts.dateTo)
+  if ("filters" in (opts ?? {}) && (opts as { filters?: string[] })?.filters?.length) {
+    for (const f of (opts as { filters: string[] }).filters) params.append("filters", f)
+  }
   const qs = params.toString()
   const url = `/appointment${qs ? `?${qs}` : ""}`
   const response = await serviceGet<ApiAppointmentItem[] | PaginatedResponse<ApiAppointmentItem>>(url)
