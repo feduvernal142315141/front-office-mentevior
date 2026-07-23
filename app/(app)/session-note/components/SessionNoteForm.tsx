@@ -45,6 +45,7 @@ interface SessionNoteFormProps {
   billingCodes: string | null
   modality: AppointmentNoteModality | null
   modalityOptions: { value: string; label: string }[]
+  errors?: Record<string, string>
   itemErrors?: Set<string>
   providerSignatureUrl?: string | null
   onProviderSignatureChange?: (base64: string | null) => void
@@ -74,6 +75,7 @@ export function SessionNoteForm({
   billingCodes,
   modality,
   modalityOptions,
+  errors = {},
   itemErrors,
   providerSignatureUrl,
   onProviderSignatureChange,
@@ -162,35 +164,55 @@ export function SessionNoteForm({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Section icon={<BookOpen className="h-4 w-4" />} title="Teaching Method, Modality & Participants">
           <div className="space-y-4">
-            <FloatingSelect
-              label="Teaching Method"
-              value={formData.teachingMethodId}
-              onChange={(val) => updateField("teachingMethodId", val)}
-              options={teachingMethodOptions}
-              searchable
-              disabled={isLoadingCatalogs || formDisabled}
-            />
-            <FloatingSelect
-              label="Modality"
-              value={formData.modalityId}
-              onChange={(val) => updateField("modalityId", val)}
-              options={modalityOptions}
-              disabled={isLoadingCatalogs || formDisabled}
-            />
-            <MultiSelectWithSearch
-              label="Participants"
-              items={participantItems}
-              selectedIds={formData.participantIds}
-              onChange={(ids) => updateField("participantIds", ids)}
-              disabled={isLoadingCatalogs || formDisabled}
-            />
+            <div>
+              <FloatingSelect
+                label="Teaching Method"
+                value={formData.teachingMethodId}
+                onChange={(val) => updateField("teachingMethodId", val)}
+                options={teachingMethodOptions}
+                searchable
+                disabled={isLoadingCatalogs || formDisabled}
+                hasError={!!errors.teachingMethodId}
+                required
+              />
+              <FieldError message={errors.teachingMethodId} />
+            </div>
+            <div>
+              <FloatingSelect
+                label="Modality"
+                value={formData.modalityId}
+                onChange={(val) => updateField("modalityId", val)}
+                options={modalityOptions}
+                disabled={isLoadingCatalogs || formDisabled}
+                hasError={!!errors.modalityId}
+                required
+              />
+              <FieldError message={errors.modalityId} />
+            </div>
+            <div>
+              <MultiSelectWithSearch
+                label="Participants"
+                items={participantItems}
+                selectedIds={formData.participantIds}
+                onChange={(ids) => updateField("participantIds", ids)}
+                disabled={isLoadingCatalogs || formDisabled}
+                hasError={!!errors.participantIds}
+              />
+              <FieldError message={errors.participantIds} />
+            </div>
           </div>
         </Section>
 
         <Section icon={<Stethoscope className="h-4 w-4" />} title="Session Details">
           <div className="space-y-3">
-            <FloatingInput label="Reason Caregiver Not Present" value={formData.reasonCaregiverNotPresent} onChange={(v) => updateField("reasonCaregiverNotPresent", v)} onBlur={() => {}} disabled={formDisabled} />
-            <FloatingInput label="Medical Concerns" value={formData.medicalConcerns} onChange={(v) => updateField("medicalConcerns", v)} onBlur={() => {}} disabled={formDisabled} />
+            <div>
+              <FloatingInput label="Reason Caregiver Not Present" value={formData.reasonCaregiverNotPresent} onChange={(v) => updateField("reasonCaregiverNotPresent", v)} onBlur={() => {}} disabled={formDisabled} hasError={!!errors.reasonCaregiverNotPresent} required />
+              <FieldError message={errors.reasonCaregiverNotPresent} />
+            </div>
+            <div>
+              <FloatingInput label="Medical Concerns" value={formData.medicalConcerns} onChange={(v) => updateField("medicalConcerns", v)} onBlur={() => {}} disabled={formDisabled} hasError={!!errors.medicalConcerns} required />
+              <FieldError message={errors.medicalConcerns} />
+            </div>
             <PremiumSwitch label="Crisis Involved" description="Was there a crisis during this session?" checked={formData.crisisInvolved} onCheckedChange={(v) => updateField("crisisInvolved", v)} compact disabled={formDisabled} />
           </div>
         </Section>
@@ -238,14 +260,23 @@ export function SessionNoteForm({
       {/* ─── Row 3: Interventions ─── */}
       <Section icon={<AlertTriangle className="h-4 w-4" />} title="Interventions">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} />
-          <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} />
+          <div>
+            <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} hasError={!!errors.antecedentInterventionIds} />
+            <FieldError message={errors.antecedentInterventionIds} />
+          </div>
+          <div>
+            <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} hasError={!!errors.consequenceInterventionIds} />
+            <FieldError message={errors.consequenceInterventionIds} />
+          </div>
         </div>
       </Section>
 
       {/* ─── Row 4: Session Summary (full width) ─── */}
       <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
-        <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} disabled={formDisabled} />
+        <div>
+          <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} disabled={formDisabled} hasError={!!errors.sessionSummary} required />
+          <FieldError message={errors.sessionSummary} />
+        </div>
       </Section>
 
       {/* ─── Row 5: Signatures ─── */}
@@ -268,6 +299,11 @@ export function SessionNoteForm({
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return <p className="mt-1.5 text-xs text-red-500">{message}</p>
+}
 
 function Section({ icon, title, subtitle, children }: { icon: React.ReactNode; title: string; subtitle?: string; children: React.ReactNode }) {
   return (

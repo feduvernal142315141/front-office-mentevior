@@ -71,6 +71,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     updateItemValue,
     updateItemEnvironmentalChange,
     handleSubmit,
+    errors,
     isLoadingNote,
     noteError,
     isSaving,
@@ -244,6 +245,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
               serviceDetails={serviceDetails}
               billingCodes={noteBillingCodes}
               modality={noteModality}
+              errors={errors}
               itemErrors={itemErrors}
               providerSignatureUrl={providerSignatureUrl}
               onProviderSignatureChange={setProviderSignatureImage}

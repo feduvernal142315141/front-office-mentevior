@@ -128,9 +128,16 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     }
   }, [note, teachingMethodOptions])
 
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
   const updateField = useCallback(
     <K extends keyof SessionNoteFormData>(field: K, value: SessionNoteFormData[K]) => {
       setFormData((prev) => ({ ...prev, [field]: value }))
+      setErrors((prev) => {
+        const next = { ...prev }
+        delete next[field as string]
+        return next
+      })
     },
     [],
   )
@@ -171,6 +178,26 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     const status = note.noteStatus
     // Prevent save on close/lock statuses
     if (status === "close" || status === "lock") return null
+
+    // Validate required fields (only when form is fully editable)
+    if (status !== "read") {
+      const newErrors: Record<string, string> = {}
+
+      if (!formData.teachingMethodId) newErrors.teachingMethodId = "Select a teaching method"
+      if (!formData.modalityId) newErrors.modalityId = "Select a modality"
+      if (formData.participantIds.length === 0) newErrors.participantIds = "Select at least one participant"
+      if (!formData.reasonCaregiverNotPresent.trim()) newErrors.reasonCaregiverNotPresent = "This field is required"
+      if (!formData.medicalConcerns.trim()) newErrors.medicalConcerns = "This field is required"
+      if (formData.antecedentInterventionIds.length === 0) newErrors.antecedentInterventionIds = "Select at least one intervention"
+      if (formData.consequenceInterventionIds.length === 0) newErrors.consequenceInterventionIds = "Select at least one intervention"
+      if (!formData.sessionSummary.trim()) newErrors.sessionSummary = "This field is required"
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors)
+        return null
+      }
+    }
+    setErrors({})
 
     // Validate that all data collection items have a value
     const missing = new Set<string>()
@@ -268,6 +295,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     updateItemValue,
     updateItemEnvironmentalChange,
     handleSubmit,
+    errors,
     note,
     isLoadingNote: noteLoading,
     noteError,
