@@ -6,6 +6,9 @@
 /** Possible status values for a session note */
 export type NoteStatus = "read" | "active" | "close" | "lock"
 
+/** Possible type values for a session note */
+export type NoteType = "Session Note" | "Session Note/Supervision" | "Service Plan"
+
 /** Teaching method item in the appointment note response */
 export interface AppointmentNoteTeachingMethod {
   id: string
@@ -49,6 +52,7 @@ export interface AppointmentNoteSummary {
   billingCodeId: string
   billingCode: string
   noteStatus?: NoteStatus
+  type?: NoteType
 }
 
 /** A category grouping items from the service plan */
@@ -93,6 +97,7 @@ export interface AppointmentNoteModality {
 export interface AppointmentNote {
   id: string
   appointmentId: string
+  type: NoteType
   recipient: AppointmentNoteRecipient | null
   provider: AppointmentNoteProvider | null
   serviceDetails: AppointmentNoteServiceDetails | null

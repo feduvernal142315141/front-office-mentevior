@@ -152,6 +152,13 @@ export function useSessionNotesTable() {
       ),
     },
     {
+      key: "type",
+      header: "Type",
+      render: (note) => (
+        <span className="text-sm text-slate-600">{note.type || "—"}</span>
+      ),
+    },
+    {
       key: "noteStatus",
       header: "Status",
       render: (note) => {

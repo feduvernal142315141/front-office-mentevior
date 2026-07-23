@@ -142,6 +142,7 @@ export async function getAppointmentNote(
   return {
     id: String(data.id ?? ""),
     appointmentId: String(data.appointmentId ?? appointmentId),
+    type: (String(data.type ?? "Session Note") as import("@/lib/types/appointment-note.types").NoteType),
     recipient: parseRecipient(data),
     provider: parseProvider(data),
     serviceDetails: parseServiceDetails(data),
@@ -279,6 +280,7 @@ export async function getAppointmentNotes(params?: {
       billingCodeId: String(e.billingCodeId ?? ""),
       billingCode: String(e.billingCode ?? ""),
       noteStatus: parseNoteStatus(e as Record<string, unknown>),
+      type: (String(e.type ?? "") || undefined) as import("@/lib/types/appointment-note.types").NoteType | undefined,
     })),
     pagination,
   }
