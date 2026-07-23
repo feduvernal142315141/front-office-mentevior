@@ -522,6 +522,7 @@ export function useAppointmentForm({
           endTime: toValidateTime(endTime),
           date,
           appointmentTypeEvent: toApiEventType(eventType),
+          ...(isEditing && appointment?.id ? { appointmentId: appointment.id } : {}),
         })
         if (cancelled) return
         setFormData((prev) => ({

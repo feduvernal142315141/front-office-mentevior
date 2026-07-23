@@ -40,6 +40,7 @@ export interface ValidateEventDataRequest {
   endTime: string
   date: string
   appointmentTypeEvent: AppointmentTypeEvent
+  appointmentId?: string
 }
 
 /** POST /appointment/validate-event-data response */
