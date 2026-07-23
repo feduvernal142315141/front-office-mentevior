@@ -356,12 +356,12 @@ export function WeekCalendar({
             </div>
 
             <div className="flex-1 min-w-0">
-              <FilterSelect
+              <FloatingSelect
+                label="Provider"
                 value={filterProvider}
                 onChange={actions.setFilterProvider}
                 options={providerFilterOptions}
-                placeholder="All Providers"
-                fullWidth
+                searchable
               />
             </div>
 
