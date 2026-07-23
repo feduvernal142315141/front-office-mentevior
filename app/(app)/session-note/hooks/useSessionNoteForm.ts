@@ -68,7 +68,7 @@ function noteToFormData(note: AppointmentNote): SessionNoteFormData {
     teachingMethodId: note.teachingMethod?.id ?? "",
     modalityId: note.modality?.id ?? "",
     reasonCaregiverNotPresent: note.reasonCaregiverNotPresent,
-    medicalConcerns: note.medicalConcerns,
+    medicalConcerns: note.medicalConcerns || "N/A",
     crisisInvolved: note.crisisInvolved,
     sessionSummary: note.sessionSummary,
     participantIds: note.participants.map((p) => p.catalogId),
