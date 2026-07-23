@@ -7,6 +7,8 @@ import { Edit2, FileDown } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { AppointmentNoteSummary } from "@/lib/types/appointment-note.types"
 import { useAppointmentNotes } from "@/lib/modules/appointment-notes/hooks/use-appointment-notes"
+import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
+import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { parseLocalDate } from "@/lib/date"
@@ -19,10 +21,23 @@ export function useSessionNotesTable() {
 
   // Filters
   const [filterDate, setFilterDate] = useState("")
-  const [filterClient, setFilterClient] = useState("")
-  const [filterProvider, setFilterProvider] = useState("")
+  const [filterClient, setFilterClient] = useState("all")
+  const [filterProvider, setFilterProvider] = useState("all")
   const [filterBillingCode, setFilterBillingCode] = useState("")
 
+  // Options for selects
+  const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
+  const { users: allUsers } = useUsers({ pageSize: 100 })
+
+  const clientOptions = useMemo(() => {
+    const opts = clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName }))
+    return [{ value: "all", label: "All Clients" }, ...opts]
+  }, [clients])
+
+  const providerOptions = useMemo(() => {
+    const opts = allUsers.filter((u) => u.active && !u.terminated && u.roleName).map((u) => ({ value: u.id, label: u.fullName }))
+    return [{ value: "all", label: "All Providers" }, ...opts]
+  }, [allUsers])
 
   // PDF Preview
   const [previewAppointmentId, setPreviewAppointmentId] = useState<string | null>(null)
@@ -39,31 +54,24 @@ export function useSessionNotesTable() {
       })
     }
 
-    if (filterClient.trim()) {
+    if (filterClient !== "all") {
       rules.push({
-        field: "appointment.clientName",
-        operator: FilterOperator.relatedContains,
-        value: filterClient.trim(),
+        field: "appointment.clientId",
+        operator: FilterOperator.relatedEqual,
+        value: filterClient,
+        type: "uuid",
         logic: "AND",
       })
     }
 
-    if (filterProvider.trim()) {
-      const parts = filterProvider.trim().split(/\s+/)
+    if (filterProvider !== "all") {
       rules.push({
-        field: "appointment.provider.firstName",
-        operator: FilterOperator.relatedContains,
-        value: parts[0],
+        field: "appointment.providerId",
+        operator: FilterOperator.relatedEqual,
+        value: filterProvider,
+        type: "uuid",
         logic: "AND",
       })
-      if (parts.length > 1) {
-        rules.push({
-          field: "appointment.provider.lastName",
-          operator: FilterOperator.relatedContains,
-          value: parts.slice(1).join(" "),
-          logic: "AND",
-        })
-      }
     }
 
     if (filterBillingCode.trim()) {
@@ -85,12 +93,13 @@ export function useSessionNotesTable() {
     pageSize,
   })
 
-  const hasActiveFilters = !!(filterDate || filterClient.trim() || filterProvider.trim() || filterBillingCode.trim())
+  const hasActiveFilters = !!(filterDate || filterClient !== "all" || filterProvider !== "all" || filterBillingCode.trim())
 
   const handleDateChange = (v: string) => { setFilterDate(v); setPage(1) }
   const handleClientChange = (v: string) => { setFilterClient(v); setPage(1) }
   const handleProviderChange = (v: string) => { setFilterProvider(v); setPage(1) }
   const handleBillingCodeChange = (v: string) => { setFilterBillingCode(v); setPage(1) }
+
 
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize)
@@ -99,8 +108,8 @@ export function useSessionNotesTable() {
 
   const clearFilters = useCallback(() => {
     setFilterDate("")
-    setFilterClient("")
-    setFilterProvider("")
+    setFilterClient("all")
+    setFilterProvider("all")
     setFilterBillingCode("")
     setPage(1)
   }, [])
@@ -224,6 +233,8 @@ export function useSessionNotesTable() {
       onProviderChange: handleProviderChange,
       onBillingCodeChange: handleBillingCodeChange,
     },
+    clientOptions,
+    providerOptions,
     hasActiveFilters,
     pagination: {
       page,

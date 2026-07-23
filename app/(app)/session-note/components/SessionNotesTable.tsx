@@ -8,6 +8,7 @@ import { CustomTable } from "@/components/custom/CustomTable"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { getAppointmentNotePdfUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
@@ -21,6 +22,8 @@ export function SessionNotesTable() {
     filters,
     hasActiveFilters,
     pagination,
+    clientOptions,
+    providerOptions,
     clearFilters,
     previewAppointmentId,
     setPreviewAppointmentId,
@@ -67,17 +70,19 @@ export function SessionNotesTable() {
             value={filters.filterDate}
             onChange={filters.onDateChange}
           />
-          <FloatingInput
+          <FloatingSelect
             label="Client"
             value={filters.filterClient}
             onChange={filters.onClientChange}
-            onBlur={() => {}}
+            options={clientOptions}
+            searchable
           />
-          <FloatingInput
+          <FloatingSelect
             label="Provider"
             value={filters.filterProvider}
             onChange={filters.onProviderChange}
-            onBlur={() => {}}
+            options={providerOptions}
+            searchable
           />
           <FloatingInput
             label="Billing Code"
