@@ -61,7 +61,7 @@ export function buildFilters(
     }
 
     if (rule.type === "uuid") {
-      formattedValue = `UUID:${rule.value}`;
+      formattedValue = `UUID_${rule.value}`;
       output.push(`${field}__${operator}__${formattedValue}__${logic}`);
       continue;
     }
