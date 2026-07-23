@@ -8,13 +8,13 @@ import { getDiagnosisCatalog } from "../services/diagnoses-catalog.service"
 const MIN_SEARCH_LENGTH = 1
 const INITIAL_PAGE_SIZE = 100
 const SEARCH_PAGE_SIZE = 20
-const DEBOUNCE_MS = 250
+const DEBOUNCE_MS = 400
 
 function buildSearchFilters(term: string) {
   const t = term.trim()
   if (t.length < MIN_SEARCH_LENGTH) return undefined
   return buildFilters([], {
-    fields: ["code", "shortDescription", "longDescription"],
+    fields: ["code", "shortDescription"],
     search: t,
   })
 }
@@ -100,6 +100,7 @@ export function useDiagnosisCatalogSearch(liveTerm: string, open: boolean) {
 
     const id = window.setTimeout(() => {
       const t = liveTerm.trim()
+      if (t === termForFetch) return // skip if term hasn't changed
       setTermForFetch(t)
       const requestId = ++activeRef.current
       void runFetch(requestId, t)
