@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Edit2, FileDown, Trash2 } from "lucide-react"
+import { Edit2, FileDown } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { AppointmentNoteSummary } from "@/lib/types/appointment-note.types"
 import { useAppointmentNotes } from "@/lib/modules/appointment-notes/hooks/use-appointment-notes"
@@ -23,8 +23,6 @@ export function useSessionNotesTable() {
   const [filterProvider, setFilterProvider] = useState("")
   const [filterBillingCode, setFilterBillingCode] = useState("")
 
-  // Delete
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   // PDF Preview
   const [previewAppointmentId, setPreviewAppointmentId] = useState<string | null>(null)
@@ -206,25 +204,6 @@ export function useSessionNotesTable() {
           >
             <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
-          <button
-            type="button"
-            onClick={() => setDeleteTarget({ id: note.id, name: note.clientName })}
-            className={cn(
-              "group/del relative h-9 w-9",
-              "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-red-50 to-red-100/80",
-              "border border-red-200/60 shadow-sm shadow-red-900/5",
-              "hover:from-red-100 hover:to-red-200/90",
-              "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
-              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-              "transition-all duration-200 ease-out",
-              "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2",
-            )}
-            title="Delete session note"
-            aria-label="Delete session note"
-          >
-            <Trash2 className="h-3.5 w-3.5 text-red-500 group-hover/del:text-red-600 transition-colors duration-200" />
-          </button>
         </div>
       ),
     },
@@ -255,8 +234,6 @@ export function useSessionNotesTable() {
       pageSizeOptions: [10, 20, 50],
     },
     clearFilters,
-    deleteTarget,
-    setDeleteTarget,
     previewAppointmentId,
     setPreviewAppointmentId,
     handleOpenNote,

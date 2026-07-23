@@ -9,7 +9,6 @@ import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
-import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { getAppointmentNotePdfUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
 
@@ -23,8 +22,6 @@ export function SessionNotesTable() {
     hasActiveFilters,
     pagination,
     clearFilters,
-    deleteTarget,
-    setDeleteTarget,
     previewAppointmentId,
     setPreviewAppointmentId,
     handleOpenNote,
@@ -121,19 +118,6 @@ export function SessionNotesTable() {
         getRowKey={(note) => note.id}
         onRowClick={(note) => handleOpenNote(note.appointmentId, note.billingCode)}
         pagination={pagination}
-      />
-
-      <DeleteConfirmModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={() => {
-          // TODO: connect to delete endpoint when available
-          setDeleteTarget(null)
-        }}
-        title="Delete Session Note"
-        message="Are you sure you want to delete this session note? This action cannot be undone."
-        itemName={deleteTarget?.name ?? ""}
-        isDeleting={false}
       />
 
       {pdfUrl && (
