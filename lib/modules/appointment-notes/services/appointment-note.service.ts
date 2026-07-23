@@ -258,9 +258,8 @@ export async function getAppointmentNotes(params?: {
   if (params?.pageSize !== undefined) qs.set("pageSize", String(params.pageSize))
   const query = qs.toString()
 
-  const response = await serviceGet<PaginatedResponse<AppointmentNoteSummary>>(
-    `/appointment/note${query ? `?${query}` : ""}`,
-  )
+  const url = `/appointment/note${query ? `?${query}` : ""}`
+  const response = await serviceGet<PaginatedResponse<AppointmentNoteSummary>>(url)
 
   if (response.status !== 200 || !response.data) {
     throw new Error(getApiErrorMessage(response?.data, "Failed to fetch appointment notes"))
