@@ -373,11 +373,6 @@ export function AppointmentModal({
             This appointment cannot be edited because it is {appointment?.status === "NoShow" ? "No Show" : appointment?.status}.
           </p>
         )}
-        {validationError && !isLockedStatus && (
-          <p className="text-xs font-medium text-red-600 text-right">
-            {validationError}
-          </p>
-        )}
         <div className="flex items-center justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onClose} className="h-10">
             Cancel
