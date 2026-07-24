@@ -20,7 +20,7 @@ interface MappedItemRowProps {
   isAnyDeleting: boolean
   onDelete: (item: ClientServicePlanCategoryMappedItem) => void
   onConfigureDataCollection: (item: ClientServicePlanCategoryMappedItem) => void
-  teachingMethodName?: string
+  teachingProcedureName?: string
   typeName?: string
 }
 
@@ -30,7 +30,7 @@ export function MappedItemRow({
   isAnyDeleting,
   onDelete,
   onConfigureDataCollection,
-  teachingMethodName,
+  teachingProcedureName,
   typeName,
 }: MappedItemRowProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -81,10 +81,10 @@ export function MappedItemRow({
         )}
       </div>
 
-      {/* Teaching Method */}
+      {/* Teaching Procedure */}
       <div className="min-w-0">
-        {teachingMethodName ? (
-          <span className="text-sm text-slate-700 truncate block">{teachingMethodName}</span>
+        {teachingProcedureName ? (
+          <span className="text-sm text-slate-700 truncate block">{teachingProcedureName}</span>
         ) : (
           <span className="text-xs text-slate-400">—</span>
         )}

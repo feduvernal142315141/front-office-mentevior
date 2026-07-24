@@ -7,7 +7,7 @@ import type {
   ClientServicePlanCategoryMappedItem,
   ClientServicePlanCategorySummary,
 } from "@/lib/types/client-service-plan.types"
-import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-method-catalog"
+import { useTeachingProcedureCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-procedure-catalog"
 import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
 
 import { CreateItemInlineForm } from "./CreateItemInlineForm"
@@ -46,12 +46,12 @@ export function CategoryItemsPanel({
   onConfigureDataCollection,
   onOpenAddItemsDrawer,
 }: CategoryItemsPanelProps) {
-  const { items: teachingMethods } = useTeachingMethodCatalog()
+  const { items: teachingProcedures } = useTeachingProcedureCatalog()
   const { itemsMap: typeEventMap } = useTypeEventCatalog()
 
-  const teachingMethodMap = useMemo(
-    () => new Map(teachingMethods.map((tm) => [tm.id, tm.name])),
-    [teachingMethods]
+  const teachingProcedureMap = useMemo(
+    () => new Map(teachingProcedures.map((tp) => [tp.id, tp.name])),
+    [teachingProcedures]
   )
 
   if (!activeCategory) {
@@ -118,7 +118,7 @@ export function CategoryItemsPanel({
             {/* Column Headers */}
             <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] gap-4 px-4 pb-1">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Item</span>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teaching Method</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Teaching Procedure</span>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Type</span>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Baseline</span>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Objective</span>
@@ -126,7 +126,7 @@ export function CategoryItemsPanel({
               <span className="w-[68px]" />
             </div>
             {items.map((item) => {
-              const tmName = item.teachingMethodId ? teachingMethodMap.get(item.teachingMethodId) : undefined
+              const tpName = item.teachingProcedureId ? teachingProcedureMap.get(item.teachingProcedureId) : undefined
               const typeId = item.dataCollection?.typeEventCatalogId ?? activeCategory.typeEventCatalogId
               const tName = typeId
                 ? (typeEventMap.get(typeId)?.name ?? activeCategory.typeEventCatalogName)
@@ -139,7 +139,7 @@ export function CategoryItemsPanel({
                   isAnyDeleting={deletingItemId !== null}
                   onDelete={onDeleteItem}
                   onConfigureDataCollection={onConfigureDataCollection}
-                  teachingMethodName={tmName}
+                  teachingProcedureName={tpName}
                   typeName={tName}
                 />
               )

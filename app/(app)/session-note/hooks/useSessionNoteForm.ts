@@ -13,7 +13,7 @@ import type {
 } from "@/lib/types/appointment-note.types"
 import { useAppointmentNote } from "@/lib/modules/appointment-notes/hooks/use-appointment-note"
 import { useAppointmentNoteMutation } from "@/lib/modules/appointment-notes/hooks/use-appointment-note-mutation"
-import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-method-catalog"
+import { useTeachingMethodCatalog } from "@/lib/modules/appointment-notes/hooks/use-teaching-method-catalog"
 import { useInterventionCatalogs } from "@/lib/modules/appointment-notes/hooks/use-intervention-catalogs"
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"

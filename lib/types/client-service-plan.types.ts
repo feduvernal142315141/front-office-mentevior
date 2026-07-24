@@ -99,7 +99,7 @@ export interface ClientServicePlanCategoryMappedItem {
   order?: number
   hasDataCollection?: boolean
   hasCustomDataCollection?: boolean
-  teachingMethodId?: string | null
+  teachingProcedureId?: string | null
   baseline?: ClientServicePlanItemBaseline[]
   objetive?: ClientServicePlanItemObjective[]
   dataCollection?: ClientServicePlanItemDataCollection | null

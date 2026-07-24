@@ -1,12 +1,16 @@
 import { serviceGet } from "@/lib/services/baseService"
 
-export interface TeachingMethodCatalogItem {
+export interface TeachingProcedureCatalogItem {
   id: string
   name: string
 }
 
-export async function getTeachingMethodCatalog(): Promise<TeachingMethodCatalogItem[]> {
-  const response = await serviceGet<unknown>("/teaching-method/catalog")
+/**
+ * GET /teaching-procedure/catalog
+ * Catalog for Client Service Plan item-level configuration.
+ */
+export async function getTeachingProcedureCatalog(): Promise<TeachingProcedureCatalogItem[]> {
+  const response = await serviceGet<unknown>("/teaching-procedure/catalog")
 
   if (response.status !== 200 || !response.data) return []
 

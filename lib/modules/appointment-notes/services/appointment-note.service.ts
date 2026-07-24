@@ -26,8 +26,14 @@ function parseTeachingMethod(data: Record<string, unknown>) {
     const id = String(tm.id ?? "")
     return id ? { id, name: String(tm.name ?? "") } : null
   }
-  const tmId = String(data.teachingMethodId ?? "")
-  return tmId ? { id: tmId, name: String(data.teachingMethodName ?? "") } : null
+  // Legacy fallback while backends finish the TeachingMethod / TeachingProcedure split
+  if (data.teachingProcedure && typeof data.teachingProcedure === "object") {
+    const tp = data.teachingProcedure as Record<string, unknown>
+    const id = String(tp.id ?? "")
+    return id ? { id, name: String(tp.name ?? "") } : null
+  }
+  const tmId = String(data.teachingMethodId ?? data.teachingProcedureId ?? "")
+  return tmId ? { id: tmId, name: String(data.teachingMethodName ?? data.teachingProcedureName ?? "") } : null
 }
 
 function parseModality(data: Record<string, unknown>) {

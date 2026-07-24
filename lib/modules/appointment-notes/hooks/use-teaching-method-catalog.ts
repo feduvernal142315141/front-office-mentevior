@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import {
   getTeachingMethodCatalog,
   type TeachingMethodCatalogItem,
-} from "../services/teaching-method-catalog.service"
+} from "@/lib/modules/appointment-notes/services/teaching-method-catalog.service"
 
 export function useTeachingMethodCatalog() {
   const [items, setItems] = useState<TeachingMethodCatalogItem[]>([])

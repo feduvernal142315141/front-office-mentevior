@@ -255,7 +255,7 @@ interface ClientItemPayload {
   name?: string
   topography: string
   status: boolean
-  teachingMethodId?: string | null
+  teachingProcedureId?: string | null
   dataCollection: ApiDataCollection
   chart?: ApiChart
   baseline?: ApiBaseline[]
@@ -279,6 +279,8 @@ interface ApiResponse {
   topography?: string
   status?: boolean
   name?: string
+  teachingProcedureId?: string
+  /** @deprecated Backend now returns teachingProcedureId */
   teachingMethodId?: string
   clientServicePlanCategoryItemId?: string
 }
@@ -305,7 +307,7 @@ export interface UpsertClientItemDataCollectionDto {
   name?: string
   topography: string
   active: boolean
-  teachingMethodId?: string | null
+  teachingProcedureId?: string | null
   type: DataCollectionType
   weeklyDailyValue?: ServicePlanValueType
   dailyValue?: ServicePlanValueType
@@ -568,7 +570,9 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
     categoryName: "",
     topography,
     active,
-    teachingMethodId: asOptionalString(itemEntity.teachingMethodId) ?? null,
+    teachingProcedureId: asOptionalString(
+      itemEntity.teachingProcedureId ?? itemEntity.teachingMethodId
+    ) ?? null,
     isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
   }
 }
@@ -714,7 +718,7 @@ export async function upsertClientItemDataCollection(
     dataCollection: toApiDataCollection(dto),
   }
   if (dto.name?.trim()) payload.name = dto.name.trim()
-  if (dto.teachingMethodId !== undefined) payload.teachingMethodId = dto.teachingMethodId || null
+  if (dto.teachingProcedureId !== undefined) payload.teachingProcedureId = dto.teachingProcedureId || null
   if (dto.chart) payload.chart = toApiChart(dto.chart)
   payload.baseline = dto.baselines ? toApiBaselines(dto.baselines) : []
   payload.objetive = dto.objectives ? toApiObjectives(dto.objectives) : []

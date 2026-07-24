@@ -23,7 +23,7 @@ import { Button } from "@/components/custom/Button"
 
 import { useAlert } from "@/lib/contexts/alert-context"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
-import { useTeachingMethodCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-method-catalog"
+import { useTeachingProcedureCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-procedure-catalog"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import {
   BaselinesTabContent,
@@ -206,10 +206,10 @@ export function ItemDetailPanel({
   const [baselines, setBaselines] = useState<BaselineRow[]>([])
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [teachingMethod, setTeachingMethod] = useState("")
+  const [teachingProcedure, setTeachingProcedure] = useState("")
 
   // --- Catalogs ---
-  const { selectOptions: teachingMethodOptions, isLoading: isLoadingTeachingMethods } = useTeachingMethodCatalog()
+  const { selectOptions: teachingProcedureOptions, isLoading: isLoadingTeachingProcedures } = useTeachingProcedureCatalog()
   const { items: periodCatalog } = usePeriodCatalog()
   const periodSelectOptions = useMemo(
     () => periodCatalog.map((p) => ({ value: p.id, label: p.name })),
@@ -278,7 +278,7 @@ export function ItemDetailPanel({
       if (itemData) {
         setItemConfig(itemData)
         setConfig(itemData)
-        setTeachingMethod(itemData.teachingMethodId ?? "")
+        setTeachingProcedure(itemData.teachingProcedureId ?? "")
         setBaselines(
           (itemData.baselines ?? []).map((b) => ({
             localId: crypto.randomUUID(),
@@ -310,7 +310,7 @@ export function ItemDetailPanel({
         const fallback: DataCollectionConfig = { type: "", levels: [] }
         setConfig(catData ? stripPersistedLevelIds(catData) : fallback)
         setItemConfig(null)
-        setTeachingMethod("")
+        setTeachingProcedure("")
         setBaselines([])
         setObjectives([])
       }
@@ -330,18 +330,18 @@ export function ItemDetailPanel({
   // --- Dirty state tracking ---
   const baselinesSnapshotRef = useRef("")
   const objectivesSnapshotRef = useRef("")
-  const teachingMethodSnapshotRef = useRef("")
+  const teachingProcedureSnapshotRef = useRef("")
 
   // While false, hasUnsavedChanges stays false (no footer flash on enter).
   const [initialized, setInitialized] = useState(false)
   const baselinesRef = useRef(baselines)
   const objectivesRef = useRef(objectives)
-  const teachingMethodRef = useRef(teachingMethod)
+  const teachingProcedureRef = useRef(teachingProcedure)
   baselinesRef.current = baselines
   objectivesRef.current = objectives
-  teachingMethodRef.current = teachingMethod
+  teachingProcedureRef.current = teachingProcedure
 
-  const catalogsReady = !isLoadingCatalog && !isLoadingTeachingMethods
+  const catalogsReady = !isLoadingCatalog && !isLoadingTeachingProcedures
 
   // Single bootstrap: reset form to final defaults only when config + catalogs are ready,
   // then snapshot baselines/objectives and enable dirty tracking after child mounts settle.
@@ -362,7 +362,7 @@ export function ItemDetailPanel({
     reset(values)
     baselinesSnapshotRef.current = snapshotRows(baselinesRef.current)
     objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
-    teachingMethodSnapshotRef.current = teachingMethodRef.current
+    teachingProcedureSnapshotRef.current = teachingProcedureRef.current
     setInitialized(false)
 
     let cancelled = false
@@ -375,7 +375,7 @@ export function ItemDetailPanel({
         reset(getValues())
         baselinesSnapshotRef.current = snapshotRows(baselinesRef.current)
         objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
-        teachingMethodSnapshotRef.current = teachingMethodRef.current
+        teachingProcedureSnapshotRef.current = teachingProcedureRef.current
         setInitialized(true)
       })
     })
@@ -406,12 +406,12 @@ export function ItemDetailPanel({
     return snapshotRows(objectives) !== objectivesSnapshotRef.current
   }, [objectives, initialized])
 
-  const hasTeachingMethodChanges =
-    initialized && teachingMethod !== teachingMethodSnapshotRef.current
+  const hasTeachingProcedureChanges =
+    initialized && teachingProcedure !== teachingProcedureSnapshotRef.current
 
   const hasUnsavedChanges =
     initialized &&
-    (isFormDirty || hasBaselineChanges || hasObjectiveChanges || hasTeachingMethodChanges)
+    (isFormDirty || hasBaselineChanges || hasObjectiveChanges || hasTeachingProcedureChanges)
 
   useEffect(() => {
     onDirtyChange?.(hasUnsavedChanges)
@@ -562,7 +562,7 @@ export function ItemDetailPanel({
       await upsertClientItemDataCollection({
         clientServicePlanCategoryItemId,
         name: itemName,
-        teachingMethodId: teachingMethod || null,
+        teachingProcedureId: teachingProcedure || null,
         type: values.type as DataCollectionType,
         weeklyDailyValue: values.weeklyDailyValue,
         dailyValue: values.dailyValue,
@@ -582,7 +582,7 @@ export function ItemDetailPanel({
       // Reset dirty state BEFORE navigating away
       baselinesSnapshotRef.current = snapshotRows(baselines)
       objectivesSnapshotRef.current = snapshotRows(objectives)
-      teachingMethodSnapshotRef.current = teachingMethod
+      teachingProcedureSnapshotRef.current = teachingProcedure
       reset(values)
 
       toast.success("Item configuration saved")
@@ -669,7 +669,7 @@ export function ItemDetailPanel({
 
       {/* ── Content ── */}
       <div className="px-6 py-5 space-y-5">
-        {/* All fields in one grid: Type + conditional fields + Teaching Method (last) + Description (full width) */}
+        {/* All fields in one grid: Type + conditional fields + Teaching Procedure (last) + Description (full width) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Type — always first */}
           <div className="space-y-1">
@@ -971,14 +971,14 @@ export function ItemDetailPanel({
             </>
           )}
 
-          {/* Teaching Method — always last in the grid */}
+          {/* Teaching Procedure — always last in the grid */}
           <FloatingSelect
-            label="Teaching Method"
-            value={teachingMethod}
-            onChange={setTeachingMethod}
-            options={teachingMethodOptions}
+            label="Teaching Procedure"
+            value={teachingProcedure}
+            onChange={setTeachingProcedure}
+            options={teachingProcedureOptions}
             searchable
-            disabled={isLoadingTeachingMethods}
+            disabled={isLoadingTeachingProcedures}
           />
 
           {/* Description — full width row */}
