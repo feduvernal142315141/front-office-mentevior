@@ -404,16 +404,7 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, appo
           {activeItem && (
             <div ref={exportRef} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
               <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-semibold text-slate-800 whitespace-normal break-words">
-                    {activeItem.itemName}
-                  </h3>
-                  {activeItem.description && (
-                    <p className="text-xs text-slate-400 mt-0.5 line-clamp-1 break-words">
-                      {activeItem.description}
-                    </p>
-                  )}
-                </div>
+                <div className="min-w-0 flex-1" />
                 <div className="flex items-center gap-2 shrink-0">
                   {categoryTypeName ? (
                     <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700">

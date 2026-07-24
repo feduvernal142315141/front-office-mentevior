@@ -214,28 +214,24 @@ export async function updateAppointmentNote(
   return payload.id
 }
 
+const DEFAULT_SESSION_NOTE_PDF_NAME = "Session Note.pdf"
+
 /**
- * Get appointment note PDF preview as a blob URL.
- * GET /reports/appointment-note/preview?appointmentId={id}
+ * Same-origin preview URL for the built-in browser PDF viewer.
+ * The filename is part of the path so Chrome's Save As uses it (not a blob UUID).
+ * Auth is handled server-side via the httpOnly `mv_fo_token` cookie.
  */
-export async function getAppointmentNotePdfUrl(
+export function getAppointmentNotePdfPreviewUrl(
   appointmentId: string,
-): Promise<string> {
-  const response = await serviceGet<unknown>(
-    `/reports/appointment-note/preview?appointmentId=${appointmentId}`,
-  )
+  fileName: string = DEFAULT_SESSION_NOTE_PDF_NAME,
+): string {
+  const safeName = encodeURIComponent(fileName || DEFAULT_SESSION_NOTE_PDF_NAME)
+  return `/api/reports/appointment-note/preview/${safeName}?appointmentId=${encodeURIComponent(appointmentId)}`
+}
 
-  if (response.status !== 200 || !response.data) {
-    throw new Error(getApiErrorMessage(response?.data, "Failed to generate PDF preview"))
-  }
-
-  const raw = response.data as Record<string, unknown>
-  const base64 = (raw.fileBase64 ?? raw.data ?? "") as string
-  if (!base64) throw new Error("Empty PDF response")
-
-  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
-  const blob = new Blob([bytes], { type: "application/pdf" })
-  return URL.createObjectURL(blob)
+/** @deprecated Prefer getAppointmentNotePdfPreviewUrl for native viewer download names. */
+export function getAppointmentNotePdfUrl(appointmentId: string): string {
+  return getAppointmentNotePdfPreviewUrl(appointmentId)
 }
 
 /**
@@ -277,6 +273,8 @@ export async function getAppointmentNotes(params?: {
       clientName: String(e.clientName ?? ""),
       providerName: String(e.providerName ?? ""),
       date: String(e.date ?? ""),
+      timeInit: e.timeInit ? String(e.timeInit) : undefined,
+      timeEnd: e.timeEnd ? String(e.timeEnd) : undefined,
       billingCodeId: String(e.billingCodeId ?? ""),
       billingCode: String(e.billingCode ?? ""),
       noteStatus: parseNoteStatus(e as Record<string, unknown>),

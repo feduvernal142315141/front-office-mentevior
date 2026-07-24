@@ -49,6 +49,8 @@ export interface AppointmentNoteSummary {
   clientName: string
   providerName: string
   date: string
+  timeInit?: string
+  timeEnd?: string
   billingCodeId: string
   billingCode: string
   noteStatus?: NoteStatus

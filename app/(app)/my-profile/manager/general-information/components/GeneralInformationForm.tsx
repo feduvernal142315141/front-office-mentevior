@@ -112,8 +112,8 @@ export function GeneralInformationForm({
   const isEditingSelf = authUser?.id && memberUserId ? authUser.id === memberUserId : false
   const canEditRole = isSuperAdmin && !isEditingSelf
 
-  const [forceOpenPersonal, setForceOpenPersonal] = useState(false)
-  const [forceOpenProfessional, setForceOpenProfessional] = useState(false)
+  const [forceOpenPersonal, setForceOpenPersonal] = useState<boolean | undefined>(undefined)
+  const [forceOpenProfessional, setForceOpenProfessional] = useState<boolean | undefined>(undefined)
 
   const PROFESSIONAL_FIELDS = ["npi", "mpi", "caqhNumber", "companyName", "ein", "employerId"]
 
@@ -136,8 +136,8 @@ export function GeneralInformationForm({
     const hasProfessionalError = errorKeys.some(k => PROFESSIONAL_FIELDS.includes(k))
 
     // Reset force flags first, then set — ensures useEffect triggers even if already true
-    setForceOpenPersonal(false)
-    setForceOpenProfessional(false)
+    setForceOpenPersonal(undefined)
+    setForceOpenProfessional(undefined)
     setTimeout(() => {
       if (hasPersonalError) setForceOpenPersonal(true)
       if (hasProfessionalError) setForceOpenProfessional(true)

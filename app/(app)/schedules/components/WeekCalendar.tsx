@@ -77,12 +77,11 @@ export function WeekCalendar({
 }: WeekCalendarProps) {
   const router = useRouter()
   const { selectedAppointment, deleteAppointment } = useAppointments()
-  const { create: canCreateSession, block: canBlockAppointment } = usePermission()
+  const { create: canCreateSession } = usePermission()
   const eventColors = useScheduleEventColors()
   const mutations = useAppointmentMutations()
   const alert = useAlert()
   const canCreate = canCreateSession(PermissionModule.SCHEDULE)
-  const canToggleLock = canBlockAppointment(PermissionModule.APPOINTMENT)
   const isAgency = scope === "agency"
   const { users: allUsers } = useUsers({ pageSize: 100 })
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
@@ -214,34 +213,6 @@ export function WeekCalendar({
       if (action === "add_new_session" && appointment) {
         actions.closeContextMenu()
         actions.openNewSessionFromParent(appointment)
-        return
-      }
-
-      if (action === "note_lock" || action === "note_activate") {
-        actions.closeContextMenu()
-        if (action === "note_lock") {
-          alert.confirm({
-            title: "Lock Note for Billing",
-            description: "This action is permanent. The note will be sent to billing and cannot be unlocked.",
-            confirmText: "Lock",
-            cancelText: "Cancel",
-            onConfirm: async () => {
-              try {
-                const { lockAppointmentNote } = await import("@/lib/modules/appointment-notes/services/appointment-note.service")
-                const result = await lockAppointmentNote(appointmentId)
-                if (result) { actions.handleAppointmentSaved(); toast.success("Note locked and sent to billing") }
-                else toast.error("Failed to lock note")
-              } catch { toast.error("Failed to lock note") }
-            },
-          })
-        } else {
-          try {
-            const { toggleAppointmentEditLocks } = await import("@/lib/modules/schedules/services/appointments.service")
-            const result = await toggleAppointmentEditLocks(appointmentId)
-            if (result) { actions.handleAppointmentSaved(); toast.success("Note re-activated for editing") }
-            else toast.error("Failed to re-activate note")
-          } catch { toast.error("Failed to re-activate note") }
-        }
         return
       }
 
@@ -787,8 +758,6 @@ export function WeekCalendar({
           billingCodeAction={contextMenuBillingCodeAction}
           isSupervision={contextMenu.isSupervision}
           parentBillingCodeAction={contextMenu.isSupervision ? contextMenuBillingCodeAction : undefined}
-          noteStatus={contextMenuAppointment?.noteStatus}
-          canToggleLock={canToggleLock}
           onAction={handleMenuAction}
           onClose={actions.closeContextMenu}
         />

@@ -64,6 +64,7 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName = "documen
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={onClose}
                   className={cn(
                     "w-9 h-9 rounded-xl",

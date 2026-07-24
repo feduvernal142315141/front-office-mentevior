@@ -227,7 +227,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                       <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>{format(day, "MMM")}</span>
                     </div>
                     {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.blocked === false && (
-                      <div className="flex items-center gap-0.5" title="Editable"><CalendarCheck2 className="h-3 w-3 text-emerald-500" /></div>
+                      <div className="flex items-center gap-0.5" title="Editable"><CalendarCheck2 className="h-3 w-3 text-emerald-700" /></div>
                     )}
                   </div>
                 )
@@ -247,7 +247,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                   const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
                   const value = entry.recordings[idx]
                   return (
-                    <div key={key} className={cn("flex items-center justify-center px-2 py-2", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]", !isEditable && "opacity-30", isEditable && !isBaseline && "bg-emerald-50/40")}>
+                    <div key={key} className={cn("flex items-center justify-center px-2 py-2", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]", !isEditable && "opacity-30", isEditable && !isBaseline && "bg-emerald-100/60")}>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -259,7 +259,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                           const num = parseFloat(raw)
                           if (!isNaN(num)) ds.setRecording(key, idx, num)
                         }}
-                        className={cn("h-8 w-16 rounded-lg text-center text-sm font-semibold tabular-nums outline-none transition-all", isEditable ? "bg-white border border-emerald-200 text-slate-800 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15" : "bg-slate-50 border border-slate-200 text-slate-400")}
+                        className={cn("h-8 w-16 rounded-lg text-center text-sm font-semibold tabular-nums outline-none transition-all", isEditable ? "bg-white border border-emerald-400 text-slate-800 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15" : "bg-slate-50 border border-slate-200 text-slate-400")}
                         placeholder="—"
                       />
                     </div>

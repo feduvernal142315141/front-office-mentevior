@@ -180,9 +180,8 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     if (status === "close" || status === "lock") return null
 
     // Validate required fields (only when form is fully editable)
+    const newErrors: Record<string, string> = {}
     if (status !== "read") {
-      const newErrors: Record<string, string> = {}
-
       if (!formData.teachingMethodId) newErrors.teachingMethodId = "Select a teaching method"
       if (!formData.modalityId) newErrors.modalityId = "Select a modality"
       if (formData.participantIds.length === 0) newErrors.participantIds = "Select at least one participant"
@@ -191,13 +190,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
       if (formData.antecedentInterventionIds.length === 0) newErrors.antecedentInterventionIds = "Select at least one intervention"
       if (formData.consequenceInterventionIds.length === 0) newErrors.consequenceInterventionIds = "Select at least one intervention"
       if (!formData.sessionSummary.trim()) newErrors.sessionSummary = "This field is required"
-
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors)
-        return null
-      }
     }
-    setErrors({})
 
     // Validate that all data collection items have a value
     const missing = new Set<string>()
@@ -208,18 +201,40 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
         if (value == null) missing.add(item.id)
       }
     }
-    if (missing.size > 0) {
+
+    const hasFieldErrors = Object.keys(newErrors).length > 0
+    const hasItemErrors = missing.size > 0
+
+    if (hasFieldErrors || hasItemErrors) {
+      setErrors(newErrors)
       setItemErrors(missing)
-      const firstId = [...missing][0]
+
+      // Scroll to the first error (field errors first, then item errors)
       setTimeout(() => {
-        const el = document.querySelector<HTMLInputElement>(`[data-item-value="${firstId}"]`)
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" })
-          setTimeout(() => el.focus(), 300)
+        let el: HTMLElement | null = null
+        if (hasFieldErrors) {
+          const firstKey = Object.keys(newErrors)[0]
+          el = document.querySelector<HTMLElement>(`[data-field="${firstKey}"]`)
+        } else {
+          const firstId = [...missing][0]
+          el = document.querySelector<HTMLElement>(`[data-item-value="${firstId}"]`)
         }
+        if (!el) return
+        const scrollContainer = document.getElementById("main-scroll")
+        if (scrollContainer) {
+          const elRect = el.getBoundingClientRect()
+          const containerRect = scrollContainer.getBoundingClientRect()
+          const scrollOffset = elRect.top - containerRect.top + scrollContainer.scrollTop - 100
+          scrollContainer.scrollTo({ top: scrollOffset, behavior: "smooth" })
+        } else {
+          el.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+        const focusable = el.querySelector<HTMLElement>("input, textarea, select, button") ?? el
+        if (focusable instanceof HTMLElement) setTimeout(() => focusable.focus(), 400)
       }, 50)
       return null
     }
+    setErrors({})
     setItemErrors(new Set())
 
     // Build flat dataCollectionItems from all categories

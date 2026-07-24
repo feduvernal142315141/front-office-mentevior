@@ -270,7 +270,12 @@ export function AppointmentModal({
             {mainBillingCodesError && <HintError>{mainBillingCodesError.message}</HintError>}
             {hasPriorAuthWithoutCodes && (
               <Hint className="text-amber-600">
-                The client has an active Prior Authorization but no billing codes for this event type.
+                No billing codes available. The provider may not have billing codes configured or is not associated with this client.
+              </Hint>
+            )}
+            {!hasPriorAuthWithoutCodes && formData.clientId && !mainBillingCodesLoading && !mainBillingCodesError && billingCodeOptions.length === 0 && (
+              <Hint className="text-amber-600">
+                No billing codes available. Verify that the provider has billing codes configured and is associated with this client.
               </Hint>
             )}
             <FieldError message={errors.billingCodeId} />
@@ -336,7 +341,7 @@ export function AppointmentModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <FloatingSelect
-                      label="Provider (Supervisor)"
+                      label="Provider (Supervisee)"
                       value={formData.supervision.providerId}
                       onChange={(v) => updateSupervisionField("providerId", v)}
                       options={rbtOptions}

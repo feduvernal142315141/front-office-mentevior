@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Edit2, FileDown } from "lucide-react"
+import { Edit2, FileDown, Calendar, Clock } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { AppointmentNoteSummary } from "@/lib/types/appointment-note.types"
 import { useAppointmentNotes } from "@/lib/modules/appointment-notes/hooks/use-appointment-notes"
@@ -13,6 +13,14 @@ import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { parseLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
+
+function formatTime(time?: string): string {
+  if (!time) return ""
+  const [h, m] = time.split(":").map(Number)
+  const suffix = h >= 12 ? "PM" : "AM"
+  const hour12 = h % 12 || 12
+  return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`
+}
 
 export function useSessionNotesTable() {
   const router = useRouter()
@@ -120,6 +128,31 @@ export function useSessionNotesTable() {
 
   const columns: CustomTableColumn<AppointmentNoteSummary>[] = useMemo(() => [
     {
+      key: "date",
+      header: "Session",
+      render: (note) => {
+        const timeRange = note.timeInit && note.timeEnd
+          ? `${formatTime(note.timeInit)} – ${formatTime(note.timeEnd)}`
+          : null
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-[#037ECC] shrink-0" />
+              <span className="text-sm font-semibold text-slate-900 tabular-nums">
+                {note.date ? format(parseLocalDate(note.date), "MM/dd/yyyy") : "—"}
+              </span>
+            </div>
+            {timeRange && (
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <span className="text-xs text-slate-500 tabular-nums">{timeRange}</span>
+              </div>
+            )}
+          </div>
+        )
+      },
+    },
+    {
       key: "clientName",
       header: "Client",
       render: (note) => (
@@ -131,15 +164,6 @@ export function useSessionNotesTable() {
       header: "Provider",
       render: (note) => (
         <span className="text-sm text-slate-700">{note.providerName}</span>
-      ),
-    },
-    {
-      key: "date",
-      header: "Date",
-      render: (note) => (
-        <span className="text-sm text-slate-600 tabular-nums">
-          {note.date ? format(parseLocalDate(note.date), "MM/dd/yyyy") : "—"}
-        </span>
       ),
     },
     {

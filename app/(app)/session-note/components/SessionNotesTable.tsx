@@ -11,7 +11,7 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
-import { getAppointmentNotePdfUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
+import { getAppointmentNotePdfPreviewUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
 
 export function SessionNotesTable() {
   const {
@@ -37,8 +37,7 @@ export function SessionNotesTable() {
     if (isGeneratingPdf) return
     setIsGeneratingPdf(true)
     try {
-      const url = await getAppointmentNotePdfUrl(appointmentId)
-      setPdfUrl(url)
+      setPdfUrl(getAppointmentNotePdfPreviewUrl(appointmentId))
     } catch {
       toast.error("Failed to generate PDF preview")
     } finally {
@@ -129,12 +128,11 @@ export function SessionNotesTable() {
         <DocumentViewer
           open
           onClose={() => {
-            URL.revokeObjectURL(pdfUrl)
             setPdfUrl(null)
             setPreviewAppointmentId(null)
           }}
           documentUrl={pdfUrl}
-          fileName="Appointment Note.pdf"
+          fileName="Session Note.pdf"
         />
       )}
     </div>

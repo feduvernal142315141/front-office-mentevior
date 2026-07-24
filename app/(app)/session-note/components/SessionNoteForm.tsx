@@ -164,7 +164,7 @@ export function SessionNoteForm({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Section icon={<BookOpen className="h-4 w-4" />} title="Teaching Method, Modality & Participants">
           <div className="space-y-4">
-            <div>
+            <div data-field="teachingMethodId">
               <FloatingSelect
                 label="Teaching Method"
                 value={formData.teachingMethodId}
@@ -177,7 +177,7 @@ export function SessionNoteForm({
               />
               <FieldError message={errors.teachingMethodId} />
             </div>
-            <div>
+            <div data-field="modalityId">
               <FloatingSelect
                 label="Modality"
                 value={formData.modalityId}
@@ -189,7 +189,7 @@ export function SessionNoteForm({
               />
               <FieldError message={errors.modalityId} />
             </div>
-            <div>
+            <div data-field="participantIds">
               <MultiSelectWithSearch
                 label="Participants"
                 items={participantItems}
@@ -197,6 +197,7 @@ export function SessionNoteForm({
                 onChange={(ids) => updateField("participantIds", ids)}
                 disabled={isLoadingCatalogs || formDisabled}
                 hasError={!!errors.participantIds}
+                required
               />
               <FieldError message={errors.participantIds} />
             </div>
@@ -205,11 +206,11 @@ export function SessionNoteForm({
 
         <Section icon={<Stethoscope className="h-4 w-4" />} title="Session Details">
           <div className="space-y-3">
-            <div>
+            <div data-field="reasonCaregiverNotPresent">
               <FloatingInput label="Reason Caregiver Not Present" value={formData.reasonCaregiverNotPresent} onChange={(v) => updateField("reasonCaregiverNotPresent", v)} onBlur={() => {}} disabled={formDisabled} hasError={!!errors.reasonCaregiverNotPresent} required />
               <FieldError message={errors.reasonCaregiverNotPresent} />
             </div>
-            <div>
+            <div data-field="medicalConcerns">
               <FloatingInput label="Medical Concerns" value={formData.medicalConcerns} onChange={(v) => updateField("medicalConcerns", v)} onBlur={() => {}} disabled={formDisabled} hasError={!!errors.medicalConcerns} required />
               <FieldError message={errors.medicalConcerns} />
             </div>
@@ -260,12 +261,12 @@ export function SessionNoteForm({
       {/* ─── Row 3: Interventions ─── */}
       <Section icon={<AlertTriangle className="h-4 w-4" />} title="Interventions">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} hasError={!!errors.antecedentInterventionIds} />
+          <div data-field="antecedentInterventionIds">
+            <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} hasError={!!errors.antecedentInterventionIds} required />
             <FieldError message={errors.antecedentInterventionIds} />
           </div>
-          <div>
-            <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} hasError={!!errors.consequenceInterventionIds} />
+          <div data-field="consequenceInterventionIds">
+            <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} hasError={!!errors.consequenceInterventionIds} required />
             <FieldError message={errors.consequenceInterventionIds} />
           </div>
         </div>
@@ -273,7 +274,7 @@ export function SessionNoteForm({
 
       {/* ─── Row 4: Session Summary (full width) ─── */}
       <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
-        <div>
+        <div data-field="sessionSummary">
           <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} disabled={formDisabled} hasError={!!errors.sessionSummary} required />
           <FieldError message={errors.sessionSummary} />
         </div>
@@ -347,7 +348,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-semibold uppercase text-slate-400">Value</span>
+                    <span className="text-[10px] font-semibold uppercase text-slate-400">Value <span className="text-[#037ECC]">*</span></span>
                     <input
                       type="text"
                       inputMode="numeric"

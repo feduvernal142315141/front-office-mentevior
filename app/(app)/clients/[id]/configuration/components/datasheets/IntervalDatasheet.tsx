@@ -262,7 +262,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                     </div>
                     {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.blocked === false && (
                       <div className="flex items-center gap-0.5" title="Editable">
-                        <CalendarCheck2 className="h-3 w-3 text-emerald-500" />
+                        <CalendarCheck2 className="h-3 w-3 text-emerald-700" />
                       </div>
                     )}
                   </div>
@@ -288,7 +288,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                       isBaseline && "bg-red-50/60",
                       today && !isBaseline && "bg-[#037ECC]/[0.03]",
                       !isEditable && "opacity-30",
-                      isEditable && !isBaseline && "bg-emerald-50/40",
+                      isEditable && !isBaseline && "bg-emerald-100/60",
                     )}>
                       <button
                         type="button"

@@ -247,7 +247,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
                     </div>
                     {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.blocked === false && (
                       <div className="flex items-center gap-0.5" title="Editable">
-                        <CalendarCheck2 className="h-3 w-3 text-emerald-500" />
+                        <CalendarCheck2 className="h-3 w-3 text-emerald-700" />
                       </div>
                     )}
                   </div>
@@ -271,16 +271,16 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
                     isBaseline && "bg-red-50/60",
                     today && !isBaseline && "bg-[#037ECC]/[0.03]",
                     !isEditable && "opacity-30",
-                    isEditable && !isBaseline && "bg-emerald-50/40",
+                    isEditable && !isBaseline && "bg-emerald-100/60",
                   )}>
-                    <div className={cn("flex items-center gap-1 rounded-xl p-1", isEditable ? "border border-emerald-200 bg-white shadow-sm" : "border border-slate-200 bg-slate-50/80")}>
+                    <div className={cn("flex items-center gap-1 rounded-xl p-1", isEditable ? "border border-emerald-400 bg-white shadow-sm" : "border border-slate-200 bg-slate-50/80")}>
                       <button type="button" onClick={() => ds.decrementOccurrences(key)} disabled={entry.occurrences === 0 || !isEditable}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400">
                         <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
                       </button>
                       <input type="text" inputMode="numeric" value={entry.occurrences || ""} disabled={!isEditable}
                         onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); ds.setOccurrences(key, v === "" ? 0 : parseInt(v, 10)) }}
-                        className={cn("h-8 w-10 rounded-lg text-center text-sm font-semibold tabular-nums outline-none transition-all", isEditable ? "bg-white border border-emerald-200 text-slate-800 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15" : "bg-slate-50 border border-slate-200 text-slate-400")}
+                        className={cn("h-8 w-10 rounded-lg text-center text-sm font-semibold tabular-nums outline-none transition-all", isEditable ? "bg-white border border-emerald-400 text-slate-800 focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15" : "bg-slate-50 border border-slate-200 text-slate-400")}
                         placeholder="0" />
                       <button type="button" onClick={() => ds.incrementOccurrences(key)} disabled={!isEditable}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-blue-50 hover:text-[#037ECC] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400">

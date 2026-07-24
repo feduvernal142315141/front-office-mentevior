@@ -225,7 +225,7 @@ export function SupervisionConfigModal({
       <div className="px-7 py-6 space-y-4">
         {/* Provider */}
         <FloatingSelect
-          label="Provider (Supervisor)"
+          label="Provider (Supervisee)"
           value={localData.providerId}
           onChange={(v) => updateField("providerId", v)}
           options={rbtOptions}

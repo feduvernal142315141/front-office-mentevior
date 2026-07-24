@@ -6,7 +6,7 @@ import { ArrowLeft, NotebookPen, FileDown, Loader2, Lock, LockOpen, BookOpen, Pe
 import { toast } from "sonner"
 import { Button } from "@/components/custom/Button"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
-import { getAppointmentNotePdfUrl, lockAppointmentNote } from "@/lib/modules/appointment-notes/services/appointment-note.service"
+import { getAppointmentNotePdfPreviewUrl, lockAppointmentNote } from "@/lib/modules/appointment-notes/services/appointment-note.service"
 import { toggleAppointmentEditLocks } from "@/lib/modules/schedules/services/appointments.service"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
@@ -109,8 +109,9 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     if (!appointmentId || isGeneratingPdf) return
     setIsGeneratingPdf(true)
     try {
-      const url = await getAppointmentNotePdfUrl(appointmentId)
-      setPdfUrl(url)
+      // Same-origin proxy URL ending in the real filename — Chrome's PDF viewer
+      // uses that path segment (and Content-Disposition) for Save As.
+      setPdfUrl(getAppointmentNotePdfPreviewUrl(appointmentId))
     } catch {
       toast.error("Failed to generate PDF preview")
     } finally {
@@ -264,12 +265,9 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
       {pdfUrl && (
         <DocumentViewer
           open
-          onClose={() => {
-            URL.revokeObjectURL(pdfUrl)
-            setPdfUrl(null)
-          }}
+          onClose={() => setPdfUrl(null)}
           documentUrl={pdfUrl}
-          fileName="Appointment Note.pdf"
+          fileName="Session Note.pdf"
         />
       )}
     </div>
