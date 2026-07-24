@@ -43,7 +43,7 @@ export function useSessionNotesTable() {
   }, [clients])
 
   const providerOptions = useMemo(() => {
-    const opts = allUsers.filter((u) => u.active && !u.terminated && u.roleName).map((u) => ({ value: u.id, label: u.fullName }))
+    const opts = allUsers.filter((u) => u.active && !u.terminated).map((u) => ({ value: u.id, label: u.fullName }))
     return [{ value: "all", label: "All Providers" }, ...opts]
   }, [allUsers])
 

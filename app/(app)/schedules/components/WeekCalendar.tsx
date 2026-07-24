@@ -86,10 +86,10 @@ export function WeekCalendar({
   const { users: allUsers } = useUsers({ pageSize: 100 })
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
 
-  // Only show users that have a role (not clients) and are active
+  // Only show active, non-terminated member users as providers
   const providerFilterOptions = useMemo(() => {
     const validProviders = allUsers
-      .filter((u) => u.active && !u.terminated && u.roleName)
+      .filter((u) => u.active && !u.terminated)
       .map((u) => ({ value: u.id, label: u.fullName }))
     return [{ value: "all", label: "All Providers" }, ...validProviders]
   }, [allUsers])

@@ -101,7 +101,7 @@ export function Step9Providers({
     return availableUsers.filter(
       (u) =>
         u.fullName.toLowerCase().includes(q) ||
-        u.roleName.toLowerCase().includes(q)
+        u.memberUserTypeNames.some((type) => type.toLowerCase().includes(q))
     )
   }, [availableUsers, searchQuery])
 
@@ -491,8 +491,10 @@ export function Step9Providers({
                           )}>
                             {user.fullName}
                           </p>
-                          {user.roleName && (
-                            <p className="text-xs text-slate-500 mt-0.5">{user.roleName}</p>
+                          {user.memberUserTypeNames.length > 0 && (
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {user.memberUserTypeNames.join(", ")}
+                            </p>
                           )}
                         </div>
 
