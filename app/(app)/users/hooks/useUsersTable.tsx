@@ -168,15 +168,19 @@ export function useUsersTable(): UseUsersTableReturn {
         ),
       },
       {
-        key: "roleName",
-        header: "Role",
+        key: "memberUserTypeNames",
+        header: "Type",
         render: (user) =>
-          user.roleName ? (
-            <Badge variant="outline" className="font-normal">
-              {user.roleName}
-            </Badge>
+          user.memberUserTypeNames && user.memberUserTypeNames.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {user.memberUserTypeNames.map((type) => (
+                <Badge key={type} variant="outline" className="font-normal">
+                  {type}
+                </Badge>
+              ))}
+            </div>
           ) : (
-            <span className="text-gray-400 text-sm">No role</span>
+            <span className="text-gray-400 text-sm">No type</span>
           ),
       },
       

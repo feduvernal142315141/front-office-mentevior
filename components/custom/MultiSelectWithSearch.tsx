@@ -26,6 +26,7 @@ interface MultiSelectWithSearchProps {
   disabled?: boolean
   hasError?: boolean
   required?: boolean
+  lockedIds?: string[]
 }
 
 export function MultiSelectWithSearch({
@@ -42,6 +43,7 @@ export function MultiSelectWithSearch({
   disabled = false,
   hasError = false,
   required = false,
+  lockedIds = [],
 }: MultiSelectWithSearchProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -72,6 +74,7 @@ export function MultiSelectWithSearch({
   const selectedItems = items.filter((item) => selectedIds.includes(item.id))
 
   const toggle = (id: string) => {
+    if (lockedIds.includes(id)) return
     if (selectedIds.includes(id)) {
       onChange(selectedIds.filter((s) => s !== id))
     } else {
@@ -80,6 +83,7 @@ export function MultiSelectWithSearch({
   }
 
   const removeChip = (id: string) => {
+    if (lockedIds.includes(id)) return
     onChange(selectedIds.filter((s) => s !== id))
   }
 
@@ -176,14 +180,16 @@ export function MultiSelectWithSearch({
               className="inline-flex items-center gap-1 rounded-full border border-[#037ECC]/20 bg-[#037ECC]/8 px-2.5 py-0.5 text-xs font-medium text-[#037ECC]"
             >
               <span>{item.name.replace(FILL_IN_BLANK_PATTERN, "___")}</span>
-              <button
-                type="button"
-                onClick={() => removeChip(item.id)}
-                disabled={disabled}
-                className="ml-0.5 rounded-full p-0.5 hover:bg-[#037ECC]/20 transition-colors"
-              >
-                <X className="h-2.5 w-2.5" />
-              </button>
+              {!lockedIds.includes(item.id) && (
+                <button
+                  type="button"
+                  onClick={() => removeChip(item.id)}
+                  disabled={disabled}
+                  className="ml-0.5 rounded-full p-0.5 hover:bg-[#037ECC]/20 transition-colors"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              )}
             </span>
           ))}
         </div>

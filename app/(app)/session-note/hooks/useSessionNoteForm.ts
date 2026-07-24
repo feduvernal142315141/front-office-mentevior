@@ -18,6 +18,8 @@ import { useInterventionCatalogs } from "@/lib/modules/appointment-notes/hooks/u
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
 
+export const CLIENT_PARTICIPANT_ID = "client-fixed"
+
 export interface CategoryItemFormData {
   value: number | null
   environmentalChange: string
@@ -46,7 +48,7 @@ const EMPTY_FORM: SessionNoteFormData = {
   medicalConcerns: "",
   crisisInvolved: false,
   sessionSummary: "",
-  participantIds: [],
+  participantIds: [CLIENT_PARTICIPANT_ID],
   antecedentInterventionIds: [],
   consequenceInterventionIds: [],
   categoryItems: {},
@@ -71,7 +73,7 @@ function noteToFormData(note: AppointmentNote): SessionNoteFormData {
     medicalConcerns: note.medicalConcerns || "N/A",
     crisisInvolved: note.crisisInvolved,
     sessionSummary: note.sessionSummary,
-    participantIds: note.participants.map((p) => p.catalogId),
+    participantIds: [CLIENT_PARTICIPANT_ID, ...note.participants.map((p) => p.catalogId)],
     antecedentInterventionIds: note.antecedentInterventionList.map((i) => i.id),
     consequenceInterventionIds: note.consequenceInterventionList.map((i) => i.id),
     categoryItems,
@@ -106,7 +108,11 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
   // Catalogs
   const { selectOptions: teachingMethodOptions, isLoading: teachingMethodsLoading } = useTeachingMethodCatalog()
   const { selectOptions: modalityOptions, isLoading: modalityLoading } = useModalityCatalog()
-  const { items: participantCatalog, isLoading: participantsLoading } = useParticipantCatalog()
+  const { items: rawParticipantCatalog, isLoading: participantsLoading } = useParticipantCatalog()
+  const participantCatalog = useMemo(
+    () => [{ id: CLIENT_PARTICIPANT_ID, name: "Client", type: "Relationship" as const }, ...rawParticipantCatalog],
+    [rawParticipantCatalog],
+  )
   const {
     antecedentInterventions,
     consequenceInterventions,
@@ -255,7 +261,7 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
     const participants: AppointmentNoteParticipantPayload[] = isReadOnly
       ? []
       : formData.participantIds
-          .filter(Boolean)
+          .filter((id) => id && id !== CLIENT_PARTICIPANT_ID)
           .map((catalogId) => {
             const item = participantCatalog.find((c) => c.id === catalogId)
             return { catalogId, catalogType: item?.type ?? "Member User Type" }

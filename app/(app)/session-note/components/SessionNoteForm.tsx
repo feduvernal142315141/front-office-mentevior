@@ -26,6 +26,7 @@ import type {
 import { cn } from "@/lib/utils"
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
 import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
+import { CLIENT_PARTICIPANT_ID } from "../hooks/useSessionNoteForm"
 
 interface SessionNoteFormProps {
   formData: SessionNoteFormData
@@ -198,6 +199,7 @@ export function SessionNoteForm({
                 disabled={isLoadingCatalogs || formDisabled}
                 hasError={!!errors.participantIds}
                 required
+                lockedIds={[CLIENT_PARTICIPANT_ID]}
               />
               <FieldError message={errors.participantIds} />
             </div>
