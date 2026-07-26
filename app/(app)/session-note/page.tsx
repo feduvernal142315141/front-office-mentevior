@@ -15,8 +15,10 @@ import { PermissionModule } from "@/lib/utils/permissions-new"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { deriveNoteStatusInfo } from "./hooks/useNoteStatus"
 import { SessionNoteForm } from "./components/SessionNoteForm"
+import { SessionNote97155Form } from "./components/SessionNote97155Form"
 import { SessionNotesTable } from "./components/SessionNotesTable"
 import { useSessionNoteForm } from "./hooks/useSessionNoteForm"
+import { useSessionNote97155Form } from "./hooks/useSessionNote97155Form"
 
 export default function SessionNotePage() {
   const searchParams = useSearchParams()
@@ -52,8 +54,18 @@ export default function SessionNotePage() {
   return <SessionNoteFormView appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
 }
 
-// Extracted to a separate component so hooks are not called conditionally
+// Route to the correct form based on billing code
 function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
+  const is97155 = billingCode?.includes("97155")
+
+  if (is97155) {
+    return <SessionNote97155FormView appointmentId={appointmentId} billingCode={billingCode} />
+  }
+  return <SessionNote97153FormView appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
+}
+
+// ─── 97153 Form View (existing behavior) ───
+function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
   const router = useRouter()
   const alert = useAlert()
   const { user } = useAuth()
@@ -102,24 +114,162 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
 
   const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
 
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
-
-  const handlePreviewPdf = useCallback(async () => {
-    if (!appointmentId || isGeneratingPdf) return
-    setIsGeneratingPdf(true)
-    try {
-      // Same-origin proxy URL ending in the real filename — Chrome's PDF viewer
-      // uses that path segment (and Content-Disposition) for Save As.
-      setPdfUrl(getAppointmentNotePdfPreviewUrl(appointmentId))
-    } catch {
-      toast.error("Failed to generate PDF preview")
-    } finally {
-      setIsGeneratingPdf(false)
+  const handleSaveAndRedirect = useCallback(async () => {
+    const result = await handleSubmit()
+    if (result) {
+      toast.success("Session note saved")
+      router.push("/session-note")
     }
-  }, [appointmentId, isGeneratingPdf])
+  }, [handleSubmit, router])
 
-  const handleNoteStatusChange = useCallback(async (newStatus: "lock" | "active") => {
+  return (
+    <FormViewShell
+      billingCode={billingCode}
+      isLoadingNote={isLoadingNote}
+      noteError={noteError}
+      statusInfo={statusInfo}
+      isChangingStatus={isChangingStatus}
+      onStatusChange={useNoteStatusHandler(appointmentId, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      appointmentId={appointmentId}
+    >
+      <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
+        <SessionNoteForm
+          formData={formData}
+          updateField={updateField}
+          updateItemValue={updateItemValue}
+          updateItemEnvironmentalChange={updateItemEnvironmentalChange}
+          isSaving={isSaving}
+          isLoadingCatalogs={isLoadingCatalogs}
+          teachingMethodOptions={teachingMethodOptions}
+          modalityOptions={modalityOptions}
+          participantCatalog={participantCatalog}
+          antecedentItems={antecedentItems}
+          consequenceItems={consequenceItems}
+          categories={categories}
+          recipient={recipient}
+          provider={provider}
+          serviceDetails={serviceDetails}
+          billingCodes={noteBillingCodes}
+          modality={noteModality}
+          errors={errors}
+          itemErrors={itemErrors}
+          providerSignatureUrl={providerSignatureUrl}
+          onProviderSignatureChange={setProviderSignatureImage}
+          useCheckmarkSignature={useCheckmarkSignature}
+          caregiverSignatureChecked={caregiverSignatureChecked}
+          onCaregiverCheckedChange={setCaregiverChecked}
+          onCaregiverSignatureChange={setCaregiverSignatureImage}
+          caregiverSignatureImage={caregiverSignatureImage}
+          noteStatus={noteStatus}
+        />
+      </form>
+    </FormViewShell>
+  )
+}
+
+// ─── 97155 Form View ───
+function SessionNote97155FormView({ appointmentId, billingCode }: { appointmentId: string; billingCode: string | null }) {
+  const router = useRouter()
+  const alert = useAlert()
+  const { user } = useAuth()
+  const { user: fullUser } = useUserById(user?.id || null)
+  const { block: canBlock } = usePermission()
+  const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
+  const hasBlockPermission = canBlock(PermissionModule.APPOINTMENT)
+  const canAdminAction = isAdmin && hasBlockPermission
+
+  const [isChangingStatus, setIsChangingStatus] = useState(false)
+
+  const {
+    formData,
+    updateField,
+    handleSubmit,
+    errors,
+    isLoadingNote,
+    noteError,
+    isSaving,
+    isLoadingCatalogs,
+    modalityOptions,
+    participantCatalog,
+    protocolObservationItems,
+    protocolAdjustmentItems,
+    qhpImplementationItems,
+    activeDirectionItems,
+    recipient,
+    provider,
+    serviceDetails,
+    billingCodes: noteBillingCodes,
+    providerSignatureUrl,
+    setProviderSignatureImage,
+    useCheckmarkSignature,
+    caregiverSignatureChecked,
+    setCaregiverChecked,
+    caregiverSignatureImage,
+    setCaregiverSignatureImage,
+    noteStatus,
+    refetchNote,
+  } = useSessionNote97155Form({ appointmentId })
+
+  const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
+
+  const handleSaveAndRedirect = useCallback(async () => {
+    const result = await handleSubmit()
+    if (result) {
+      toast.success("Session note saved")
+      router.push("/session-note")
+    }
+  }, [handleSubmit, router])
+
+  return (
+    <FormViewShell
+      billingCode={billingCode}
+      isLoadingNote={isLoadingNote}
+      noteError={noteError}
+      statusInfo={statusInfo}
+      isChangingStatus={isChangingStatus}
+      onStatusChange={useNoteStatusHandler(appointmentId, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      appointmentId={appointmentId}
+    >
+      <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
+        <SessionNote97155Form
+          formData={formData}
+          updateField={updateField}
+          isSaving={isSaving}
+          isLoadingCatalogs={isLoadingCatalogs}
+          modalityOptions={modalityOptions}
+          participantCatalog={participantCatalog}
+          protocolObservationItems={protocolObservationItems}
+          protocolAdjustmentItems={protocolAdjustmentItems}
+          qhpImplementationItems={qhpImplementationItems}
+          activeDirectionItems={activeDirectionItems}
+          recipient={recipient}
+          provider={provider}
+          serviceDetails={serviceDetails}
+          billingCodes={noteBillingCodes}
+          errors={errors}
+          providerSignatureUrl={providerSignatureUrl}
+          onProviderSignatureChange={setProviderSignatureImage}
+          useCheckmarkSignature={useCheckmarkSignature}
+          caregiverSignatureChecked={caregiverSignatureChecked}
+          onCaregiverCheckedChange={setCaregiverChecked}
+          onCaregiverSignatureChange={setCaregiverSignatureImage}
+          caregiverSignatureImage={caregiverSignatureImage}
+          noteStatus={noteStatus}
+        />
+      </form>
+    </FormViewShell>
+  )
+}
+
+// ─── Shared status change handler ───
+function useNoteStatusHandler(
+  appointmentId: string,
+  isChangingStatus: boolean,
+  setIsChangingStatus: (v: boolean) => void,
+  refetchNote: () => Promise<void>,
+  alert: ReturnType<typeof useAlert>,
+) {
+  return useCallback(async (newStatus: "lock" | "active") => {
     if (!appointmentId || isChangingStatus) return
     if (newStatus === "lock") {
       alert.confirm({
@@ -147,14 +297,21 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     } catch { toast.error("Failed to re-activate note") }
     finally { setIsChangingStatus(false) }
   }, [appointmentId, isChangingStatus, refetchNote, alert])
+}
 
-  const handleSaveAndRedirect = useCallback(async () => {
-    const result = await handleSubmit()
-    if (result) {
-      toast.success("Session note saved")
-      router.push("/session-note")
-    }
-  }, [handleSubmit, router])
+// ─── Shared layout shell for both form views ───
+function FormViewShell({ billingCode, isLoadingNote, noteError, statusInfo, isChangingStatus, onStatusChange, appointmentId, children }: {
+  billingCode: string | null
+  isLoadingNote: boolean
+  noteError: Error | null
+  statusInfo: import("./hooks/useNoteStatus").NoteStatusInfo
+  isChangingStatus: boolean
+  onStatusChange: (status: "lock" | "active") => void
+  appointmentId: string
+  children: React.ReactNode
+}) {
+  const router = useRouter()
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   return (
     <div className="px-6 py-6">
@@ -184,17 +341,16 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
               </span>
             )}
           </div>
-          {/* Preview PDF button */}
           <div className="ml-auto">
             <Button
               type="button"
               variant="secondary"
               className="gap-2"
-              onClick={handlePreviewPdf}
-              disabled={isGeneratingPdf || isLoadingNote}
+              onClick={() => setPdfUrl(getAppointmentNotePdfPreviewUrl(appointmentId))}
+              disabled={isLoadingNote}
             >
-              {isGeneratingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-              {isGeneratingPdf ? "Generating..." : "Preview PDF"}
+              <FileDown className="h-4 w-4" />
+              Preview PDF
             </Button>
           </div>
         </div>
@@ -204,7 +360,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
           <NoteStatusBanner
             statusInfo={statusInfo}
             isChangingStatus={isChangingStatus}
-            onStatusChange={handleNoteStatusChange}
+            onStatusChange={onStatusChange}
           />
         )}
 
@@ -225,40 +381,8 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
           </div>
         )}
 
-        {/* Form */}
-        {!isLoadingNote && !noteError && (
-          <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
-            <SessionNoteForm
-              formData={formData}
-              updateField={updateField}
-              updateItemValue={updateItemValue}
-              updateItemEnvironmentalChange={updateItemEnvironmentalChange}
-              isSaving={isSaving}
-              isLoadingCatalogs={isLoadingCatalogs}
-              teachingMethodOptions={teachingMethodOptions}
-              modalityOptions={modalityOptions}
-              participantCatalog={participantCatalog}
-              antecedentItems={antecedentItems}
-              consequenceItems={consequenceItems}
-              categories={categories}
-              recipient={recipient}
-              provider={provider}
-              serviceDetails={serviceDetails}
-              billingCodes={noteBillingCodes}
-              modality={noteModality}
-              errors={errors}
-              itemErrors={itemErrors}
-              providerSignatureUrl={providerSignatureUrl}
-              onProviderSignatureChange={setProviderSignatureImage}
-              useCheckmarkSignature={useCheckmarkSignature}
-              caregiverSignatureChecked={caregiverSignatureChecked}
-              onCaregiverCheckedChange={setCaregiverChecked}
-              onCaregiverSignatureChange={setCaregiverSignatureImage}
-              caregiverSignatureImage={caregiverSignatureImage}
-              noteStatus={noteStatus}
-            />
-          </form>
-        )}
+        {/* Form content */}
+        {!isLoadingNote && !noteError && children}
       </div>
 
       {/* PDF Viewer */}
