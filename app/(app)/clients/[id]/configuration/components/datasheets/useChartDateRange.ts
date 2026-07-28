@@ -67,6 +67,27 @@ const MIN_PRESET_FOR_INTERVAL: Record<string, ChartRangePreset | null> = {
 export const CHART_RANGE_PRESETS: ChartRangePreset[] = ["1W", "2W", "1M", "3M", "6M"]
 
 // ---------------------------------------------------------------------------
+// Auto-compute the smallest preset that covers from anchor date to today
+// ---------------------------------------------------------------------------
+
+function computeOptimalPreset(anchor: Date, fallback: ChartRangePreset): ChartRangePreset {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diffDays = Math.ceil((today.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24))
+
+  // Anchor is today or in the future → use fallback
+  if (diffDays <= 0) return fallback
+
+  // preset.days must be >= diffDays + 1 so range end (anchor + days - 1) >= today
+  const needed = diffDays + 1
+  if (needed <= 7) return "1W"
+  if (needed <= 14) return "2W"
+  if (needed <= 30) return "1M"
+  if (needed <= 90) return "3M"
+  return "6M"
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
@@ -98,9 +119,6 @@ export function useChartDateRange(
   initialPreset: ChartRangePreset = "1W",
   anchorDate?: Date,
 ): UseChartDateRangeResult {
-  const [preset, setPresetState] = useState<ChartRangePreset>(initialPreset)
-  const [interval, setIntervalState] = useState<ChartInterval>(ChartInterval.DAILY)
-
   const resolvedAnchor = useMemo(() => {
     if (anchorDate) {
       const d = new Date(anchorDate)
@@ -112,14 +130,24 @@ export function useChartDateRange(
     return today
   }, [anchorDate])
 
+  // Auto-compute optimal preset so chart covers from anchor to today
+  const optimalPreset = useMemo(() => {
+    if (!anchorDate) return initialPreset
+    return computeOptimalPreset(resolvedAnchor, initialPreset)
+  }, [anchorDate, resolvedAnchor, initialPreset])
+
+  const [preset, setPresetState] = useState<ChartRangePreset>(optimalPreset)
+  const [interval, setIntervalState] = useState<ChartInterval>(ChartInterval.DAILY)
+
   const [startDate, setStartDate] = useState<Date>(resolvedAnchor)
 
-  // Sync startDate when anchor changes (item switch)
+  // Sync startDate AND preset when anchor changes (item switch)
   const anchorKey = resolvedAnchor.getTime()
   const prevAnchorRef = useMemo(() => ({ current: anchorKey }), [])
   if (prevAnchorRef.current !== anchorKey) {
     prevAnchorRef.current = anchorKey
     setStartDate(resolvedAnchor)
+    setPresetState(optimalPreset)
   }
 
   // Monthly interval → full year range (Jan 1 - Dec 31)

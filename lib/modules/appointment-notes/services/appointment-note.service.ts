@@ -186,6 +186,34 @@ export async function getAppointmentNote(
                 value: typeof item.value === "number" ? item.value : null,
                 environmentalChange: typeof item.environmentalChange === "string" ? item.environmentalChange : null,
                 type: typeof item.type === "string" ? item.type : null,
+                typeEventCatalogId: item.typeEventCatalogId ? String(item.typeEventCatalogId) : null,
+                typeEventCatalogName: typeof item.typeEventCatalogName === "string" ? item.typeEventCatalogName : null,
+                baseline: Array.isArray(item.baseline)
+                  ? item.baseline.map((b: Record<string, unknown>) => ({
+                      id: String(b.id ?? ""),
+                      date: String(b.date ?? ""),
+                      value: typeof b.value === "number" ? b.value : 0,
+                      periodCatalogId: String(b.periodCatalogId ?? ""),
+                      environmentalChanges: typeof b.environmentalChanges === "string" ? b.environmentalChanges : undefined,
+                      show: b.show !== false,
+                    }))
+                  : [],
+                objetive: Array.isArray(item.objetive)
+                  ? item.objetive.map((o: Record<string, unknown>) => ({
+                      id: String(o.id ?? ""),
+                      name: String(o.name ?? ""),
+                      statusId: o.statusId ? String(o.statusId) : undefined,
+                      status: o.status ? String(o.status) : undefined,
+                      startDate: String(o.startDate ?? ""),
+                      estimatedEndDate: o.estimatedEndDate ? String(o.estimatedEndDate) : null,
+                      endDate: o.endDate ? String(o.endDate) : "",
+                      operatorSmartCriteria: String(o.operatorSmartCriteria ?? ""),
+                      valueSmartCriteria: typeof o.valueSmartCriteria === "number" ? o.valueSmartCriteria : 0,
+                      periodSmartCriteriaCatalogId: String(o.periodSmartCriteriaCatalogId ?? ""),
+                      valueDuration: typeof o.valueDuration === "number" ? o.valueDuration : 0,
+                      periodDurationCatalogId: String(o.periodDurationCatalogId ?? ""),
+                    }))
+                  : [],
               }))
             : [],
         }))

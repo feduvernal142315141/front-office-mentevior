@@ -13,10 +13,12 @@ import {
   ReferenceLine,
 } from "recharts"
 import { format } from "date-fns"
+import { TrendingUp, TrendingDown, Minus as MinusIcon, BarChart3 } from "lucide-react"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/constants/chart.constants"
 import { DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
 import { type PercentageDayEntry, getDateKey, calculatePercentage, countYes } from "./percentage-datasheet.types"
+import { linearRegression } from "./duration-datasheet.types"
 
 interface PercentageChartProps {
   weekDays: Date[]
@@ -106,6 +108,17 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
     return data.filter((d) => d.hasNote).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
   }, [data])
 
+  const trendInfo = useMemo(() => {
+    const valuePoints = data.filter((p) => p.percentage != null)
+    if (valuePoints.length < 2) return null
+    const points = valuePoints.map((p, i) => ({ x: i, y: p.percentage! }))
+    const reg = linearRegression(points)
+    if (!reg) return null
+    const direction = reg.slope > 0.01 ? "Increasing" : reg.slope < -0.01 ? "Decreasing" : "Stable"
+    const arrow = reg.slope > 0.01 ? "↑" : reg.slope < -0.01 ? "↓" : "→"
+    return { ...reg, direction, arrow, count: valuePoints.length }
+  }, [data])
+
   const objVisual = chartConfig.objectives
 
   const PX_PER_POINT = 30
@@ -185,8 +198,11 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
                   {point?.totalTrials != null && point.totalTrials > 0 && (
                     <p className="text-slate-300">{point.yesCount}/{point.totalTrials} Yes</p>
                   )}
-                  {point?.hasNote && (
-                    <p className="text-teal-300 italic">{point.note}</p>
+                  {point?.hasNote && point.note && (
+                    <div className="flex items-start gap-1.5 pt-1 border-t border-slate-700">
+                      <div className="h-3 w-0 border-l border-dashed border-teal-400 mt-0.5 shrink-0" />
+                      <p className="text-teal-300 italic">{point.note}</p>
+                    </div>
                   )}
                 </div>
               )
@@ -208,7 +224,7 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
           )}
 
           {envChangeDates.map((env) => (
-            <ReferenceLine key={env.dateLabel} x={env.dateLabel} stroke="#94A3B8" strokeWidth={1} strokeDasharray="4 3" />
+            <ReferenceLine key={env.dateLabel} x={env.dateLabel} stroke="#14B8A6" strokeWidth={1} strokeDasharray="4 3" />
           ))}
 
           {lineType === "BAR" ? (
@@ -228,6 +244,36 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
         </ComposedChart>
       </ResponsiveContainer>
       </div>
+
+      {trendInfo && (
+        <div className="mt-4 flex items-center gap-4 rounded-xl bg-slate-50/80 border border-slate-100 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-xs font-semibold text-slate-600">Datapoints: <span className="text-slate-800 tabular-nums">{trendInfo.count}</span></span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <div className="flex items-center gap-1.5">
+            {trendInfo.direction === "Increasing" ? (
+              <TrendingUp className="h-3.5 w-3.5 text-rose-500" />
+            ) : trendInfo.direction === "Decreasing" ? (
+              <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <MinusIcon className="h-3.5 w-3.5 text-amber-500" />
+            )}
+            <span className="text-xs font-semibold text-slate-600">
+              Total: <span className={
+                trendInfo.direction === "Increasing" ? "text-rose-600" :
+                trendInfo.direction === "Decreasing" ? "text-emerald-600" :
+                "text-amber-600"
+              }>{trendInfo.arrow} {trendInfo.direction}</span>
+            </span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <span className="text-[11px] text-slate-400 tabular-nums">
+            slope: {trendInfo.slope.toFixed(2)} &middot; alpha: {trendInfo.intercept.toFixed(2)}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

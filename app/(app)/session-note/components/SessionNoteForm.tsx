@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import {
   BookOpen, AlertTriangle, Stethoscope,
   Target, BarChart3, User, Building2, ClipboardList, PenTool, CheckCircle2, PenLine,
@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils"
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
 import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
 import { CLIENT_PARTICIPANT_ID } from "../hooks/useSessionNoteForm"
+import { SessionItemChartPanel } from "./SessionItemChartPanel"
 
 interface SessionNoteFormProps {
   formData: SessionNoteFormData
@@ -56,6 +57,7 @@ interface SessionNoteFormProps {
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
   noteStatus?: NoteStatus
+  appointmentId?: string | null
 }
 
 export function SessionNoteForm({
@@ -86,6 +88,7 @@ export function SessionNoteForm({
   onCaregiverSignatureChange,
   caregiverSignatureImage,
   noteStatus = "read",
+  appointmentId,
 }: SessionNoteFormProps) {
   const statusInfo = deriveNoteStatusInfo(noteStatus, false)
   const formDisabled = !statusInfo.isFormEditable
@@ -94,6 +97,12 @@ export function SessionNoteForm({
 
   const categoriesWithItems = categories.filter((c) => c.items.length > 0)
   const categoriesEmpty = categories.filter((c) => c.items.length === 0)
+
+  // Track which item is active in the chart per category
+  const [activeChartItems, setActiveChartItems] = useState<Record<string, string>>({})
+  const handleItemFocus = useCallback((categoryId: string, itemId: string) => {
+    setActiveChartItems((prev) => ({ ...prev, [categoryId]: itemId }))
+  }, [])
 
   const participantItems = participantCatalog.map((p) => ({ id: p.id, name: p.name }))
 
@@ -229,19 +238,30 @@ export function SessionNoteForm({
             <span>No goals configured for this billing code</span>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-4">
             {categoriesWithItems.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              <div className="space-y-4">
                 {categoriesWithItems.map((category) => (
-                  <CategoryCard
-                    key={category.id}
-                    category={category}
-                    categoryItems={formData.categoryItems}
-                    onValueChange={updateItemValue}
-                    onEnvChangeChange={updateItemEnvironmentalChange}
-                    itemErrors={itemErrors}
-                    disabled={dataCollectionDisabled}
-                  />
+                  <div key={category.id} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <CategoryCard
+                      category={category}
+                      categoryItems={formData.categoryItems}
+                      onValueChange={updateItemValue}
+                      onEnvChangeChange={updateItemEnvironmentalChange}
+                      itemErrors={itemErrors}
+                      disabled={dataCollectionDisabled}
+                      activeItemId={activeChartItems[category.id]}
+                      onItemFocus={(itemId) => handleItemFocus(category.id, itemId)}
+                    />
+                    <SessionItemChartPanel
+                      category={category}
+                      categoryItems={formData.categoryItems}
+                      appointmentDate={serviceDetails?.date ?? null}
+                      appointmentId={appointmentId ?? null}
+                      activeItemId={activeChartItems[category.id]}
+                      onActiveItemChange={(itemId) => handleItemFocus(category.id, itemId)}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -323,16 +343,18 @@ function Section({ icon, title, subtitle, children }: { icon: React.ReactNode; t
   )
 }
 
-function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChange, itemErrors, disabled }: {
+function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChange, itemErrors, disabled, activeItemId, onItemFocus }: {
   category: AppointmentNoteCategory
   categoryItems: Record<string, { value: number | null; environmentalChange: string }>
   onValueChange: (itemId: string, value: number | null) => void
   onEnvChangeChange: (itemId: string, text: string) => void
   itemErrors?: Set<string>
   disabled?: boolean
+  activeItemId?: string
+  onItemFocus?: (itemId: string) => void
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden self-start">
       <div className="flex items-center gap-2 px-4 py-2.5 bg-white border-b border-slate-100">
         <BarChart3 className="h-3.5 w-3.5 text-[#037ECC]" />
         <span className="text-xs font-semibold text-slate-800 flex-1">{category.name}</span>
@@ -344,9 +366,17 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
           const currentValue = edited?.value ?? item.value
           const currentEnv = edited?.environmentalChange ?? item.environmentalChange ?? ""
           const hasError = itemErrors?.has(item.id)
+          const isActive = activeItemId === item.id
           return (
-            <div key={item.id} className="px-4 py-3 space-y-2">
-              <span className="text-sm font-medium text-slate-700 block">{item.name}</span>
+            <div
+              key={item.id}
+              className={cn(
+                "px-4 py-3 space-y-2 transition-colors cursor-pointer",
+                isActive && "bg-[#037ECC]/[0.03] border-l-2 border-l-[#037ECC]",
+              )}
+              onClick={() => onItemFocus?.(item.id)}
+            >
+              <span className={cn("text-sm font-medium block", isActive ? "text-[#037ECC]" : "text-slate-700")}>{item.name}</span>
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-1.5">
@@ -357,6 +387,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
                       data-item-value={item.id}
                       disabled={disabled}
                       value={currentValue ?? ""}
+                      onFocus={() => onItemFocus?.(item.id)}
                       onChange={(e) => {
                         const raw = e.target.value.replace(/[^0-9.]/g, "")
                         onValueChange(item.id, raw === "" ? null : parseFloat(raw))
@@ -380,6 +411,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
                     type="text"
                     value={currentEnv}
                     disabled={disabled}
+                    onFocus={() => onItemFocus?.(item.id)}
                     onChange={(e) => onEnvChangeChange(item.id, e.target.value)}
                     placeholder="Environmental change..."
                     className="h-7 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all placeholder:text-slate-300 disabled:bg-slate-50 disabled:text-slate-400"

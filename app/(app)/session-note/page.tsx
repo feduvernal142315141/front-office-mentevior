@@ -161,6 +161,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
           noteStatus={noteStatus}
+          appointmentId={appointmentId}
         />
       </form>
     </FormViewShell>

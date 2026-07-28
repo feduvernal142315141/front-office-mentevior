@@ -13,6 +13,7 @@ import {
   ReferenceArea,
 } from "recharts"
 import { format } from "date-fns"
+import { TrendingUp, TrendingDown, Minus as MinusIcon, BarChart3 } from "lucide-react"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import type { ClientServicePlanItemBaseline, ClientServicePlanItemObjective } from "@/lib/types/client-service-plan.types"
 import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/constants/chart.constants"
@@ -159,6 +160,10 @@ export function DurationChart({
     return { ...reg, direction, arrow, count: treatmentPoints.length }
   }, [data])
 
+  const envChangeDates = useMemo(() => {
+    return data.filter((p) => p.hasNote && p.note).map((p) => p.dateLabel)
+  }, [data])
+
   const yTitle = `Values (${unitLabel})`
 
   const { yMin, yMax, yTicks } = useMemo(() => {
@@ -226,6 +231,12 @@ export function DurationChart({
             <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: lineColor }} />
             <span className="text-xs text-slate-500">Total</span>
           </div>
+          {envChangeDates.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div className="h-4 w-0 border-l-2 border-dashed border-teal-400" />
+              <span className="text-xs text-slate-500">Env Changes</span>
+            </div>
+          )}
           {objectiveValue !== null && (
             <div className="flex items-center gap-1.5">
               <div className="h-0.5 w-5 border-t-2 border-dashed border-emerald-500" />
@@ -259,7 +270,12 @@ export function DurationChart({
                       )}
                     </p>
                   )}
-                  {point?.hasNote && point.note && <p className="text-teal-300 italic">{point.note}</p>}
+                  {point?.hasNote && point.note && (
+                    <div className="flex items-start gap-1.5 pt-1 border-t border-slate-700">
+                      <div className="h-3 w-0 border-l border-dashed border-teal-400 mt-0.5 shrink-0" />
+                      <p className="text-teal-300 italic">{point.note}</p>
+                    </div>
+                  )}
                 </div>
               )
             }}
@@ -298,6 +314,10 @@ export function DurationChart({
             />)
           })}
 
+          {envChangeDates.map((dateLabel) => (
+            <ReferenceLine key={`env-${dateLabel}`} x={dateLabel} stroke="#2DD4BF" strokeWidth={1.5} strokeDasharray="6 3" />
+          ))}
+
           <Line type="monotone" dataKey="value" stroke={lineColor} strokeWidth={pointCount > 60 ? 1.5 : 2.5} dot={pointCount > 30 ? false : { r: 4, fill: "white", stroke: lineColor, strokeWidth: 2 }} activeDot={{ r: 5, fill: lineColor, stroke: "white", strokeWidth: 2 }} connectNulls={totalDatasetConfig?.spanGaps ?? false} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -305,9 +325,33 @@ export function DurationChart({
 
       {/* Trend info */}
       {trendInfo && (
-        <p className="text-xs text-slate-500 mt-2">
-          * Datapoints: {trendInfo.count}, Total: {trendInfo.arrow} {trendInfo.direction} (slope: {trendInfo.slope.toFixed(2)}, alpha: {trendInfo.intercept.toFixed(2)})
-        </p>
+        <div className="mt-4 flex items-center gap-4 rounded-xl bg-slate-50/80 border border-slate-100 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-xs font-semibold text-slate-600">Datapoints: <span className="text-slate-800 tabular-nums">{trendInfo.count}</span></span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <div className="flex items-center gap-1.5">
+            {trendInfo.direction === "Increasing" ? (
+              <TrendingUp className="h-3.5 w-3.5 text-rose-500" />
+            ) : trendInfo.direction === "Decreasing" ? (
+              <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <MinusIcon className="h-3.5 w-3.5 text-amber-500" />
+            )}
+            <span className="text-xs font-semibold text-slate-600">
+              Total: <span className={
+                trendInfo.direction === "Increasing" ? "text-rose-600" :
+                trendInfo.direction === "Decreasing" ? "text-emerald-600" :
+                "text-amber-600"
+              }>{trendInfo.arrow} {trendInfo.direction}</span>
+            </span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <span className="text-[11px] text-slate-400 tabular-nums">
+            slope: {trendInfo.slope.toFixed(2)} &middot; alpha: {trendInfo.intercept.toFixed(2)}
+          </span>
+        </div>
       )}
     </div>
   )

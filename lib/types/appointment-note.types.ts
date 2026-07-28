@@ -40,6 +40,10 @@ export interface AppointmentNoteCategoryItem {
   value: number | null
   environmentalChange: string | null
   type: string | null
+  typeEventCatalogId: string | null
+  typeEventCatalogName: string | null
+  baseline: import("./client-service-plan.types").ClientServicePlanItemBaseline[]
+  objetive: import("./client-service-plan.types").ClientServicePlanItemObjective[]
 }
 
 /** Summary item from GET /appointment/note (paginated list) */
