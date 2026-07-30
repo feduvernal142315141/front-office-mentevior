@@ -14,11 +14,13 @@ import { useClientAppointments } from "@/lib/modules/schedules/hooks/use-client-
 import { upsertClientDataCollectionValue } from "@/lib/modules/client-service-plan/services/client-data-collection-values.service"
 import { ServicePlanValueType } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { useIntervalDatasheet } from "./useIntervalDatasheet"
+import { computeHiddenDayKeys } from "./chart-gaps"
 import { useChartDateRange } from "./useChartDateRange"
 import { useChartData } from "./useChartData"
 import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
 import { getDateKey, parseLocalDate, calculateIntervalPercentage, countPositive } from "./interval-datasheet.types"
 import { PercentageChart } from "./PercentageChart"
+import type { PercentageDayEntry } from "./percentage-datasheet.types"
 import {
   DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
@@ -176,17 +178,6 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
   }, [activeItem.baseline])
 
   const chartRange = useChartDateRange("1W", firstBaselineDate)
-  const extendedChartDays = useMemo(() => {
-    const original = chartRange.chartDays
-    const gapCount = original.filter((day) => gapDateKeys.has(getDateKey(day))).length
-    if (gapCount === 0) return original
-    const lastDay = original[original.length - 1]
-    const extended = [...original]
-    let cursor = lastDay
-    let added = 0
-    while (added < gapCount) { cursor = addDays(cursor, 1); extended.push(cursor); added++ }
-    return extended
-  }, [chartRange.chartDays, gapDateKeys])
 
   const aggregationMethod = dcConfig?.weeklyDailyValue ?? ServicePlanValueType.AVERAGE
 
@@ -204,9 +195,35 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     return result
   }, [ds.entries])
 
+  // Interval entries mapped to the shape PercentageChart expects
+  const percentageChartEntries = useMemo(() => {
+    const result: Record<string, PercentageDayEntry> = {}
+    for (const [key, entry] of Object.entries(ds.entries)) {
+      result[key] = {
+        trials: entry.intervals.map((v) => ({ result: v === "+" ? "yes" as const : v === "-" ? "no" as const : null })),
+        numberOfTrials: entry.numberOfIntervals,
+        initials: entry.initials,
+        environmentalNote: entry.environmentalNote,
+      }
+    }
+    return result
+  }, [ds.entries])
+
+  // Days the chart must skip: every empty day (baseline dates and phase markers survive)
+  const chartHiddenDayKeys = useMemo(
+    () => computeHiddenDayKeys({
+      chartDays: chartRange.chartDays,
+      hasData: (key) => ds.entries[key] != null && calculateIntervalPercentage(ds.entries[key]) != null,
+      baselines: activeItem.baseline,
+      objectives: activeItem.objetive,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [chartRange.chartDays, ds.entries, activeItem.baseline, activeItem.objetive],
+  )
+
   const chartData = useChartData({
     clientServicePlanCategoryItemId: activeItem.id,
-    chartDays: extendedChartDays,
+    chartDays: chartRange.chartDays,
     interval: chartRange.interval,
     aggregationMethod,
     baselines: activeItem.baseline,
@@ -394,21 +411,11 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <PercentageChart
           weekDays={ds.weekDays}
-          entries={(() => {
-            // Convert interval entries to percentage entries for PercentageChart
-            const result: Record<string, import("./percentage-datasheet.types").PercentageDayEntry> = {}
-            for (const [key, entry] of Object.entries(ds.entries)) {
-              const pct = calculateIntervalPercentage(entry)
-              result[key] = {
-                trials: entry.intervals.map((v) => ({ result: v === "+" ? "yes" as const : v === "-" ? "no" as const : null })),
-                numberOfTrials: entry.numberOfIntervals,
-                initials: entry.initials,
-                environmentalNote: entry.environmentalNote,
-              }
-            }
-            return result
-          })()}
+          entries={percentageChartEntries}
           dcConfig={dcConfig}
+          chartDays={chartRange.chartDays}
+          tickInterval={chartRange.tickInterval}
+          gapDateKeys={chartHiddenDayKeys}
         />
       </div>
 

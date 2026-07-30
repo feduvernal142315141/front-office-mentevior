@@ -11,6 +11,7 @@ import { CategoryItemsPanel } from "../components/CategoryItemsPanel"
 import { ClientDataCollectionDrawer } from "../components/ClientDataCollectionDrawer"
 import { ClientServicePlanHeader } from "../components/ClientServicePlanHeader"
 import { ClientServicePlanSummaryCard } from "../components/ClientServicePlanSummaryCard"
+import { EditClientServicePlanModal } from "../components/EditClientServicePlanModal"
 import { useClientServicePlanCategoryItems } from "../hooks/useClientServicePlanCategoryItems"
 import { useClientServicePlanConfiguration } from "../hooks/useClientServicePlanConfiguration"
 import { useDataCollectionDrawerController } from "../hooks/useDataCollectionDrawerController"
@@ -28,7 +29,19 @@ export default function ClientServicePlanPage() {
     error,
     setActiveCategoryId,
     reloadCategories,
+    isEditModalOpen,
+    openEditModal,
+    closeEditModal,
+    handleServicePlanUpdated,
   } = useClientServicePlanConfiguration(spId)
+
+  const categoryLabels = useMemo(() => {
+    const labels: Record<string, string> = {}
+    for (const category of categories) {
+      if (category.categoryId) labels[category.categoryId] = category.categoryName
+    }
+    return labels
+  }, [categories])
 
   const itemsState = useClientServicePlanCategoryItems({
     activeClientServicePlanCategoryId: activeCategoryId,
@@ -96,6 +109,7 @@ export default function ClientServicePlanPage() {
                 activeCategoryId={activeCategoryId}
                 onSelectCategory={setActiveCategoryId}
                 onConfigureDataCollection={dcDrawer.openForCategory}
+                onEditServicePlan={openEditModal}
               />
 
               <CategoryItemsPanel
@@ -124,6 +138,16 @@ export default function ClientServicePlanPage() {
           onAssignSuccess={handleAssignSuccess}
         />
       )}
+
+      <EditClientServicePlanModal
+        open={isEditModalOpen}
+        onClose={closeEditModal}
+        onSuccess={() => {
+          void handleServicePlanUpdated()
+        }}
+        initialPlan={clientServicePlan}
+        categoryLabels={categoryLabels}
+      />
 
       <ClientDataCollectionDrawer
         open={dcDrawer.state.open}

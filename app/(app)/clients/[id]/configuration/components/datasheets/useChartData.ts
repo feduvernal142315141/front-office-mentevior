@@ -21,6 +21,8 @@ interface UseChartDataParams {
   baselines?: ClientServicePlanItemBaseline[]
   objectives?: ClientServicePlanItemObjective[]
   gridEntries: WeekEntries
+  /** Dates whose value comes from data collection — never aggregated as baseline. */
+  collectedDateKeys?: Set<string>
 }
 
 interface UseChartDataResult {
@@ -37,6 +39,7 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
     baselines,
     objectives,
     gridEntries,
+    collectedDateKeys,
   } = params
 
   // Treatment starts at the first STO's startDate
@@ -116,7 +119,9 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
       // Any date before STO1 startDate is considered part of baseline phase
       const date = parseLocalDate(dateKey)
       const isBeforeTreatment = treatmentStartDate ? date.getTime() < treatmentStartDate.getTime() : false
-      const isBaseline = isBaselineRecord || isBeforeTreatment
+      // A collected value is data collection, so it never counts as baseline
+      const isCollected = collectedDateKeys?.has(dateKey) ?? false
+      const isBaseline = !isCollected && (isBaselineRecord || isBeforeTreatment)
 
       // Priority: grid entries (unsaved edits) > API DC values > baseline values
       let value: number | null = null
@@ -143,7 +148,7 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
 
       return { dateKey, value, isBaseline, note }
     })
-  }, [chartDays, baselineDateKeys, baselineValueMap, dcValueMap, gridEntries, treatmentStartDate])
+  }, [chartDays, baselineDateKeys, baselineValueMap, dcValueMap, gridEntries, collectedDateKeys, treatmentStartDate])
 
   // Aggregate
   const aggregatedPoints = useMemo(

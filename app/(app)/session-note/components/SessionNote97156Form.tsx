@@ -2,51 +2,46 @@
 
 import { useState, useCallback } from "react"
 import {
-  BookOpen, AlertTriangle, Stethoscope,
-  Target, BarChart3, User, Building2, ClipboardList, PenTool, CheckCircle2, PenLine,
+  BookOpen, Stethoscope, Users2, User, Building2, ClipboardList,
+  PenTool, CheckCircle2, PenLine, FileText, Heart, Target, BarChart3,
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
-import { Button } from "@/components/custom/Button"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
-import type { RecommendationCatalogItem } from "@/lib/types/client-service-plan.types"
-import type { NoteStatus } from "@/lib/types/appointment-note.types"
-import { deriveNoteStatusInfo } from "../hooks/useNoteStatus"
-import type {
-  AppointmentNoteCategory,
-  AppointmentNoteRecipient,
-  AppointmentNoteProvider,
-  AppointmentNoteServiceDetails,
-  AppointmentNoteModality,
-  ParticipantCatalogItem,
-} from "@/lib/types/appointment-note.types"
 import { cn } from "@/lib/utils"
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
-import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
 import { CLIENT_PARTICIPANT_ID } from "../hooks/useSessionNoteForm"
+import { deriveNoteStatusInfo } from "../hooks/useNoteStatus"
+import type { SessionNote97156FormData } from "@/lib/types/appointment-note-97156.types"
+import type { InterventionCatalog97156Item } from "@/lib/modules/appointment-notes/services/97156-intervention-catalog.service"
+import type { AppointmentNoteCategory, ParticipantCatalogItem, NoteStatus } from "@/lib/types/appointment-note.types"
 import { SessionItemChartPanel } from "./SessionItemChartPanel"
 
-interface SessionNoteFormProps {
-  formData: SessionNoteFormData
-  updateField: <K extends keyof SessionNoteFormData>(field: K, value: SessionNoteFormData[K]) => void
+interface CaregiverOption {
+  id: string
+  name: string
+  relationship: string
+}
+
+interface SessionNote97156FormProps {
+  formData: SessionNote97156FormData
+  updateField: <K extends keyof SessionNote97156FormData>(field: K, value: SessionNote97156FormData[K]) => void
   updateItemValue: (itemId: string, value: number | null) => void
   updateItemEnvironmentalChange: (itemId: string, text: string) => void
   isSaving: boolean
   isLoadingCatalogs: boolean
-  teachingMethodOptions: { value: string; label: string }[]
-  participantCatalog: ParticipantCatalogItem[]
-  antecedentItems: RecommendationCatalogItem[]
-  consequenceItems: RecommendationCatalogItem[]
-  categories: AppointmentNoteCategory[]
-  recipient: AppointmentNoteRecipient | null
-  provider: AppointmentNoteProvider | null
-  serviceDetails: AppointmentNoteServiceDetails | null
-  billingCodes: string | null
-  modality: AppointmentNoteModality | null
   modalityOptions: { value: string; label: string }[]
+  participantCatalog: ParticipantCatalogItem[]
+  interventionCatalog: InterventionCatalog97156Item[]
+  caregiverOptions: CaregiverOption[]
+  categories: AppointmentNoteCategory[]
+  recipient: { name: string; dateOfBirth: string; insuranceNumber: string; diagnosis: string } | null
+  provider: { name: string; credential: string; npi: string; mpi: string; sign: string } | null
+  serviceDetails: { date: string | null; placeOfService: string | null; timeInOut: string | null; hours: string | null } | null
+  billingCodes: string | null
   errors?: Record<string, string>
   itemErrors?: Set<string>
   providerSignatureUrl?: string | null
@@ -60,24 +55,22 @@ interface SessionNoteFormProps {
   appointmentId?: string | null
 }
 
-export function SessionNoteForm({
+export function SessionNote97156Form({
   formData,
   updateField,
   updateItemValue,
   updateItemEnvironmentalChange,
   isSaving,
   isLoadingCatalogs,
-  teachingMethodOptions,
+  modalityOptions,
   participantCatalog,
-  antecedentItems,
-  consequenceItems,
+  interventionCatalog,
+  caregiverOptions,
   categories,
   recipient,
   provider,
   serviceDetails,
   billingCodes,
-  modality,
-  modalityOptions,
   errors = {},
   itemErrors,
   providerSignatureUrl,
@@ -89,7 +82,7 @@ export function SessionNoteForm({
   caregiverSignatureImage,
   noteStatus = "read",
   appointmentId,
-}: SessionNoteFormProps) {
+}: SessionNote97156FormProps) {
   const statusInfo = deriveNoteStatusInfo(noteStatus, false)
   const formDisabled = !statusInfo.isFormEditable
   const dataCollectionDisabled = !statusInfo.isDataCollectionEditable
@@ -98,13 +91,25 @@ export function SessionNoteForm({
   const categoriesWithItems = categories.filter((c) => c.items.length > 0)
   const categoriesEmpty = categories.filter((c) => c.items.length === 0)
 
-  // Track which item is active in the chart per category
   const [activeChartItems, setActiveChartItems] = useState<Record<string, string>>({})
   const handleItemFocus = useCallback((categoryId: string, itemId: string) => {
     setActiveChartItems((prev) => ({ ...prev, [categoryId]: itemId }))
   }, [])
 
   const participantItems = participantCatalog.map((p) => ({ id: p.id, name: p.name }))
+  const caregiverItems = caregiverOptions.map((c) => ({
+    id: c.id,
+    name: c.relationship ? `${c.name} (${c.relationship})` : c.name,
+  }))
+
+  const toggleIntervention = (id: string) => {
+    const current = formData.interventionIds
+    if (current.includes(id)) {
+      updateField("interventionIds", current.filter((i) => i !== id))
+    } else {
+      updateField("interventionIds", [...current, id])
+    }
+  }
 
   return (
     <div className="space-y-5 pb-32">
@@ -143,7 +148,7 @@ export function SessionNoteForm({
       )}
 
       {/* ─── Service Details ─── */}
-      {(serviceDetails || billingCodes || modality) && (
+      {(serviceDetails || billingCodes) && (
         <Section icon={<ClipboardList className="h-4 w-4" />} title="Service Details">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <div>
@@ -170,23 +175,10 @@ export function SessionNoteForm({
         </Section>
       )}
 
-      {/* ─── Row 1: Teaching Method & Modality + Session Details ─── */}
+      {/* ─── Modality & Participants + Session Details ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Section icon={<BookOpen className="h-4 w-4" />} title="Teaching Method, Modality & Participants">
+        <Section icon={<BookOpen className="h-4 w-4" />} title="Modality & Participants">
           <div className="space-y-4">
-            <div data-field="teachingMethodId">
-              <FloatingSelect
-                label="Teaching Method"
-                value={formData.teachingMethodId}
-                onChange={(val) => updateField("teachingMethodId", val)}
-                options={teachingMethodOptions}
-                searchable
-                disabled={isLoadingCatalogs || formDisabled}
-                hasError={!!errors.teachingMethodId}
-                required
-              />
-              <FieldError message={errors.teachingMethodId} />
-            </div>
             <div data-field="modalityId">
               <FloatingSelect
                 label="Modality"
@@ -230,7 +222,7 @@ export function SessionNoteForm({
         </Section>
       </div>
 
-      {/* ─── Row 2: Goals & Programs (full width) ─── */}
+      {/* ─── Goals & Programs (Data Collection) ─── */}
       <Section icon={<Target className="h-4 w-4" />} title="Goals & Programs" subtitle="Data collection values from this session">
         {categories.length === 0 ? (
           <div className="flex items-center gap-3 py-4 text-sm text-slate-400">
@@ -280,29 +272,103 @@ export function SessionNoteForm({
         )}
       </Section>
 
-      {/* ─── Row 3: Interventions ─── */}
-      <Section icon={<AlertTriangle className="h-4 w-4" />} title="Interventions">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div data-field="antecedentInterventionIds">
-            <MultiSelectWithSearch label="Antecedent Interventions" items={antecedentItems} selectedIds={formData.antecedentInterventionIds} onChange={(ids) => updateField("antecedentInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} hasError={!!errors.antecedentInterventionIds} required />
-            <FieldError message={errors.antecedentInterventionIds} />
+      {/* ─── Session Participants: Caregivers + Client Present ─── */}
+      <Section icon={<Heart className="h-4 w-4" />} title="Session Participants">
+        <div className="space-y-4">
+          <div data-field="caregiverIds">
+            <MultiSelectWithSearch
+              label="Parent(s)/Caregiver(s) Present"
+              items={caregiverItems}
+              selectedIds={formData.caregiverIds}
+              onChange={(ids) => updateField("caregiverIds", ids)}
+              disabled={isLoadingCatalogs || formDisabled}
+              hasError={!!errors.caregiverIds}
+              required
+            />
+            <FieldError message={errors.caregiverIds} />
           </div>
-          <div data-field="consequenceInterventionIds">
-            <MultiSelectWithSearch label="Consequence Interventions" items={consequenceItems} selectedIds={formData.consequenceInterventionIds} onChange={(ids) => updateField("consequenceInterventionIds", ids)} disabled={isLoadingCatalogs || formDisabled} hasError={!!errors.consequenceInterventionIds} required />
-            <FieldError message={errors.consequenceInterventionIds} />
+          <PremiumSwitch
+            label="Client Present"
+            description="Was the client present during this session?"
+            checked={formData.clientPresent}
+            onCheckedChange={(v) => updateField("clientPresent", v)}
+            compact
+            disabled={formDisabled}
+          />
+        </div>
+      </Section>
+
+      {/* ─── Interventions (checkboxes) ─── */}
+      <Section icon={<Users2 className="h-4 w-4" />} title="Interventions">
+        <div data-field="interventionIds">
+          <p className="text-sm text-slate-600 mb-4">
+            The interventions used to implement the protocol during the session are indicated by the checked boxes below:
+          </p>
+          <div className="space-y-2.5">
+            {interventionCatalog.map((item) => {
+              const checked = formData.interventionIds.includes(item.id)
+              return (
+                <label
+                  key={item.id}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-all",
+                    checked
+                      ? "border-[#037ECC] bg-[#037ECC]/[0.06] shadow-sm shadow-[#037ECC]/10"
+                      : "border-slate-200 hover:border-[#037ECC]/30 hover:bg-[#037ECC]/[0.02] bg-white",
+                    formDisabled && "opacity-60 cursor-not-allowed",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => !formDisabled && toggleIntervention(item.id)}
+                    disabled={formDisabled}
+                    className="h-4 w-4 rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 cursor-pointer disabled:opacity-50"
+                  />
+                  <span className={cn("text-sm", checked ? "text-slate-900 font-medium" : "text-slate-600")}>
+                    {item.name}
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+          <FieldError message={errors.interventionIds} />
+        </div>
+      </Section>
+
+      {/* ─── Session Summary ─── */}
+      <Section icon={<FileText className="h-4 w-4" />} title="Session Summary">
+        <div className="space-y-4">
+          <div data-field="goals">
+            <FloatingTextarea
+              label="Goals"
+              value={formData.goals}
+              onChange={(v) => updateField("goals", v)}
+              onBlur={() => {}}
+              rows={4}
+              disabled={formDisabled}
+              hasError={!!errors.goals}
+              required
+            />
+            <FieldError message={errors.goals} />
+          </div>
+          <div data-field="sessionSummary">
+            <FloatingTextarea
+              label="Summary"
+              value={formData.sessionSummary}
+              onChange={(v) => updateField("sessionSummary", v)}
+              onBlur={() => {}}
+              rows={6}
+              disabled={formDisabled}
+              hasError={!!errors.sessionSummary}
+              required
+            />
+            <FieldError message={errors.sessionSummary} />
           </div>
         </div>
       </Section>
 
-      {/* ─── Row 4: Session Summary (full width) ─── */}
-      <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
-        <div data-field="sessionSummary">
-          <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} disabled={formDisabled} hasError={!!errors.sessionSummary} required />
-          <FieldError message={errors.sessionSummary} />
-        </div>
-      </Section>
-
-      {/* ─── Row 5: Signatures ─── */}
+      {/* ─── Signatures ─── */}
       <SignatureSection
         provider={provider}
         providerSignatureUrl={providerSignatureUrl}
@@ -316,7 +382,7 @@ export function SessionNoteForm({
         notCanEdit={formDisabled}
       />
 
-      <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText={noteStatus === "read" ? "Save Data Collection" : "Save Session Note"} disabled={saveDisabled} />
+      <FormBottomBar isSubmitting={isSaving} onCancel={() => window.history.back()} submitText={noteStatus === "read" ? "Save Data" : "Save Session Note"} disabled={saveDisabled} />
     </div>
   )
 }
@@ -432,7 +498,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
 }
 
 function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
-  provider: AppointmentNoteProvider | null
+  provider: { name: string; credential: string; npi: string; mpi: string; sign: string } | null
   providerSignatureUrl?: string | null
   onProviderSignatureChange?: (base64: string | null) => void
   serviceDate?: string | null
@@ -458,59 +524,32 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
   return (
     <Section icon={<PenTool className="h-4 w-4" />} title="Signatures">
       <div className="space-y-4">
-        {/* Certification text */}
         <p className="text-sm italic text-slate-600">
           By signing below, I certify that I provided the above services following all applicable policies and procedures
         </p>
 
-        {/* ─── Document-style signature block ─── */}
         <div className="rounded-2xl border border-[#037ECC]/20 bg-white overflow-hidden">
-
           {/* Row 1 — Provider */}
           <div className="grid grid-cols-2 border-b border-[#037ECC]/10">
-            {/* Provider name */}
             <div className="px-6 py-5 border-r border-[#037ECC]/10">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Provider Name / Credential</span>
               <p className="text-sm font-semibold text-slate-800">{provider?.name ?? "—"}</p>
-              {provider?.credential && (
-                <p className="text-xs text-slate-500 mt-0.5">{provider.credential}</p>
-              )}
+              {provider?.credential && <p className="text-xs text-slate-500 mt-0.5">{provider.credential}</p>}
             </div>
-            {/* Provider signature */}
             <div className="px-6 py-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">Signature</span>
                 {!notCanEdit && (
-                  <button
-                    type="button"
-                    onClick={() => setProviderEditorOpen(true)}
-                    className={cn(
-                      "h-7 w-7 rounded-lg border border-slate-200 bg-white inline-flex items-center justify-center",
-                      "text-slate-500 hover:text-[#037ECC] hover:border-[#037ECC]/40 transition-all duration-150",
-                    )}
-                    title="Edit signature"
-                    aria-label="Edit provider signature"
-                  >
+                  <button type="button" onClick={() => setProviderEditorOpen(true)} className={cn("h-7 w-7 rounded-lg border border-slate-200 bg-white inline-flex items-center justify-center", "text-slate-500 hover:text-[#037ECC] hover:border-[#037ECC]/40 transition-all duration-150")} title="Edit signature" aria-label="Edit provider signature">
                     <PenLine className="h-3.5 w-3.5" />
                   </button>
                 )}
               </div>
               <div className="relative min-h-[64px] flex items-end pb-3">
                 {providerSignatureUrl ? (
-                  <img
-                    src={providerSignatureUrl}
-                    alt="Provider signature"
-                    className="max-h-[52px] max-w-full object-contain contrast-150 brightness-50"
-                  />
+                  <img src={providerSignatureUrl} alt="Provider signature" className="max-h-[52px] max-w-full object-contain contrast-150 brightness-50" />
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => !notCanEdit && setProviderEditorOpen(true)}
-                    disabled={notCanEdit}
-                    className="text-xs text-slate-300 italic hover:text-[#037ECC] transition-colors disabled:hover:text-slate-300"
-                  >
-                    Click to sign
-                  </button>
+                  <button type="button" onClick={() => !notCanEdit && setProviderEditorOpen(true)} disabled={notCanEdit} className="text-xs text-slate-300 italic hover:text-[#037ECC] transition-colors disabled:hover:text-slate-300">Click to sign</button>
                 )}
                 <div className="absolute bottom-0 left-0 right-0 border-b border-[#037ECC]/20" />
               </div>
@@ -519,43 +558,22 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
 
           {/* Row 2 — Caregiver */}
           <div className="grid grid-cols-2 border-b border-[#037ECC]/10">
-            {/* Caregiver info */}
             <div className="px-6 py-5 border-r border-[#037ECC]/10">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Caregiver</span>
               {useCheckmarkSignature ? (
                 <label className="flex items-start gap-2.5 cursor-pointer group mt-1">
-                  <input
-                    type="checkbox"
-                    checked={caregiverChecked ?? false}
-                    onChange={(e) => onCaregiverCheckedChange?.(e.target.checked)}
-                    disabled={notCanEdit}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 cursor-pointer disabled:opacity-50"
-                  />
-                  <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
-                    Caregiver confirms participation in this session
-                  </span>
+                  <input type="checkbox" checked={caregiverChecked ?? false} onChange={(e) => onCaregiverCheckedChange?.(e.target.checked)} disabled={notCanEdit} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 cursor-pointer disabled:opacity-50" />
+                  <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">Caregiver confirms participation in this session</span>
                 </label>
               ) : (
                 <p className="text-sm text-slate-600 mt-1">Caregiver Signature</p>
               )}
             </div>
-            {/* Caregiver signature */}
             <div className="px-6 py-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">
-                  {useCheckmarkSignature ? "Confirmation" : "Signature"}
-                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">{useCheckmarkSignature ? "Confirmation" : "Signature"}</span>
                 {!useCheckmarkSignature && !notCanEdit && (
-                  <button
-                    type="button"
-                    onClick={() => setEditorOpen(true)}
-                    className={cn(
-                      "h-7 w-7 rounded-lg border border-slate-200 bg-white inline-flex items-center justify-center",
-                      "text-slate-500 hover:text-[#037ECC] hover:border-[#037ECC]/40 transition-all duration-150",
-                    )}
-                    title="Edit signature"
-                    aria-label="Edit caregiver signature"
-                  >
+                  <button type="button" onClick={() => setEditorOpen(true)} className={cn("h-7 w-7 rounded-lg border border-slate-200 bg-white inline-flex items-center justify-center", "text-slate-500 hover:text-[#037ECC] hover:border-[#037ECC]/40 transition-all duration-150")} title="Edit signature" aria-label="Edit caregiver signature">
                     <PenLine className="h-3.5 w-3.5" />
                   </button>
                 )}
@@ -563,32 +581,16 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
               <div className="relative min-h-[64px] flex items-end pb-3">
                 {useCheckmarkSignature ? (
                   caregiverChecked ? (
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                      <span className="text-sm font-medium text-emerald-700">Confirmed</span>
-                    </div>
+                    <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-500" /><span className="text-sm font-medium text-emerald-700">Confirmed</span></div>
                   ) : (
                     <span className="text-xs text-slate-300 italic">Pending confirmation</span>
                   )
                 ) : caregiverSignatureImage ? (
-                  <img
-                    src={caregiverSignatureImage}
-                    alt="Caregiver signature"
-                    className="max-h-[52px] max-w-full object-contain contrast-150 brightness-50"
-                  />
+                  <img src={caregiverSignatureImage} alt="Caregiver signature" className="max-h-[52px] max-w-full object-contain contrast-150 brightness-50" />
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => !notCanEdit && setEditorOpen(true)}
-                    disabled={notCanEdit}
-                    className="text-xs text-slate-300 italic hover:text-[#037ECC] transition-colors disabled:hover:text-slate-300"
-                  >
-                    Click to sign
-                  </button>
+                  <button type="button" onClick={() => !notCanEdit && setEditorOpen(true)} disabled={notCanEdit} className="text-xs text-slate-300 italic hover:text-[#037ECC] transition-colors disabled:hover:text-slate-300">Click to sign</button>
                 )}
-                {!useCheckmarkSignature && (
-                  <div className="absolute bottom-0 left-0 right-0 border-b border-[#037ECC]/20" />
-                )}
+                {!useCheckmarkSignature && <div className="absolute bottom-0 left-0 right-0 border-b border-[#037ECC]/20" />}
               </div>
             </div>
           </div>
@@ -600,21 +602,8 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
           </div>
         </div>
 
-        {/* Signature Editor Modal (provider) */}
-        <SignatureEditorModal
-          open={providerEditorOpen}
-          onOpenChange={setProviderEditorOpen}
-          onSave={handleSaveProviderSignature}
-        />
-
-        {/* Signature Editor Modal (caregiver) */}
-        {!useCheckmarkSignature && (
-          <SignatureEditorModal
-            open={editorOpen}
-            onOpenChange={setEditorOpen}
-            onSave={handleSaveSignature}
-          />
-        )}
+        <SignatureEditorModal open={providerEditorOpen} onOpenChange={setProviderEditorOpen} onSave={handleSaveProviderSignature} />
+        {!useCheckmarkSignature && <SignatureEditorModal open={editorOpen} onOpenChange={setEditorOpen} onSave={handleSaveSignature} />}
       </div>
     </Section>
   )

@@ -7,6 +7,7 @@ import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-ser
 import { AddItemsDrawer } from "../../service-plan/components/AddItemsDrawer"
 import { CategoriesSidebar } from "../../service-plan/components/CategoriesSidebar"
 import { CategoryItemsPanel } from "../../service-plan/components/CategoryItemsPanel"
+import { EditClientServicePlanModal } from "../../service-plan/components/EditClientServicePlanModal"
 import { ClientDataCollectionModal } from "./ClientDataCollectionModal"
 import { ItemDetailPanel } from "./ItemDetailPanel"
 import { useClientServicePlanCategoryItems } from "../../service-plan/hooks/useClientServicePlanCategoryItems"
@@ -39,7 +40,19 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
     error,
     setActiveCategoryId,
     reloadCategories,
+    isEditModalOpen,
+    openEditModal,
+    closeEditModal,
+    handleServicePlanUpdated,
   } = useClientServicePlanConfiguration(spId)
+
+  const categoryLabels = useMemo(() => {
+    const labels: Record<string, string> = {}
+    for (const category of categories) {
+      if (category.categoryId) labels[category.categoryId] = category.categoryName
+    }
+    return labels
+  }, [categories])
 
   const itemsState = useClientServicePlanCategoryItems({
     activeClientServicePlanCategoryId: activeCategoryId,
@@ -206,6 +219,7 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
             activeCategoryId={activeCategoryId}
             onSelectCategory={handleSelectCategory}
             onConfigureDataCollection={dcDrawer.openForCategory}
+            onEditServicePlan={openEditModal}
           />
 
           {selectedItemDetail ? (
@@ -244,6 +258,16 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
           onAssignSuccess={handleAssignSuccess}
         />
       )}
+
+      <EditClientServicePlanModal
+        open={isEditModalOpen}
+        onClose={closeEditModal}
+        onSuccess={() => {
+          void handleServicePlanUpdated()
+        }}
+        initialPlan={clientServicePlan}
+        categoryLabels={categoryLabels}
+      />
 
       {/* Modal only used for category-level data collection now */}
       <ClientDataCollectionModal

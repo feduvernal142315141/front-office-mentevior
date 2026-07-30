@@ -16,9 +16,11 @@ import { useAlert } from "@/lib/contexts/alert-context"
 import { deriveNoteStatusInfo } from "./hooks/useNoteStatus"
 import { SessionNoteForm } from "./components/SessionNoteForm"
 import { SessionNote97155Form } from "./components/SessionNote97155Form"
+import { SessionNote97156Form } from "./components/SessionNote97156Form"
 import { SessionNotesTable } from "./components/SessionNotesTable"
 import { useSessionNoteForm } from "./hooks/useSessionNoteForm"
 import { useSessionNote97155Form } from "./hooks/useSessionNote97155Form"
+import { useSessionNote97156Form } from "./hooks/useSessionNote97156Form"
 
 export default function SessionNotePage() {
   const searchParams = useSearchParams()
@@ -57,7 +59,11 @@ export default function SessionNotePage() {
 // Route to the correct form based on billing code
 function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
   const is97155 = billingCode?.includes("97155")
+  const is97156 = billingCode?.includes("97156")
 
+  if (is97156) {
+    return <SessionNote97156FormView appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
+  }
   if (is97155) {
     return <SessionNote97155FormView appointmentId={appointmentId} billingCode={billingCode} />
   }
@@ -256,6 +262,105 @@ function SessionNote97155FormView({ appointmentId, billingCode }: { appointmentI
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
           noteStatus={noteStatus}
+        />
+      </form>
+    </FormViewShell>
+  )
+}
+
+// ─── 97156 Form View ───
+function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
+  const router = useRouter()
+  const alert = useAlert()
+  const { user } = useAuth()
+  const { user: fullUser } = useUserById(user?.id || null)
+  const { block: canBlock } = usePermission()
+  const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
+  const hasBlockPermission = canBlock(PermissionModule.APPOINTMENT)
+  const canAdminAction = isAdmin && hasBlockPermission
+
+  const [isChangingStatus, setIsChangingStatus] = useState(false)
+
+  const {
+    formData,
+    updateField,
+    updateItemValue,
+    updateItemEnvironmentalChange,
+    handleSubmit,
+    errors,
+    itemErrors,
+    isLoadingNote,
+    noteError,
+    isSaving,
+    isLoadingCatalogs,
+    modalityOptions,
+    participantCatalog,
+    interventionCatalog,
+    caregiverOptions,
+    categories,
+    recipient,
+    provider,
+    serviceDetails,
+    billingCodes: noteBillingCodes,
+    providerSignatureUrl,
+    setProviderSignatureImage,
+    useCheckmarkSignature,
+    caregiverSignatureChecked,
+    setCaregiverChecked,
+    caregiverSignatureImage,
+    setCaregiverSignatureImage,
+    noteStatus,
+    refetchNote,
+  } = useSessionNote97156Form({ appointmentId, clientId })
+
+  const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
+
+  const handleSaveAndRedirect = useCallback(async () => {
+    const result = await handleSubmit()
+    if (result) {
+      toast.success("Session note saved")
+      router.push("/session-note")
+    }
+  }, [handleSubmit, router])
+
+  return (
+    <FormViewShell
+      billingCode={billingCode}
+      isLoadingNote={isLoadingNote}
+      noteError={noteError}
+      statusInfo={statusInfo}
+      isChangingStatus={isChangingStatus}
+      onStatusChange={useNoteStatusHandler(appointmentId, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      appointmentId={appointmentId}
+    >
+      <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
+        <SessionNote97156Form
+          formData={formData}
+          updateField={updateField}
+          updateItemValue={updateItemValue}
+          updateItemEnvironmentalChange={updateItemEnvironmentalChange}
+          isSaving={isSaving}
+          isLoadingCatalogs={isLoadingCatalogs}
+          modalityOptions={modalityOptions}
+          participantCatalog={participantCatalog}
+          interventionCatalog={interventionCatalog}
+          caregiverOptions={caregiverOptions}
+          categories={categories}
+          recipient={recipient}
+          provider={provider}
+          serviceDetails={serviceDetails}
+          billingCodes={noteBillingCodes}
+          errors={errors}
+          itemErrors={itemErrors}
+          providerSignatureUrl={providerSignatureUrl}
+          onProviderSignatureChange={setProviderSignatureImage}
+          useCheckmarkSignature={useCheckmarkSignature}
+          caregiverSignatureChecked={caregiverSignatureChecked}
+          onCaregiverCheckedChange={setCaregiverChecked}
+          onCaregiverSignatureChange={setCaregiverSignatureImage}
+          caregiverSignatureImage={caregiverSignatureImage}
+          noteStatus={noteStatus}
+          appointmentId={appointmentId}
         />
       </form>
     </FormViewShell>

@@ -346,7 +346,14 @@ export function SaveBar({ label, sublabel, saveLabel, saveState, onSave, onDisca
   )
 }
 
-export function EnvironmentalChangesLegend({ entries }: { entries: Record<string, { environmentalNote?: string }> }) {
+export function EnvironmentalChangesLegend({
+  entries,
+  compact = false,
+}: {
+  entries: Record<string, { environmentalNote?: string }>
+  /** Narrow layouts (e.g. session note side panel): single column, tighter padding. */
+  compact?: boolean
+}) {
   const changes = useMemo(() => {
     const result: { dateKey: string; note: string }[] = []
     for (const [dateKey, entry] of Object.entries(entries)) {
@@ -359,13 +366,13 @@ export function EnvironmentalChangesLegend({ entries }: { entries: Record<string
   if (changes.length === 0) return null
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-5 py-4">
-      <div className="flex items-center gap-2 mb-3">
+    <div className={cn("rounded-2xl border border-slate-200 bg-white shadow-sm", compact ? "px-4 py-3" : "px-5 py-4")}>
+      <div className={cn("flex items-center gap-2", compact ? "mb-2" : "mb-3")}>
         <MapPin className="h-4 w-4 text-teal-500" />
         <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Environmental Changes</h4>
         <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-teal-50 border border-teal-200/60 text-[10px] font-bold text-teal-600 tabular-nums">{changes.length}</span>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-2">
+      <div className={cn("grid gap-x-6 gap-y-2", compact ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
         {changes.map(({ dateKey, note }) => {
           const [y, m, d] = dateKey.split("-")
           const dateObj = new Date(Number(y), Number(m) - 1, Number(d))

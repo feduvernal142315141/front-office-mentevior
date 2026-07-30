@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronRight, Sliders } from "lucide-react"
+import { ChevronRight, Edit2, Sliders } from "lucide-react"
 
 import { Card } from "@/components/custom/Card"
 import { DataCollectionBadge } from "@/app/(app)/my-company/service-plans/components/data-collection/DataCollectionBadge"
@@ -11,6 +11,7 @@ interface CategoriesSidebarProps {
   activeCategoryId: string | null
   onSelectCategory: (id: string) => void
   onConfigureDataCollection: (category: ClientServicePlanCategorySummary) => void
+  onEditServicePlan?: () => void
 }
 
 export function CategoriesSidebar({
@@ -18,11 +19,25 @@ export function CategoriesSidebar({
   activeCategoryId,
   onSelectCategory,
   onConfigureDataCollection,
+  onEditServicePlan,
 }: CategoriesSidebarProps) {
   return (
     <Card variant="elevated" padding="none" className="overflow-hidden">
       <div className="border-b border-slate-200 px-4 py-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Categories</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Categories</h3>
+          {onEditServicePlan && (
+            <button
+              type="button"
+              onClick={onEditServicePlan}
+              className="group/edit relative h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-b from-blue-50 to-blue-100/80 border border-blue-200/60 shadow-sm shadow-blue-900/5 hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+              title="Edit service plan"
+              aria-label="Edit service plan"
+            >
+              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            </button>
+          )}
+        </div>
       </div>
 
       {categories.length === 0 ? (

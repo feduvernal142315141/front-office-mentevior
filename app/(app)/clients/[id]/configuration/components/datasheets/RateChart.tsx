@@ -14,7 +14,6 @@ import {
   ReferenceArea,
 } from "recharts"
 import { format } from "date-fns"
-import { TrendingUp, TrendingDown, Minus as MinusIcon, BarChart3 } from "lucide-react"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import type { ClientServicePlanItemBaseline, ClientServicePlanItemObjective } from "@/lib/types/client-service-plan.types"
 import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/constants/chart.constants"
@@ -25,7 +24,7 @@ import type { DayEntry } from "./frequency-datasheet.types"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
 import { getSessionDurationInUnit, unitOfTimeLabel } from "./rate-datasheet.types"
-import { linearRegression } from "./duration-datasheet.types"
+import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
 
 interface RateChartProps {
   weekDays: Date[]
@@ -36,6 +35,12 @@ interface RateChartProps {
   itemBaselines?: ClientServicePlanItemBaseline[]
   itemObjectives?: ClientServicePlanItemObjective[]
   gapDateKeys?: Set<string>
+  /**
+   * Dates whose value comes from data collection (saved DC records or the live session
+   * value). They are ALWAYS plotted as treatment, never as baseline — even if the date
+   * also has a configured baseline or the first STO hasn't started yet.
+   */
+  collectedDateKeys?: Set<string>
   aggregatedData?: AggregatedDataPoint[]
   interval?: ChartInterval
   appointmentsByDate: Map<string, Appointment>
@@ -58,7 +63,7 @@ interface RateChartDataPoint {
 
 export function RateChart({
   weekDays, entries, dcConfig, chartDays, tickInterval = 0,
-  itemBaselines, itemObjectives, gapDateKeys,
+  itemBaselines, itemObjectives, gapDateKeys, collectedDateKeys,
   aggregatedData, interval = ChartInterval.DAILY,
   appointmentsByDate, unitOfTime,
 }: RateChartProps) {
@@ -166,7 +171,9 @@ export function RateChart({
       const bl = baselineMap.get(key)
       const isBaselineDay = baselineDateKeys.has(key)
       const isBeforeTreatment = treatmentStartDate ? day.getTime() < treatmentStartDate.getTime() : false
-      const isBaselinePhase = isBaselineDay || isBeforeTreatment
+      // A collected value is data collection, so it stays in the treatment series
+      const isCollected = collectedDateKeys?.has(key) ?? false
+      const isBaselinePhase = !isCollected && (isBaselineDay || isBeforeTreatment)
       const hasData = entry && entry.occurrences > 0
       const occurrences = isBaselinePhase ? null : (hasData ? entry.occurrences : null)
 
@@ -185,7 +192,7 @@ export function RateChart({
 
       const liveBaselineValue = isBaselinePhase
         ? (hasData ? entry.occurrences : (bl?.value ?? null))
-        : null
+        : (isBaselineDay ? (bl?.value ?? null) : null)
 
       return {
         dateKey: key,
@@ -200,7 +207,7 @@ export function RateChart({
         duration,
       }
     })
-  }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, appointmentsByDate, unitOfTime, treatmentStartDate])
+  }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, appointmentsByDate, unitOfTime, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 
@@ -208,21 +215,25 @@ export function RateChart({
     return data.filter((d) => d.hasNote && d.note).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
   }, [data])
 
-  const trendInfo = useMemo(() => {
-    const valuePoints = data.filter((p) => !p.isBaseline && p.rate != null)
-    if (valuePoints.length < 2) return null
-    const points = valuePoints.map((p, i) => ({ x: i, y: p.rate! }))
-    const reg = linearRegression(points)
-    if (!reg) return null
-    const direction = reg.slope > 0.01 ? "Increasing" : reg.slope < -0.01 ? "Decreasing" : "Stable"
-    const arrow = reg.slope > 0.01 ? "↑" : reg.slope < -0.01 ? "↓" : "→"
-    return { ...reg, direction, arrow, count: valuePoints.length }
-  }, [data])
+  const activeObjective = useMemo(
+    () => resolveActiveObjective(itemObjectives, objectives),
+    [itemObjectives, objectives],
+  )
+
+  // Trend is always evaluated against the objective in progress
+  const trendInfo = useMemo(
+    () => computeTrendInfo(
+      data.map((p) => ({ dateKey: p.dateKey, value: p.rate, isBaseline: p.isBaseline, })),
+      activeObjective,
+    ),
+    [data, activeObjective],
+  )
 
   const objectiveValue = useMemo(() => {
+    if (activeObjective?.valueSmartCriteria != null) return activeObjective.valueSmartCriteria
     if (objectives.length === 0) return null
     return objectives[0].valueSmartCriteria ?? null
-  }, [objectives])
+  }, [activeObjective, objectives])
 
   const yTitle = `Rate (occ/${unitLabel})`
 
@@ -474,35 +485,7 @@ export function RateChart({
       </ResponsiveContainer>
       </div>
 
-      {trendInfo && (
-        <div className="mt-4 flex items-center gap-4 rounded-xl bg-slate-50/80 border border-slate-100 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-3.5 w-3.5 text-slate-400" />
-            <span className="text-xs font-semibold text-slate-600">Datapoints: <span className="text-slate-800 tabular-nums">{trendInfo.count}</span></span>
-          </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="flex items-center gap-1.5">
-            {trendInfo.direction === "Increasing" ? (
-              <TrendingUp className="h-3.5 w-3.5 text-rose-500" />
-            ) : trendInfo.direction === "Decreasing" ? (
-              <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <MinusIcon className="h-3.5 w-3.5 text-amber-500" />
-            )}
-            <span className="text-xs font-semibold text-slate-600">
-              Total: <span className={
-                trendInfo.direction === "Increasing" ? "text-rose-600" :
-                trendInfo.direction === "Decreasing" ? "text-emerald-600" :
-                "text-amber-600"
-              }>{trendInfo.arrow} {trendInfo.direction}</span>
-            </span>
-          </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <span className="text-[11px] text-slate-400 tabular-nums">
-            slope: {trendInfo.slope.toFixed(2)} &middot; alpha: {trendInfo.intercept.toFixed(2)}
-          </span>
-        </div>
-      )}
+      <TrendFooter trend={trendInfo} />
     </div>
   )
 }

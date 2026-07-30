@@ -15,11 +15,13 @@ import { useClientAppointments } from "@/lib/modules/schedules/hooks/use-client-
 import { upsertClientDataCollectionValue } from "@/lib/modules/client-service-plan/services/client-data-collection-values.service"
 import { ServicePlanValueType } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { useFrequencyDatasheet } from "./useFrequencyDatasheet"
+import { computeHiddenDayKeys } from "./chart-gaps"
 import { useChartDateRange } from "./useChartDateRange"
 import { useChartData } from "./useChartData"
 import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { PercentageChart } from "./PercentageChart"
+import { calculatePercentage } from "./percentage-datasheet.types"
 import {
   DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
@@ -184,23 +186,11 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
   }, [activeItem.baseline])
 
   const chartRange = useChartDateRange("1W", firstBaselineDate)
-  const extendedChartDays = useMemo(() => {
-    const original = chartRange.chartDays
-    const gapCount = original.filter((day) => gapDateKeys.has(getDateKey(day))).length
-    if (gapCount === 0) return original
-    const lastDay = original[original.length - 1]
-    const extended = [...original]
-    let cursor = lastDay
-    let added = 0
-    while (added < gapCount) { cursor = addDays(cursor, 1); extended.push(cursor); added++ }
-    return extended
-  }, [chartRange.chartDays, gapDateKeys])
-
   const aggregationMethod = dcConfig?.weeklyDailyValue ?? ServicePlanValueType.TOTAL
 
   const chartData = useChartData({
     clientServicePlanCategoryItemId: activeItem.id,
-    chartDays: extendedChartDays,
+    chartDays: chartRange.chartDays,
     interval: chartRange.interval,
     aggregationMethod,
     baselines: activeItem.baseline,
@@ -229,6 +219,18 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
     }
     return result
   }, [ds.entries])
+
+  // Days the chart must skip: every empty day (baseline dates and phase markers survive)
+  const chartHiddenDayKeys = useMemo(
+    () => computeHiddenDayKeys({
+      chartDays: chartRange.chartDays,
+      hasData: (key) => percentageEntries[key] != null && calculatePercentage(percentageEntries[key]) != null,
+      baselines: activeItem.baseline,
+      objectives: activeItem.objetive,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [chartRange.chartDays, ds.entries, activeItem.baseline, activeItem.objetive],
+  )
 
   const gridCols = `200px repeat(${visibleDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
 
@@ -399,8 +401,9 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
           weekDays={ds.weekDays}
           entries={percentageEntries}
           dcConfig={dcConfig}
-          chartDays={extendedChartDays}
+          chartDays={chartRange.chartDays}
           tickInterval={chartRange.tickInterval}
+          gapDateKeys={chartHiddenDayKeys}
         />
       </div>
 

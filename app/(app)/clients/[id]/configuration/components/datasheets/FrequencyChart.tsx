@@ -14,7 +14,7 @@ import {
   ReferenceArea,
 } from "recharts"
 import { format } from "date-fns"
-import { TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import type { ClientServicePlanItemBaseline, ClientServicePlanItemObjective } from "@/lib/types/client-service-plan.types"
 import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/constants/chart.constants"
@@ -22,7 +22,7 @@ import { ChartInterval, DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans
 import type { DayEntry } from "./frequency-datasheet.types"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
-import { linearRegression } from "./duration-datasheet.types"
+import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
 
 interface FrequencyChartProps {
   weekDays: Date[]
@@ -33,8 +33,16 @@ interface FrequencyChartProps {
   itemBaselines?: ClientServicePlanItemBaseline[]
   itemObjectives?: ClientServicePlanItemObjective[]
   gapDateKeys?: Set<string>
+  /**
+   * Dates whose value comes from data collection (saved DC records or the live session
+   * value). They are ALWAYS plotted as treatment, never as baseline — even if the date
+   * also has a configured baseline or the first STO hasn't started yet.
+   */
+  collectedDateKeys?: Set<string>
   aggregatedData?: AggregatedDataPoint[]
   interval?: ChartInterval
+  /** Narrow layouts (e.g. session note side panel): shorter chart, wrapping legend, earlier scroll. */
+  compact?: boolean
 }
 
 interface ChartDataPoint {
@@ -51,8 +59,8 @@ interface ChartDataPoint {
 
 export function FrequencyChart({
   weekDays, entries, dcConfig, chartDays, tickInterval = 0,
-  itemBaselines, itemObjectives, gapDateKeys,
-  aggregatedData, interval = ChartInterval.DAILY,
+  itemBaselines, itemObjectives, gapDateKeys, collectedDateKeys,
+  aggregatedData, interval = ChartInterval.DAILY, compact = false,
 }: FrequencyChartProps) {
   const days = chartDays ?? weekDays
   const labelFormat = "MM/dd/yyyy"
@@ -157,13 +165,15 @@ export function FrequencyChart({
       const isBaselineDay = baselineDateKeys.has(key)
       // Any date before STO1 startDate is considered part of the baseline phase
       const isBeforeTreatment = treatmentStartDate ? day.getTime() < treatmentStartDate.getTime() : false
-      const isBaselinePhase = isBaselineDay || isBeforeTreatment
+      // A collected value is data collection, so it stays in the treatment series
+      const isCollected = collectedDateKeys?.has(key) ?? false
+      const isBaselinePhase = !isCollected && (isBaselineDay || isBeforeTreatment)
       const hasData = entry && entry.occurrences > 0
 
       // Baseline value: show for baseline records AND any data before treatment start
       const liveBaselineValue = isBaselinePhase
         ? (hasData ? entry.occurrences : (bl?.value ?? null))
-        : null
+        : (isBaselineDay ? (bl?.value ?? null) : null)
 
       // Treatment value: only show for dates ON or AFTER treatment start and not baseline records
       const treatmentValue = !isBaselinePhase && hasData ? entry.occurrences : null
@@ -179,7 +189,7 @@ export function FrequencyChart({
         isBaseline: isBaselinePhase,
       }
     })
-  }, [days, entries, baselines, labelFormat, isAggregated, aggregatedData, gapDateKeys, treatmentStartDate])
+  }, [days, entries, baselines, labelFormat, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 
@@ -189,25 +199,30 @@ export function FrequencyChart({
     return data.filter((d) => d.hasNote && d.note).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
   }, [data])
 
-  // ─── Trend info (linear regression) ────────────────────────────────────
+  // ─── Active objective (drives trend + target line) ─────────────────────
 
-  const trendInfo = useMemo(() => {
-    const valuePoints = data.filter((p) => !p.isBaseline && p.occurrences != null)
-    if (valuePoints.length < 2) return null
-    const points = valuePoints.map((p, i) => ({ x: i, y: p.occurrences! }))
-    const reg = linearRegression(points)
-    if (!reg) return null
-    const direction = reg.slope > 0.01 ? "Increasing" : reg.slope < -0.01 ? "Decreasing" : "Stable"
-    const arrow = reg.slope > 0.01 ? "↑" : reg.slope < -0.01 ? "↓" : "→"
-    return { ...reg, direction, arrow, count: valuePoints.length }
-  }, [data])
+  const activeObjective = useMemo(
+    () => resolveActiveObjective(itemObjectives, objectives),
+    [itemObjectives, objectives],
+  )
+
+  // ─── Trend info (linear regression, scoped to the objective in progress) ─
+
+  const trendInfo = useMemo(
+    () => computeTrendInfo(
+      data.map((p) => ({ dateKey: p.dateKey, value: p.occurrences, isBaseline: p.isBaseline })),
+      activeObjective,
+    ),
+    [data, activeObjective],
+  )
 
   // ─── Objective target value ────────────────────────────────────────────
 
   const objectiveValue = useMemo(() => {
+    if (activeObjective?.valueSmartCriteria != null) return activeObjective.valueSmartCriteria
     if (objectives.length === 0) return null
     return objectives[0].valueSmartCriteria ?? null
-  }, [objectives])
+  }, [activeObjective, objectives])
 
   // ─── Y-axis range ──────────────────────────────────────────────────────
 
@@ -261,9 +276,10 @@ export function FrequencyChart({
 
   const pointCount = data.length
   const PX_PER_POINT = isAggregated ? 60 : 30
-  const needsScroll = pointCount > (isAggregated ? 30 : 60)
+  const scrollThreshold = compact ? (isAggregated ? 10 : 20) : (isAggregated ? 30 : 60)
+  const needsScroll = pointCount > scrollThreshold
   const chartWidth = needsScroll ? pointCount * PX_PER_POINT : undefined
-  const chartHeight = 240
+  const chartHeight = compact ? 200 : 240
   const fontSize = pointCount > 90 ? 8 : pointCount > 30 ? 9 : 10
 
   // ─── Interval label for header ─────────────────────────────────────────
@@ -273,8 +289,8 @@ export function FrequencyChart({
     : ""
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
-      <div className="flex items-center justify-between mb-3">
+    <div className={cn("rounded-2xl border border-slate-200 bg-white shadow-sm", compact ? "p-4" : "p-5")}>
+      <div className={cn("flex items-center justify-between mb-3", compact && "flex-wrap gap-y-1.5")}>
         <div>
           <h4 className="text-sm font-semibold text-slate-700">
             Chart
@@ -282,7 +298,7 @@ export function FrequencyChart({
           </h4>
           {yTitle && <p className="text-[11px] text-slate-400 mt-0.5">{yTitle}</p>}
         </div>
-        <div className="flex items-center gap-4">
+        <div className={cn("flex items-center", compact ? "flex-wrap gap-x-3 gap-y-1" : "gap-4")}>
           {hasBaselineData && (
             <div className="flex items-center gap-1.5">
               <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: baselineColor }} />
@@ -477,35 +493,7 @@ export function FrequencyChart({
       </div>
 
       {/* ─── Trend Footer ─── */}
-      {trendInfo && (
-        <div className="mt-4 flex items-center gap-4 rounded-xl bg-slate-50/80 border border-slate-100 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-3.5 w-3.5 text-slate-400" />
-            <span className="text-xs font-semibold text-slate-600">Datapoints: <span className="text-slate-800 tabular-nums">{trendInfo.count}</span></span>
-          </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="flex items-center gap-1.5">
-            {trendInfo.direction === "Increasing" ? (
-              <TrendingUp className="h-3.5 w-3.5 text-rose-500" />
-            ) : trendInfo.direction === "Decreasing" ? (
-              <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <Minus className="h-3.5 w-3.5 text-amber-500" />
-            )}
-            <span className="text-xs font-semibold text-slate-600">
-              Total: <span className={
-                trendInfo.direction === "Increasing" ? "text-rose-600" :
-                trendInfo.direction === "Decreasing" ? "text-emerald-600" :
-                "text-amber-600"
-              }>{trendInfo.arrow} {trendInfo.direction}</span>
-            </span>
-          </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <span className="text-[11px] text-slate-400 tabular-nums">
-            slope: {trendInfo.slope.toFixed(2)} &middot; alpha: {trendInfo.intercept.toFixed(2)}
-          </span>
-        </div>
-      )}
+      <TrendFooter trend={trendInfo} compact={compact} />
     </div>
   )
 }

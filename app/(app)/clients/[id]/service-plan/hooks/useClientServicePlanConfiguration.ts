@@ -21,6 +21,11 @@ interface UseClientServicePlanConfigurationResult {
   setActiveCategoryId: (id: string) => void
   reloadCategories: () => Promise<void>
   reloadClientServicePlan: () => Promise<void>
+  // Edit modal state
+  isEditModalOpen: boolean
+  openEditModal: () => void
+  closeEditModal: () => void
+  handleServicePlanUpdated: () => Promise<void>
 }
 
 function sortCategoriesByName(
@@ -40,6 +45,7 @@ export function useClientServicePlanConfiguration(
   const [activeCategoryId, setActiveCategoryIdState] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   const reloadCategories = useCallback(async () => {
     if (!clientServicePlan?.id) return
@@ -110,6 +116,20 @@ export function useClientServicePlanConfiguration(
     setActiveCategoryIdState(id)
   }, [])
 
+  // Same pattern as company service plan: open immediately with data already in memory
+  const openEditModal = useCallback(() => {
+    if (!clientServicePlan) return
+    setIsEditModalOpen(true)
+  }, [clientServicePlan])
+
+  const closeEditModal = useCallback(() => setIsEditModalOpen(false), [])
+
+  const handleServicePlanUpdated = useCallback(async () => {
+    setIsEditModalOpen(false)
+    await reloadClientServicePlan()
+    await reloadCategories()
+  }, [reloadClientServicePlan, reloadCategories])
+
   return {
     clientServicePlan,
     categories,
@@ -120,5 +140,9 @@ export function useClientServicePlanConfiguration(
     setActiveCategoryId,
     reloadCategories,
     reloadClientServicePlan,
+    isEditModalOpen,
+    openEditModal,
+    closeEditModal,
+    handleServicePlanUpdated,
   }
 }

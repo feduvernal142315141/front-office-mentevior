@@ -15,6 +15,7 @@ import { useClientAppointments } from "@/lib/modules/schedules/hooks/use-client-
 import { upsertClientDataCollectionValue } from "@/lib/modules/client-service-plan/services/client-data-collection-values.service"
 import { ServicePlanValueType, ServicePlanUnitOfTime } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { useFrequencyDatasheet } from "./useFrequencyDatasheet"
+import { computeHiddenDayKeys } from "./chart-gaps"
 import { useChartDateRange } from "./useChartDateRange"
 import { useChartData } from "./useChartData"
 import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
@@ -175,28 +176,35 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
   }, [activeItem.baseline])
 
   const chartRange = useChartDateRange("1W", firstBaselineDate)
-  const extendedChartDays = useMemo(() => {
-    const original = chartRange.chartDays
-    const gapCount = original.filter((day) => gapDateKeys.has(getDateKey(day))).length
-    if (gapCount === 0) return original
-    const lastDay = original[original.length - 1]
-    const extended = [...original]
-    let cursor = lastDay
-    let added = 0
-    while (added < gapCount) { cursor = addDays(cursor, 1); extended.push(cursor); added++ }
-    return extended
-  }, [chartRange.chartDays, gapDateKeys])
+  // Dates backed by a saved data collection record — never plotted as baseline
+  const collectedDateKeys = useMemo(
+    () => new Set(dcValues.records.map((rec) => rec.date.slice(0, 10))),
+    [dcValues.records],
+  )
+
+  // Days the chart must skip: every empty day (baseline dates and phase markers survive)
+  const chartHiddenDayKeys = useMemo(
+    () => computeHiddenDayKeys({
+      chartDays: chartRange.chartDays,
+      hasData: (key) => (ds.entries[key]?.occurrences ?? 0) > 0,
+      baselines: activeItem.baseline,
+      objectives: activeItem.objetive,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [chartRange.chartDays, ds.entries, activeItem.baseline, activeItem.objetive],
+  )
 
   const aggregationMethod = dcConfig?.weeklyDailyValue ?? ServicePlanValueType.TOTAL
 
   const chartData = useChartData({
     clientServicePlanCategoryItemId: activeItem.id,
-    chartDays: extendedChartDays,
+    chartDays: chartRange.chartDays,
     interval: chartRange.interval,
     aggregationMethod,
     baselines: activeItem.baseline,
     objectives: activeItem.objetive,
     gridEntries: ds.entries,
+    collectedDateKeys,
   })
 
   const dcStatusByDate = useMemo(() => {
@@ -375,9 +383,9 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <RateChart
           weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig}
-          chartDays={extendedChartDays} tickInterval={chartRange.tickInterval}
+          chartDays={chartRange.chartDays} tickInterval={chartRange.tickInterval}
           itemBaselines={activeItem.baseline} itemObjectives={activeItem.objetive}
-          gapDateKeys={gapDateKeys} aggregatedData={chartData.aggregatedPoints}
+          gapDateKeys={chartHiddenDayKeys} collectedDateKeys={collectedDateKeys} aggregatedData={chartData.aggregatedPoints}
           interval={chartRange.interval}
           appointmentsByDate={clientAppointments.appointmentsByDate}
           unitOfTime={unitOfTime}
