@@ -16,6 +16,7 @@ import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-mo
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { use97156InterventionCatalog } from "@/lib/modules/appointment-notes/hooks/use-97156-intervention-catalog"
 import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
+import { getAppointmentById } from "@/lib/modules/schedules/services/appointments.service"
 import { CLIENT_PARTICIPANT_ID } from "./useSessionNoteForm"
 
 const EMPTY_FORM: SessionNote97156FormData = {
@@ -93,8 +94,35 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
 
   const { items: interventionCatalog, isLoading: interventionsLoading } = use97156InterventionCatalog()
 
-  // Caregivers for the client
-  const { caregivers: clientCaregivers, isLoading: caregiversLoading } = useCaregiversByClient(clientId)
+  // Caregivers for the client.
+  // The note can be opened without `clientId` in the URL (e.g. from the session notes table),
+  // so fall back to resolving it from the appointment — otherwise the caregiver list is empty.
+  const [resolvedClientId, setResolvedClientId] = useState<string | null>(clientId)
+
+  useEffect(() => {
+    if (clientId) {
+      setResolvedClientId(clientId)
+      return
+    }
+    if (!appointmentId) {
+      setResolvedClientId(null)
+      return
+    }
+
+    let active = true
+    void (async () => {
+      try {
+        const appointment = await getAppointmentById(appointmentId)
+        if (active) setResolvedClientId(appointment?.clientId ?? null)
+      } catch {
+        if (active) setResolvedClientId(null)
+      }
+    })()
+
+    return () => { active = false }
+  }, [clientId, appointmentId])
+
+  const { caregivers: clientCaregivers, isLoading: caregiversLoading } = useCaregiversByClient(resolvedClientId)
   const caregiverOptions = useMemo(
     () => clientCaregivers
       .filter((c) => c.status)
