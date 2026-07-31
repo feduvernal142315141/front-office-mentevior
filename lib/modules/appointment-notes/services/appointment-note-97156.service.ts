@@ -142,9 +142,20 @@ export async function getAppointmentNote97156(
     if (id) modality = { id, name: String(m.name ?? "") }
   }
 
+  // Parse teaching method (same catalog as 97153)
+  let teachingMethod: AppointmentNote97156["teachingMethod"] = null
+  if (data.teachingMethod && typeof data.teachingMethod === "object") {
+    const tm = data.teachingMethod as Record<string, unknown>
+    const id = String(tm.id ?? "")
+    if (id) teachingMethod = { id, name: String(tm.name ?? "") }
+  } else if (data.teachingMethodId) {
+    teachingMethod = { id: String(data.teachingMethodId), name: String(data.teachingMethodName ?? "") }
+  }
+
   return {
     id: String(data.id ?? ""),
     appointmentId: String(data.appointmentId ?? appointmentId),
+    teachingMethod,
     modality,
     reasonCaregiverNotPresent: String(data.reasonCaregiverNotPresent ?? ""),
     medicalConcerns: String(data.medicalConcerns ?? ""),

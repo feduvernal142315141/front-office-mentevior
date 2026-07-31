@@ -1,14 +1,17 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import {
-  addDays,
   addWeeks,
   addMonths,
   addYears,
   subWeeks,
   subMonths,
   subYears,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
   startOfYear,
   endOfYear,
   eachDayOfInterval,
@@ -25,34 +28,28 @@ export type ChartRangePreset = "1W" | "2W" | "1M" | "3M" | "6M"
 
 interface PresetConfig {
   label: string
-  days: number
   shiftFn: (date: Date, dir: 1 | -1) => Date
 }
 
 const PRESET_MAP: Record<ChartRangePreset, PresetConfig> = {
   "1W": {
     label: "1W",
-    days: 7,
     shiftFn: (d, dir) => (dir === 1 ? addWeeks(d, 1) : subWeeks(d, 1)),
   },
   "2W": {
     label: "2W",
-    days: 14,
     shiftFn: (d, dir) => (dir === 1 ? addWeeks(d, 2) : subWeeks(d, 2)),
   },
   "1M": {
     label: "1M",
-    days: 30,
     shiftFn: (d, dir) => (dir === 1 ? addMonths(d, 1) : subMonths(d, 1)),
   },
   "3M": {
     label: "3M",
-    days: 90,
     shiftFn: (d, dir) => (dir === 1 ? addMonths(d, 3) : subMonths(d, 3)),
   },
   "6M": {
     label: "6M",
-    days: 170,
     shiftFn: (d, dir) => (dir === 1 ? addMonths(d, 6) : subMonths(d, 6)),
   },
 }
@@ -66,25 +63,10 @@ const MIN_PRESET_FOR_INTERVAL: Record<string, ChartRangePreset | null> = {
 
 export const CHART_RANGE_PRESETS: ChartRangePreset[] = ["1W", "2W", "1M", "3M", "6M"]
 
-// ---------------------------------------------------------------------------
-// Auto-compute the smallest preset that covers from anchor date to today
-// ---------------------------------------------------------------------------
-
-function computeOptimalPreset(anchor: Date, fallback: ChartRangePreset): ChartRangePreset {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const diffDays = Math.ceil((today.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24))
-
-  // Anchor is today or in the future → use fallback
-  if (diffDays <= 0) return fallback
-
-  // preset.days must be >= diffDays + 1 so range end (anchor + days - 1) >= today
-  const needed = diffDays + 1
-  if (needed <= 7) return "1W"
-  if (needed <= 14) return "2W"
-  if (needed <= 30) return "1M"
-  if (needed <= 90) return "3M"
-  return "6M"
+function startOfDayCopy(date: Date): Date {
+  const copy = new Date(date)
+  copy.setHours(0, 0, 0, 0)
+  return copy
 }
 
 // ---------------------------------------------------------------------------
@@ -109,60 +91,64 @@ interface UseChartDateRangeResult {
   presetsDisabled: boolean
 }
 
-function buildRange(startDate: Date, preset: ChartRangePreset) {
-  const cfg = PRESET_MAP[preset]
-  const end = addDays(startDate, cfg.days - 1)
-  return { start: startDate, end }
+const WEEK_OPTS = { weekStartsOn: 0 as const } // Sunday
+
+/**
+ * Presets are CALENDAR windows around `anchor` (today, or the session date), not trailing
+ * N-day windows: "1W" is the Sunday→Saturday week containing the anchor, "2W" adds the
+ * previous calendar week, and the month presets cover whole calendar months. The anchor's
+ * remaining week/month days sit on the right, so today reads inside its familiar frame.
+ */
+function buildRange(anchor: Date, preset: ChartRangePreset) {
+  switch (preset) {
+    case "1W":
+      return { start: startOfWeek(anchor, WEEK_OPTS), end: endOfWeek(anchor, WEEK_OPTS) }
+    case "2W":
+      return { start: startOfWeek(subWeeks(anchor, 1), WEEK_OPTS), end: endOfWeek(anchor, WEEK_OPTS) }
+    case "1M":
+      return { start: startOfMonth(anchor), end: endOfMonth(anchor) }
+    case "3M":
+      return { start: startOfMonth(subMonths(anchor, 2)), end: endOfMonth(anchor) }
+    case "6M":
+      return { start: startOfMonth(subMonths(anchor, 5)), end: endOfMonth(anchor) }
+  }
 }
 
 export function useChartDateRange(
   initialPreset: ChartRangePreset = "1W",
-  anchorDate?: Date,
+  /** Anchor of the calendar window. Defaults to today; the session note pins it to the session date. */
+  endAnchorDate?: Date,
 ): UseChartDateRangeResult {
-  const resolvedAnchor = useMemo(() => {
-    if (anchorDate) {
-      const d = new Date(anchorDate)
-      d.setHours(0, 0, 0, 0)
-      return d
-    }
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return today
-  }, [anchorDate])
+  const endAnchor = useMemo(
+    () => startOfDayCopy(endAnchorDate ?? new Date()),
+    [endAnchorDate],
+  )
 
-  // Auto-compute optimal preset so chart covers from anchor to today
-  const optimalPreset = useMemo(() => {
-    if (!anchorDate) return initialPreset
-    return computeOptimalPreset(resolvedAnchor, initialPreset)
-  }, [anchorDate, resolvedAnchor, initialPreset])
-
-  const [preset, setPresetState] = useState<ChartRangePreset>(optimalPreset)
+  const [preset, setPresetState] = useState<ChartRangePreset>(initialPreset)
   const [interval, setIntervalState] = useState<ChartInterval>(ChartInterval.DAILY)
 
-  const [startDate, setStartDate] = useState<Date>(resolvedAnchor)
+  const [anchor, setAnchor] = useState<Date>(endAnchor)
 
-  // Sync startDate AND preset when anchor changes (item switch)
-  const anchorKey = resolvedAnchor.getTime()
-  const prevAnchorRef = useMemo(() => ({ current: anchorKey }), [])
-  if (prevAnchorRef.current !== anchorKey) {
-    prevAnchorRef.current = anchorKey
-    setStartDate(resolvedAnchor)
-    setPresetState(optimalPreset)
+  // Re-anchor the window when the item (or its session date) changes
+  const syncKey = endAnchor.getTime()
+  const prevSyncRef = useRef(syncKey)
+  if (prevSyncRef.current !== syncKey) {
+    prevSyncRef.current = syncKey
+    setAnchor(endAnchor)
+    setPresetState(initialPreset)
   }
 
   // Monthly interval → full year range (Jan 1 - Dec 31)
   const isMonthlyFullYear = interval === ChartInterval.MONTHLY
   const presetsDisabled = isMonthlyFullYear
 
+  // Baselines older than the window are NOT part of the range: they are drawn anyway, as a
+  // pinned prefix, by the chart itself (see FrequencyChart / useChartData).
   const range = useMemo(() => {
-    if (isMonthlyFullYear) {
-      return {
-        start: startOfYear(startDate),
-        end: endOfYear(startDate),
-      }
-    }
-    return buildRange(startDate, preset)
-  }, [startDate, preset, isMonthlyFullYear])
+    return isMonthlyFullYear
+      ? { start: startOfYear(anchor), end: endOfYear(anchor) }
+      : buildRange(anchor, preset)
+  }, [anchor, preset, isMonthlyFullYear])
 
   const chartDays = useMemo(
     () => eachDayOfInterval({ start: range.start, end: range.end }),
@@ -179,44 +165,36 @@ export function useChartDateRange(
   }, [range, isMonthlyFullYear])
 
   const isAtToday = useMemo(() => {
-    return isSameDay(startDate, resolvedAnchor)
-  }, [startDate, resolvedAnchor])
+    return isSameDay(anchor, endAnchor)
+  }, [anchor, endAnchor])
 
   const setPreset = useCallback((p: ChartRangePreset) => {
     if (presetsDisabled) return
     setPresetState(p)
-    setStartDate(resolvedAnchor)
+    setAnchor(endAnchor)
     // 1W or 2W → auto-select Daily (weekly aggregation doesn't make sense for 1-2 weeks)
     if ((p === "1W" || p === "2W") && interval !== ChartInterval.DAILY) {
       setIntervalState(ChartInterval.DAILY)
     }
-  }, [resolvedAnchor, presetsDisabled, interval])
+  }, [endAnchor, presetsDisabled, interval])
 
   const goToPrev = useCallback(() => {
-    if (isMonthlyFullYear) {
-      setStartDate((current) => subYears(current, 1))
-    } else {
-      setStartDate((current) => {
-        const cfg = PRESET_MAP[preset]
-        return cfg.shiftFn(current, -1)
-      })
-    }
+    setAnchor((current) =>
+      isMonthlyFullYear ? subYears(current, 1) : PRESET_MAP[preset].shiftFn(current, -1),
+    )
   }, [preset, isMonthlyFullYear])
 
   const goToNext = useCallback(() => {
-    if (isMonthlyFullYear) {
-      setStartDate((current) => addYears(current, 1))
-    } else {
-      setStartDate((current) => {
-        const cfg = PRESET_MAP[preset]
-        return cfg.shiftFn(current, 1)
-      })
-    }
-  }, [preset, isMonthlyFullYear])
+    setAnchor((current) => {
+      const next = isMonthlyFullYear ? addYears(current, 1) : PRESET_MAP[preset].shiftFn(current, 1)
+      // Never scroll past the anchor — there is no data ahead of it
+      return next.getTime() > endAnchor.getTime() ? endAnchor : next
+    })
+  }, [preset, isMonthlyFullYear, endAnchor])
 
   const goToToday = useCallback(() => {
-    setStartDate(resolvedAnchor)
-  }, [resolvedAnchor])
+    setAnchor(endAnchor)
+  }, [endAnchor])
 
   const tickInterval = 0
 
@@ -230,10 +208,10 @@ export function useChartDateRange(
       const minIdx = presetOrder.indexOf(minPreset)
       if (currentIdx < minIdx) {
         setPresetState(minPreset)
-        setStartDate(resolvedAnchor)
+        setAnchor(endAnchor)
       }
     }
-  }, [preset, resolvedAnchor])
+  }, [preset, endAnchor])
 
   return {
     preset,

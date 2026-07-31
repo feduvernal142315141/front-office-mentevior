@@ -30,7 +30,7 @@ import {
   createEmptyBaseline,
   type BaselineRow,
 } from "./BaselinesTabContent"
-import { ObjectivesTabContent } from "./ObjectivesTabContent"
+import { ObjectivesTabContent, inferObjetiveType } from "./ObjectivesTabContent"
 import type { ObjectiveRow } from "./ObjectiveFormModal"
 
 import {
@@ -74,6 +74,7 @@ import type {
   DataCollectionLevel,
   ItemDataCollectionConfig,
   DataCollectionType,
+  ObjetiveType,
 } from "@/lib/types/data-collection.types"
 
 // ---------------------------------------------------------------------------
@@ -207,6 +208,7 @@ export function ItemDetailPanel({
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [teachingProcedure, setTeachingProcedure] = useState("")
+  const [objetiveType, setObjetiveType] = useState<ObjetiveType | null>(null)
 
   // --- Catalogs ---
   const { selectOptions: teachingProcedureOptions, isLoading: isLoadingTeachingProcedures } = useTeachingProcedureCatalog()
@@ -279,6 +281,7 @@ export function ItemDetailPanel({
         setItemConfig(itemData)
         setConfig(itemData)
         setTeachingProcedure(itemData.teachingProcedureId ?? "")
+        setObjetiveType(itemData.objetiveType ?? null)
         setBaselines(
           (itemData.baselines ?? []).map((b) => ({
             localId: crypto.randomUUID(),
@@ -311,6 +314,7 @@ export function ItemDetailPanel({
         setConfig(catData ? stripPersistedLevelIds(catData) : fallback)
         setItemConfig(null)
         setTeachingProcedure("")
+        setObjetiveType(null)
         setBaselines([])
         setObjectives([])
       }
@@ -563,6 +567,7 @@ export function ItemDetailPanel({
         clientServicePlanCategoryItemId,
         name: itemName,
         teachingProcedureId: teachingProcedure || null,
+        objetiveType: objetiveType ?? inferObjetiveType(objectives),
         type: values.type as DataCollectionType,
         weeklyDailyValue: values.weeklyDailyValue,
         dailyValue: values.dailyValue,
@@ -1047,6 +1052,8 @@ export function ItemDetailPanel({
           hideButtons
           disableActions={baselines.length === 0}
           onModalChange={setIsModalOpen}
+          objetiveType={objetiveType}
+          onObjetiveTypeChange={setObjetiveType}
         />
       </div>
 

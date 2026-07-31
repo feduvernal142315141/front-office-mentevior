@@ -41,7 +41,7 @@ import {
   createEmptyBaseline,
   type BaselineRow,
 } from "./BaselinesTabContent"
-import { ObjectivesTabContent } from "./ObjectivesTabContent"
+import { ObjectivesTabContent, inferObjetiveType } from "./ObjectivesTabContent"
 import type { ObjectiveRow } from "./ObjectiveFormModal"
 
 import {
@@ -92,6 +92,7 @@ import type {
   DataCollectionLevel,
   ItemDataCollectionConfig,
   DataCollectionType,
+  ObjetiveType,
 } from "@/lib/types/data-collection.types"
 
 // ---------------------------------------------------------------------------
@@ -177,6 +178,7 @@ export function ClientDataCollectionModal({
   const [objectivesError, setObjectivesError] = useState(false)
   const [baselines, setBaselines] = useState<BaselineRow[]>([])
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
+  const [objetiveType, setObjetiveType] = useState<ObjetiveType | null>(null)
 
   // --- Catalogs (loaded once when modal opens) ---
   const { items: periodCatalog, isLoading: isLoadingPeriods } = usePeriodCatalog()
@@ -278,6 +280,7 @@ export function ClientDataCollectionModal({
         if (itemData) {
           setItemConfig(itemData)
           setConfig(itemData)
+          setObjetiveType(itemData.objetiveType ?? null)
           setBaselines(
             (itemData.baselines ?? []).map((b) => ({
               localId: crypto.randomUUID(),
@@ -308,6 +311,7 @@ export function ClientDataCollectionModal({
           const catData = await getClientCategoryDataCollection(categoryId)
           setConfig(catData ? stripPersistedLevelIds(catData) : null)
           setItemConfig(null)
+          setObjetiveType(null)
           setBaselines([])
           setObjectives([])
         }
@@ -334,6 +338,7 @@ export function ClientDataCollectionModal({
       setObjectivesError(false)
       setBaselines([])
       setObjectives([])
+      setObjetiveType(null)
       reset({
         type: "",
         weeklyDailyValue: ServicePlanValueType.TOTAL,
@@ -516,6 +521,7 @@ export function ClientDataCollectionModal({
         await upsertClientItemDataCollection({
           clientServicePlanCategoryItemId,
           name: itemName,
+          objetiveType: objetiveType ?? inferObjetiveType(objectives),
           type: values.type as DataCollectionType,
           weeklyDailyValue: values.weeklyDailyValue,
           dailyValue: values.dailyValue,
@@ -972,6 +978,8 @@ export function ClientDataCollectionModal({
                 clientFirstName={clientFirstName}
                 targetName={targetName}
                 dataCollectionTypeName={resolvedType.name}
+                objetiveType={objetiveType}
+                onObjetiveTypeChange={setObjetiveType}
               />
             </div>
           ),

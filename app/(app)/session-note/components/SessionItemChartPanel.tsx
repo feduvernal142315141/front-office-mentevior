@@ -17,7 +17,7 @@ import { ChartDateRangeToolbar } from "@/app/(app)/clients/[id]/configuration/co
 import { FrequencyChart } from "@/app/(app)/clients/[id]/configuration/components/datasheets/FrequencyChart"
 import { ActiveObjectiveBanner } from "@/app/(app)/clients/[id]/configuration/components/datasheets/ActiveObjectiveBanner"
 import { EnvironmentalChangesLegend } from "@/app/(app)/clients/[id]/configuration/components/datasheets/shared-datasheet-components"
-import { getDateKey } from "@/app/(app)/clients/[id]/configuration/components/datasheets/frequency-datasheet.types"
+import { getDateKey, parseLocalDate } from "@/app/(app)/clients/[id]/configuration/components/datasheets/frequency-datasheet.types"
 import { computeHiddenDayKeys } from "@/app/(app)/clients/[id]/configuration/components/datasheets/chart-gaps"
 import type { WeekEntries } from "@/app/(app)/clients/[id]/configuration/components/datasheets/frequency-datasheet.types"
 
@@ -333,16 +333,17 @@ function ItemChartView({
   itemObjectives?: ClientServicePlanItemObjective[]
   compact: boolean
 }) {
-  // Anchor chart from first baseline date so it covers baseline → today
-  const firstBaselineDate = useMemo(() => {
-    if (!itemBaselines || itemBaselines.length === 0) return undefined
-    const sorted = [...itemBaselines]
-      .filter((b) => b.date)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    return sorted.length > 0 ? new Date(sorted[0].date) : undefined
-  }, [itemBaselines])
+  // The session day anchors the calendar window, so the value being collected now always
+  // falls inside the chart instead of outside the window.
+  const sessionDate = useMemo(() => {
+    if (!appointmentDate) return undefined
+    const parsed = /^\d{4}-\d{2}-\d{2}/.test(appointmentDate)
+      ? parseLocalDate(appointmentDate.slice(0, 10))
+      : new Date(appointmentDate)
+    return isNaN(parsed.getTime()) ? undefined : parsed
+  }, [appointmentDate])
 
-  const chartRange = useChartDateRange("2W", firstBaselineDate)
+  const chartRange = useChartDateRange("2W", sessionDate)
   const { entries, chartData, hiddenDayKeys, collectedDateKeys, isLoading, parsedDateKey, refetch, hasPendingChanges } = useItemChartData(
     itemId, currentValue, currentEnvChange, appointmentDate, chartRange, itemBaselines, itemObjectives,
   )

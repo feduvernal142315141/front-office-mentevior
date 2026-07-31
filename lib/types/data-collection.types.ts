@@ -84,6 +84,9 @@ export interface CategoryDataCollectionConfig extends DataCollectionConfig {
   categoryName: string
 }
 
+/** How the item's objectives were authored (backend field name, sic) */
+export type ObjetiveType = "Mastery" | "STO"
+
 export interface ItemDataCollectionConfig extends DataCollectionConfig {
   itemId: string
   itemName: string
@@ -92,6 +95,7 @@ export interface ItemDataCollectionConfig extends DataCollectionConfig {
   topography: string
   active: boolean
   teachingProcedureId?: string | null
+  objetiveType?: ObjetiveType | null
   isCustomOverride?: boolean
 }
 

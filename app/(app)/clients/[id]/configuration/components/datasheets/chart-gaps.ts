@@ -3,13 +3,14 @@ import { getDateKey, parseLocalDate } from "./datasheet-utils"
 /**
  * Which calendar days the CHART must skip.
  *
- * Only the GAPS BETWEEN datapoints are collapsed: an empty day sitting between two real
- * values adds a dead column and breaks the line (e.g. baselines on 07/15 and 07/17 would be
- * drawn apart with a hole on 07/16). Hiding it makes both points adjacent, so the line
- * connects them directly.
+ * Days that carry data are the ones that matter: every empty day BEFORE the last datapoint is
+ * collapsed, in every window size. An empty day sitting between two real values adds a dead
+ * column and breaks the line (e.g. baselines on 07/15 and 07/17 would be drawn apart with a
+ * hole on 07/16); hiding it makes both points adjacent, so the line connects them directly.
  *
  * The tail is kept on purpose: empty days AFTER the last datapoint stay on the axis, so the
- * chart keeps showing the rest of the selected range instead of ending abruptly.
+ * chart keeps showing the rest of the selected range (the days of the week/month still to be
+ * collected) instead of ending abruptly.
  *
  * Never hidden (they must keep a slot on the axis):
  * - baseline dates, even when empty

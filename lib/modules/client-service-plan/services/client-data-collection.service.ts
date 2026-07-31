@@ -26,6 +26,7 @@ import type {
   DataCollectionObjectiveData,
   DataCollectionType,
   ItemDataCollectionConfig,
+  ObjetiveType,
 } from "@/lib/types/data-collection.types"
 import type {
   ApiRecommendationsPayload,
@@ -256,6 +257,7 @@ interface ClientItemPayload {
   topography: string
   status: boolean
   teachingProcedureId?: string | null
+  objetiveType?: ObjetiveType
   dataCollection: ApiDataCollection
   chart?: ApiChart
   baseline?: ApiBaseline[]
@@ -282,6 +284,7 @@ interface ApiResponse {
   teachingProcedureId?: string
   /** @deprecated Backend now returns teachingProcedureId */
   teachingMethodId?: string
+  objetiveType?: string
   clientServicePlanCategoryItemId?: string
 }
 
@@ -308,6 +311,8 @@ export interface UpsertClientItemDataCollectionDto {
   topography: string
   active: boolean
   teachingProcedureId?: string | null
+  /** Omitted (or null) leaves the persisted value untouched on the backend */
+  objetiveType?: ObjetiveType | null
   type: DataCollectionType
   weeklyDailyValue?: ServicePlanValueType
   dailyValue?: ServicePlanValueType
@@ -573,6 +578,10 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
     teachingProcedureId: asOptionalString(
       itemEntity.teachingProcedureId ?? itemEntity.teachingMethodId
     ) ?? null,
+    objetiveType:
+      itemEntity.objetiveType === "Mastery" || itemEntity.objetiveType === "STO"
+        ? itemEntity.objetiveType
+        : null,
     isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
   }
 }
@@ -719,6 +728,8 @@ export async function upsertClientItemDataCollection(
   }
   if (dto.name?.trim()) payload.name = dto.name.trim()
   if (dto.teachingProcedureId !== undefined) payload.teachingProcedureId = dto.teachingProcedureId || null
+  // Only valid enum values travel; null/undefined keep the backend's stored value
+  if (dto.objetiveType) payload.objetiveType = dto.objetiveType
   if (dto.chart) payload.chart = toApiChart(dto.chart)
   payload.baseline = dto.baselines ? toApiBaselines(dto.baselines) : []
   payload.objetive = dto.objectives ? toApiObjectives(dto.objectives) : []

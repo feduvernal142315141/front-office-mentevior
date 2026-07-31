@@ -203,16 +203,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
   }, [ds, clientAppointments.appointmentsByDate, activeItem.id, dcValues, onItemsReload])
 
   // Chart
-  const firstBaselineDate = useMemo(() => {
-    const bls = activeItem.baseline
-    if (!bls || bls.length === 0) return undefined
-    const sorted = [...bls]
-      .filter((b) => b.date)
-      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
-    return sorted.length > 0 ? parseLocalDate(sorted[0].date) : undefined
-  }, [activeItem.baseline])
-
-  const chartRange = useChartDateRange("1W", firstBaselineDate)
+  const chartRange = useChartDateRange("1W")
   // Dates backed by a saved data collection record — never plotted as baseline
   const collectedDateKeys = useMemo(
     () => new Set(dcValues.records.map((rec) => rec.date.slice(0, 10))),

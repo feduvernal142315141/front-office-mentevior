@@ -293,6 +293,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
     noteError,
     isSaving,
     isLoadingCatalogs,
+    teachingMethodOptions,
     modalityOptions,
     participantCatalog,
     interventionCatalog,
@@ -341,6 +342,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
           updateItemEnvironmentalChange={updateItemEnvironmentalChange}
           isSaving={isSaving}
           isLoadingCatalogs={isLoadingCatalogs}
+          teachingMethodOptions={teachingMethodOptions}
           modalityOptions={modalityOptions}
           participantCatalog={participantCatalog}
           interventionCatalog={interventionCatalog}

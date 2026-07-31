@@ -46,6 +46,12 @@ interface FrequencyChartProps {
 }
 
 interface ChartDataPoint {
+  /**
+   * Horizontal position: the column index. Every drawn column is evenly spaced, whether or not
+   * the dates are consecutive — the gap between 07/19 and 07/28 reads exactly like the gap
+   * between 07/16 and 07/17.
+   */
+  x: number
   dateKey: string
   dateLabel: string
   fullDate: string
@@ -63,7 +69,8 @@ export function FrequencyChart({
   aggregatedData, interval = ChartInterval.DAILY, compact = false,
 }: FrequencyChartProps) {
   const days = chartDays ?? weekDays
-  const labelFormat = "MM/dd/yyyy"
+  // Narrow panels get short dates so every column can keep its own label instead of being thinned
+  const labelFormat = compact ? "MM/dd" : "MM/dd/yyyy"
   const chartConfig = dcConfig?.chart ?? DEFAULT_CHART_CONFIG
   const objectives = dcConfig?.objectives ?? []
   const isAggregated = interval !== ChartInterval.DAILY && interval !== ChartInterval.SESSION && !!aggregatedData
@@ -120,7 +127,8 @@ export function FrequencyChart({
   const data = useMemo<ChartDataPoint[]>(() => {
     // AGGREGATED MODE: use pre-computed aggregated data
     if (isAggregated && aggregatedData) {
-      return aggregatedData.map((ap) => ({
+      return aggregatedData.map((ap, index) => ({
+        x: index,
         dateKey: ap.periodKey,
         dateLabel: ap.periodLabel,
         fullDate: ap.periodLabel,
@@ -152,13 +160,15 @@ export function FrequencyChart({
       const key = getDateKey(day)
       if (!allDayKeys.has(key) && !gap.has(key)) { allDayKeys.add(key); allDays.push(day) }
     }
+    // Baselines are a pinned prefix: they are always drawn, whatever range is selected, and they
+    // never consume days from it — picking "1W" means 7 treatment days PLUS the baseline columns.
     for (const b of visibleBaselines) {
       const d = parseLocalDate(b.date); const key = getDateKey(d)
       if (!allDayKeys.has(key)) { allDayKeys.add(key); allDays.push(d) }
     }
     allDays.sort((a, b) => a.getTime() - b.getTime())
 
-    return allDays.map((day) => {
+    return allDays.map((day, index) => {
       const key = getDateKey(day)
       const entry = entries[key]
       const bl = baselineMap.get(key)
@@ -179,6 +189,7 @@ export function FrequencyChart({
       const treatmentValue = !isBaselinePhase && hasData ? entry.occurrences : null
 
       return {
+        x: index,
         dateKey: key,
         dateLabel: format(day, labelFormat),
         fullDate: format(day, "EEEE, MMM dd yyyy"),
@@ -192,6 +203,28 @@ export function FrequencyChart({
   }, [days, entries, baselines, labelFormat, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
+
+  // ─── Axis position lookups (markers are anchored by date label) ────────
+
+  const xByLabel = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const point of data) map.set(point.dateLabel, point.x)
+    return map
+  }, [data])
+
+  const labelByX = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const point of data) map.set(point.x, point.dateLabel)
+    return map
+  }, [data])
+
+  // A single datapoint would collapse the numeric domain — give it room so the dot still lands
+  const xDomain = useMemo<[number, number]>(() => {
+    if (data.length === 0) return [0, 1]
+    const first = data[0].x
+    const last = data[data.length - 1].x
+    return first === last ? [first - 1, last + 1] : [first, last]
+  }, [data])
 
   // ─── Environmental change dates ────────────────────────────────────────
 
@@ -271,6 +304,7 @@ export function FrequencyChart({
   const showValues = totalDatasetConfig?.showValues ?? false
   const baselineColor = baselineDatasetConfig?.borderColor ?? "#DC2626"
   const objVisual = chartConfig.objectives
+  const objectiveColor = objVisual?.borderColor ?? "#22C55E"
 
   // ─── Layout ────────────────────────────────────────────────────────────
 
@@ -281,6 +315,20 @@ export function FrequencyChart({
   const chartWidth = needsScroll ? pointCount * PX_PER_POINT : undefined
   const chartHeight = compact ? 200 : 240
   const fontSize = pointCount > 90 ? 8 : pointCount > 30 ? 9 : 10
+
+  // One tick per drawn point. When the chart scrolls every point owns a fixed slot, so all labels
+  // fit; when it is squeezed into the available width (narrow session-note panel) keep one every
+  // Nth instead of letting Recharts stack rotated dates on top of each other.
+  const xTicks = useMemo(() => {
+    if (pointCount === 0) return []
+    const maxLabels = compact ? (isAggregated ? 8 : 16) : (isAggregated ? 14 : 24)
+    const step = tickInterval > 0
+      ? tickInterval + 1
+      : needsScroll
+        ? 1
+        : Math.max(1, Math.ceil(pointCount / maxLabels))
+    return data.filter((_, index) => index % step === 0).map((point) => point.x)
+  }, [data, pointCount, tickInterval, needsScroll, compact, isAggregated])
 
   // ─── Interval label for header ─────────────────────────────────────────
 
@@ -311,8 +359,8 @@ export function FrequencyChart({
           </div>
           {objectiveValue !== null && (
             <div className="flex items-center gap-1.5">
-              <div className="h-0.5 w-5 border-t-2 border-dashed border-emerald-500" />
-              <span className="text-xs text-slate-500">Objective: <span className="font-semibold text-emerald-500">{objectiveValue}</span></span>
+              <div className="h-0.5 w-5 border-t-2 border-dashed" style={{ borderColor: objectiveColor }} />
+              <span className="text-xs text-slate-500">Objective: <span className="font-semibold" style={{ color: objectiveColor }}>{objectiveValue}</span></span>
             </div>
           )}
           {envChangeDates.length > 0 && (
@@ -335,12 +383,16 @@ export function FrequencyChart({
           />
 
           <XAxis
-            dataKey="dateLabel"
+            type="number"
+            dataKey="x"
+            domain={xDomain}
+            ticks={xTicks}
+            tickFormatter={(value: number) => labelByX.get(value) ?? ""}
             tick={{ fontSize, fill: "#64748B" }}
             axisLine={{ stroke: "#E2E8F0" }}
             tickLine={false}
-            padding={{ left: 30, right: 10 }}
-            interval={tickInterval}
+            padding={{ left: 24, right: 24 }}
+            interval={0}
             angle={isAggregated ? 0 : -45}
             textAnchor={isAggregated ? "middle" : "end"}
             height={isAggregated ? 40 : 70}
@@ -395,7 +447,7 @@ export function FrequencyChart({
               strokeWidth={2}
               dot={{ r: 4, fill: "white", stroke: baselineColor, strokeWidth: 2 }}
               activeDot={{ r: 6, fill: baselineColor, stroke: "white", strokeWidth: 2 }}
-              connectNulls={false}
+              connectNulls
             />
           )}
 
@@ -406,7 +458,7 @@ export function FrequencyChart({
           {objectiveValue !== null && objVisual?.showLine !== false && (
             <ReferenceLine
               y={objectiveValue}
-              stroke={objVisual?.borderColor ?? "#22C55E"}
+              stroke={objectiveColor}
               strokeWidth={1.5}
               strokeDasharray={objVisual?.lineType === "SOLID" ? undefined : "8 4"}
             />
@@ -414,13 +466,13 @@ export function FrequencyChart({
 
           {/* Environmental change dashed lines */}
           {envChangeDates.map((env) => (
-            <ReferenceLine key={`env-${env.dateLabel}`} x={env.dateLabel} stroke="#14B8A6" strokeWidth={1} strokeDasharray="4 3" />
+            <ReferenceLine key={`env-${env.dateLabel}`} x={xByLabel.get(env.dateLabel)} stroke="#14B8A6" strokeWidth={1} strokeDasharray="4 3" />
           ))}
 
           {/* Treatment vertical line */}
-          {treatmentDateLabel && (
+          {treatmentDateLabel && xByLabel.has(treatmentDateLabel) && (
             <ReferenceLine
-              x={treatmentDateLabel}
+              x={xByLabel.get(treatmentDateLabel)}
               stroke="#0F172A"
               strokeWidth={2}
               strokeDasharray="8 4"
@@ -439,22 +491,23 @@ export function FrequencyChart({
 
           {/* STO phase markers */}
           {stoPhases.map((sto) =>
-            sto.startLabel !== treatmentDateLabel ? (
-              <ReferenceLine key={`sto-start-${sto.number}`} x={sto.startLabel} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" />
+            sto.startLabel !== treatmentDateLabel && xByLabel.has(sto.startLabel) ? (
+              <ReferenceLine key={`sto-start-${sto.number}`} x={xByLabel.get(sto.startLabel)} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" />
             ) : null
           )}
           {stoPhases.map((sto) =>
-            sto.endLabel ? (
-              <ReferenceLine key={`sto-end-${sto.number}`} x={sto.endLabel} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" />
+            sto.endLabel && xByLabel.has(sto.endLabel) ? (
+              <ReferenceLine key={`sto-end-${sto.number}`} x={xByLabel.get(sto.endLabel)} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" />
             ) : null
           )}
           {stoPhases.map((sto) => {
             if (!sto.endLabel) return null
+            if (!xByLabel.has(sto.startLabel) || !xByLabel.has(sto.endLabel)) return null
             return (
               <ReferenceArea
                 key={`sto-area-${sto.number}`}
-                x1={sto.startLabel}
-                x2={sto.endLabel}
+                x1={xByLabel.get(sto.startLabel)}
+                x2={xByLabel.get(sto.endLabel)}
                 fill="transparent"
                 strokeOpacity={0}
                 label={({ viewBox }: { viewBox: { x?: number; y?: number; width?: number; height?: number } }) => {
@@ -473,6 +526,8 @@ export function FrequencyChart({
               dataKey="occurrences"
               fill={lineColor}
               radius={[4, 4, 0, 0]}
+              // A numeric axis has no band to derive the width from — pin it explicitly
+              barSize={pointCount > 30 ? 8 : pointCount > 12 ? 14 : 24}
               maxBarSize={pointCount > 30 ? 12 : 32}
               label={showValues && pointCount <= 31 ? { position: "top", fontSize: 10, fill: "#64748B" } : false}
             />
@@ -484,7 +539,9 @@ export function FrequencyChart({
               strokeWidth={pointCount > 60 ? 1.5 : 2.5}
               dot={pointCount > 30 ? false : { r: 4, fill: "white", stroke: lineColor, strokeWidth: 2 }}
               activeDot={{ r: 5, fill: lineColor, stroke: "white", strokeWidth: 2 }}
-              connectNulls={totalDatasetConfig?.spanGaps ?? false}
+              // Days without a session are empty columns, not a break in the data: keep the line
+              // continuous unless the chart config explicitly asks for broken segments.
+              connectNulls={totalDatasetConfig?.spanGaps ?? true}
               label={showValues && pointCount <= 31 ? { position: "top", fontSize: 10, fill: "#64748B" } : false}
             />
           )}

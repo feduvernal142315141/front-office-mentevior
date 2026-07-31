@@ -176,16 +176,7 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
   }, [ds, clientAppointments.appointmentsByDate, activeItem.id, dcValues, onItemsReload])
 
   // Chart
-  const firstBaselineDate = useMemo(() => {
-    const bls = activeItem.baseline
-    if (!bls || bls.length === 0) return undefined
-    const sorted = [...bls]
-      .filter((b) => b.date)
-      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
-    return sorted.length > 0 ? parseLocalDate(sorted[0].date) : undefined
-  }, [activeItem.baseline])
-
-  const chartRange = useChartDateRange("1W", firstBaselineDate)
+  const chartRange = useChartDateRange("1W")
   const aggregationMethod = dcConfig?.weeklyDailyValue ?? ServicePlanValueType.TOTAL
 
   const chartData = useChartData({

@@ -12,6 +12,7 @@ import type {
 } from "@/lib/types/appointment-note.types"
 import { useAppointmentNote97156 } from "@/lib/modules/appointment-notes/hooks/use-appointment-note-97156"
 import { useAppointmentNote97156Mutation } from "@/lib/modules/appointment-notes/hooks/use-appointment-note-97156-mutation"
+import { useTeachingMethodCatalog } from "@/lib/modules/appointment-notes/hooks/use-teaching-method-catalog"
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { use97156InterventionCatalog } from "@/lib/modules/appointment-notes/hooks/use-97156-intervention-catalog"
@@ -21,6 +22,7 @@ import { CLIENT_PARTICIPANT_ID } from "./useSessionNoteForm"
 
 const EMPTY_FORM: SessionNote97156FormData = {
   noteId: "",
+  teachingMethodId: "",
   modalityId: "",
   reasonCaregiverNotPresent: "",
   medicalConcerns: "",
@@ -47,6 +49,7 @@ function noteToFormData(note: AppointmentNote97156): SessionNote97156FormData {
 
   return {
     noteId: note.id,
+    teachingMethodId: note.teachingMethod?.id ?? "",
     modalityId: note.modality?.id ?? "",
     reasonCaregiverNotPresent: note.reasonCaregiverNotPresent,
     medicalConcerns: note.medicalConcerns || "N/A",
@@ -85,6 +88,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
   }, [note])
 
   // Catalogs
+  const { selectOptions: teachingMethodOptions, isLoading: teachingMethodsLoading } = useTeachingMethodCatalog()
   const { selectOptions: modalityOptions, isLoading: modalityLoading } = useModalityCatalog()
   const { items: rawParticipantCatalog, isLoading: participantsLoading } = useParticipantCatalog()
   const participantCatalog = useMemo(
@@ -196,6 +200,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
     // Validate required fields
     const newErrors: Record<string, string> = {}
     if (status !== "read") {
+      if (!formData.teachingMethodId) newErrors.teachingMethodId = "Select a teaching method"
       if (!formData.modalityId) newErrors.modalityId = "Select a modality"
       if (formData.participantIds.length === 0) newErrors.participantIds = "Select at least one participant"
       if (!formData.reasonCaregiverNotPresent.trim()) newErrors.reasonCaregiverNotPresent = "This field is required"
@@ -281,6 +286,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
       caregiverSignatureChecked: useCheckmarkSignature ? caregiverSignatureChecked : null,
       providerSignatureImage: providerSignatureImage || null,
       ...(isReadOnly ? {} : {
+        teachingMethodId: formData.teachingMethodId || null,
         modalityId: formData.modalityId || null,
         reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
         medicalConcerns: formData.medicalConcerns,
@@ -305,7 +311,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
   const serviceDetails = note?.serviceDetails ?? null
   const billingCodes = note?.billingCodes ?? null
 
-  const isLoadingCatalogs = modalityLoading || participantsLoading || interventionsLoading || caregiversLoading
+  const isLoadingCatalogs = teachingMethodsLoading || modalityLoading || participantsLoading || interventionsLoading || caregiversLoading
 
   return {
     formData,
@@ -320,6 +326,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
     noteError,
     isSaving: mutation.isLoading,
     isLoadingCatalogs,
+    teachingMethodOptions,
     modalityOptions,
     participantCatalog,
     interventionCatalog,

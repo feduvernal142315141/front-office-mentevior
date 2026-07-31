@@ -140,21 +140,22 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
   const { rows: clientDocumentRows, isLoading: isDocumentsLoading } = useClientDocuments(resolvedClientId, !!resolvedClientId)
   const { pas } = usePriorAuthorizationsByClient(resolvedClientId)
 
+  // Must mirror the REQUIRED fields of Step1PersonalInfo — email is optional there,
+  // so it can't gate the checkmark.
   const checkPersonalInfoComplete = useCallback((clientData: any) => {
     if (!clientData) return false
-    
+
     const requiredFields = [
       clientData.firstName,
       clientData.lastName,
       clientData.phoneNumber,
-      clientData.email,
       clientData.genderId,
       clientData.ssn,
       clientData.brithDate,
       clientData.chartId,
       clientData.languages?.length > 0,
     ]
-    
+
     return requiredFields.every(field => !!field)
   }, [])
 

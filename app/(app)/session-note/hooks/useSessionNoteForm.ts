@@ -123,16 +123,11 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
 
   useEffect(() => {
     if (note) {
-      const data = noteToFormData(note)
-      // Default teaching method to first catalog item if not set
-      if (!data.teachingMethodId && teachingMethodOptions.length > 0) {
-        data.teachingMethodId = teachingMethodOptions[0].value
-      }
-      setFormData(data)
+      setFormData(noteToFormData(note))
     } else {
       setFormData(EMPTY_FORM)
     }
-  }, [note, teachingMethodOptions])
+  }, [note])
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 

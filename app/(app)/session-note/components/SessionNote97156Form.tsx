@@ -33,6 +33,7 @@ interface SessionNote97156FormProps {
   updateItemEnvironmentalChange: (itemId: string, text: string) => void
   isSaving: boolean
   isLoadingCatalogs: boolean
+  teachingMethodOptions: { value: string; label: string }[]
   modalityOptions: { value: string; label: string }[]
   participantCatalog: ParticipantCatalogItem[]
   interventionCatalog: InterventionCatalog97156Item[]
@@ -62,6 +63,7 @@ export function SessionNote97156Form({
   updateItemEnvironmentalChange,
   isSaving,
   isLoadingCatalogs,
+  teachingMethodOptions,
   modalityOptions,
   participantCatalog,
   interventionCatalog,
@@ -175,10 +177,23 @@ export function SessionNote97156Form({
         </Section>
       )}
 
-      {/* ─── Modality & Participants + Session Details ─── */}
+      {/* ─── Teaching Method, Modality & Participants + Session Details ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Section icon={<BookOpen className="h-4 w-4" />} title="Modality & Participants">
+        <Section icon={<BookOpen className="h-4 w-4" />} title="Teaching Method, Modality & Participants">
           <div className="space-y-4">
+            <div data-field="teachingMethodId">
+              <FloatingSelect
+                label="Teaching Method"
+                value={formData.teachingMethodId}
+                onChange={(val) => updateField("teachingMethodId", val)}
+                options={teachingMethodOptions}
+                searchable
+                disabled={isLoadingCatalogs || formDisabled}
+                hasError={!!errors.teachingMethodId}
+                required
+              />
+              <FieldError message={errors.teachingMethodId} />
+            </div>
             <div data-field="modalityId">
               <FloatingSelect
                 label="Modality"

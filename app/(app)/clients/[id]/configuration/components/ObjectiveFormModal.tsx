@@ -78,6 +78,8 @@ interface ObjectiveFormModalProps {
   onSave: (objective: ObjectiveRow) => void
   onDelete: (objective: ObjectiveRow) => void
   periodSelectOptions: { value: string; label: string }[]
+  /** Builds the Mastery criteria name from the row values, so the Name field stays live-synced */
+  buildAutoName?: (objective: ObjectiveRow) => string
 }
 
 export function ObjectiveFormModal({
@@ -88,19 +90,29 @@ export function ObjectiveFormModal({
   onSave,
   onDelete,
   periodSelectOptions,
+  buildAutoName,
 }: ObjectiveFormModalProps) {
   const isEdit = !!objective?.recordId
 
   const [form, setForm] = useState<ObjectiveRow>(objective ?? createEmptyObjective())
   const [fieldErrors, setFieldErrors] = useState<ObjectiveFieldErrors>({})
   const [isDeleting, setIsDeleting] = useState(false)
+  // Name captured at open time. It decides WHICH template rebuilds the name (Mastery vs
+  // STO#N, keeping its number) no matter what the provider typed into the field since —
+  // every value change regenerates the name from this seed. `null` = custom name, never touch.
+  const [autoNameSeed, setAutoNameSeed] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
-      setForm(objective ?? createEmptyObjective())
+      const initial = objective ?? createEmptyObjective()
+      const name = initial.name.trim()
+      const isAutoName = !objective || !name || name.startsWith("Mastery") || /^STO#\d+/.test(name)
+      const seed = buildAutoName && isAutoName ? name : null
+      setAutoNameSeed(seed)
+      setForm(seed !== null && !name ? { ...initial, name: buildAutoName!(initial) } : initial)
       setFieldErrors({})
     }
-  }, [open, objective])
+  }, [open, objective, buildAutoName])
 
   const update = useCallback(
     (field: keyof ObjectiveRow, value: string) => {
@@ -109,6 +121,10 @@ export function ObjectiveFormModal({
         // Auto-fill duration period when smart criteria period is selected
         if (field === "periodSmartCriteriaCatalogId" && value && !prev.periodDurationCatalogId) {
           next.periodDurationCatalogId = value
+        }
+        // Any value change rewrites the name in real time, even after manual name edits
+        if (field !== "name" && buildAutoName && autoNameSeed !== null) {
+          next.name = buildAutoName({ ...next, name: autoNameSeed })
         }
         return next
       })
@@ -119,7 +135,7 @@ export function ObjectiveFormModal({
         return next
       })
     },
-    []
+    [buildAutoName, autoNameSeed]
   )
 
   const handleSave = useCallback(() => {
@@ -156,13 +172,17 @@ export function ObjectiveFormModal({
   }, [objective, mode, onDelete, onClose])
 
   const handleClear = useCallback(() => {
-    setForm((prev) => ({
-      ...createEmptyObjective(),
-      localId: prev.localId,
-      recordId: prev.recordId,
-    }))
+    setForm((prev) => {
+      const cleared = {
+        ...createEmptyObjective(),
+        localId: prev.localId,
+        recordId: prev.recordId,
+      }
+      return buildAutoName ? { ...cleared, name: buildAutoName(cleared) } : cleared
+    })
+    setAutoNameSeed("")
     setFieldErrors({})
-  }, [])
+  }, [buildAutoName])
 
   return (
     <CustomModal

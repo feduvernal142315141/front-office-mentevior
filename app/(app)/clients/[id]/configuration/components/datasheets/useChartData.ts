@@ -103,7 +103,7 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
 
   // Merge all data sources into daily points
   const dailyPoints = useMemo<DailyDataPoint[]>(() => {
-    // Collect all relevant dates: chartDays + baseline dates
+    // Collect all relevant dates: chartDays + baseline dates (baselines are always plotted)
     const allDateKeys = new Set<string>()
     for (const day of chartDays) {
       allDateKeys.add(getDateKey(day))

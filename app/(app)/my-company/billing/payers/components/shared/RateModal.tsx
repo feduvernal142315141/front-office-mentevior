@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -46,6 +46,65 @@ const emptyDefaults: RateFormValues = {
   alias: "",
   startDate: "",
   endDate: "",
+}
+
+/** Digits plus a single decimal point ("12.5.9" → "12.59"). */
+function sanitizeDecimal(raw: string): string {
+  const cleaned = raw.replace(/[^\d.]/g, "")
+  const firstDot = cleaned.indexOf(".")
+  if (firstDot === -1) return cleaned
+  return cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "")
+}
+
+interface DecimalInputProps {
+  label: string
+  /** NaN / undefined / null render as empty */
+  value: number | undefined | null
+  onChange: (value: number) => void
+  onBlur: () => void
+  hasError?: boolean
+  required?: boolean
+}
+
+/**
+ * The form stores a number, but the number alone can't drive the input: "12." parses to 12,
+ * so the dot would vanish on re-render and decimals could never be typed. The text being
+ * typed is kept locally and only the parsed number is pushed to the form.
+ */
+function DecimalInput({ label, value, onChange, onBlur, hasError, required }: DecimalInputProps) {
+  const [text, setText] = useState<string>(() =>
+    value == null || Number.isNaN(value) ? "" : String(value),
+  )
+
+  // External value changes (modal reset, editing another rate) must refresh the text,
+  // but echoes of our own keystrokes must not overwrite in-progress input like "12."
+  useEffect(() => {
+    const numeric = value == null || Number.isNaN(value) ? Number.NaN : value
+    setText((current) => {
+      const currentNumeric = current === "" ? Number.NaN : Number(current)
+      const same =
+        (Number.isNaN(numeric) && Number.isNaN(currentNumeric)) || numeric === currentNumeric
+      return same ? current : Number.isNaN(numeric) ? "" : String(numeric)
+    })
+  }, [value])
+
+  return (
+    <FloatingInput
+      label={label}
+      value={text}
+      onChange={(v) => {
+        const sanitized = sanitizeDecimal(v)
+        setText(sanitized)
+        onChange(sanitized === "" ? Number.NaN : Number(sanitized))
+      }}
+      onBlur={onBlur}
+      type="text"
+      inputMode="decimal"
+      hasError={hasError}
+      required={required}
+      autoComplete="off"
+    />
+  )
 }
 
 interface RateModalProps {
@@ -187,26 +246,13 @@ export function RateModal({
             control={form.control}
             render={({ field, fieldState }) => (
               <div>
-                <FloatingInput
+                <DecimalInput
                   label="Approved rate"
-                  value={
-                    field.value === undefined ||
-                    field.value === null ||
-                    Number.isNaN(field.value)
-                      ? ""
-                      : String(field.value)
-                  }
-                  onChange={(v) => {
-                    const digits = v.replace(/\D/g, "")
-                    field.onChange(digits === "" ? Number.NaN : Number(digits))
-                  }}
+                  value={field.value}
+                  onChange={field.onChange}
                   onBlur={field.onBlur}
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
                   hasError={!!fieldState.error}
                   required
-                  autoComplete="off"
                 />
                 {fieldState.error && (
                   <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
@@ -221,25 +267,12 @@ export function RateModal({
             control={form.control}
             render={({ field, fieldState }) => (
               <div>
-                <FloatingInput
+                <DecimalInput
                   label="Submit Amount"
-                  value={
-                    field.value === undefined ||
-                    field.value === null ||
-                    Number.isNaN(field.value)
-                      ? ""
-                      : String(field.value)
-                  }
-                  onChange={(v) => {
-                    const digits = v.replace(/\D/g, "")
-                    field.onChange(digits === "" ? Number.NaN : Number(digits))
-                  }}
+                  value={field.value}
+                  onChange={field.onChange}
                   onBlur={field.onBlur}
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
                   hasError={!!fieldState.error}
-                  autoComplete="off"
                 />
                 {fieldState.error && (
                   <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>

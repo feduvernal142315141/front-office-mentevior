@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   OPERATOR_SMART_CRITERIA_OPTIONS,
   type ObjectiveStatus,
+  type ObjetiveType,
 } from "@/lib/types/data-collection.types"
 import {
   deleteClientCategoryObjective,
@@ -24,6 +25,7 @@ import {
   type ObjectiveRow,
 } from "./ObjectiveFormModal"
 import { GenerateObjectivesModal } from "./GenerateObjectivesModal"
+import { buildGeneratedObjectiveName } from "./generate-objective-name"
 
 interface ObjectivesTabContentProps {
   objectives: ObjectiveRow[]
@@ -38,6 +40,15 @@ interface ObjectivesTabContentProps {
   externalTitle?: boolean
   disableActions?: boolean
   onModalChange?: (open: boolean) => void
+  /** Persisted objective type; when absent it is inferred from the objective names */
+  objetiveType?: ObjetiveType | null
+  onObjetiveTypeChange?: (type: ObjetiveType | null) => void
+}
+
+/** Objectives created by the STO generator are named "STO#N: …"; manual ones "Mastery criteria: …" */
+export function inferObjetiveType(objectives: ObjectiveRow[]): ObjetiveType | null {
+  if (objectives.length === 0) return null
+  return objectives.some((o) => o.name.trim().startsWith("STO#")) ? "STO" : "Mastery"
 }
 
 function computeStatus(obj: ObjectiveRow): ObjectiveStatus {
@@ -110,10 +121,20 @@ export function ObjectivesTabContent({
   externalTitle = false,
   disableActions = false,
   onModalChange,
+  objetiveType = null,
+  onObjetiveTypeChange,
 }: ObjectivesTabContentProps) {
   const [formOpen, setFormOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
+
+  // Mastery and STO objectives are mutually exclusive: picking one path locks the other
+  // until the objectives are removed, so providers can't mix both by mistake.
+  const effectiveType = objetiveType ?? inferObjetiveType(objectives)
+  const masteryLocked = effectiveType === "STO"
+  const stoLocked = effectiveType === "Mastery"
+  const masteryLockTitle = masteryLocked ? "This item uses STO objectives — remove them to switch to Mastery criteria" : undefined
+  const stoLockTitle = stoLocked ? "This item uses a Mastery criteria objective — remove it to generate STOs" : undefined
 
   // Notify parent when any modal opens/closes
   useEffect(() => {
@@ -151,6 +172,30 @@ export function ObjectivesTabContent({
     [clientFirstName, targetName, periodMap],
   )
 
+  // Live name for the edit modal: values typed in the form rewrite the name as you type.
+  // STO names keep their number and the generator's template; everything else is Mastery.
+  const buildLiveName = useCallback(
+    (obj: ObjectiveRow): string => {
+      const stoMatch = obj.name.trim().match(/^STO#(\d+)/)
+      if (stoMatch) {
+        return buildGeneratedObjectiveName({
+          index: Number(stoMatch[1]),
+          operatorSmartCriteria: obj.operatorSmartCriteria,
+          valueSmartCriteria: obj.valueSmartCriteria,
+          periodSmartCriteriaCatalogId: obj.periodSmartCriteriaCatalogId,
+          valueDuration: obj.valueDuration,
+          periodDurationCatalogId: obj.periodDurationCatalogId,
+          clientFirstName,
+          targetName,
+          periodMap,
+          dataCollectionTypeName,
+        })
+      }
+      return buildMasteryCriteriaName(obj)
+    },
+    [buildMasteryCriteriaName, clientFirstName, targetName, periodMap, dataCollectionTypeName],
+  )
+
   const handleSave = useCallback(
     (saved: ObjectiveRow) => {
       const exists = objectives.some((o) => o.localId === saved.localId)
@@ -163,30 +208,35 @@ export function ObjectivesTabContent({
           finalName = buildMasteryCriteriaName(saved)
         }
         onChange([...objectives, { ...saved, name: finalName }])
+        onObjetiveTypeChange?.("Mastery")
       }
     },
-    [objectives, onChange, buildMasteryCriteriaName]
+    [objectives, onChange, buildMasteryCriteriaName, onObjetiveTypeChange]
   )
 
   const handleDelete = useCallback(
     (deleted: ObjectiveRow) => {
-      onChange(objectives.filter((o) => o.localId !== deleted.localId))
+      const remaining = objectives.filter((o) => o.localId !== deleted.localId)
+      onChange(remaining)
+      if (remaining.length === 0) onObjetiveTypeChange?.(null)
     },
-    [objectives, onChange]
+    [objectives, onChange, onObjetiveTypeChange]
   )
 
   const handleGenerate = useCallback(
     (generated: ObjectiveRow[]) => {
       onChange([...objectives, ...generated])
+      onObjetiveTypeChange?.("STO")
     },
-    [objectives, onChange]
+    [objectives, onChange, onObjetiveTypeChange]
   )
 
   const handleBulkSave = useCallback(
     (updated: ObjectiveRow[]) => {
       onChange(updated)
+      onObjetiveTypeChange?.(inferObjetiveType(updated))
     },
-    [onChange]
+    [onChange, onObjetiveTypeChange]
   )
 
   const getSmartCriteriaSummary = useCallback(
@@ -256,9 +306,11 @@ export function ObjectivesTabContent({
         }
         setDeletingId(null)
       }
-      onChange(objectives.filter((o) => o.localId !== obj.localId))
+      const remaining = objectives.filter((o) => o.localId !== obj.localId)
+      onChange(remaining)
+      if (remaining.length === 0) onObjetiveTypeChange?.(null)
     },
-    [objectives, onChange, mode]
+    [objectives, onChange, mode, onObjetiveTypeChange]
   )
 
   return (
@@ -273,9 +325,9 @@ export function ObjectivesTabContent({
               )}
             </h3>
             <div className="flex items-center gap-2">
-              <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions}>
+              <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions || masteryLocked} title={masteryLockTitle}>
                 <Plus className="h-3.5 w-3.5" />
-                Add objective
+                Mastery Criteria Objective
               </Button>
               {objectives.length > 0 && (
                 <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions}>
@@ -283,9 +335,9 @@ export function ObjectivesTabContent({
                   Edit All
                 </Button>
               )}
-              <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions}>
+              <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions || stoLocked} title={stoLockTitle}>
                 <Sparkles className="h-3.5 w-3.5" />
-                Generate
+                STO Objective Generate
               </Button>
             </div>
           </div>
@@ -385,9 +437,9 @@ export function ObjectivesTabContent({
 
         {!hideButtons && (
           <div className="flex shrink-0 justify-center gap-3 border-t border-slate-100 pt-3">
-            <Button type="button" onClick={handleAdd} className="gap-2">
+            <Button type="button" onClick={handleAdd} className="gap-2" disabled={masteryLocked} title={masteryLockTitle}>
               <Plus className="h-4 w-4" />
-              Add objective
+              Mastery Criteria Objective
             </Button>
             {objectives.length > 0 && (
               <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-2">
@@ -395,9 +447,9 @@ export function ObjectivesTabContent({
                 Edit All
               </Button>
             )}
-            <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-2">
+            <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-2" disabled={stoLocked} title={stoLockTitle}>
               <Sparkles className="h-4 w-4" />
-              Generate objectives
+              STO Objective Generate
             </Button>
           </div>
         )}
@@ -411,6 +463,7 @@ export function ObjectivesTabContent({
         onSave={handleSave}
         onDelete={handleDelete}
         periodSelectOptions={periodSelectOptions}
+        buildAutoName={buildLiveName}
       />
 
       <GenerateObjectivesModal

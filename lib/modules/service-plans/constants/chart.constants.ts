@@ -309,7 +309,8 @@ export const DEFAULT_CHART_CONFIG: ChartConfig = {
     showLabel: true,
     fontColor: "#0F172A",
     showLine: true,
-    borderColor: "#0F172A",
+    // Emerald, not slate: the "Treatment" phase marker already owns the dark dashed line
+    borderColor: "#22C55E",
     lineType: ObjectivesLineType.DASHED,
     showBackground: false,
     backgroundColor: "#00000000",

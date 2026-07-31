@@ -149,36 +149,8 @@ export function BillingCodeModal({
           )}
         />
 
-        {/* Units row */}
-        <div className="grid grid-cols-3 gap-4">
-          {/* Used units */}
-          <Controller
-            name="usedUnits"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <div>
-                <FloatingInput
-                  label="Used Units"
-                  value={field.value === null || field.value === undefined ? "" : String(field.value)}
-                  onChange={(v) => {
-                    if (v === "") {
-                      field.onChange(0)
-                      return
-                    }
-                    const parsed = parseInt(v, 10)
-                    if (!isNaN(parsed)) field.onChange(parsed)
-                  }}
-                  onBlur={field.onBlur}
-                  inputMode="numeric"
-                  hasError={!!fieldState.error}
-                />
-                {fieldState.error && (
-                  <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
-                )}
-              </div>
-            )}
-          />
-
+        {/* Units row — Used Units is tracked by the system, not entered here */}
+        <div className="grid grid-cols-2 gap-4">
           {/* Approved units */}
           <Controller
             name="approvedUnits"
