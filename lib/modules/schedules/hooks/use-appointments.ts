@@ -36,18 +36,26 @@ export function useScheduleAppointments({
   const filtersKey = filters ? filters.join("|") : ""
   const optsRef = useRef({ filters, providerId, dateFrom, dateTo })
   optsRef.current = { filters, providerId, dateFrom, dateTo }
+  // Monotonic request id: when filters change mid-flight (e.g. the provider scope resolves),
+  // a slow, stale response must never overwrite the result of the newest request.
+  const requestIdRef = useRef(0)
 
   const fetchAppointments = useCallback(async () => {
+    const requestId = ++requestIdRef.current
     try {
       setIsLoading(true)
       setError(null)
       const data = await getAppointments(optsRef.current)
+      if (requestIdRef.current !== requestId) return
       setAppointments(data)
     } catch (err) {
+      if (requestIdRef.current !== requestId) return
       setError(err instanceof Error ? err : new Error("Failed to fetch appointments"))
       setAppointments([])
     } finally {
-      setIsLoading(false)
+      if (requestIdRef.current === requestId) {
+        setIsLoading(false)
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey, providerId, dateFrom, dateTo])

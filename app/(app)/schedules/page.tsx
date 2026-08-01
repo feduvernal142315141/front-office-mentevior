@@ -13,6 +13,9 @@ export default function SchedulesPage() {
   const { user: fullUser } = useUserById(currentUserId || null)
   const roleName = fullUser?.role?.name ?? ""
   const isAgencyAdmin = /admin|superadmin|supervisor|agency/i.test(roleName)
+  // Until the role resolves, scope is unknown: rendering the calendar too early fires a
+  // provider-filtered fetch that races the unfiltered one and can clobber its result.
+  const isRoleResolved = !currentUserId || !!fullUser
 
   return (
     <div className="p-4 md:p-8">
@@ -33,11 +36,17 @@ export default function SchedulesPage() {
         </div>
 
      
-        <WeekCalendar
-          rbtId={currentUserId}
-          viewMode={isAgencyAdmin ? "general" : "client"}
-          scope={isAgencyAdmin ? "agency" : "provider"}
-        />
+        {isRoleResolved ? (
+          <WeekCalendar
+            rbtId={currentUserId}
+            viewMode={isAgencyAdmin ? "general" : "client"}
+            scope={isAgencyAdmin ? "agency" : "provider"}
+          />
+        ) : (
+          <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white py-24">
+            <div className="animate-pulse text-slate-500">Loading schedule…</div>
+          </div>
+        )}
       </div>
     </div>
   )
