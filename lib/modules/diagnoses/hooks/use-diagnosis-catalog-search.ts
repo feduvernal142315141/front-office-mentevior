@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { DiagnosisCatalogItem } from "@/lib/types/diagnosis-catalog.types"
+import { buildFilters } from "@/lib/utils/query-filters"
 import { getDiagnosisCatalog } from "../services/diagnoses-catalog.service"
 
 const MIN_SEARCH_LENGTH = 1
@@ -10,13 +11,10 @@ const SEARCH_PAGE_SIZE = 20
 const DEBOUNCE_MS = 400
 
 function buildSearchFilters(term: string) {
-  const t = term.trim().toUpperCase()
+  const t = term.trim()
   if (t.length < MIN_SEARCH_LENGTH) return undefined
-  // Providers search by code PREFIX (the first letter, or the full code) — never by
-  // description. The filter grammar has no STARTS_WITH, but codes sort alphabetically,
-  // so the half-open range [term, term+1) selects exactly the codes starting with it.
-  const next = t.slice(0, -1) + String.fromCharCode(t.charCodeAt(t.length - 1) + 1)
-  return [`code__GTE__${t}__AND`, `code__LT__${next}__AND`]
+  // Se busca ÚNICAMENTE por código (nunca por descripción).
+  return buildFilters([], { fields: ["code"], search: t })
 }
 
 /**
