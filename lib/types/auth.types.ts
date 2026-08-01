@@ -26,6 +26,11 @@ export interface CompanyInfo {
 export interface TokenState {
   accessToken: string | null
   accessTokenExpiresAt: number
+  /**
+   * Momento a partir del cual hay que renovar. El backend sólo permite refrescar
+   * con el access token vigente, así que se renueva bastante antes del vencimiento.
+   */
+  accessTokenRefreshAt: number
   refreshToken: string | null
   refreshTokenExpiresAt: number
 }
@@ -37,11 +42,15 @@ export interface AuthState extends TokenState {
   hydrated: boolean
 }
 
+// El backend nombra distinto los campos de expiración en login y en refresh,
+// por eso ambos aceptan las dos variantes (se toma la que venga informada).
 export interface LoginResponse {
   accessToken: string
   accessTokenExpiresIn: string
   refreshToken: string
   refreshTokenExpiresIn: string
+  accessExpiresIn?: string
+  refreshExpiresIn?: string
 }
 
 export interface RefreshTokenResponse {
@@ -49,4 +58,6 @@ export interface RefreshTokenResponse {
   accessExpiresIn: string
   refreshToken: string
   refreshExpiresIn: string
+  accessTokenExpiresIn?: string
+  refreshTokenExpiresIn?: string
 }

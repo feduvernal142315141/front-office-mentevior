@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { useLogin } from "@/lib/modules/auth/hooks/use-login"
+import { SESSION_END_REASON_KEY } from "@/lib/store/auth.store"
 import Link from "next/link"
 import { Button } from "@/components/custom/Button"
 
@@ -22,6 +23,19 @@ export function LoginForm({ companyId, companyName, companyLogo, companyIdentifi
 
   const [emailError, setEmailError] = useState("")
   const [passwordError, setPasswordError] = useState("")
+  const [sessionExpired, setSessionExpired] = useState(false)
+
+  // Si llegamos acá por expiración de sesión, hay que decirlo (antes se cerraba en silencio)
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(SESSION_END_REASON_KEY) === "expired") {
+        setSessionExpired(true)
+        window.sessionStorage.removeItem(SESSION_END_REASON_KEY)
+      }
+    } catch {
+      /* sessionStorage puede no estar disponible */
+    }
+  }, [])
 
   return (
     <div className="login-card-wrapper relative w-full max-w-[440px] 2xl:max-w-[500px] bg-white rounded-[28px] p-12 2xl:p-14 login-large-screen-spacing animate-in fade-in slide-in-from-bottom-8 duration-600 delay-400">
@@ -37,6 +51,14 @@ export function LoginForm({ companyId, companyName, companyLogo, companyIdentifi
           </span>
         </p>
       </div>
+
+      {sessionExpired && (
+        <div className="mb-6 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 animate-in fade-in slide-in-from-top-1 duration-300">
+          <p className="text-[13px] 2xl:text-[14px] text-amber-700 font-medium">
+            Your session expired. Please sign in again to continue.
+          </p>
+        </div>
+      )}
 
       <form
         onSubmit={(e) => {

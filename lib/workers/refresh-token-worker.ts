@@ -1,16 +1,21 @@
 /**
  * Script del Worker en formato Blob para crear el worker inline
  * Esto evita problemas de CORS y permite usar el worker sin archivos externos
- * 
+ *
  * Este worker maneja el timer de verificación del refresh token
+ *
+ * IMPORTANTE: el backend sólo acepta refrescar mientras el access token siga
+ * VIGENTE. Por eso no se espera al último momento: el hilo principal calcula
+ * `refreshAt` (bastante antes del vencimiento) y aquí sólo se compara el reloj.
  */
 
 const workerScript = `
 let checkInterval = null;
 let accessTokenExpiresAt = 0;
 let refreshTokenExpiresAt = 0;
+let refreshAt = 0;
 
-const REFRESH_THRESHOLD_MS = 30 * 1000; // 30 segundos antes de expirar
+const FALLBACK_THRESHOLD_MS = 5 * 60 * 1000; // 5 min antes de expirar si no nos dan refreshAt
 const CHECK_INTERVAL_MS = 5000; // Verificar cada 5 segundos
 
 /**
@@ -28,24 +33,22 @@ const clearCheckInterval = () => {
  */
 const checkTokenExpiration = () => {
   const now = Date.now();
-  const accessTokenExpiresIn = accessTokenExpiresAt - now;
-  const refreshTokenExpiresIn = refreshTokenExpiresAt - now;
+  // refreshTokenExpiresAt = 0 significa "no lo sabemos" (el backend no lo mandó),
+  // NO "ya expiró": tratarlo como expirado cerraba la sesión sin motivo.
+  const refreshExpiryKnown = refreshTokenExpiresAt > 0;
 
-  // Si el refresh token ya expiró, notificar para hacer logout
-  if (refreshTokenExpiresIn <= 0) {
+  // Sólo cerramos sesión si SABEMOS que el refresh token expiró
+  if (refreshExpiryKnown && refreshTokenExpiresAt - now <= 0) {
     self.postMessage({ type: 'SESSION_EXPIRED' });
     clearCheckInterval();
     return;
   }
 
-  // Si el access token expira en menos de 30 segundos (y no expiró hace mucho)
-  if (accessTokenExpiresIn <= REFRESH_THRESHOLD_MS && accessTokenExpiresIn > -60000) {
-    self.postMessage({ type: 'NEEDS_REFRESH' });
-    return;
-  }
+  const renewAt = refreshAt > 0 ? refreshAt : accessTokenExpiresAt - FALLBACK_THRESHOLD_MS;
 
-  // Si el access token ya expiró pero el refresh token está vigente
-  if (accessTokenExpiresIn <= 0 && refreshTokenExpiresIn > 0) {
+  // Renovar en cuanto entramos en la ventana (o si el access token ya venció:
+  // el hilo principal intentará igual y decidirá si la sesión terminó)
+  if (now >= renewAt) {
     self.postMessage({ type: 'NEEDS_REFRESH' });
     return;
   }
@@ -62,7 +65,7 @@ const startCheckInterval = () => {
     return;
   }
 
-  
+
   // Ejecutar verificación inicial
   checkTokenExpiration();
 
@@ -82,12 +85,14 @@ self.onmessage = function(event) {
     case 'SET_TOKEN_EXPIRATION':
       accessTokenExpiresAt = payload.accessTokenExpiresAt || 0;
       refreshTokenExpiresAt = payload.refreshTokenExpiresAt || 0;
+      refreshAt = payload.refreshAt || 0;
       startCheckInterval();
       break;
 
     case 'CLEAR':
       accessTokenExpiresAt = 0;
       refreshTokenExpiresAt = 0;
+      refreshAt = 0;
       clearCheckInterval();
       break;
 
@@ -105,14 +110,20 @@ self.onmessage = function(event) {
 };
 `;
 
+export type RefreshTokenWorker = Worker & { __objectUrl?: string }
+
 /**
- * Crea una instancia del worker desde el código inline
+ * Crea una instancia del worker desde el código inline.
+ *
+ * La object URL NO se revoca acá: hacerlo justo después de `new Worker()` es una
+ * carrera y en algunos navegadores el worker no alcanza a cargar (y entonces la
+ * sesión se queda sin nadie que la renueve). Se revoca al terminarlo.
  */
-export const createRefreshTokenWorker = (): Worker => {
+export const createRefreshTokenWorker = (): RefreshTokenWorker => {
   const blob = new Blob([workerScript], { type: 'application/javascript' });
   const workerUrl = URL.createObjectURL(blob);
-  const worker = new Worker(workerUrl);
-  URL.revokeObjectURL(workerUrl);
+  const worker = new Worker(workerUrl) as RefreshTokenWorker;
+  worker.__objectUrl = workerUrl;
   return worker;
 };
 

@@ -79,7 +79,31 @@ apiInstance.interceptors.request.use(
             const isPublicRoute = PUBLIC_ROUTES.some((path) => config.url?.includes(path))
 
             if (!isPublicRoute) {
-                // Obtener token desde Zustand store
+                // El backend exige que el refresh se haga con el access token TODAVÍA vigente.
+                // Por eso, antes de cualquier request, si entramos en la ventana de renovación
+                // refrescamos primero: así el token nunca llega a vencer estando la app en uso.
+                // (El propio refresh se excluye para no esperarse a sí mismo.)
+                const isRefreshRoute = config.url?.includes('/auth/refresh-token')
+
+                if (!isRefreshRoute) {
+                    const { isAuthenticated, accessTokenRefreshAt, accessTokenExpiresAt } = useAuthStore.getState()
+                    const now = Date.now()
+
+                    if (isAuthenticated && accessTokenRefreshAt > 0 && now >= accessTokenRefreshAt) {
+                        const stillValid = accessTokenExpiresAt > now + 5000
+
+                        if (stillValid) {
+                            // El token actual todavía sirve: renovamos en paralelo sin
+                            // bloquear la request (el refresh está deduplicado en el store).
+                            void useAuthStore.getState().refreshSession()
+                        } else {
+                            // Está por vencer justo ahora: conviene esperar el token nuevo
+                            await useAuthStore.getState().refreshSession()
+                        }
+                    }
+                }
+
+                // Obtener token desde Zustand store (ya renovado si hacía falta)
                 const token = useAuthStore.getState().accessToken
 
                 if (token) {
@@ -147,19 +171,24 @@ apiInstance.interceptors.response.use(
                 isRefreshingToken = true
 
                 try {
-                    const success = await useAuthStore.getState().refresh()
+                    const outcome = await useAuthStore.getState().refreshSession()
                     const newToken = useAuthStore.getState().accessToken
 
-                    if (success && newToken) {
+                    if (outcome === 'ok' && newToken) {
                         // Refresh exitoso: reintentar request original y resolver cola
                         processQueue(newToken)
                         originalRequest.headers.Authorization = `Bearer ${newToken}`
                         return apiInstance(originalRequest)
                     }
 
-                    // Refresh falló: rechazar cola y notificar
+                    // Refresh falló: rechazar cola
                     processQueue(null)
-                    interceptorHandlers.onUnauthorized?.()
+
+                    // Sólo cerramos sesión si el backend invalidó el refresh token.
+                    // Ante red caída o 5xx la sesión sigue viva: el worker reintentará.
+                    if (outcome === 'invalid') {
+                        interceptorHandlers.onUnauthorized?.()
+                    }
                     return Promise.reject(error)
                 } catch (refreshError) {
                     processQueue(null)
