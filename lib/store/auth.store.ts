@@ -37,6 +37,12 @@ export type RefreshOutcome = "ok" | "invalid" | "transient"
 /** Chequeo de respaldo en el hilo principal por si el Web Worker no arranca */
 const FALLBACK_CHECK_INTERVAL_MS = 30 * 1000
 
+/**
+ * Desfase de reloj por debajo del cual no corregimos nada: la latencia de red y
+ * el redondeo de `iat` a segundos siempre dan unos segundos de diferencia.
+ */
+const CLOCK_SKEW_THRESHOLD_MS = 60 * 1000
+
 let workerInstance: RefreshTokenWorker | null = null
 let refreshPromise: Promise<RefreshOutcome> | null = null
 let visibilityHandler: (() => void) | null = null
@@ -100,10 +106,44 @@ function getTokenExpiration(token: string): number {
 }
 
 /**
+ * Vencimiento del access token. Preferimos el `exp` del JWT y, si no se puede
+ * decodificar, usamos la fecha que manda el backend: quedarnos en 0 significaría
+ * que nadie programa la renovación y la sesión se muere en silencio.
+ */
+function resolveAccessTokenExpiresAt(token: string, expiresIn?: string | null): number {
+  return getTokenExpiration(token) || (parseExpiresIn(expiresIn) ?? 0)
+}
+
+/**
+ * Desfase entre el reloj del equipo y el del servidor, medido con el `iat` del
+ * JWT (que es el "ahora" del backend en el momento de emitirlo).
+ * Positivo = el equipo va adelantado. Devuelve null si no se puede medir.
+ */
+function measureClockSkew(token: string): number | null {
+  try {
+    const decoded: any = jwtDecode(token)
+    if (typeof decoded?.iat !== "number") return null
+    const skew = Date.now() - decoded.iat * 1000
+    return Math.abs(skew) >= CLOCK_SKEW_THRESHOLD_MS ? skew : 0
+  } catch {
+    return null
+  }
+}
+
+/**
+ * "Ahora" según el reloj del servidor. Todas las expiraciones llegan como fecha
+ * absoluta del backend, así que compararlas contra `Date.now()` a secas deja la
+ * sesión a merced del reloj del equipo del usuario.
+ */
+function serverNow(skewMs: number): number {
+  return Date.now() - (skewMs || 0)
+}
+
+/**
  * Momento en el que hay que renovar: mitad de la vida del access token,
  * con un mínimo de 1 min y un máximo de 15 min de anticipación.
  */
-function computeRefreshAt(token: string, accessTokenExpiresAt: number): number {
+function computeRefreshAt(token: string, accessTokenExpiresAt: number, skewMs = 0): number {
   if (!accessTokenExpiresAt) return 0
 
   let issuedAt = 0
@@ -114,7 +154,9 @@ function computeRefreshAt(token: string, accessTokenExpiresAt: number): number {
     issuedAt = 0
   }
 
-  const lifetime = issuedAt > 0 ? accessTokenExpiresAt - issuedAt : 0
+  // Sin `iat` usable, la vida restante es la mejor aproximación disponible a la
+  // vida total (en login y en refresh el token acaba de emitirse).
+  const lifetime = issuedAt > 0 ? accessTokenExpiresAt - issuedAt : accessTokenExpiresAt - serverNow(skewMs)
   const margin =
     lifetime > 0
       ? Math.min(Math.max(lifetime / 2, MIN_REFRESH_MARGIN_MS), MAX_REFRESH_MARGIN_MS)
@@ -155,9 +197,9 @@ function decodeUserFromToken(accessToken: string): User {
  * La cookie httpOnly debe vivir al menos lo que vive el refresh token; si no,
  * el layout del servidor manda a /login-error aunque la sesión siga siendo válida.
  */
-function cookieMaxAgeFor(refreshTokenExpiresAt: number): number {
+function cookieMaxAgeFor(refreshTokenExpiresAt: number, skewMs = 0): number {
   if (!refreshTokenExpiresAt) return COOKIE_MAX_AGE_FALLBACK
-  const seconds = Math.floor((refreshTokenExpiresAt - Date.now()) / 1000)
+  const seconds = Math.floor((refreshTokenExpiresAt - serverNow(skewMs)) / 1000)
   if (!Number.isFinite(seconds) || seconds <= 0) return COOKIE_MAX_AGE_FALLBACK
   return Math.min(Math.max(seconds, COOKIE_MAX_AGE_FALLBACK), COOKIE_MAX_AGE_CAP)
 }
@@ -261,19 +303,26 @@ export const useAuthStore = create<AuthStore>()(
         if (
           persisted?.accessToken &&
           persisted.accessToken !== state.accessToken &&
-          persisted.accessTokenExpiresAt > Date.now() + 30000
+          persisted.accessTokenExpiresAt > serverNow(state.clockSkewMs) + 30000
         ) {
           try {
             set({
               user: decodeUserFromToken(persisted.accessToken),
               accessToken: persisted.accessToken,
               accessTokenExpiresAt: persisted.accessTokenExpiresAt,
-              accessTokenRefreshAt: computeRefreshAt(persisted.accessToken, persisted.accessTokenExpiresAt),
+              accessTokenRefreshAt: computeRefreshAt(
+                persisted.accessToken,
+                persisted.accessTokenExpiresAt,
+                state.clockSkewMs,
+              ),
               refreshToken: persisted.refreshToken,
               refreshTokenExpiresAt: persisted.refreshTokenExpiresAt,
               isAuthenticated: true,
             })
-            await updateServerCookie(persisted.accessToken, cookieMaxAgeFor(persisted.refreshTokenExpiresAt))
+            await updateServerCookie(
+              persisted.accessToken,
+              cookieMaxAgeFor(persisted.refreshTokenExpiresAt, state.clockSkewMs),
+            )
             return "ok"
           } catch (error) {
             console.error("[AuthStore] Could not adopt tokens from another tab:", error)
@@ -306,24 +355,29 @@ export const useAuthStore = create<AuthStore>()(
           return "transient"
         }
 
-        // El backend nombra distinto este campo en login y en refresh: aceptamos ambos.
+        // Nombre canónico desde 2026-08-01; el anterior queda como respaldo.
         const refreshExpiresAt =
+          parseExpiresIn(data.refreshTokenExpiresIn) ??
           parseExpiresIn(data.refreshExpiresIn) ??
-          parseExpiresIn((data as any).refreshTokenExpiresIn) ??
           // Si no viene, conservamos la expiración anterior en vez de dejarla en 0
           get().refreshTokenExpiresAt
 
         try {
           const user = decodeUserFromToken(data.accessToken)
-          const accessTokenExpiresAt = getTokenExpiration(data.accessToken)
+          const clockSkewMs = measureClockSkew(data.accessToken) ?? state.clockSkewMs
+          const accessTokenExpiresAt = resolveAccessTokenExpiresAt(
+            data.accessToken,
+            data.accessTokenExpiresIn ?? data.accessExpiresIn,
+          )
 
           set({
             user,
             accessToken: data.accessToken,
             accessTokenExpiresAt,
-            accessTokenRefreshAt: computeRefreshAt(data.accessToken, accessTokenExpiresAt),
+            accessTokenRefreshAt: computeRefreshAt(data.accessToken, accessTokenExpiresAt, clockSkewMs),
             refreshToken: data.refreshToken ?? currentRefreshToken,
             refreshTokenExpiresAt: refreshExpiresAt,
+            clockSkewMs,
             isAuthenticated: true,
           })
         } catch (error) {
@@ -331,7 +385,7 @@ export const useAuthStore = create<AuthStore>()(
           return "invalid"
         }
 
-        await updateServerCookie(data.accessToken, cookieMaxAgeFor(refreshExpiresAt))
+        await updateServerCookie(data.accessToken, cookieMaxAgeFor(refreshExpiresAt, get().clockSkewMs))
         return "ok"
       }
 
@@ -356,8 +410,8 @@ export const useAuthStore = create<AuthStore>()(
             if (outcome !== "transient") break
 
             // Si el refresh token ya venció no tiene sentido seguir insistiendo
-            const { refreshTokenExpiresAt, accessTokenExpiresAt } = get()
-            const now = Date.now()
+            const { refreshTokenExpiresAt, accessTokenExpiresAt, clockSkewMs } = get()
+            const now = serverNow(clockSkewMs)
             if (refreshTokenExpiresAt > 0 && refreshTokenExpiresAt <= now) {
               outcome = "invalid"
               break
@@ -421,10 +475,13 @@ export const useAuthStore = create<AuthStore>()(
         const s = get()
         if (!s.isAuthenticated) return
 
-        const now = Date.now()
+        const now = serverNow(s.clockSkewMs)
 
+        // Aunque el reloj diga que el refresh token venció, no cerramos por
+        // nuestra cuenta: intentamos renovar y sólo terminamos si el backend
+        // lo rechaza (401/403). La única fuente de verdad es el servidor.
         if (s.refreshTokenExpiresAt > 0 && s.refreshTokenExpiresAt <= now) {
-          get().endSession()
+          triggerRefresh()
           return
         }
 
@@ -442,6 +499,7 @@ export const useAuthStore = create<AuthStore>()(
       accessTokenRefreshAt: 0,
       refreshToken: null,
       refreshTokenExpiresAt: 0,
+      clockSkewMs: 0,
       isAuthenticated: false,
       hydrated: false,
 
@@ -469,10 +527,23 @@ export const useAuthStore = create<AuthStore>()(
 
           const refreshTokenExpiresAt =
             parseExpiresIn(data.refreshTokenExpiresIn) ??
-            parseExpiresIn((data as any).refreshExpiresIn) ??
+            parseExpiresIn(data.refreshExpiresIn) ??
             0
 
-          const accessTokenExpiresAt = getTokenExpiration(data.accessToken)
+          // El login es el mejor momento para medir el desfase de reloj: el token
+          // acaba de emitirse, así que su `iat` es prácticamente el "ahora" del servidor.
+          const clockSkewMs = measureClockSkew(data.accessToken) ?? 0
+          const accessTokenExpiresAt = resolveAccessTokenExpiresAt(
+            data.accessToken,
+            data.accessTokenExpiresIn ?? data.accessExpiresIn,
+          )
+
+          if (clockSkewMs !== 0) {
+            console.warn(
+              `[AuthStore] El reloj del equipo va ${clockSkewMs > 0 ? "adelantado" : "atrasado"} ` +
+                `${Math.round(Math.abs(clockSkewMs) / 1000)}s respecto del servidor; se compensa.`,
+            )
+          }
 
           const newState = {
             user,
@@ -483,9 +554,10 @@ export const useAuthStore = create<AuthStore>()(
             },
             accessToken: data.accessToken,
             accessTokenExpiresAt,
-            accessTokenRefreshAt: computeRefreshAt(data.accessToken, accessTokenExpiresAt),
+            accessTokenRefreshAt: computeRefreshAt(data.accessToken, accessTokenExpiresAt, clockSkewMs),
             refreshToken: data.refreshToken,
             refreshTokenExpiresAt,
+            clockSkewMs,
             isAuthenticated: true,
           }
 
@@ -496,7 +568,7 @@ export const useAuthStore = create<AuthStore>()(
           }
 
           // Actualizar cookie del servidor
-          await updateServerCookie(data.accessToken, cookieMaxAgeFor(refreshTokenExpiresAt))
+          await updateServerCookie(data.accessToken, cookieMaxAgeFor(refreshTokenExpiresAt, clockSkewMs))
 
           // Iniciar worker
           get().initWorker()
@@ -581,7 +653,10 @@ export const useAuthStore = create<AuthStore>()(
                   break
 
                 case "SESSION_EXPIRED":
-                  get().endSession()
+                  // El worker sólo mira el reloj. Antes de cerrar, damos una
+                  // última oportunidad al backend: si el refresh token todavía
+                  // sirve, la sesión sigue; si no, `triggerRefresh` la termina.
+                  triggerRefresh()
                   break
 
                 default:
@@ -633,7 +708,11 @@ export const useAuthStore = create<AuthStore>()(
                 user: decodeUserFromToken(persisted.accessToken),
                 accessToken: persisted.accessToken,
                 accessTokenExpiresAt: persisted.accessTokenExpiresAt,
-                accessTokenRefreshAt: computeRefreshAt(persisted.accessToken, persisted.accessTokenExpiresAt),
+                accessTokenRefreshAt: computeRefreshAt(
+                  persisted.accessToken,
+                  persisted.accessTokenExpiresAt,
+                  current.clockSkewMs,
+                ),
                 refreshToken: persisted.refreshToken,
                 refreshTokenExpiresAt: persisted.refreshTokenExpiresAt,
               })
@@ -647,27 +726,35 @@ export const useAuthStore = create<AuthStore>()(
 
         // Enviar tiempos de expiración al worker
         const current = get()
+        const skew = current.clockSkewMs
         const refreshAt =
           current.accessTokenRefreshAt ||
-          (current.accessToken ? computeRefreshAt(current.accessToken, current.accessTokenExpiresAt) : 0)
+          (current.accessToken ? computeRefreshAt(current.accessToken, current.accessTokenExpiresAt, skew) : 0)
+
+        // El worker compara contra su propio `Date.now()`, así que le pasamos las
+        // fechas ya convertidas al reloj del equipo (server + desfase).
+        const toClientClock = (timestamp: number) => (timestamp > 0 ? timestamp + skew : 0)
 
         workerInstance?.postMessage({
           type: "SET_TOKEN_EXPIRATION",
           payload: {
-            accessTokenExpiresAt: current.accessTokenExpiresAt,
-            refreshTokenExpiresAt: current.refreshTokenExpiresAt,
-            refreshAt,
+            accessTokenExpiresAt: toClientClock(current.accessTokenExpiresAt),
+            refreshTokenExpiresAt: toClientClock(current.refreshTokenExpiresAt),
+            refreshAt: toClientClock(refreshAt),
           },
         })
 
         // Traza para poder verificar en consola cuándo se va a renovar
+        // (en hora del equipo, para que coincida con lo que ve el usuario)
         console.info(
           "[AuthStore] Sesión activa · access expira",
-          new Date(current.accessTokenExpiresAt).toLocaleString(),
+          new Date(toClientClock(current.accessTokenExpiresAt)).toLocaleString(),
           "· se renueva",
-          refreshAt ? new Date(refreshAt).toLocaleString() : "n/d",
+          refreshAt ? new Date(toClientClock(refreshAt)).toLocaleString() : "n/d",
           "· refresh token expira",
-          current.refreshTokenExpiresAt ? new Date(current.refreshTokenExpiresAt).toLocaleString() : "n/d",
+          current.refreshTokenExpiresAt
+            ? new Date(toClientClock(current.refreshTokenExpiresAt)).toLocaleString()
+            : "n/d",
         )
 
         // Si ya estamos dentro de la ventana (p. ej. la app estuvo cerrada un rato), renovar ya
@@ -719,23 +806,25 @@ export const useAuthStore = create<AuthStore>()(
       // Callback después de hidratar desde localStorage
       onRehydrateStorage: () => (state) => {
         if (state) {
-          const now = Date.now()
-
-          // Sólo cerramos si SABEMOS que el refresh token venció (> 0 y en el pasado).
-          // Un 0 significa "desconocido" y antes provocaba cierres injustificados.
-          if (state.refreshTokenExpiresAt > 0 && state.refreshTokenExpiresAt <= now) {
-            console.warn("[AuthStore] Stored refresh token expired, clearing session")
-            markSessionEndReason("expired")
-            state.logout()
-          } else if (state.isAuthenticated) {
+          // Ya no cerramos sesión acá comparando fechas contra el reloj del equipo:
+          // si el refresh token de verdad venció, el primer intento de renovación
+          // recibirá un 401 y `endSession()` se encargará con el motivo correcto.
+          if (state.isAuthenticated) {
             // Sesiones guardadas antes de este cambio no traen la ventana de renovación
             if (state.accessToken && !state.accessTokenRefreshAt) {
-              state.accessTokenRefreshAt = computeRefreshAt(state.accessToken, state.accessTokenExpiresAt)
+              state.accessTokenRefreshAt = computeRefreshAt(
+                state.accessToken,
+                state.accessTokenExpiresAt,
+                state.clockSkewMs,
+              )
             }
             // Renovar la cookie httpOnly: si caduca antes que el refresh token,
             // el layout del servidor redirige a /login-error con la sesión viva.
             if (state.accessToken) {
-              void updateServerCookie(state.accessToken, cookieMaxAgeFor(state.refreshTokenExpiresAt))
+              void updateServerCookie(
+                state.accessToken,
+                cookieMaxAgeFor(state.refreshTokenExpiresAt, state.clockSkewMs),
+              )
             }
             // Iniciar worker si hay sesión válida
             state.initWorker()

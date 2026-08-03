@@ -7,6 +7,9 @@ import type {
   ClientServicePlanCategorySummary,
   UpdateClientServicePlanDto,
 } from "@/lib/types/client-service-plan.types"
+import { buildFilters } from "@/lib/utils/query-filters"
+import { FilterOperator } from "@/lib/models/filterOperator"
+import { getQueryString } from "@/lib/utils/format"
 
 // --- Helpers de normalización ---
 
@@ -259,9 +262,17 @@ function extractSingleClientServicePlan(data: unknown): ClientServicePlan | null
 // --- Client Service Plan CRUD ---
 
 export async function getClientServicePlanByClientId(clientId: string): Promise<ClientServicePlan | null> {
-  // Use the same filter format the backend expects (field__EQ__value__AND)
+  // `clientId` es UUID en la entidad: sin el prefijo `UUID_` el backend responde
+  // 400 ("Cannot compare left expression of type 'java.util.UUID' with right
+  // expression of type 'java.lang.String'"). Se arma con `buildFilters` para no
+  // volver a perder el prefijo tipado.
+  const filters = buildFilters([
+    { field: "clientId", operator: FilterOperator.eq, value: clientId, type: "uuid" },
+    { field: "active", operator: FilterOperator.eq, value: true, type: "boolean" },
+  ])
+
   const response = await serviceGet<unknown>(
-    `/client-service-plan?page=0&pageSize=10&filters=clientId__EQ__${clientId}__AND,active__EQ__Boolean_true__AND`
+    `/client-service-plan?${getQueryString({ page: 0, pageSize: 10, filters })}`
   )
 
   if (response.status === 404) return null

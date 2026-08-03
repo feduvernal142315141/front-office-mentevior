@@ -10,7 +10,7 @@ export type FilterRule = {
   value: GenericFilterValue;
   operator?: string;
   logic?: "AND" | "OR";
-  type?: "string" | "number" | "boolean" | "uuid";
+  type?: "string" | "number" | "boolean" | "uuid" | "date";
 };
 
 export type SearchRule = {
@@ -62,6 +62,13 @@ export function buildFilters(
 
     if (rule.type === "uuid") {
       formattedValue = `UUID_${rule.value}`;
+      output.push(`${field}__${operator}__${formattedValue}__${logic}`);
+      continue;
+    }
+
+    // Fecha en `yyyy-MM-dd`, con el mismo prefijo tipado que UUID/Integer/Boolean
+    if (rule.type === "date") {
+      formattedValue = `Date_${rule.value}`;
       output.push(`${field}__${operator}__${formattedValue}__${logic}`);
       continue;
     }
