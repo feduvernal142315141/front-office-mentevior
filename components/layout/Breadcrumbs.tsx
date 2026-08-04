@@ -22,6 +22,7 @@ const SEGMENT_LABEL_MAP: Record<string, string> = {
   "service-log": "Service Log",
   "assessment": "Assessment",
   "behavior-plan": "Behavior Plan",
+  "clinical-options": "Clinical Options",
   "my-company": "Company Configuration",
   "my-profile": "My Profile",
   "manager": "Profile Management",

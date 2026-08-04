@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { NotebookPen, CalendarCheck, ChevronLeft, ChevronRight, Gauge, Users, Hospital, CalendarClock, ClipboardList, ClipboardCheck, TrendingUp, User, UserCog, Shield, Building2, BarChart3, FileSignature, FileText, FolderHeart, FolderOpen, FileCheck, UserPlus, ChevronDown, ChevronUp, Calendar, CreditCard } from "lucide-react"
+import { NotebookPen, CalendarCheck, ChevronLeft, ChevronRight, Gauge, Users, Hospital, CalendarClock, ClipboardList, ClipboardCheck, TrendingUp, User, UserCog, Shield, Building2, BarChart3, FileSignature, FileText, FolderHeart, FolderOpen, FileCheck, UserPlus, ChevronDown, ChevronUp, Calendar, CreditCard, Stethoscope } from "lucide-react"
 import Image from "next/image"
 import { useUi } from "@/lib/store/ui.store"
 import { cn } from "@/lib/utils"
@@ -38,7 +38,19 @@ export const ICON_MAP = {
   UserPlus,
   Calendar,
   CreditCard,
+  Stethoscope,
 } as const
+
+/**
+ * Una ruta pertenece a un ítem si es exactamente su href o cuelga de él.
+ *
+ * Con comparación exacta, estar en `/clients/123/edit` no marcaba "Clients" como
+ * activo ni desplegaba su padre. Antes casi no se notaba porque los módulos eran
+ * de primer nivel; ahora que todos son hijos, se nota siempre.
+ */
+function matchesRoute(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -86,7 +98,9 @@ export function Sidebar() {
     
     filteredNavItems.forEach((item) => {
       if (item.children) {
-        const isCurrentOrChild = pathname === item.href || item.children.some((child) => pathname === child.href)
+        const isCurrentOrChild =
+          matchesRoute(pathname, item.href) ||
+          item.children.some((child) => matchesRoute(pathname, child.href))
         if (isCurrentOrChild) {
           itemToExpand = item.href
         }
@@ -216,10 +230,10 @@ export function Sidebar() {
         <div className="flex flex-col gap-2">
           {filteredNavItems.map((item) => {
             const Icon = ICON_MAP[item.icon]
-            const isActive = pathname === item.href
+            const isActive = matchesRoute(pathname, item.href)
             const hasChildren = item.children && item.children.length > 0
             const isExpanded = expandedItems[item.href]
-            const isChildActive = hasChildren && item.children?.some((child) => pathname === child.href)
+            const isChildActive = hasChildren && item.children?.some((child) => matchesRoute(pathname, child.href))
 
             const childKeys = hasChildren ? item.children!.map((c) => c.href) : []
             const parentCompletion = hasChildren && hasCompletionData ? getMissingCount(childKeys) : null
@@ -424,7 +438,7 @@ export function Sidebar() {
                     >
                       <div className="flex flex-col gap-1 mt-1 ml-4 pl-4 border-l-2 border-slate-200">
                         {item.children?.map((child) => {
-                          const isChildItemActive = pathname === child.href
+                          const isChildItemActive = matchesRoute(pathname, child.href)
                           const childHasData = hasCompletionData && child.href in completionMap
                           const isChildComplete = childHasData ? isSectionComplete(child.href) : true
 

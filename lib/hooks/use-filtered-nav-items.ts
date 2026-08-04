@@ -64,6 +64,26 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
 }
 
 /**
+ * Padres visuales cuyos hijos NO cuelgan de su ruta.
+ *
+ * `Clinical Options` agrupa módulos que conservan sus URLs originales
+ * (`/clients`, `/users`…), así que no se pueden descubrir por prefijo como sí se
+ * hace con `/data-collection/*`. Se listan explícitamente.
+ */
+const VISUAL_PARENT_CHILDREN: Record<string, string[]> = {
+  "/clinical-options": [
+    "/clients",
+    "/users",
+    "/session-note",
+    "/schedules",
+    "/clinical-monthly",
+    "/monthly-supervisions",
+    "/service-log",
+    "/assessment",
+  ],
+}
+
+/**
  * Helper function to check if user has permission to any deep children routes
  * Deep children are routes like /data-collection/datasheets that are nested under /data-collection
  */
@@ -74,7 +94,15 @@ function hasDeepChildrenPermission(baseHref: string, permissionsObj: Record<stri
     const hrPerms = permissionsObj[PermissionModule.HR_DOCUMENTS] || 0
     return clinicalPerms > 0 || hrPerms > 0
   }
-  
+
+  const explicitChildren = VISUAL_PARENT_CHILDREN[baseHref]
+  if (explicitChildren) {
+    return explicitChildren.some((route) => {
+      const module = SIDEBAR_TO_PERMISSION_MAP[route]
+      return module ? (permissionsObj[module] || 0) > 0 : false
+    })
+  }
+
   // Get all routes that start with the baseHref
   const deepChildRoutes = Object.keys(SIDEBAR_TO_PERMISSION_MAP).filter(
     route => route.startsWith(baseHref + "/")

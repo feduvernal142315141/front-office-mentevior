@@ -60,6 +60,17 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
 }
 
 const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
+  // Padre visual sin permiso propio: sus hijos conservan sus URLs originales
+  "/clinical-options": [
+    "/clients",
+    "/users",
+    "/session-note",
+    "/schedules",
+    "/clinical-monthly",
+    "/monthly-supervisions",
+    "/service-log",
+    "/assessment",
+  ],
   "/my-company": [
     "/my-company/roles",
     "/my-company/account-profile",
@@ -168,15 +179,24 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     // Obtener el módulo de permisos basado en la ruta base
     const module = ROUTE_TO_PERMISSION_MAP[baseRoute]
+    const permissionsObj = permissionsToObject(user.permissions || [])
+
+    // Padre visual sin permiso propio (p. ej. /clinical-options): se accede si el
+    // usuario puede ver alguno de sus hijos. Sin esto caería en el "permitir por
+    // defecto" de abajo y quedaría abierto a cualquiera con sesión.
+    if (!module && PARENT_TO_CHILDREN_MAP[baseRoute]) {
+      return PARENT_TO_CHILDREN_MAP[baseRoute].some((childRoute) => {
+        const childModule = ROUTE_TO_PERMISSION_MAP[childRoute]
+        if (childModule) return (permissionsObj[childModule] || 0) > 0
+        return hasDeepChildrenPermission(childRoute, permissionsObj)
+      })
+    }
 
     // Si la ruta no está en el mapa, permitir acceso (rutas sin restricción)
     if (!module) {
       console.warn(`No permission mapping found for route: ${baseRoute}`)
       return true
     }
-
-    // Verificar permisos
-    const permissionsObj = permissionsToObject(user.permissions || [])
     
     // 1. Check parent permission
     const modulePermissions = permissionsObj[module] || 0

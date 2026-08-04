@@ -3,7 +3,13 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/", "/login-error", "/set-cookie"];
 
-// Rutas de la aplicación autenticada que NO deben ser interceptadas
+/**
+ * Rutas de la aplicación autenticada que NO deben ser interceptadas.
+ *
+ * ⚠️ Al agregar una ruta de primer nivel en `app/(app)/`, hay que agregarla acá
+ * también. Si falta, el proxy la confunde con un identificador de compañía y
+ * redirige a `/<ruta>/login`.
+ */
 const APP_ROUTES = [
   "/dashboard",
   "/users",
@@ -20,6 +26,7 @@ const APP_ROUTES = [
   "/change-password",
   "/clinical-documents",
   "/clinical-monthly",
+  "/clinical-options",
   "/data-collection",
   "/hr-documents",
   "/monthly-supervisions",
@@ -47,23 +54,27 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  const token = req.cookies.get("mv_fo_token");
   const segments = pathname.split('/').filter(Boolean);
-  
-  // Only redirect if it's a single segment (companyIdentifier) and not an app route
-  if (segments.length === 1) {
+
+  // Un segmento suelto se interpreta como identificador de compañía y se manda
+  // al login… pero eso sólo tiene sentido para una visita SIN sesión.
+  //
+  // Con sesión activa nunca se redirige: si la ruta faltaba en APP_ROUTES, antes
+  // terminabas en `/<ruta>/login` pidiendo la config de una compañía que no
+  // existe. Este chequeo corta esa clase de error de raíz, sin depender de que
+  // la lista esté completa.
+  if (segments.length === 1 && !token) {
     const companyIdentifier = segments[0];
-    
+
     const url = req.nextUrl.clone();
     url.pathname = `/${companyIdentifier}/login`;
-    
+
     return NextResponse.redirect(url);
   }
 
-  const token = req.cookies.get("mv_fo_token");
-
   if (!token) {
     console.warn("No token in cookie → letting client-side auth handle it.");
-    return NextResponse.next();
   }
 
   return NextResponse.next();

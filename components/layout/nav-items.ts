@@ -24,52 +24,48 @@ export const navItems: NavItem[] = [
     section: "main",
   },
   {
-    label: "Clients",
-    href: "/clients",
-    icon: "Users",
+    // Padre visual: no tiene permiso propio, se muestra si el usuario puede ver
+    // alguno de sus hijos. Los hijos conservan sus URLs de siempre (`/clients`,
+    // `/users`…) para no romper enlaces ni rutas existentes — mismo criterio que
+    // ya usa Company Configuration con `/agreements` y `/applicants`.
+    label: "Clinical Options",
+    href: "/clinical-options",
+    icon: "Stethoscope",
     section: "main",
-  },
-  {
-    label: "Users/Providers",
-    href: "/users",
-    icon: "UserCog",
-    section: "main",
-  },
-  {
-    label: "Session Note",
-    href: "/session-note",
-    icon: "NotebookPen",
-    section: "main",
-  },
-  {
-    label: "Schedules",
-    href: "/schedules",
-    icon: "CalendarCheck",
-    section: "main",
-  },
-  {
-    label: "Clinical Monthly",
-    href: "/clinical-monthly",
-    icon: "Hospital",
-    section: "main",
-  },
-  {
-    label: "Monthly Supervisions",
-    href: "/monthly-supervisions",
-    icon: "CalendarClock",
-    section: "main",
-  },
-  {
-    label: "Service Log",
-    href: "/service-log",
-    icon: "ClipboardList",
-    section: "main",
-  },
-  {
-    label: "Assessment",
-    href: "/assessment",
-    icon: "ClipboardCheck",
-    section: "main",
+    children: [
+      {
+        label: "Clients",
+        href: "/clients",
+      },
+      {
+        label: "Users/Providers",
+        href: "/users",
+      },
+      {
+        label: "Session Note",
+        href: "/session-note",
+      },
+      {
+        label: "Schedules",
+        href: "/schedules",
+      },
+      {
+        label: "Clinical Monthly",
+        href: "/clinical-monthly",
+      },
+      {
+        label: "Monthly Supervisions",
+        href: "/monthly-supervisions",
+      },
+      {
+        label: "Service Log",
+        href: "/service-log",
+      },
+      {
+        label: "Assessment",
+        href: "/assessment",
+      },
+    ],
   },
   // {
   //   label: "Behavior Plan",
