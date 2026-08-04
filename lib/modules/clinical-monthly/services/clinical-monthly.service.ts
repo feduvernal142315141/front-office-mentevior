@@ -56,8 +56,8 @@ export async function getClinicalMonthlyById(id: string): Promise<ClinicalMonthl
 }
 
 /**
- * Crea el registro `ClinicalMonthly` con sus textos por item y devuelve su id.
- * Ya NO genera el PDF: para verlo hay que pedirlo después con
+ * Crea el registro `ClinicalMonthly` (cliente, período y `summary`) y devuelve
+ * su id. Ya NO genera el PDF: para verlo hay que pedirlo después con
  * `getClinicalMonthlyPdfUrl(id)`.
  *
  * El endpoint se sigue llamando `/preview` por compatibilidad, pero persiste.
@@ -74,7 +74,7 @@ export async function createClinicalMonthly(data: SaveClinicalMonthlyDto): Promi
   return extractId(response.data, "create")
 }
 
-/** Actualiza la cabecera y sincroniza los textos por item (crea, actualiza y borra) */
+/** Actualiza cliente, período y `summary` del reporte */
 export async function updateClinicalMonthly(
   id: string,
   data: SaveClinicalMonthlyDto,

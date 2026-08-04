@@ -1,5 +1,3 @@
-import type { ClinicalMonthlyItemInput } from "@/lib/types/clinical-monthly.types"
-
 /** El backend acota el reporte a 12 meses */
 export const MAX_MONTH_RANGE = 12
 
@@ -44,25 +42,6 @@ export function validateMonthRange(startMonthYear: string, endMonthYear: string)
   }
   if (length > MAX_MONTH_RANGE) {
     return `The range cannot exceed ${MAX_MONTH_RANGE} months`
-  }
-
-  return null
-}
-
-/**
- * El backend rechaza items repetidos. Devuelve null si no hay duplicados.
- */
-export function validateUniqueItems(items: ClinicalMonthlyItemInput[]): string | null {
-  const seen = new Set<string>()
-
-  for (const item of items) {
-    if (!item.clientServicePlanCategoryItemId) {
-      return "Every item must reference a Client Service Plan item"
-    }
-    if (seen.has(item.clientServicePlanCategoryItemId)) {
-      return "An item cannot be sent more than once"
-    }
-    seen.add(item.clientServicePlanCategoryItemId)
   }
 
   return null

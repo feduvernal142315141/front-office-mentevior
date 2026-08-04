@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { SaveClinicalMonthlyDto } from "@/lib/types/clinical-monthly.types"
 import { createClinicalMonthly, updateClinicalMonthly } from "../services/clinical-monthly.service"
-import { validateMonthRange, validateUniqueItems } from "../utils/month-range"
+import { validateMonthRange } from "../utils/month-range"
 
 interface UseSaveClinicalMonthlyOptions {
   /** Id del reporte cuando se está editando uno existente */
@@ -43,12 +43,10 @@ export function useSaveClinicalMonthly(
 
   const save = useCallback(async (data: SaveClinicalMonthlyDto): Promise<string | null> => {
     const rangeError = validateMonthRange(data.startMonthYear, data.endMonthYear)
-    const itemsError = rangeError ? null : validateUniqueItems(data.items ?? [])
-    const validationError = rangeError ?? itemsError
 
-    if (validationError) {
-      setError(validationError)
-      toast.error("Check the report range", { description: validationError })
+    if (rangeError) {
+      setError(rangeError)
+      toast.error("Check the report range", { description: rangeError })
       return null
     }
 

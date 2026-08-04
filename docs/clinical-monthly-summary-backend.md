@@ -21,11 +21,40 @@ Guía que se muestra dentro del campo nuevo (mismo formato que las session notes
 Es decir, el `Summary` cumple el rol que antes repartían `monthlyDataProgress` y
 `commentsProcedureChange`, pero una sola vez por reporte en lugar de una por item.
 
-## Lo que se pide a backend
+## Estado: ✅ implementado en backend (2026-08-04)
+
+La propiedad se llama **`summary`** en todo el contrato. El nombre anterior
+(`sumary`, con el typo) ya no forma parte del JSON. El valor se guarda como texto
+en `clinical_monthly.summary` y se muestra en `Document information > Summary`
+dentro del PDF.
+
+`ClinicalMonthlyItemData` quedó retirado: el reporte tiene un único `summary` en
+el registro padre y los items ya no reciben textos.
+
+| Endpoint | Cambio |
+| --- | --- |
+| `GET /reports/clinical-monthly` | Cada registro devuelve `summary`. |
+| `POST /reports/clinical-monthly/preview` | Recibe `summary`. |
+| `GET /reports/clinical-monthly/{clinicalMonthlyId}` | Devuelve `summary` en la raíz. |
+| `PUT /reports/clinical-monthly/{clinicalMonthlyId}` | Recibe y actualiza `summary`. |
+| `GET /reports/clinical-monthly/preview?clinicalMonthlyId={id}` | El PDF usa el `summary` persistido. |
+
+### Migración de base de datos
+
+Ejecutar manualmente durante el despliegue
+`scripts/sql/2026-08-04_remove_clinical_monthly_item_data_add_summary.sql`:
+renombra `sumary` → `summary`, conserva el valor si ambas columnas existen, crea
+`summary TEXT` si no existe ninguna, y elimina `clinical_monthly_item_data`.
+
+> ⚠️ **Orden de despliegue: backend + migración primero.** El front manda
+> `summary` siempre; contra un backend sin migrar el campo se ignora en silencio
+> y el usuario ve "Clinical Monthly created" con el texto perdido, sin error.
+
+## Contrato
 
 ### `POST /reports/clinical-monthly/preview` y `PUT /reports/clinical-monthly/{id}`
 
-Aceptar y persistir un campo `summary` de nivel raíz:
+Reciben y persisten un campo `summary` de nivel raíz:
 
 ```json
 {
@@ -36,12 +65,14 @@ Aceptar y persistir un campo `summary` de nivel raíz:
 }
 ```
 
-- Tipo: `string`, opcional, sin tope de longitud definido por ahora.
-- El front lo manda **siempre** (string vacío si no se escribió nada).
+- Tipo: `string`, sin tope de longitud definido por ahora.
+- El front lo manda **siempre y con contenido**: el formulario no deja guardar ni
+  previsualizar con el campo vacío, y lo envía trimmeado. O sea, nunca llega `""`
+  ni sólo espacios.
 
 ### `GET /reports/clinical-monthly/{id}`
 
-Devolver `summary` en el detalle, para precargarlo al editar:
+Devuelve `summary` en el detalle, que es de donde se precarga al editar:
 
 ```json
 {
@@ -52,10 +83,29 @@ Devolver `summary` en el detalle, para precargarlo al editar:
 }
 ```
 
+Los items de `categories[].items[]` ya **no** incluyen `monthlyDataProgress` ni
+`commentsProcedureChange`.
+
+### `GET /reports/clinical-monthly` (listado)
+
+Cada elemento del response paginado incluye `summary`:
+
+```json
+{
+  "id": "...",
+  "clientId": "...",
+  "clientName": "Example Client",
+  "startDate": "2026-05-01",
+  "endDate": "2026-07-31",
+  "summary": "Clinical summary for the selected period.",
+  "active": true
+}
+```
+
 ### PDF
 
-Que el `summary` salga en el documento, en el lugar donde antes aparecían los
-textos por item.
+El `summary` sale en `Document information > Summary`, en el lugar donde antes
+aparecían los textos por item.
 
 ## Lo que NO cambia
 
@@ -64,17 +114,23 @@ textos por item.
 - Las validaciones actuales se mantienen: rango obligatorio, `endMonthYear >=
   startMonthYear` y tope de 12 meses. El front las sigue comprobando antes de llamar
   (`lib/modules/clinical-monthly/utils/month-range.ts`).
-- El endpoint sigue aceptando `items[]`; simplemente el front ya no los manda.
+## Resuelto
 
-## ⚠️ Dos cosas a confirmar
+- **`items[]`**: `ClinicalMonthlyItemData` está retirado del backend, así que el
+  tipo `ClinicalMonthlyItemInput` y la clave `items` del DTO se eliminaron del
+  front. Ya no hay riesgo de borrado accidental al editar reportes viejos.
+- **`summary` en el DTO**: ahora es requerido (`summary: string`), acorde a que
+  el formulario no deja guardar sin él.
 
-1. **¿El `PUT` sin `items` borra los items existentes?**
-   El front **omite la clave** (no manda `items: []`) justamente para no
-   dispararlo. Hay que confirmar que "clave ausente" se trate como *no tocar* y
-   no como *borrar todo* — si no, un reporte viejo perdería sus textos al
-   editarlo.
+## ⚠️ Pendiente de confirmar con backend
 
-2. **¿El endpoint rechaza campos desconocidos?**
-   Si la validación es estricta, mandar `summary` antes de que exista en el
-   backend haría fallar el guardado. En ese caso avisen y lo dejamos detrás de un
-   flag hasta que esté desplegado.
+1. **¿El listado sigue devolviendo `createAt`?**
+   El ejemplo del contrato del 2026-08-04 no lo incluye, pero la tabla tiene una
+   columna que lo pinta (`useClinicalMonthlyTable.tsx`). Se tipó como opcional y
+   la celda cae en `—` cuando no llega, así que no rompe; si el campo
+   desapareció de verdad, hay que quitar la columna.
+
+2. **¿El detalle conserva `recipientName`, `payer`, `providerName` y `clientName`?**
+   El ejemplo del contrato sólo muestra lo que cambió. El formulario de edición
+   los lee para las tarjetas de Recipient y Provider; si se fueron, esa cabecera
+   queda vacía (cae en `—`, no crashea).
