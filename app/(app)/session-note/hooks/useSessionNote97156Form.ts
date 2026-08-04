@@ -18,6 +18,7 @@ import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use
 import { use97156InterventionCatalog } from "@/lib/modules/appointment-notes/hooks/use-97156-intervention-catalog"
 import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
 import { getAppointmentById } from "@/lib/modules/schedules/services/appointments.service"
+import { validateNarrativeLength } from "@/lib/utils/narrative-length"
 import { CLIENT_PARTICIPANT_ID } from "./useSessionNoteForm"
 
 const EMPTY_FORM: SessionNote97156FormData = {
@@ -208,7 +209,8 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
       if (formData.caregiverIds.length === 0) newErrors.caregiverIds = "Select at least one caregiver"
       if (formData.interventionIds.length === 0) newErrors.interventionIds = "Select at least one intervention"
       if (!formData.goals.trim()) newErrors.goals = "This field is required"
-      if (!formData.sessionSummary.trim()) newErrors.sessionSummary = "This field is required"
+      const summaryError = validateNarrativeLength(formData.sessionSummary)
+      if (summaryError) newErrors.sessionSummary = summaryError
     }
 
     // Validate data collection items

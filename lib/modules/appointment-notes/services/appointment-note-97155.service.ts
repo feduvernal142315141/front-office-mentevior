@@ -94,6 +94,16 @@ export async function getAppointmentNote97155(
     }
   }
 
+  // Parse supervisionProvider — el técnico supervisado; viene null si el
+  // appointment no tiene sub-event de supervisión activo
+  let supervisionProvider: AppointmentNote97155["supervisionProvider"] = null
+  if (data.supervisionProvider && typeof data.supervisionProvider === "object") {
+    const sp = data.supervisionProvider as Record<string, unknown>
+    const name = String(sp.name ?? "")
+    const credential = String(sp.credential ?? "")
+    if (name || credential) supervisionProvider = { name, credential }
+  }
+
   // Parse recipient
   let recipient: AppointmentNote97155["recipient"] = null
   if (data.recipient && typeof data.recipient === "object") {
@@ -164,6 +174,7 @@ export async function getAppointmentNote97155(
       : [],
     // Context
     provider,
+    supervisionProvider,
     recipient,
     serviceDetails,
     billingCodes: typeof data.billingCodes === "string" ? data.billingCodes : null,

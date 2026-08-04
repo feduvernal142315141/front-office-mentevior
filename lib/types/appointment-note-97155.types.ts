@@ -52,6 +52,15 @@ export interface AppointmentNote97155 {
     mpi: string
     sign: string
   } | null
+  /**
+   * Provider del sub-event de supervisión, es decir el técnico que recibió la
+   * dirección activa. `null` cuando el appointment no tiene sub-event activo.
+   * Con esto se precarga "Technician's Name and Credentials".
+   */
+  supervisionProvider: {
+    name: string
+    credential: string
+  } | null
   recipient: {
     name: string
     dateOfBirth: string

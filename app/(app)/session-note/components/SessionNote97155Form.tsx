@@ -7,18 +7,22 @@ import {
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
+import { SESSION_NOTE_GUIDANCE } from "@/lib/constants/session-note-guidance"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
+import { formatHoursAndUnits, splitBillingCodesAndUnits } from "@/lib/utils/session-note-units"
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
 import { CLIENT_PARTICIPANT_ID } from "../hooks/useSessionNoteForm"
 import { deriveNoteStatusInfo } from "../hooks/useNoteStatus"
 import type { SessionNote97155FormData } from "@/lib/types/appointment-note-97155.types"
 import type { CatalogItem } from "@/lib/types/appointment-note-97155.types"
 import type { ParticipantCatalogItem, NoteStatus } from "@/lib/types/appointment-note.types"
+
+const GUIDANCE_97155 = SESSION_NOTE_GUIDANCE["97155"]
 
 interface SessionNote97155FormProps {
   formData: SessionNote97155FormData
@@ -77,6 +81,10 @@ export function SessionNote97155Form({
 
   const participantItems = participantCatalog.map((p) => ({ id: p.id, name: p.name }))
 
+  // Las unidades llegan pegadas al string de billing codes; en Service Details
+  // van junto a las horas, no junto al código.
+  const { label: billingCodeLabel, units: billingCodeUnits } = splitBillingCodesAndUnits(billingCodes)
+
   return (
     <div className="space-y-5 pb-32">
       {/* ─── Context Header: Recipient + Provider ─── */}
@@ -130,12 +138,12 @@ export function SessionNote97155Form({
               <span className="text-sm font-medium text-slate-800">{serviceDetails?.timeInOut ?? "—"}</span>
             </div>
             <div>
-              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Hours</span>
-              <span className="text-sm font-medium text-slate-800">{serviceDetails?.hours ?? "—"}</span>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Hours / Units</span>
+              <span className="text-sm font-medium text-slate-800">{formatHoursAndUnits(serviceDetails?.hours, billingCodeUnits)}</span>
             </div>
             <div>
               <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Billing Codes</span>
-              <span className="text-sm font-medium text-slate-800">{billingCodes ?? "—"}</span>
+              <span className="text-sm font-medium text-slate-800">{billingCodeLabel || "—"}</span>
             </div>
           </div>
         </Section>
@@ -243,15 +251,20 @@ export function SessionNote97155Form({
                 </RadioGroup>
                 <FieldError message={errors.faceToFaceProtocolId} />
               </div>
-              <div className="pl-4">
+              <div className="pl-4" data-field="faceToFaceProtocolNarrative">
                 <FloatingTextarea
                   label="Narrative"
                   value={formData.faceToFaceProtocolNarrative}
                   onChange={(v) => updateField("faceToFaceProtocolNarrative", v)}
                   onBlur={() => {}}
-                  rows={6}
+                  guidance={GUIDANCE_97155.faceToFaceProtocolNarrative}
+                  rows={8}
+                  showLengthCounter
                   disabled={formDisabled}
+                  hasError={!!errors.faceToFaceProtocolNarrative}
+                  required
                 />
+                <FieldError message={errors.faceToFaceProtocolNarrative} />
               </div>
             </div>
           )}
@@ -283,15 +296,20 @@ export function SessionNote97155Form({
                 />
                 <FieldError message={errors.protocolAdjustmentIds} />
               </div>
-              <div className="pl-4">
+              <div className="pl-4" data-field="adjustmentsNarrative">
                 <FloatingTextarea
                   label="Narrative"
                   value={formData.adjustmentsNarrative}
                   onChange={(v) => updateField("adjustmentsNarrative", v)}
                   onBlur={() => {}}
-                  rows={6}
+                  guidance={GUIDANCE_97155.adjustmentsNarrative}
+                  rows={8}
+                  showLengthCounter
                   disabled={formDisabled}
+                  hasError={!!errors.adjustmentsNarrative}
+                  required
                 />
+                <FieldError message={errors.adjustmentsNarrative} />
               </div>
             </div>
           )}
@@ -351,15 +369,20 @@ export function SessionNote97155Form({
                 </RadioGroup>
                 <FieldError message={errors.qhpImplementationId} />
               </div>
-              <div className="pl-4">
+              <div className="pl-4" data-field="qhpNarrative">
                 <FloatingTextarea
                   label="Narrative"
                   value={formData.qhpNarrative}
                   onChange={(v) => updateField("qhpNarrative", v)}
                   onBlur={() => {}}
-                  rows={6}
+                  guidance={GUIDANCE_97155.qhpNarrative}
+                  rows={8}
+                  showLengthCounter
                   disabled={formDisabled}
+                  hasError={!!errors.qhpNarrative}
+                  required
                 />
+                <FieldError message={errors.qhpNarrative} />
               </div>
             </div>
           )}
@@ -403,15 +426,20 @@ export function SessionNote97155Form({
                 />
                 <FieldError message={errors.activeDirectionIds} />
               </div>
-              <div className="pl-4">
+              <div className="pl-4" data-field="activeDirectionNarrative">
                 <FloatingTextarea
                   label="Narrative"
                   value={formData.activeDirectionNarrative}
                   onChange={(v) => updateField("activeDirectionNarrative", v)}
                   onBlur={() => {}}
-                  rows={6}
+                  guidance={GUIDANCE_97155.activeDirectionNarrative}
+                  rows={8}
+                  showLengthCounter
                   disabled={formDisabled}
+                  hasError={!!errors.activeDirectionNarrative}
+                  required
                 />
+                <FieldError message={errors.activeDirectionNarrative} />
               </div>
             </div>
           )}

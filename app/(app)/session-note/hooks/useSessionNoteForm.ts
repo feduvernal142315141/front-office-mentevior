@@ -17,6 +17,7 @@ import { useTeachingMethodCatalog } from "@/lib/modules/appointment-notes/hooks/
 import { useInterventionCatalogs } from "@/lib/modules/appointment-notes/hooks/use-intervention-catalogs"
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
+import { validateNarrativeLength } from "@/lib/utils/narrative-length"
 
 export const CLIENT_PARTICIPANT_ID = "client-fixed"
 
@@ -190,7 +191,8 @@ export function useSessionNoteForm({ appointmentId }: UseSessionNoteFormProps) {
       if (!formData.medicalConcerns.trim()) newErrors.medicalConcerns = "This field is required"
       if (formData.antecedentInterventionIds.length === 0) newErrors.antecedentInterventionIds = "Select at least one intervention"
       if (formData.consequenceInterventionIds.length === 0) newErrors.consequenceInterventionIds = "Select at least one intervention"
-      if (!formData.sessionSummary.trim()) newErrors.sessionSummary = "This field is required"
+      const summaryError = validateNarrativeLength(formData.sessionSummary)
+      if (summaryError) newErrors.sessionSummary = summaryError
     }
 
     // Validate that all data collection items have a value

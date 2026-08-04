@@ -11,7 +11,7 @@ import {
   getAppointmentBillingCodeLabel,
   getCalendarEventTypeLabel,
   getEventColor,
-  formatAppointmentUnits,
+  formatAppointmentHoursAndUnits,
 } from "@/lib/modules/schedules/utils/schedule-display"
 import { canHaveInlineSupervision } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
 import { cn } from "@/lib/utils"
@@ -54,7 +54,7 @@ export function AppointmentCard({
   const eventLabel = getCalendarEventTypeLabel(eventType)
   const billingCode = getAppointmentBillingCodeLabel(appointment)
   const locationLabel = appointment.addressLabel?.trim() || appointment.location
-  const units = formatAppointmentUnits(appointment)
+  const hoursAndUnits = formatAppointmentHoursAndUnits(appointment)
   const showPeople = viewMode === "general"
   const clientName = appointment.clientName?.trim() || ""
   const hasSupervision = !!appointment.supervision
@@ -148,10 +148,10 @@ export function AppointmentCard({
             {eventLabel}
           </p>
 
-          {/* Row 3: Billing code (units) | Location */}
+          {/* Row 3: Billing code · hours · units | Location */}
           <p className="text-[10px] text-gray-500">
             {billingCode}
-            {units != null ? ` (${units})` : ""}
+            {hoursAndUnits ? ` · ${hoursAndUnits}` : ""}
             {locationLabel ? ` | ${locationLabel}` : ""}
           </p>
 

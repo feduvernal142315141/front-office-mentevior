@@ -51,6 +51,19 @@ export interface SaveClinicalMonthlyDto {
   startMonthYear: string
   /** Mes/año final en formato `MM/yyyy` */
   endMonthYear: string
+  /**
+   * Comentario único del reporte: cambios de procedimiento y/o progreso de la
+   * data collection. Reemplaza a los textos por item —el resto del contenido lo
+   * arma el PDF desde el Service Plan.
+   *
+   * ⚠️ Campo nuevo, **pendiente de que backend lo acepte y lo persista**.
+   * Ver `docs/clinical-monthly-summary-backend.md`.
+   */
+  summary?: string
+  /**
+   * @deprecated El formulario ya no captura textos por item. Se mantiene en el
+   * tipo porque el endpoint los sigue aceptando y el detalle los devuelve.
+   */
   items?: ClinicalMonthlyItemInput[]
   // Sin `providerId`: el provider del reporte es el usuario logueado que lo crea,
   // así que el backend lo resuelve del token y no se envía desde el front.
@@ -126,6 +139,8 @@ export interface ClinicalMonthlyDetail {
   recipientName: string
   providerName: string
   payer: string
+  /** Comentario único del reporte. Pendiente de backend, igual que en el DTO */
+  summary?: string
   months: ClinicalMonthlyMonth[]
   categories: ClinicalMonthlyCategory[]
   [key: string]: unknown

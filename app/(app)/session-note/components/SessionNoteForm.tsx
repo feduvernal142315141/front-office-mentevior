@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
+import { SESSION_NOTE_GUIDANCE } from "@/lib/constants/session-note-guidance"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
@@ -24,6 +25,7 @@ import type {
   ParticipantCatalogItem,
 } from "@/lib/types/appointment-note.types"
 import { cn } from "@/lib/utils"
+import { formatHoursAndUnits, splitBillingCodesAndUnits } from "@/lib/utils/session-note-units"
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
 import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
 import { CLIENT_PARTICIPANT_ID } from "../hooks/useSessionNoteForm"
@@ -106,6 +108,10 @@ export function SessionNoteForm({
 
   const participantItems = participantCatalog.map((p) => ({ id: p.id, name: p.name }))
 
+  // Las unidades llegan pegadas al string de billing codes; en Service Details
+  // van junto a las horas, no junto al código.
+  const { label: billingCodeLabel, units: billingCodeUnits } = splitBillingCodesAndUnits(billingCodes)
+
   return (
     <div className="space-y-5 pb-32">
       {/* ─── Context Header: Recipient + Provider ─── */}
@@ -159,12 +165,12 @@ export function SessionNoteForm({
               <span className="text-sm font-medium text-slate-800">{serviceDetails?.timeInOut ?? "—"}</span>
             </div>
             <div>
-              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Hours</span>
-              <span className="text-sm font-medium text-slate-800">{serviceDetails?.hours ?? "—"}</span>
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Hours / Units</span>
+              <span className="text-sm font-medium text-slate-800">{formatHoursAndUnits(serviceDetails?.hours, billingCodeUnits)}</span>
             </div>
             <div>
               <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Billing Codes</span>
-              <span className="text-sm font-medium text-slate-800">{billingCodes ?? "—"}</span>
+              <span className="text-sm font-medium text-slate-800">{billingCodeLabel || "—"}</span>
             </div>
           </div>
         </Section>
@@ -297,7 +303,7 @@ export function SessionNoteForm({
       {/* ─── Row 4: Session Summary (full width) ─── */}
       <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
         <div data-field="sessionSummary">
-          <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} rows={20} disabled={formDisabled} hasError={!!errors.sessionSummary} required />
+          <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} guidance={SESSION_NOTE_GUIDANCE["97153"].sessionSummary} rows={20} showLengthCounter disabled={formDisabled} hasError={!!errors.sessionSummary} required />
           <FieldError message={errors.sessionSummary} />
         </div>
       </Section>

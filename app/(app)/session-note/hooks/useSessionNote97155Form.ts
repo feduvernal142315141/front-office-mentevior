@@ -12,6 +12,7 @@ import { useAppointmentNote97155Mutation } from "@/lib/modules/appointment-notes
 import { useModalityCatalog } from "@/lib/modules/appointment-notes/hooks/use-modality-catalog"
 import { useParticipantCatalog } from "@/lib/modules/appointment-notes/hooks/use-participant-catalog"
 import { use97155Catalogs } from "@/lib/modules/appointment-notes/hooks/use-97155-catalogs"
+import { validateNarrativeLength } from "@/lib/utils/narrative-length"
 import { CLIENT_PARTICIPANT_ID } from "./useSessionNoteForm"
 
 const EMPTY_FORM: SessionNote97155FormData = {
@@ -36,6 +37,21 @@ const EMPTY_FORM: SessionNote97155FormData = {
   activeDirectionNarrative: "",
 }
 
+/**
+ * "Technician's Name and Credentials" describe al técnico que recibió la dirección
+ * activa, que es justamente el provider del sub-event de supervisión. El backend lo
+ * resuelve en `supervisionProvider`, así que se usa para precargar el campo.
+ */
+function formatSupervisionProvider(
+  supervisionProvider: AppointmentNote97155["supervisionProvider"],
+): string {
+  if (!supervisionProvider) return ""
+  return [supervisionProvider.name, supervisionProvider.credential]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ")
+}
+
 function noteToFormData(note: AppointmentNote97155): SessionNote97155FormData {
   return {
     noteId: note.id,
@@ -54,7 +70,9 @@ function noteToFormData(note: AppointmentNote97155): SessionNote97155FormData {
     qhpImplementationId: note.qhpImplementation?.id ?? "",
     qhpNarrative: note.qhpNarrative,
     activeDirectionActivitiesShow: note.activeDirectionActivitiesShow,
-    technicianNameAndCredentials: note.technicianNameAndCredentials,
+    // Lo ya guardado manda; el provider supervisado sólo rellena el campo vacío
+    technicianNameAndCredentials:
+      note.technicianNameAndCredentials || formatSupervisionProvider(note.supervisionProvider),
     activeDirectionIds: note.activeDirections.map((d) => d.id),
     activeDirectionNarrative: note.activeDirectionNarrative,
   }
@@ -112,14 +130,29 @@ export function useSessionNote97155Form({ appointmentId }: UseSessionNote97155Fo
 
   const updateField = useCallback(
     <K extends keyof SessionNote97155FormData>(field: K, value: SessionNote97155FormData[K]) => {
-      setFormData((prev) => ({ ...prev, [field]: value }))
+      // Encender "Active direction" recupera al técnico supervisado si el campo quedó
+      // vacío: es la forma de recuperarlo después de borrarlo a mano.
+      const isTurningOnActiveDirection = field === "activeDirectionActivitiesShow" && value === true
+      const technicianPrefill = isTurningOnActiveDirection
+        ? formatSupervisionProvider(note?.supervisionProvider ?? null)
+        : ""
+
+      setFormData((prev) => {
+        const next = { ...prev, [field]: value }
+        if (technicianPrefill && !next.technicianNameAndCredentials.trim()) {
+          next.technicianNameAndCredentials = technicianPrefill
+        }
+        return next
+      })
       setErrors((prev) => {
         const next = { ...prev }
         delete next[field as string]
+        // La sección se acaba de mostrar/ocultar: un error viejo del técnico ya no aplica
+        if (field === "activeDirectionActivitiesShow") delete next.technicianNameAndCredentials
         return next
       })
     },
-    [],
+    [note],
   )
 
   const handleSubmit = useCallback(async () => {
@@ -136,19 +169,28 @@ export function useSessionNote97155Form({ appointmentId }: UseSessionNote97155Fo
       if (!formData.reasonCaregiverNotPresent.trim()) newErrors.reasonCaregiverNotPresent = "This field is required"
       if (!formData.medicalConcerns.trim()) newErrors.medicalConcerns = "This field is required"
 
-      // Conditional validation for toggle sections
+      // Conditional validation for toggle sections.
+      // El narrative sólo se exige cuando su sección está encendida.
       if (formData.faceToFaceProtocolShow) {
         if (!formData.faceToFaceProtocolId) newErrors.faceToFaceProtocolId = "Select a protocol observation outcome"
+        const narrativeError = validateNarrativeLength(formData.faceToFaceProtocolNarrative)
+        if (narrativeError) newErrors.faceToFaceProtocolNarrative = narrativeError
       }
       if (formData.protocolAdjustmentsShow) {
         if (formData.protocolAdjustmentIds.length === 0) newErrors.protocolAdjustmentIds = "Select at least one adjustment"
+        const narrativeError = validateNarrativeLength(formData.adjustmentsNarrative)
+        if (narrativeError) newErrors.adjustmentsNarrative = narrativeError
       }
       if (formData.qhpImplementationShow) {
         if (!formData.qhpImplementationId) newErrors.qhpImplementationId = "Select a QHP implementation option"
+        const narrativeError = validateNarrativeLength(formData.qhpNarrative)
+        if (narrativeError) newErrors.qhpNarrative = narrativeError
       }
       if (formData.activeDirectionActivitiesShow) {
         if (!formData.technicianNameAndCredentials.trim()) newErrors.technicianNameAndCredentials = "This field is required"
         if (formData.activeDirectionIds.length === 0) newErrors.activeDirectionIds = "Select at least one activity"
+        const narrativeError = validateNarrativeLength(formData.activeDirectionNarrative)
+        if (narrativeError) newErrors.activeDirectionNarrative = narrativeError
       }
     }
 

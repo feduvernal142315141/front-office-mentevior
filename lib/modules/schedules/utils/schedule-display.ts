@@ -36,6 +36,28 @@ export function formatAppointmentUnits(appointment: Appointment): number | null 
   return Number(units)
 }
 
+/**
+ * Duración de la cita en horas con 2 decimales, calculada del rango real.
+ * Es el mismo número que la session note muestra como "Hours" (unidades ÷ 4).
+ */
+export function formatAppointmentHours(appointment: Appointment): number | null {
+  const ms = parseISO(appointment.endsAt).getTime() - parseISO(appointment.startsAt).getTime()
+  if (!Number.isFinite(ms) || ms <= 0) return null
+  return Math.round((ms / 3_600_000) * 100) / 100
+}
+
+/** "2.07 hrs · 8.27 units" — omite la parte que no se pueda calcular */
+export function formatAppointmentHoursAndUnits(appointment: Appointment): string {
+  const hours = formatAppointmentHours(appointment)
+  const units = formatAppointmentUnits(appointment)
+  return [
+    hours != null ? `${hours} hrs` : "",
+    units != null ? `${units} units` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ")
+}
+
 export function formatAppointmentTimeRange(appointment: Appointment): string {
   const units = formatAppointmentUnits(appointment)
   const timeRange = `${formatTime(appointment.startsAt)} - ${formatTime(appointment.endsAt)}`
