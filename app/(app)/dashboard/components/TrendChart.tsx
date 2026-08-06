@@ -9,11 +9,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
-import { Activity } from "lucide-react"
+import { Activity, LineChart } from "lucide-react"
 import type { TrendPoint } from "@/lib/types/dashboard.types"
 import { SectionCard } from "@/components/custom/SectionCard"
 import { BRAND, STATUS_COLOR } from "./tokens"
-import { WidgetPendingBackend, WidgetSkeleton } from "./WidgetStates"
+import { WidgetEmptyState, WidgetPendingBackend, WidgetSkeleton } from "./WidgetStates"
 
 interface TrendChartProps {
   data?: { points: TrendPoint[] }
@@ -115,7 +115,18 @@ export function TrendChart({ data, isLoading }: TrendChartProps) {
 
       {!isLoading && !data && <WidgetPendingBackend label="Activity trend" />}
 
-      {!isLoading && data && (
+      {/* Ejes vacíos sugieren "cero actividad"; sin puntos no hay nada que
+          afirmar, así que se dice explícitamente. */}
+      {!isLoading && data && data.points.length === 0 && (
+        <WidgetEmptyState
+          icon={<LineChart className="h-5 w-5" />}
+          title="No activity yet"
+          description="Once sessions are logged, the last 12 weeks will show up here."
+          tone="neutral"
+        />
+      )}
+
+      {!isLoading && data && data.points.length > 0 && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Facet
             title="Sessions"

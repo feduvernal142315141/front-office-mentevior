@@ -27,6 +27,8 @@ interface ExpiringListProps {
   items: ExpiringItem[]
   /** Si el backend todavía no entregó la sección */
   hasData: boolean
+  /** Vencimientos que existen pero no llegaron: el backend manda el top 20 */
+  truncatedCount?: number
   isLoading?: boolean
   filter: AttentionFilter
   onClearFilter: () => void
@@ -43,7 +45,14 @@ interface ExpiringListProps {
  * Ordena por severidad → días → tipo, con desempate estable para que la lista no
  * se reacomode entre refrescos.
  */
-export function ExpiringList({ items, hasData, isLoading, filter, onClearFilter }: ExpiringListProps) {
+export function ExpiringList({
+  items,
+  hasData,
+  truncatedCount = 0,
+  isLoading,
+  filter,
+  onClearFilter,
+}: ExpiringListProps) {
   const router = useRouter()
   const [expanded, setExpanded] = useState(false)
 
@@ -169,6 +178,14 @@ export function ExpiringList({ items, hasData, isLoading, filter, onClearFilter 
                   {expanded ? "Show less" : `Show ${hiddenCount} more`}
                 </Button>
               </div>
+            )}
+
+            {/* La cola que el backend no manda. Decirlo evita que la lista se lea
+                como el inventario completo de lo que vence. */}
+            {truncatedCount > 0 && (
+              <p className="mt-3 text-center text-xs text-slate-400">
+                {truncatedCount.toLocaleString("en-US")} more expiring beyond the most urgent shown here
+              </p>
             )}
           </>
         )}

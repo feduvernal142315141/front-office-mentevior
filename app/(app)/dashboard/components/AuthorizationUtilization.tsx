@@ -20,12 +20,26 @@ interface AuthorizationUtilizationProps {
  *
  * Es un ratio contra un límite, así que va como medidor y no como gráfica.
  */
+/** El backend manda 4 decimales (`480.0000`); en pantalla sobran. */
+function formatUnits(units: number): string {
+  return units.toLocaleString("en-US", { maximumFractionDigits: 2 })
+}
+
 export function AuthorizationUtilization({ data, isLoading }: AuthorizationUtilizationProps) {
+  // La lista es el top por consumo, no una lista de riesgo: puede traer
+  // autorizaciones sanas. Contar todo como "at risk" sería una falsa alarma.
+  const atRisk = data?.items.filter((item) => item.severity !== "good").length ?? 0
+  const subtitle = data?.items.length
+    ? atRisk > 0
+      ? `${atRisk} at risk`
+      : `Top ${data.items.length} by usage`
+    : undefined
+
   return (
     <SectionCard
       icon={<Gauge className="h-4 w-4" />}
       title="Authorization usage"
-      subtitle={data?.items.length ? `${data.items.length} at risk` : undefined}
+      subtitle={subtitle}
       action={
         <InfoTooltip
           message={`Flagged when used units reach ${UTILIZATION_THRESHOLDS.warning}% of what was authorized.`}
@@ -56,7 +70,7 @@ export function AuthorizationUtilization({ data, isLoading }: AuthorizationUtili
                     {" · "}
                     {/* Columna de números: acá sí corresponde tabular-nums */}
                     <span className="tabular-nums">
-                      {item.unitsUsed.toLocaleString("en-US")} / {item.unitsAuthorized.toLocaleString("en-US")} units
+                      {formatUnits(item.unitsUsed)} / {formatUnits(item.unitsAuthorized)} units
                     </span>
                   </p>
                 </div>

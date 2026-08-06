@@ -25,6 +25,17 @@ export const UTILIZATION_THRESHOLDS = {
   warning: 60,
 } as const
 
+/**
+ * Porcentaje de cobertura de un objetivo — acá **más alto es mejor**, al revés
+ * que los dos umbrales de arriba. Aplica al Clinical Monthly del mes: qué
+ * proporción de los clientes que deberían tener reporte lo tienen.
+ */
+export const COVERAGE_THRESHOLDS = {
+  good: 90,
+  warning: 75,
+  serious: 50,
+} as const
+
 /** Cuántos días hacia adelante mira el dashboard */
 export const EXPIRATION_HORIZON_DAYS = EXPIRATION_THRESHOLDS.warning
 
@@ -40,6 +51,22 @@ export function severityFromPercentUsed(percentUsed: number): Severity {
   if (percentUsed >= UTILIZATION_THRESHOLDS.serious) return "serious"
   if (percentUsed >= UTILIZATION_THRESHOLDS.warning) return "warning"
   return "good"
+}
+
+/**
+ * Severidad de un "value de target" donde llegar al tope es lo bueno.
+ *
+ * Sin esto el medidor del Clinical Monthly se pintaba verde fijo, que es peor
+ * que no tenerlo: 3 de 12 reportes del mes se leía como "todo en orden".
+ */
+export function severityFromCoverage(value: number, target: number): Severity {
+  if (target <= 0) return "good"
+
+  const percent = (value / target) * 100
+  if (percent >= COVERAGE_THRESHOLDS.good) return "good"
+  if (percent >= COVERAGE_THRESHOLDS.warning) return "warning"
+  if (percent >= COVERAGE_THRESHOLDS.serious) return "serious"
+  return "critical"
 }
 
 const SEVERITY_RANK: Record<Severity, number> = {

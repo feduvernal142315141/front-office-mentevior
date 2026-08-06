@@ -12,6 +12,18 @@ interface ActionCenterProps {
   summary?: ActionCenterSummary
   /** Ya filtrados por rol: el hero y la lista tienen que contar lo mismo */
   items?: ExpiringItem[]
+  /**
+   * Si el backend entregó la sección `expiring`. Sin esto no se distingue
+   * "todavía no llegó el detalle" de "llegó y está vacío", y el hero terminaba
+   * anunciando vencimientos que la lista de abajo no muestra.
+   */
+  hasExpiringSection?: boolean
+  /**
+   * Cuántos vencimientos existen más allá de los que el backend mandó. El
+   * contrato entrega el top 20 y conserva el total real: sin este número el
+   * hero diría "20" donde hay 63.
+   */
+  truncatedCount?: number
   filter: AttentionFilter
   onFilterChange: (filter: AttentionFilter) => void
   isLoading?: boolean
@@ -45,6 +57,8 @@ interface KindChip {
 export function ActionCenter({
   summary,
   items,
+  hasExpiringSection = false,
+  truncatedCount = 0,
   filter,
   onFilterChange,
   isLoading,
@@ -76,15 +90,22 @@ export function ActionCenter({
         if (item.daysRemaining < current.soonestDays) current.soonestDays = item.daysRemaining
       }
 
+      const derivedCritical = items.filter((i) => i.severity === "critical").length
+
       return {
-        total: items.length,
-        criticalCount: items.filter((i) => i.severity === "critical").length,
+        total: items.length + truncatedCount,
+        // Con la lista truncada, el conteo de críticos del backend cubre también
+        // la cola que no llegó; el derivado sólo ve los 20 que sí.
+        criticalCount:
+          truncatedCount > 0 && summary ? Math.max(summary.criticalCount, derivedCritical) : derivedCritical,
         chips: KIND_ORDER.map((kind) => grouped.get(kind)).filter(Boolean) as KindChip[],
       }
     }
 
-    // Respaldo: backend mandó el resumen pero todavía no el detalle
-    if (summary) {
+    // Respaldo SÓLO cuando el detalle no llegó. Si la sección vino y quedó
+    // vacía —sea porque no hay nada, sea porque el filtro por rol la vació—
+    // el conteo correcto es cero, no el total sin filtrar del resumen.
+    if (summary && !hasExpiringSection) {
       return {
         total: summary.total,
         criticalCount: summary.criticalCount,
@@ -96,7 +117,7 @@ export function ActionCenter({
     }
 
     return { total: 0, criticalCount: 0, chips: [] as KindChip[] }
-  }, [items, summary])
+  }, [items, summary, hasExpiringSection, truncatedCount])
 
   const criticalActive = isSameFilter(filter, { type: "critical" })
 
@@ -146,7 +167,11 @@ export function ActionCenter({
               </span>
             </div>
 
-            <p className="mt-3 text-xs text-slate-400">Pick a group to filter the list below</p>
+            <p className="mt-3 text-xs text-slate-400">
+              {truncatedCount > 0
+                ? `Showing the ${(items?.length ?? 0).toLocaleString("en-US")} most urgent · pick a group to filter the list below`
+                : "Pick a group to filter the list below"}
+            </p>
 
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {criticalCount > 0 && (

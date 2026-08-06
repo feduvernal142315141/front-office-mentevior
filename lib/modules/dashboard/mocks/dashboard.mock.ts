@@ -71,20 +71,32 @@ const UTILIZATION_ITEMS = [
   return { ...item, percentUsed, severity: severityFromPercentUsed(percentUsed), href: "/clients" }
 })
 
-const TREND_POINTS = [
-  { label: "W1", sessions: 96, notesPending: 11 },
-  { label: "W2", sessions: 104, notesPending: 9 },
-  { label: "W3", sessions: 99, notesPending: 14 },
-  { label: "W4", sessions: 112, notesPending: 8 },
-  { label: "W5", sessions: 108, notesPending: 12 },
-  { label: "W6", sessions: 118, notesPending: 6 },
-  { label: "W7", sessions: 115, notesPending: 10 },
-  { label: "W8", sessions: 124, notesPending: 7 },
-  { label: "W9", sessions: 119, notesPending: 9 },
-  { label: "W10", sessions: 131, notesPending: 5 },
-  { label: "W11", sessions: 127, notesPending: 8 },
-  { label: "W12", sessions: 128, notesPending: 7 },
+/** "May 18" — el mismo formato de etiqueta que manda el backend */
+function weekLabel(weeksAgo: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() - weeksAgo * 7)
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+}
+
+const WEEKLY_SERIES = [
+  { sessions: 96, notesPending: 11 },
+  { sessions: 104, notesPending: 9 },
+  { sessions: 99, notesPending: 14 },
+  { sessions: 112, notesPending: 8 },
+  { sessions: 108, notesPending: 12 },
+  { sessions: 118, notesPending: 6 },
+  { sessions: 115, notesPending: 10 },
+  { sessions: 124, notesPending: 7 },
+  { sessions: 119, notesPending: 9 },
+  { sessions: 131, notesPending: 5 },
+  { sessions: 127, notesPending: 8 },
+  { sessions: 128, notesPending: 7 },
 ]
+
+const TREND_POINTS = WEEKLY_SERIES.map((point, index) => ({
+  ...point,
+  label: weekLabel(WEEKLY_SERIES.length - 1 - index),
+}))
 
 const DEFAULT_SUMMARY: DashboardSummary = {
   generatedAt: new Date().toISOString(),
@@ -117,14 +129,15 @@ const DEFAULT_SUMMARY: DashboardSummary = {
       value: 72,
       unit: "%",
       target: 100,
-      deltaPercent: 4.1,
-      deltaDirection: "up",
+      // Sin delta a propósito: el backend no guarda snapshots de `usedUnits`, así
+      // que este KPI nunca trae variación. Ver el contrato del 2026-08-05.
       higherIsBetter: false,
     },
     clinicalMonthlyThisMonth: {
       value: 8,
       target: 12,
-      deltaDirection: "flat",
+      deltaPercent: 33.3,
+      deltaDirection: "up",
       higherIsBetter: true,
     },
   },
@@ -134,14 +147,19 @@ const DEFAULT_SUMMARY: DashboardSummary = {
   documentCompliance: { delivered: 120, pending: 34, nearExpiration: 12, expired: 3 },
 }
 
+/**
+ * Compañía nueva: el backend responde con la forma completa pero sin nada que
+ * contar. Es el escenario que ejercita TODOS los estados vacíos —incluidos los
+ * de tendencia y cumplimiento, que con cero no dibujan nada.
+ */
 const EMPTY_SUMMARY: DashboardSummary = {
   generatedAt: new Date().toISOString(),
   actionCenter: { total: 0, criticalCount: 0, byKind: {} },
   kpis: DEFAULT_SUMMARY.kpis,
   expiring: { items: [], total: 0 },
   authorizationUtilization: { items: [] },
-  trend: DEFAULT_SUMMARY.trend,
-  documentCompliance: { delivered: 169, pending: 0, nearExpiration: 0, expired: 0 },
+  trend: { points: [] },
+  documentCompliance: { delivered: 0, pending: 0, nearExpiration: 0, expired: 0 },
 }
 
 /** Backend entregó unas secciones y otras todavía no: cada widget degrada solo */

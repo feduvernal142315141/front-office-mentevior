@@ -1,8 +1,8 @@
-import { FolderCheck } from "lucide-react"
+import { FolderCheck, FolderOpen } from "lucide-react"
 import type { DocumentComplianceBreakdown } from "@/lib/types/dashboard.types"
 import { SectionCard } from "@/components/custom/SectionCard"
 import { STATUS_COLOR } from "./tokens"
-import { WidgetPendingBackend, WidgetSkeleton } from "./WidgetStates"
+import { WidgetEmptyState, WidgetPendingBackend, WidgetSkeleton } from "./WidgetStates"
 
 interface DocumentComplianceProps {
   data?: DocumentComplianceBreakdown
@@ -38,6 +38,18 @@ export function DocumentCompliance({ data, isLoading }: DocumentComplianceProps)
       {isLoading && <WidgetSkeleton rows={2} />}
 
       {!isLoading && !data && <WidgetPendingBackend label="Document compliance" />}
+
+      {/* La sección llegó pero sin nada que medir: no hay configuraciones
+          documentales activas. Distinto de "no llegó", y distinto de "todo en
+          orden" — por eso va en tono neutro. */}
+      {!isLoading && data && total === 0 && (
+        <WidgetEmptyState
+          icon={<FolderOpen className="h-5 w-5" />}
+          title="No documents to track"
+          description="There are no active document requirements for this scope yet."
+          tone="neutral"
+        />
+      )}
 
       {!isLoading && data && total > 0 && (
         <>

@@ -1,0 +1,39 @@
+"use client"
+
+import { useRouter } from "next/navigation"
+import { ArrowLeft, CalendarClock } from "lucide-react"
+import { Button } from "@/components/custom/Button"
+import { MonthlySupervisionForm } from "../components/MonthlySupervisionForm"
+
+export default function CreateMonthlySupervisionPage() {
+  const router = useRouter()
+
+  return (
+    <div className="px-6 py-6">
+      <div className="max-w-[1400px] mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="secondary"
+            className="h-10 w-10 p-0"
+            onClick={() => router.push("/monthly-supervisions")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
+            <CalendarClock className="h-8 w-8 text-[#037ECC]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              New Monthly Supervision
+            </h1>
+            <p className="text-slate-600 mt-1">
+              Document the month&apos;s supervision sessions for a supervisee
+            </p>
+          </div>
+        </div>
+
+        <MonthlySupervisionForm />
+      </div>
+    </div>
+  )
+}

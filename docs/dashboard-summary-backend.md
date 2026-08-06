@@ -402,6 +402,116 @@ por un banner global. ¿Están de acuerdo?
 | Umbrales y orden | `lib/modules/dashboard/utils/severity.ts` |
 | Ejemplo completo de respuesta | `lib/modules/dashboard/mocks/dashboard.mock.ts` |
 | Servicio HTTP ya escrito | `lib/modules/dashboard/services/dashboard.service.ts` |
+| Normalización del payload | `lib/modules/dashboard/utils/normalize-summary.ts` |
+| Errores tipados | `lib/modules/dashboard/services/dashboard-error.ts` |
+
+---
+
+## 10. Entrega del backend — 2026-08-05 ✅ conectado
+
+Backend entregó `GET /dashboard/summary` y **el front ya consume el endpoint real**
+(`NEXT_PUBLIC_DASHBOARD_MOCK` invirtió su default: el mock ahora hay que pedirlo con
+`=true`). La forma coincide con este documento campo por campo; no hizo falta cambiar
+`dashboard.types.ts`.
+
+### Preguntas de §7 que quedaron respondidas
+
+| # | Respuesta del contrato |
+| --- | --- |
+| 7.2 | `scope=company` sólo aplica a `SuperAdmin`/`Admin`/`Administrator`; el resto se reduce a lo propio automáticamente. Para un analista, sus clientes vía `client_provider`. |
+| 7.3 | `target` = clientes distintos con al menos un appointment válido en el mes. `value` = cuántos de esos tienen un Clinical Monthly que cubre el mes. |
+| 7.4 | 12 semanas, con `label` tipo `"May 18"`. |
+| 7.1 | Resuelto en el endpoint: `severity` y `daysRemaining` vienen calculados para credenciales igual que para el resto. *(Alinear el módulo de credenciales sigue pendiente, fuera de esta HU.)* |
+| 7.5 | Sin responder — sigue abierto, va aparte. |
+
+### 🟡 Lo que quedó abierto
+
+**1. El `scope` efectivo no vuelve en la respuesta.**
+El contrato dice, con razón, que *"el frontend no debe asumir que enviar
+`scope=company` concede acceso de compañía"*. Pero como la respuesta no dice con qué
+alcance se resolvió, **el front no puede mostrarlo sin mentir**: un usuario no
+administrativo con el selector en "Company" está viendo sus propios datos.
+
+**Pedido:** agregar un campo de nivel raíz con el alcance realmente aplicado.
+
+```json
+{ "generatedAt": "...", "effectiveScope": "me" }
+```
+
+Con eso el selector se corrige solo y se puede explicar por qué. Mientras no exista,
+el front ofrece el selector únicamente a quien alcanza el módulo de staff
+(`useDashboardScope.ts`) y quien no lo tiene pide `me` directamente.
+
+**2. ¿Con qué criterio se eligen los 20 de `expiring.items`?**
+El contrato dice "top 20" pero no por qué campo. El front asume **los más urgentes**
+(vencidos primero, luego por días restantes) y así lo comunica en pantalla —"Showing
+the 20 most urgent". Si el orden fuera otro (por fecha de creación, por ejemplo), ese
+texto sería falso y el hero estaría escondiendo lo grave detrás de lo trivial.
+
+**Pedido:** confirmar que el truncado se hace después de ordenar por severidad/días
+(§5.3 de este documento).
+
+**3. `notesPendingSignature` mira sólo la firma del caregiver.**
+La regla entregada es: pendiente cuando no hay `caregiverSignatureImage` y
+`caregiverSignatureChecked` no es `true`. Pero **las notas 97155 (supervisión) no
+tienen caregiver** — llevan firma de provider y de supervisee. Según cómo esté hecha
+la consulta, o quedan todas contadas como pendientes para siempre, o quedan fuera del
+KPI.
+
+**Pedido:** confirmar qué pasa con 97155, y si la firma del provider debería contar.
+
+**4. `authorizationUsage` sin delta — está bien, pero conviene decirlo en la UI.**
+La razón (no hay histórico de snapshots de `usedUnits`) es válida. El front ya no
+pinta variación para ese KPI. Si en algún momento se guarda el histórico, el campo
+`deltaPercent` ya está tipado y el tile lo muestra solo.
+
+**5. El `403` dispara el modal global de "Access Denied".**
+No es del contrato, es del front: el interceptor de `apiConfig.ts` lanza
+`onForbidden` en todo `403` **ignorando `skipNotification`**. Un usuario sin compañía
+ve el modal global *y* la tarjeta de error del dashboard. Se deja anotado acá porque
+tocar el interceptor afecta a toda la app y merece su propio cambio.
+
+### 🔴 Bug bloqueante en el endpoint — 2026-08-05
+
+Al conectar contra el backend real, `GET /dashboard/summary` responde **`400`** con:
+
+```json
+{
+  "code": 400,
+  "message": "No parameter named ':cancelledStatusId' in query with named parameters [companyId, companyWide, today, userId] ON EntityManagerFactoryUtils.java LINE 371 [org.springframework.dao.InvalidDataAccessApiUsageException]",
+  "details": "No parameter named ':cancelledStatusId' in query with named parameters [companyId, companyWide, today, userId]"
+}
+```
+
+La consulta declara `:cancelledStatusId` pero sólo se bindean `companyId`,
+`companyWide`, `today` y `userId`. Por `today` + el estado cancelado, apunta a la
+query de **`sessionsThisWeek`** — la que según §4.5 "excluye canceladas, no-show y
+eliminadas".
+
+**El endpoint no devuelve datos en ningún caso**, así que la integración está
+bloqueada hasta que se corrija. Dato útil: `companyWide` **sí** está bindeado, o sea
+que el `scope` llega bien; el fallo es sólo el parámetro faltante.
+
+> ⚠️ **Y el `400` no corresponde acá.** El contrato reserva ese código para "`scope`
+> no es `me` ni `company`" —algo que el front no puede provocar—. Un fallo interno
+> armando la consulta debería ser **`500`**: con `400` cualquier cliente asume que
+> mandó mal la petición y busca el error donde no está. Además el cuerpo expone la
+> excepción de Hibernate con nombres de clase y línea.
+
+### Cómo quedó del lado del front
+
+- **Normalización defensiva** (`normalize-summary.ts`): cada sección se valida y se
+  descarta si no cumple, en vez de tumbar la vista. Lo derivable se deriva —sin
+  `severity`, se calcula con los umbrales de §5.
+- **Errores tipados** (`dashboard-error.ts`): `400`/`401`/`403` tienen mensaje propio y
+  el botón de reintentar sólo aparece cuando reintentar puede funcionar.
+- **Selector de alcance**: `company` / `me`, persistido, con la salvedad del punto 1.
+- **`generatedAt` visible**: "Updated 4 min ago", en ámbar pasada la media hora.
+- **Truncado explícito**: el hero suma `total` y la lista dice cuántos no se muestran.
+- **Mensajes técnicos contenidos**: si el cuerpo del error trae una excepción, SQL o
+  un stack, la pantalla muestra texto legible y el volcado queda plegado bajo
+  "Technical details" (y en consola). Nadie que abra el dashboard debería leer
+  `EntityManagerFactoryUtils.java LINE 371`.
 | Interruptor mock ↔ real | `lib/modules/dashboard/services/dashboard.source.ts` |
 | Composición por rol (UX) | `app/(app)/dashboard/hooks/useDashboardLayout.ts` |
 | Análisis y decisiones de diseño | `plans/dashboard.md` |

@@ -1,6 +1,6 @@
 import { CalendarCheck, FileSignature, Hospital, TrendingUp } from "lucide-react"
 import type { DashboardKpis } from "@/lib/types/dashboard.types"
-import { severityFromPercentUsed } from "@/lib/modules/dashboard/utils/severity"
+import { severityFromCoverage, severityFromPercentUsed } from "@/lib/modules/dashboard/utils/severity"
 import { StatTile } from "./StatTile"
 
 interface KpiRowProps {
@@ -50,10 +50,16 @@ export function KpiRow({ kpis, isLoading, compact = false }: KpiRowProps) {
             label="Clinical Monthly"
             kpi={clinicalMonthly}
             icon={<Hospital className="h-4 w-4" />}
-            meterSeverity="good"
+            // Cobertura: acá llegar al tope es lo bueno, así que la severidad se
+            // calcula al revés que en las autorizaciones.
+            meterSeverity={
+              clinicalMonthly?.target
+                ? severityFromCoverage(clinicalMonthly.value, clinicalMonthly.target)
+                : undefined
+            }
             footnote={
               clinicalMonthly?.target
-                ? `${clinicalMonthly.value} of ${clinicalMonthly.target} expected this month`
+                ? `${clinicalMonthly.value} of ${clinicalMonthly.target} clients covered this month`
                 : undefined
             }
           />

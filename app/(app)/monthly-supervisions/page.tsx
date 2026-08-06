@@ -1,6 +1,7 @@
 "use client"
 
 import { CalendarClock } from "lucide-react"
+import { MonthlySupervisionTable } from "./components/MonthlySupervisionTable"
 
 export default function MonthlySupervisionPage() {
   return (
@@ -14,21 +15,11 @@ export default function MonthlySupervisionPage() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
               Monthly Supervisions
             </h1>
-            <p className="text-slate-600 mt-1">Track and manage monthly supervision sessions</p>
+            <p className="text-slate-600 mt-1">Track and manage monthly supervision reports</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12">
-          <div className="text-center max-w-md mx-auto">
-            <div className="inline-flex p-4 rounded-full bg-slate-100 mb-4">
-              <CalendarClock className="h-12 w-12 text-slate-400" />
-            </div>
-            <h2 className="text-xl font-semibold text-slate-800 mb-2">Coming Soon</h2>
-            <p className="text-slate-600">
-              Monthly supervision features will be available here soon.
-            </p>
-          </div>
-        </div>
+        <MonthlySupervisionTable />
       </div>
     </div>
   )

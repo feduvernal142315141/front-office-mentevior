@@ -27,14 +27,26 @@ export function WidgetEmptyState({
   icon,
   title,
   description,
+  tone = "positive",
 }: {
   icon?: React.ReactNode
   title: string
   description?: string
+  /**
+   * `positive` = "no hay nada por vencer", que es una buena noticia.
+   * `neutral` = "todavía no hay nada que medir"; pintarlo de verde afirmaría un
+   * logro que no ocurrió.
+   */
+  tone?: "positive" | "neutral"
 }) {
   return (
     <div className="py-10 text-center">
-      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-[#0ca30c]">
+      <div
+        className={cn(
+          "inline-flex h-11 w-11 items-center justify-center rounded-xl",
+          tone === "positive" ? "bg-emerald-50 text-[#0ca30c]" : "bg-slate-100 text-slate-400",
+        )}
+      >
         {icon ?? <Inbox className="h-5 w-5" />}
       </div>
       <p className="mt-3 text-sm font-semibold text-slate-800">{title}</p>
