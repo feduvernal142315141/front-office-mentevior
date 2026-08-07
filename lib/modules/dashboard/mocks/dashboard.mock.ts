@@ -3,6 +3,7 @@ import type {
   DashboardSummary,
   ExpiringItem,
 } from "@/lib/types/dashboard.types"
+import { clientProfileHref } from "../utils/safe-href"
 import { severityFromDaysRemaining, severityFromPercentUsed, sortExpiringItems } from "../utils/severity"
 
 /**
@@ -47,28 +48,44 @@ function expiring(
   }
 }
 
+/** UUIDs estables: el enlace de cada fila se arma con el del CLIENTE, no con `id` */
+const MOCK_CLIENT_IDS = {
+  mateo: "11111111-1111-1111-1111-111111111111",
+  sofia: "22222222-2222-2222-2222-222222222222",
+  tomas: "33333333-3333-3333-3333-333333333333",
+  valentina: "44444444-4444-4444-4444-444444444444",
+  camila: "55555555-5555-5555-5555-555555555555",
+}
+
+// Los de cliente enlazan al paso del perfil donde se atienden; los de staff van a
+// su propio módulo. Mismas rutas que manda el backend desde el 2026-08-07.
 const EXPIRING_ITEMS: ExpiringItem[] = sortExpiringItems([
-  expiring("e1", "PRIOR_AUTHORIZATION", "Prior Auth #A-1024 · 97153", "Mateo Rivas", -2, "/clients"),
-  expiring("e2", "PRIOR_AUTHORIZATION", "Prior Auth #A-1031 · 97155", "Sofía Delgado", 3, "/clients"),
+  expiring("e1", "PRIOR_AUTHORIZATION", "Prior Auth #A-1024 · 97153", "Mateo Rivas", -2, clientProfileHref(MOCK_CLIENT_IDS.mateo, "priorAuth")),
+  expiring("e2", "PRIOR_AUTHORIZATION", "Prior Auth #A-1031 · 97155", "Sofía Delgado", 3, clientProfileHref(MOCK_CLIENT_IDS.sofia, "priorAuth")),
   expiring("e3", "CREDENTIAL", "BCBA Certification", "Laura Méndez", 6, "/users"),
-  expiring("e4", "CLIENT_DOCUMENT", "Insurance Card", "Mateo Rivas", 9, "/clients"),
+  expiring("e4", "CLIENT_DOCUMENT", "Insurance Card", "Mateo Rivas", 9, clientProfileHref(MOCK_CLIENT_IDS.mateo, "documents")),
   expiring("e5", "CREDENTIAL", "CPR / First Aid", "Diego Fuentes", 14, "/users"),
   expiring("e6", "HR_DOCUMENT", "Background Check", "Diego Fuentes", 21, "/hr-documents"),
-  expiring("e7", "CLIENT_DOCUMENT", "Treatment Consent", "Valentina Cruz", 27, "/clients"),
-  expiring("e8", "PRIOR_AUTHORIZATION", "Prior Auth #A-0997 · 97156", "Tomás Herrera", 34, "/clients"),
+  expiring("e7", "CLIENT_DOCUMENT", "Treatment Consent", "Valentina Cruz", 27, clientProfileHref(MOCK_CLIENT_IDS.valentina, "documents")),
+  expiring("e8", "PRIOR_AUTHORIZATION", "Prior Auth #A-0997 · 97156", "Tomás Herrera", 34, clientProfileHref(MOCK_CLIENT_IDS.tomas, "priorAuth")),
   expiring("e9", "HR_DOCUMENT", "TB Test", "Laura Méndez", 41, "/hr-documents"),
   expiring("e10", "CREDENTIAL", "RBT Certification", "Camila Ortiz", 52, "/users"),
 ])
 
 const UTILIZATION_ITEMS = [
-  { id: "u1", clientName: "Mateo Rivas", billingCode: "97153", unitsAuthorized: 480, unitsUsed: 449, endDate: isoInDays(21) },
-  { id: "u2", clientName: "Sofía Delgado", billingCode: "97155", unitsAuthorized: 160, unitsUsed: 133, endDate: isoInDays(34) },
-  { id: "u3", clientName: "Tomás Herrera", billingCode: "97153", unitsAuthorized: 520, unitsUsed: 402, endDate: isoInDays(48) },
-  { id: "u4", clientName: "Valentina Cruz", billingCode: "97156", unitsAuthorized: 96, unitsUsed: 68, endDate: isoInDays(56) },
-  { id: "u5", clientName: "Camila Ortiz", billingCode: "97153", unitsAuthorized: 400, unitsUsed: 244, endDate: isoInDays(72) },
+  { id: "u1", clientId: MOCK_CLIENT_IDS.mateo, clientName: "Mateo Rivas", billingCode: "97153", unitsAuthorized: 480, unitsUsed: 449, endDate: isoInDays(21) },
+  { id: "u2", clientId: MOCK_CLIENT_IDS.sofia, clientName: "Sofía Delgado", billingCode: "97155", unitsAuthorized: 160, unitsUsed: 133, endDate: isoInDays(34) },
+  { id: "u3", clientId: MOCK_CLIENT_IDS.tomas, clientName: "Tomás Herrera", billingCode: "97153", unitsAuthorized: 520, unitsUsed: 402, endDate: isoInDays(48) },
+  { id: "u4", clientId: MOCK_CLIENT_IDS.valentina, clientName: "Valentina Cruz", billingCode: "97156", unitsAuthorized: 96, unitsUsed: 68, endDate: isoInDays(56) },
+  { id: "u5", clientId: MOCK_CLIENT_IDS.camila, clientName: "Camila Ortiz", billingCode: "97153", unitsAuthorized: 400, unitsUsed: 244, endDate: isoInDays(72) },
 ].map((item) => {
   const percentUsed = Math.round((item.unitsUsed / item.unitsAuthorized) * 100)
-  return { ...item, percentUsed, severity: severityFromPercentUsed(percentUsed), href: "/clients" }
+  return {
+    ...item,
+    percentUsed,
+    severity: severityFromPercentUsed(percentUsed),
+    href: clientProfileHref(item.clientId, "priorAuth"),
+  }
 })
 
 /** "May 18" — el mismo formato de etiqueta que manda el backend */
@@ -78,24 +95,12 @@ function weekLabel(weeksAgo: number): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-const WEEKLY_SERIES = [
-  { sessions: 96, notesPending: 11 },
-  { sessions: 104, notesPending: 9 },
-  { sessions: 99, notesPending: 14 },
-  { sessions: 112, notesPending: 8 },
-  { sessions: 108, notesPending: 12 },
-  { sessions: 118, notesPending: 6 },
-  { sessions: 115, notesPending: 10 },
-  { sessions: 124, notesPending: 7 },
-  { sessions: 119, notesPending: 9 },
-  { sessions: 131, notesPending: 5 },
-  { sessions: 127, notesPending: 8 },
-  { sessions: 128, notesPending: 7 },
-]
+/** Sólo sesiones: la serie de notas pendientes salió del contrato el 2026-08-07 */
+const WEEKLY_SESSIONS = [96, 104, 99, 112, 108, 118, 115, 124, 119, 131, 127, 128]
 
-const TREND_POINTS = WEEKLY_SERIES.map((point, index) => ({
-  ...point,
-  label: weekLabel(WEEKLY_SERIES.length - 1 - index),
+const TREND_POINTS = WEEKLY_SESSIONS.map((sessions, index) => ({
+  sessions,
+  label: weekLabel(WEEKLY_SESSIONS.length - 1 - index),
 }))
 
 const DEFAULT_SUMMARY: DashboardSummary = {
@@ -118,13 +123,7 @@ const DEFAULT_SUMMARY: DashboardSummary = {
       higherIsBetter: true,
       sparkline: TREND_POINTS.map((p) => p.sessions),
     },
-    notesPendingSignature: {
-      value: 7,
-      deltaPercent: 30,
-      deltaDirection: "down",
-      higherIsBetter: false,
-      sparkline: TREND_POINTS.map((p) => p.notesPending),
-    },
+    notesPendingSignature: 7,
     authorizationUsage: {
       value: 72,
       unit: "%",

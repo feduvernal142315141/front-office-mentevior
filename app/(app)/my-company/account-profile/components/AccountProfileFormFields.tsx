@@ -343,8 +343,10 @@ export function AccountProfileFormFields({
                     value={field.value || ""}
                     onChange={field.onChange}
                     hasError={!!fieldState.error}
+                    error={fieldState.error?.message}
                     disabled={isSubmitting}
                     maxSizeMB={1}
+                    required
                   />
                 )}
               />

@@ -9,8 +9,32 @@ import {
   type AccountProfileFormValues 
 } from "@/lib/schemas/account-profile.schema"
 import type { UpdateAccountProfileDto } from "@/lib/types/account-profile.types"
+import type { AccountProfile } from "@/lib/types/account-profile.types"
 import { useAccountProfile } from "@/lib/modules/account-profile/hooks/use-account-profile"
 import { useUpdateAccountProfile } from "@/lib/modules/account-profile/hooks/use-update-account-profile"
+
+/**
+ * Mapea la respuesta del API a los valores del form. Ojo con
+ * `chartStartNumber`: el backend lo devuelve como número y el schema lo valida
+ * como string, así que hay que normalizarlo o zod falla con
+ * "Expected string, received number" apenas se abre la pantalla.
+ */
+function toFormValues(profile: AccountProfile): AccountProfileFormValues {
+  return {
+    legalName: profile.legalName,
+    agencyEmail: profile.agencyEmail,
+    phoneNumber: profile.phoneNumber,
+    fax: profile.fax || "",
+    webSite: profile.webSite || "",
+    ein: profile.ein,
+    npi: profile.npi,
+    mpi: profile.mpi,
+    taxonomyCode: profile.taxonomyCode,
+    logo: profile.logo || "",
+    chartPrefix: profile.chartPrefix || "BA",
+    chartStartNumber: profile.chartStartNumber != null ? String(profile.chartStartNumber) : "1",
+  }
+}
 
 interface UseAccountProfileFormReturn {
   form: ReturnType<typeof useForm<AccountProfileFormValues>>
@@ -40,20 +64,7 @@ export function useAccountProfileForm(): UseAccountProfileFormReturn {
   
   useEffect(() => {
     if (accountProfile) {
-      form.reset({
-        legalName: accountProfile.legalName,
-        agencyEmail: accountProfile.agencyEmail,
-        phoneNumber: accountProfile.phoneNumber,
-        fax: accountProfile.fax || "",
-        webSite: accountProfile.webSite || "",
-        ein: accountProfile.ein,
-        npi: accountProfile.npi,
-        mpi: accountProfile.mpi,
-        taxonomyCode: accountProfile.taxonomyCode,
-        logo: accountProfile.logo || "",
-        chartPrefix: accountProfile.chartPrefix || "BA",
-        chartStartNumber: accountProfile.chartStartNumber || "1",
-      })
+      form.reset(toFormValues(accountProfile))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountProfile])
@@ -93,20 +104,7 @@ export function useAccountProfileForm(): UseAccountProfileFormReturn {
   const actions = {
     cancel: () => {
       if (accountProfile) {
-        form.reset({
-          legalName: accountProfile.legalName,
-          agencyEmail: accountProfile.agencyEmail,
-          phoneNumber: accountProfile.phoneNumber,
-          fax: accountProfile.fax || "",
-          webSite: accountProfile.webSite || "",
-          ein: accountProfile.ein,
-          npi: accountProfile.npi,
-          mpi: accountProfile.mpi,
-          taxonomyCode: accountProfile.taxonomyCode,
-          logo: accountProfile.logo || "",
-          chartPrefix: accountProfile.chartPrefix || "BA",
-          chartStartNumber: accountProfile.chartStartNumber || "1",
-        })
+        form.reset(toFormValues(accountProfile))
       }
       router.push("/my-company")
     },

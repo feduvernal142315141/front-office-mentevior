@@ -148,7 +148,12 @@ export default function DashboardPage() {
               userName={user?.name}
             />
 
-            <KpiRow kpis={summary?.kpis} isLoading={isLoading} compact={layout.compactKpis} />
+            <KpiRow
+              kpis={summary?.kpis}
+              isLoading={isLoading}
+              compact={layout.compactKpis}
+              hrefs={layout.kpiHrefs}
+            />
 
             <div
               ref={listRef}

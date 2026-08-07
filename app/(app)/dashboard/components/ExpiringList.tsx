@@ -1,13 +1,13 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
 import { BadgeCheck, CalendarClock, FileText, IdCard, PartyPopper, ShieldCheck, X } from "lucide-react"
 import type { ExpiringItem, ExpiringKind } from "@/lib/types/dashboard.types"
 import { EXPIRING_KIND_LABEL, formatDaysRemaining, sortExpiringItems } from "@/lib/modules/dashboard/utils/severity"
 import type { AttentionFilter } from "./attention-filter"
 import { SectionCard } from "@/components/custom/SectionCard"
 import { Button } from "@/components/custom/Button"
+import { RowChevron, RowLink } from "./RowLink"
 import { SeverityBadge } from "./SeverityBadge"
 import { SEVERITY_STYLES } from "./tokens"
 import { WidgetEmptyState, WidgetPendingBackend, WidgetSkeleton } from "./WidgetStates"
@@ -53,7 +53,6 @@ export function ExpiringList({
   filter,
   onClearFilter,
 }: ExpiringListProps) {
-  const router = useRouter()
   const [expanded, setExpanded] = useState(false)
 
   const sorted = useMemo(() => sortExpiringItems(items), [items])
@@ -122,26 +121,15 @@ export function ExpiringList({
               {visible.map((item) => {
                 const Icon = KIND_ICON[item.kind]
                 const styles = SEVERITY_STYLES[item.severity]
-                const clickable = !!item.href
 
                 return (
                   <li key={item.id}>
-                    <div
-                      role={clickable ? "button" : undefined}
-                      tabIndex={clickable ? 0 : undefined}
-                      onClick={() => item.href && router.push(item.href)}
-                      onKeyDown={(event) => {
-                        if (!item.href) return
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault()
-                          router.push(item.href)
-                        }
-                      }}
+                    <RowLink
+                      href={item.href}
                       className={cn(
                         "flex items-center gap-3 rounded-lg border-l-2 px-3 py-3 transition-colors",
                         styles.row,
-                        clickable && "cursor-pointer hover:bg-slate-50",
-                        "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/30",
+                        item.href && "hover:bg-slate-50",
                       )}
                     >
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white">
@@ -165,8 +153,9 @@ export function ExpiringList({
                           {formatDaysRemaining(item.daysRemaining)}
                         </span>
                         <SeverityBadge severity={item.severity} />
+                        {item.href && <RowChevron />}
                       </div>
-                    </div>
+                    </RowLink>
                   </li>
                 )
               })}

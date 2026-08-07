@@ -41,6 +41,13 @@ import { StepPriorAuthorizations } from "./steps/prior-authorizations"
 interface ClientProfileWizardProps {
   clientId: string
   isCreateMode?: boolean
+  /**
+   * Paso a abrir de entrada, por `id` (ej. `"priorAuth"`). Sirve para enlazar
+   * desde fuera al lugar exacto donde se resuelve algo —el dashboard manda a
+   * Prior Authorizations— en vez de dejar al usuario en Personal Information
+   * buscando la pestaña. Un id desconocido se ignora y abre el paso 1.
+   */
+  initialStepId?: string
 }
 
 function isUUID(value: string): boolean {
@@ -49,7 +56,7 @@ function isUUID(value: string): boolean {
 
 type SubmitIntent = "close" | "continue" | "navigate" | null
 
-export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientProfileWizardProps) {
+export function ClientProfileWizard({ clientId, isCreateMode = false, initialStepId }: ClientProfileWizardProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [activeStepIndex, setActiveStepIndex] = useState(0)
@@ -289,9 +296,12 @@ export function ClientProfileWizard({ clientId, isCreateMode = false }: ClientPr
     if (didSetInitialStepRef.current) return
     if (isInCreateMode || !client) return
 
-    setActiveStepIndex(0)
+    // El deep-link sólo decide el arranque: después manda la navegación del
+    // usuario, así que no se vuelve a aplicar aunque cambie la URL.
+    const requested = initialStepId ? steps.findIndex((step) => step.id === initialStepId) : -1
+    setActiveStepIndex(requested >= 0 ? requested : 0)
     didSetInitialStepRef.current = true
-  }, [isInCreateMode, client])
+  }, [isInCreateMode, client, initialStepId, steps])
 
   const EXCLUDED_FROM_COMPLETION = ["medications"]
 

@@ -78,13 +78,7 @@ todo — arranquen por `actionCenter` + `expiring`, que es el corazón del dashb
       "higherIsBetter": true,
       "sparkline": [96, 104, 99, 112, 108, 118, 115, 124, 119, 131, 127, 128]
     },
-    "notesPendingSignature": {
-      "value": 7,
-      "deltaPercent": 30,
-      "deltaDirection": "down",
-      "higherIsBetter": false,
-      "sparkline": [11, 9, 14, 8, 12, 6, 10, 7, 9, 5, 8, 7]
-    },
+    "notesPendingSignature": 7,
     "authorizationUsage": {
       "value": 72,
       "unit": "%",
@@ -135,8 +129,8 @@ todo — arranquen por `actionCenter` + `expiring`, que es el corazón del dashb
 
   "trend": {
     "points": [
-      { "label": "W1", "sessions": 96, "notesPending": 11 },
-      { "label": "W2", "sessions": 104, "notesPending": 9 }
+      { "label": "W1", "sessions": 96 },
+      { "label": "W2", "sessions": 104 }
     ]
   },
 
@@ -181,7 +175,20 @@ pregunta: *¿cuántos días me quedan?*
 | `expirationDate` | `string` | ISO date `yyyy-MM-dd` |
 | `daysRemaining` | `number` | **Lo calcula backend.** Negativo = ya vencido |
 | `severity` | enum | `critical` \| `serious` \| `warning` \| `good` — ver §5 |
-| `href` | `string?` | Ruta del front a donde ir para resolverlo. Opcional |
+| `href` | `string?` | Ruta del front a donde ir para resolverlo. Opcional. **Tiene que ser una ruta interna** que empiece con `/` — el front descarta URLs absolutas, `javascript:` y protocol-relative (`//host`), y la fila queda sin enlace |
+
+Destinos por tipo (contrato del 2026-08-07):
+
+| `kind` | `href` |
+| --- | --- |
+| `PRIOR_AUTHORIZATION` | `/clients/{clientId}/profile?step=priorAuth` |
+| `CLIENT_DOCUMENT` | `/clients/{clientId}/profile?step=documents` |
+| `CREDENTIAL`, `HR_DOCUMENT` | Sin ruta de cliente — van a su propio módulo |
+
+> `?step=` abre el wizard de perfil directo en esa pestaña. Ids válidos:
+> `personalInfo` · `addresses` · `caregivers` · `medications` · `diagnoses` ·
+> `insurances` · `priorAuth` · `providers` · `documents`. Uno desconocido se ignora
+> y abre el paso 1.
 
 - **`items`**: devolver el **top 20** ordenado por urgencia (§5.3). El front muestra 6
   colapsados y expande al resto.
@@ -210,7 +217,8 @@ sobre-utilizadas"*: unidades consumidas contra autorizadas, por cliente y billin
 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
-| `id` | `string` | UUID de la autorización (o del par auth+billing code) |
+| `id` | `string` | UUID de `authorization_billing_code`. **No es el del cliente** |
+| `clientId` | `string` | UUID del cliente. De acá sale el enlace si `href` faltara |
 | `clientName` | `string` | |
 | `billingCode` | `string` | Ej: `"97153"` |
 | `unitsAuthorized` | `number` | |
@@ -218,7 +226,7 @@ sobre-utilizadas"*: unidades consumidas contra autorizadas, por cliente y billin
 | `percentUsed` | `number` | 0..100, **ya redondeado** |
 | `endDate` | `string` | ISO date |
 | `severity` | enum | Según §5.2 |
-| `href` | `string?` | |
+| `href` | `string?` | `/clients/{clientId}/profile?step=priorAuth`. Mismas reglas de ruta interna que en `expiring` |
 
 Devolver el **top 5** por `percentUsed` descendente. Sólo autorizaciones **activas**.
 
@@ -229,11 +237,28 @@ Los cuatro son opcionales por separado.
 | KPI | Qué mide |
 | --- | --- |
 | `sessionsThisWeek` | Appointments de la semana en curso |
-| `notesPendingSignature` | Session notes sin firmar / sin cerrar |
+| `notesPendingSignature` | **`number` pelado**, no `KpiValue` — ver abajo |
 | `authorizationUsage` | % global de unidades consumidas (`unit: "%"`, `target: 100`) |
 | `clinicalMonthlyThisMonth` | Clinical Monthly creados este mes contra los esperados (`target`) |
 
-Estructura de cada uno (`KpiValue`):
+`notesPendingSignature` es la excepción: desde el 2026-08-07 llega como cantidad
+acumulada hasta `generatedAt`. `0` es un valor válido y el front lo pinta como cero,
+no como "sin datos".
+
+Se cuenta una nota como pendiente cuando **la cita ya finalizó** y, según el CPT:
+
+| CPT | Pendiente cuando |
+| --- | --- |
+| `97155` | El **supervisee** del subevent no tiene firma persistida en `MemberUser.sign` |
+| Resto | No hay imagen de firma del **caregiver** y el checkmark no es `true` |
+
+La distinción existe porque las notas de supervisión **no tienen caregiver**: llevan
+firma de provider y de supervisee. Aplicarles la regla del caregiver las dejaría
+contadas como pendientes para siempre.
+
+Excluye notas eliminadas y citas canceladas, no-show o eliminadas.
+
+Estructura de los otros tres (`KpiValue`):
 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
@@ -259,10 +284,9 @@ Mándenlo siempre.
 | --- | --- |
 | `label` | `string` — ej. `"W1"` o `"Jul 28"` |
 | `sessions` | `number` |
-| `notesPending` | `number` |
 
-> El front las dibuja como **small multiples** (dos gráficas separadas), no con doble
-> eje. No hace falta que vengan normalizadas.
+> Serie única desde el 2026-08-07: `notesPending` salió del contrato. El total de notas
+> sin firmar vive ahora en `kpis.notesPendingSignature` como cantidad acumulada.
 
 ### 4.7 `documentCompliance` — cumplimiento documental
 
@@ -451,14 +475,10 @@ texto sería falso y el hero estaría escondiendo lo grave detrás de lo trivial
 **Pedido:** confirmar que el truncado se hace después de ordenar por severidad/días
 (§5.3 de este documento).
 
-**3. `notesPendingSignature` mira sólo la firma del caregiver.**
-La regla entregada es: pendiente cuando no hay `caregiverSignatureImage` y
-`caregiverSignatureChecked` no es `true`. Pero **las notas 97155 (supervisión) no
-tienen caregiver** — llevan firma de provider y de supervisee. Según cómo esté hecha
-la consulta, o quedan todas contadas como pendientes para siempre, o quedan fuera del
-KPI.
-
-**Pedido:** confirmar qué pasa con 97155, y si la firma del provider debería contar.
+**3. `notesPendingSignature` mira sólo la firma del caregiver.** ✅ **Resuelto 2026-08-07**
+Las 97155 no tienen caregiver, así que la regla del caregiver las habría dejado
+contadas como pendientes para siempre. Backend separó el criterio por CPT: para
+`97155` mira la firma del **supervisee** en `MemberUser.sign`. Ver §4.5.
 
 **4. `authorizationUsage` sin delta — está bien, pero conviene decirlo en la UI.**
 La razón (no hay histórico de snapshots de `usedUnits`) es válida. El front ya no

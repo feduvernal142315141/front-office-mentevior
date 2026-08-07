@@ -39,7 +39,10 @@ export interface ExpiringItem {
 }
 
 export interface AuthorizationUtilizationItem {
+  /** UUID de `authorization_billing_code`, NO del cliente */
   id: string
+  /** UUID del cliente. Es de donde sale el enlace si `href` no viniera */
+  clientId?: string
   clientName: string
   billingCode: string
   unitsAuthorized: number
@@ -72,7 +75,6 @@ export interface KpiValue {
 export interface TrendPoint {
   label: string
   sessions: number
-  notesPending: number
 }
 
 export interface DocumentComplianceBreakdown {
@@ -90,7 +92,13 @@ export interface ActionCenterSummary {
 
 export interface DashboardKpis {
   sessionsThisWeek?: KpiValue
-  notesPendingSignature?: KpiValue
+  /**
+   * Cantidad acumulada hasta `generatedAt`, no un `KpiValue`: el backend dejó de
+   * mandar serie semanal, así que no hay contra qué comparar ni qué dibujar.
+   * Cuenta las notas del alcance cuya cita ya terminó y siguen sin firma del
+   * caregiver. Ver el contrato del 2026-08-07.
+   */
+  notesPendingSignature?: number
   authorizationUsage?: KpiValue
   clinicalMonthlyThisMonth?: KpiValue
 }

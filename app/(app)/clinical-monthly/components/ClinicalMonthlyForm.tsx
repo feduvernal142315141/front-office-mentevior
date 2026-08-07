@@ -15,6 +15,7 @@ import { useSaveClinicalMonthly } from "@/lib/modules/clinical-monthly/hooks/use
 import { getClinicalMonthlyPdfUrl } from "@/lib/modules/clinical-monthly/services/clinical-monthly.service"
 import { validateMonthRange } from "@/lib/modules/clinical-monthly/utils/month-range"
 import { CLINICAL_MONTHLY_SUMMARY_GUIDANCE } from "@/lib/constants/clinical-monthly-guidance"
+import { getNarrativeLengthState, validateNarrativeLength } from "@/lib/utils/narrative-length"
 import { MonthRangePicker } from "./MonthRangePicker"
 
 interface ClinicalMonthlyFormProps {
@@ -89,11 +90,13 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     }
 
     // El Summary es el único contenido que escribe el usuario: sin él el reporte
-    // no aporta nada sobre lo que ya genera el PDF.
+    // no aporta nada sobre lo que ya genera el PDF. Se le exige la misma
+    // extensión clínica que a los narrative de las session notes.
     const trimmedSummary = summary.trim()
-    if (!trimmedSummary) {
-      setSummaryError("This field is required")
-      toast.error("Summary is required")
+    const lengthError = validateNarrativeLength(trimmedSummary)
+    if (lengthError) {
+      setSummaryError(lengthError)
+      toast.error("Check the summary", { description: lengthError })
       document.querySelector('[data-field="summary"]')?.scrollIntoView({ behavior: "smooth", block: "center" })
       return null
     }
@@ -122,7 +125,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
   const hasRange = !!startMonthYear && !!endMonthYear
   // Guardar y previsualizar son la misma operación (el preview persiste), así que
   // ambos exigen lo mismo: cliente, período y summary.
-  const canSave = !!clientId && hasRange && !!summary.trim() && !isBusy
+  const canSave = !!clientId && hasRange && getNarrativeLengthState(summary).isValid && !isBusy
 
   if (isEditing && detailLoading) {
     return (
@@ -222,10 +225,11 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
           <FloatingTextarea
             label="Summary"
             value={summary}
-            onChange={(v) => { setSummary(v); if (v.trim()) setSummaryError(null) }}
+            onChange={(v) => { setSummary(v); if (!validateNarrativeLength(v)) setSummaryError(null) }}
             onBlur={() => {}}
             guidance={CLINICAL_MONTHLY_SUMMARY_GUIDANCE}
             rows={10}
+            showLengthCounter
             disabled={isBusy}
             hasError={!!summaryError}
             required

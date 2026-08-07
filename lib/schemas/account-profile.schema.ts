@@ -46,8 +46,8 @@ export const accountProfileSchema = z.object({
   
   logo: z
     .string()
-    .url("Invalid logo URL")
-    .min(1, "Logo is required"),
+    .min(1, "Logo is required")
+    .url("Invalid logo URL"),
 
   chartPrefix: z
     .string()
@@ -55,11 +55,13 @@ export const accountProfileSchema = z.object({
     .max(10, "Chart prefix must be less than 10 characters")
     .regex(/^[\p{L}\p{N}\p{P}\p{S}\s]+$/u, "Only alphanumeric and special characters are allowed"),
 
+  // Se guarda como texto para no perder ceros a la izquierda ("001"), pero el
+  // contenido tiene que ser numérico: es el correlativo del Chart ID.
   chartStartNumber: z
     .string()
     .min(1, "Starting number is required")
     .max(20, "Starting number must be less than 20 characters")
-    .regex(/^[\p{L}\p{N}\p{P}\p{S}\s]+$/u, "Only alphanumeric and special characters are allowed"),
+    .regex(/^\d+$/, "Only numbers are allowed"),
 })
 
 export type AccountProfileFormValues = z.infer<typeof accountProfileSchema>

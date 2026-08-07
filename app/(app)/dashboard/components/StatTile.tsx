@@ -1,6 +1,7 @@
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react"
 import type { KpiValue, Severity } from "@/lib/types/dashboard.types"
 import { Meter } from "./Meter"
+import { RowChevron, RowLink } from "./RowLink"
 import { Sparkline } from "./Sparkline"
 import { BRAND } from "./tokens"
 import { cn } from "@/lib/utils"
@@ -13,6 +14,8 @@ interface StatTileProps {
   meterSeverity?: Severity
   /** Texto al pie, ej. "de 12 esperados" */
   footnote?: string
+  /** Pantalla donde se atiende este número. Sin él el tile es sólo informativo. */
+  href?: string
 }
 
 /** 1284 → "1,284" · 12900 → "12.9K" */
@@ -22,7 +25,7 @@ function formatCompact(value: number): string {
   return value.toLocaleString("en-US")
 }
 
-export function StatTile({ label, kpi, icon, meterSeverity, footnote }: StatTileProps) {
+export function StatTile({ label, kpi, icon, meterSeverity, footnote, href }: StatTileProps) {
   if (!kpi) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-5 py-4">
@@ -46,15 +49,17 @@ export function StatTile({ label, kpi, icon, meterSeverity, footnote }: StatTile
   const meterPercent = showMeter ? (unit === "%" ? value : (value / target!) * 100) : 0
 
   return (
-    <div
+    <RowLink
+      href={href}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm",
+        "relative block overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm",
         "transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md",
       )}
     >
       <div className="flex items-center gap-2">
         {icon && <span className="text-[#037ECC]">{icon}</span>}
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</span>
+        {href && <RowChevron className="ml-auto" />}
       </div>
 
       <div className="mt-2 flex items-end gap-2">
@@ -86,6 +91,6 @@ export function StatTile({ label, kpi, icon, meterSeverity, footnote }: StatTile
           <Sparkline points={sparkline} accent={BRAND.primary} className="h-8 w-full" />
         </div>
       )}
-    </div>
+    </RowLink>
   )
 }

@@ -172,14 +172,14 @@ export interface AuthorizationUtilization {
   severity: Severity
 }
 
-export interface TrendPoint { label: string; sessions: number; notesPending: number }
+export interface TrendPoint { label: string; sessions: number }
 
 export interface DashboardSummary {
   generatedAt: string
   actionCenter?: { total: number; byKind: Record<string, number> }
   kpis?: {
     sessionsThisWeek?: KpiValue
-    notesPendingSignature?: KpiValue
+    notesPendingSignature?: number   // cantidad acumulada, no KpiValue
     authorizationUsage?: KpiValue
     clinicalMonthlyThisMonth?: KpiValue
   }

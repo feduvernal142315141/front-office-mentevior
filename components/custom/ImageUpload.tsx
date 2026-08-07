@@ -10,6 +10,8 @@ interface ImageUploadProps {
   onChange: (base64: string) => void
   required?: boolean
   hasError?: boolean
+  /** Mensaje del formulario; si no viene se usa uno genérico */
+  error?: string
   disabled?: boolean
   maxSizeMB?: number
 }
@@ -20,6 +22,7 @@ export function ImageUpload({
   onChange,
   required = false,
   hasError = false,
+  error,
   disabled = false,
   maxSizeMB = 1,
 }: ImageUploadProps) {
@@ -163,9 +166,10 @@ export function ImageUpload({
         </div>
       )}
 
-      {(hasError ) && (
+      {/* El error local (tipo/tamaño de archivo) manda: es el más específico */}
+      {(localError || hasError) && (
         <p className="text-sm text-red-600 font-medium pt-1">
-          {hasError && "Please upload a valid logo."}
+          {localError || error || "Please upload a valid logo."}
         </p>
       )}
     </div>

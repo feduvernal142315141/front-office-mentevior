@@ -7,6 +7,7 @@ import type {
   Severity,
   TrendPoint,
 } from "@/lib/types/dashboard.types"
+import { toClientHref, toInternalHref } from "./safe-href"
 import { severityFromDaysRemaining, severityFromPercentUsed } from "./severity"
 
 /**
@@ -42,6 +43,17 @@ function toNumber(value: unknown): number | undefined {
 function toInt(value: unknown, fallback = 0): number {
   const parsed = toNumber(value)
   return parsed === undefined ? fallback : Math.round(parsed)
+}
+
+/**
+ * Conteo acumulado: `0` es un valor legítimo ("nada pendiente"), así que no se
+ * puede usar el truco de la falsedad para descartarlo. Un negativo no es un
+ * conteo, y se prefiere el estado "pendiente" antes que pintar un número falso.
+ */
+function toCount(value: unknown): number | undefined {
+  const parsed = toNumber(value)
+  if (parsed === undefined || parsed < 0) return undefined
+  return Math.round(parsed)
 }
 
 function toText(value: unknown): string | undefined {
@@ -121,7 +133,14 @@ function normalizeExpiringItem(raw: unknown, index: number): ExpiringItem | unde
     // El backend manda `severity`; si faltara se deriva con los mismos umbrales
     // que ya usa el front, y la lista sigue ordenando bien.
     severity: toSeverity(raw.severity) ?? severityFromDaysRemaining(daysRemaining),
-    href: toText(raw.href),
+    // Los vencimientos de cliente se atienden en un paso concreto de su perfil;
+    // los de staff (credenciales, RRHH) van a otras pantallas y pasan derecho.
+    href:
+      kind === "PRIOR_AUTHORIZATION"
+        ? toClientHref(raw.href, "priorAuth")
+        : kind === "CLIENT_DOCUMENT"
+          ? toClientHref(raw.href, "documents")
+          : toInternalHref(raw.href),
   }
 }
 
@@ -137,8 +156,11 @@ function normalizeUtilizationItem(raw: unknown, index: number): AuthorizationUti
     toNumber(raw.percentUsed) ??
     (unitsAuthorized > 0 ? Math.round((unitsUsed / unitsAuthorized) * 100) : 0)
 
+  const clientId = toText(raw.clientId)
+
   return {
     id: toText(raw.id) ?? `utilization-${index}`,
+    clientId,
     clientName,
     billingCode: toText(raw.billingCode) ?? "—",
     unitsAuthorized,
@@ -146,7 +168,10 @@ function normalizeUtilizationItem(raw: unknown, index: number): AuthorizationUti
     percentUsed,
     endDate: toText(raw.endDate) ?? "",
     severity: toSeverity(raw.severity) ?? severityFromPercentUsed(percentUsed),
-    href: toText(raw.href),
+    // Una autorización se atiende en Prior Authorizations del perfil del cliente.
+    // `clientId` es el respaldo: `id` es el del authorization_billing_code y
+    // armar la ruta con él llevaría a un cliente que no existe.
+    href: toClientHref(raw.href, "priorAuth", clientId),
   }
 }
 
@@ -158,7 +183,6 @@ function normalizeTrendPoint(raw: unknown): TrendPoint | undefined {
   return {
     label,
     sessions: toInt(raw.sessions),
-    notesPending: toInt(raw.notesPending),
   }
 }
 
@@ -213,13 +237,15 @@ export function normalizeDashboardSummary(payload: unknown): DashboardSummary {
   if (isObject(root.kpis)) {
     const kpis = {
       sessionsThisWeek: normalizeKpi(root.kpis.sessionsThisWeek),
-      notesPendingSignature: normalizeKpi(root.kpis.notesPendingSignature),
+      // Llega como número pelado, no como objeto de KPI
+      notesPendingSignature: toCount(root.kpis.notesPendingSignature),
       authorizationUsage: normalizeKpi(root.kpis.authorizationUsage),
       clinicalMonthlyThisMonth: normalizeKpi(root.kpis.clinicalMonthlyThisMonth),
     }
     // Si ninguno sobrevivió, se omite la sección entera para que la fila muestre
-    // "pendiente" en lugar de cuatro tiles vacíos.
-    if (Object.values(kpis).some(Boolean)) summary.kpis = kpis
+    // "pendiente" en lugar de cuatro tiles vacíos. Se compara contra `undefined`
+    // y no por falsedad: `notesPendingSignature: 0` es un dato, no una ausencia.
+    if (Object.values(kpis).some((kpi) => kpi !== undefined)) summary.kpis = kpis
   }
 
   if (isObject(root.expiring)) {

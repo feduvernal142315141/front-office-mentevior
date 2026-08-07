@@ -11,7 +11,8 @@ export interface AccountProfile {
   taxonomyCode: string
   logo: string
   chartPrefix: string
-  chartStartNumber: string
+  /** El backend lo devuelve como número; el form lo maneja como texto */
+  chartStartNumber: string | number
   active: boolean
   createdAt?: string
   updatedAt?: string

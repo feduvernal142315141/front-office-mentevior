@@ -5,6 +5,17 @@ import type { ExpiringKind } from "@/lib/types/dashboard.types"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 
+/**
+ * A dónde manda cada KPI al hacer click. `undefined` = el tile no navega, sea
+ * porque el rol no puede entrar a esa pantalla —mandarlo a un "sin permiso" es
+ * peor que no ofrecer el enlace— o porque el número no tiene un destino honesto.
+ */
+export interface KpiHrefs {
+  sessionsThisWeek?: string
+  notesPendingSignature?: string
+  clinicalMonthlyThisMonth?: string
+}
+
 export interface DashboardLayout {
   showAuthorizationUtilization: boolean
   showDocumentCompliance: boolean
@@ -13,6 +24,7 @@ export interface DashboardLayout {
   compactKpis: boolean
   /** Tipos de vencimiento que este rol puede ver */
   allowedExpiringKinds: ExpiringKind[]
+  kpiHrefs: KpiHrefs
 }
 
 /**
@@ -50,6 +62,16 @@ export function useDashboardLayout(): DashboardLayout {
       showTrend: true,
       compactKpis: !canSeeClients,
       allowedExpiringKinds,
+      kpiHrefs: {
+        sessionsThisWeek: permission.view(PermissionModule.SCHEDULE) ? "/schedules" : undefined,
+        notesPendingSignature: permission.view(PermissionModule.SESSION_NOTE) ? "/session-note" : undefined,
+        clinicalMonthlyThisMonth: permission.view(PermissionModule.CLINICAL_MONTHLY)
+          ? "/clinical-monthly"
+          : undefined,
+        // `authorizationUsage` queda sin enlace a propósito: es un porcentaje
+        // global y no existe una pantalla de autorizaciones — viven dentro de
+        // cada cliente. El widget de abajo sí lleva a la autorización concreta.
+      },
     }
   }, [permission])
 }
