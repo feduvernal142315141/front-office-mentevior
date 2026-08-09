@@ -8,7 +8,7 @@ import {
   buildReportMonth,
   formatReportMonthLong,
   splitReportMonth,
-} from "@/lib/modules/monthly-supervision/utils/report-month"
+} from "@/lib/utils/report-month"
 import { cn } from "@/lib/utils"
 
 interface MonthPickerProps {
@@ -24,12 +24,14 @@ interface MonthPickerProps {
 }
 
 /**
- * Selector de **un** mes.
+ * Selector de **un** mes, en `yyyyMM`.
  *
- * El Monthly Supervision es de un mes, no de un rango —por eso no se reusa el
+ * Para reportes de un mes, no de un rango —por eso no se reusa el
  * `MonthRangePicker` de Clinical Monthly, que obliga a elegir dos extremos—.
  * Mismo lenguaje visual: altura de `FloatingSelect`, label flotante y grilla de
  * 12 meses con navegación por año.
+ *
+ * Lo usan Monthly Supervision y Case Supervision Log.
  */
 export function MonthPicker({
   value,

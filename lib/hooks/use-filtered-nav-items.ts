@@ -14,6 +14,10 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/session-note": PermissionModule.SESSION_NOTE,
   "/clinical-monthly": PermissionModule.CLINICAL_MONTHLY,
   "/monthly-supervisions": PermissionModule.MONTHLY_SUPERVISIONS,
+  // Comparte módulo con el catálogo de eventos de supervisión: es lo que dice el
+  // contrato del 2026-08-07, pero está en revisión (§6 de
+  // `docs/case-supervision-log-backend.md`).
+  "/case-supervision-log": PermissionModule.SUPERVISION,
   "/service-log": PermissionModule.SERVICE_LOG,
   "/assessment": PermissionModule.ASSESSMENT,
   "/my-company": PermissionModule.MY_COMPANY,

@@ -13,7 +13,8 @@
  */
 
 /** Período del reporte en el formato que guarda y filtra el backend: `yyyyMM` */
-export type ReportMonth = string
+import type { ReportMonth } from "@/lib/utils/report-month"
+export type { ReportMonth }
 
 // ============================================
 // Catálogos

@@ -2,18 +2,16 @@
 
 import { useMemo } from "react"
 import { Plus } from "lucide-react"
-import { CustomTable } from "@/components/custom/CustomTable"
-import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
-import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { Card } from "@/components/custom/Card"
+import { CustomTable } from "@/components/custom/CustomTable"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
-import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
-import { getMonthlySupervisionPdfUrl } from "@/lib/modules/monthly-supervision/services/monthly-supervision.service"
-import { formatReportMonthLong } from "@/lib/modules/monthly-supervision/utils/report-month"
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
-import { useMonthlySupervisionTable } from "../hooks/useMonthlySupervisionTable"
+import { getCaseSupervisionLogPdfUrl } from "@/lib/modules/case-supervision-log/services/case-supervision-log.service"
+import { useCaseSupervisionLogTable } from "../hooks/useCaseSupervisionLogTable"
 
-export function MonthlySupervisionTable() {
+export function CaseSupervisionLogTable() {
   const {
     data,
     columns,
@@ -27,23 +25,20 @@ export function MonthlySupervisionTable() {
     pagination,
     previewId,
     setPreviewId,
-    pendingDelete,
-    setPendingDelete,
-    confirmDelete,
-    isDeleting,
     canCreate,
     goToCreate,
-  } = useMonthlySupervisionTable()
+    goToDetail,
+  } = useCaseSupervisionLogTable()
 
   const pdfUrl = useMemo(
-    () => (previewId ? getMonthlySupervisionPdfUrl(previewId) : null),
+    () => (previewId ? getCaseSupervisionLogPdfUrl(previewId) : null),
     [previewId],
   )
 
   if (error) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-        <p className="font-medium text-red-600">Failed to load monthly supervisions</p>
+        <p className="font-medium text-red-600">Failed to load case supervision logs</p>
         <p className="mt-1 text-sm text-red-500">{error.message}</p>
       </div>
     )
@@ -55,7 +50,7 @@ export function MonthlySupervisionTable() {
         <div className="flex justify-end">
           <Button onClick={goToCreate} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            New Monthly Supervision
+            New Case Supervision Log
           </Button>
         </div>
       )}
@@ -76,7 +71,7 @@ export function MonthlySupervisionTable() {
             searchable
           />
           <FloatingSelect
-            label="Supervisee"
+            label="Supervisor"
             value={filters.filterProvider}
             onChange={filters.onProviderChange}
             options={providerOptions}
@@ -97,12 +92,12 @@ export function MonthlySupervisionTable() {
         columns={columns}
         data={data}
         isLoading={isLoading}
-        emptyMessage={hasActiveFilters ? "No results found" : "No monthly supervisions yet"}
+        emptyMessage={hasActiveFilters ? "No results found" : "No case supervision logs yet"}
         emptyContent={
           hasActiveFilters ? (
             <div className="py-8 text-center">
               <p className="text-base font-semibold text-gray-800">
-                No monthly supervisions match your filters
+                No case supervision logs match your filters
               </p>
               <p className="mt-1 text-sm text-gray-500">Try adjusting your search criteria</p>
               <Button variant="ghost" onClick={clearFilters} className="mt-4">
@@ -112,7 +107,9 @@ export function MonthlySupervisionTable() {
           ) : undefined
         }
         getRowKey={(item) => item.id}
-        onRowClick={(item) => setPreviewId(item.id)}
+        // La fila abre el detalle, no el PDF: el reporte no se puede editar, así
+        // que ver qué contiene es la acción principal.
+        onRowClick={goToDetail}
         pagination={pagination}
       />
 
@@ -121,23 +118,9 @@ export function MonthlySupervisionTable() {
           open
           onClose={() => setPreviewId(null)}
           documentUrl={pdfUrl}
-          fileName="Monthly Supervision.pdf"
+          fileName="Case Supervision Log.pdf"
         />
       )}
-
-      <DeleteConfirmModal
-        isOpen={!!pendingDelete}
-        onClose={() => setPendingDelete(null)}
-        onConfirm={confirmDelete}
-        isDeleting={isDeleting}
-        title="Delete Monthly Supervision"
-        message="This will remove the report and its supervision entries. This action cannot be undone."
-        itemName={
-          pendingDelete
-            ? `${pendingDelete.clientName} — ${formatReportMonthLong(pendingDelete.requestedReportDate)}`
-            : undefined
-        }
-      />
     </div>
   )
 }

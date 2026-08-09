@@ -58,6 +58,10 @@ export const navItems: NavItem[] = [
         href: "/monthly-supervisions",
       },
       {
+        label: "Case Supervision Log",
+        href: "/case-supervision-log",
+      },
+      {
         label: "Service Log",
         href: "/service-log",
       },

@@ -31,7 +31,7 @@ import {
   toApiReportDate,
 } from "@/lib/modules/monthly-supervision/utils/report-month"
 import type { SupervisionAppointment } from "@/lib/types/monthly-supervision.types"
-import { MonthPicker } from "./MonthPicker"
+import { MonthPicker } from "@/components/custom/MonthPicker"
 import { SupervisionAppointmentsTable } from "./SupervisionAppointmentsTable"
 import { SupervisionOptionsChecklist } from "./SupervisionOptionsChecklist"
 import { SupervisionSignatures } from "./SupervisionSignatures"

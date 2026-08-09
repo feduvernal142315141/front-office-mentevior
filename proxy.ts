@@ -23,6 +23,7 @@ const APP_ROUTES = [
   "/assessment",
   "/behavior-plan",
   "/billing",
+  "/case-supervision-log",
   "/change-password",
   "/clinical-documents",
   "/clinical-monthly",

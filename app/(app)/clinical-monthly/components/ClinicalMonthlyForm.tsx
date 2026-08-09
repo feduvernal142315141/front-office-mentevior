@@ -13,10 +13,11 @@ import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-
 import { useClinicalMonthlyById } from "@/lib/modules/clinical-monthly/hooks/use-clinical-monthly-by-id"
 import { useSaveClinicalMonthly } from "@/lib/modules/clinical-monthly/hooks/use-save-clinical-monthly"
 import { getClinicalMonthlyPdfUrl } from "@/lib/modules/clinical-monthly/services/clinical-monthly.service"
-import { validateMonthRange } from "@/lib/modules/clinical-monthly/utils/month-range"
+import { MAX_MONTH_RANGE, validateMonthRange } from "@/lib/modules/clinical-monthly/utils/month-range"
 import { CLINICAL_MONTHLY_SUMMARY_GUIDANCE } from "@/lib/constants/clinical-monthly-guidance"
 import { getNarrativeLengthState, validateNarrativeLength } from "@/lib/utils/narrative-length"
-import { MonthRangePicker } from "./MonthRangePicker"
+import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
+import { formatReportMonthShort, parseReportMonth } from "@/lib/utils/report-month"
 
 interface ClinicalMonthlyFormProps {
   /** Presente al editar un reporte existente */
@@ -70,9 +71,15 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     setClientId(clients[0].id)
   }, [clients, clientId, isEditing])
 
+  /**
+   * El picker habla `yyyyMM` —el formato interno del front— pero el contrato de
+   * Clinical Monthly es `MM/yyyy`, y así lo esperan `validateMonthRange`,
+   * `listMonthKeys` y el propio backend. La conversión vive sólo acá, en el
+   * borde del componente: el estado del formulario no cambia de formato.
+   */
   const handleRangeChange = useCallback((start: string, end: string) => {
-    setStartMonthYear(start)
-    setEndMonthYear(end)
+    setStartMonthYear(start ? formatReportMonthShort(start) : "")
+    setEndMonthYear(end ? formatReportMonthShort(end) : "")
     setRangeError(null)
   }, [])
 
@@ -195,10 +202,13 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             required
           />
           <MonthRangePicker
-            startValue={startMonthYear}
-            endValue={endMonthYear}
+            label="Reporting period"
+            startValue={parseReportMonth(startMonthYear) ?? ""}
+            endValue={parseReportMonth(endMonthYear) ?? ""}
             onChange={handleRangeChange}
             currentYear={currentYear}
+            maxMonths={MAX_MONTH_RANGE}
+            required
             hasError={!!rangeError}
             disabled={isBusy}
           />

@@ -1,7 +1,12 @@
-import type { ReportMonth } from "@/lib/types/monthly-supervision.types"
+import type { ReportMonth } from "@/lib/utils/report-month"
+import { formatReportMonthLong, splitReportMonth } from "@/lib/utils/report-month"
 
 /**
- * El período del reporte, en un solo lugar.
+ * El período del reporte de Monthly Supervision.
+ *
+ * Las primitivas puras viven en `lib/utils/report-month.ts` y se re-exportan acá
+ * para no romper a quien ya importaba desde este módulo. Lo propio de Monthly
+ * Supervision es sólo la conversión a los formatos de SUS endpoints.
  *
  * Hay **tres formatos** dando vueltas para el mismo mes, y ninguno de los dos
  * contratos dice cuál gana en el `POST`:
@@ -12,13 +17,20 @@ import type { ReportMonth } from "@/lib/types/monthly-supervision.types"
  * | `POST` / `PUT` (contrato 2026-08-04) | `"February 2026"` |
  * | Listado y sus filtros (2026-08-05) | `202608` / `Integer_202608` |
  *
- * Adentro del front se usa **siempre `yyyyMM`** —ordenable, comparable y el
- * mismo que el backend guarda y filtra—, y las conversiones a los formatos de
- * cada endpoint viven acá. Si backend confirma que el `POST` espera
- * `"February 2026"`, se cambia `SAVE_FORMAT` y no se toca nada más.
- *
  * Ver §7.0 de `docs/monthly-supervision-backend.md`.
  */
+
+export type { ReportMonth }
+export {
+  MONTHS_LONG,
+  MONTHS_SHORT,
+  buildReportMonth,
+  currentReportMonth,
+  formatReportMonthLong,
+  isReportMonth,
+  parseReportMonth,
+  splitReportMonth,
+} from "@/lib/utils/report-month"
 
 /**
  * Qué formato se manda en `requestedReportDate` al crear/actualizar.
@@ -28,74 +40,6 @@ import type { ReportMonth } from "@/lib/types/monthly-supervision.types"
  * para el filtro del listado.
  */
 const SAVE_FORMAT: "yyyyMM" | "monthName" = "yyyyMM"
-
-const MONTHS_LONG = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-]
-
-const MONTHS_SHORT = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-]
-
-export { MONTHS_LONG, MONTHS_SHORT }
-
-/** `yyyyMM` válido: año de 4 dígitos y mes 01–12 */
-const YYYYMM = /^(\d{4})(0[1-9]|1[0-2])$/
-
-export function isReportMonth(value: string): boolean {
-  return YYYYMM.test(value.trim())
-}
-
-export function buildReportMonth(year: number, monthIndex0: number): ReportMonth {
-  return `${year}${String(monthIndex0 + 1).padStart(2, "0")}`
-}
-
-/** `"202602"` → `{ year: 2026, monthIndex0: 1 }`; `null` si no se puede leer */
-export function splitReportMonth(value?: string | null): { year: number; monthIndex0: number } | null {
-  const parsed = parseReportMonth(value)
-  if (!parsed) return null
-  return { year: Number(parsed.slice(0, 4)), monthIndex0: Number(parsed.slice(4)) - 1 }
-}
-
-/**
- * Lee cualquiera de los tres formatos y devuelve `yyyyMM`.
- *
- * Tolerante a propósito: hay registros creados antes de que el backend cambiara
- * el almacenamiento, y no se puede saber cuál de los formatos trae cada uno.
- */
-export function parseReportMonth(value?: string | null): ReportMonth | null {
-  if (!value) return null
-  const raw = value.trim()
-  if (!raw) return null
-
-  // yyyyMM
-  if (YYYYMM.test(raw)) return raw
-
-  // MM/yyyy
-  const slash = /^(0?[1-9]|1[0-2])\/(\d{4})$/.exec(raw)
-  if (slash) return buildReportMonth(Number(slash[2]), Number(slash[1]) - 1)
-
-  // "February 2026" / "Feb 2026"
-  const named = /^([A-Za-z]+)\s+(\d{4})$/.exec(raw)
-  if (named) {
-    const needle = named[1].toLowerCase()
-    const index = MONTHS_LONG.findIndex(
-      (month, i) => month.toLowerCase() === needle || MONTHS_SHORT[i].toLowerCase() === needle,
-    )
-    if (index >= 0) return buildReportMonth(Number(named[2]), index)
-  }
-
-  return null
-}
-
-/** `"202602"` → `"February 2026"`; devuelve `"—"` si no se puede leer */
-export function formatReportMonthLong(value?: string | null): string {
-  const parts = splitReportMonth(value)
-  if (!parts) return "—"
-  return `${MONTHS_LONG[parts.monthIndex0]} ${parts.year}`
-}
 
 /** Valor de `requestedReportDate` para el `POST`/`PUT` */
 export function toApiReportDate(value: ReportMonth): string {
@@ -117,10 +61,4 @@ export function toAppointmentsMonthYear(value: ReportMonth): string {
 /** Valor numérico para los filtros del listado (`Integer_202608`) */
 export function toFilterValue(value: ReportMonth): number {
   return Number(value)
-}
-
-/** El mes actual, para arrancar el selector en algo útil */
-export function currentReportMonth(): ReportMonth {
-  const now = new Date()
-  return buildReportMonth(now.getFullYear(), now.getMonth())
 }

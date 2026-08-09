@@ -296,8 +296,13 @@ export function useMonthlySupervisionTable() {
       filterMonthTo,
       filterClient,
       filterProvider,
-      onMonthFromChange: (value: string) => { setFilterMonthFrom(value); setPage(1) },
-      onMonthToChange: (value: string) => { setFilterMonthTo(value); setPage(1) },
+      // El picker emite los dos extremos juntos: un solo cambio de estado, una
+      // sola consulta. Con dos campos separados, elegir un rango disparaba dos.
+      onMonthRangeChange: (from: string, to: string) => {
+        setFilterMonthFrom(from)
+        setFilterMonthTo(to)
+        setPage(1)
+      },
       onClientChange: (value: string) => { setFilterClient(value); setPage(1) },
       onProviderChange: (value: string) => { setFilterProvider(value); setPage(1) },
     },

@@ -3,55 +3,60 @@
 import { useEffect, useMemo, useState } from "react"
 import { CalendarRange, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { MAX_MONTH_RANGE } from "@/lib/modules/clinical-monthly/utils/month-range"
+import { MONTHS_LONG, MONTHS_SHORT, splitReportMonth } from "@/lib/utils/report-month"
 import { cn } from "@/lib/utils"
 
-const MONTHS_SHORT = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-]
-
-const MONTHS_LONG = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-]
-
 interface MonthRangePickerProps {
-  /** `MM/yyyy`, o string vacío */
+  /** `yyyyMM`, o string vacío */
   startValue: string
-  /** `MM/yyyy`, o string vacío */
+  /** `yyyyMM`, o string vacío */
   endValue: string
   /** Emite ambos extremos a la vez; strings vacíos cuando se limpia */
-  onChange: (startMonthYear: string, endMonthYear: string) => void
-  /** Año de referencia; se pasa explícito para no depender del reloj en render */
-  currentYear: number
+  onChange: (startReportMonth: string, endReportMonth: string) => void
   label?: string
+  /** Tope de meses del rango. Sin él, el rango es libre */
+  maxMonths?: number
+  /** Año de referencia; se pasa explícito para no depender del reloj en render */
+  currentYear?: number
+  required?: boolean
   hasError?: boolean
   disabled?: boolean
 }
 
 /**
- * Selección del período del reporte en un solo calendario: se elige mes de
- * inicio y mes de fin con dos clics, con el rango resaltado.
+ * Selección de un rango de meses en un solo calendario: mes de inicio y mes de
+ * fin con dos clics, con el rango resaltado.
  *
- * El grano es **mes**, no día, porque el contrato del backend es `MM/yyyy`
- * (`startMonthYear` / `endMonthYear`). Un date picker de día sugeriría una
- * precisión que el reporte no tiene.
+ * El grano es **mes, no día**: un date picker de día sugeriría una precisión que
+ * estos reportes no tienen.
  *
- * Los meses que excederían el tope de 12 quedan deshabilitados mientras se
- * elige el fin, así el rango inválido no se puede ni construir.
+ * Reemplaza al par de campos "From" / "To": dos selectores separados obligan a
+ * abrir dos veces y no muestran el rango como una unidad, que es como se piensa.
+ *
+ * Habla `yyyyMM`, el formato interno del front (ver `lib/utils/report-month.ts`).
+ * Quien use otro formato en su API convierte en su propio borde.
+ *
+ * Con `maxMonths`, los meses que excederían el tope quedan deshabilitados
+ * mientras se elige el fin: el rango inválido no se puede ni construir.
  */
 export function MonthRangePicker({
   startValue,
   endValue,
   onChange,
+  label = "Period",
+  maxMonths,
   currentYear,
-  label = "Reporting period",
+  required = false,
   hasError,
   disabled,
 }: MonthRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [viewYear, setViewYear] = useState(currentYear)
+  // Se fija una vez: el año de referencia no debería moverse mientras el
+  // componente vive, y leer el reloj en cada render rompe la hidratación.
+  const [fallbackYear] = useState(() => new Date().getFullYear())
+  const referenceYear = currentYear ?? fallbackYear
+
+  const [viewYear, setViewYear] = useState(referenceYear)
   /** Índice del inicio mientras falta elegir el fin; null cuando el rango está completo */
   const [pendingStart, setPendingStart] = useState<number | null>(null)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
@@ -59,14 +64,14 @@ export function MonthRangePicker({
   const startIndex = toMonthIndex(startValue)
   const endIndex = toMonthIndex(endValue)
 
-  // Al abrir, mostrar el año del rango ya elegido en vez del año actual
+  // Al abrir, mostrar el año del rango ya elegido en vez del año de referencia
   useEffect(() => {
     if (!isOpen) return
     setPendingStart(null)
     setHoveredIndex(null)
     if (startIndex != null) setViewYear(Math.floor(startIndex / 12))
-    else setViewYear(currentYear)
-  }, [isOpen, startIndex, currentYear])
+    else setViewYear(referenceYear)
+  }, [isOpen, startIndex, referenceYear])
 
   const triggerLabel = useMemo(() => {
     if (startIndex == null || endIndex == null) return ""
@@ -106,10 +111,10 @@ export function MonthRangePicker({
     setPendingStart(null)
   }
 
-  /** Con inicio elegido, sólo se habilitan los 12 meses del tope */
+  /** Con inicio elegido y tope definido, sólo se habilitan los meses que caben */
   const isDisabledMonth = (index: number) => {
-    if (pendingStart == null) return false
-    return index > pendingStart + (MAX_MONTH_RANGE - 1)
+    if (pendingStart == null || !maxMonths) return false
+    return index > pendingStart + (maxMonths - 1)
   }
 
   return (
@@ -138,7 +143,7 @@ export function MonthRangePicker({
               isOpen && !disabled && "text-[#2563EB]",
             )}
           >
-            {label} <span className="text-[#037ECC]">*</span>
+            {label} {required && <span className="text-[#037ECC]">*</span>}
           </span>
 
           <CalendarRange className="h-4 w-4 shrink-0 text-[#037ECC]" />
@@ -222,11 +227,12 @@ export function MonthRangePicker({
           {pendingStart != null ? (
             <span>
               Start: <strong className="text-slate-700">{formatLong(pendingStart)}</strong> — now pick the
-              end month (up to {MAX_MONTH_RANGE})
+              end month{maxMonths ? ` (up to ${maxMonths})` : ""}
             </span>
           ) : monthCount > 0 ? (
             <span>
-              <strong className="text-slate-700">{monthCount}</strong> {monthCount === 1 ? "month" : "months"} selected
+              <strong className="text-slate-700">{monthCount}</strong>{" "}
+              {monthCount === 1 ? "month" : "months"} selected
             </span>
           ) : (
             <span>Pick the start month, then the end month</span>
@@ -237,18 +243,18 @@ export function MonthRangePicker({
   )
 }
 
-/** `MM/yyyy` → índice comparable de meses; null si el formato no sirve */
-function toMonthIndex(monthYear: string): number | null {
-  if (!/^(0[1-9]|1[0-2])\/\d{4}$/.test(monthYear.trim())) return null
-  const [month, year] = monthYear.trim().split("/").map(Number)
-  return year * 12 + (month - 1)
+/** `yyyyMM` → índice comparable de meses; null si el formato no sirve */
+function toMonthIndex(reportMonth: string): number | null {
+  const parts = splitReportMonth(reportMonth)
+  if (!parts) return null
+  return parts.year * 12 + parts.monthIndex0
 }
 
-/** índice → `MM/yyyy` */
+/** índice → `yyyyMM` */
 function fromMonthIndex(index: number): string {
   const year = Math.floor(index / 12)
   const month = (index % 12) + 1
-  return `${String(month).padStart(2, "0")}/${year}`
+  return `${year}${String(month).padStart(2, "0")}`
 }
 
 /** índice → "May 2026" */

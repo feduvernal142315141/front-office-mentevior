@@ -14,6 +14,7 @@ const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/session-note": PermissionModule.SESSION_NOTE,
   "/clinical-monthly": PermissionModule.CLINICAL_MONTHLY,
   "/monthly-supervisions": PermissionModule.MONTHLY_SUPERVISIONS,
+  "/case-supervision-log": PermissionModule.SUPERVISION,
   "/service-log": PermissionModule.SERVICE_LOG,
   "/assessment": PermissionModule.ASSESSMENT,
   
