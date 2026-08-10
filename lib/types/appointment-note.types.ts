@@ -99,6 +99,14 @@ export interface AppointmentNoteModality {
   name: string
 }
 
+/** Client caregiver who signed the note, from GET note responses */
+export interface AppointmentNoteClientCaregiver {
+  id: string
+  fullName: string
+  relationshipId: string
+  relationshipName: string
+}
+
 /** Full appointment note response from GET /appointment/{id}/note */
 export interface AppointmentNote {
   id: string
@@ -121,6 +129,7 @@ export interface AppointmentNote {
   useCheckmarkSignature: boolean
   caregiverSignatureImage: string | null
   caregiverSignatureChecked: boolean | null
+  clientCaregiver: AppointmentNoteClientCaregiver | null
   noteStatus: NoteStatus
   /** @deprecated Use noteStatus instead */
   blocked?: boolean
@@ -157,6 +166,7 @@ export interface UpdateAppointmentNotePayload {
   dataCollectionItems?: UpdateAppointmentNoteDataCollectionItem[]
   caregiverSignatureImage?: string | null
   caregiverSignatureChecked?: boolean | null
+  clientCaregiverId?: string | null
   providerSignatureImage?: string | null
 }
 

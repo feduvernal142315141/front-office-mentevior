@@ -81,11 +81,13 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
   const useCheckmarkSignature = note?.useCheckmarkSignature ?? false
   const [caregiverSignatureChecked, setCaregiverChecked] = useState(false)
   const [caregiverSignatureImage, setCaregiverSignatureImage] = useState<string | null>(null)
+  const [clientCaregiverId, setClientCaregiverIdState] = useState("")
 
   useEffect(() => {
     if (!note) return
     if (note.caregiverSignatureChecked != null) setCaregiverChecked(note.caregiverSignatureChecked)
     if (note.caregiverSignatureImage != null) setCaregiverSignatureImage(note.caregiverSignatureImage)
+    if (note.clientCaregiver) setClientCaregiverIdState(note.clientCaregiver.id)
   }, [note])
 
   // Catalogs
@@ -152,6 +154,39 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [itemErrors, setItemErrors] = useState<Set<string>>(new Set())
 
+  // Active caregivers as select options for the signature block;
+  // keep the persisted signer visible even if deactivated
+  const signatureCaregiverOptions = useMemo(() => {
+    const options = caregiverOptions.map((c) => ({
+      value: c.id,
+      label: c.relationship ? `${c.name} (${c.relationship})` : c.name,
+    }))
+    const persisted = note?.clientCaregiver
+    if (persisted && !options.some((o) => o.value === persisted.id)) {
+      options.push({
+        value: persisted.id,
+        label: persisted.relationshipName ? `${persisted.fullName} (${persisted.relationshipName})` : persisted.fullName,
+      })
+    }
+    return options
+  }, [caregiverOptions, note])
+
+  // Single caregiver → pre-select it; the user only chooses when there are several
+  useEffect(() => {
+    if (signatureCaregiverOptions.length !== 1) return
+    setClientCaregiverIdState((prev) => prev || signatureCaregiverOptions[0].value)
+  }, [signatureCaregiverOptions])
+
+  const setClientCaregiverId = useCallback((id: string) => {
+    setClientCaregiverIdState(id)
+    setErrors((prev) => {
+      if (!prev.clientCaregiverId) return prev
+      const next = { ...prev }
+      delete next.clientCaregiverId
+      return next
+    })
+  }, [])
+
   const updateField = useCallback(
     <K extends keyof SessionNote97156FormData>(field: K, value: SessionNote97156FormData[K]) => {
       setFormData((prev) => ({ ...prev, [field]: value }))
@@ -211,6 +246,12 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
       if (!formData.goals.trim()) newErrors.goals = "This field is required"
       const summaryError = validateNarrativeLength(formData.sessionSummary)
       if (summaryError) newErrors.sessionSummary = summaryError
+    }
+
+    // Backend requires the signing caregiver whenever a caregiver signature/check is sent
+    const caregiverSignaturePresent = useCheckmarkSignature ? caregiverSignatureChecked : !!caregiverSignatureImage
+    if (caregiverSignaturePresent && !clientCaregiverId) {
+      newErrors.clientCaregiverId = "Select the caregiver who signed"
     }
 
     // Validate data collection items
@@ -286,6 +327,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
       dataCollectionItems,
       caregiverSignatureImage: caregiverSignatureImage || null,
       caregiverSignatureChecked: useCheckmarkSignature ? caregiverSignatureChecked : null,
+      clientCaregiverId: clientCaregiverId || null,
       providerSignatureImage: providerSignatureImage || null,
       ...(isReadOnly ? {} : {
         teachingMethodId: formData.teachingMethodId || null,
@@ -305,7 +347,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
     const id = await mutation.update(payload)
     if (id) void refetch()
     return id
-  }, [formData, note, mutation, refetch, participantCatalog, caregiverSignatureImage, caregiverSignatureChecked, useCheckmarkSignature, providerSignatureImage])
+  }, [formData, note, mutation, refetch, participantCatalog, caregiverSignatureImage, caregiverSignatureChecked, useCheckmarkSignature, providerSignatureImage, clientCaregiverId])
 
   const categories: AppointmentNoteCategory[] = useMemo(() => note?.categories ?? [], [note])
   const recipient = note?.recipient ?? null
@@ -347,6 +389,11 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
     setCaregiverChecked,
     caregiverSignatureImage,
     setCaregiverSignatureImage,
+    signatureCaregiverOptions,
+    clientCaregiverId,
+    setClientCaregiverId,
+    resolvedClientId,
+    caregiversLoading,
     // Status
     noteStatus: note?.noteStatus ?? "read",
     noteId: note?.id ?? null,

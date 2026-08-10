@@ -49,6 +49,19 @@ function parseParticipant(p: Record<string, unknown>) {
   }
 }
 
+function parseClientCaregiver(obj: unknown): AppointmentNote97156Caregiver | null {
+  if (!obj || typeof obj !== "object") return null
+  const c = obj as Record<string, unknown>
+  const id = String(c.id ?? "")
+  if (!id) return null
+  return {
+    id,
+    fullName: String(c.fullName ?? ""),
+    relationshipId: String(c.relationshipId ?? ""),
+    relationshipName: String(c.relationshipName ?? ""),
+  }
+}
+
 function parseCaregivers(arr: unknown): AppointmentNote97156Caregiver[] {
   if (!Array.isArray(arr)) return []
   return arr
@@ -216,6 +229,7 @@ export async function getAppointmentNote97156(
     // Signatures
     caregiverSignatureImage: typeof data.caregiverSignatureImage === "string" ? data.caregiverSignatureImage : null,
     caregiverSignatureChecked: typeof data.caregiverSignatureChecked === "boolean" ? data.caregiverSignatureChecked : null,
+    clientCaregiver: parseClientCaregiver(data.clientCaregiver),
     useCheckmarkSignature: Boolean(data.useCheckmarkSignature),
     // Status
     noteStatus: parseNoteStatus(data),

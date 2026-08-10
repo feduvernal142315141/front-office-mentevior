@@ -91,6 +91,19 @@ function parseCatalogType(raw: unknown): AppointmentNoteParticipantCatalogType {
   return "Member User Type"
 }
 
+function parseClientCaregiver(obj: unknown) {
+  if (!obj || typeof obj !== "object") return null
+  const c = obj as Record<string, unknown>
+  const id = String(c.id ?? "")
+  if (!id) return null
+  return {
+    id,
+    fullName: String(c.fullName ?? ""),
+    relationshipId: String(c.relationshipId ?? ""),
+    relationshipName: String(c.relationshipName ?? ""),
+  }
+}
+
 function parseParticipant(p: Record<string, unknown>) {
   // Backend may use catalogId/catalogType or memberUserTypeId/relationshipId
   if (p.catalogId) {
@@ -221,6 +234,7 @@ export async function getAppointmentNote(
     useCheckmarkSignature: Boolean(data.useCheckmarkSignature),
     caregiverSignatureImage: typeof data.caregiverSignatureImage === "string" ? data.caregiverSignatureImage : null,
     caregiverSignatureChecked: typeof data.caregiverSignatureChecked === "boolean" ? data.caregiverSignatureChecked : null,
+    clientCaregiver: parseClientCaregiver(data.clientCaregiver),
     noteStatus: parseNoteStatus(data),
     blocked: Boolean(data.blocked),
     notCanEdit: Boolean(data.notCanEdit),

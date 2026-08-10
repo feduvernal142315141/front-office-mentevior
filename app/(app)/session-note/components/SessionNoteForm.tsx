@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import Link from "next/link"
 import {
   BookOpen, AlertTriangle, Stethoscope,
   Target, BarChart3, User, Building2, ClipboardList, PenTool, CheckCircle2, PenLine,
@@ -58,6 +59,11 @@ interface SessionNoteFormProps {
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
+  caregiverSignatureOptions?: { value: string; label: string }[]
+  clientCaregiverId?: string
+  onClientCaregiverChange?: (id: string) => void
+  caregiversClientId?: string | null
+  caregiversLoading?: boolean
   noteStatus?: NoteStatus
   appointmentId?: string | null
 }
@@ -89,6 +95,11 @@ export function SessionNoteForm({
   onCaregiverCheckedChange,
   onCaregiverSignatureChange,
   caregiverSignatureImage,
+  caregiverSignatureOptions,
+  clientCaregiverId,
+  onClientCaregiverChange,
+  caregiversClientId,
+  caregiversLoading,
   noteStatus = "read",
   appointmentId,
 }: SessionNoteFormProps) {
@@ -319,6 +330,12 @@ export function SessionNoteForm({
         onCaregiverCheckedChange={onCaregiverCheckedChange}
         onCaregiverSignatureChange={onCaregiverSignatureChange}
         caregiverSignatureImage={caregiverSignatureImage}
+        caregiverOptions={caregiverSignatureOptions}
+        clientCaregiverId={clientCaregiverId}
+        onClientCaregiverChange={onClientCaregiverChange}
+        clientCaregiverError={errors.clientCaregiverId}
+        caregiversEmpty={!caregiversLoading && caregiverSignatureOptions != null && caregiverSignatureOptions.length === 0}
+        caregiversProfileHref={caregiversClientId ? `/clients/${caregiversClientId}/profile?step=caregivers` : undefined}
         notCanEdit={formDisabled}
       />
 
@@ -437,7 +454,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, notCanEdit }: {
+function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, caregiverOptions, clientCaregiverId, onClientCaregiverChange, clientCaregiverError, caregiversEmpty, caregiversProfileHref, notCanEdit }: {
   provider: AppointmentNoteProvider | null
   providerSignatureUrl?: string | null
   onProviderSignatureChange?: (base64: string | null) => void
@@ -447,6 +464,12 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
+  caregiverOptions?: { value: string; label: string }[]
+  clientCaregiverId?: string
+  onClientCaregiverChange?: (id: string) => void
+  clientCaregiverError?: string
+  caregiversEmpty?: boolean
+  caregiversProfileHref?: string
   notCanEdit?: boolean
 }) {
   const [editorOpen, setEditorOpen] = useState(false)
@@ -528,6 +551,35 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
             {/* Caregiver info */}
             <div className="px-6 py-5 border-r border-[#037ECC]/10">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Caregiver</span>
+              <div className="mb-3" data-field="clientCaregiverId">
+                {caregiversEmpty ? (
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <p className="text-sm text-amber-800">
+                      This client has no caregivers configured.{" "}
+                      {caregiversProfileHref ? (
+                        <Link href={caregiversProfileHref} className="font-semibold underline hover:text-amber-900">
+                          Add them in the client profile
+                        </Link>
+                      ) : (
+                        "Add them in the client profile to enable the caregiver signature."
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <FloatingSelect
+                    label="Caregiver Name"
+                    value={clientCaregiverId ?? ""}
+                    onChange={(id) => onClientCaregiverChange?.(id)}
+                    options={caregiverOptions ?? []}
+                    searchable
+                    disabled={notCanEdit}
+                    hasError={!!clientCaregiverError}
+                    required={useCheckmarkSignature ? !!caregiverChecked : !!caregiverSignatureImage}
+                  />
+                )}
+                <FieldError message={clientCaregiverError} />
+              </div>
               {useCheckmarkSignature ? (
                 <label className="flex items-start gap-2.5 cursor-pointer group mt-1">
                   <input

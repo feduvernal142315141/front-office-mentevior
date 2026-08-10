@@ -38,6 +38,19 @@ function parseCatalogType(raw: unknown): AppointmentNoteParticipantCatalogType {
   return "Member User Type"
 }
 
+function parseClientCaregiver(obj: unknown) {
+  if (!obj || typeof obj !== "object") return null
+  const c = obj as Record<string, unknown>
+  const id = String(c.id ?? "")
+  if (!id) return null
+  return {
+    id,
+    fullName: String(c.fullName ?? ""),
+    relationshipId: String(c.relationshipId ?? ""),
+    relationshipName: String(c.relationshipName ?? ""),
+  }
+}
+
 function parseParticipant(p: Record<string, unknown>) {
   if (p.catalogId) {
     return {
@@ -163,6 +176,7 @@ export async function getAppointmentNote97155(
     // Signatures
     caregiverSignatureImage: typeof data.caregiverSignatureImage === "string" ? data.caregiverSignatureImage : null,
     caregiverSignatureChecked: typeof data.caregiverSignatureChecked === "boolean" ? data.caregiverSignatureChecked : null,
+    clientCaregiver: parseClientCaregiver(data.clientCaregiver),
     useCheckmarkSignature: Boolean(data.useCheckmarkSignature),
     // Status
     noteStatus: parseNoteStatus(data),

@@ -225,6 +225,29 @@ Los tres comparten `FormViewShell` (header, PDF, lock/unlock) y `useNoteStatusHa
 `active` (editable) · `read` (solo data collection + firmas) · `close` · `lock` (no guarda).
 En `read` el payload se envía **recortado**: solo `dataCollectionItems` + firmas.
 
+### 5.2.1 Caregiver firmante (`clientCaregiverId`) — 2026-08-10
+
+Los tres formularios (97153/97155/97156) tienen en la sección **Signatures**, celda Caregiver,
+un `FloatingSelect` "Caregiver Name" con los caregivers **activos** del cliente
+(`useCaregiversByClient(resolvedClientId)`, etiqueta "Nombre (Relación)"). El `clientId` se
+resuelve desde la URL o, si falta, vía `getAppointmentById(appointmentId).clientId` (los tres
+hooks tienen el fallback).
+
+Contrato backend:
+- Los `PUT` de nota aceptan `clientCaregiverId`; es **requerido** cuando se envía
+  `caregiverSignatureImage` o `caregiverSignatureChecked: true` (400 si falta,
+  422 si el caregiver no pertenece al cliente). El front valida esto en `handleSubmit`
+  (error `clientCaregiverId`, "Select the caregiver who signed") **fuera** del gate
+  `status !== "read"`, porque las firmas viajan también en `read`.
+- Los `GET` devuelven `clientCaregiver: { id, fullName, relationshipId, relationshipName } | null`;
+  se sincroniza al estado y se re-envía en cada save. Si el firmante persistido ya no está
+  activo, igual se agrega a las opciones del select para que se siga mostrando.
+- `caregiverSignatureChecked: false` borra firma + firmante en backend; notas históricas pueden
+  venir con `clientCaregiver: null`.
+
+El payload manda `clientCaregiverId: clientCaregiverId || null` junto a los campos de firma
+(fuera del spread `isReadOnly`).
+
 ### 5.3 97153 — nota base (`SessionNoteForm.tsx` + `useSessionNoteForm.ts`)
 
 Secciones: Service Details · Teaching Method, Modality & Participants · Session Details ·
@@ -277,7 +300,8 @@ medical concerns, ≥1 caregiver, ≥1 intervención, goals, sessionSummary, **y
 debe tener `value`**. Hace scroll+focus al primer error (`[data-field]` / `[data-item-value]`)
 usando el contenedor `#main-scroll`.
 
-**`clientId` es obligatorio** para que carguen los caregivers: la URL debe llevar `?clientId=`.
+**`clientId`**: idealmente la URL lleva `?clientId=`; si falta, los hooks lo resuelven con
+`getAppointmentById(appointmentId).clientId` (fallback presente en 97153, 97155 y 97156).
 
 ---
 

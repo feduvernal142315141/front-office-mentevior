@@ -65,7 +65,7 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
     return <SessionNote97156FormView appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
   }
   if (is97155) {
-    return <SessionNote97155FormView appointmentId={appointmentId} billingCode={billingCode} />
+    return <SessionNote97155FormView appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
   }
   return <SessionNote97153FormView appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
 }
@@ -113,6 +113,11 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
     setCaregiverChecked,
     caregiverSignatureImage,
     setCaregiverSignatureImage,
+    signatureCaregiverOptions,
+    clientCaregiverId,
+    setClientCaregiverId,
+    resolvedClientId,
+    caregiversLoading,
     noteStatus,
     noteId,
     refetchNote,
@@ -166,6 +171,11 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
+          caregiverSignatureOptions={signatureCaregiverOptions}
+          clientCaregiverId={clientCaregiverId}
+          onClientCaregiverChange={setClientCaregiverId}
+          caregiversClientId={resolvedClientId}
+          caregiversLoading={caregiversLoading}
           noteStatus={noteStatus}
           appointmentId={appointmentId}
         />
@@ -175,7 +185,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
 }
 
 // ─── 97155 Form View ───
-function SessionNote97155FormView({ appointmentId, billingCode }: { appointmentId: string; billingCode: string | null }) {
+function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
   const router = useRouter()
   const alert = useAlert()
   const { user } = useAuth()
@@ -213,9 +223,14 @@ function SessionNote97155FormView({ appointmentId, billingCode }: { appointmentI
     setCaregiverChecked,
     caregiverSignatureImage,
     setCaregiverSignatureImage,
+    signatureCaregiverOptions,
+    clientCaregiverId,
+    setClientCaregiverId,
+    resolvedClientId,
+    caregiversLoading,
     noteStatus,
     refetchNote,
-  } = useSessionNote97155Form({ appointmentId })
+  } = useSessionNote97155Form({ appointmentId, clientId })
 
   const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
 
@@ -261,6 +276,11 @@ function SessionNote97155FormView({ appointmentId, billingCode }: { appointmentI
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
+          caregiverSignatureOptions={signatureCaregiverOptions}
+          clientCaregiverId={clientCaregiverId}
+          onClientCaregiverChange={setClientCaregiverId}
+          caregiversClientId={resolvedClientId}
+          caregiversLoading={caregiversLoading}
           noteStatus={noteStatus}
         />
       </form>
@@ -310,6 +330,11 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
     setCaregiverChecked,
     caregiverSignatureImage,
     setCaregiverSignatureImage,
+    signatureCaregiverOptions,
+    clientCaregiverId,
+    setClientCaregiverId,
+    resolvedClientId,
+    caregiversLoading,
     noteStatus,
     refetchNote,
   } = useSessionNote97156Form({ appointmentId, clientId })
@@ -361,6 +386,11 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
+          caregiverSignatureOptions={signatureCaregiverOptions}
+          clientCaregiverId={clientCaregiverId}
+          onClientCaregiverChange={setClientCaregiverId}
+          caregiversClientId={resolvedClientId}
+          caregiversLoading={caregiversLoading}
           noteStatus={noteStatus}
           appointmentId={appointmentId}
         />

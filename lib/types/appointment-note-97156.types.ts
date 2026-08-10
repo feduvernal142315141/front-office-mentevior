@@ -43,6 +43,7 @@ export interface AppointmentNote97156 {
   // Signatures
   caregiverSignatureImage: string | null
   caregiverSignatureChecked: boolean | null
+  clientCaregiver: AppointmentNote97156Caregiver | null
   useCheckmarkSignature: boolean
   // Status
   noteStatus: NoteStatus
@@ -91,6 +92,7 @@ export interface UpdateAppointmentNote97156Payload {
   caregiverSignatureImage?: string | null
   providerSignatureImage?: string | null
   caregiverSignatureChecked?: boolean | null
+  clientCaregiverId?: string | null
 }
 
 /** Client-side form state for 97156 */

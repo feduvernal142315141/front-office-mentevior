@@ -1,4 +1,5 @@
 import type {
+  AppointmentNoteClientCaregiver,
   AppointmentNoteParticipant,
   AppointmentNoteParticipantPayload,
   NoteStatus,
@@ -37,6 +38,7 @@ export interface AppointmentNote97155 {
   // Signatures
   caregiverSignatureImage: string | null
   caregiverSignatureChecked: boolean | null
+  clientCaregiver: AppointmentNoteClientCaregiver | null
   useCheckmarkSignature: boolean
   // Status
   noteStatus: NoteStatus
@@ -105,6 +107,7 @@ export interface UpdateAppointmentNote97155Payload {
   caregiverSignatureImage?: string | null
   providerSignatureImage?: string | null
   caregiverSignatureChecked?: boolean | null
+  clientCaregiverId?: string | null
 }
 
 /** Client-side form state for 97155 */
