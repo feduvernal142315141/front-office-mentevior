@@ -67,6 +67,52 @@ function fetchUpstream(url: string, token: string): Promise<UpstreamResult> {
   })
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
+/** `message`/`details` del contrato de error del backend, si el cuerpo es JSON */
+function extractUpstreamMessage(body: Buffer): string | null {
+  try {
+    const parsed = JSON.parse(body.toString("utf8")) as Record<string, unknown>
+    const candidate = parsed.message ?? parsed.details ?? parsed.error
+    return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Error como página HTML mínima, no como JSON: el único consumidor de estas
+ * rutas es el `<iframe>` del DocumentViewer, y un JSON crudo ahí se ve como un
+ * bug. La página muestra el mensaje real del backend cuando existe.
+ */
+function errorResponse(status: number, message: string): NextResponse {
+  const html = `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Preview unavailable</title></head>
+<body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:440px;margin:24px;padding:32px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,0.05);text-align:center;">
+    <div style="font-size:34px;line-height:1;">📄</div>
+    <h1 style="margin:14px 0 6px;font-size:17px;font-weight:600;color:#1e293b;">The PDF preview is not available</h1>
+    <p style="margin:0;font-size:14px;line-height:1.5;color:#64748b;">${escapeHtml(message)}</p>
+  </div>
+</body>
+</html>`
+  return new NextResponse(html, {
+    status,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "private, no-store",
+    },
+  })
+}
+
 /** Nombre de archivo desde `Content-Disposition` (`filename=` / `filename*=`) */
 function parseContentDispositionFilename(header: string | null): string | null {
   if (!header) return null
@@ -113,18 +159,18 @@ export function createPdfProxyRoute(config: PdfProxyConfig) {
   return async function GET(req: NextRequest, context: RouteContext) {
     const id = req.nextUrl.searchParams.get(config.idParam)
     if (!id) {
-      return NextResponse.json({ error: `${config.idParam} is required` }, { status: 400 })
+      return errorResponse(400, `The document identifier (${config.idParam}) is missing.`)
     }
 
     const apiBase = process.env.NEXT_PUBLIC_API_URL
     if (!apiBase) {
-      return NextResponse.json({ error: "API URL is not configured" }, { status: 500 })
+      return errorResponse(500, "The API URL is not configured.")
     }
 
     const cookieStore = await cookies()
     const token = cookieStore.get("mv_fo_token")?.value
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return errorResponse(401, "Your session has expired. Sign in again and retry.")
     }
 
     const { fileName: rawFileName } = await context.params
@@ -136,13 +182,21 @@ export function createPdfProxyRoute(config: PdfProxyConfig) {
       upstream = await fetchUpstream(config.buildUpstreamUrl(apiBase, id), token)
     } catch (err) {
       console.error("[pdf-preview-proxy] upstream request failed:", err)
-      return NextResponse.json({ error: "Failed to reach PDF service" }, { status: 502 })
+      return errorResponse(502, "The PDF service could not be reached. Try again in a moment.")
     }
 
     if (upstream.status < 200 || upstream.status >= 300) {
-      return NextResponse.json(
-        { error: "Failed to generate PDF preview" },
-        { status: upstream.status },
+      // El motivo real viene en el cuerpo del error del backend; sin él, el
+      // usuario ve un genérico y nadie sabe qué pasó (p.ej. el 422 de un
+      // service log cuyas session notes todavía no están en Lock).
+      const upstreamMessage = extractUpstreamMessage(upstream.body)
+      console.error(
+        `[pdf-preview-proxy] upstream responded ${upstream.status}:`,
+        upstreamMessage ?? upstream.body.toString("utf8").slice(0, 500),
+      )
+      return errorResponse(
+        upstream.status,
+        upstreamMessage ?? `The document service responded with an error (${upstream.status}).`,
       )
     }
 
@@ -157,11 +211,11 @@ export function createPdfProxyRoute(config: PdfProxyConfig) {
       try {
         raw = JSON.parse(upstream.body.toString("utf8")) as Record<string, unknown>
       } catch {
-        return NextResponse.json({ error: "Invalid PDF response" }, { status: 502 })
+        return errorResponse(502, "The document service returned an invalid response.")
       }
       const base64 = String(raw.fileBase64 ?? raw.data ?? "")
       if (!base64) {
-        return NextResponse.json({ error: "Empty PDF response" }, { status: 502 })
+        return errorResponse(502, "The document service returned an empty document.")
       }
       pdfBuffer = Buffer.from(base64, "base64")
     } else {
