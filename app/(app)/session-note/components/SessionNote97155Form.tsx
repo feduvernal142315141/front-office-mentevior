@@ -7,7 +7,13 @@ import {
   User, Building2, ClipboardList, PenTool, CheckCircle2, PenLine,
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
-import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
+import { AiImprovableTextarea } from "@/components/custom/AiImprovableTextarea"
+import {
+  buildFaceToFaceMetadata,
+  buildProtocolAdjustmentsMetadata,
+  buildQhpImplementationMetadata,
+  buildActiveDirectionMetadata,
+} from "@/lib/modules/appointment-notes/utils/ai-summary-metadata"
 import { SESSION_NOTE_GUIDANCE } from "@/lib/constants/session-note-guidance"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
@@ -95,6 +101,42 @@ export function SessionNote97155Form({
   // Las unidades llegan pegadas al string de billing codes; en Service Details
   // van junto a las horas, no junto al código.
   const { label: billingCodeLabel, units: billingCodeUnits } = splitBillingCodesAndUnits(billingCodes)
+
+  const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
+    ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
+
+  const generalMetadata = () => ({
+    modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
+    reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
+    medicalConcerns: formData.medicalConcerns,
+    crisisInvolved: formData.crisisInvolved,
+    participantNames: namesFromIds(formData.participantIds, participantCatalog),
+  })
+
+  const buildFaceToFaceSummaryMetadata = () =>
+    buildFaceToFaceMetadata({
+      ...generalMetadata(),
+      faceToFaceProtocolName: protocolObservationItems.find((i) => i.id === formData.faceToFaceProtocolId)?.name ?? "",
+    })
+
+  const buildAdjustmentsSummaryMetadata = () =>
+    buildProtocolAdjustmentsMetadata({
+      ...generalMetadata(),
+      protocolAdjustmentNames: namesFromIds(formData.protocolAdjustmentIds, protocolAdjustmentItems),
+    })
+
+  const buildQhpSummaryMetadata = () =>
+    buildQhpImplementationMetadata({
+      ...generalMetadata(),
+      qhpImplementationName: qhpImplementationItems.find((i) => i.id === formData.qhpImplementationId)?.name ?? "",
+    })
+
+  const buildActiveDirectionSummaryMetadata = () =>
+    buildActiveDirectionMetadata({
+      ...generalMetadata(),
+      technicianNameAndCredentials: formData.technicianNameAndCredentials,
+      activeDirectionActivityNames: namesFromIds(formData.activeDirectionIds, activeDirectionItems),
+    })
 
   return (
     <div className="space-y-5 pb-32">
@@ -263,7 +305,7 @@ export function SessionNote97155Form({
                 <FieldError message={errors.faceToFaceProtocolId} />
               </div>
               <div className="pl-4" data-field="faceToFaceProtocolNarrative">
-                <FloatingTextarea
+                <AiImprovableTextarea
                   label="Narrative"
                   value={formData.faceToFaceProtocolNarrative}
                   onChange={(v) => updateField("faceToFaceProtocolNarrative", v)}
@@ -274,6 +316,9 @@ export function SessionNote97155Form({
                   disabled={formDisabled}
                   hasError={!!errors.faceToFaceProtocolNarrative}
                   required
+                  billingCode="97155"
+                  summaryType="FACE_TO_FACE_OBSERVATION"
+                  buildMetadata={buildFaceToFaceSummaryMetadata}
                 />
                 <FieldError message={errors.faceToFaceProtocolNarrative} />
               </div>
@@ -308,7 +353,7 @@ export function SessionNote97155Form({
                 <FieldError message={errors.protocolAdjustmentIds} />
               </div>
               <div className="pl-4" data-field="adjustmentsNarrative">
-                <FloatingTextarea
+                <AiImprovableTextarea
                   label="Narrative"
                   value={formData.adjustmentsNarrative}
                   onChange={(v) => updateField("adjustmentsNarrative", v)}
@@ -319,6 +364,9 @@ export function SessionNote97155Form({
                   disabled={formDisabled}
                   hasError={!!errors.adjustmentsNarrative}
                   required
+                  billingCode="97155"
+                  summaryType="PROTOCOL_ADJUSTMENTS"
+                  buildMetadata={buildAdjustmentsSummaryMetadata}
                 />
                 <FieldError message={errors.adjustmentsNarrative} />
               </div>
@@ -381,7 +429,7 @@ export function SessionNote97155Form({
                 <FieldError message={errors.qhpImplementationId} />
               </div>
               <div className="pl-4" data-field="qhpNarrative">
-                <FloatingTextarea
+                <AiImprovableTextarea
                   label="Narrative"
                   value={formData.qhpNarrative}
                   onChange={(v) => updateField("qhpNarrative", v)}
@@ -392,6 +440,9 @@ export function SessionNote97155Form({
                   disabled={formDisabled}
                   hasError={!!errors.qhpNarrative}
                   required
+                  billingCode="97155"
+                  summaryType="QHP_IMPLEMENTATION"
+                  buildMetadata={buildQhpSummaryMetadata}
                 />
                 <FieldError message={errors.qhpNarrative} />
               </div>
@@ -438,7 +489,7 @@ export function SessionNote97155Form({
                 <FieldError message={errors.activeDirectionIds} />
               </div>
               <div className="pl-4" data-field="activeDirectionNarrative">
-                <FloatingTextarea
+                <AiImprovableTextarea
                   label="Narrative"
                   value={formData.activeDirectionNarrative}
                   onChange={(v) => updateField("activeDirectionNarrative", v)}
@@ -449,6 +500,9 @@ export function SessionNote97155Form({
                   disabled={formDisabled}
                   hasError={!!errors.activeDirectionNarrative}
                   required
+                  billingCode="97155"
+                  summaryType="ACTIVE_DIRECTION"
+                  buildMetadata={buildActiveDirectionSummaryMetadata}
                 />
                 <FieldError message={errors.activeDirectionNarrative} />
               </div>

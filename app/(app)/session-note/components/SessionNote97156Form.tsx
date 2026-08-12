@@ -8,6 +8,8 @@ import {
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
+import { AiImprovableTextarea } from "@/components/custom/AiImprovableTextarea"
+import { buildSessionSummaryMetadata97156 } from "@/lib/modules/appointment-notes/utils/ai-summary-metadata"
 import { SESSION_NOTE_GUIDANCE } from "@/lib/constants/session-note-guidance"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
@@ -120,6 +122,31 @@ export function SessionNote97156Form({
     id: c.id,
     name: c.relationship ? `${c.name} (${c.relationship})` : c.name,
   }))
+
+  const buildSummaryMetadata = () => {
+    const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
+      ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
+    // El ejemplo del backend manda la relación ("Parent"), no el nombre del cuidador — evita PII innecesaria.
+    const caregiverNames = formData.caregiverIds
+      .map((id) => caregiverOptions.find((c) => c.id === id))
+      .filter((c): c is CaregiverOption => !!c)
+      .map((c) => c.relationship || c.name)
+
+    return buildSessionSummaryMetadata97156({
+      teachingMethodName: teachingMethodOptions.find((o) => o.value === formData.teachingMethodId)?.label ?? "",
+      modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
+      reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
+      medicalConcerns: formData.medicalConcerns,
+      crisisInvolved: formData.crisisInvolved,
+      caregiverNames,
+      clientPresent: formData.clientPresent,
+      interventionNames: namesFromIds(formData.interventionIds, interventionCatalog),
+      goals: formData.goals,
+      participantNames: namesFromIds(formData.participantIds, participantCatalog),
+      categories,
+      categoryItems: formData.categoryItems,
+    })
+  }
 
   const toggleIntervention = (id: string) => {
     const current = formData.interventionIds
@@ -385,7 +412,7 @@ export function SessionNote97156Form({
             <FieldError message={errors.goals} />
           </div>
           <div data-field="sessionSummary">
-            <FloatingTextarea
+            <AiImprovableTextarea
               label="Summary"
               value={formData.sessionSummary}
               onChange={(v) => updateField("sessionSummary", v)}
@@ -396,6 +423,8 @@ export function SessionNote97156Form({
               disabled={formDisabled}
               hasError={!!errors.sessionSummary}
               required
+              billingCode="97156"
+              buildMetadata={buildSummaryMetadata}
             />
             <FieldError message={errors.sessionSummary} />
           </div>

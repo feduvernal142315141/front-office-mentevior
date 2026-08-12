@@ -10,7 +10,7 @@ import {
   NARRATIVE_MIN_WORDS,
 } from "@/lib/utils/narrative-length"
 
-interface Props {
+export interface FloatingTextareaProps {
   label: string
   value: string
   onChange: (v: string) => void
@@ -48,7 +48,7 @@ export function FloatingTextarea({
   disabled,
   required,
   className: extraClassName,
-}: Props) {
+}: FloatingTextareaProps) {
   const [isFocused, setIsFocused] = useState(false)
   // En una nota bloqueada/read-only la guía no aporta: el campo ya no se puede escribir
   const showHint = !value && !isFocused && !disabled

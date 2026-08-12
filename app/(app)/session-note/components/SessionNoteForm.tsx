@@ -7,7 +7,8 @@ import {
   Target, BarChart3, User, Building2, ClipboardList, PenTool, CheckCircle2, PenLine,
 } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
-import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
+import { AiImprovableTextarea } from "@/components/custom/AiImprovableTextarea"
+import { buildSessionSummaryMetadata97153 } from "@/lib/modules/appointment-notes/utils/ai-summary-metadata"
 import { SESSION_NOTE_GUIDANCE } from "@/lib/constants/session-note-guidance"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
@@ -122,6 +123,24 @@ export function SessionNoteForm({
   // Las unidades llegan pegadas al string de billing codes; en Service Details
   // van junto a las horas, no junto al código.
   const { label: billingCodeLabel, units: billingCodeUnits } = splitBillingCodesAndUnits(billingCodes)
+
+  const buildSummaryMetadata = () => {
+    const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
+      ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
+
+    return buildSessionSummaryMetadata97153({
+      teachingMethodName: teachingMethodOptions.find((o) => o.value === formData.teachingMethodId)?.label ?? "",
+      modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
+      reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
+      medicalConcerns: formData.medicalConcerns,
+      crisisInvolved: formData.crisisInvolved,
+      participantNames: namesFromIds(formData.participantIds, participantCatalog),
+      antecedentNames: namesFromIds(formData.antecedentInterventionIds, antecedentItems),
+      consequenceNames: namesFromIds(formData.consequenceInterventionIds, consequenceItems),
+      categories,
+      categoryItems: formData.categoryItems,
+    })
+  }
 
   return (
     <div className="space-y-5 pb-32">
@@ -314,7 +333,20 @@ export function SessionNoteForm({
       {/* ─── Row 4: Session Summary (full width) ─── */}
       <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
         <div data-field="sessionSummary">
-          <FloatingTextarea label="Session Summary" value={formData.sessionSummary} onChange={(v) => updateField("sessionSummary", v)} onBlur={() => {}} guidance={SESSION_NOTE_GUIDANCE["97153"].sessionSummary} rows={20} showLengthCounter disabled={formDisabled} hasError={!!errors.sessionSummary} required />
+          <AiImprovableTextarea
+            label="Session Summary"
+            value={formData.sessionSummary}
+            onChange={(v) => updateField("sessionSummary", v)}
+            onBlur={() => {}}
+            guidance={SESSION_NOTE_GUIDANCE["97153"].sessionSummary}
+            rows={20}
+            showLengthCounter
+            disabled={formDisabled}
+            hasError={!!errors.sessionSummary}
+            required
+            billingCode="97153"
+            buildMetadata={buildSummaryMetadata}
+          />
           <FieldError message={errors.sessionSummary} />
         </div>
       </Section>
