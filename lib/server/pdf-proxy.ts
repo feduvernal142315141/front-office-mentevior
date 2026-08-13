@@ -135,8 +135,12 @@ function parseContentDispositionFilename(header: string | null): string | null {
 export interface PdfProxyConfig {
   /** Query param del que sale el identificador del documento */
   idParam: string
-  /** Arma la URL del backend. El id llega **sin** escapar */
-  buildUpstreamUrl: (apiBase: string, id: string) => string
+  /**
+   * Arma la URL del backend. El id llega **sin** escapar. `searchParams` trae el
+   * resto de la query string por si la ruta necesita más de un identificador
+   * (p.ej. batch claim + cliente).
+   */
+  buildUpstreamUrl: (apiBase: string, id: string, searchParams: URLSearchParams) => string
   /** Nombre a usar si la URL no trae uno y el backend tampoco */
   fallbackFileName: string
 }
@@ -179,7 +183,10 @@ export function createPdfProxyRoute(config: PdfProxyConfig) {
 
     let upstream: UpstreamResult
     try {
-      upstream = await fetchUpstream(config.buildUpstreamUrl(apiBase, id), token)
+      upstream = await fetchUpstream(
+        config.buildUpstreamUrl(apiBase, id, req.nextUrl.searchParams),
+        token,
+      )
     } catch (err) {
       console.error("[pdf-preview-proxy] upstream request failed:", err)
       return errorResponse(502, "The PDF service could not be reached. Try again in a moment.")
