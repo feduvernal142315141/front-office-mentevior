@@ -28,10 +28,22 @@ export function RatesSection({
 }: RatesSectionProps) {
   const [pendingDelete, setPendingDelete] = useState<LocalInsurancePlanRate | null>(null)
 
-  const getCurrencyToken = (currencyLabel: string) => {
+  // Null-safe: rates legacy pueden venir sin currency/interval desde el backend
+  const getCurrencyToken = (currencyLabel: string | null | undefined) => {
+    if (!currencyLabel) return ""
     const match = currencyLabel.match(/\(([^)]+)\)/)
     if (match?.[1]) return match[1].trim().toUpperCase()
     return currencyLabel.trim().toUpperCase()
+  }
+
+  const formatRateAmount = (entry: LocalInsurancePlanRate) => {
+    const amount = new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(entry.amount)
+    const currency = getCurrencyToken(entry.currencyLabel)
+    const interval = entry.intervalType ? `/${entry.intervalType.toUpperCase()}` : ""
+    return `${amount}${currency ? ` ${currency}` : ""}${interval}`
   }
 
   return (
@@ -101,10 +113,7 @@ export function RatesSection({
                 )}
               </div>
               <span className="text-sm tabular-nums text-slate-700 text-center">
-                {`${new Intl.NumberFormat(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                }).format(entry.amount)} ${getCurrencyToken(entry.currencyLabel)}/${entry.intervalType.toUpperCase()}`}
+                {formatRateAmount(entry)}
               </span>
               <div className="flex items-center justify-center gap-1.5">
                 <button

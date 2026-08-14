@@ -160,9 +160,10 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         billingModifier: r.billingModifier?.trim() || undefined,
         amount: r.amount,
         submitAmount: r.submitAmount ?? undefined,
-        intervalType: r.intervalType,
+        intervalType: r.intervalType ?? "",
         currencyId: r.currencyId,
-        currencyLabel: r.currencyCode || r.currencyId,
+        // Rates legacy pueden venir sin currency: la etiqueta queda vacía, no null
+        currencyLabel: r.currencyCode || r.currencyName || r.currencyId || "",
         alias: r.alias,
         startDate: r.startDate ?? undefined,
         endDate: r.endDate ?? undefined,
