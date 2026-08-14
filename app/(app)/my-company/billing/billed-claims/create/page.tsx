@@ -41,7 +41,7 @@ export default function CreateBatchClaimPage() {
             <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
               New Batch Claim
             </h1>
-            <p className="mt-1 text-slate-600">Select a payer plan and the appointments to include in the batch</p>
+            <p className="mt-1 text-slate-600">Select a payer plan and the service logs to include in the batch</p>
           </div>
         </div>
 

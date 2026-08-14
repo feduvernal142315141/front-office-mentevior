@@ -7,8 +7,9 @@ import type {
   BatchClaimClientGroup,
   BatchClaimPayload,
   BatchClaimSummary,
-  EligibleAppointment,
-  EligibleAppointmentsQuery,
+  EligibleServiceLog,
+  EligibleServiceLogAppointment,
+  EligibleServiceLogsQuery,
 } from "@/lib/types/batch-claim.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 
@@ -110,19 +111,40 @@ export async function getBatchClaimById(batchClaimId: string): Promise<BatchClai
 
   return {
     ...parseSummary(data),
+    serviceLogIds: Array.isArray(data.serviceLogIds) ? data.serviceLogIds.map(String) : [],
     appointments: Array.isArray(data.appointments)
       ? data.appointments.map((g: Record<string, unknown>) => parseClientGroup(g))
       : [],
   }
 }
 
+/** `"2026-08-01T00:00:00.000+00:00"` → `"2026-08-01"` */
+function toDateOnly(value: unknown): string {
+  return String(value ?? "").slice(0, 10)
+}
+
+function parseEligibleAppointment(a: Record<string, unknown>): EligibleServiceLogAppointment {
+  return {
+    appointmentId: String(a.appointmentId ?? a.id ?? ""),
+    appointmentNoteId: String(a.appointmentNoteId ?? ""),
+    date: String(a.date ?? ""),
+    timeInit: String(a.timeInit ?? ""),
+    timeEnd: String(a.timeEnd ?? ""),
+    billingCodeId: String(a.billingCodeId ?? ""),
+    priorAuthorizationId: String(a.priorAuthorizationId ?? ""),
+    cantUnit: typeof a.cantUnit === "number" ? a.cantUnit : 0,
+    units: typeof a.units === "number" ? a.units : 0,
+  }
+}
+
 /**
- * Fetch appointments eligible for a batch (LOCK note + caregiver & provider signatures).
- * GET /batch-claims/appointments
+ * Fetch service logs eligible for a batch. Each service log groups the billable
+ * appointments (LOCK note + caregiver & provider signatures) of one client+provider period.
+ * GET /batch-claims/service-logs
  */
-export async function getEligibleAppointments(
-  query: EligibleAppointmentsQuery,
-): Promise<EligibleAppointment[]> {
+export async function getEligibleServiceLogs(
+  query: EligibleServiceLogsQuery,
+): Promise<EligibleServiceLog[]> {
   const qs = new URLSearchParams({
     payerPlanId: query.payerPlanId,
     initDate: query.initDate,
@@ -130,10 +152,10 @@ export async function getEligibleAppointments(
   })
   if (query.clientId) qs.set("clientId", query.clientId)
 
-  const response = await serviceGet<unknown>(`/batch-claims/appointments?${qs.toString()}`)
+  const response = await serviceGet<unknown>(`/batch-claims/service-logs?${qs.toString()}`)
 
   if (response.status !== 200) {
-    throw new Error(getApiErrorMessage(response?.data, "Failed to fetch eligible appointments"))
+    throw new Error(getApiErrorMessage(response?.data, "Failed to fetch eligible service logs"))
   }
 
   const raw = response.data as unknown
@@ -143,19 +165,17 @@ export async function getEligibleAppointments(
       ? ((raw as Record<string, unknown>).entities as unknown[])
       : []
 
-  return (list as Record<string, unknown>[]).map((a) => ({
-    id: String(a.id ?? ""),
-    appointmentNoteId: String(a.appointmentNoteId ?? ""),
-    clientId: String(a.clientId ?? ""),
-    clientName: String(a.clientName ?? ""),
-    providerId: String(a.providerId ?? ""),
-    date: String(a.date ?? ""),
-    timeInit: String(a.timeInit ?? ""),
-    timeEnd: String(a.timeEnd ?? ""),
-    billingCodeId: String(a.billingCodeId ?? ""),
-    priorAuthorizationId: String(a.priorAuthorizationId ?? ""),
-    cantUnit: typeof a.cantUnit === "number" ? a.cantUnit : 0,
-    units: typeof a.units === "number" ? a.units : 0,
+  return (list as Record<string, unknown>[]).map((sl) => ({
+    id: String(sl.id ?? ""),
+    clientId: String(sl.clientId ?? ""),
+    clientName: String(sl.clientName ?? ""),
+    providerId: String(sl.providerId ?? ""),
+    providerName: String(sl.providerName ?? ""),
+    initDate: toDateOnly(sl.initDate),
+    endDate: toDateOnly(sl.endDate),
+    appointments: Array.isArray(sl.appointments)
+      ? sl.appointments.map((a: Record<string, unknown>) => parseEligibleAppointment(a))
+      : [],
   }))
 }
 
@@ -176,7 +196,7 @@ export async function createBatchClaim(payload: BatchClaimPayload): Promise<stri
 
 /**
  * Replace a batch claim's header and appointment selection.
- * PUT /batch-claims/{batchClaimId} — appointmentIds fully replaces the previous selection
+ * PUT /batch-claims/{batchClaimId} — serviceLogIds fully replaces the previous selection
  */
 export async function updateBatchClaim(
   batchClaimId: string,

@@ -43,7 +43,7 @@ export default function EditBatchClaimPage({ params }: { params: Promise<{ id: s
               Edit Batch Claim
             </h1>
             <p className="mt-1 text-slate-600">
-              Saving replaces the batch&apos;s appointment selection with the current one
+              Saving replaces the batch&apos;s service log selection with the current one
             </p>
           </div>
         </div>

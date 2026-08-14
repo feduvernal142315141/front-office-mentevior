@@ -126,8 +126,9 @@ export function BatchClaimDetailView({ batchClaim }: BatchClaimDetailViewProps) 
       </div>
 
       {/* ─── Totals strip ─── */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {[
+          { label: "Service Logs", value: String(batchClaim.serviceLogIds.length) },
           { label: "Clients", value: String(totals.clients) },
           { label: "Appointments", value: String(totals.appointments) },
           { label: "Units", value: String(totals.units) },

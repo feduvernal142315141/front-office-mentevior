@@ -100,7 +100,77 @@ hooks/useBatchClaimForm.ts
 3. **Fase 3 — Detalle**: vista agrupada con montos + preview CMS-1500 (proxy routes) + 837P download.
 4. **Fase 4 — Edición**: reuso del form con precarga + PUT.
 
-## 6. Preguntas abiertas / riesgos
+## 6. Cambio de contrato 2026-08-14: selección por Service Log
+
+El backend cambió la unidad de selección: `BatchClaim` ya no guarda `appointmentIds` sino
+`serviceLogIds`. Los appointments para CMS-1500/837P se derivan por
+`BatchClaim → BatchClaimServiceLog → SupervisionLog → … → Appointment`. Los 3 endpoints de
+salida (preview batch/cliente, 837p) NO cambian de contrato.
+
+Resumen de cambios de API:
+- `POST /batch-claims` y `PUT /batch-claims/{id}`: body con `serviceLogIds` (reemplazo total en PUT).
+- `GET /batch-claims/appointments` → **`GET /batch-claims/service-logs`** (mismos query params);
+  devuelve service logs con `providerName`, `initDate`/`endDate` (timestamps ISO) y sus
+  `appointments[]` anidados.
+- `GET /batch-claims/{id}`: agrega `serviceLogIds[]`; `appointments` (grupos por cliente) se
+  mantiene pero derivado.
+- Validación nueva clave: un service log activo no puede pertenecer a otro BatchClaim activo
+  (create rechaza; update permite conservar los propios).
+
+### Plan de adaptación del front
+
+1. **Tipos** (`lib/types/batch-claim.types.ts`)
+   - `BatchClaimPayload.appointmentIds` → `serviceLogIds`.
+   - Nuevo `EligibleServiceLog { id, clientId, clientName, providerId, providerName, initDate,
+     endDate, appointments: EligibleServiceLogAppointment[] }`. El appointment anidado usa
+     `appointmentId` (ya no `id`) y pierde `clientId/clientName` (viven en el padre).
+   - `BatchClaim` agrega `serviceLogIds: string[]`.
+   - Eliminar `EligibleAppointment`/`EligibleAppointmentsQuery` o renombrarlos al nuevo shape.
+
+2. **Service** (`batch-claims.service.ts`)
+   - `getEligibleAppointments` → `getEligibleServiceLogs` apuntando a `/batch-claims/service-logs`;
+     parse anidado; normalizar `initDate/endDate` ISO → `yyyy-MM-dd` (recorte, como hace
+     `service-log.service.ts`).
+   - `create/update`: renombrar campo del payload.
+   - `getBatchClaimById`: parsear `serviceLogIds`.
+
+3. **Hooks** — `use-eligible-appointments` → `use-eligible-service-logs` (misma mecánica
+   fetch-bajo-demanda). En `useBatchClaimForm`, `selectedIds` pasa a contener **service log ids**;
+   los totales (appointments/units) se calculan sumando los `appointments[]` de los SL
+   seleccionados.
+
+4. **Picker** (`EligibleAppointmentsPicker` → `EligibleServiceLogsPicker`)
+   - Se mantiene la agrupación visual por cliente, pero el **checkbox va por service log**:
+     fila con provider, período (initDate–endDate), N appointments y unidades totales.
+   - Cada fila es expandible (chevron) para ver sus appointments en solo-lectura: fecha, horario,
+     billing code (etiqueta resuelta con el catálogo, igual que hoy), unidades. No hay checkbox
+     por appointment: la selección es todo-o-nada por service log (así lo modela el backend).
+   - Select-all por cliente se mantiene (marca todos los SL del cliente).
+
+5. **Edición**
+   - Precarga de selección directa desde `serviceLogIds` del GET (ya no se deriva de appointments).
+   - El rango del período se sigue derivando de min/max de las fechas de los appointments
+     derivados (el GET no trae las fechas de los SL).
+   - **Huérfanos** (SL seleccionados que la búsqueda vigente no devuelve): resolver sus datos con
+     `getServiceLogById` (`/reports/service-log/{id}`, ya existe en
+     `lib/modules/service-log/services/service-log.service.ts`, devuelve initDate/endDate/cliente)
+     para pintar la fila "Currently selected — outside this search". Fallback: fila mínima solo
+     con el id si ese GET falla.
+   - Los snapshots por appointment (`SelectedAppointmentSnapshot`) se reemplazan por snapshots
+     por service log.
+
+6. **Errores** — el 400/422 de "service log ya pertenece a otro batch activo" llega por
+   `getApiErrorMessage` al toast; verificar que el mensaje del backend sea legible. Opcional
+   futuro: marcar en el picker los SL ya tomados por otro batch (hoy el backend no lo indica en
+   el response de elegibles — pedirlo si Miriam lo quiere ver antes de fallar el submit).
+
+7. **Detalle** — sin cambios funcionales (el response de grupos/preview/837P es igual). Opcional:
+   tile "Service Logs" con `serviceLogIds.length` junto a Clients/Appointments/Units.
+
+Orden sugerido: tipos → service → hooks → picker → edit → detalle. Sin migraciones de UI fuera
+del picker; las rutas proxy y la descarga 837P no se tocan.
+
+## 7. Preguntas abiertas / riesgos
 
 1. **Selector de plan**: ¿existe (o puede existir) un endpoint de catálogo de payer plans de la compañía? Hoy habría que componerlo con `GET /payers` + `GET /payers/{id}`. (Preguntar a backend.)
 2. **Rango de fechas en edit**: el backend no lo guarda; se deriva de los appointments. Confirmar que es aceptable.

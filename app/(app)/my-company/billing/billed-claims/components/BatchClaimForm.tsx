@@ -9,7 +9,7 @@ import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
 import { useBatchClaimForm } from "../hooks/useBatchClaimForm"
-import { EligibleAppointmentsPicker } from "./EligibleAppointmentsPicker"
+import { EligibleServiceLogsPicker } from "./EligibleServiceLogsPicker"
 
 interface BatchClaimFormProps {
   form: ReturnType<typeof useBatchClaimForm>
@@ -60,13 +60,13 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
     startMonth,
     endMonth,
     handleRangeChange,
-    appointments,
+    serviceLogs,
     isLoadingEligible,
     hasSearched,
     canSearch,
     selectedIds,
-    toggleAppointment,
-    setAppointmentsSelected,
+    toggleServiceLog,
+    setServiceLogsSelected,
     orphanSelections,
     billingCodeLabels,
     handleSubmit,
@@ -156,8 +156,8 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
         {/* ─── Appointment selection ─── */}
         <Section
           icon={<CalendarRange className="h-4 w-4" />}
-          title="Select Appointments"
-          subtitle="Only appointments with a locked and signed session note are billable"
+          title="Select Service Logs"
+          subtitle="Service logs whose appointments have a locked and signed session note"
         >
           <div className="space-y-4">
             <div className="max-w-md" data-form-field="dateRange">
@@ -172,19 +172,19 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
               <FieldError message={errors.dateRange} />
             </div>
 
-            <div data-form-field="appointments">
-              <EligibleAppointmentsPicker
-                appointments={appointments}
+            <div data-form-field="serviceLogs">
+              <EligibleServiceLogsPicker
+                serviceLogs={serviceLogs}
                 isLoading={isLoadingEligible}
                 hasSearched={hasSearched}
                 canSearch={canSearch}
                 selectedIds={selectedIds}
-                onToggle={toggleAppointment}
-                onSetGroupSelected={setAppointmentsSelected}
+                onToggle={toggleServiceLog}
+                onSetGroupSelected={setServiceLogsSelected}
                 orphanSelections={orphanSelections}
                 billingCodeLabels={billingCodeLabels}
               />
-              <FieldError message={errors.appointments} />
+              <FieldError message={errors.serviceLogs} />
             </div>
           </div>
         </Section>

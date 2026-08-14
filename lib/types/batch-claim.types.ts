@@ -51,16 +51,15 @@ export interface BatchClaim {
   comments: string
   createAt: string
   active: boolean
+  /** Selección vigente del batch; los appointments de abajo se derivan de estos */
+  serviceLogIds: string[]
   appointments: BatchClaimClientGroup[]
 }
 
-/** Row from GET /batch-claims/appointments (eligible appointments) */
-export interface EligibleAppointment {
-  id: string
+/** Appointment nested inside an eligible service log */
+export interface EligibleServiceLogAppointment {
+  appointmentId: string
   appointmentNoteId: string
-  clientId: string
-  clientName: string
-  providerId: string
   date: string
   timeInit: string
   timeEnd: string
@@ -70,8 +69,22 @@ export interface EligibleAppointment {
   units: number
 }
 
-/** Query for GET /batch-claims/appointments */
-export interface EligibleAppointmentsQuery {
+/** Row from GET /batch-claims/service-logs (eligible service logs) */
+export interface EligibleServiceLog {
+  id: string
+  clientId: string
+  clientName: string
+  providerId: string
+  providerName: string
+  /** `yyyy-MM-dd` (recortado del timestamp ISO del backend) */
+  initDate: string
+  /** `yyyy-MM-dd` */
+  endDate: string
+  appointments: EligibleServiceLogAppointment[]
+}
+
+/** Query for GET /batch-claims/service-logs */
+export interface EligibleServiceLogsQuery {
   payerPlanId: string
   initDate: string
   endDate: string
@@ -83,7 +96,8 @@ export interface BatchClaimPayload {
   payerPlanId: string
   reference: string
   comments: string
-  appointmentIds: string[]
+  /** En PUT reemplaza completamente la selección anterior */
+  serviceLogIds: string[]
 }
 
 /** Response of GET /batch-claims/{id}/837p */

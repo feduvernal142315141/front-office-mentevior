@@ -4,23 +4,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { buildReportMonth, splitReportMonth } from "@/lib/utils/report-month"
 import { getBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
+import { getServiceLogById } from "@/lib/modules/service-log/services/service-log.service"
 import { useBatchClaimById } from "@/lib/modules/batch-claims/hooks/use-batch-claim-by-id"
 import { useBatchClaimMutation } from "@/lib/modules/batch-claims/hooks/use-batch-claim-mutation"
-import { useEligibleAppointments } from "@/lib/modules/batch-claims/hooks/use-eligible-appointments"
+import { useEligibleServiceLogs } from "@/lib/modules/batch-claims/hooks/use-eligible-service-logs"
 import { usePayerPlanOptions } from "@/lib/modules/batch-claims/hooks/use-payer-plan-options"
 import type { BatchClaimPayload } from "@/lib/types/batch-claim.types"
 
 /**
- * Fila mínima para poder listar en el picker un appointment que ya está
- * seleccionado en el batch pero que la búsqueda de elegibles no devolvió
- * (rango distinto, o su nota cambió de estado). Se arma desde el GET del batch.
+ * Fila mínima para listar en el picker un service log que ya pertenece al batch
+ * pero que la búsqueda de elegibles no devolvió (período distinto, o quedó sin
+ * appointments elegibles). Se resuelve con `GET /reports/service-log/{id}`.
  */
-export interface SelectedAppointmentSnapshot {
-  appointmentId: string
+export interface SelectedServiceLogSnapshot {
+  serviceLogId: string
   clientName: string
-  date: string
-  billingCode: string
-  units: number
+  providerName: string
+  /** `yyyy-MM-dd`; vacíos si el fetch del detalle falló */
+  initDate: string
+  endDate: string
 }
 
 interface UseBatchClaimFormProps {
@@ -63,20 +65,19 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
 
   const { payerOptions, planOptions, isLoadingPayers, isLoadingPlans } = usePayerPlanOptions(payerId)
 
-  // ── Rango + selección ──
-  // Rango en meses (`yyyyMM`, como MonthRangePicker); a la API van los bordes del período
+  // ── Período + selección (ids de service logs) ──
   const [startMonth, setStartMonth] = useState("")
   const [endMonth, setEndMonth] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const { appointments, isLoading: isLoadingEligible, hasSearched, search, reset } = useEligibleAppointments()
+  const { serviceLogs, isLoading: isLoadingEligible, hasSearched, search, reset } = useEligibleServiceLogs()
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Snapshot de lo ya seleccionado en el batch (solo edit), para mostrar
-  // los appointments seleccionados aunque no salgan en la búsqueda de elegibles
-  const [selectedSnapshots, setSelectedSnapshots] = useState<Record<string, SelectedAppointmentSnapshot>>({})
+  // Detalle resuelto de los service logs del batch que la búsqueda no devuelve (solo edit)
+  const [orphanSnapshots, setOrphanSnapshots] = useState<Record<string, SelectedServiceLogSnapshot>>({})
+  const orphanFetchesRef = useRef<Set<string>>(new Set())
 
-  // ── Etiquetas de billing codes (el endpoint de elegibles solo trae el id) ──
+  // ── Etiquetas de billing codes (los appointments anidados solo traen el id) ──
   const [billingCodeLabels, setBillingCodeLabels] = useState<Record<string, string>>({})
   useEffect(() => {
     let active = true
@@ -108,36 +109,35 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     setPayerPlanId(batchClaim.payerPlanId)
     setReference(batchClaim.reference)
     setComments(batchClaim.comments)
+    setSelectedIds(new Set(batchClaim.serviceLogIds))
 
-    const ids = new Set<string>()
-    const snapshots: Record<string, SelectedAppointmentSnapshot> = {}
+    // El backend no persiste el período del lote: se deriva de los appointments derivados
     let minDate = ""
     let maxDate = ""
     for (const group of batchClaim.appointments) {
       for (const detail of group.appointmentDetails) {
-        ids.add(detail.appointmentId)
-        snapshots[detail.appointmentId] = {
-          appointmentId: detail.appointmentId,
-          clientName: group.clientName,
-          date: detail.date,
-          billingCode: detail.billingCode,
-          units: detail.units,
-        }
-        if (detail.date) {
-          if (!minDate || detail.date < minDate) minDate = detail.date
-          if (!maxDate || detail.date > maxDate) maxDate = detail.date
-        }
+        if (!detail.date) continue
+        if (!minDate || detail.date < minDate) minDate = detail.date
+        if (!maxDate || detail.date > maxDate) maxDate = detail.date
       }
     }
-    setSelectedIds(ids)
-    setSelectedSnapshots(snapshots)
-    // El backend no persiste el rango del lote: se deriva de la selección
     if (minDate) setStartMonth(dateToReportMonth(minDate))
     if (maxDate) setEndMonth(dateToReportMonth(maxDate))
   }, [isEdit, batchClaim])
 
+  // Un solo plan → se preselecciona; el usuario solo elige cuando hay varios
+  useEffect(() => {
+    if (planOptions.length !== 1) return
+    setPayerPlanId((prev) => prev || planOptions[0].value)
+    setErrors((prev) => {
+      if (!prev.payerPlanId) return prev
+      const next = { ...prev }
+      delete next.payerPlanId
+      return next
+    })
+  }, [planOptions])
+
   // ── Búsqueda de elegibles: automática cuando hay plan + período completo ──
-  // A la API van los bordes del período: día 1 del mes inicial → último día del final
   const initDate = useMemo(() => reportMonthToFirstDay(startMonth), [startMonth])
   const endDate = useMemo(() => reportMonthToLastDay(endMonth), [endMonth])
   const canSearch = !!payerPlanId && !!initDate && !!endDate && initDate <= endDate
@@ -145,6 +145,56 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     if (!canSearch) return
     void search({ payerPlanId, initDate, endDate })
   }, [canSearch, payerPlanId, initDate, endDate, search])
+
+  // ── Huérfanos: seleccionados que no están en el resultado vigente ──
+  const eligibleIds = useMemo(() => new Set(serviceLogs.map((sl) => sl.id)), [serviceLogs])
+
+  const orphanIds = useMemo(
+    () => [...selectedIds].filter((id) => !eligibleIds.has(id)),
+    [selectedIds, eligibleIds],
+  )
+
+  // Resolver el detalle de cada huérfano una sola vez, tolerando fallos
+  useEffect(() => {
+    for (const id of orphanIds) {
+      if (orphanFetchesRef.current.has(id)) continue
+      orphanFetchesRef.current.add(id)
+      void getServiceLogById(id)
+        .then((detail) => {
+          setOrphanSnapshots((prev) => ({
+            ...prev,
+            [id]: {
+              serviceLogId: id,
+              clientName: detail?.recipient ?? "",
+              providerName: detail?.provider ?? "",
+              initDate: detail?.initDate ?? "",
+              endDate: detail?.endDate ?? "",
+            },
+          }))
+        })
+        .catch(() => {
+          setOrphanSnapshots((prev) => ({
+            ...prev,
+            [id]: { serviceLogId: id, clientName: "", providerName: "", initDate: "", endDate: "" },
+          }))
+        })
+    }
+  }, [orphanIds])
+
+  const orphanSelections = useMemo(
+    () =>
+      orphanIds.map(
+        (id) =>
+          orphanSnapshots[id] ?? {
+            serviceLogId: id,
+            clientName: "",
+            providerName: "",
+            initDate: "",
+            endDate: "",
+          },
+      ),
+    [orphanIds, orphanSnapshots],
+  )
 
   const clearFieldError = useCallback((field: string) => {
     setErrors((prev) => {
@@ -154,13 +204,6 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
       return next
     })
   }, [])
-
-  // Un solo plan → se preselecciona; el usuario solo elige cuando hay varios
-  useEffect(() => {
-    if (planOptions.length !== 1) return
-    setPayerPlanId((prev) => prev || planOptions[0].value)
-    clearFieldError("payerPlanId")
-  }, [planOptions, clearFieldError])
 
   const handlePayerChange = useCallback((id: string) => {
     setPayerId(id)
@@ -186,35 +229,27 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     clearFieldError("dateRange")
   }, [clearFieldError])
 
-  const toggleAppointment = useCallback((appointmentId: string) => {
+  const toggleServiceLog = useCallback((serviceLogId: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      if (next.has(appointmentId)) next.delete(appointmentId)
-      else next.add(appointmentId)
+      if (next.has(serviceLogId)) next.delete(serviceLogId)
+      else next.add(serviceLogId)
       return next
     })
-    clearFieldError("appointments")
+    clearFieldError("serviceLogs")
   }, [clearFieldError])
 
-  const setAppointmentsSelected = useCallback((appointmentIds: string[], selected: boolean) => {
+  const setServiceLogsSelected = useCallback((serviceLogIds: string[], selected: boolean) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      for (const id of appointmentIds) {
+      for (const id of serviceLogIds) {
         if (selected) next.add(id)
         else next.delete(id)
       }
       return next
     })
-    clearFieldError("appointments")
+    clearFieldError("serviceLogs")
   }, [clearFieldError])
-
-  /** Seleccionados que la búsqueda vigente no devolvió (solo aparecen en edit) */
-  const orphanSelections = useMemo(() => {
-    const eligibleIds = new Set(appointments.map((a) => a.id))
-    return [...selectedIds]
-      .filter((id) => !eligibleIds.has(id) && selectedSnapshots[id])
-      .map((id) => selectedSnapshots[id])
-  }, [selectedIds, appointments, selectedSnapshots])
 
   const scrollToField = (field: string) => {
     setTimeout(() => {
@@ -230,7 +265,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     const newErrors: Record<string, string> = {}
     if (!payerPlanId) newErrors.payerPlanId = "Select a payer plan"
     if (!reference.trim()) newErrors.reference = "Reference is required"
-    if (selectedIds.size === 0) newErrors.appointments = "Select at least one appointment"
+    if (selectedIds.size === 0) newErrors.serviceLogs = "Select at least one service log"
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -243,7 +278,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
       payerPlanId,
       reference: reference.trim(),
       comments: comments.trim(),
-      appointmentIds: [...selectedIds],
+      serviceLogIds: [...selectedIds],
     }
 
     return isEdit && batchClaimId
@@ -276,13 +311,13 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     startMonth,
     endMonth,
     handleRangeChange,
-    appointments,
+    serviceLogs,
     isLoadingEligible,
     hasSearched,
     canSearch,
     selectedIds,
-    toggleAppointment,
-    setAppointmentsSelected,
+    toggleServiceLog,
+    setServiceLogsSelected,
     orphanSelections,
     billingCodeLabels,
     // Submit
