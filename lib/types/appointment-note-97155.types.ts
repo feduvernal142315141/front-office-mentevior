@@ -33,6 +33,11 @@ export interface AppointmentNote97155 {
   // Supervision / active direction
   technicianNameAndCredentials: string
   activeDirections: CatalogItem[]
+  /**
+   * Derivado por el backend: true sii el appointment 97155 tiene un
+   * AppointmentSubEvent activo. No es editable — el PUT responde 422 si el
+   * payload contradice este valor, así que siempre se reenvía tal cual llegó.
+   */
   activeDirectionActivitiesShow: boolean
   activeDirectionNarrative: string
   // Signatures
@@ -101,6 +106,7 @@ export interface UpdateAppointmentNote97155Payload {
   // Active direction
   technicianNameAndCredentials?: string
   activeDirectionIds?: string[]
+  /** Debe coincidir con el valor derivado que devolvió el GET (422 si no). */
   activeDirectionActivitiesShow: boolean
   activeDirectionNarrative?: string
   // Signatures

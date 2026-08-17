@@ -262,6 +262,12 @@ Secciones propias: Face-to-face Protocol Observation · Protocol Adjustments · 
 Supervision — Active Direction. **No lleva gráfico ni data collection.**
 Endpoints: `GET /appointment/{id}/note/97155`, `PUT /appointment/note/97155`.
 
+**`activeDirectionActivitiesShow` es derivado (2026-08-15):** el backend lo calcula por la
+existencia de un `AppointmentSubEvent` activo en el appointment y el `PUT` responde 422 si el
+payload lo contradice. En el front el switch "Active direction" quedó deshabilitado (solo
+indicador) y el submit reenvía siempre el valor que devolvió el `GET`
+(ver `docs/ajustes-backend-2026-08-15-insurance-type-y-97155.md`).
+
 ### 5.5 97156 — caregiver training (NUEVO, sin commitear)
 
 Archivos nuevos:

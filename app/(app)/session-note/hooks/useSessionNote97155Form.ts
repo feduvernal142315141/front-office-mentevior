@@ -199,29 +199,14 @@ export function useSessionNote97155Form({ appointmentId, clientId }: UseSessionN
 
   const updateField = useCallback(
     <K extends keyof SessionNote97155FormData>(field: K, value: SessionNote97155FormData[K]) => {
-      // Encender "Active direction" recupera al técnico supervisado si el campo quedó
-      // vacío: es la forma de recuperarlo después de borrarlo a mano.
-      const isTurningOnActiveDirection = field === "activeDirectionActivitiesShow" && value === true
-      const technicianPrefill = isTurningOnActiveDirection
-        ? formatSupervisionProvider(note?.supervisionProvider ?? null)
-        : ""
-
-      setFormData((prev) => {
-        const next = { ...prev, [field]: value }
-        if (technicianPrefill && !next.technicianNameAndCredentials.trim()) {
-          next.technicianNameAndCredentials = technicianPrefill
-        }
-        return next
-      })
+      setFormData((prev) => ({ ...prev, [field]: value }))
       setErrors((prev) => {
         const next = { ...prev }
         delete next[field as string]
-        // La sección se acaba de mostrar/ocultar: un error viejo del técnico ya no aplica
-        if (field === "activeDirectionActivitiesShow") delete next.technicianNameAndCredentials
         return next
       })
     },
-    [note],
+    [],
   )
 
   const handleSubmit = useCallback(async () => {
@@ -229,6 +214,10 @@ export function useSessionNote97155Form({ appointmentId, clientId }: UseSessionN
 
     const status = note.noteStatus
     if (status === "close" || status === "lock") return null
+
+    // Derivado del sub-event de supervisión: el PUT rechaza (422) cualquier otro
+    // valor, así que se valida y reenvía siempre lo que devolvió el GET.
+    const activeDirectionShow = note.activeDirectionActivitiesShow
 
     // Validate required fields
     const newErrors: Record<string, string> = {}
@@ -255,7 +244,7 @@ export function useSessionNote97155Form({ appointmentId, clientId }: UseSessionN
         const narrativeError = validateNarrativeLength(formData.qhpNarrative)
         if (narrativeError) newErrors.qhpNarrative = narrativeError
       }
-      if (formData.activeDirectionActivitiesShow) {
+      if (activeDirectionShow) {
         if (!formData.technicianNameAndCredentials.trim()) newErrors.technicianNameAndCredentials = "This field is required"
         if (formData.activeDirectionIds.length === 0) newErrors.activeDirectionIds = "Select at least one activity"
         const narrativeError = validateNarrativeLength(formData.activeDirectionNarrative)
@@ -312,7 +301,7 @@ export function useSessionNote97155Form({ appointmentId, clientId }: UseSessionN
       faceToFaceProtocolShow: formData.faceToFaceProtocolShow,
       protocolAdjustmentsShow: formData.protocolAdjustmentsShow,
       qhpImplementationShow: formData.qhpImplementationShow,
-      activeDirectionActivitiesShow: formData.activeDirectionActivitiesShow,
+      activeDirectionActivitiesShow: activeDirectionShow,
       ...(isReadOnly ? {} : {
         modalityId: formData.modalityId || null,
         reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,

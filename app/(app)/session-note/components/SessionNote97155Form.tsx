@@ -454,12 +454,13 @@ export function SessionNote97155Form({
       {/* Section 4: Supervision / Active Direction */}
       <Section icon={<Users2 className="h-4 w-4" />} title="Supervision — Active Direction">
         <div className="space-y-4">
+          {/* Derivado del sub-event de supervisión del appointment; el backend rechaza (422) cualquier otro valor */}
           <PremiumSwitch
             label="Active direction"
-            description="Active direction (face-to-face) was given to a technician as they delivered ABA services."
+            description="Active direction (face-to-face) was given to a technician as they delivered ABA services. Set automatically from the supervision sub-event on this appointment."
             checked={formData.activeDirectionActivitiesShow}
-            onCheckedChange={(v) => updateField("activeDirectionActivitiesShow", v)}
-            disabled={formDisabled}
+            onCheckedChange={() => {}}
+            disabled
             className="flex-row-reverse justify-end gap-4"
           />
           {formData.activeDirectionActivitiesShow && (

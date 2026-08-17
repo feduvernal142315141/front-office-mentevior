@@ -17,9 +17,10 @@ import {
   clientInsuranceFormDefaults,
   clientInsuranceFormSchema,
   INSURANCE_RELATIONSHIPS,
+  INSURANCE_TYPE_OPTIONS,
   type ClientInsuranceFormValues,
 } from "@/lib/schemas/client-insurance-form.schema"
-import type { ClientInsurance } from "@/lib/types/client-insurance.types"
+import type { ClientInsurance, ClientInsuranceType } from "@/lib/types/client-insurance.types"
 import { useClientInsurancesByClient } from "@/lib/modules/client-insurances/hooks/use-client-insurances-by-client"
 import { useCreateClientInsurance } from "@/lib/modules/client-insurances/hooks/use-create-client-insurance"
 import { useUpdateClientInsurance } from "@/lib/modules/client-insurances/hooks/use-update-client-insurance"
@@ -133,6 +134,7 @@ export function StepInsurances({
     memberNumber: insurance.memberNumber,
     groupNumber: insurance.groupNumber ?? "",
     relationship: insurance.relationship,
+    type: insurance.type ?? "",
     isActive: insurance.isActive,
     isPrimary: insurance.isPrimary,
     effectiveDate: insurance.effectiveDate,
@@ -172,6 +174,13 @@ export function StepInsurances({
       render: (insurance) => insurance.relationship,
     },
     {
+      key: "type",
+      header: "Type",
+      className: "whitespace-nowrap",
+      render: (insurance) =>
+        insurance.type === "COMERCIAL" ? "Commercial" : insurance.type === "MEDICAID" ? "Medicaid" : "—",
+    },
+    {
       key: "effectiveDate",
       header: "Effective date",
       className: "whitespace-nowrap",
@@ -185,7 +194,7 @@ export function StepInsurances({
     },
     {
       key: "isPrimary",
-      header: "Type",
+      header: "Priority",
       className: "whitespace-nowrap",
       align: "center",
       render: (insurance) =>
@@ -284,6 +293,7 @@ export function StepInsurances({
           memberNumber: values.memberNumber,
           groupNumber: values.groupNumber,
           relationship: values.relationship,
+          type: values.type as ClientInsuranceType,
           isActive: values.isActive,
           isPrimary: values.isPrimary,
           effectiveDate: values.effectiveDate,
@@ -302,6 +312,7 @@ export function StepInsurances({
           memberNumber: values.memberNumber,
           groupNumber: values.groupNumber,
           relationship: values.relationship,
+          type: values.type as ClientInsuranceType,
           isActive: values.isActive,
           isPrimary: values.isPrimary,
           effectiveDate: values.effectiveDate,
@@ -442,12 +453,12 @@ export function StepInsurances({
           noValidate
           className="px-6 py-6"
         >
-          <div className="grid grid-cols-1 gap-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             <Controller
               name="payerId"
               control={form.control}
               render={({ field, fieldState }) => (
-                <div>
+                <div className="md:col-span-2">
                   <FloatingSelect
                     label="Payer"
                     value={field.value || ""}
@@ -456,6 +467,27 @@ export function StepInsurances({
                     options={payerOptions}
                     hasError={!!fieldState.error}
                     disabled={isLoadingPayers}
+                    required
+                  />
+                  {fieldState.error && (
+                    <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>
+                  )}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="type"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <div>
+                  <FloatingSelect
+                    label="Insurance type"
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={INSURANCE_TYPE_OPTIONS}
+                    hasError={!!fieldState.error}
                     required
                   />
                   {fieldState.error && (

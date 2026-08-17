@@ -1,6 +1,7 @@
 import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import type {
   ClientInsurance,
+  ClientInsuranceType,
   CreateClientInsuranceDto,
   UpdateClientInsuranceDto,
 } from "@/lib/types/client-insurance.types"
@@ -17,6 +18,11 @@ function normalizeDate(isoDate: string | undefined | null): string {
   return isoDate.split("T")[0]
 }
 
+/** Rows predating the type enum come back with type = null; anything unexpected is treated the same. */
+function normalizeInsuranceType(raw: unknown): ClientInsuranceType | null {
+  return raw === "COMERCIAL" || raw === "MEDICAID" ? raw : null
+}
+
 /**
  * Maps the raw backend response to the frontend ClientInsurance shape,
  * normalizing dates and providing defaults for optional fields.
@@ -31,6 +37,7 @@ function normalizeInsurance(raw: Record<string, unknown>): ClientInsurance {
     memberNumber: (raw.memberNumber as string) ?? "",
     groupNumber: (raw.groupNumber as string) ?? "",
     relationship: (raw.relationship as ClientInsurance["relationship"]) ?? "Self",
+    type: normalizeInsuranceType(raw.type),
     isActive: (raw.isActive as boolean) ?? (raw.active as boolean) ?? true,
     isPrimary: (raw.isPrimary as boolean) ?? false,
     effectiveDate: normalizeDate(raw.effectiveDate as string),
