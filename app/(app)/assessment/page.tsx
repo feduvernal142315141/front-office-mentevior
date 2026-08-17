@@ -1,6 +1,7 @@
 "use client"
 
 import { ClipboardCheck } from "lucide-react"
+import { AssessmentsTable } from "./components/AssessmentsTable"
 
 export default function AssessmentPage() {
   return (
@@ -18,17 +19,7 @@ export default function AssessmentPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12">
-          <div className="text-center max-w-md mx-auto">
-            <div className="inline-flex p-4 rounded-full bg-slate-100 mb-4">
-              <ClipboardCheck className="h-12 w-12 text-slate-400" />
-            </div>
-            <h2 className="text-xl font-semibold text-slate-800 mb-2">Coming Soon</h2>
-            <p className="text-slate-600">
-              Assessment features will be available here soon.
-            </p>
-          </div>
-        </div>
+        <AssessmentsTable />
       </div>
     </div>
   )
