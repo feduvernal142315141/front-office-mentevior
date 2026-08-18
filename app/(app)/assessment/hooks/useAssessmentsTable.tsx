@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Edit2 } from "lucide-react"
+import { Edit2, FileDown } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -31,6 +31,8 @@ export function useAssessmentsTable() {
   const [filterDateFrom, setFilterDateFrom] = useState("")
   const [filterDateTo, setFilterDateTo] = useState("")
   const [filterClient, setFilterClient] = useState("all")
+
+  const [previewId, setPreviewId] = useState<string | null>(null)
 
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
 
@@ -174,6 +176,28 @@ export function useAssessmentsTable() {
       align: "right",
       render: (item) => (
         <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setPreviewId(item.id)
+            }}
+            className={cn(
+              "group/pdf relative h-9 w-9",
+              "flex items-center justify-center rounded-xl",
+              "bg-gradient-to-b from-slate-50 to-slate-100/80",
+              "border border-slate-200/60 shadow-sm shadow-slate-900/5",
+              "hover:from-slate-100 hover:to-slate-200/90",
+              "hover:border-slate-300/80 hover:shadow-md hover:shadow-slate-900/10",
+              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+              "transition-all duration-200 ease-out",
+              "focus:outline-none focus:ring-2 focus:ring-slate-500/30 focus:ring-offset-2",
+            )}
+            title="Preview PDF"
+            aria-label="Preview PDF"
+          >
+            <FileDown className="w-4 h-4 text-slate-600 group-hover/pdf:text-slate-800 transition-colors duration-200" />
+          </button>
           {canEdit && (
             <button
               type="button"
@@ -220,6 +244,8 @@ export function useAssessmentsTable() {
     clientOptions,
     hasActiveFilters,
     clearFilters,
+    previewId,
+    setPreviewId,
     pagination: {
       page,
       pageSize,

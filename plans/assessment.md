@@ -19,7 +19,8 @@ Respuestas incorporadas:
 | Q2 · JSON del detalle | Publicado: hijas con `id` de fila + nombres resueltos (`assessmentConductedName`, `clientServicePlanCategoryItemName`, `billingCode`, `credential`) | `normalizeAssessmentDetail` ajustado |
 | Q3 · Body del PUT | `PUT /assessments` (sin id en ruta), **`id` en el body**, mismo shape que el POST; reemplaza colecciones por soft-delete + insert | `assessments.service.ts` |
 | Q4 · Filtros del listado | Sin confirmar — sigue solo `clientId` | `useAssessmentsTable.tsx` |
-| Q7/Q8 · DELETE / PDF | Siguen sin existir | — |
+| Q7 · DELETE | Sigue sin existir | — |
+| Q8 · PDF | ✅ **Entregado 2026-08-17**: `GET /reports/assessment/behavior-analysis-support-plan?assessmentId=` responde `{fileBase64}`. Integrado con el patrón estándar: ruta proxy `app/api/reports/assessment/preview/[fileName]/route.ts` (el proxy compartido ya decodifica base64), `getAssessmentPdfUrl()`, botón/row-click en la tabla + DocumentViewer, y "Save & Preview PDF" en el form (persiste primero; `use-save-assessment` recuerda el id para no duplicar) | — |
 
 **Colecciones nuevas** (contrato 2026-08-17): `billingCodes` (código del catálogo de la
 compañía + units period/week + `settings` JSON string, convención front `{location,notes}`),

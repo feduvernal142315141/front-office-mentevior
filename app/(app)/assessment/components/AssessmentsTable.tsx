@@ -1,12 +1,15 @@
 "use client"
 
+import { useMemo } from "react"
 import { ClipboardCheck, Plus } from "lucide-react"
 import { useAssessmentsTable } from "../hooks/useAssessmentsTable"
 import { CustomTable } from "@/components/custom/CustomTable"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { getAssessmentPdfUrl } from "@/lib/modules/assessments/services/assessments.service"
 
 export function AssessmentsTable() {
   const {
@@ -18,10 +21,14 @@ export function AssessmentsTable() {
     clientOptions,
     hasActiveFilters,
     clearFilters,
+    previewId,
+    setPreviewId,
     pagination,
     canCreate,
     goToCreate,
   } = useAssessmentsTable()
+
+  const pdfUrl = useMemo(() => (previewId ? getAssessmentPdfUrl(previewId) : null), [previewId])
 
   if (error) {
     return (
@@ -105,8 +112,18 @@ export function AssessmentsTable() {
           )
         }
         getRowKey={(item) => item.id}
+        onRowClick={(item) => setPreviewId(item.id)}
         pagination={pagination}
       />
+
+      {pdfUrl && (
+        <DocumentViewer
+          open
+          onClose={() => setPreviewId(null)}
+          documentUrl={pdfUrl}
+          fileName="Behavior Analysis Assessment and Support Plan.pdf"
+        />
+      )}
     </div>
   )
 }

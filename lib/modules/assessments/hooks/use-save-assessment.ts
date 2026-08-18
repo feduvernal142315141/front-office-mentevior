@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { SaveAssessmentDto } from "@/lib/types/assessment.types"
 import { createAssessment, updateAssessment } from "../services/assessments.service"
@@ -11,24 +11,34 @@ interface UseSaveAssessmentOptions {
 }
 
 interface UseSaveAssessmentReturn {
-  /** Devuelve el id guardado, o null si falló (el error ya se mostró en toast) */
+  /** Crea la primera vez y actualiza a partir de ahí. Devuelve el id, o null si falló */
   save: (data: SaveAssessmentDto) => Promise<string | null>
   isSaving: boolean
   error: string | null
 }
 
+/**
+ * Guardado del Assessment. Recuerda el id del primer create para que "Save &
+ * Preview PDF" seguido de "Create" actualice el mismo registro en vez de dejar
+ * dos (mismo patrón que `useSaveClinicalMonthly`).
+ */
 export function useSaveAssessment(options?: UseSaveAssessmentOptions): UseSaveAssessmentReturn {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const assessmentId = options?.assessmentId
+  // En ref y no en estado: dos guardados seguidos no deben crear dos registros
+  // por leer un id todavía sin re-renderizar.
+  const idRef = useRef<string | null>(options?.assessmentId ?? null)
 
   const save = useCallback(async (data: SaveAssessmentDto): Promise<string | null> => {
     setIsSaving(true)
     setError(null)
 
     try {
-      return assessmentId ? await updateAssessment(assessmentId, data) : await createAssessment(data)
+      const existingId = idRef.current
+      const id = existingId ? await updateAssessment(existingId, data) : await createAssessment(data)
+      idRef.current = id
+      return id
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save assessment"
       setError(message)
@@ -37,7 +47,7 @@ export function useSaveAssessment(options?: UseSaveAssessmentOptions): UseSaveAs
     } finally {
       setIsSaving(false)
     }
-  }, [assessmentId])
+  }, [])
 
   return { save, isSaving, error }
 }

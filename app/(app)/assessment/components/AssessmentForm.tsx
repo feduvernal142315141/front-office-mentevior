@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   BookOpenText,
@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Contact,
   Eye,
+  FileDown,
   GraduationCap,
   Home,
   Info,
@@ -20,7 +21,9 @@ import {
   User,
 } from "lucide-react"
 import { toast } from "sonner"
+import { Button } from "@/components/custom/Button"
 import { Checkbox } from "@/components/custom/Checkbox"
+import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -33,6 +36,7 @@ import {
   HOUSING_TYPE_OPTIONS,
   SCHOOL_SETTING_OPTIONS,
 } from "@/lib/constants/assessment.constants"
+import { getAssessmentPdfUrl } from "@/lib/modules/assessments/services/assessments.service"
 import { useAssessmentForm } from "../hooks/useAssessmentForm"
 import { AbcDataSection } from "./sections/AbcDataSection"
 import { BillingCodesSection } from "./sections/BillingCodesSection"
@@ -53,6 +57,7 @@ interface AssessmentFormProps {
  */
 export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
   const router = useRouter()
+  const [previewId, setPreviewId] = useState<string | null>(null)
 
   const {
     formData,
@@ -110,6 +115,13 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     [handleSubmit, isEditing, router],
   )
 
+  // Generar el PDF exige que el registro exista, así que previsualizar guarda
+  // primero (el hook de guardado recuerda el id: no se duplican registros)
+  const handlePreview = useCallback(async () => {
+    const id = await handleSubmit()
+    if (id) setPreviewId(id)
+  }, [handleSubmit])
+
   if (isEditing && detailLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -131,6 +143,20 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5 pb-32">
+      {/* ─── Preview: exige guardar antes, el PDF sale de un registro existente ─── */}
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handlePreview}
+          disabled={isSaving}
+          className="gap-2 flex items-center"
+        >
+          <FileDown className="h-4 w-4" />
+          Save &amp; Preview PDF
+        </Button>
+      </div>
+
       {/* ─── Client ─── */}
       <Section icon={<User className="h-4 w-4" />} title="Client" subtitle="Who this assessment is for">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -491,6 +517,15 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         submitText={isEditing ? "Update Assessment" : "Create Assessment"}
         disabled={isSaving}
       />
+
+      {previewId && (
+        <DocumentViewer
+          open
+          onClose={() => setPreviewId(null)}
+          documentUrl={getAssessmentPdfUrl(previewId)}
+          fileName="Behavior Analysis Assessment and Support Plan.pdf"
+        />
+      )}
     </form>
   )
 }

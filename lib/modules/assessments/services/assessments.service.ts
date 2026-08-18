@@ -81,6 +81,19 @@ export async function updateAssessment(id: string, data: SaveAssessmentDto): Pro
   return extractId(response.data, "update") || id
 }
 
+/**
+ * URL del proxy same-origin que sirve el PDF "Behavior Analysis Assessment and
+ * Support Plan" de un assessment existente. El nombre va en la ruta para que el
+ * visor de Chrome muestre un nombre real (mismo patrón que Clinical Monthly).
+ */
+export function getAssessmentPdfUrl(
+  assessmentId: string,
+  fileName = "Behavior Analysis Assessment and Support Plan.pdf",
+): string {
+  const safeName = encodeURIComponent(fileName.endsWith(".pdf") ? fileName : `${fileName}.pdf`)
+  return `/api/reports/assessment/preview/${safeName}?assessmentId=${encodeURIComponent(assessmentId)}`
+}
+
 /** El backend responde el UUID pelado; algunos entornos lo envuelven (patrón clinical-monthly) */
 function extractId(payload: unknown, action: "create" | "update"): string {
   if (typeof payload === "string" && payload.trim()) return payload.trim()
