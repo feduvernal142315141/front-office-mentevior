@@ -1,14 +1,10 @@
 /**
- * Dos campos del contrato de Assessment viajan como JSON serializado dentro de
- * un string:
+ * `proposedSchedule[].schedule` viaja como JSON serializado dentro de un
+ * string: el backend exige un objeto con EXACTAMENTE las 7 keys Monday…Sunday
+ * y valores numéricos (horas). Todo el (de)serializado vive acá.
  *
- * - `proposedSchedule[].schedule`: el backend exige un objeto con EXACTAMENTE
- *   las 7 keys Monday…Sunday y valores numéricos (horas).
- * - `billingCodes[].settings`: string libre; el front usa la convención del
- *   ejemplo del contrato `{"location":...,"notes":...}`.
- *
- * Todo el (de)serializado vive acá para que el resto del módulo trabaje con
- * objetos tipados.
+ * (`billingCodes[].settings` fue JSON hasta el contrato 2026-08-18; hoy es
+ * texto plano y no necesita helpers.)
  */
 
 export const SCHEDULE_DAY_KEYS = [
@@ -64,30 +60,22 @@ export function serializeProposedSchedule(hours: ScheduleHours): string {
   return JSON.stringify(schedule)
 }
 
-export interface BillingCodeSettings {
-  location: string
-  notes: string
-}
-
-export function parseBillingCodeSettings(raw: string): BillingCodeSettings {
-  if (!raw.trim()) return { location: "", notes: "" }
+/**
+ * Assessments guardados antes del cambio de contrato traen `settings` como
+ * JSON `{"location":...,"notes":...}`. Se aplana a texto legible; el texto
+ * plano actual pasa tal cual.
+ */
+export function normalizeBillingCodeSettings(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed.startsWith("{")) return trimmed
 
   try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    return {
-      location: typeof parsed?.location === "string" ? parsed.location : "",
-      notes: typeof parsed?.notes === "string" ? parsed.notes : "",
-    }
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>
+    const parts = [parsed.location, parsed.notes].filter(
+      (v): v is string => typeof v === "string" && v.trim().length > 0,
+    )
+    return parts.length > 0 ? parts.join(" — ") : trimmed
   } catch {
-    // Un settings que no siga la convención se conserva visible como nota
-    return { location: "", notes: raw }
+    return trimmed
   }
-}
-
-/** Ambos vacíos → string vacío (no se inventa un JSON hueco) */
-export function serializeBillingCodeSettings(settings: BillingCodeSettings): string {
-  const location = settings.location.trim()
-  const notes = settings.notes.trim()
-  if (!location && !notes) return ""
-  return JSON.stringify({ location, notes })
 }

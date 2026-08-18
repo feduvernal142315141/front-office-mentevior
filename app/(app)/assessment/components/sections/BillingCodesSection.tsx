@@ -17,7 +17,7 @@ interface BillingCodesSectionProps {
   onUpdate: (index: number, field: keyof BillingCodeRow, value: string) => void
 }
 
-/** Códigos de facturación propuestos: código + unidades por período/semana + settings (location/notes) */
+/** Códigos de facturación propuestos: código + unidades por período/semana + settings (texto plano) */
 export function BillingCodesSection({
   rows,
   options,
@@ -84,19 +84,13 @@ export function BillingCodesSection({
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
+            <div className="mt-4">
               <FloatingInput
-                label="Location"
-                value={row.location}
-                onChange={(v) => onUpdate(index, "location", v)}
+                label="Settings"
+                value={row.settings}
+                onChange={(v) => onUpdate(index, "settings", v)}
                 onBlur={() => {}}
-                disabled={disabled}
-              />
-              <FloatingInput
-                label="Notes"
-                value={row.notes}
-                onChange={(v) => onUpdate(index, "notes", v)}
-                onBlur={() => {}}
+                placeholder="Home, Community"
                 disabled={disabled}
               />
             </div>

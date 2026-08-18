@@ -24,7 +24,14 @@ interface CategoryItemsSectionProps {
 }
 
 function isTouched(value: CategoryItemFormValue): boolean {
-  return !!value.intensityKey || !!value.intensityDescription.trim() || !!value.hypothesizedFunction
+  return (
+    !!value.intensityKey ||
+    !!value.intensityDescription.trim() ||
+    !!value.hypothesizedFunction ||
+    !!value.prevalentSetting.trim() ||
+    !!value.preventiveStrategies.trim() ||
+    !!value.managementStrategies.trim()
+  )
 }
 
 /**
@@ -125,6 +132,29 @@ export function CategoryItemsSection({
                       value={value.hypothesizedFunction}
                       onChange={(v) => onUpdate(item.id, "hypothesizedFunction", v)}
                       options={HYPOTHESIZED_FUNCTION_OPTIONS}
+                      disabled={disabled}
+                    />
+                  </div>
+                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <FloatingInput
+                      label="Prevalent setting"
+                      value={value.prevalentSetting}
+                      onChange={(v) => onUpdate(item.id, "prevalentSetting", v)}
+                      onBlur={() => {}}
+                      disabled={disabled}
+                    />
+                    <FloatingInput
+                      label="Preventive strategies (antecedent)"
+                      value={value.preventiveStrategies}
+                      onChange={(v) => onUpdate(item.id, "preventiveStrategies", v)}
+                      onBlur={() => {}}
+                      disabled={disabled}
+                    />
+                    <FloatingInput
+                      label="Management strategies (consequence)"
+                      value={value.managementStrategies}
+                      onChange={(v) => onUpdate(item.id, "managementStrategies", v)}
+                      onBlur={() => {}}
                       disabled={disabled}
                     />
                   </div>

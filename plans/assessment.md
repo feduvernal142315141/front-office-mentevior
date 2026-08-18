@@ -44,6 +44,25 @@ con catálogos `useBillingCodes` / `useCredentials` existentes.
   ids por fila, no-negativos) porque son las reglas comentadas para reactivación.
 - El PDF deriva `School Information / Hours` de `timeInit`/`timeEnd` (no hay `schoolHours`).
 
+### Revisión del contrato v3 (2026-08-18)
+
+- **Removidos** (además de los de la v2): `schoolSetting`,
+  `medicalHistoryChildSpecialCharacteristic`, `medicalHistoryAdditionalInfo`.
+  La sección School quedó: name, grade, horas, address; Medical History quedó:
+  other diagnosis, morbidities, allergies, type of birth.
+- **`medicalHistoryTypeOfBirth` ahora es enum** `CaesareanSection | NaturalChildbirth`
+  (ojo: PascalCase, no SCREAMING_SNAKE) → select con `TYPE_OF_BIRTH_OPTIONS`; ya no
+  parte en "N/A" (viaja `null` si no se elige).
+- **`categoriesItems` + 3 campos**: `prevalentSetting`, `preventiveStrategies`
+  (antecedent), `managementStrategies` (consequence) — segunda fila de inputs por item.
+  Regla PDF (solo backend): intensity solo se pinta si el collectionMethod del item es
+  frequency.
+- **`billingCodes[].settings` pasó a texto plano** ("Home, Community") — se eliminó la
+  convención JSON `{location,notes}`; un solo input Settings.
+  `normalizeBillingCodeSettings` aplana el JSON viejo de assessments ya guardados.
+- **El listado responde `{items, page, pageSize, total}`** (ya no
+  `{entities, pagination}`); el service acepta ambas formas.
+
 Pendiente (fase 5): probar el flujo completo contra el backend real.
 
 ## 0. Qué es

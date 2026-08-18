@@ -34,7 +34,7 @@ import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch
 import {
   ASSESSMENT_BACKGROUND_FIELDS,
   HOUSING_TYPE_OPTIONS,
-  SCHOOL_SETTING_OPTIONS,
+  TYPE_OF_BIRTH_OPTIONS,
 } from "@/lib/constants/assessment.constants"
 import { getAssessmentPdfUrl } from "@/lib/modules/assessments/services/assessments.service"
 import { useAssessmentForm } from "../hooks/useAssessmentForm"
@@ -214,12 +214,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             />
             <FieldError message={errors.timeEnd} />
           </div>
-          <FloatingSelect
-            label="School setting"
-            value={formData.schoolSetting}
-            onChange={(v) => updateField("schoolSetting", v as typeof formData.schoolSetting)}
-            options={SCHOOL_SETTING_OPTIONS}
-          />
           <div className="lg:col-span-3">
             <FloatingInput
               label="School address"
@@ -310,28 +304,11 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             onChange={(v) => updateField("medicalHistoryAllergies", v)}
             onBlur={() => {}}
           />
-          <FloatingInput
+          <FloatingSelect
             label="Type of birth"
             value={formData.medicalHistoryTypeOfBirth}
-            onChange={(v) => updateField("medicalHistoryTypeOfBirth", v)}
-            onBlur={() => {}}
-          />
-          <div className="md:col-span-2">
-            <FloatingInput
-              label="Child special characteristics"
-              value={formData.medicalHistoryChildSpecialCharacteristic}
-              onChange={(v) => updateField("medicalHistoryChildSpecialCharacteristic", v)}
-              onBlur={() => {}}
-            />
-          </div>
-        </div>
-        <div className="mt-4">
-          <FloatingTextarea
-            label="Additional medical information"
-            value={formData.medicalHistoryAdditionalInfo}
-            onChange={(v) => updateField("medicalHistoryAdditionalInfo", v)}
-            onBlur={() => {}}
-            rows={4}
+            onChange={(v) => updateField("medicalHistoryTypeOfBirth", v as typeof formData.medicalHistoryTypeOfBirth)}
+            options={TYPE_OF_BIRTH_OPTIONS}
           />
         </div>
       </Section>

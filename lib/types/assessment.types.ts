@@ -8,10 +8,11 @@
  * observación, ids por fila en billingCodes/proposedSchedule y no-negativos.
  */
 
-export type SchoolSetting = "REGULAR" | "SPECIAL" | "ADVANCED"
 export type HousingType = "HOME" | "FOSTER_HOME" | "PPEC"
 export type AssessmentIntensityKey = "MILD" | "MODERATE" | "HIGH"
 export type HypothesizedFunction = "ESCAPE" | "ATTENTION" | "SENSORY" | "TANGIBLE"
+/** Ojo: PascalCase, no SCREAMING_SNAKE como los demás enums */
+export type MedicalHistoryTypeOfBirth = "CaesareanSection" | "NaturalChildbirth"
 
 /** `GET /grade/catalog` y `GET /assessment-conducted/catalog` comparten la forma */
 export interface AssessmentCatalogItem {
@@ -47,6 +48,11 @@ export interface AssessmentCategoryItemInput {
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string
   hypothesizedFunction: HypothesizedFunction | null
+  prevalentSetting: string
+  /** Antecedent interventions del item */
+  preventiveStrategies: string
+  /** Consequence interventions del item */
+  managementStrategies: string
 }
 
 export interface AssessmentBillingCodeInput {
@@ -54,7 +60,7 @@ export interface AssessmentBillingCodeInput {
   /** No negativos */
   unitsPeriod: number
   unitsWeek: number
-  /** JSON string libre; el front serializa `{"location":...,"notes":...}` */
+  /** Texto plano (p.ej. "Home, Community") — contrato 2026-08-18; antes era JSON */
   settings: string
 }
 
@@ -108,7 +114,6 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields {
   timeInit: string | null
   timeEnd: string | null
   gradeCatalogId: string | null
-  schoolSetting: SchoolSetting | null
   schoolAddress: string
   housingType: HousingType | null
   housingNumberRooms: number
@@ -118,9 +123,7 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields {
   medicalHistoryOtherDiagnosis: string
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
-  medicalHistoryTypeOfBirth: string
-  medicalHistoryChildSpecialCharacteristic: string
-  medicalHistoryAdditionalInfo: string
+  medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | null
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
   assessmentConductedCatalogIds: string[]
@@ -164,6 +167,9 @@ export interface AssessmentCategoryItemEntry {
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string
   hypothesizedFunction: HypothesizedFunction | null
+  prevalentSetting: string
+  preventiveStrategies: string
+  managementStrategies: string
 }
 
 /** Fila de `billingCodes` en el detalle, con el código resuelto */
@@ -187,7 +193,6 @@ export interface AssessmentDetail extends AssessmentBackgroundFields {
   timeEnd: string
   gradeCatalogId: string
   gradeName: string
-  schoolSetting: SchoolSetting | ""
   schoolAddress: string
   housingType: HousingType | ""
   housingNumberRooms: number
@@ -199,9 +204,7 @@ export interface AssessmentDetail extends AssessmentBackgroundFields {
   medicalHistoryOtherDiagnosis: string
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
-  medicalHistoryTypeOfBirth: string
-  medicalHistoryChildSpecialCharacteristic: string
-  medicalHistoryAdditionalInfo: string
+  medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | ""
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
   assessmentConductedList: AssessmentConductedEntry[]

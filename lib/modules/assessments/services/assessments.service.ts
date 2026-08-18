@@ -30,20 +30,31 @@ export async function getAssessments(
     throw new Error(response.data?.message || "Failed to fetch assessments")
   }
 
-  const paginatedData = response.data as unknown as PaginatedResponse<AssessmentListItem>
+  // El contrato 2026-08-18 responde `{items, page, pageSize, total}`; se acepta
+  // también la forma estándar `{entities, pagination}` por si el backend la
+  // unifica después.
+  const data = response.data as unknown as {
+    items?: AssessmentListItem[]
+    total?: number
+    entities?: AssessmentListItem[]
+    pagination?: { total?: number; totalAmount?: number }
+  }
 
-  if (!paginatedData.entities || !Array.isArray(paginatedData.entities)) {
+  const assessments = Array.isArray(data.items)
+    ? data.items
+    : Array.isArray(data.entities)
+      ? data.entities
+      : null
+
+  if (!assessments) {
     console.error("Invalid backend response:", response.data)
     return { assessments: [], totalCount: 0 }
   }
 
-  // Mismo criterio que clinical-monthly.service: el total del contrato paginado
-  // llega como `total` o `totalAmount` según el listado; sin ninguno, se cae al
-  // largo de la página para no dejar la tabla vacía.
-  const pagination = paginatedData.pagination as { total?: number; totalAmount?: number } | undefined
-  const totalCount = pagination?.totalAmount ?? pagination?.total ?? paginatedData.entities.length
+  const totalCount =
+    data.total ?? data.pagination?.totalAmount ?? data.pagination?.total ?? assessments.length
 
-  return { assessments: paginatedData.entities, totalCount }
+  return { assessments, totalCount }
 }
 
 export async function getAssessmentById(id: string): Promise<AssessmentDetail | null> {
@@ -169,6 +180,9 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     intensityDescription: str(i.intensityDescription),
     hypothesizedFunction:
       enumOrEmpty(i.hypothesizedFunction, ["ESCAPE", "ATTENTION", "SENSORY", "TANGIBLE"] as const) || null,
+    prevalentSetting: str(i.prevalentSetting),
+    preventiveStrategies: str(i.preventiveStrategies),
+    managementStrategies: str(i.managementStrategies),
   }))
 
   const billingCodes: AssessmentBillingCodeEntry[] = arr(raw.billingCodes).map((b) => ({
@@ -207,7 +221,6 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     timeEnd: normalizeTime(raw.timeEnd),
     gradeCatalogId: str(raw.gradeCatalogId),
     gradeName: str(raw.gradeName),
-    schoolSetting: enumOrEmpty(raw.schoolSetting, ["REGULAR", "SPECIAL", "ADVANCED"] as const),
     schoolAddress: str(raw.schoolAddress),
     housingType: enumOrEmpty(raw.housingType, ["HOME", "FOSTER_HOME", "PPEC"] as const),
     housingNumberRooms: num(raw.housingNumberRooms),
@@ -219,9 +232,10 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     medicalHistoryOtherDiagnosis: str(raw.medicalHistoryOtherDiagnosis),
     medicalHistoryMorbidities: str(raw.medicalHistoryMorbidities),
     medicalHistoryAllergies: str(raw.medicalHistoryAllergies),
-    medicalHistoryTypeOfBirth: str(raw.medicalHistoryTypeOfBirth),
-    medicalHistoryChildSpecialCharacteristic: str(raw.medicalHistoryChildSpecialCharacteristic),
-    medicalHistoryAdditionalInfo: str(raw.medicalHistoryAdditionalInfo),
+    medicalHistoryTypeOfBirth: enumOrEmpty(raw.medicalHistoryTypeOfBirth, [
+      "CaesareanSection",
+      "NaturalChildbirth",
+    ] as const),
     backgroundSummary: str(raw.backgroundSummary),
     backgroundStrengths: str(raw.backgroundStrengths),
     backgroundWeaknesses: str(raw.backgroundWeaknesses),

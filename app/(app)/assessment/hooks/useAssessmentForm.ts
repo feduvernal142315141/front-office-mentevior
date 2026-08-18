@@ -13,8 +13,8 @@ import type {
   AssessmentProviderFileInput,
   HousingType,
   HypothesizedFunction,
+  MedicalHistoryTypeOfBirth,
   SaveAssessmentDto,
-  SchoolSetting,
 } from "@/lib/types/assessment.types"
 import { useAssessmentById } from "@/lib/modules/assessments/hooks/use-assessment-by-id"
 import { useAssessmentCatalogs } from "@/lib/modules/assessments/hooks/use-assessment-catalogs"
@@ -22,10 +22,9 @@ import { useClientCategoryItems } from "@/lib/modules/assessments/hooks/use-clie
 import { useSaveAssessment } from "@/lib/modules/assessments/hooks/use-save-assessment"
 import {
   EMPTY_SCHEDULE_HOURS,
-  parseBillingCodeSettings,
+  normalizeBillingCodeSettings,
   parseProposedSchedule,
   SCHEDULE_DAY_KEYS,
-  serializeBillingCodeSettings,
   serializeProposedSchedule,
   type ScheduleHours,
 } from "@/lib/modules/assessments/utils/assessment-json-fields"
@@ -39,15 +38,17 @@ export interface CategoryItemFormValue {
   intensityKey: AssessmentIntensityKey | ""
   intensityDescription: string
   hypothesizedFunction: HypothesizedFunction | ""
+  prevalentSetting: string
+  preventiveStrategies: string
+  managementStrategies: string
 }
 
-/** Fila de billing code; unidades como texto de input, settings desarmado en location/notes */
+/** Fila de billing code; unidades como texto de input, settings texto plano */
 export interface BillingCodeRow {
   billingCodeId: string
   unitsPeriod: string
   unitsWeek: string
-  location: string
-  notes: string
+  settings: string
 }
 
 export interface ScheduleRow {
@@ -63,7 +64,6 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   timeInit: string
   timeEnd: string
   gradeCatalogId: string
-  schoolSetting: SchoolSetting | ""
   schoolAddress: string
   // Housing & family
   housingType: HousingType | ""
@@ -75,9 +75,7 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   medicalHistoryOtherDiagnosis: string
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
-  medicalHistoryTypeOfBirth: string
-  medicalHistoryChildSpecialCharacteristic: string
-  medicalHistoryAdditionalInfo: string
+  medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | ""
   // Collections
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
@@ -92,13 +90,16 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
 
 const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", frequency: "", details: "" }
 const EMPTY_OBSERVATION: AssessmentObservationInput = { date: "", setting: "", summary: "" }
-const EMPTY_BILLING_CODE: BillingCodeRow = { billingCodeId: "", unitsPeriod: "", unitsWeek: "", location: "", notes: "" }
+const EMPTY_BILLING_CODE: BillingCodeRow = { billingCodeId: "", unitsPeriod: "", unitsWeek: "", settings: "" }
 const EMPTY_ABC: AssessmentAbcInput = { antecedent: "", behavior: "", consequence: "" }
 const EMPTY_PROVIDER_FILE: AssessmentProviderFileInput = { type: "", name: "", contactIformation: "" }
 export const EMPTY_CATEGORY_ITEM: CategoryItemFormValue = {
   intensityKey: "",
   intensityDescription: "",
   hypothesizedFunction: "",
+  prevalentSetting: "",
+  preventiveStrategies: "",
+  managementStrategies: "",
 }
 
 /** Los textos clínicos parten en "N/A" (convención del ejemplo del contrato; nada es requerido) */
@@ -108,7 +109,6 @@ const EMPTY_FORM: AssessmentFormData = {
   timeInit: "",
   timeEnd: "",
   gradeCatalogId: "",
-  schoolSetting: "",
   schoolAddress: "",
   housingType: "",
   housingNumberRooms: 0,
@@ -118,9 +118,7 @@ const EMPTY_FORM: AssessmentFormData = {
   medicalHistoryOtherDiagnosis: "N/A",
   medicalHistoryMorbidities: "N/A",
   medicalHistoryAllergies: "N/A",
-  medicalHistoryTypeOfBirth: "N/A",
-  medicalHistoryChildSpecialCharacteristic: "N/A",
-  medicalHistoryAdditionalInfo: "N/A",
+  medicalHistoryTypeOfBirth: "",
   backgroundSummary: "",
   backgroundStrengths: "",
   backgroundWeaknesses: "",
@@ -152,17 +150,18 @@ function isObservationEmpty(o: AssessmentObservationInput): boolean {
 }
 
 function isCategoryItemTouched(v: CategoryItemFormValue): boolean {
-  return !!v.intensityKey || !!v.intensityDescription.trim() || !!v.hypothesizedFunction
+  return (
+    !!v.intensityKey ||
+    !!v.intensityDescription.trim() ||
+    !!v.hypothesizedFunction ||
+    !!v.prevalentSetting.trim() ||
+    !!v.preventiveStrategies.trim() ||
+    !!v.managementStrategies.trim()
+  )
 }
 
 function isBillingCodeEmpty(row: BillingCodeRow): boolean {
-  return (
-    !row.billingCodeId &&
-    !row.unitsPeriod.trim() &&
-    !row.unitsWeek.trim() &&
-    !row.location.trim() &&
-    !row.notes.trim()
-  )
+  return !row.billingCodeId && !row.unitsPeriod.trim() && !row.unitsWeek.trim() && !row.settings.trim()
 }
 
 function isScheduleEmpty(row: ScheduleRow): boolean {
@@ -241,6 +240,9 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         intensityKey: entry.intensityKey ?? "",
         intensityDescription: entry.intensityDescription,
         hypothesizedFunction: entry.hypothesizedFunction ?? "",
+        prevalentSetting: entry.prevalentSetting,
+        preventiveStrategies: entry.preventiveStrategies,
+        managementStrategies: entry.managementStrategies,
       }
     }
 
@@ -250,7 +252,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       timeInit: assessment.timeInit,
       timeEnd: assessment.timeEnd,
       gradeCatalogId: assessment.gradeCatalogId,
-      schoolSetting: assessment.schoolSetting,
       schoolAddress: assessment.schoolAddress,
       housingType: assessment.housingType,
       housingNumberRooms: assessment.housingNumberRooms,
@@ -263,8 +264,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       medicalHistoryMorbidities: assessment.medicalHistoryMorbidities,
       medicalHistoryAllergies: assessment.medicalHistoryAllergies,
       medicalHistoryTypeOfBirth: assessment.medicalHistoryTypeOfBirth,
-      medicalHistoryChildSpecialCharacteristic: assessment.medicalHistoryChildSpecialCharacteristic,
-      medicalHistoryAdditionalInfo: assessment.medicalHistoryAdditionalInfo,
       backgroundSummary: assessment.backgroundSummary,
       backgroundStrengths: assessment.backgroundStrengths,
       backgroundWeaknesses: assessment.backgroundWeaknesses,
@@ -283,16 +282,12 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         .map((c) => c.assessmentConductedCatalogId)
         .filter(Boolean),
       categoryItems,
-      billingCodes: assessment.billingCodes.map((b) => {
-        const settings = parseBillingCodeSettings(b.settings)
-        return {
-          billingCodeId: b.billingCodeId,
-          unitsPeriod: b.unitsPeriod ? String(b.unitsPeriod) : "",
-          unitsWeek: b.unitsWeek ? String(b.unitsWeek) : "",
-          location: settings.location,
-          notes: settings.notes,
-        }
-      }),
+      billingCodes: assessment.billingCodes.map((b) => ({
+        billingCodeId: b.billingCodeId,
+        unitsPeriod: b.unitsPeriod ? String(b.unitsPeriod) : "",
+        unitsWeek: b.unitsWeek ? String(b.unitsWeek) : "",
+        settings: normalizeBillingCodeSettings(b.settings),
+      })),
       proposedSchedule: assessment.proposedSchedule.map((s) => ({
         credentialId: s.credentialId,
         hours: parseProposedSchedule(s.schedule),
@@ -540,6 +535,9 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         intensityKey: value.intensityKey || null,
         intensityDescription: value.intensityDescription.trim(),
         hypothesizedFunction: value.hypothesizedFunction || null,
+        prevalentSetting: value.prevalentSetting.trim(),
+        preventiveStrategies: value.preventiveStrategies.trim(),
+        managementStrategies: value.managementStrategies.trim(),
       }))
 
     const billingCodes: AssessmentBillingCodeInput[] = formData.billingCodes
@@ -548,7 +546,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         billingCodeId: row.billingCodeId,
         unitsPeriod: Number.parseFloat(row.unitsPeriod) || 0,
         unitsWeek: Number.parseFloat(row.unitsWeek) || 0,
-        settings: serializeBillingCodeSettings({ location: row.location, notes: row.notes }),
+        settings: row.settings.trim(),
       }))
 
     const proposedSchedule: AssessmentProposedScheduleInput[] = formData.proposedSchedule
@@ -564,7 +562,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       timeInit: formData.timeInit ? `${formData.timeInit}:00` : null,
       timeEnd: formData.timeEnd ? `${formData.timeEnd}:00` : null,
       gradeCatalogId: formData.gradeCatalogId || null,
-      schoolSetting: formData.schoolSetting || null,
       schoolAddress: formData.schoolAddress.trim(),
       housingType: formData.housingType || null,
       housingNumberRooms: formData.housingNumberRooms,
@@ -574,9 +571,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       medicalHistoryOtherDiagnosis: formData.medicalHistoryOtherDiagnosis.trim(),
       medicalHistoryMorbidities: formData.medicalHistoryMorbidities.trim(),
       medicalHistoryAllergies: formData.medicalHistoryAllergies.trim(),
-      medicalHistoryTypeOfBirth: formData.medicalHistoryTypeOfBirth.trim(),
-      medicalHistoryChildSpecialCharacteristic: formData.medicalHistoryChildSpecialCharacteristic.trim(),
-      medicalHistoryAdditionalInfo: formData.medicalHistoryAdditionalInfo.trim(),
+      medicalHistoryTypeOfBirth: formData.medicalHistoryTypeOfBirth || null,
       backgroundSummary: formData.backgroundSummary.trim(),
       backgroundStrengths: formData.backgroundStrengths.trim(),
       backgroundWeaknesses: formData.backgroundWeaknesses.trim(),
