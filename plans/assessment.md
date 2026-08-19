@@ -63,6 +63,23 @@ con catálogos `useBillingCodes` / `useCredentials` existentes.
 - **El listado responde `{items, page, pageSize, total}`** (ya no
   `{entities, pagination}`); el service acepta ambas formas.
 
+### Revisión del contrato v4 (2026-08-18, textos editables del PDF + flags)
+
+- **29 textos editables del PDF** (`coordinationCare` … `matchingLawTreatment`): keys en
+  `ASSESSMENT_PDF_TEXT_KEYS` (types), labels agrupados en `ASSESSMENT_PDF_TEXT_GROUPS`
+  (constants: General 8 · Antecedent 13 · Consequence 8). UI: `PdfNarrativesSections`,
+  tres `CollapsableSection` colapsadas por defecto. **Regla clave**: un campo vacío viaja
+  `null` → en create el backend guarda su texto estándar; en update `null`/`""` = la
+  subsección no se pinta en el PDF. En create se muestra una nota explicándolo.
+- **27 flags `show*`** de visibilidad de secciones del PDF: `ASSESSMENT_PDF_FLAG_KEYS` +
+  `ASSESSMENT_PDF_SECTION_FLAGS`. UI: `PdfSectionsVisibility` (switches en grid,
+  colapsable, todo parte en true). `null` del backend se normaliza a `true`; el front
+  siempre manda booleans explícitos. Vienen también en el listado (no se usan ahí).
+- **Placeholders del Background** (template del PDF): `assessment-guidance.ts` con
+  `FieldGuidance` por campo (patrón session-notes: se ven dentro del campo vacío).
+  Labels actualizados: "Self-care skills / Daily living skills", "Gross/Fine motor
+  skills"; el summary se titula "Summary" con la guía completa a/b/c.
+
 Pendiente (fase 5): probar el flujo completo contra el backend real.
 
 ## 0. Qué es

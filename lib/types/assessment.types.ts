@@ -86,6 +86,90 @@ export interface AssessmentProviderFileInput {
   contactIformation: string
 }
 
+/**
+ * Textos editables del PDF (contrato 2026-08-18). Multilinea (`\n`).
+ * En `POST`, un campo en `null` hace que el backend guarde su texto histórico
+ * por defecto; en `PUT` se guarda lo enviado tal cual. En el PDF, un texto
+ * vacío/null no pinta su subsección.
+ */
+export const ASSESSMENT_PDF_TEXT_KEYS = [
+  // Generales
+  "coordinationCare",
+  "medicalNecessity",
+  "caregiverTraining",
+  "generalizationTraining",
+  "fadingTransitionPlan",
+  "crisisProcedures",
+  "dischargeCriteria",
+  "assessmentTreatmentConsent",
+  // Preventive & antecedent strategies
+  "noncontingentAttention",
+  "thinNoncontingentAttention",
+  "independentBreaks",
+  "visualSupports",
+  "communicationTraining",
+  "verbalBehaviorInstruction",
+  "delayDenialTolerance",
+  "premackPrinciple",
+  "promptFading",
+  "shaping",
+  "highProbabilityRequests",
+  "behavioralMomentum",
+  "pairing",
+  // Consequence-based strategies
+  "dra",
+  "thinDra",
+  "dri",
+  "dro",
+  "plannedIgnoring",
+  "alternativeRedirection",
+  "stopRedirectReinforce",
+  "matchingLawTreatment",
+] as const
+
+export type AssessmentPdfTextKey = (typeof ASSESSMENT_PDF_TEXT_KEYS)[number]
+
+/**
+ * Flags de visibilidad de secciones del PDF. `null` en backend equivale a
+ * `true`; el front siempre manda booleans explícitos.
+ */
+export const ASSESSMENT_PDF_FLAG_KEYS = [
+  "showEmergencyContactInformation",
+  "showSchoolInformation",
+  "showHousingFamily",
+  "showReferringPhysicians",
+  "showFamilyCaregiversGuardians",
+  "showMedicalHistory",
+  "showCurrentMedications",
+  "showCoordinationOfCare",
+  "showProvidersOnFile",
+  "showDocumentsReviewed",
+  "showServiceLocations",
+  "showBackgroundInformation",
+  "showMedicalNecessityStatement",
+  "showObservations",
+  "showAbcDataRecording",
+  "showAssessmentConducted",
+  "showAssessmentCategories",
+  "showPreventiveAndAntecedentStrategies",
+  "showConsequenceBasedStrategies",
+  "showFamilyCaregiverTraining",
+  "showGeneralizationTraining",
+  "showServiceFadingTransitionPlan",
+  "showCrisisProcedures",
+  "showDischargePlanCriteria",
+  "showRecommendedServices",
+  "showProposedSchedule",
+  "showConsentAssessmentTreatment",
+] as const
+
+export type AssessmentPdfFlagKey = (typeof ASSESSMENT_PDF_FLAG_KEYS)[number]
+
+export type AssessmentPdfTexts = Record<AssessmentPdfTextKey, string>
+export type AssessmentPdfFlags = Record<AssessmentPdfFlagKey, boolean>
+/** En el DTO los textos van en null cuando el usuario los dejó vacíos */
+export type AssessmentPdfTextsPayload = Record<AssessmentPdfTextKey, string | null>
+
 /** Los 12 campos de background del cliente; todos String libres */
 export interface AssessmentBackgroundFields {
   backgroundSummary: string
@@ -107,7 +191,7 @@ export interface AssessmentBackgroundFields {
  * usa el mismo body más `id` (el service lo agrega). Las colecciones se mandan
  * completas: el update reemplaza las hijas.
  */
-export interface SaveAssessmentDto extends AssessmentBackgroundFields {
+export interface SaveAssessmentDto extends AssessmentBackgroundFields, AssessmentPdfTextsPayload, AssessmentPdfFlags {
   clientId: string
   schoolName: string
   /** HH:mm:ss, o null si no se capturó */
@@ -183,7 +267,7 @@ export interface AssessmentProposedScheduleEntry extends AssessmentProposedSched
 }
 
 /** `GET /assessments/{id}`, normalizado en `normalizeAssessmentDetail` */
-export interface AssessmentDetail extends AssessmentBackgroundFields {
+export interface AssessmentDetail extends AssessmentBackgroundFields, AssessmentPdfTexts, AssessmentPdfFlags {
   id: string
   clientId: string
   clientName: string

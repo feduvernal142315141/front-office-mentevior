@@ -36,6 +36,10 @@ import {
   HOUSING_TYPE_OPTIONS,
   TYPE_OF_BIRTH_OPTIONS,
 } from "@/lib/constants/assessment.constants"
+import {
+  ASSESSMENT_BACKGROUND_GUIDANCE,
+  ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE,
+} from "@/lib/constants/assessment-guidance"
 import { getAssessmentPdfUrl } from "@/lib/modules/assessments/services/assessments.service"
 import { useAssessmentForm } from "../hooks/useAssessmentForm"
 import { AbcDataSection } from "./sections/AbcDataSection"
@@ -43,6 +47,8 @@ import { BillingCodesSection } from "./sections/BillingCodesSection"
 import { CategoryItemsSection } from "./sections/CategoryItemsSection"
 import { MedicationsSection } from "./sections/MedicationsSection"
 import { ObservationsSection } from "./sections/ObservationsSection"
+import { PdfNarrativesSections } from "./sections/PdfNarrativesSections"
+import { PdfSectionsVisibility } from "./sections/PdfSectionsVisibility"
 import { ProposedScheduleSection } from "./sections/ProposedScheduleSection"
 import { ProviderFilesSection } from "./sections/ProviderFilesSection"
 
@@ -100,6 +106,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     addProviderFile,
     removeProviderFile,
     updateProviderFile,
+    updatePdfText,
+    updatePdfFlag,
     handleSubmit,
     isSaving,
   } = useAssessmentForm({ assessmentId })
@@ -320,11 +328,12 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Current functioning, strengths and skills"
       >
         <FloatingTextarea
-          label="Background summary"
+          label="Summary"
           value={formData.backgroundSummary}
           onChange={(v) => updateField("backgroundSummary", v)}
           onBlur={() => {}}
-          rows={4}
+          guidance={ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE}
+          rows={6}
         />
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           {ASSESSMENT_BACKGROUND_FIELDS.map(({ key, label }) => (
@@ -334,7 +343,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               value={formData[key]}
               onChange={(v) => updateField(key, v)}
               onBlur={() => {}}
-              rows={3}
+              guidance={ASSESSMENT_BACKGROUND_GUIDANCE[key]}
+              rows={4}
             />
           ))}
         </div>
@@ -487,6 +497,16 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           onUpdate={updateProviderFile}
         />
       </Section>
+
+      {/* ─── PDF: narrativas editables + visibilidad de secciones ─── */}
+      <PdfNarrativesSections
+        values={formData.pdfTexts}
+        isEditing={isEditing}
+        disabled={isSaving}
+        onUpdate={updatePdfText}
+      />
+
+      <PdfSectionsVisibility flags={formData.pdfFlags} disabled={isSaving} onUpdate={updatePdfFlag} />
 
       <FormBottomBar
         isSubmitting={isSaving}

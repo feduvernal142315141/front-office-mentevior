@@ -1,6 +1,15 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import {
+  ASSESSMENT_PDF_FLAG_KEYS,
+  ASSESSMENT_PDF_TEXT_KEYS,
+  type AssessmentPdfFlagKey,
+  type AssessmentPdfFlags,
+  type AssessmentPdfTextKey,
+  type AssessmentPdfTexts,
+  type AssessmentPdfTextsPayload,
+} from "@/lib/types/assessment.types"
 import type {
   AssessmentAbcInput,
   AssessmentBackgroundFields,
@@ -86,6 +95,22 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   proposedSchedule: ScheduleRow[]
   abcData: AssessmentAbcInput[]
   providerFiles: AssessmentProviderFileInput[]
+  // PDF
+  pdfTexts: AssessmentPdfTexts
+  pdfFlags: AssessmentPdfFlags
+}
+
+function buildEmptyPdfTexts(): AssessmentPdfTexts {
+  const texts = {} as AssessmentPdfTexts
+  for (const key of ASSESSMENT_PDF_TEXT_KEYS) texts[key] = ""
+  return texts
+}
+
+/** Todas las secciones del PDF parten visibles (null equivale a true en backend) */
+function buildDefaultPdfFlags(): AssessmentPdfFlags {
+  const flags = {} as AssessmentPdfFlags
+  for (const key of ASSESSMENT_PDF_FLAG_KEYS) flags[key] = true
+  return flags
 }
 
 const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", frequency: "", details: "" }
@@ -139,6 +164,8 @@ const EMPTY_FORM: AssessmentFormData = {
   proposedSchedule: [],
   abcData: [],
   providerFiles: [],
+  pdfTexts: buildEmptyPdfTexts(),
+  pdfFlags: buildDefaultPdfFlags(),
 }
 
 function isMedicationEmpty(m: AssessmentMedicationInput): boolean {
@@ -294,6 +321,12 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       })),
       abcData: assessment.abcData,
       providerFiles: assessment.providerFiles,
+      pdfTexts: Object.fromEntries(
+        ASSESSMENT_PDF_TEXT_KEYS.map((key) => [key, assessment[key]]),
+      ) as AssessmentPdfTexts,
+      pdfFlags: Object.fromEntries(
+        ASSESSMENT_PDF_FLAG_KEYS.map((key) => [key, assessment[key]]),
+      ) as AssessmentPdfFlags,
     })
   }, [assessment])
 
@@ -467,6 +500,15 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     [],
   )
 
+  // ── PDF texts & section flags ──
+  const updatePdfText = useCallback((key: AssessmentPdfTextKey, value: string) => {
+    setFormData((prev) => ({ ...prev, pdfTexts: { ...prev.pdfTexts, [key]: value } }))
+  }, [])
+
+  const updatePdfFlag = useCallback((key: AssessmentPdfFlagKey, value: boolean) => {
+    setFormData((prev) => ({ ...prev, pdfFlags: { ...prev.pdfFlags, [key]: value } }))
+  }, [])
+
   // ── Provider files ──
   const addProviderFile = useCallback(() => {
     setFormData((prev) => ({ ...prev, providerFiles: [...prev.providerFiles, { ...EMPTY_PROVIDER_FILE }] }))
@@ -613,6 +655,12 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
           name: row.name.trim(),
           contactIformation: row.contactIformation.trim(),
         })),
+      // Un texto vacío viaja null: en create el backend aplica su texto
+      // estándar; en update significa "no pintar esa subsección del PDF".
+      ...(Object.fromEntries(
+        ASSESSMENT_PDF_TEXT_KEYS.map((key) => [key, formData.pdfTexts[key].trim() || null]),
+      ) as AssessmentPdfTextsPayload),
+      ...formData.pdfFlags,
     }
   }, [formData])
 
@@ -692,6 +740,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     addProviderFile,
     removeProviderFile,
     updateProviderFile,
+    updatePdfText,
+    updatePdfFlag,
     // Submit
     handleSubmit,
     isSaving,

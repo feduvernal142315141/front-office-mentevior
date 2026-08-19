@@ -1,4 +1,10 @@
 import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import {
+  ASSESSMENT_PDF_FLAG_KEYS,
+  ASSESSMENT_PDF_TEXT_KEYS,
+  type AssessmentPdfFlags,
+  type AssessmentPdfTexts,
+} from "@/lib/types/assessment.types"
 import type {
   AssessmentAbcInput,
   AssessmentBillingCodeEntry,
@@ -212,6 +218,17 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     contactIformation: str(p.contactIformation) || str(p.contactInformation),
   }))
 
+  const pdfTexts = {} as AssessmentPdfTexts
+  for (const key of ASSESSMENT_PDF_TEXT_KEYS) {
+    pdfTexts[key] = str(raw[key])
+  }
+
+  // `null` en un flag equivale a visible (regla del contrato)
+  const pdfFlags = {} as AssessmentPdfFlags
+  for (const key of ASSESSMENT_PDF_FLAG_KEYS) {
+    pdfFlags[key] = raw[key] == null ? true : Boolean(raw[key])
+  }
+
   return {
     id: str(raw.id),
     clientId: str(raw.clientId),
@@ -256,6 +273,8 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     proposedSchedule,
     abcData,
     providerFiles,
+    ...pdfTexts,
+    ...pdfFlags,
     createAt: str(raw.createAt),
     active: raw.active === undefined ? true : Boolean(raw.active),
   }
