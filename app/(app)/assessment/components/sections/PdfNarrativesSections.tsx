@@ -18,6 +18,8 @@ import { SectionPdfToggle } from "./SectionPdfToggle"
 interface PdfNarrativesSectionsProps {
   values: AssessmentPdfTexts
   flags: AssessmentPdfFlags
+  /** Claves: la key del texto (narrativa) o el flagKey del grupo (estrategias) */
+  errors: Record<string, string>
   isEditing: boolean
   disabled?: boolean
   onUpdate: (key: AssessmentPdfTextKey, value: string) => void
@@ -33,6 +35,7 @@ interface PdfNarrativesSectionsProps {
 export function PdfNarrativesSections({
   values,
   flags,
+  errors,
   isEditing,
   disabled,
   onUpdate,
@@ -56,9 +59,10 @@ export function PdfNarrativesSections({
           icon={<FileText className="h-4 w-4" />}
           title={label}
           defaultOpen={false}
-          // Con el switch apagado la sección queda plegada y sin expandir;
-          // el texto capturado se conserva y se sigue enviando
-          forceOpen={flags[flagKey] ? undefined : false}
+          // Con el switch apagado queda plegada y sin expandir (el texto se
+          // conserva y se sigue enviando); un error la fuerza abierta para que
+          // el mensaje inline sea visible
+          forceOpen={errors[key] ? true : flags[flagKey] ? undefined : false}
           disabled={!flags[flagKey]}
           headerAction={
             <SectionPdfToggle
@@ -69,14 +73,18 @@ export function PdfNarrativesSections({
           }
         >
           {defaultTextNote}
-          <FloatingTextarea
-            label={label}
-            value={values[key]}
-            onChange={(v) => onUpdate(key, v)}
-            onBlur={() => {}}
-            rows={5}
-            disabled={disabled}
-          />
+          <div data-field={key}>
+            <FloatingTextarea
+              label={label}
+              value={values[key]}
+              onChange={(v) => onUpdate(key, v)}
+              onBlur={() => {}}
+              rows={5}
+              disabled={disabled}
+              hasError={!!errors[key]}
+            />
+            {errors[key] && <p className="mt-1.5 text-xs font-medium text-red-500">{errors[key]}</p>}
+          </div>
         </CollapsableSection>
       ))}
 
@@ -87,7 +95,7 @@ export function PdfNarrativesSections({
           title={group.title}
           subtitle={group.subtitle}
           defaultOpen={false}
-          forceOpen={flags[group.flagKey] ? undefined : false}
+          forceOpen={errors[group.flagKey] ? true : flags[group.flagKey] ? undefined : false}
           disabled={!flags[group.flagKey]}
           headerAction={
             <SectionPdfToggle
@@ -98,6 +106,11 @@ export function PdfNarrativesSections({
           }
         >
           {defaultTextNote}
+          <div data-field={group.flagKey}>
+            {errors[group.flagKey] && (
+              <p className="mb-3 text-xs font-medium text-red-500">{errors[group.flagKey]}</p>
+            )}
+          </div>
           <div className="space-y-4">
             {group.fields.map(({ key, label }) => (
               <FloatingTextarea

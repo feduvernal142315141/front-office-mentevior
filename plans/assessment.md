@@ -88,6 +88,22 @@ con catálogos `useBillingCodes` / `useCredentials` existentes.
   Labels actualizados: "Self-care skills / Daily living skills", "Gross/Fine motor
   skills"; el summary se titula "Summary" con la guía completa a/b/c.
 
+### Validación "incluido en PDF ⇒ requerido" (feedback Frank 2026-08-19)
+
+Una sección con su switch encendido no puede ir vacía; con el switch apagado no se
+valida nada de ella. En `useAssessmentForm.validate`:
+
+- Campos requeridos por sección: School (name/grade/horas/address), Housing
+  (type/information), Medical History (los 4), Background (summary + los 11).
+- Colecciones: mínimo una fila válida (medications, observations, conducted,
+  categoriesItems, billing codes, schedule, ABC, providers) — error inline al pie de la
+  sección con ancla `data-field`, mensaje "…or turn the section off".
+- Narrativas: **solo en edit** (en create el vacío es válido porque el backend aplica el
+  texto estándar); grupo de estrategias exige ≥1 texto. Un error fuerza la colapsable
+  abierta (`forceOpen`) para que el mensaje se vea.
+- Cambiar cualquier flag limpia los errores visibles (el contexto de validación cambió);
+  se recalculan al volver a guardar.
+
 Pendiente (fase 5): probar el flujo completo contra el backend real.
 
 ## 0. Qué es

@@ -7,6 +7,8 @@ import type { AssessmentMedicationInput } from "@/lib/types/assessment.types"
 
 interface MedicationsSectionProps {
   medications: AssessmentMedicationInput[]
+  /** Pinta el empty state en rojo cuando la sección exige al menos una fila */
+  hasError?: boolean
   disabled?: boolean
   onAdd: () => void
   onRemove: (index: number) => void
@@ -15,6 +17,7 @@ interface MedicationsSectionProps {
 
 export function MedicationsSection({
   medications,
+  hasError,
   disabled,
   onAdd,
   onRemove,
@@ -23,9 +26,9 @@ export function MedicationsSection({
   return (
     <div className="space-y-4">
       {medications.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-8">
-          <Pill className="h-6 w-6 text-slate-300" />
-          <p className="text-sm text-slate-500">No current medications added</p>
+        <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-8 ${hasError ? "border-red-300 bg-red-50/40" : "border-slate-200 bg-slate-50/60"}`}>
+          <Pill className={`h-6 w-6 ${hasError ? "text-red-300" : "text-slate-300"}`} />
+          <p className={`text-sm ${hasError ? "text-red-500" : "text-slate-500"}`}>No current medications added</p>
         </div>
       )}
 

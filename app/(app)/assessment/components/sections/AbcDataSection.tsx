@@ -7,6 +7,8 @@ import type { AssessmentAbcInput } from "@/lib/types/assessment.types"
 
 interface AbcDataSectionProps {
   rows: AssessmentAbcInput[]
+  /** Pinta el empty state en rojo cuando la sección exige al menos una fila */
+  hasError?: boolean
   disabled?: boolean
   onAdd: () => void
   onRemove: (index: number) => void
@@ -14,13 +16,13 @@ interface AbcDataSectionProps {
 }
 
 /** Filas Antecedent / Behavior / Consequence */
-export function AbcDataSection({ rows, disabled, onAdd, onRemove, onUpdate }: AbcDataSectionProps) {
+export function AbcDataSection({ rows, hasError, disabled, onAdd, onRemove, onUpdate }: AbcDataSectionProps) {
   return (
     <div className="space-y-4">
       {rows.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-8">
-          <ListTree className="h-6 w-6 text-slate-300" />
-          <p className="text-sm text-slate-500">No ABC data added</p>
+        <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-8 ${hasError ? "border-red-300 bg-red-50/40" : "border-slate-200 bg-slate-50/60"}`}>
+          <ListTree className={`h-6 w-6 ${hasError ? "text-red-300" : "text-slate-300"}`} />
+          <p className={`text-sm ${hasError ? "text-red-500" : "text-slate-500"}`}>No ABC data added</p>
         </div>
       )}
 

@@ -18,6 +18,8 @@ interface CategoryItemsSectionProps {
   categories: ClientCategoryWithItems[]
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
+  /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
+  hasError?: boolean
   disabled?: boolean
   onUpdate: (itemId: string, field: keyof CategoryItemFormValue, value: string) => void
   onClear: (itemId: string) => void
@@ -43,14 +45,15 @@ export function CategoryItemsSection({
   categories,
   isLoading,
   values,
+  hasError,
   disabled,
   onUpdate,
   onClear,
 }: CategoryItemsSectionProps) {
   if (!clientSelected) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-8">
-        <FolderOpen className="h-6 w-6 text-slate-300" />
+      <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-8 ${hasError ? "border-red-300 bg-red-50/40" : "border-slate-200 bg-slate-50/60"}`}>
+        <FolderOpen className={`h-6 w-6 ${hasError ? "text-red-300" : "text-slate-300"}`} />
         <p className="text-sm text-slate-500">Select a client to load their service plan items</p>
       </div>
     )
@@ -66,8 +69,8 @@ export function CategoryItemsSection({
 
   if (categories.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-8">
-        <FolderOpen className="h-6 w-6 text-slate-300" />
+      <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-8 ${hasError ? "border-red-300 bg-red-50/40" : "border-slate-200 bg-slate-50/60"}`}>
+        <FolderOpen className={`h-6 w-6 ${hasError ? "text-red-300" : "text-slate-300"}`} />
         <p className="text-sm font-medium text-slate-600">No active service plan</p>
         <p className="max-w-md text-center text-sm text-slate-500">
           This client has no active service plan with categories, so there are no items to evaluate.

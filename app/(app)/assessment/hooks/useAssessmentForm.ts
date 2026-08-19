@@ -25,6 +25,11 @@ import type {
   MedicalHistoryTypeOfBirth,
   SaveAssessmentDto,
 } from "@/lib/types/assessment.types"
+import {
+  ASSESSMENT_BACKGROUND_FIELDS,
+  ASSESSMENT_PDF_GENERAL_NARRATIVES,
+  ASSESSMENT_PDF_STRATEGY_GROUPS,
+} from "@/lib/constants/assessment.constants"
 import { useAssessmentById } from "@/lib/modules/assessments/hooks/use-assessment-by-id"
 import { useAssessmentCatalogs } from "@/lib/modules/assessments/hooks/use-assessment-catalogs"
 import { useClientCategoryItems } from "@/lib/modules/assessments/hooks/use-client-category-items"
@@ -507,6 +512,9 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
   const updatePdfFlag = useCallback((key: AssessmentPdfFlagKey, value: boolean) => {
     setFormData((prev) => ({ ...prev, pdfFlags: { ...prev.pdfFlags, [key]: value } }))
+    // Encender/apagar una sección cambia qué es requerido: los errores visibles
+    // quedan obsoletos y se recalculan completos en el próximo submit
+    setErrors({})
   }, [])
 
   // ── Provider files ──
@@ -529,18 +537,99 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   )
 
   /**
-   * Reglas confirmadas por backend (2026-08-17): sólo `clientId` es requerido a
-   * nivel registro. Por fila: `observations[].date`, `billingCodes[].billingCodeId`
-   * y `proposedSchedule[].credentialId` cuando la fila viaja; unidades y horas no
-   * negativas; `timeInit < timeEnd` cuando vienen ambos.
+   * Reglas de backend (2026-08-17): sólo `clientId` es requerido a nivel
+   * registro; por fila, los ids/fechas y los no-negativos. Encima, regla de
+   * producto (2026-08-19): una sección marcada "Include in PDF" no puede ir
+   * vacía — sus campos son requeridos y sus colecciones exigen al menos una
+   * fila. Con el switch apagado nada de esa sección se valida.
    */
   const validate = useCallback((): Record<string, string> => {
     const newErrors: Record<string, string> = {}
+    const flags = formData.pdfFlags
+    const required = "This field is required"
 
     if (!formData.clientId) newErrors.clientId = "Select a client"
 
     if (formData.timeInit && formData.timeEnd && formData.timeEnd <= formData.timeInit) {
       newErrors.timeEnd = "End time must be after start time"
+    }
+
+    if (flags.showSchoolInformation) {
+      if (!formData.schoolName.trim()) newErrors.schoolName = required
+      if (!formData.gradeCatalogId) newErrors.gradeCatalogId = "Select a grade"
+      if (!formData.timeInit) newErrors.timeInit = required
+      if (!formData.timeEnd && !newErrors.timeEnd) newErrors.timeEnd = required
+      if (!formData.schoolAddress.trim()) newErrors.schoolAddress = required
+    }
+
+    if (flags.showHousingFamily) {
+      if (!formData.housingType) newErrors.housingType = "Select a housing type"
+      if (!formData.housingInformation.trim()) newErrors.housingInformation = required
+    }
+
+    if (flags.showMedicalHistory) {
+      if (!formData.medicalHistoryOtherDiagnosis.trim()) newErrors.medicalHistoryOtherDiagnosis = required
+      if (!formData.medicalHistoryMorbidities.trim()) newErrors.medicalHistoryMorbidities = required
+      if (!formData.medicalHistoryAllergies.trim()) newErrors.medicalHistoryAllergies = required
+      if (!formData.medicalHistoryTypeOfBirth) newErrors.medicalHistoryTypeOfBirth = "Select the type of birth"
+    }
+
+    if (flags.showBackgroundInformation) {
+      if (!formData.backgroundSummary.trim()) newErrors.backgroundSummary = required
+      for (const { key } of ASSESSMENT_BACKGROUND_FIELDS) {
+        if (!formData[key].trim()) newErrors[key] = required
+      }
+    }
+
+    if (flags.showCurrentMedications && !formData.currentMedications.some((m) => !isMedicationEmpty(m))) {
+      newErrors.currentMedications = "Add at least one medication, or turn the section off"
+    }
+
+    if (flags.showObservations && !formData.observations.some((o) => !isObservationEmpty(o))) {
+      newErrors.observations = "Add at least one observation, or turn the section off"
+    }
+
+    if (flags.showAssessmentConducted && formData.assessmentConductedCatalogIds.length === 0) {
+      newErrors.assessmentConductedCatalogIds = "Select at least one assessment, or turn the section off"
+    }
+
+    if (
+      flags.showAssessmentCategories &&
+      !Object.values(formData.categoryItems).some((v) => isCategoryItemTouched(v))
+    ) {
+      newErrors.categoriesItems = "Evaluate at least one item, or turn the section off"
+    }
+
+    if (flags.showRecommendedServices && !formData.billingCodes.some((row) => !isBillingCodeEmpty(row))) {
+      newErrors.billingCodesSection = "Add at least one billing code, or turn the section off"
+    }
+
+    if (flags.showProposedSchedule && !formData.proposedSchedule.some((row) => !isScheduleEmpty(row))) {
+      newErrors.proposedScheduleSection = "Add at least one schedule, or turn the section off"
+    }
+
+    if (flags.showAbcDataRecording && !formData.abcData.some((row) => !isAbcEmpty(row))) {
+      newErrors.abcData = "Add at least one ABC row, or turn the section off"
+    }
+
+    if (flags.showProvidersOnFile && !formData.providerFiles.some((row) => !isProviderFileEmpty(row))) {
+      newErrors.providerFiles = "Add at least one provider, or turn the section off"
+    }
+
+    // Narrativas: en create un texto vacío es válido (el backend aplica su
+    // texto estándar); en edit ya no hay defaults, así que sección encendida
+    // exige contenido.
+    if (isEditing) {
+      for (const { key, flagKey, label } of ASSESSMENT_PDF_GENERAL_NARRATIVES) {
+        if (flags[flagKey] && !formData.pdfTexts[key].trim()) {
+          newErrors[key] = `${label} cannot be empty while included in the PDF`
+        }
+      }
+      for (const group of ASSESSMENT_PDF_STRATEGY_GROUPS) {
+        if (flags[group.flagKey] && group.fields.every(({ key }) => !formData.pdfTexts[key].trim())) {
+          newErrors[group.flagKey] = "Fill at least one strategy, or turn the section off"
+        }
+      }
     }
 
     formData.observations.forEach((o, index) => {
@@ -567,7 +656,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     })
 
     return newErrors
-  }, [formData])
+  }, [formData, isEditing])
 
   const buildPayload = useCallback((): SaveAssessmentDto => {
     const categoriesItems: AssessmentCategoryItemInput[] = Object.entries(formData.categoryItems)

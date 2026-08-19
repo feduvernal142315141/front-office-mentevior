@@ -193,26 +193,36 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
       {/* ─── School Information ─── */}
       <Section icon={<GraduationCap className="h-4 w-4" />} title="School Information" contentHidden={!formData.pdfFlags.showSchoolInformation} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showSchoolInformation} onChange={(v) => updatePdfFlag("showSchoolInformation", v)} disabled={isSaving} />}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2" data-field="schoolName">
             <FloatingInput
               label="School name"
               value={formData.schoolName}
               onChange={(v) => updateField("schoolName", v)}
               onBlur={() => {}}
+              hasError={!!errors.schoolName}
             />
+            <FieldError message={errors.schoolName} />
           </div>
-          <FloatingSelect
-            label="Grade"
-            value={formData.gradeCatalogId}
-            onChange={(v) => updateField("gradeCatalogId", v)}
-            options={gradeOptions}
-            disabled={isLoadingCatalogs}
-          />
-          <FloatingTimePicker
-            label="School start time"
-            value={formData.timeInit}
-            onChange={(v) => updateField("timeInit", v)}
-          />
+          <div data-field="gradeCatalogId">
+            <FloatingSelect
+              label="Grade"
+              value={formData.gradeCatalogId}
+              onChange={(v) => updateField("gradeCatalogId", v)}
+              options={gradeOptions}
+              disabled={isLoadingCatalogs}
+              hasError={!!errors.gradeCatalogId}
+            />
+            <FieldError message={errors.gradeCatalogId} />
+          </div>
+          <div data-field="timeInit">
+            <FloatingTimePicker
+              label="School start time"
+              value={formData.timeInit}
+              onChange={(v) => updateField("timeInit", v)}
+              hasError={!!errors.timeInit}
+            />
+            <FieldError message={errors.timeInit} />
+          </div>
           <div data-field="timeEnd">
             <FloatingTimePicker
               label="School end time"
@@ -223,13 +233,15 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             />
             <FieldError message={errors.timeEnd} />
           </div>
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3" data-field="schoolAddress">
             <FloatingInput
               label="School address"
               value={formData.schoolAddress}
               onChange={(v) => updateField("schoolAddress", v)}
               onBlur={() => {}}
+              hasError={!!errors.schoolAddress}
             />
+            <FieldError message={errors.schoolAddress} />
           </div>
         </div>
       </Section>
@@ -237,12 +249,16 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
       {/* ─── Housing & Family ─── */}
       <Section icon={<Home className="h-4 w-4" />} title="Housing & Family" contentHidden={!formData.pdfFlags.showHousingFamily} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showHousingFamily} onChange={(v) => updatePdfFlag("showHousingFamily", v)} disabled={isSaving} />}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <FloatingSelect
-            label="Housing type"
-            value={formData.housingType}
-            onChange={(v) => updateField("housingType", v as typeof formData.housingType)}
-            options={HOUSING_TYPE_OPTIONS}
-          />
+          <div data-field="housingType">
+            <FloatingSelect
+              label="Housing type"
+              value={formData.housingType}
+              onChange={(v) => updateField("housingType", v as typeof formData.housingType)}
+              options={HOUSING_TYPE_OPTIONS}
+              hasError={!!errors.housingType}
+            />
+            <FieldError message={errors.housingType} />
+          </div>
           <FloatingNumberStepper
             label="Number of rooms"
             value={formData.housingNumberRooms}
@@ -265,14 +281,16 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             isLoading={isLoadingCatalogs}
           />
         </div>
-        <div className="mt-4">
+        <div className="mt-4" data-field="housingInformation">
           <FloatingTextarea
             label="Housing / family information"
             value={formData.housingInformation}
             onChange={(v) => updateField("housingInformation", v)}
             onBlur={() => {}}
             rows={4}
+            hasError={!!errors.housingInformation}
           />
+          <FieldError message={errors.housingInformation} />
         </div>
       </Section>
 
@@ -295,30 +313,46 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           </p>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FloatingInput
-            label="Other diagnosis"
-            value={formData.medicalHistoryOtherDiagnosis}
-            onChange={(v) => updateField("medicalHistoryOtherDiagnosis", v)}
-            onBlur={() => {}}
-          />
-          <FloatingInput
-            label="Morbidities"
-            value={formData.medicalHistoryMorbidities}
-            onChange={(v) => updateField("medicalHistoryMorbidities", v)}
-            onBlur={() => {}}
-          />
-          <FloatingInput
-            label="Allergies"
-            value={formData.medicalHistoryAllergies}
-            onChange={(v) => updateField("medicalHistoryAllergies", v)}
-            onBlur={() => {}}
-          />
-          <FloatingSelect
-            label="Type of birth"
-            value={formData.medicalHistoryTypeOfBirth}
-            onChange={(v) => updateField("medicalHistoryTypeOfBirth", v as typeof formData.medicalHistoryTypeOfBirth)}
-            options={TYPE_OF_BIRTH_OPTIONS}
-          />
+          <div data-field="medicalHistoryOtherDiagnosis">
+            <FloatingInput
+              label="Other diagnosis"
+              value={formData.medicalHistoryOtherDiagnosis}
+              onChange={(v) => updateField("medicalHistoryOtherDiagnosis", v)}
+              onBlur={() => {}}
+              hasError={!!errors.medicalHistoryOtherDiagnosis}
+            />
+            <FieldError message={errors.medicalHistoryOtherDiagnosis} />
+          </div>
+          <div data-field="medicalHistoryMorbidities">
+            <FloatingInput
+              label="Morbidities"
+              value={formData.medicalHistoryMorbidities}
+              onChange={(v) => updateField("medicalHistoryMorbidities", v)}
+              onBlur={() => {}}
+              hasError={!!errors.medicalHistoryMorbidities}
+            />
+            <FieldError message={errors.medicalHistoryMorbidities} />
+          </div>
+          <div data-field="medicalHistoryAllergies">
+            <FloatingInput
+              label="Allergies"
+              value={formData.medicalHistoryAllergies}
+              onChange={(v) => updateField("medicalHistoryAllergies", v)}
+              onBlur={() => {}}
+              hasError={!!errors.medicalHistoryAllergies}
+            />
+            <FieldError message={errors.medicalHistoryAllergies} />
+          </div>
+          <div data-field="medicalHistoryTypeOfBirth">
+            <FloatingSelect
+              label="Type of birth"
+              value={formData.medicalHistoryTypeOfBirth}
+              onChange={(v) => updateField("medicalHistoryTypeOfBirth", v as typeof formData.medicalHistoryTypeOfBirth)}
+              options={TYPE_OF_BIRTH_OPTIONS}
+              hasError={!!errors.medicalHistoryTypeOfBirth}
+            />
+            <FieldError message={errors.medicalHistoryTypeOfBirth} />
+          </div>
         </div>
       </Section>
 
@@ -329,50 +363,65 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Current functioning, strengths and skills"
         contentHidden={!formData.pdfFlags.showBackgroundInformation} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showBackgroundInformation} onChange={(v) => updatePdfFlag("showBackgroundInformation", v)} disabled={isSaving} />}
       >
-        <FloatingTextarea
-          label="Summary"
-          value={formData.backgroundSummary}
-          onChange={(v) => updateField("backgroundSummary", v)}
-          onBlur={() => {}}
-          guidance={ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE}
-          rows={6}
-        />
+        <div data-field="backgroundSummary">
+          <FloatingTextarea
+            label="Summary"
+            value={formData.backgroundSummary}
+            onChange={(v) => updateField("backgroundSummary", v)}
+            onBlur={() => {}}
+            guidance={ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE}
+            rows={6}
+            hasError={!!errors.backgroundSummary}
+          />
+          <FieldError message={errors.backgroundSummary} />
+        </div>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           {ASSESSMENT_BACKGROUND_FIELDS.map(({ key, label }) => (
-            <FloatingTextarea
-              key={key}
-              label={label}
-              value={formData[key]}
-              onChange={(v) => updateField(key, v)}
-              onBlur={() => {}}
-              guidance={ASSESSMENT_BACKGROUND_GUIDANCE[key]}
-              rows={4}
-            />
+            <div key={key} data-field={key}>
+              <FloatingTextarea
+                label={label}
+                value={formData[key]}
+                onChange={(v) => updateField(key, v)}
+                onBlur={() => {}}
+                guidance={ASSESSMENT_BACKGROUND_GUIDANCE[key]}
+                rows={4}
+                hasError={!!errors[key]}
+              />
+              <FieldError message={errors[key]} />
+            </div>
           ))}
         </div>
       </Section>
 
       {/* ─── Current Medications ─── */}
       <Section icon={<Pill className="h-4 w-4" />} title="Current Medications" contentHidden={!formData.pdfFlags.showCurrentMedications} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showCurrentMedications} onChange={(v) => updatePdfFlag("showCurrentMedications", v)} disabled={isSaving} />}>
+        <div data-field="currentMedications">
         <MedicationsSection
           medications={formData.currentMedications}
+          hasError={!!errors.currentMedications}
           disabled={isSaving}
           onAdd={addMedication}
           onRemove={removeMedication}
           onUpdate={updateMedication}
         />
+          <FieldError message={errors.currentMedications} />
+        </div>
       </Section>
 
       {/* ─── Observations ─── */}
       <Section icon={<Eye className="h-4 w-4" />} title="Observations" contentHidden={!formData.pdfFlags.showObservations} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showObservations} onChange={(v) => updatePdfFlag("showObservations", v)} disabled={isSaving} />}>
+        <div data-field="observations">
         <ObservationsSection
           observations={formData.observations}
+          hasError={!!errors.observations}
           errors={errors}
           disabled={isSaving}
           onAdd={addObservation}
           onRemove={removeObservation}
           onUpdate={updateObservation}
         />
+          <FieldError message={errors.observations} />
+        </div>
       </Section>
 
       {/* ─── Assessment Conducted ─── */}
@@ -382,7 +431,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Instruments and procedures used during this assessment"
         contentHidden={!formData.pdfFlags.showAssessmentConducted} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAssessmentConducted} onChange={(v) => updatePdfFlag("showAssessmentConducted", v)} disabled={isSaving} />}
       >
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2" data-field="assessmentConductedCatalogIds">
           {conductedOptions.map((option) => {
             const checked = formData.assessmentConductedCatalogIds.includes(option.id)
             return (
@@ -415,6 +464,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             <p className="text-sm text-slate-500 md:col-span-2">No assessment options available</p>
           )}
         </div>
+        <FieldError message={errors.assessmentConductedCatalogIds} />
       </Section>
 
       {/* ─── Categories & Items ─── */}
@@ -424,8 +474,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Evaluate each item of the client's active service plan"
         contentHidden={!formData.pdfFlags.showAssessmentCategories} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAssessmentCategories} onChange={(v) => updatePdfFlag("showAssessmentCategories", v)} disabled={isSaving} />}
       >
+        <div data-field="categoriesItems">
         <CategoryItemsSection
           clientSelected={!!formData.clientId}
+          hasError={!!errors.categoriesItems}
           categories={categories}
           isLoading={categoriesLoading}
           values={formData.categoryItems}
@@ -433,6 +485,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           onUpdate={updateCategoryItem}
           onClear={clearCategoryItem}
         />
+          <FieldError message={errors.categoriesItems} />
+        </div>
       </Section>
 
       {/* ─── Billing Codes ─── */}
@@ -442,8 +496,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Proposed billing codes and units for this assessment"
         contentHidden={!formData.pdfFlags.showRecommendedServices} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showRecommendedServices} onChange={(v) => updatePdfFlag("showRecommendedServices", v)} disabled={isSaving} />}
       >
+        <div data-field="billingCodesSection">
         <BillingCodesSection
           rows={formData.billingCodes}
+          hasError={!!errors.billingCodesSection}
           options={billingCodeOptions}
           optionsLoading={billingCodesLoading}
           errors={errors}
@@ -452,6 +508,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           onRemove={removeBillingCode}
           onUpdate={updateBillingCode}
         />
+          <FieldError message={errors.billingCodesSection} />
+        </div>
       </Section>
 
       {/* ─── Proposed Schedule ─── */}
@@ -461,8 +519,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Weekly hours proposed per credential"
         contentHidden={!formData.pdfFlags.showProposedSchedule} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showProposedSchedule} onChange={(v) => updatePdfFlag("showProposedSchedule", v)} disabled={isSaving} />}
       >
+        <div data-field="proposedScheduleSection">
         <ProposedScheduleSection
           rows={formData.proposedSchedule}
+          hasError={!!errors.proposedScheduleSection}
           options={credentialOptions}
           optionsLoading={credentialsLoading}
           errors={errors}
@@ -472,6 +532,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           onUpdateCredential={updateScheduleCredential}
           onUpdateHours={updateScheduleHours}
         />
+          <FieldError message={errors.proposedScheduleSection} />
+        </div>
       </Section>
 
       {/* ─── ABC Data ─── */}
@@ -481,13 +543,17 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Antecedent, behavior and consequence observations"
         contentHidden={!formData.pdfFlags.showAbcDataRecording} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAbcDataRecording} onChange={(v) => updatePdfFlag("showAbcDataRecording", v)} disabled={isSaving} />}
       >
+        <div data-field="abcData">
         <AbcDataSection
           rows={formData.abcData}
+          hasError={!!errors.abcData}
           disabled={isSaving}
           onAdd={addAbcRow}
           onRemove={removeAbcRow}
           onUpdate={updateAbcRow}
         />
+          <FieldError message={errors.abcData} />
+        </div>
       </Section>
 
       {/* ─── Providers ─── */}
@@ -497,19 +563,24 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Other providers involved with the client"
         contentHidden={!formData.pdfFlags.showProvidersOnFile} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showProvidersOnFile} onChange={(v) => updatePdfFlag("showProvidersOnFile", v)} disabled={isSaving} />}
       >
+        <div data-field="providerFiles">
         <ProviderFilesSection
           rows={formData.providerFiles}
+          hasError={!!errors.providerFiles}
           disabled={isSaving}
           onAdd={addProviderFile}
           onRemove={removeProviderFile}
           onUpdate={updateProviderFile}
         />
+          <FieldError message={errors.providerFiles} />
+        </div>
       </Section>
 
       {/* ─── PDF: narrativas editables (cada una con su switch en el header) ─── */}
       <PdfNarrativesSections
         values={formData.pdfTexts}
         flags={formData.pdfFlags}
+        errors={errors}
         isEditing={isEditing}
         disabled={isSaving}
         onUpdate={updatePdfText}
