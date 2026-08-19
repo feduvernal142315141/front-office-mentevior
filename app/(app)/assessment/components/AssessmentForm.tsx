@@ -581,7 +581,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         values={formData.pdfTexts}
         flags={formData.pdfFlags}
         errors={errors}
-        isEditing={isEditing}
         disabled={isSaving}
         onUpdate={updatePdfText}
         onUpdateFlag={updatePdfFlag}

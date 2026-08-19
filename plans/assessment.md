@@ -98,11 +98,20 @@ valida nada de ella. En `useAssessmentForm.validate`:
 - Colecciones: mínimo una fila válida (medications, observations, conducted,
   categoriesItems, billing codes, schedule, ABC, providers) — error inline al pie de la
   sección con ancla `data-field`, mensaje "…or turn the section off".
-- Narrativas: **solo en edit** (en create el vacío es válido porque el backend aplica el
-  texto estándar); grupo de estrategias exige ≥1 texto. Un error fuerza la colapsable
-  abierta (`forceOpen`) para que el mensaje se vea.
+- Narrativas: **precargadas con los textos estándar** en create
+  (`lib/constants/assessment-pdf-default-texts.ts`, copia exacta del doc de backend
+  "Assessment Editable PDF Default Texts" 2026-08-18 — ⚠️ mantener sincronizados si
+  backend los cambia; ojo: `caregiverTraining` trae "Aaliyah Rios" hardcodeado en el
+  default del backend). Encendidas no pueden quedar vacías (create y edit); grupo de
+  estrategias exige ≥1 texto. Un error fuerza la colapsable abierta (`forceOpen`).
 - Cambiar cualquier flag limpia los errores visibles (el contexto de validación cambió);
   se recalculan al volver a guardar.
+- **En create todos los flags parten APAGADOS** (feedback 2026-08-19): el usuario
+  enciende lo que quiere imprimir; encender una narrativa colapsable la **expande
+  automáticamente** (override local en `PdfNarrativesSections`) y encender una sección
+  normal revela su contenido (`contentHidden`). En edit mandan los flags persistidos y
+  las colapsables parten cerradas. Las narrativas vacías del GET se rellenan con el
+  texto estándar al precargar.
 
 Pendiente (fase 5): probar el flujo completo contra el backend real.
 

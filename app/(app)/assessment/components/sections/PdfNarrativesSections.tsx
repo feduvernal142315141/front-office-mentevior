@@ -1,6 +1,7 @@
 "use client"
 
-import { FileText, Info } from "lucide-react"
+import { useCallback, useState } from "react"
+import { FileText } from "lucide-react"
 import { CollapsableSection } from "@/components/custom/CollapsableSection"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import {
@@ -20,35 +21,38 @@ interface PdfNarrativesSectionsProps {
   flags: AssessmentPdfFlags
   /** Claves: la key del texto (narrativa) o el flagKey del grupo (estrategias) */
   errors: Record<string, string>
-  isEditing: boolean
   disabled?: boolean
   onUpdate: (key: AssessmentPdfTextKey, value: string) => void
   onUpdateFlag: (key: AssessmentPdfFlagKey, value: boolean) => void
 }
 
 /**
- * Narrativas editables del PDF, colapsadas por defecto: en create casi siempre
- * se dejan vacías (el backend aplica el texto estándar) y en edit son párrafos
- * largos que no deben alargar el formulario. Cada sección lleva su switch de
+ * Narrativas editables del PDF, colapsadas por defecto porque son párrafos
+ * largos: en create llegan precargadas con el texto estándar (el mismo default
+ * del backend) y en edit con lo persistido. Cada sección lleva su switch de
  * visibilidad en el header; los bloques de estrategias tienen un flag único.
  */
 export function PdfNarrativesSections({
   values,
   flags,
   errors,
-  isEditing,
   disabled,
   onUpdate,
   onUpdateFlag,
 }: PdfNarrativesSectionsProps) {
-  const defaultTextNote = !isEditing && (
-    <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#037ECC]/20 bg-[#037ECC]/[0.04] px-4 py-3">
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#037ECC]" />
-      <p className="text-sm text-slate-600">
-        Leave a field empty to use the standard text in the PDF. You can review and edit the applied
-        text after the assessment is created.
-      </p>
-    </div>
+  /**
+   * Encender un switch expande su sección de inmediato (y apagar la cierra);
+   * después el usuario puede colapsarla a mano sin que se vuelva a forzar.
+   * `undefined` = sin override, comportamiento normal del colapsable.
+   */
+  const [openOverrides, setOpenOverrides] = useState<Partial<Record<AssessmentPdfFlagKey, boolean>>>({})
+
+  const handleFlagChange = useCallback(
+    (flagKey: AssessmentPdfFlagKey, value: boolean) => {
+      onUpdateFlag(flagKey, value)
+      setOpenOverrides((prev) => ({ ...prev, [flagKey]: value }))
+    },
+    [onUpdateFlag],
   )
 
   return (
@@ -60,19 +64,18 @@ export function PdfNarrativesSections({
           title={label}
           defaultOpen={false}
           // Con el switch apagado queda plegada y sin expandir (el texto se
-          // conserva y se sigue enviando); un error la fuerza abierta para que
-          // el mensaje inline sea visible
-          forceOpen={errors[key] ? true : flags[flagKey] ? undefined : false}
+          // conserva y se sigue enviando); encenderlo la expande, y un error
+          // la fuerza abierta para que el mensaje inline sea visible
+          forceOpen={errors[key] ? true : !flags[flagKey] ? false : openOverrides[flagKey]}
           disabled={!flags[flagKey]}
           headerAction={
             <SectionPdfToggle
               checked={flags[flagKey]}
-              onChange={(v) => onUpdateFlag(flagKey, v)}
+              onChange={(v) => handleFlagChange(flagKey, v)}
               disabled={disabled}
             />
           }
         >
-          {defaultTextNote}
           <div data-field={key}>
             <FloatingTextarea
               label={label}
@@ -95,17 +98,16 @@ export function PdfNarrativesSections({
           title={group.title}
           subtitle={group.subtitle}
           defaultOpen={false}
-          forceOpen={errors[group.flagKey] ? true : flags[group.flagKey] ? undefined : false}
+          forceOpen={errors[group.flagKey] ? true : !flags[group.flagKey] ? false : openOverrides[group.flagKey]}
           disabled={!flags[group.flagKey]}
           headerAction={
             <SectionPdfToggle
               checked={flags[group.flagKey]}
-              onChange={(v) => onUpdateFlag(group.flagKey, v)}
+              onChange={(v) => handleFlagChange(group.flagKey, v)}
               disabled={disabled}
             />
           }
         >
-          {defaultTextNote}
           <div data-field={group.flagKey}>
             {errors[group.flagKey] && (
               <p className="mb-3 text-xs font-medium text-red-500">{errors[group.flagKey]}</p>

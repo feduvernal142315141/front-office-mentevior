@@ -30,6 +30,7 @@ import {
   ASSESSMENT_PDF_GENERAL_NARRATIVES,
   ASSESSMENT_PDF_STRATEGY_GROUPS,
 } from "@/lib/constants/assessment.constants"
+import { ASSESSMENT_PDF_DEFAULT_TEXTS } from "@/lib/constants/assessment-pdf-default-texts"
 import { useAssessmentById } from "@/lib/modules/assessments/hooks/use-assessment-by-id"
 import { useAssessmentCatalogs } from "@/lib/modules/assessments/hooks/use-assessment-catalogs"
 import { useClientCategoryItems } from "@/lib/modules/assessments/hooks/use-client-category-items"
@@ -105,16 +106,22 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   pdfFlags: AssessmentPdfFlags
 }
 
-function buildEmptyPdfTexts(): AssessmentPdfTexts {
-  const texts = {} as AssessmentPdfTexts
-  for (const key of ASSESSMENT_PDF_TEXT_KEYS) texts[key] = ""
-  return texts
+/**
+ * En create las narrativas parten con el texto estándar visible y editable
+ * (el mismo que el backend guardaría ante un `null`), no vacías.
+ */
+function buildDefaultPdfTexts(): AssessmentPdfTexts {
+  return { ...ASSESSMENT_PDF_DEFAULT_TEXTS }
 }
 
-/** Todas las secciones del PDF parten visibles (null equivale a true en backend) */
+/**
+ * En create todas las secciones parten APAGADAS (feedback Frank 2026-08-19):
+ * el usuario enciende explícitamente lo que quiere imprimir y ahí la sección se
+ * despliega para llenarse. En edit mandan los flags persistidos del registro.
+ */
 function buildDefaultPdfFlags(): AssessmentPdfFlags {
   const flags = {} as AssessmentPdfFlags
-  for (const key of ASSESSMENT_PDF_FLAG_KEYS) flags[key] = true
+  for (const key of ASSESSMENT_PDF_FLAG_KEYS) flags[key] = false
   return flags
 }
 
@@ -169,7 +176,7 @@ const EMPTY_FORM: AssessmentFormData = {
   proposedSchedule: [],
   abcData: [],
   providerFiles: [],
-  pdfTexts: buildEmptyPdfTexts(),
+  pdfTexts: buildDefaultPdfTexts(),
   pdfFlags: buildDefaultPdfFlags(),
 }
 
@@ -326,8 +333,10 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       })),
       abcData: assessment.abcData,
       providerFiles: assessment.providerFiles,
+      // Una narrativa persistida vacía (registros previos a los defaults del
+      // backend) se rellena con su texto estándar: nunca se muestra vacía
       pdfTexts: Object.fromEntries(
-        ASSESSMENT_PDF_TEXT_KEYS.map((key) => [key, assessment[key]]),
+        ASSESSMENT_PDF_TEXT_KEYS.map((key) => [key, assessment[key] || ASSESSMENT_PDF_DEFAULT_TEXTS[key]]),
       ) as AssessmentPdfTexts,
       pdfFlags: Object.fromEntries(
         ASSESSMENT_PDF_FLAG_KEYS.map((key) => [key, assessment[key]]),
@@ -616,19 +625,16 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       newErrors.providerFiles = "Add at least one provider, or turn the section off"
     }
 
-    // Narrativas: en create un texto vacío es válido (el backend aplica su
-    // texto estándar); en edit ya no hay defaults, así que sección encendida
-    // exige contenido.
-    if (isEditing) {
-      for (const { key, flagKey, label } of ASSESSMENT_PDF_GENERAL_NARRATIVES) {
-        if (flags[flagKey] && !formData.pdfTexts[key].trim()) {
-          newErrors[key] = `${label} cannot be empty while included in the PDF`
-        }
+    // Narrativas: parten con el texto estándar precargado, así que encendidas
+    // no pueden quedar vacías (create y edit por igual)
+    for (const { key, flagKey, label } of ASSESSMENT_PDF_GENERAL_NARRATIVES) {
+      if (flags[flagKey] && !formData.pdfTexts[key].trim()) {
+        newErrors[key] = `${label} cannot be empty while included in the PDF`
       }
-      for (const group of ASSESSMENT_PDF_STRATEGY_GROUPS) {
-        if (flags[group.flagKey] && group.fields.every(({ key }) => !formData.pdfTexts[key].trim())) {
-          newErrors[group.flagKey] = "Fill at least one strategy, or turn the section off"
-        }
+    }
+    for (const group of ASSESSMENT_PDF_STRATEGY_GROUPS) {
+      if (flags[group.flagKey] && group.fields.every(({ key }) => !formData.pdfTexts[key].trim())) {
+        newErrors[group.flagKey] = "Fill at least one strategy, or turn the section off"
       }
     }
 
@@ -656,7 +662,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     })
 
     return newErrors
-  }, [formData, isEditing])
+  }, [formData])
 
   const buildPayload = useCallback((): SaveAssessmentDto => {
     const categoriesItems: AssessmentCategoryItemInput[] = Object.entries(formData.categoryItems)
