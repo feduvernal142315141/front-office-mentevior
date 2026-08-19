@@ -14,6 +14,8 @@ interface CollapsableSectionProps {
   className?: string
   disabled?: boolean
   onToggle?: (isOpen: boolean) => void
+  /** Control extra en el header (p.ej. un switch); no dispara el toggle */
+  headerAction?: React.ReactNode
 }
 
 export function CollapsableSection({
@@ -26,6 +28,7 @@ export function CollapsableSection({
   className,
   disabled = false,
   onToggle,
+  headerAction,
 }: CollapsableSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
@@ -44,12 +47,14 @@ export function CollapsableSection({
 
   return (
     <div className={cn("w-full", className)}>
+      <div className={cn(headerAction && "flex items-center gap-4")}>
       <button
         type="button"
         onClick={handleToggle}
         disabled={disabled}
         className={cn(
           "w-full group flex items-center justify-between py-4 transition-colors duration-200",
+          headerAction && "flex-1 min-w-0",
           !disabled && "hover:opacity-80 cursor-pointer",
           disabled && "cursor-not-allowed opacity-50"
         )}
@@ -78,6 +83,8 @@ export function CollapsableSection({
           )}
         />
       </button>
+      {headerAction && <div className="shrink-0">{headerAction}</div>}
+      </div>
 
       <div className="border-t border-gray-200" />
 

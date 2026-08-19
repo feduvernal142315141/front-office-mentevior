@@ -71,10 +71,18 @@ con catálogos `useBillingCodes` / `useCredentials` existentes.
   tres `CollapsableSection` colapsadas por defecto. **Regla clave**: un campo vacío viaja
   `null` → en create el backend guarda su texto estándar; en update `null`/`""` = la
   subsección no se pinta en el PDF. En create se muestra una nota explicándolo.
-- **27 flags `show*`** de visibilidad de secciones del PDF: `ASSESSMENT_PDF_FLAG_KEYS` +
-  `ASSESSMENT_PDF_SECTION_FLAGS`. UI: `PdfSectionsVisibility` (switches en grid,
-  colapsable, todo parte en true). `null` del backend se normaliza a `true`; el front
-  siempre manda booleans explícitos. Vienen también en el listado (no se usan ahí).
+- **27 flags `show*`** de visibilidad de secciones del PDF: `ASSESSMENT_PDF_FLAG_KEYS`.
+  `null` del backend se normaliza a `true`; el front siempre manda booleans explícitos.
+  Vienen también en el listado (no se usan ahí). **UI (feedback Frank 2026-08-19)**: cada
+  switch vive en el **header de su sección** (`SectionPdfToggle`, "Include in PDF") — las
+  12 secciones del form (School→showSchoolInformation, Billing Codes→showRecommendedServices,
+  etc.), las 8 narrativas generales (colapsables individuales con flag propio, mapeo en
+  `ASSESSMENT_PDF_GENERAL_NARRATIVES`) y los 2 bloques de estrategias (flag de bloque,
+  `ASSESSMENT_PDF_STRATEGY_GROUPS`). Los 5 flags sin sección en el form (Emergency
+  Contacts, Referring Physicians, Family/Caregivers, Documents Reviewed, Service
+  Locations) quedan agrupados en `PdfSectionsVisibility` ("Client Record PDF Sections",
+  lista en `ASSESSMENT_PDF_CLIENT_RECORD_FLAGS`). `CollapsableSection` ganó la prop
+  opcional `headerAction` para esto.
 - **Placeholders del Background** (template del PDF): `assessment-guidance.ts` con
   `FieldGuidance` por campo (patrón session-notes: se ven dentro del campo vacío).
   Labels actualizados: "Self-care skills / Daily living skills", "Gross/Fine motor
