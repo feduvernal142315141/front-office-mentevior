@@ -13,7 +13,10 @@ function hasFillInBlank(name: string): boolean {
 }
 
 interface MultiSelectWithSearchProps {
-  label: string
+  /** Sin label el control se apoya en el encabezado del contenedor (p.ej. una card) */
+  label?: string
+  /** Texto del control vacío; por defecto se deriva del label */
+  placeholder?: string
   items: RecommendationCatalogItem[]
   selectedIds: string[]
   onChange: (selectedIds: string[]) => void
@@ -31,6 +34,7 @@ interface MultiSelectWithSearchProps {
 
 export function MultiSelectWithSearch({
   label,
+  placeholder,
   items,
   selectedIds,
   onChange,
@@ -118,6 +122,7 @@ export function MultiSelectWithSearch({
   return (
     <div className="space-y-1.5">
       {/* Label row */}
+      {(label || allowCreate) && (
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium text-slate-700">{label} {required && <span className="text-[#037ECC]">*</span>}</span>
         {allowCreate && !isCreating && (
@@ -135,6 +140,7 @@ export function MultiSelectWithSearch({
           </button>
         )}
       </div>
+      )}
 
       {/* Inline create form */}
       {isCreating && (
@@ -232,7 +238,7 @@ export function MultiSelectWithSearch({
           {isLoading
             ? "Loading..."
             : selectedIds.length === 0
-              ? `Select ${label.toLowerCase()}...`
+              ? placeholder ?? `Select ${(label ?? "options").toLowerCase()}...`
               : `${selectedIds.length} selected`}
         </span>
         {isLoading ? (

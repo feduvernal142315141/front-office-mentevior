@@ -143,6 +143,7 @@ export const ASSESSMENT_PDF_FLAG_KEYS = [
   "showCurrentMedications",
   "showCoordinationOfCare",
   "showProvidersOnFile",
+  "showOtherServices",
   "showDocumentsReviewed",
   "showServiceLocations",
   "showBackgroundInformation",
@@ -208,6 +209,9 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields, Assessmen
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
   medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | null
+  /** Sección Other Services del PDF; requeridos cuando `showOtherServices` es true */
+  previousAbaTherapy: string
+  previousAgencyName: string
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
   assessmentConductedCatalogIds: string[]
@@ -289,6 +293,8 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
   medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | ""
+  previousAbaTherapy: string
+  previousAgencyName: string
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
   assessmentConductedList: AssessmentConductedEntry[]

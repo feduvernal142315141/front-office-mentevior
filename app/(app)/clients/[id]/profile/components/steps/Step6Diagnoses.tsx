@@ -15,6 +15,7 @@ import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
+import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
 import { PhysicianFormFields } from "@/app/(app)/my-company/physicians/components/PhysicianFormFields"
 import {
   diagnosisFormDefaults,
@@ -32,12 +33,15 @@ import { usePhysicianById } from "@/lib/modules/physicians/hooks/use-physician-b
 import { useUpdatePhysician } from "@/lib/modules/physicians/hooks/use-update-physician"
 import { usePhysicianTypes } from "@/lib/modules/physicians/hooks/use-physician-types"
 import { usePhysicianSpecialties } from "@/lib/modules/physicians/hooks/use-physician-specialties"
+import { useProvidersOnFile } from "@/lib/modules/provider-on-file/hooks/use-providers-on-file"
+import { useSaveProviderOnFile } from "@/lib/modules/provider-on-file/hooks/use-save-provider-on-file"
 import { useCountries } from "@/lib/modules/addresses/hooks/use-countries"
 import { useStates } from "@/lib/modules/addresses/hooks/use-states"
 import type { Diagnosis } from "@/lib/types/diagnosis.types"
 import type { DiagnosisCatalogItem } from "@/lib/types/diagnosis-catalog.types"
 import type { CreateManualClientPhysicianDto } from "@/lib/types/client-physician.types"
 import type { Physician } from "@/lib/types/physician.types"
+import type { SaveProviderOnFileDto } from "@/lib/types/provider-on-file.types"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 import { physicianFormSchema, getPhysicianFormDefaults, type PhysicianFormData } from "@/lib/schemas/physician-form.schema"
 import { formatDateDisplay } from "@/lib/utils/date"
@@ -225,6 +229,60 @@ export function Step6Diagnoses({
   const { countries, isLoading: isLoadingCountries } = useCountries()
   const { physicianTypes, isLoading: isLoadingPhysicianTypes } = usePhysicianTypes()
   const { physicianSpecialties, isLoading: isLoadingPhysicianSpecialties } = usePhysicianSpecialties()
+
+  // Providers on file asociables al diagnóstico (contrato 2026-08-19)
+  const { providers: providersOnFile, isLoading: isLoadingProvidersOnFile, refetch: refetchProvidersOnFile } = useProvidersOnFile()
+  const { save: saveProviderOnFile, isSaving: isSavingProviderOnFile } = useSaveProviderOnFile()
+  const [selectedProviderOnFileIds, setSelectedProviderOnFileIds] = useState<string[]>([])
+  const [isProviderModalOpen, setIsProviderModalOpen] = useState(false)
+  const EMPTY_PROVIDER_FORM: SaveProviderOnFileDto = { firstName: "", lastName: "", agencyName: "", specialyId: "", phone: "", email: "" }
+  const [providerForm, setProviderForm] = useState<SaveProviderOnFileDto>(EMPTY_PROVIDER_FORM)
+  const [providerFormErrors, setProviderFormErrors] = useState<Partial<Record<keyof SaveProviderOnFileDto, string>>>({})
+
+  const specialtyNameById = useMemo(
+    () => new Map(physicianSpecialties.map((sp) => [sp.id, sp.name])),
+    [physicianSpecialties],
+  )
+
+  const providerOnFileItems = useMemo(
+    () =>
+      providersOnFile.map((provider) => {
+        const name = [provider.firstName, provider.lastName].filter(Boolean).join(" ")
+        const specialty = provider.specialyName || specialtyNameById.get(provider.specialyId)
+        const parts = [name, provider.agencyName, specialty].filter(Boolean)
+        return { id: provider.id, name: parts.join(" — ") }
+      }),
+    [providersOnFile, specialtyNameById],
+  )
+
+  const handleCreateProviderOnFile = async () => {
+    // Requeridos por backend: first/last name, agency, specialty y phone (email opcional)
+    const newErrors: Partial<Record<keyof SaveProviderOnFileDto, string>> = {}
+    if (!providerForm.firstName.trim()) newErrors.firstName = "First name is required"
+    if (!providerForm.lastName.trim()) newErrors.lastName = "Last name is required"
+    if (!providerForm.agencyName.trim()) newErrors.agencyName = "Agency name is required"
+    if (!providerForm.specialyId) newErrors.specialyId = "Specialty is required"
+    if (!providerForm.phone.trim()) newErrors.phone = "Phone is required"
+    if (Object.keys(newErrors).length > 0) {
+      setProviderFormErrors(newErrors)
+      return
+    }
+    setProviderFormErrors({})
+    const id = await saveProviderOnFile({
+      firstName: providerForm.firstName.trim(),
+      lastName: providerForm.lastName.trim(),
+      agencyName: providerForm.agencyName.trim(),
+      specialyId: providerForm.specialyId,
+      phone: providerForm.phone.trim(),
+      email: providerForm.email.trim(),
+    })
+    if (!id) return
+    await refetchProvidersOnFile()
+    // El provider recién creado queda seleccionado en el diagnóstico
+    setSelectedProviderOnFileIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
+    setProviderForm(EMPTY_PROVIDER_FORM)
+    setIsProviderModalOpen(false)
+  }
 
   const usaCountry = useMemo(
     () => countries.find((country) => country.name === "United States" || country.name === "USA"),
@@ -460,6 +518,7 @@ export function Step6Diagnoses({
       status: values.status,
       treatmentEndDate: values.treatmentEndDate || undefined,
       isPrimary: values.isPrimary,
+      providerOnFileIds: selectedProviderOnFileIds,
       ...(attachmentBase64 && attachmentFileName
         ? {
             attachment: attachmentBase64,
@@ -491,6 +550,7 @@ export function Step6Diagnoses({
     setAttachmentBase64(null)
     setAttachmentFileName(null)
     setAttachmentError(null)
+    setSelectedProviderOnFileIds([])
     setIsDiagnosisModalOpen(false)
     await refetch()
   }, () => {
@@ -550,6 +610,7 @@ export function Step6Diagnoses({
         null
       )
       setAttachmentError(null)
+      setSelectedProviderOnFileIds((sourceDiagnosis.providerOnFiles ?? []).map((provider) => provider.id))
       setIsDiagnosisModalOpen(true)
     } finally {
       setEditingDiagnosisIdLoading(null)
@@ -789,6 +850,7 @@ export function Step6Diagnoses({
             setAttachmentBase64(null)
             setAttachmentFileName(null)
             setAttachmentError(null)
+            setSelectedProviderOnFileIds([])
             setIsDiagnosisModalOpen(true)
           }}
         >
@@ -1196,6 +1258,40 @@ export function Step6Diagnoses({
             )}
           </div>
 
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-[#037ECC]/45">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">Providers on File</p>
+                <p className="text-sm text-slate-500 mt-1">
+                  {selectedProviderOnFileIds.length === 0
+                    ? "No providers selected"
+                    : `${selectedProviderOnFileIds.length} provider${selectedProviderOnFileIds.length === 1 ? "" : "s"} selected`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setProviderForm(EMPTY_PROVIDER_FORM)
+                  setProviderFormErrors({})
+                  setIsProviderModalOpen(true)
+                }}
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
+              >
+                <Plus className="w-4 h-4" />
+                New provider
+              </button>
+            </div>
+            <div className="mt-3">
+              <MultiSelectWithSearch
+                items={providerOnFileItems}
+                selectedIds={selectedProviderOnFileIds}
+                onChange={setSelectedProviderOnFileIds}
+                isLoading={isLoadingProvidersOnFile}
+                placeholder="Select providers on file..."
+              />
+            </div>
+          </div>
+
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Controller
               name="status"
@@ -1249,6 +1345,7 @@ export function Step6Diagnoses({
                 setAttachmentBase64(null)
                 setAttachmentFileName(null)
                 setAttachmentError(null)
+                setSelectedProviderOnFileIds([])
               }}
               disabled={isCreating || isUpdating}
             >
@@ -1259,6 +1356,119 @@ export function Step6Diagnoses({
             </Button>
           </div>
         </form>
+      </CustomModal>
+
+      {/* Mini-modal para registrar un provider on file sin salir del diagnóstico */}
+      <CustomModal
+        open={isProviderModalOpen}
+        onOpenChange={(open) => {
+          setIsProviderModalOpen(open)
+          if (!open) {
+            setProviderForm(EMPTY_PROVIDER_FORM)
+            setProviderFormErrors({})
+          }
+        }}
+        title="New provider on file"
+        description="Register another provider involved with the client"
+        maxWidthClassName="sm:max-w-[640px]"
+      >
+        <div className="px-6 py-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <FloatingInput
+                label="First name"
+                value={providerForm.firstName}
+                onChange={(v) => setProviderForm((prev) => ({ ...prev, firstName: v }))}
+                onBlur={() => {}}
+                hasError={!!providerFormErrors.firstName}
+                required
+              />
+              {providerFormErrors.firstName && (
+                <p className="mt-1.5 text-xs font-medium text-red-500">{providerFormErrors.firstName}</p>
+              )}
+            </div>
+            <div>
+              <FloatingInput
+                label="Last name"
+                value={providerForm.lastName}
+                onChange={(v) => setProviderForm((prev) => ({ ...prev, lastName: v }))}
+                onBlur={() => {}}
+                hasError={!!providerFormErrors.lastName}
+                required
+              />
+              {providerFormErrors.lastName && (
+                <p className="mt-1.5 text-xs font-medium text-red-500">{providerFormErrors.lastName}</p>
+              )}
+            </div>
+            <div>
+              <FloatingInput
+                label="Agency name"
+                value={providerForm.agencyName}
+                onChange={(v) => setProviderForm((prev) => ({ ...prev, agencyName: v }))}
+                onBlur={() => {}}
+                hasError={!!providerFormErrors.agencyName}
+                required
+              />
+              {providerFormErrors.agencyName && (
+                <p className="mt-1.5 text-xs font-medium text-red-500">{providerFormErrors.agencyName}</p>
+              )}
+            </div>
+            <div>
+              <FloatingSelect
+                label="Specialty"
+                value={providerForm.specialyId}
+                onChange={(v) => setProviderForm((prev) => ({ ...prev, specialyId: v }))}
+                options={physicianSpecialties.map((sp) => ({ value: sp.id, label: sp.name }))}
+                disabled={isLoadingPhysicianSpecialties}
+                hasError={!!providerFormErrors.specialyId}
+                searchable
+                required
+              />
+              {providerFormErrors.specialyId && (
+                <p className="mt-1.5 text-xs font-medium text-red-500">{providerFormErrors.specialyId}</p>
+              )}
+            </div>
+            <div>
+              <FloatingInput
+                label="Phone"
+                value={providerForm.phone}
+                onChange={(v) => setProviderForm((prev) => ({ ...prev, phone: v }))}
+                onBlur={() => {}}
+                inputMode="tel"
+                hasError={!!providerFormErrors.phone}
+                required
+              />
+              {providerFormErrors.phone && (
+                <p className="mt-1.5 text-xs font-medium text-red-500">{providerFormErrors.phone}</p>
+              )}
+            </div>
+            <FloatingInput
+              label="Email"
+              value={providerForm.email}
+              onChange={(v) => setProviderForm((prev) => ({ ...prev, email: v }))}
+              onBlur={() => {}}
+              inputMode="email"
+            />
+          </div>
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsProviderModalOpen(false)}
+              disabled={isSavingProviderOnFile}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleCreateProviderOnFile()}
+              loading={isSavingProviderOnFile}
+              disabled={isSavingProviderOnFile}
+            >
+              Create provider
+            </Button>
+          </div>
+        </div>
       </CustomModal>
 
       <CustomModal

@@ -253,6 +253,8 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
       "CaesareanSection",
       "NaturalChildbirth",
     ] as const),
+    previousAbaTherapy: str(raw.previousAbaTherapy),
+    previousAgencyName: str(raw.previousAgencyName),
     backgroundSummary: str(raw.backgroundSummary),
     backgroundStrengths: str(raw.backgroundStrengths),
     backgroundWeaknesses: str(raw.backgroundWeaknesses),

@@ -1,3 +1,5 @@
+import type { ProviderOnFile } from "./provider-on-file.types"
+
 export interface Diagnosis {
   id: string
   clientId: string
@@ -21,6 +23,8 @@ export interface Diagnosis {
   attachment?: string
   attachmentDownload?: string
   attachmentFileName?: string
+  /** Providers on file asociados al diagnóstico (contrato 2026-08-19) */
+  providerOnFiles: ProviderOnFile[]
   createdAt?: string
 }
 
@@ -35,6 +39,7 @@ export interface CreateDiagnosisDto {
   isPrimary: boolean
   attachment?: string
   attachmentFileName?: string
+  providerOnFileIds?: string[]
 }
 
 export interface UpdateDiagnosisDto {
@@ -47,4 +52,5 @@ export interface UpdateDiagnosisDto {
   isPrimary: boolean
   attachment?: string
   attachmentFileName?: string
+  providerOnFileIds?: string[]
 }

@@ -88,6 +88,27 @@ con catálogos `useBillingCodes` / `useCredentials` existentes.
   Labels actualizados: "Self-care skills / Daily living skills", "Gross/Fine motor
   skills"; el summary se titula "Summary" con la guía completa a/b/c.
 
+### Provider on File + specialty catalog (contrato 2026-08-19)
+
+- Módulo `lib/modules/provider-on-file` (CRUD completo + hooks). ⚠️ El contrato escribe
+  **`specialyId`/`specialyName`/`specialyCode`** [sic]; el normalizador acepta también la
+  variante corregida.
+- `getPhysicianSpecialties()` ahora pega a `GET /specialty/catalog` (reemplaza
+  `/physician-specialty`, misma forma id/name/code — drop-in para Step5/Step6).
+- Client diagnosis: `providerOnFileIds` en create/update, `providerOnFiles` normalizado
+  en los GETs. UI en `Step6Diagnoses`: multi-select "Providers on file" en el modal de
+  diagnosis (label "Nombre — Agency — Specialty") + mini-modal "New provider" que crea
+  y auto-selecciona. El backend llena los providerFiles del Assessment desde acá (regla
+  interna). No hay pantalla de administración de providers (update/delete existen en el
+  service pero sin UI; pendiente de definir dónde viviría).
+
+### Other Services (contrato 2026-08-19)
+
+Nueva sección del PDF tras Providers on File: flag `showOtherServices` (null→true en
+backend) + `previousAbaTherapy` y `previousAgencyName` (String). Backend los exige
+cuando el flag va en `true` — el front valida lo mismo. Sección "Other Services" en el
+form después de Providers, con su toggle, contentHidden y errores inline.
+
 ### Validación "incluido en PDF ⇒ requerido" (feedback Frank 2026-08-19)
 
 Una sección con su switch encendido no puede ir vacía; con el switch apagado no se

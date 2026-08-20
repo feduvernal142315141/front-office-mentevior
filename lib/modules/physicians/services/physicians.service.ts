@@ -96,7 +96,9 @@ export async function getPhysicianTypes(): Promise<PhysicianType[]> {
 }
 
 export async function getPhysicianSpecialties(): Promise<PhysicianSpecialty[]> {
-  const response = await serviceGet<PaginatedResponse<PhysicianSpecialty>>("/physician-specialty")
+  // `/specialty/catalog` reemplaza a `/physician-specialty` (contrato 2026-08-19);
+  // misma forma de item (id/name/code)
+  const response = await serviceGet<PaginatedResponse<PhysicianSpecialty>>("/specialty/catalog")
   
   if (response.status !== 200 || !response.data) {
     throw new Error(response.data?.message || "Failed to fetch physician specialties")

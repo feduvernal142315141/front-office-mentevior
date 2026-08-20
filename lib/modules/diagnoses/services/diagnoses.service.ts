@@ -42,6 +42,7 @@ type DiagnosisApiItem = {
   attachmentDownload?: string
   attachmentFileName?: string
   createdAt?: string
+  providerOnFiles?: unknown[]
 }
 
 function normalizeDiagnosis(item: DiagnosisApiItem): Diagnosis {
@@ -78,7 +79,28 @@ function normalizeDiagnosis(item: DiagnosisApiItem): Diagnosis {
     attachmentDownload: item.attachmentDownload,
     attachmentFileName: item.attachmentFileName,
     createdAt: item.createdAt,
+    providerOnFiles: normalizeProviderOnFiles(item.providerOnFiles),
   }
+}
+
+/** `providerOnFiles` del contrato 2026-08-19; [sic] `specialy*` viene así del backend */
+function normalizeProviderOnFiles(raw: unknown[] | undefined): Diagnosis["providerOnFiles"] {
+  if (!Array.isArray(raw)) return []
+  const str = (v: unknown) => (typeof v === "string" ? v : "")
+  return raw.map((entry) => {
+    const p = entry as Record<string, unknown>
+    return {
+      id: str(p.id),
+      firstName: str(p.firstName),
+      lastName: str(p.lastName),
+      agencyName: str(p.agencyName),
+      specialyId: str(p.specialyId) || str(p.specialtyId),
+      specialyName: str(p.specialyName) || str(p.specialtyName) || undefined,
+      specialyCode: str(p.specialyCode) || str(p.specialtyCode) || undefined,
+      phone: str(p.phone),
+      email: str(p.email),
+    }
+  })
 }
 
 function normalizeDiagnosesResponse(data: unknown): Diagnosis[] {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   BookOpenText,
   CalendarClock,
+  History,
   ClipboardList,
   Contact,
   Eye,
@@ -573,6 +574,40 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           onUpdate={updateProviderFile}
         />
           <FieldError message={errors.providerFiles} />
+        </div>
+      </Section>
+
+      {/* ─── Other Services ─── */}
+      <Section
+        icon={<History className="h-4 w-4" />}
+        title="Other Services"
+        subtitle="Previous ABA therapy history"
+        contentHidden={!formData.pdfFlags.showOtherServices}
+        headerAction={<SectionPdfToggle checked={formData.pdfFlags.showOtherServices} onChange={(v) => updatePdfFlag("showOtherServices", v)} disabled={isSaving} />}
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div data-field="previousAbaTherapy">
+            <FloatingInput
+              label="Previous ABA therapy"
+              value={formData.previousAbaTherapy}
+              onChange={(v) => updateField("previousAbaTherapy", v)}
+              onBlur={() => {}}
+              hasError={!!errors.previousAbaTherapy}
+              required
+            />
+            <FieldError message={errors.previousAbaTherapy} />
+          </div>
+          <div data-field="previousAgencyName">
+            <FloatingInput
+              label="Previous agency name"
+              value={formData.previousAgencyName}
+              onChange={(v) => updateField("previousAgencyName", v)}
+              onBlur={() => {}}
+              hasError={!!errors.previousAgencyName}
+              required
+            />
+            <FieldError message={errors.previousAgencyName} />
+          </div>
         </div>
       </Section>
 

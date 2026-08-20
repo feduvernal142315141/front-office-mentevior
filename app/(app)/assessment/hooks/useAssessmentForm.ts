@@ -91,6 +91,9 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
   medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | ""
+  // Other services (sección del PDF tras Providers on File)
+  previousAbaTherapy: string
+  previousAgencyName: string
   // Collections
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
@@ -156,6 +159,8 @@ const EMPTY_FORM: AssessmentFormData = {
   medicalHistoryMorbidities: "N/A",
   medicalHistoryAllergies: "N/A",
   medicalHistoryTypeOfBirth: "",
+  previousAbaTherapy: "",
+  previousAgencyName: "",
   backgroundSummary: "",
   backgroundStrengths: "",
   backgroundWeaknesses: "",
@@ -303,6 +308,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       medicalHistoryMorbidities: assessment.medicalHistoryMorbidities,
       medicalHistoryAllergies: assessment.medicalHistoryAllergies,
       medicalHistoryTypeOfBirth: assessment.medicalHistoryTypeOfBirth,
+      previousAbaTherapy: assessment.previousAbaTherapy,
+      previousAgencyName: assessment.previousAgencyName,
       backgroundSummary: assessment.backgroundSummary,
       backgroundStrengths: assessment.backgroundStrengths,
       backgroundWeaknesses: assessment.backgroundWeaknesses,
@@ -583,6 +590,11 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       if (!formData.medicalHistoryTypeOfBirth) newErrors.medicalHistoryTypeOfBirth = "Select the type of birth"
     }
 
+    if (flags.showOtherServices) {
+      if (!formData.previousAbaTherapy.trim()) newErrors.previousAbaTherapy = required
+      if (!formData.previousAgencyName.trim()) newErrors.previousAgencyName = required
+    }
+
     if (flags.showBackgroundInformation) {
       if (!formData.backgroundSummary.trim()) newErrors.backgroundSummary = required
       for (const { key } of ASSESSMENT_BACKGROUND_FIELDS) {
@@ -709,6 +721,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       medicalHistoryMorbidities: formData.medicalHistoryMorbidities.trim(),
       medicalHistoryAllergies: formData.medicalHistoryAllergies.trim(),
       medicalHistoryTypeOfBirth: formData.medicalHistoryTypeOfBirth || null,
+      previousAbaTherapy: formData.previousAbaTherapy.trim(),
+      previousAgencyName: formData.previousAgencyName.trim(),
       backgroundSummary: formData.backgroundSummary.trim(),
       backgroundStrengths: formData.backgroundStrengths.trim(),
       backgroundWeaknesses: formData.backgroundWeaknesses.trim(),
