@@ -54,6 +54,12 @@ import { ProposedScheduleSection } from "./sections/ProposedScheduleSection"
 import { ProviderFilesSection } from "./sections/ProviderFilesSection"
 import { SectionPdfToggle } from "./sections/SectionPdfToggle"
 
+/** El contrato persiste el valor como String; el PDF muestra Yes/No */
+const PREVIOUS_ABA_THERAPY_OPTIONS = [
+  { value: "Yes", label: "Yes" },
+  { value: "No", label: "No" },
+]
+
 interface AssessmentFormProps {
   /** Presente al editar un assessment existente */
   assessmentId?: string
@@ -587,11 +593,16 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div data-field="previousAbaTherapy">
-            <FloatingInput
+            <FloatingSelect
               label="Previous ABA therapy"
               value={formData.previousAbaTherapy}
               onChange={(v) => updateField("previousAbaTherapy", v)}
-              onBlur={() => {}}
+              // Registros previos al select pueden traer texto libre: se conserva visible
+              options={
+                formData.previousAbaTherapy && !PREVIOUS_ABA_THERAPY_OPTIONS.some((o) => o.value === formData.previousAbaTherapy)
+                  ? [...PREVIOUS_ABA_THERAPY_OPTIONS, { value: formData.previousAbaTherapy, label: formData.previousAbaTherapy }]
+                  : PREVIOUS_ABA_THERAPY_OPTIONS
+              }
               hasError={!!errors.previousAbaTherapy}
               required
             />

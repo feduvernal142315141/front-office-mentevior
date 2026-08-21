@@ -241,7 +241,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { grades, conductedOptions, isLoading: catalogsLoading } = useAssessmentCatalogs()
   const { relationships, isLoading: relationshipsLoading } = useRelationshipCatalog()
-  const { billingCodes: companyBillingCodes, isLoading: billingCodesLoading } = useBillingCodes({ page: 0, pageSize: 200 })
+  // pageSize 0 = todos los billing codes configurados de la compañía
+  const { billingCodes: companyBillingCodes, isLoading: billingCodesLoading } = useBillingCodes({ page: 0, pageSize: 0 })
   const { credentials: companyCredentials, isLoading: credentialsLoading } = useCredentials({ page: 0, pageSize: 200 })
 
   const [formData, setFormData] = useState<AssessmentFormData>(EMPTY_FORM)
@@ -254,16 +255,18 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     [clients],
   )
 
+  // `active !== false`: algunos listados no incluyen el campo y un filtro
+  // estricto dejaría el select vacío
   const billingCodeOptions = useMemo(
     () =>
       companyBillingCodes
-        .filter((b) => b.active)
+        .filter((b) => b.active !== false)
         .map((b) => ({ value: b.id, label: b.description ? `${b.code} — ${b.description}` : b.code })),
     [companyBillingCodes],
   )
 
   const credentialOptions = useMemo(
-    () => companyCredentials.filter((c) => c.active).map((c) => ({ value: c.id, label: c.name })),
+    () => companyCredentials.filter((c) => c.active !== false).map((c) => ({ value: c.id, label: c.name })),
     [companyCredentials],
   )
 

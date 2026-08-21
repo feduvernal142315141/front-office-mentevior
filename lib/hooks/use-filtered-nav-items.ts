@@ -31,6 +31,7 @@ const SIDEBAR_TO_PERMISSION_MAP: Record<string, string> = {
   "/my-company/address": PermissionModule.MY_COMPANY,
   "/my-company/credentials": PermissionModule.MY_COMPANY,
   "/my-company/physicians": PermissionModule.MY_COMPANY,
+  "/my-company/providers-on-file": PermissionModule.MY_COMPANY,
   "/my-company/service-plans": PermissionModule.MY_COMPANY,
   "/my-company/services": PermissionModule.MY_COMPANY,
   
