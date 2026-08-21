@@ -34,6 +34,7 @@ import { ASSESSMENT_PDF_DEFAULT_TEXTS } from "@/lib/constants/assessment-pdf-def
 import { useAssessmentById } from "@/lib/modules/assessments/hooks/use-assessment-by-id"
 import { useAssessmentCatalogs } from "@/lib/modules/assessments/hooks/use-assessment-catalogs"
 import { useClientCategoryItems } from "@/lib/modules/assessments/hooks/use-client-category-items"
+import { useClientItemCollectionMethods } from "@/lib/modules/assessments/hooks/use-client-item-collection-methods"
 import { useSaveAssessment } from "@/lib/modules/assessments/hooks/use-save-assessment"
 import {
   EMPTY_SCHEDULE_HOURS,
@@ -249,6 +250,9 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const { categories, isLoading: categoriesLoading } = useClientCategoryItems(formData.clientId || null)
+  // Método de colección por item: decide si se muestran los campos de intensidad
+  const { methodByItemId: collectionMethodByItemId, isLoading: collectionMethodsLoading } =
+    useClientItemCollectionMethods(formData.clientId || null, categories)
 
   const clientOptions = useMemo(
     () => clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
@@ -824,7 +828,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     conductedOptions,
     relationships,
     categories,
-    categoriesLoading,
+    categoriesLoading: categoriesLoading || collectionMethodsLoading,
+    collectionMethodByItemId,
     billingCodeOptions,
     credentialOptions,
     isLoadingCatalogs: catalogsLoading || relationshipsLoading,

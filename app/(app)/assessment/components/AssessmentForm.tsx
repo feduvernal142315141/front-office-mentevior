@@ -88,6 +88,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     relationships,
     categories,
     categoriesLoading,
+    collectionMethodByItemId,
     billingCodeOptions,
     credentialOptions,
     isLoadingCatalogs,
@@ -486,6 +487,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           clientSelected={!!formData.clientId}
           hasError={!!errors.categoriesItems}
           categories={categories}
+          collectionMethodByItemId={collectionMethodByItemId}
           isLoading={categoriesLoading}
           values={formData.categoryItems}
           disabled={isSaving}
