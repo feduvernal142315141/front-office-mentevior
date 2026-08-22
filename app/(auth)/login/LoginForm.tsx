@@ -11,10 +11,9 @@ interface LoginFormProps {
   companyId: string;
   companyName: string;
   companyLogo: string;
-  companyIdentifier: string;
 }
 
-export function LoginForm({ companyId, companyName, companyLogo, companyIdentifier }: LoginFormProps) {
+export function LoginForm({ companyId, companyName, companyLogo }: LoginFormProps) {
   const { onSubmit, isSubmitting, error } = useLogin()
 
   const [email, setEmail] = useState("")
@@ -190,7 +189,7 @@ export function LoginForm({ companyId, companyName, companyLogo, companyIdentifi
 
         <div className="text-center">
           <Link
-            href={`/${companyIdentifier}/forgot-password`}
+            href={`/forgot-password`}
             className="text-[13px] text-black hover:text-[#2563EB] transition-colors duration-200"
           >
             Forgot password

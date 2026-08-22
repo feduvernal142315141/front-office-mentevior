@@ -14,15 +14,12 @@ import { setCompanyIdentifier } from "@/lib/utils/company-identifier"
 
 function ResetPasswordContent() {
   const params = useParams()
-  const companyIdentifier = params?.companyIdentifier as string
 
-  const { companyConfig, isLoading: isLoadingCompany, error: companyError } = useCompanyConfig(companyIdentifier)
+  const { companyConfig, isLoading: isLoadingCompany, error: companyError } = useCompanyConfig()
 
   useEffect(() => {
-    if (companyIdentifier) {
-      setCompanyIdentifier(companyIdentifier)
-    }
-  }, [companyIdentifier])
+
+  }, [])
 
   const {
     onSubmit,

@@ -1,41 +1,43 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/hooks/use-auth";
+import {useState, useCallback} from "react";
+import {useRouter} from "next/navigation";
+import {useAuth} from "@/lib/hooks/use-auth";
+import {useCompanySlug} from "@/lib/modules/auth/hooks/use-company-slug";
 
 export function useLogin() {
-  const router = useRouter();
-  const { login } = useAuth();
+    const router = useRouter();
+    const {login} = useAuth();
 
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const {companySlug} = useCompanySlug()
 
-  const onSubmit = useCallback(
-    async (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => {
-      setIsSubmitting(true);
-      setError(null);
+    const onSubmit = useCallback(
+        async (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => {
+            setIsSubmitting(true);
+            setError(null);
 
-      const success = await login(email, password, companyId, companyName, companyLogo);
+            const success = await login(email, password, companyId, companyName, companyLogo);
 
-      if (success) {
-        console.log("Login successful, redirecting to /dashboard");
-        
-        // Usar window.location.href para forzar un hard reload
-        // Esto asegura que el servidor verifique la cookie recién seteada
-        window.location.href = "/dashboard";
-        return;
-      }
+            if (success) {
+                console.log("Login successful, redirecting to /dashboard");
 
-      setError("Invalid credentials");
-      setIsSubmitting(false);
-    },
-    [login, router]
-  );
+                // Usar window.location.href para forzar un hard reload
+                // Esto asegura que el servidor verifique la cookie recién seteada
+                window.location.href = "/dashboard";
+                return;
+            }
 
-  return {
-    onSubmit,
-    error,
-    isSubmitting,
-  };
+            setError("Invalid credentials");
+            setIsSubmitting(false);
+        },
+        [login, router]
+    );
+
+    return {
+        onSubmit,
+        error,
+        isSubmitting,
+    };
 }

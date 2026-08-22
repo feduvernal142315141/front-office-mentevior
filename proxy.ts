@@ -39,13 +39,13 @@ const APP_ROUTES = [
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
+  console.log(pathname, "PIMGA");
   // Allow public paths, dynamic login routes, and dynamic forgot-password routes
   if (
     PUBLIC_PATHS.includes(pathname) || 
-    pathname.match(/^\/[^/]+\/login$/) ||
-    pathname.match(/^\/[^/]+\/forgot-password$/) ||
-    pathname.match(/^\/[^/]+\/reset-password$/)
+    pathname.match(/login$/) ||
+    pathname.match(/forgot-password$/) ||
+    pathname.match(/reset-password$/)
   ) {
     return NextResponse.next();
   }
@@ -66,10 +66,8 @@ export function proxy(req: NextRequest) {
   // existe. Este chequeo corta esa clase de error de raíz, sin depender de que
   // la lista esté completa.
   if (segments.length === 1 && !token) {
-    const companyIdentifier = segments[0];
-
     const url = req.nextUrl.clone();
-    url.pathname = `/${companyIdentifier}/login`;
+    url.pathname = `/login`;
 
     return NextResponse.redirect(url);
   }

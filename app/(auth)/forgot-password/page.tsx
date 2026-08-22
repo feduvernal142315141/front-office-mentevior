@@ -12,15 +12,12 @@ import { setCompanyIdentifier } from "@/lib/utils/company-identifier"
 export default function ForgotPasswordPage() {
   const router = useRouter()
   const params = useParams()
-  const companyIdentifier = params?.companyIdentifier as string
 
-  const { companyConfig, isLoading: isLoadingCompany, error: companyError } = useCompanyConfig(companyIdentifier)
+  const { companyConfig, isLoading: isLoadingCompany, error: companyError } = useCompanyConfig()
 
   useEffect(() => {
-    if (companyIdentifier) {
-      setCompanyIdentifier(companyIdentifier)
-    }
-  }, [companyIdentifier])
+
+  }, [])
 
   const {
     onSubmit,
@@ -146,7 +143,7 @@ export default function ForgotPasswordPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => router.push(`/${companyIdentifier}/login`)}
+                  onClick={() => router.push(`/login`)}
                   disabled={isLoading}
                   className="shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 flex-1"
                 >

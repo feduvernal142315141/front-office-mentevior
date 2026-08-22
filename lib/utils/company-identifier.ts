@@ -25,12 +25,7 @@ export function clearCompanyIdentifier(): void {
 
 
 export function getLoginUrl(): string {
-  const identifier = getCompanyIdentifier();
-  if (identifier) {
-    return `/${identifier}/login`;
-  }
-
-  return "/login-error";
+  return "/login";
 }
 
 
