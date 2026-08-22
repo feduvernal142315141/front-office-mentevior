@@ -7,6 +7,7 @@ import {
   HYPOTHESIZED_FUNCTION_OPTIONS,
   INTENSITY_KEY_OPTIONS,
 } from "@/lib/constants/assessment.constants"
+import { typeIsFrequency } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import type { ClientCategoryWithItems } from "@/lib/types/assessment.types"
 import {
   EMPTY_CATEGORY_ITEM,
@@ -16,6 +17,11 @@ import {
 interface CategoryItemsSectionProps {
   clientSelected: boolean
   categories: ClientCategoryWithItems[]
+  /**
+   * Nombre del método de colección por item id. Intensity e Intensity description
+   * sólo aplican a items Frequency; un item sin entrada (método desconocido) los muestra.
+   */
+  collectionMethodByItemId?: Record<string, string>
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
   /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
@@ -43,6 +49,7 @@ function isTouched(value: CategoryItemFormValue): boolean {
 export function CategoryItemsSection({
   clientSelected,
   categories,
+  collectionMethodByItemId = {},
   isLoading,
   values,
   hasError,
@@ -91,6 +98,8 @@ export function CategoryItemsSection({
             {category.items.map((item) => {
               const value = values[item.id] ?? EMPTY_CATEGORY_ITEM
               const touched = isTouched(value)
+              const collectionMethod = collectionMethodByItemId[item.id]
+              const showIntensity = !collectionMethod || typeIsFrequency(collectionMethod)
 
               return (
                 <div
@@ -115,21 +124,25 @@ export function CategoryItemsSection({
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-[180px_1fr_200px]">
-                    <FloatingSelect
-                      label="Intensity"
-                      value={value.intensityKey}
-                      onChange={(v) => onUpdate(item.id, "intensityKey", v)}
-                      options={INTENSITY_KEY_OPTIONS}
-                      disabled={disabled}
-                    />
-                    <FloatingInput
-                      label="Intensity description"
-                      value={value.intensityDescription}
-                      onChange={(v) => onUpdate(item.id, "intensityDescription", v)}
-                      onBlur={() => {}}
-                      disabled={disabled}
-                    />
+                  {showIntensity && (
+                    <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-[180px_1fr]">
+                      <FloatingSelect
+                        label="Intensity"
+                        value={value.intensityKey}
+                        onChange={(v) => onUpdate(item.id, "intensityKey", v)}
+                        options={INTENSITY_KEY_OPTIONS}
+                        disabled={disabled}
+                      />
+                      <FloatingInput
+                        label="Intensity description"
+                        value={value.intensityDescription}
+                        onChange={(v) => onUpdate(item.id, "intensityDescription", v)}
+                        onBlur={() => {}}
+                        disabled={disabled}
+                      />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <FloatingSelect
                       label="Hypothesized function"
                       value={value.hypothesizedFunction}
@@ -137,8 +150,6 @@ export function CategoryItemsSection({
                       options={HYPOTHESIZED_FUNCTION_OPTIONS}
                       disabled={disabled}
                     />
-                  </div>
-                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                     <FloatingInput
                       label="Prevalent setting"
                       value={value.prevalentSetting}

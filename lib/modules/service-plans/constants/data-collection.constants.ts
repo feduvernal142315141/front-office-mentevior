@@ -22,6 +22,15 @@ export function typeIsMeasurementLog(typeName: string): boolean {
   return normalizeTypeName(typeName) === "measurement log"
 }
 
+/**
+ * Frequency-like types (Frequency, Frequency/Count). Gate for intensity fields
+ * in the Assessment: the backend only prints intensity for these items.
+ */
+export function typeIsFrequency(typeName: string): boolean {
+  const normalized = normalizeTypeName(typeName)
+  return normalized === "frequency" || normalized === "frequency/count"
+}
+
 export function typeRequiresWeeklyDaily(typeName: string): boolean {
   return typeName === "Frequency" || typeName === "Frequency/Count" || typeName === "Rate"
 }

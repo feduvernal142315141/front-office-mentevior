@@ -137,6 +137,10 @@ export const navItems: NavItem[] = [
         href: "/my-company/physicians",
       },
       {
+        label: "Providers on File",
+        href: "/my-company/providers-on-file",
+      },
+      {
         label: "Roles",
         href: "/my-company/roles",
       },

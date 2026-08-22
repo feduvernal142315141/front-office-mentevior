@@ -56,7 +56,11 @@ con catálogos `useBillingCodes` / `useCredentials` existentes.
 - **`categoriesItems` + 3 campos**: `prevalentSetting`, `preventiveStrategies`
   (antecedent), `managementStrategies` (consequence) — segunda fila de inputs por item.
   Regla PDF (solo backend): intensity solo se pinta si el collectionMethod del item es
-  frequency.
+  frequency. En el form (2026-08-20) Intensity + Intensity description también se ocultan
+  para items no-Frequency: como `category-items` no trae el método, el hook
+  `use-client-item-collection-methods` lo resuelve con los endpoints del SP del cliente
+  (tipo de categoría + override del item → nombre vía `/type-event/catalog`). Método
+  desconocido = campos visibles.
 - **`billingCodes[].settings` pasó a texto plano** ("Home, Community") — se eliminó la
   convención JSON `{location,notes}`; un solo input Settings.
   `normalizeBillingCodeSettings` aplana el JSON viejo de assessments ya guardados.
@@ -99,8 +103,9 @@ con catálogos `useBillingCodes` / `useCredentials` existentes.
   en los GETs. UI en `Step6Diagnoses`: multi-select "Providers on file" en el modal de
   diagnosis (label "Nombre — Agency — Specialty") + mini-modal "New provider" que crea
   y auto-selecciona. El backend llena los providerFiles del Assessment desde acá (regla
-  interna). No hay pantalla de administración de providers (update/delete existen en el
-  service pero sin UI; pendiente de definir dónde viviría).
+  interna). Gestión CRUD (2026-08-20): `/my-company/providers-on-file` en el sidebar
+  (bajo My Company, junto a Referring Physicians, permiso MY_COMPANY) — listado con
+  búsqueda por nombre + create/edit en modal + delete con confirmación.
 
 ### Other Services (contrato 2026-08-19)
 

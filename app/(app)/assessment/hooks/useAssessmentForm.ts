@@ -34,6 +34,7 @@ import { ASSESSMENT_PDF_DEFAULT_TEXTS } from "@/lib/constants/assessment-pdf-def
 import { useAssessmentById } from "@/lib/modules/assessments/hooks/use-assessment-by-id"
 import { useAssessmentCatalogs } from "@/lib/modules/assessments/hooks/use-assessment-catalogs"
 import { useClientCategoryItems } from "@/lib/modules/assessments/hooks/use-client-category-items"
+import { useClientItemCollectionMethods } from "@/lib/modules/assessments/hooks/use-client-item-collection-methods"
 import { useSaveAssessment } from "@/lib/modules/assessments/hooks/use-save-assessment"
 import {
   EMPTY_SCHEDULE_HOURS,
@@ -241,29 +242,35 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { grades, conductedOptions, isLoading: catalogsLoading } = useAssessmentCatalogs()
   const { relationships, isLoading: relationshipsLoading } = useRelationshipCatalog()
-  const { billingCodes: companyBillingCodes, isLoading: billingCodesLoading } = useBillingCodes({ page: 0, pageSize: 200 })
+  // pageSize 0 = todos los billing codes configurados de la compañía
+  const { billingCodes: companyBillingCodes, isLoading: billingCodesLoading } = useBillingCodes({ page: 0, pageSize: 0 })
   const { credentials: companyCredentials, isLoading: credentialsLoading } = useCredentials({ page: 0, pageSize: 200 })
 
   const [formData, setFormData] = useState<AssessmentFormData>(EMPTY_FORM)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const { categories, isLoading: categoriesLoading } = useClientCategoryItems(formData.clientId || null)
+  // Método de colección por item: decide si se muestran los campos de intensidad
+  const { methodByItemId: collectionMethodByItemId, isLoading: collectionMethodsLoading } =
+    useClientItemCollectionMethods(formData.clientId || null, categories)
 
   const clientOptions = useMemo(
     () => clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
     [clients],
   )
 
+  // `active !== false`: algunos listados no incluyen el campo y un filtro
+  // estricto dejaría el select vacío
   const billingCodeOptions = useMemo(
     () =>
       companyBillingCodes
-        .filter((b) => b.active)
+        .filter((b) => b.active !== false)
         .map((b) => ({ value: b.id, label: b.description ? `${b.code} — ${b.description}` : b.code })),
     [companyBillingCodes],
   )
 
   const credentialOptions = useMemo(
-    () => companyCredentials.filter((c) => c.active).map((c) => ({ value: c.id, label: c.name })),
+    () => companyCredentials.filter((c) => c.active !== false).map((c) => ({ value: c.id, label: c.name })),
     [companyCredentials],
   )
 
@@ -821,7 +828,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     conductedOptions,
     relationships,
     categories,
-    categoriesLoading,
+    categoriesLoading: categoriesLoading || collectionMethodsLoading,
+    collectionMethodByItemId,
     billingCodeOptions,
     credentialOptions,
     isLoadingCatalogs: catalogsLoading || relationshipsLoading,
