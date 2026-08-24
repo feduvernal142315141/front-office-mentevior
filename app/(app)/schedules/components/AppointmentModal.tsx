@@ -59,6 +59,7 @@ export function AppointmentModal({
     validationError,
     isValidatingMain,
     pendingValidation,
+    priorAuthRequired,
     clientOptions,
     clientsLoading,
     clientsError,
@@ -321,7 +322,9 @@ export function AppointmentModal({
                 ? priorAuthorizationOptions[0].label
                 : isValidatingMain
                   ? "Validating…"
-                  : undefined
+                  : !priorAuthRequired
+                    ? "Not required"
+                    : undefined
             }
           />
         )}

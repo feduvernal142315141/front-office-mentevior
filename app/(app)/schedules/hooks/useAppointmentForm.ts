@@ -18,6 +18,10 @@ import { useAlert } from "@/lib/contexts/alert-context"
 import { canHaveInlineSupervision } from "@/lib/modules/schedules/utils/billing-code-supervision-rules"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
 import {
+  isPriorAuthorizationRequired,
+  resolveBillingCodeAutoUnits,
+} from "@/lib/constants/billing-code-rules"
+import {
   appointmentToFormData,
   buildAppointmentApiPayload,
   buildMainValidateKey,
@@ -144,10 +148,21 @@ export function useAppointmentForm({
   } = useApprovedBillingCodes(formData.clientId || null, billingCodeType, effectiveProviderId)
 
   // ─── Determine if selected BC allows inline supervision ───
-  const selectedBillingCodeLabel = useMemo(() => {
-    const bc = mainBillingCodes.find((b) => b.id === formData.billingCodeId)
-    return bc?.label ?? ""
-  }, [mainBillingCodes, formData.billingCodeId])
+  const selectedBillingCode = useMemo(
+    () => mainBillingCodes.find((b) => b.id === formData.billingCodeId) ?? null,
+    [mainBillingCodes, formData.billingCodeId],
+  )
+
+  const selectedBillingCodeLabel = selectedBillingCode?.label ?? ""
+
+  const priorAuthRequired = useMemo(() => {
+    if (!selectedBillingCode) return true
+    return isPriorAuthorizationRequired({
+      type: selectedBillingCode.type,
+      code: selectedBillingCode.code,
+      modifier: selectedBillingCode.modifier,
+    })
+  }, [selectedBillingCode])
 
   const showSupervisionSwitch = canAddSupervision && canHaveInlineSupervision(selectedBillingCodeLabel)
 
@@ -510,6 +525,22 @@ export function useAppointmentForm({
     if (key === mainValidateKey.current) return
     mainValidateKey.current = key
 
+    const selectedCode = mainBillingCodes.find((b) => b.id === billingCodeId) ?? null
+    const needsPriorAuth = selectedCode
+      ? isPriorAuthorizationRequired({
+          type: selectedCode.type,
+          code: selectedCode.code,
+          modifier: selectedCode.modifier,
+        })
+      : true
+    const autoUnits = selectedCode
+      ? resolveBillingCodeAutoUnits({
+          type: selectedCode.type,
+          code: selectedCode.code,
+          modifier: selectedCode.modifier,
+        })
+      : undefined
+
     let cancelled = false
     const run = async () => {
       try {
@@ -528,11 +559,23 @@ export function useAppointmentForm({
         setFormData((prev) => ({
           ...prev,
           validatedUnits: result.unitsToUse,
-          priorAuthorizationId: result.priorAuthorizationId,
-          approvedPriorAuthorizationBillingCodeId: result.approvedPriorAuthorizationBillingCodeId,
+          priorAuthorizationId: result.priorAuthorizationId || "",
+          approvedPriorAuthorizationBillingCodeId: result.approvedPriorAuthorizationBillingCodeId || "",
         }))
       } catch (err) {
         if (cancelled) return
+        // CPT 97151 without modifier: PA is optional — fall back to auto units and allow save
+        if (!needsPriorAuth && autoUnits != null) {
+          mainValidateKey.current = key
+          setFormData((prev) => ({
+            ...prev,
+            validatedUnits: autoUnits,
+            priorAuthorizationId: "",
+            approvedPriorAuthorizationBillingCodeId: "",
+          }))
+          setValidationError(null)
+          return
+        }
         mainValidateKey.current = ""
         setFormData((prev) => ({
           ...prev,
@@ -547,7 +590,17 @@ export function useAppointmentForm({
     }
     void run()
     return () => { cancelled = true }
-  }, [formData.clientId, formData.billingCodeId, formData.startTime, formData.endTime, formData.date, formData.eventType])
+  }, [
+    formData.clientId,
+    formData.billingCodeId,
+    formData.startTime,
+    formData.endTime,
+    formData.date,
+    formData.eventType,
+    mainBillingCodes,
+    isEditing,
+    appointment?.id,
+  ])
 
   // ─── Validation & Submit ───
 
@@ -664,15 +717,15 @@ export function useAppointmentForm({
     if (success) onSuccess?.()
   }, [appointment, mutations, onSuccess])
 
-  // True when all fields for validation are filled but priorAuthorizationId hasn't been resolved yet
+  // True when required fields are filled but we are still waiting on validation / PA (when required)
   const pendingValidation =
     !!formData.clientId &&
     !!formData.billingCodeId &&
     !!formData.startTime &&
     !!formData.endTime &&
     !!formData.date &&
-    !formData.priorAuthorizationId &&
-    !validationError
+    !validationError &&
+    (isValidatingMain || (priorAuthRequired && !formData.priorAuthorizationId))
 
   return {
     formData,
@@ -682,6 +735,7 @@ export function useAppointmentForm({
     validationError,
     isValidatingMain,
     pendingValidation,
+    priorAuthRequired,
     clientOptions,
     clientsLoading,
     clientsError,
