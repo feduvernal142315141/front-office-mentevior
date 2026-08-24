@@ -1,9 +1,10 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceGet, servicePatch, servicePost, servicePut } from "@/lib/services/baseService"
 import {
   ASSESSMENT_PDF_FLAG_KEYS,
   ASSESSMENT_PDF_TEXT_KEYS,
   type AssessmentPdfFlags,
   type AssessmentPdfTexts,
+  type AssessmentStatus,
 } from "@/lib/types/assessment.types"
 import type {
   AssessmentAbcInput,
@@ -60,7 +61,12 @@ export async function getAssessments(
   const totalCount =
     data.total ?? data.pagination?.totalAmount ?? data.pagination?.total ?? assessments.length
 
-  return { assessments, totalCount }
+  return {
+    assessments: assessments.map((item) =>
+      normalizeAssessmentListItem(item as unknown as Record<string, unknown>),
+    ),
+    totalCount,
+  }
 }
 
 export async function getAssessmentById(id: string): Promise<AssessmentDetail | null> {
@@ -111,6 +117,42 @@ export function getAssessmentPdfUrl(
   return `/api/reports/assessment/preview/${safeName}?assessmentId=${encodeURIComponent(assessmentId)}`
 }
 
+/**
+ * Re-activate a closed assessment (`Close → Active`).
+ * PATCH /assessments/activate
+ */
+export async function activateAssessment(assessmentId: string): Promise<string | null> {
+  try {
+    const response = await servicePatch<{ assessmentId: string }, string>(
+      `${BASE_URL}/activate`,
+      { assessmentId },
+    )
+    if (response.status !== 200) return null
+    const data = response.data as unknown
+    return typeof data === "string" && data.trim() ? data.trim() : assessmentId
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Lock a closed assessment for billing (`Close → Lock`, terminal).
+ * PATCH /assessments/lock
+ */
+export async function lockAssessment(assessmentId: string): Promise<string | null> {
+  try {
+    const response = await servicePatch<{ assessmentId: string }, string>(
+      `${BASE_URL}/lock`,
+      { assessmentId },
+    )
+    if (response.status !== 200) return null
+    const data = response.data as unknown
+    return typeof data === "string" && data.trim() ? data.trim() : assessmentId
+  } catch {
+    return null
+  }
+}
+
 /** El backend responde el UUID pelado; algunos entornos lo envuelven (patrón clinical-monthly) */
 function extractId(payload: unknown, action: "create" | "update"): string {
   if (typeof payload === "string" && payload.trim()) return payload.trim()
@@ -153,6 +195,32 @@ function normalizeTime(value: unknown): string {
 
 function enumOrEmpty<T extends string>(value: unknown, allowed: readonly T[]): T | "" {
   return typeof value === "string" && (allowed as readonly string[]).includes(value) ? (value as T) : ""
+}
+
+/** Backend sends PascalCase (Read/Active/Close/Lock); UI uses lowercase. */
+export function parseAssessmentStatus(raw: unknown): AssessmentStatus {
+  const value = String(raw ?? "").trim().toLowerCase()
+  if (value === "read" || value === "active" || value === "close" || value === "lock") {
+    return value
+  }
+  return "active"
+}
+
+function normalizeAssessmentListItem(raw: Record<string, unknown>): AssessmentListItem {
+  const housingType = enumOrEmpty(raw.housingType, ["HOME", "FOSTER_HOME", "PPEC"] as const)
+  return {
+    id: str(raw.id),
+    clientId: str(raw.clientId),
+    clientName: str(raw.clientName),
+    schoolName: str(raw.schoolName),
+    gradeCatalogId: str(raw.gradeCatalogId),
+    gradeName: str(raw.gradeName),
+    housingType: housingType || null,
+    medicalHistoryPrimaryDiagnosisName: str(raw.medicalHistoryPrimaryDiagnosisName) || null,
+    createAt: str(raw.createAt),
+    status: parseAssessmentStatus(raw.status),
+    active: raw.active === undefined ? true : Boolean(raw.active),
+  }
 }
 
 function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDetail {
@@ -278,6 +346,8 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     ...pdfTexts,
     ...pdfFlags,
     createAt: str(raw.createAt),
+    status: parseAssessmentStatus(raw.status),
+    notCanEdit: Boolean(raw.notCanEdit),
     active: raw.active === undefined ? true : Boolean(raw.active),
   }
 }

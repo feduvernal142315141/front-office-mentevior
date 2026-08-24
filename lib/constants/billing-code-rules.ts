@@ -16,14 +16,17 @@ function normalizeBillingCodeParts({
   }
 }
 
-/** CPT 97151 without a modifier does not require a prior authorization. */
+/**
+ * 97151 without a modifier does not require a prior authorization.
+ * Matches regardless of billing-code type label (CPT / Session / Service Plan).
+ */
 export function isPriorAuthorizationRequired({
   type,
   code,
   modifier,
 }: BillingCodeRuleInput): boolean {
   const normalized = normalizeBillingCodeParts({ type, code, modifier })
-  if (normalized.type === "cpt" && normalized.code === "97151" && !normalized.modifier) {
+  if (normalized.code === "97151" && !normalized.modifier) {
     return false
   }
   return true
@@ -36,7 +39,8 @@ export function resolveBillingCodeAutoUnits({
 }: BillingCodeRuleInput): number | undefined {
   const normalized = normalizeBillingCodeParts({ type, code, modifier })
 
-  if (normalized.type !== "cpt" || normalized.code !== "97151") {
+  // Same code can appear under CPT / Session / Service Plan type labels
+  if (normalized.code !== "97151") {
     return undefined
   }
 

@@ -3,8 +3,10 @@
 import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
+  BookOpen,
   BookOpenText,
   CalendarClock,
+  Clock,
   History,
   ClipboardList,
   Contact,
@@ -15,6 +17,9 @@ import {
   Info,
   ListTree,
   Loader2,
+  Lock,
+  LockOpen,
+  PenLine,
   Pill,
   Receipt,
   Stethoscope,
@@ -41,8 +46,22 @@ import {
   ASSESSMENT_BACKGROUND_GUIDANCE,
   ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE,
 } from "@/lib/constants/assessment-guidance"
-import { getAssessmentPdfUrl } from "@/lib/modules/assessments/services/assessments.service"
+import {
+  activateAssessment,
+  getAssessmentPdfUrl,
+  lockAssessment,
+} from "@/lib/modules/assessments/services/assessments.service"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
+import { useAlert } from "@/lib/contexts/alert-context"
+import { PermissionModule } from "@/lib/utils/permissions-new"
+import { cn } from "@/lib/utils"
 import { useAssessmentForm } from "../hooks/useAssessmentForm"
+import {
+  deriveAssessmentStatusInfo,
+  type AssessmentStatusInfo,
+} from "../hooks/useAssessmentStatus"
 import { AbcDataSection } from "./sections/AbcDataSection"
 import { BillingCodesSection } from "./sections/BillingCodesSection"
 import { CategoryItemsSection } from "./sections/CategoryItemsSection"
@@ -71,7 +90,15 @@ interface AssessmentFormProps {
  */
 export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
   const router = useRouter()
+  const alert = useAlert()
+  const { user } = useAuth()
+  const { user: fullUser } = useUserById(user?.id || null)
+  const { block: canBlock } = usePermission()
+  const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
+  const canAdminAction = isAdmin && canBlock(PermissionModule.ASSESSMENT)
+
   const [previewId, setPreviewId] = useState<string | null>(null)
+  const [isChangingStatus, setIsChangingStatus] = useState(false)
 
   const {
     formData,
@@ -81,6 +108,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     assessment,
     detailLoading,
     detailError,
+    refetchAssessment,
     clientOptions,
     clientsLoading,
     grades,
@@ -121,23 +149,79 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     isSaving,
   } = useAssessmentForm({ assessmentId })
 
+  const statusInfo = deriveAssessmentStatusInfo(
+    assessment?.status ?? "active",
+    canAdminAction,
+    assessment?.notCanEdit ?? false,
+  )
+  const formDisabled = isEditing && !statusInfo.isFormEditable
+  const fieldsDisabled = isSaving || formDisabled
+
   const onSubmit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault()
+      if (formDisabled) return
       const id = await handleSubmit()
       if (!id) return
       toast.success(isEditing ? "Assessment updated" : "Assessment created")
       router.push("/assessment")
     },
-    [handleSubmit, isEditing, router],
+    [handleSubmit, isEditing, router, formDisabled],
   )
 
-  // Generar el PDF exige que el registro exista, así que previsualizar guarda
-  // primero (el hook de guardado recuerda el id: no se duplican registros)
   const handlePreview = useCallback(async () => {
+    if (formDisabled && assessmentId) {
+      setPreviewId(assessmentId)
+      return
+    }
     const id = await handleSubmit()
     if (id) setPreviewId(id)
-  }, [handleSubmit])
+  }, [handleSubmit, formDisabled, assessmentId])
+
+  const handleStatusChange = useCallback(
+    async (next: "lock" | "active") => {
+      if (!assessmentId || isChangingStatus) return
+
+      if (next === "lock") {
+        alert.confirm({
+          title: "Lock Assessment for Billing",
+          description:
+            "This action is permanent. The assessment will be locked and cannot be unlocked.",
+          confirmText: "Lock",
+          cancelText: "Cancel",
+          onConfirm: async () => {
+            setIsChangingStatus(true)
+            try {
+              const result = await lockAssessment(assessmentId)
+              if (result) {
+                await refetchAssessment()
+                toast.success("Assessment locked for billing")
+              } else {
+                toast.error("Failed to lock assessment")
+              }
+            } finally {
+              setIsChangingStatus(false)
+            }
+          },
+        })
+        return
+      }
+
+      setIsChangingStatus(true)
+      try {
+        const result = await activateAssessment(assessmentId)
+        if (result) {
+          await refetchAssessment()
+          toast.success("Assessment re-activated")
+        } else {
+          toast.error("Failed to re-activate assessment")
+        }
+      } finally {
+        setIsChangingStatus(false)
+      }
+    },
+    [assessmentId, isChangingStatus, alert, refetchAssessment],
+  )
 
   if (isEditing && detailLoading) {
     return (
@@ -160,7 +244,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5 pb-32">
-      {/* ─── Preview: exige guardar antes, el PDF sale de un registro existente ─── */}
+      {/* ─── Preview ─── */}
       <div className="flex justify-end">
         <Button
           type="button"
@@ -170,10 +254,19 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           className="gap-2 flex items-center"
         >
           <FileDown className="h-4 w-4" />
-          Save &amp; Preview PDF
+          {formDisabled ? "Preview PDF" : "Save & Preview PDF"}
         </Button>
       </div>
 
+      {isEditing && (
+        <AssessmentStatusBanner
+          statusInfo={statusInfo}
+          isChangingStatus={isChangingStatus}
+          onStatusChange={handleStatusChange}
+        />
+      )}
+
+      <div className={cn("space-y-5", formDisabled && "pointer-events-none opacity-60")}>
       {/* ─── Client ─── */}
       <Section icon={<User className="h-4 w-4" />} title="Client" subtitle="Who this assessment is for">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -183,7 +276,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               value={formData.clientId}
               onChange={(v) => updateField("clientId", v)}
               options={clientOptions}
-              disabled={clientsLoading || isEditing}
+              disabled={clientsLoading || isEditing || fieldsDisabled}
               hasError={!!errors.clientId}
               searchable
               required
@@ -629,19 +722,20 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         values={formData.pdfTexts}
         flags={formData.pdfFlags}
         errors={errors}
-        disabled={isSaving}
+        disabled={fieldsDisabled}
         onUpdate={updatePdfText}
         onUpdateFlag={updatePdfFlag}
       />
 
       {/* Secciones del PDF que salen del expediente del cliente (sin sección propia acá) */}
-      <PdfSectionsVisibility flags={formData.pdfFlags} disabled={isSaving} onUpdate={updatePdfFlag} />
+      <PdfSectionsVisibility flags={formData.pdfFlags} disabled={fieldsDisabled} onUpdate={updatePdfFlag} />
+      </div>
 
       <FormBottomBar
         isSubmitting={isSaving}
         onCancel={() => router.push("/assessment")}
         submitText={isEditing ? "Update Assessment" : "Create Assessment"}
-        disabled={isSaving}
+        disabled={isSaving || formDisabled || !statusInfo.canSave}
       />
 
       {previewId && (
@@ -653,6 +747,64 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         />
       )}
     </form>
+  )
+}
+
+const BANNER_CONFIG = {
+  info:    { border: "border-[#037ECC]/20", bg: "from-[#037ECC]/[0.04] to-[#079CFB]/[0.04]", shadow: "shadow-[0_2px_12px_rgba(3,126,204,0.06)]", iconBg: "bg-[#037ECC]/10 border-[#037ECC]/20", title: "text-[#037ECC]", desc: "text-[#037ECC]/60" },
+  success: { border: "border-emerald-200/80", bg: "from-emerald-50/90 to-emerald-100/50", shadow: "shadow-[0_2px_12px_rgba(16,185,129,0.08)]", iconBg: "bg-emerald-100 border-emerald-200/60", title: "text-emerald-800", desc: "text-emerald-600/80" },
+  warning: { border: "border-amber-200/80", bg: "from-amber-50/90 to-amber-100/50", shadow: "shadow-[0_2px_12px_rgba(245,158,11,0.08)]", iconBg: "bg-amber-100 border-amber-200/60", title: "text-amber-800", desc: "text-amber-600/80" },
+  danger:  { border: "border-red-200/80", bg: "from-red-50/90 to-red-100/50", shadow: "shadow-[0_2px_12px_rgba(239,68,68,0.08)]", iconBg: "bg-red-100 border-red-200/60", title: "text-red-800", desc: "text-red-600/80" },
+} as const
+
+const BANNER_ICONS = { read: BookOpen, active: PenLine, close: Clock, lock: Lock } as const
+
+function AssessmentStatusBanner({
+  statusInfo,
+  isChangingStatus,
+  onStatusChange,
+}: {
+  statusInfo: AssessmentStatusInfo
+  isChangingStatus: boolean
+  onStatusChange: (status: "lock" | "active") => void
+}) {
+  const colors = BANNER_CONFIG[statusInfo.bannerVariant]
+  const Icon = BANNER_ICONS[statusInfo.status]
+
+  return (
+    <div className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl border transition-all duration-300 ease-out bg-gradient-to-r ${colors.border} ${colors.bg} ${colors.shadow}`}>
+      <div className={`flex items-center justify-center h-10 w-10 rounded-xl shrink-0 border ${colors.iconBg}`}>
+        <Icon className={`h-4 w-4 ${colors.title}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-semibold ${colors.title}`}>{statusInfo.bannerMessage}</p>
+        <p className={`text-xs mt-0.5 ${colors.desc}`}>{statusInfo.bannerDescription}</p>
+      </div>
+      {statusInfo.canActivate && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="shrink-0 h-9 px-4 text-xs font-semibold gap-2 rounded-xl border-amber-300 text-amber-700 hover:bg-amber-100 hover:border-amber-400"
+          onClick={() => onStatusChange("active")}
+          disabled={isChangingStatus}
+        >
+          {isChangingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LockOpen className="h-3.5 w-3.5" />}
+          Re-Activate
+        </Button>
+      )}
+      {statusInfo.canLock && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="shrink-0 h-9 px-4 text-xs font-semibold gap-2 rounded-xl border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400"
+          onClick={() => onStatusChange("lock")}
+          disabled={isChangingStatus}
+        >
+          {isChangingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+          Lock for Billing
+        </Button>
+      )}
+    </div>
   )
 }
 

@@ -14,6 +14,7 @@ import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { cn } from "@/lib/utils"
+import { ASSESSMENT_STATUS_BADGE } from "./useAssessmentStatus"
 
 export function useAssessmentsTable() {
   const router = useRouter()
@@ -159,16 +160,19 @@ export function useAssessmentsTable() {
       header: "Status",
       align: "center",
       className: "whitespace-nowrap",
-      render: (item) =>
-        item.active ? (
-          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Active
+      render: (item) => {
+        const badge = ASSESSMENT_STATUS_BADGE[item.status] ?? ASSESSMENT_STATUS_BADGE.active
+        return (
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border",
+              badge.className,
+            )}
+          >
+            {badge.label}
           </span>
-        ) : (
-          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-            Inactive
-          </span>
-        ),
+        )
+      },
     },
     {
       key: "actions",

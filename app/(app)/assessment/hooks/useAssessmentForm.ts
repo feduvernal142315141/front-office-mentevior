@@ -236,7 +236,8 @@ interface UseAssessmentFormProps {
 export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   const isEditing = !!assessmentId
 
-  const { assessment, isLoading: detailLoading, error: detailError } = useAssessmentById(assessmentId)
+  const { assessment, isLoading: detailLoading, error: detailError, refetch: refetchAssessment } =
+    useAssessmentById(assessmentId)
   const { save, isSaving } = useSaveAssessment({ assessmentId })
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
@@ -801,6 +802,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
   /** Devuelve el id guardado, o null si la validación o el request fallaron */
   const handleSubmit = useCallback(async (): Promise<string | null> => {
+    if (isEditing && assessment?.notCanEdit) return null
+
     const newErrors = validate()
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -810,7 +813,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     setErrors({})
 
     return save(buildPayload())
-  }, [validate, buildPayload, save, scrollToFirstError])
+  }, [validate, buildPayload, save, scrollToFirstError, isEditing, assessment?.notCanEdit])
 
   return {
     formData,
@@ -821,6 +824,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     assessment,
     detailLoading,
     detailError,
+    refetchAssessment,
     // Catalogs & options
     clientOptions,
     clientsLoading,

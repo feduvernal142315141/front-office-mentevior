@@ -631,6 +631,19 @@ export function useAppointmentForm({
       newErrors.timeRange = validationError
     }
 
+    if (
+      priorAuthRequired &&
+      formData.clientId &&
+      formData.billingCodeId &&
+      formData.startTime &&
+      formData.endTime &&
+      formData.date &&
+      !formData.priorAuthorizationId
+    ) {
+      newErrors.priorAuthorizationId =
+        "A prior authorization is required for this billing code. Add an active PA for this client or choose another billing code."
+    }
+
     // Assign-to-other validation
     if (isAdmin && assignToOther && !selectedProviderId) {
       newErrors.assignedProviderId = "Select a provider"
@@ -643,7 +656,7 @@ export function useAppointmentForm({
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }, [formData, validationError, showSupervisionSwitch, isNewSessionMode, parentAppointment])
+  }, [formData, validationError, showSupervisionSwitch, isNewSessionMode, parentAppointment, priorAuthRequired, isAdmin, assignToOther, selectedProviderId])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -718,14 +731,23 @@ export function useAppointmentForm({
   }, [appointment, mutations, onSuccess])
 
   // True when required fields are filled but we are still waiting on validation / PA (when required)
-  const pendingValidation =
+  const hasRequiredScheduleFields =
     !!formData.clientId &&
     !!formData.billingCodeId &&
     !!formData.startTime &&
     !!formData.endTime &&
-    !!formData.date &&
+    !!formData.date
+
+  const missingRequiredPriorAuth =
+    priorAuthRequired &&
+    hasRequiredScheduleFields &&
+    !isValidatingMain &&
+    !formData.priorAuthorizationId
+
+  const pendingValidation =
+    hasRequiredScheduleFields &&
     !validationError &&
-    (isValidatingMain || (priorAuthRequired && !formData.priorAuthorizationId))
+    (isValidatingMain || missingRequiredPriorAuth)
 
   return {
     formData,
@@ -736,6 +758,7 @@ export function useAppointmentForm({
     isValidatingMain,
     pendingValidation,
     priorAuthRequired,
+    missingRequiredPriorAuth,
     clientOptions,
     clientsLoading,
     clientsError,

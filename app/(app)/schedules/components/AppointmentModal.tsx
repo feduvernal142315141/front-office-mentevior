@@ -60,6 +60,7 @@ export function AppointmentModal({
     isValidatingMain,
     pendingValidation,
     priorAuthRequired,
+    missingRequiredPriorAuth,
     clientOptions,
     clientsLoading,
     clientsError,
@@ -324,11 +325,14 @@ export function AppointmentModal({
                   ? "Validating…"
                   : !priorAuthRequired
                     ? "Not required"
-                    : undefined
+                    : "Required"
             }
+            priorAuthMissing={missingRequiredPriorAuth}
           />
         )}
-
+        {missingRequiredPriorAuth && (
+          <FieldError message="A prior authorization is required for this billing code. Add an active PA for this client or choose another billing code." />
+        )}
         {/* ─── SUPERVISION (inline, only for 97155 codes) ─── */}
         {showSupervisionSwitch && (
           <div className="rounded-2xl border border-indigo-200/60 bg-indigo-50/30 p-4 space-y-4">
@@ -381,6 +385,11 @@ export function AppointmentModal({
             This appointment cannot be edited because it is {appointment?.status === "NoShow" ? "No Show" : appointment?.status}.
           </p>
         )}
+        {missingRequiredPriorAuth && !isLockedStatus && (
+          <p className="text-xs font-medium text-amber-600 text-right">
+            Prior authorization is required before creating this session.
+          </p>
+        )}
         <div className="flex items-center justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onClose} className="h-10">
             Cancel
@@ -431,17 +440,21 @@ function SummaryBar({
   duration,
   units,
   priorAuth,
+  priorAuthMissing = false,
   variant = "blue",
 }: {
   label: string
   duration: string
   units?: number | null
   priorAuth?: string
+  priorAuthMissing?: boolean
   variant?: "blue" | "indigo"
 }) {
   const colors = variant === "indigo"
     ? { border: "border-indigo-200/40", bg: "from-indigo-500/[0.06] to-indigo-400/[0.04]", accent: "text-indigo-600", divider: "bg-indigo-300/30", label: "text-indigo-500" }
-    : { border: "border-[#037ECC]/15", bg: "from-[#037ECC]/[0.06] to-[#079CFB]/[0.04]", accent: "text-[#037ECC]", divider: "bg-[#037ECC]/20", label: "text-[#037ECC]/70" }
+    : priorAuthMissing
+      ? { border: "border-amber-200/70", bg: "from-amber-50/90 to-amber-100/40", accent: "text-amber-600", divider: "bg-amber-300/40", label: "text-amber-600" }
+      : { border: "border-[#037ECC]/15", bg: "from-[#037ECC]/[0.06] to-[#079CFB]/[0.04]", accent: "text-[#037ECC]", divider: "bg-[#037ECC]/20", label: "text-[#037ECC]/70" }
 
   return (
     <div className={cn("flex flex-wrap items-center gap-4 rounded-xl border px-4 py-2.5", colors.border, `bg-gradient-to-br ${colors.bg}`)}>
@@ -463,9 +476,14 @@ function SummaryBar({
         <>
           <div className={cn("h-3.5 w-px", colors.divider)} />
           <div className="flex items-center gap-1.5">
-            <Shield className={cn("h-3.5 w-3.5", colors.accent)} />
-            <span className="text-xs text-slate-600 truncate max-w-[200px]">
-              {priorAuth}
+            <Shield className={cn("h-3.5 w-3.5", priorAuthMissing ? "text-amber-600" : colors.accent)} />
+            <span
+              className={cn(
+                "text-xs truncate max-w-[220px]",
+                priorAuthMissing ? "font-semibold text-amber-700" : "text-slate-600",
+              )}
+            >
+              {priorAuthMissing ? `PA ${priorAuth}` : priorAuth}
             </span>
           </div>
         </>

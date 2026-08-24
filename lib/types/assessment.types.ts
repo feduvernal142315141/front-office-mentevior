@@ -6,7 +6,12 @@
  * requerido a nivel validator), pero el front conserva las reglas que quedaron
  * comentadas para reactivación: clientId, timeInit < timeEnd, fecha por
  * observación, ids por fila en billingCodes/proposedSchedule y no-negativos.
+ *
+ * Status lifecycle (2026-08-24): Read | Active | Close | Lock.
  */
+
+/** Effective assessment lifecycle status from GET list/detail */
+export type AssessmentStatus = "read" | "active" | "close" | "lock"
 
 export type HousingType = "HOME" | "FOSTER_HOME" | "PPEC"
 export type AssessmentIntensityKey = "MILD" | "MODERATE" | "HIGH"
@@ -233,6 +238,9 @@ export interface AssessmentListItem {
   housingType: HousingType | null
   medicalHistoryPrimaryDiagnosisName: string | null
   createAt: string
+  /** Effective status: Read | Active | Close | Lock */
+  status: AssessmentStatus
+  /** Legacy boolean; prefer `status` for UI */
   active: boolean
 }
 
@@ -304,5 +312,13 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   abcData: AssessmentAbcInput[]
   providerFiles: AssessmentProviderFileInput[]
   createAt: string
+  /** Effective status: Read | Active | Close | Lock */
+  status: AssessmentStatus
+  /**
+   * Detail-only. `true` when status is Close/Lock, or when the linked
+   * appointment marks notCanEdit for Read/Active. Never null from API.
+   */
+  notCanEdit: boolean
+  /** Legacy boolean; prefer `status` / `notCanEdit` for UI */
   active: boolean
 }
