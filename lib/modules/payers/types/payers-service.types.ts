@@ -3,8 +3,10 @@ import type {
   CreatePayerDto,
   ListPayersQueryDto,
   PayerClearingHouseItem,
+  PayerCatalogSearchItem,
   Payer,
   PayerCatalogItem,
+  SearchPayerCatalogQuery,
   UpdatePayerDto,
 } from "@/lib/types/payer.types"
 
@@ -22,6 +24,10 @@ export interface PayersServiceContract {
   createFromPrivateInsurance(ids: string[]): Promise<void>
   getPrivateInsurancesCatalog(): Promise<PayerCatalogItem[]>
   getClearingHouseCatalog(): Promise<PayerClearingHouseItem[]>
+  searchPayerCatalog(
+    clearingHouseId: string,
+    query: SearchPayerCatalogQuery,
+  ): Promise<{ items: PayerCatalogSearchItem[]; totalCount: number }>
   getPlanTypeCatalog(): Promise<PlanTypeCatalogItem[]>
   refresh(): Promise<void>
 }

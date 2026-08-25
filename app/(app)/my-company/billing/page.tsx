@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { useSectionCompletion } from "@/lib/modules/section-completion/hooks/use-section-completion"
+import { HIDDEN_BILLING_HREFS } from "@/lib/constants/hidden-modules"
 import type { ComponentType } from "react"
 
 export default function BillingPage() {
@@ -57,6 +58,10 @@ export default function BillingPage() {
   ]
   
   const subModules = allSubModules.filter((module) => {
+    if (HIDDEN_BILLING_HREFS.has(module.href)) {
+      return false
+    }
+
     if (module.module === PermissionModule.PAYERS) {
       return canViewPayers
     }

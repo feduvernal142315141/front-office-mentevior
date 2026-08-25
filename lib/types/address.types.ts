@@ -63,6 +63,9 @@ export interface State {
   id: string
   name: string
   countryId: string
+  code?: string
+  isoCode?: string
+  abbreviation?: string
 }
 
 export interface PlaceOfService {

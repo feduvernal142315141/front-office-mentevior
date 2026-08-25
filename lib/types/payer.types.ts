@@ -100,6 +100,28 @@ export interface PayerClearingHouseItem {
   name: string
 }
 
+export interface PayerCatalogSearchItem {
+  clearingHouseId: string
+  externalPayerId: string
+  catalogName: string
+  alternateNames?: string[]
+  professionalClaims?: boolean
+  institutionalClaims?: boolean
+  dentalClaims?: boolean
+  eligibilityStatus?: string
+  eraStatus?: string
+  attachmentsStatus?: string
+  payerType?: string
+  payerState?: string
+}
+
+export interface SearchPayerCatalogQuery {
+  searchText: string
+  payerState?: string
+  page?: number
+  pageSize?: number
+}
+
 export interface PayerPlanPayload {
   id?: string
   planName: string

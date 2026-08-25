@@ -161,6 +161,7 @@ export function getModuleActions(permissions: string[], module: PermissionModule
   const value = getModulePermissionValue(permissions, module)
   const actions: PermissionAction[] = []
   
+  if (value & PermissionAction.READ) actions.push(PermissionAction.READ)
   if (value & PermissionAction.CREATE) actions.push(PermissionAction.CREATE)
   if (value & PermissionAction.EDIT) actions.push(PermissionAction.EDIT)
   if (value & PermissionAction.DELETE) actions.push(PermissionAction.DELETE)

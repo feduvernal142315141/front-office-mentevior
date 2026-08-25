@@ -122,11 +122,12 @@ export const navItems: NavItem[] = [
         label: "Credentials",
         href: "/my-company/credentials",
       },
-      {
-        label: "Data Collection",
-        href: "/data-collection",
-        hasDeepChildren: true,
-      },
+      // Hidden until implementation is ready — see lib/constants/hidden-modules.ts
+      // {
+      //   label: "Data Collection",
+      //   href: "/data-collection",
+      //   hasDeepChildren: true,
+      // },
       {
         label: "Documents",
         href: "/my-company/documents",
@@ -164,11 +165,12 @@ export const navItems: NavItem[] = [
         label: "Supervision",
         href: "/my-company/events/supervision",
       },
-      {
-        label: "Template Documents",
-        href: "/template-documents",
-        hasDeepChildren: true,
-      },
+      // Hidden until implementation is ready — see lib/constants/hidden-modules.ts
+      // {
+      //   label: "Template Documents",
+      //   href: "/template-documents",
+      //   hasDeepChildren: true,
+      // },
     ],
   },
 ]

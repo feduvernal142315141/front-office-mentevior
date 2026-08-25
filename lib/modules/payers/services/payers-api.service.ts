@@ -1,6 +1,7 @@
 import type { QueryModel } from "@/lib/models/queryModel"
-import { serviceGet, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
+import { serviceGet, serviceGetSilent, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
 import { getQueryString } from "@/lib/utils/format"
+import qsLib from "qs"
 import type { PlanTypeCatalogItem } from "@/lib/types/plan-type.types"
 import type {
   CreatePayerDto,
@@ -8,6 +9,8 @@ import type {
   PayerClearingHouseItem,
   Payer,
   PayerCatalogItem,
+  PayerCatalogSearchItem,
+  SearchPayerCatalogQuery,
   UpdatePayerDto,
 } from "@/lib/types/payer.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
@@ -124,6 +127,51 @@ export class ApiPayersService implements PayersServiceContract {
     return Array.isArray(paginated.entities) ? paginated.entities : []
   }
 
+  async searchPayerCatalog(
+    clearingHouseId: string,
+    query: SearchPayerCatalogQuery,
+  ): Promise<{ items: PayerCatalogSearchItem[]; totalCount: number }> {
+    const searchText = sanitizeCatalogFilterValue(query.searchText)
+    if (!clearingHouseId || !searchText) {
+      return { items: [], totalCount: 0 }
+    }
+
+    const filters = [`searchText__CONTAINS_IGNORE_CASE__${searchText}`]
+    const payerState = sanitizeCatalogFilterValue(query.payerState ?? "")
+    if (payerState) {
+      filters.push(`payerState__CONTAINS_IGNORE_CASE__${payerState}`)
+    }
+
+    const qsString = qsLib.stringify(
+      {
+        filters,
+        page: query.page ?? 0,
+        pageSize: query.pageSize ?? 20,
+      },
+      { arrayFormat: "repeat", encode: true },
+    )
+
+    const response = await serviceGetSilent<PaginatedResponse<PayerCatalogSearchItem>>(
+      `/clearing-houses/${clearingHouseId}/payer-catalog/search?${qsString}`,
+    )
+
+    if (!response || response.status !== 200 || !response.data) {
+      throw new Error(response?.data?.message || "Failed to search payer catalog")
+    }
+
+    const data = response.data as unknown
+    if (Array.isArray(data)) {
+      return { items: data as PayerCatalogSearchItem[], totalCount: data.length }
+    }
+
+    const paginated = data as PaginatedResponse<PayerCatalogSearchItem>
+    const entities = Array.isArray(paginated.entities) ? paginated.entities : []
+    return {
+      items: entities,
+      totalCount: paginated.pagination?.total ?? entities.length,
+    }
+  }
+
   async getPlanTypeCatalog(): Promise<PlanTypeCatalogItem[]> {
     const response = await serviceGet<PlanTypeCatalogItem[]>("/plan-type/catalog")
 
@@ -141,4 +189,8 @@ export class ApiPayersService implements PayersServiceContract {
   async refresh(): Promise<void> {
     // no-op: the list hook re-fetches via refreshIndex
   }
+}
+
+function sanitizeCatalogFilterValue(value: string): string {
+  return value.trim().replace(/__/g, " ")
 }

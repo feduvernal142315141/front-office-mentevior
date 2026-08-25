@@ -1,8 +1,9 @@
 "use client"
 
-import { Building2, Shield, UserCircle, MapPin, CreditCard, Award, Stethoscope, FileText, BarChart3, FileSignature, FolderHeart, FileCheck, UserPlus, HeartPulse, CalendarCheck, Users } from "lucide-react"
+import { Building2, Shield, UserCircle, MapPin, CreditCard, Award, Stethoscope, FileText, FileSignature, FolderHeart, FileCheck, UserPlus, HeartPulse, CalendarCheck, Users } from "lucide-react"
 import Link from "next/link"
 import { useCanViewModule } from "@/lib/hooks/use-filtered-nav-items"
+import { isHiddenNavRoute } from "@/lib/constants/hidden-modules"
 import { useMemo } from "react"
 import { ChevronRight } from "lucide-react"
 
@@ -17,9 +18,7 @@ export default function MyCompanyPage() {
   const canViewAppointments = useCanViewModule("/my-company/session")
   const canViewSupervision = useCanViewModule("/my-company/events/supervision")
   const canViewBilling = useCanViewModule("/my-company/billing")
-  const canViewDataCollection = useCanViewModule("/data-collection")
   const canViewSignaturesCaregiver = useCanViewModule("/my-company/signatures-caregiver")
-  const canViewTemplateDocuments = useCanViewModule("/template-documents")
   const canViewDocuments = useCanViewModule("/my-company/documents")
   const canViewAgreements = useCanViewModule("/agreements")
   const canViewApplicants = useCanViewModule("/applicants")
@@ -90,28 +89,12 @@ export default function MyCompanyPage() {
       hasDeepChildren: true,
     },
     {
-      title: "Data Collection",
-      description: "Manage data collection datasheets and analysis",
-      href: "/data-collection",
-      icon: BarChart3,
-      canView: canViewDataCollection,
-      hasDeepChildren: true,
-    },
-    {
       title: "Signatures Caregiver",
       description: "Configure caregiver confirmation method for Progress Notes",
       href: "/my-company/signatures-caregiver",
       icon: FileSignature,
       canView: canViewSignaturesCaregiver,
       hasDeepChildren: false,
-    },
-    {
-      title: "Template Documents",
-      description: "Manage document templates for notes and reports",
-      href: "/template-documents",
-      icon: FileText,
-      canView: canViewTemplateDocuments,
-      hasDeepChildren: true,
     },
     {
       title: "Documents",
@@ -157,7 +140,7 @@ export default function MyCompanyPage() {
 
   const subModules = useMemo(() => {
     return allSubModules
-      .filter(module => module.canView)
+      .filter((module) => module.canView && !isHiddenNavRoute(module.href))
       .sort((a, b) => a.title.localeCompare(b.title))
   }, [
     canViewRoles, 
@@ -170,9 +153,7 @@ export default function MyCompanyPage() {
     canViewAppointments,
     canViewSupervision,
     canViewBilling,
-    canViewDataCollection,
     canViewSignaturesCaregiver,
-    canViewTemplateDocuments,
     canViewDocuments,
     canViewAgreements,
     canViewApplicants,

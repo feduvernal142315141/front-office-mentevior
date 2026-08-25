@@ -18,34 +18,46 @@ export function useCompanyConfig(): UseCompanyConfigReturn {
     const {companySlug} = useCompanySlug()
 
     useEffect(() => {
-        if (!companySlug) {
-            setError("Company identifier is required");
-            setIsLoading(false);
-            return;
+        if (companySlug === null) {
+            setCompanyConfig(null)
+            setError("Company identifier is required")
+            setIsLoading(false)
+            return
         }
 
-        const fetchCompanyConfig = async (companySlug:string) => {
-            setIsLoading(true);
-            setError(null);
+        let cancelled = false
+
+        const fetchCompanyConfig = async (slug: string) => {
+            setIsLoading(true)
+            setError(null)
 
             try {
-                const response = await serviceGetCompanyConfig(companySlug);
+                const response = await serviceGetCompanyConfig(slug)
+
+                if (cancelled) return
 
                 if (response?.status === 200 && response.data) {
-                    setCompanyConfig(response.data);
+                    setCompanyConfig(response.data)
                 } else {
-                    setError("Company not found");
+                    setCompanyConfig(null)
+                    setError("Company not found")
                 }
             } catch (err) {
-                console.error("[useCompanyConfig] Error fetching company config:", err);
-                setError("Failed to load company information");
+                if (cancelled) return
+                console.error("[useCompanyConfig] Error fetching company config:", err)
+                setCompanyConfig(null)
+                setError("Failed to load company information")
             } finally {
-                setIsLoading(false);
+                if (!cancelled) setIsLoading(false)
             }
-        };
+        }
 
-        fetchCompanyConfig(companySlug as string);
-    }, [companySlug]);
+        void fetchCompanyConfig(companySlug as string)
+
+        return () => {
+            cancelled = true
+        }
+    }, [companySlug])
 
     return {
         companyConfig,

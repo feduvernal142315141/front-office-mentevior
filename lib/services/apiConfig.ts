@@ -48,9 +48,26 @@ const SKIP_RETRY_ROUTES = [
     '/auth/refresh-token',
 ]
 
+/** En *.localhost el backend no permite CORS; usamos el proxy /api de Next.js. */
+function resolveApiBaseURL(): string {
+    if (typeof window !== 'undefined') {
+        const host = window.location.hostname
+        if (host === 'localhost' || host.endsWith('.localhost')) {
+            return '/api'
+        }
+    }
+
+    const configured = process.env.NEXT_PUBLIC_API_URL
+    if (configured && !configured.startsWith('/')) {
+        return configured
+    }
+
+    return process.env.BACKEND_API_URL ?? 'https://api.dev.mentevior.com'
+}
+
 // Crear instancia de axios
 const apiInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    baseURL: resolveApiBaseURL(),
     headers: {
         'Content-Type': 'application/json',
     }

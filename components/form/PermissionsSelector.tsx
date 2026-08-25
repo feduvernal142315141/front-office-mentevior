@@ -9,13 +9,20 @@ import {
   objectToPermissions,
   getModuleActions
 } from "@/lib/utils/permissions-new"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Fragment } from "react"
 import { ChevronRight, Check, Eraser, Eye, ShieldCheck, UserCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { isHiddenPermissionModule } from "@/lib/constants/hidden-modules"
 
-const CORE_MODULES = [
+type PermissionRow = { key: PermissionModule; label: string }
+
+function visibleRows(rows: PermissionRow[]): PermissionRow[] {
+  return rows.filter((row) => !isHiddenPermissionModule(row.key))
+}
+
+const CORE_MODULES = visibleRows([
   { key: PermissionModule.USERS_PROVIDERS, label: "Users" },
   { key: PermissionModule.CLIENTS, label: "Clients" },
   { key: PermissionModule.SCHEDULE, label: "Schedules" },
@@ -25,78 +32,78 @@ const CORE_MODULES = [
   { key: PermissionModule.CASE_SUPERVISION, label: "Case Supervision Log" },
   { key: PermissionModule.SERVICE_LOG, label: "Service Log" },
   { key: PermissionModule.ASSESSMENT, label: "Assessment" },
-]
+])
 
 const BEHAVIOR_PLAN = {
   key: PermissionModule.BEHAVIOR_PLAN,
   label: "Behavior Plan",
-  children: [
+  children: visibleRows([
     { key: PermissionModule.MALADAPTIVE_BEHAVIORS, label: "Maladaptive Behaviors" },
     { key: PermissionModule.REPLACEMENT_PROGRAMS, label: "Replacement Programs" },
     { key: PermissionModule.CAREGIVER_PROGRAMS, label: "Caregiver Programs" },
-  ]
+  ]),
 }
 
 const DATA_COLLECTION = {
   label: "Data Collection",
-  children: [
+  children: visibleRows([
     { key: PermissionModule.DATASHEETS, label: "Datasheets" },
     { key: PermissionModule.ON_SITE_COLLECTION, label: "On-site Collection" },
     { key: PermissionModule.CHARTS, label: "Charts" },
     { key: PermissionModule.DATA_ANALYSIS, label: "Data Analysis" },
     { key: PermissionModule.RAW_DATA, label: "Raw Data" },
-  ]
+  ]),
 }
 
 const EVENTS = {
-  label: "Schedules",
-  children: [
-    { key: PermissionModule.APPOINTMENT, label: "Appointment" },
-    { key: PermissionModule.SERVICE_PLAN, label: "Service Plan" },
+  label: "Session",
+  children: visibleRows([
+    { key: PermissionModule.APPOINTMENT, label: "Session" },
+    { key: PermissionModule.SERVICE_PLAN, label: "Service Plan Events" },
     { key: PermissionModule.SUPERVISION, label: "Supervision" },
-  ]
+  ]),
 }
 
 const BILLING = {
   label: "Billing",
-  children: [
+  children: visibleRows([
     { key: PermissionModule.SERVICES_PENDING_BILLING, label: "Services Pending Billing" },
     { key: PermissionModule.BILLED_CLAIMS, label: "Billed Claims" },
     { key: PermissionModule.BILLING_CODE, label: "Billing Codes" },
     { key: PermissionModule.PAYERS, label: "Payers" },
-  ]
+  ]),
 }
 
 const TEMPLATE_DOCUMENTS = {
   label: "Template Documents",
-  children: [
+  children: visibleRows([
     { key: PermissionModule.SESSION_NOTE_CONFIGURATION, label: "Session Note" },
     { key: PermissionModule.SERVICE_LOG_CONFIGURATION, label: "Service Log" },
     { key: PermissionModule.CLINICAL_MONTHLY_CONFIGURATION, label: "Clinical Monthly" },
     { key: PermissionModule.MONTHLY_SUPERVISIONS_CONFIGURATION, label: "Monthly Supervision" },
     { key: PermissionModule.ASSESSMENT_CONFIGURATION, label: "Assessment" },
-  ]
+  ]),
 }
 
 const DOCUMENTS = {
   label: "Documents",
-  children: [
+  children: visibleRows([
     { key: PermissionModule.CLINICAL_DOCUMENTS, label: "Clinical Documents" },
     { key: PermissionModule.HR_DOCUMENTS, label: "HR Documents" },
-  ]
+  ]),
 }
 
-const MY_COMPANY_MODULES = [
+const MY_COMPANY_MODULES = visibleRows([
   { key: PermissionModule.ROLE, label: "Roles" },
   { key: PermissionModule.ACCOUNT_PROFILE, label: "Account Profile" },
-  { key: PermissionModule.PHYSICIANS, label: "Physicians" },
+  { key: PermissionModule.PHYSICIANS, label: "Referring Physicians" },
   { key: PermissionModule.PROVIDER_ON_FILE, label: "Providers on File" },
   { key: PermissionModule.SERVICE_PLANS, label: "Service Plans" },
   { key: PermissionModule.MONTHLY_REPORT, label: "Monthly Report" },
   { key: PermissionModule.SIGNATURES_CAREGIVER, label: "Signatures Caregiver" },
   { key: PermissionModule.AGREEMENTS, label: "Agreements" },
   { key: PermissionModule.APPLICANTS, label: "Applicants" },
-]
+])
 
 const MY_COMPANY_EXPANDABLES = [
   EVENTS,
@@ -104,6 +111,18 @@ const MY_COMPANY_EXPANDABLES = [
   DATA_COLLECTION,
   TEMPLATE_DOCUMENTS,
   DOCUMENTS,
+].filter((group) => group.children.length > 0)
+
+const ALL_SELECTOR_MODULES = [
+  ...CORE_MODULES.map((m) => m.key),
+  ...BEHAVIOR_PLAN.children.map((c) => c.key),
+  ...MY_COMPANY_EXPANDABLES.flatMap((group) => group.children.map((c) => c.key)),
+  ...MY_COMPANY_MODULES.map((m) => m.key),
+]
+
+const ALL_COMPANY_SELECTOR_MODULES = [
+  ...MY_COMPANY_EXPANDABLES.flatMap((group) => group.children.map((c) => c.key)),
+  ...MY_COMPANY_MODULES.map((m) => m.key),
 ]
 
 const ACTIONS = [
@@ -127,12 +146,8 @@ export function PermissionsSelector({
   const currentPermissions = watch(name) as string[] || []
   const [permissionsObj, setPermissionsObj] = useState<Record<string, number>>({})
   const [behaviorPlanExpanded, setBehaviorPlanExpanded] = useState(false)
-  const [eventsExpanded, setEventsExpanded] = useState(false)
-  const [billingExpanded, setBillingExpanded] = useState(false)
   const [myCompanyExpanded, setMyCompanyExpanded] = useState(false)
-  const [dataCollectionExpanded, setDataCollectionExpanded] = useState(false)
-  const [templateDocumentsExpanded, setTemplateDocumentsExpanded] = useState(false)
-  const [documentsExpanded, setDocumentsExpanded] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
   
   useEffect(() => {
     const obj = permissionsToObject(currentPermissions)
@@ -182,19 +197,10 @@ export function PermissionsSelector({
   }
   
   const toggleAllMyCompany = () => {
-    const allChildModules = [
-      ...MY_COMPANY_MODULES.map(m => m.key),
-      ...EVENTS.children.map(c => c.key),
-      ...BILLING.children.map(c => c.key),
-      ...DATA_COLLECTION.children.map(c => c.key),
-      ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
-      ...DOCUMENTS.children.map(c => c.key),
-    ]
-    
-    const allHaveFullAccess = allChildModules.every(m => hasFullAccess(m))
+    const allHaveFullAccess = ALL_COMPANY_SELECTOR_MODULES.every(m => hasFullAccess(m))
     
     const newObj = { ...permissionsObj }
-    allChildModules.forEach(m => {
+    ALL_COMPANY_SELECTOR_MODULES.forEach(m => {
       newObj[m] = allHaveFullAccess ? 0 : PermissionAction.ALL
     })
     
@@ -203,30 +209,14 @@ export function PermissionsSelector({
     setValue(name, newPermissions, { shouldDirty: true, shouldValidate: true })
   }
   
-  const allMyCompanyChildModules = [
-    ...MY_COMPANY_MODULES.map(m => m.key),
-    ...EVENTS.children.map(c => c.key),
-    ...BILLING.children.map(c => c.key),
-    ...DATA_COLLECTION.children.map(c => c.key),
-    ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
-    ...DOCUMENTS.children.map(c => c.key),
-  ]
+  const allMyCompanyChildModules = ALL_COMPANY_SELECTOR_MODULES
   const allMyCompanySelected = allMyCompanyChildModules.every(m => hasFullAccess(m))
   const someMyCompanySelected = allMyCompanyChildModules.some(m => hasAnyPermission(m))
   
   const selectAllPermissions = () => {
     if (disabled) return
     
-    const allModules = [
-      ...CORE_MODULES.map(m => m.key),
-      ...BEHAVIOR_PLAN.children.map(c => c.key),
-      ...EVENTS.children.map(c => c.key),
-      ...BILLING.children.map(c => c.key),
-      ...MY_COMPANY_MODULES.map(m => m.key),
-      ...DATA_COLLECTION.children.map(c => c.key),
-      ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
-      ...DOCUMENTS.children.map(c => c.key),
-    ]
+    const allModules = ALL_SELECTOR_MODULES
     
     const newObj: Record<string, number> = {}
     allModules.forEach(m => {
@@ -252,16 +242,7 @@ export function PermissionsSelector({
     
     if (preset === 'readonly') {
       // Read Only: Solo lectura en TODOS los módulos (Core + Behavior Plan + Company Configuration expandables)
-      const allModules = [
-        ...CORE_MODULES.map(m => m.key),
-        ...BEHAVIOR_PLAN.children.map(c => c.key),
-        ...EVENTS.children.map(c => c.key),
-        ...BILLING.children.map(c => c.key),
-        ...DATA_COLLECTION.children.map(c => c.key),
-        ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
-        ...DOCUMENTS.children.map(c => c.key),
-        ...MY_COMPANY_MODULES.map(m => m.key),
-      ]
+      const allModules = ALL_SELECTOR_MODULES
       allModules.forEach(m => {
         newObj[m] = PermissionAction.READ
       })
@@ -273,14 +254,11 @@ export function PermissionsSelector({
         PermissionModule.MONTHLY_SUPERVISIONS,
         PermissionModule.SERVICE_LOG,
         PermissionModule.ASSESSMENT,
-        ...BEHAVIOR_PLAN.children.map(c => c.key),
       ]
       clinicalModules.forEach(m => {
         newObj[m] = PermissionAction.ALL
       })
     } else if (preset === 'supervisor') {
-      // Supervisor: Full control including delete
-      // Full access to operational modules (Core modules + Behavior Plan only)
       const supervisorModules = [
         PermissionModule.USERS_PROVIDERS,
         PermissionModule.CLIENTS,
@@ -290,10 +268,9 @@ export function PermissionsSelector({
         PermissionModule.MONTHLY_SUPERVISIONS,
         PermissionModule.SERVICE_LOG,
         PermissionModule.ASSESSMENT,
-        ...BEHAVIOR_PLAN.children.map(c => c.key),
+        PermissionModule.CASE_SUPERVISION,
       ]
       
-      // Full control: Read + Create + Edit + Block + Delete
       const supervisorValue = PermissionAction.ALL
       supervisorModules.forEach(m => {
         newObj[m] = supervisorValue
@@ -310,17 +287,7 @@ export function PermissionsSelector({
   
   // Detect which preset is currently active
   const detectActivePreset = (): 'readonly' | 'clinical' | 'supervisor' | null => {
-    // Check Read Only - Todos los módulos con solo READ
-    const allModules = [
-      ...CORE_MODULES.map(m => m.key),
-      ...BEHAVIOR_PLAN.children.map(c => c.key),
-      ...EVENTS.children.map(c => c.key),
-      ...BILLING.children.map(c => c.key),
-      ...DATA_COLLECTION.children.map(c => c.key),
-      ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
-      ...DOCUMENTS.children.map(c => c.key),
-      ...MY_COMPANY_MODULES.map(m => m.key),
-    ]
+    const allModules = ALL_SELECTOR_MODULES
     const matchesReadOnly = allModules.every(m => permissionsObj[m] === PermissionAction.READ) &&
       totalModulesWithPermissions === allModules.length
     if (matchesReadOnly) {
@@ -337,18 +304,14 @@ export function PermissionsSelector({
     ]
     
     const hasClinicalModules = clinicalCoreModules.every(m => permissionsObj[m] === PermissionAction.ALL)
-    
-    const hasBehaviorPlanPermissions = BEHAVIOR_PLAN.children.every(c => permissionsObj[c.key] === PermissionAction.ALL)
-    
-    const hasNoDataCollection = !permissionsObj[PermissionModule.DATASHEETS] && 
-                                 !permissionsObj[PermissionModule.ON_SITE_COLLECTION] &&
-                                 !permissionsObj[PermissionModule.CHARTS] &&
-                                 !permissionsObj[PermissionModule.DATA_ANALYSIS] &&
-                                 !permissionsObj[PermissionModule.RAW_DATA]
-    
     const hasNoClinicalMonthly = !permissionsObj[PermissionModule.CLINICAL_MONTHLY]
+    const extraClinical = Object.entries(permissionsObj).filter(([key, value]) => (
+      value > 0 &&
+      !isHiddenPermissionModule(key) &&
+      !clinicalCoreModules.includes(key as PermissionModule)
+    ))
     
-    if (hasClinicalModules && hasBehaviorPlanPermissions && hasNoDataCollection && hasNoClinicalMonthly && totalModulesWithPermissions >= 9 && totalModulesWithPermissions <= 12) {
+    if (hasClinicalModules && hasNoClinicalMonthly && extraClinical.length === 0) {
       return 'clinical'
     }
     
@@ -363,25 +326,16 @@ export function PermissionsSelector({
       PermissionModule.MONTHLY_SUPERVISIONS,
       PermissionModule.SERVICE_LOG,
       PermissionModule.ASSESSMENT,
+      PermissionModule.CASE_SUPERVISION,
     ]
-    const supervisorMatchCount = supervisorCoreModules.filter(m => permissionsObj[m] === supervisorValue).length
+    const hasSupervisorModules = supervisorCoreModules.every(m => permissionsObj[m] === supervisorValue)
+    const extraSupervisor = Object.entries(permissionsObj).filter(([key, value]) => (
+      value > 0 &&
+      !isHiddenPermissionModule(key) &&
+      !supervisorCoreModules.includes(key as PermissionModule)
+    ))
     
-    const hasBehaviorPlanSupervisorPermissions = BEHAVIOR_PLAN.children.every(c => permissionsObj[c.key] === supervisorValue)
-    
-    const hasNoMyCompanyPermissions = !permissionsObj[PermissionModule.SERVICES_PENDING_BILLING] &&
-                                       !permissionsObj[PermissionModule.BILLED_CLAIMS] &&
-                                       !permissionsObj[PermissionModule.MONTHLY_REPORT] &&
-                                       !permissionsObj[PermissionModule.DATASHEETS] &&
-                                       !permissionsObj[PermissionModule.ON_SITE_COLLECTION] &&
-                                       !permissionsObj[PermissionModule.CHARTS] &&
-                                       !permissionsObj[PermissionModule.DATA_ANALYSIS] &&
-                                       !permissionsObj[PermissionModule.RAW_DATA] &&
-                                       !permissionsObj[PermissionModule.APPOINTMENT] &&
-                                       !permissionsObj[PermissionModule.SERVICE_PLAN] &&
-                                       !permissionsObj[PermissionModule.SUPERVISION] &&
-                                       MY_COMPANY_MODULES.every(m => !permissionsObj[m.key])
-    
-    if (supervisorMatchCount >= 6 && hasBehaviorPlanSupervisorPermissions && hasNoMyCompanyPermissions && totalModulesWithPermissions >= 11 && totalModulesWithPermissions <= 14) {
+    if (hasSupervisorModules && extraSupervisor.length === 0) {
       return 'supervisor'
     }
     
@@ -389,16 +343,7 @@ export function PermissionsSelector({
   }
   
   const activePreset = detectActivePreset()
-  const allPermissionsSelected = totalModulesWithFullAccess === [
-    ...CORE_MODULES.map(m => m.key),
-    ...BEHAVIOR_PLAN.children.map(c => c.key),
-    ...EVENTS.children.map(c => c.key),
-    ...BILLING.children.map(c => c.key),
-    ...MY_COMPANY_MODULES.map(m => m.key),
-    ...DATA_COLLECTION.children.map(c => c.key),
-    ...TEMPLATE_DOCUMENTS.children.map(c => c.key),
-    ...DOCUMENTS.children.map(c => c.key),
-  ].length
+  const allPermissionsSelected = ALL_SELECTOR_MODULES.every((m) => permissionsObj[m] === PermissionAction.ALL)
   
   const getAccessLevelBadge = (moduleKey: string) => {
     const value = permissionsObj[moduleKey] || 0
@@ -478,7 +423,7 @@ export function PermissionsSelector({
     }
     
     return (
-      <>
+      <Fragment key={module.label}>
         <tr className={cn(
           "transition-all duration-150",
           someChildrenHavePermission && "bg-blue-50/30",
@@ -531,12 +476,8 @@ export function PermissionsSelector({
           </td>
         </tr>
         
-        {isExpanded && (
-          <>
-            {module.children.map((child) => renderModuleRow(child, true))}
-          </>
-        )}
-      </>
+        {isExpanded && module.children.map((child) => renderModuleRow(child, true))}
+      </Fragment>
     )
   }
   
@@ -757,7 +698,7 @@ export function PermissionsSelector({
             <tbody className="divide-y divide-slate-100">
               {CORE_MODULES.map((module) => renderModuleRow(module))}
               
-              {renderExpandableWithRealChildren(
+              {BEHAVIOR_PLAN.children.length > 0 && renderExpandableWithRealChildren(
                 BEHAVIOR_PLAN,
                 behaviorPlanExpanded,
                 () => setBehaviorPlanExpanded(!behaviorPlanExpanded)
@@ -867,31 +808,18 @@ export function PermissionsSelector({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {renderExpandableWithRealChildren(
-                    EVENTS,
-                    eventsExpanded,
-                    () => setEventsExpanded(!eventsExpanded)
-                  )}
-                  {renderExpandableWithRealChildren(
-                    BILLING,
-                    billingExpanded,
-                    () => setBillingExpanded(!billingExpanded)
-                  )}
-                  {renderExpandableWithRealChildren(
-                    DATA_COLLECTION, 
-                    dataCollectionExpanded, 
-                    () => setDataCollectionExpanded(!dataCollectionExpanded)
-                  )}
-                  {renderExpandableWithRealChildren(
-                    TEMPLATE_DOCUMENTS, 
-                    templateDocumentsExpanded, 
-                    () => setTemplateDocumentsExpanded(!templateDocumentsExpanded)
-                  )}
-                  {renderExpandableWithRealChildren(
-                    DOCUMENTS,
-                    documentsExpanded,
-                    () => setDocumentsExpanded(!documentsExpanded)
-                  )}
+                  {MY_COMPANY_EXPANDABLES.map((group) => (
+                    <Fragment key={group.label}>
+                      {renderExpandableWithRealChildren(
+                        group,
+                        Boolean(expandedGroups[group.label]),
+                        () => setExpandedGroups((prev) => ({
+                          ...prev,
+                          [group.label]: !prev[group.label],
+                        }))
+                      )}
+                    </Fragment>
+                  ))}
                   
                   {MY_COMPANY_MODULES.map((module) => renderModuleRow(module))}
                 </tbody>
@@ -905,8 +833,8 @@ export function PermissionsSelector({
         <div className="flex items-center gap-2 text-sm text-blue-800">
           <div className="w-2 h-2 rounded-full bg-blue-500" />
           <span>
-            <strong>{Object.values(permissionsObj).filter(v => v > 0).length}</strong> modules with permissions • 
-            <strong className="ml-2">{Object.values(permissionsObj).filter(v => v === PermissionAction.ALL).length}</strong> with full access
+            <strong>{Object.entries(permissionsObj).filter(([key, v]) => v > 0 && !isHiddenPermissionModule(key)).length}</strong> modules with permissions • 
+            <strong className="ml-2">{Object.entries(permissionsObj).filter(([key, v]) => v === PermissionAction.ALL && !isHiddenPermissionModule(key)).length}</strong> with full access
           </span>
         </div>
       </div>

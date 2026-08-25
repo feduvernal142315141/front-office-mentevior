@@ -7,6 +7,8 @@ import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import type { PayerFullFormValues } from "@/lib/schemas/payer-form.schema"
 import { PayerLogoUpload } from "./PayerLogoUpload"
 import { PhoneInputField } from "./PhoneInputField"
+import { PayerExternalIdField } from "./PayerExternalIdField"
+import { toPayerStateCode } from "@/lib/constants/us-state-abbreviations"
 
 interface CatalogItem {
   id: string
@@ -51,7 +53,12 @@ export function PayerBaseForm({
 }: PayerBaseFormProps) {
   const { control } = form
   const selectedCountryId = useWatch({ control, name: "countryId" })
+  const selectedStateId = useWatch({ control, name: "stateId" })
+  const payerName = useWatch({ control, name: "name" })
+  const clearingHouseId = useWatch({ control, name: "planTypeId" })
   const isStateDisabled = readOnly || !selectedCountryId || isLoadingStates
+  const selectedState = states.find((state) => state.id === selectedStateId)
+  const payerStateCode = toPayerStateCode(selectedState)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -133,31 +140,6 @@ export function PayerBaseForm({
                 onBlur={field.onBlur}
                 type="email"
                 placeholder="payer@insurance.com"
-                hasError={!!fieldState.error}
-                required
-                disabled={readOnly}
-              />
-              {!readOnly && fieldState.error && (
-                <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
-              )}
-            </div>
-          )}
-        />
-      </div>
-
-      {/* External ID */}
-      <div data-form-field="externalId">
-        <Controller
-          name="externalId"
-          control={control}
-          render={({ field, fieldState }) => (
-            <div>
-              <FloatingInput
-                label="External ID"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                placeholder="Member ID / External reference"
                 hasError={!!fieldState.error}
                 required
                 disabled={readOnly}
@@ -370,6 +352,28 @@ export function PayerBaseForm({
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
               )}
             </div>
+          )}
+        />
+      </div>
+
+      {/* External ID — after clearing house so catalog search can use name + state */}
+      <div className="md:col-span-2" data-form-field="externalId">
+        <Controller
+          name="externalId"
+          control={control}
+          render={({ field, fieldState }) => (
+            <PayerExternalIdField
+              value={field.value ?? ""}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              hasError={!!fieldState.error}
+              errorMessage={fieldState.error?.message}
+              disabled={readOnly}
+              required
+              clearingHouseId={clearingHouseId ?? ""}
+              searchText={payerName ?? ""}
+              payerState={payerStateCode}
+            />
           )}
         />
       </div>

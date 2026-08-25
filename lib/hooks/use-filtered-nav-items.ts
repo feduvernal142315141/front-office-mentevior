@@ -6,6 +6,7 @@ import {
   PARENT_TO_CHILDREN_MAP,
   ROUTE_TO_PERMISSION_MAP,
 } from "@/lib/constants/route-permissions"
+import { isHiddenNavRoute } from "@/lib/constants/hidden-modules"
 
 const SIDEBAR_TO_PERMISSION_MAP = ROUTE_TO_PERMISSION_MAP
 
@@ -92,6 +93,8 @@ export function useFilteredNavItems(): NavItem[] {
       // If no direct permission OR item has children, check children
       if (item.children && item.children.length > 0) {
         return item.children.some((child) => {
+          if (isHiddenNavRoute(child.href)) return false
+
           const childModule = SIDEBAR_TO_PERMISSION_MAP[child.href]
           
           // Direct child has permission
@@ -118,6 +121,8 @@ export function useFilteredNavItems(): NavItem[] {
     }).map((item) => {
       if (item.children && item.children.length > 0) {
         const filteredChildren = item.children.filter((child) => {
+          if (isHiddenNavRoute(child.href)) return false
+
           const childModule = SIDEBAR_TO_PERMISSION_MAP[child.href]
           
           // Direct child has permission
@@ -155,6 +160,8 @@ export function useCanViewModule(href: string): boolean {
     if (!user) return false
     
     if (href === "/dashboard") return true
+
+    if (isHiddenNavRoute(href)) return false
     
     const module = SIDEBAR_TO_PERMISSION_MAP[href]
     const permissionsObj = permissionsToObject(user.permissions || [])
