@@ -3,8 +3,16 @@
 import { Award } from "lucide-react"
 import { Card } from "@/components/custom/Card"
 import { CredentialForm } from "../components/CredentialForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function CreateCredentialPage() {
+  const allowed = useRequirePermission(PermissionModule.ACCOUNT_PROFILE, PermissionAction.CREATE)
+
+  if (!allowed) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gray-50/50 p-6">
       <div className="max-w-5xl mx-auto">

@@ -9,7 +9,8 @@ import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
-import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import {
   deleteClientCategoryBaseline,
   deleteClientItemBaseline,
@@ -43,6 +44,7 @@ interface BaselinesTabContentProps {
   periodSelectOptions: { value: string; label: string }[]
   showErrors?: boolean
   hideAddButton?: boolean
+  readOnly?: boolean
 }
 
 export function BaselinesTabContent({
@@ -52,7 +54,11 @@ export function BaselinesTabContent({
   periodSelectOptions,
   showErrors = false,
   hideAddButton = false,
+  readOnly = false,
 }: BaselinesTabContentProps) {
+  const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENTS)
+  const actionsDisabled = readOnly || !canEdit
+  const showAdd = !hideAddButton && canCreate && !actionsDisabled
 
   const handleAdd = useCallback(() => {
     onChange([...baselines, createEmptyBaseline()])
@@ -60,10 +66,10 @@ export function BaselinesTabContent({
 
   const handleUpdate = useCallback(
     (localId: string, field: keyof BaselineRow, value: string | boolean) => {
+      if (actionsDisabled) return
       onChange(
         baselines.map((row) => {
           if (row.localId === localId) return { ...row, [field]: value }
-          // Auto-fill period on other baselines that have it empty
           if (field === "periodCatalogId" && value && !row.periodCatalogId) {
             return { ...row, periodCatalogId: value as string }
           }
@@ -71,11 +77,12 @@ export function BaselinesTabContent({
         })
       )
     },
-    [baselines, onChange]
+    [actionsDisabled, baselines, onChange]
   )
 
   const handleDelete = useCallback(
     async (row: BaselineRow) => {
+      if (!canDelete || actionsDisabled) return
       if (row.recordId) {
         try {
           if (mode === "item") {
@@ -91,7 +98,7 @@ export function BaselinesTabContent({
       }
       onChange(baselines.filter((b) => b.localId !== row.localId))
     },
-    [baselines, onChange, mode]
+    [actionsDisabled, baselines, canDelete, mode, onChange]
   )
 
   return (
@@ -107,7 +114,6 @@ export function BaselinesTabContent({
               key={row.localId}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 space-y-3 overflow-visible relative z-0 focus-within:z-50"
             >
-              {/* Main fields row */}
               <div className="flex items-end gap-3">
                 <div className="flex-1 min-w-0">
                   <PremiumDatePicker
@@ -116,6 +122,7 @@ export function BaselinesTabContent({
                     onChange={(v) => handleUpdate(row.localId, "date", v)}
                     hasError={showErrors && !row.date}
                     required
+                    disabled={actionsDisabled}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -127,6 +134,7 @@ export function BaselinesTabContent({
                     inputMode="numeric"
                     hasError={showErrors && !row.value}
                     required
+                    disabled={actionsDisabled}
                   />
                 </div>
                 <div className="flex-1 min-w-0 relative">
@@ -138,38 +146,40 @@ export function BaselinesTabContent({
                     dropdownPosition="bottom"
                     hasError={showErrors && !row.periodCatalogId}
                     required
+                    disabled={actionsDisabled}
                   />
                 </div>
-                {/* Environmental Changes — visible only on 2xl+ */}
                 <div className="hidden 2xl:block flex-1 min-w-0">
                   <FloatingInput
                     label="Environmental Changes"
                     value={row.comments}
                     onChange={(v) => handleUpdate(row.localId, "comments", v)}
                     onBlur={() => {}}
+                    disabled={actionsDisabled}
                   />
                 </div>
-                {/* Show toggle hidden */}
-                <button
-                  type="button"
-                  onClick={() => void handleDelete(row)}
-                  className={cn(
-                    "shrink-0 flex items-center justify-center h-9 w-9 rounded-lg mb-1",
-                    "text-red-400 hover:text-red-600 hover:bg-red-50",
-                    "transition-colors"
-                  )}
-                  title="Remove baseline"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {canDelete && !actionsDisabled && (
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(row)}
+                    className={cn(
+                      "shrink-0 flex items-center justify-center h-9 w-9 rounded-lg mb-1",
+                      "text-red-400 hover:text-red-600 hover:bg-red-50",
+                      "transition-colors"
+                    )}
+                    title="Remove baseline"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-              {/* Environmental Changes — visible only below 2xl */}
               <div className="2xl:hidden">
                 <FloatingInput
                   label="Environmental Changes"
                   value={row.comments}
                   onChange={(v) => handleUpdate(row.localId, "comments", v)}
                   onBlur={() => {}}
+                  disabled={actionsDisabled}
                 />
               </div>
             </div>
@@ -177,8 +187,7 @@ export function BaselinesTabContent({
         </div>
       )}
 
-      {/* Add button - centered */}
-      {!hideAddButton && (
+      {showAdd && (
         <div className="flex justify-center pt-1">
           <Button type="button" onClick={handleAdd} className="gap-2">
             <Plus className="h-4 w-4" />

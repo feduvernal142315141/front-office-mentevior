@@ -3,9 +3,16 @@
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ClipboardCheck } from "lucide-react"
 import { CaseSupervisionLogForm } from "../components/CaseSupervisionLogForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function CreateCaseSupervisionLogPage() {
   const router = useRouter()
+  const canCreate = useRequirePermission(PermissionModule.CASE_SUPERVISION, PermissionAction.CREATE)
+
+  if (!canCreate) {
+    return null
+  }
 
   return (
     <div className="p-8">

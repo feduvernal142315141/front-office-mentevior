@@ -11,9 +11,12 @@ import { buildFilters } from "@/lib/utils/query-filters"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { deleteCredential } from "@/lib/modules/credentials/services/credentials.service"
 import { toast } from "sonner"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export function useCredentialsTable() {
   const router = useRouter()
+  const { canEdit, canDelete } = useModulePermissions(PermissionModule.ACCOUNT_PROFILE)
   
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
@@ -116,7 +119,7 @@ export function useCredentialsTable() {
           </div>
         ) : (
         <div className="flex justify-end gap-2">
-          {item.canEdit && (
+          {item.canEdit && canEdit && (
             <button
               onClick={() => router.push(`/my-company/credentials/${item.id}/edit`)}
               className="
@@ -147,9 +150,10 @@ export function useCredentialsTable() {
               " />
             </button>
           )}
-          
-          <button
-            onClick={() => handleDeleteClick(item)}
+
+          {canDelete && (
+            <button
+              onClick={() => handleDeleteClick(item)}
             className="
               group/delete
               relative
@@ -177,11 +181,12 @@ export function useCredentialsTable() {
               transition-colors duration-200
             " />
           </button>
+          )}
         </div>
         )
       ),
     },
-  ], [router, handleDeleteClick])
+  ], [router, handleDeleteClick, canEdit, canDelete])
 
   const pagination = {
     page,

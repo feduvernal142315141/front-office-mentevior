@@ -4,6 +4,8 @@ import { MapPin, Plus } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { useRouter } from "next/navigation"
 import { AddressesTable } from "./components/AddressesTable"
+import { CreateGate } from "@/components/layout/PermissionGate"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function AddressPage() {
   const router = useRouter()
@@ -24,14 +26,16 @@ export default function AddressPage() {
             </div>
           </div>
 
-          <Button
-            variant="primary"
-            onClick={() => router.push("/my-company/address/create")}
-            className="gap-2 flex items-center"
-          >
-            <Plus className="w-4 h-4" />
-            New Address
-          </Button>
+          <CreateGate module={PermissionModule.ACCOUNT_PROFILE}>
+            <Button
+              variant="primary"
+              onClick={() => router.push("/my-company/address/create")}
+              className="gap-2 flex items-center"
+            >
+              <Plus className="w-4 h-4" />
+              New Address
+            </Button>
+          </CreateGate>
         </div>
 
         <AddressesTable />

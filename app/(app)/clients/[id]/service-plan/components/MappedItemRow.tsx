@@ -6,6 +6,8 @@ import { format } from "date-fns"
 
 import { DataCollectionBadge } from "@/app/(app)/my-company/service-plans/components/data-collection/DataCollectionBadge"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
 
 function parseLocalDate(iso: string): Date {
@@ -33,6 +35,7 @@ export function MappedItemRow({
   teachingProcedureName,
   typeName,
 }: MappedItemRowProps) {
+  const { canDelete } = useModulePermissions(PermissionModule.CLIENTS)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const baselines = useMemo(() => {
@@ -145,7 +148,7 @@ export function MappedItemRow({
           type="button"
           aria-label={`Remove ${item.itemName} from category`}
           onClick={() => setShowDeleteModal(true)}
-          disabled={isAnyDeleting}
+          disabled={isAnyDeleting || !canDelete}
           className="rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" />

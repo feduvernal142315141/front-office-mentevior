@@ -29,7 +29,7 @@ export default function BillingPage() {
       description: "Manage codes for your organization",
       href: "/my-company/billing/billing-codes",
       icon: Code,
-      alwaysShow: true,
+      module: PermissionModule.BILLING_CODE,
       completionKey: "billingCode",
     },
     {

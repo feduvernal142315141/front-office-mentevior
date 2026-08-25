@@ -13,6 +13,8 @@ import { useSaveProviderOnFile } from "@/lib/modules/provider-on-file/hooks/use-
 import { getProvidersOnFile } from "@/lib/modules/provider-on-file/services/provider-on-file.service"
 import type { ProviderOnFile, SaveProviderOnFileDto } from "@/lib/types/provider-on-file.types"
 import { cn } from "@/lib/utils"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export const EMPTY_PROVIDER_FORM: SaveProviderOnFileDto = {
   firstName: "",
@@ -24,6 +26,7 @@ export const EMPTY_PROVIDER_FORM: SaveProviderOnFileDto = {
 }
 
 export function useProvidersOnFileTable() {
+  const { canEdit, canDelete } = useModulePermissions(PermissionModule.PROVIDER_ON_FILE)
   const [providers, setProviders] = useState<ProviderOnFile[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -232,8 +235,9 @@ export function useProvidersOnFileTable() {
       align: "right" as const,
       render: (provider) => (
         <div className="flex justify-end gap-2">
-          <button
-            onClick={() => openEditModal(provider)}
+          {canEdit && (
+            <button
+              onClick={() => openEditModal(provider)}
             className={cn(
               "group/edit relative h-9 w-9 flex items-center justify-center rounded-xl",
               "bg-gradient-to-b from-blue-50 to-blue-100/80 border border-blue-200/60",
@@ -247,8 +251,10 @@ export function useProvidersOnFileTable() {
           >
             <Edit2 className="h-4 w-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
-          <button
-            onClick={() => handleDeleteClick(provider)}
+          )}
+          {canDelete && (
+            <button
+              onClick={() => handleDeleteClick(provider)}
             disabled={isDeleting}
             className={cn(
               "group/delete relative h-9 w-9 flex items-center justify-center rounded-xl",
@@ -265,6 +271,7 @@ export function useProvidersOnFileTable() {
           >
             <Trash2 className="h-4 w-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
           </button>
+          )}
         </div>
       ),
     },

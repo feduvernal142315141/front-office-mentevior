@@ -4,13 +4,20 @@ import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import {  Loader2, Stethoscope } from "lucide-react"
 import { ClinicalDocumentCreateForm } from "./components/ClinicalDocumentCreateForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 function CreateClinicalDocumentContent() {
   const searchParams = useSearchParams()
+  const canCreate = useRequirePermission(PermissionModule.CLINICAL_DOCUMENTS, PermissionAction.CREATE)
   
   const mode = searchParams.get("mode") as "catalog" | "manual" | null
   const catalogId = searchParams.get("catalogId")
   const documentName = searchParams.get("name")
+
+  if (!canCreate) {
+    return null
+  }
 
   return (
     <div className="p-8">

@@ -4,12 +4,19 @@ import { useParams } from "next/navigation"
 import { Loader2, Stethoscope } from "lucide-react"
 import { useClinicalDocumentById } from "@/lib/modules/clinical-documents/hooks/use-clinical-document-by-id"
 import { ClinicalDocumentEditForm } from "./components/ClinicalDocumentEditForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function EditClinicalDocumentPage() {
   const params = useParams()
   const id = params.id as string
+  const canEdit = useRequirePermission(PermissionModule.CLINICAL_DOCUMENTS, PermissionAction.EDIT)
 
   const { data: document, isLoading, error } = useClinicalDocumentById(id)
+
+  if (!canEdit) {
+    return null
+  }
 
   if (isLoading) {
     return (

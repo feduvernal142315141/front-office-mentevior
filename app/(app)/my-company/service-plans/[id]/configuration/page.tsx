@@ -16,10 +16,13 @@ import { ServicePlanSummaryCard } from "./components/ServicePlanSummaryCard"
 import { useDataCollectionDrawerController } from "./hooks/useDataCollectionDrawerController"
 import { useServicePlanCategoryItems } from "./hooks/useServicePlanCategoryItems"
 import { useServicePlanConfiguration } from "./hooks/useServicePlanConfiguration"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function ServicePlanConfigurationPage() {
   const params = useParams<{ id: string }>()
   const { services } = useCompanyActiveServices()
+  const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.SERVICE_PLANS)
 
   const {
     servicePlan,
@@ -108,6 +111,7 @@ export default function ServicePlanConfigurationPage() {
                 onSelectCategory={setActiveCategoryId}
                 onEditServicePlan={openEditModal}
                 onConfigureDataCollection={dcDrawer.openForCategory}
+                canEdit={canEdit}
               />
 
               <CategoryItemsPanel
@@ -121,6 +125,9 @@ export default function ServicePlanConfigurationPage() {
                 onDeleteItem={itemsState.deleteItem}
                 onConfigureDataCollection={handleConfigureItemDc}
                 onOpenAddItemsDrawer={handleOpenAddItemsDrawer}
+                canCreate={canCreate}
+                canEdit={canEdit}
+                canDelete={canDelete}
               />
             </div>
           </div>

@@ -8,6 +8,7 @@ import { CalendarClock, Settings } from "lucide-react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 import { Card } from "@/components/custom/Card"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
+import { EditGate } from "@/components/layout/PermissionGate"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
@@ -33,6 +34,7 @@ import type { SupervisionConfig } from "@/lib/types/supervision-config.types"
 import { cn } from "@/lib/utils"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 import { formatTimeTo24h } from "@/lib/utils/time-format"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { EventTimeField } from "@/lib/types/appointment-config.types"
 
 function toTimeField(raw24h: string): EventTimeField {
@@ -494,12 +496,14 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
         </div>
       </Card>
 
-      <FormBottomBar
-        isSubmitting={isSaving}
-        onCancel={() => router.push(COMPANY_PATH)}
-        cancelText="Back"
-        submitText="Save changes"
-      />
+      <EditGate module={PermissionModule.SUPERVISION}>
+        <FormBottomBar
+          isSubmitting={isSaving}
+          onCancel={() => router.push(COMPANY_PATH)}
+          cancelText="Back"
+          submitText="Save changes"
+        />
+      </EditGate>
     </form>
   )
 }

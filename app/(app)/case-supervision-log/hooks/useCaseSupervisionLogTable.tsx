@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { CalendarRange, Eye, FileDown } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
-import { usePermission } from "@/lib/hooks/use-permission"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { CaseSupervisionLogListItem } from "@/lib/types/case-supervision-log.types"
 import { useCaseSupervisionLogs } from "@/lib/modules/case-supervision-log/hooks/use-case-supervision-logs"
@@ -23,11 +23,7 @@ import { cn } from "@/lib/utils"
 
 export function useCaseSupervisionLogTable() {
   const router = useRouter()
-  const permission = usePermission()
-
-  // Gate de UX: el control real lo aplica el backend, que exige el módulo
-  // `supervision` con READ para listar y CREATE para crear.
-  const canCreate = permission.create(PermissionModule.SUPERVISION)
+  const { canCreate } = useModulePermissions(PermissionModule.CASE_SUPERVISION)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)

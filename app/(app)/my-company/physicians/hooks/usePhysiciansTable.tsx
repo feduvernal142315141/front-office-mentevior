@@ -14,10 +14,13 @@ import { FilterOperator } from "@/lib/models/filterOperator"
 import { deletePhysician } from "@/lib/modules/physicians/services/physicians.service"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export function usePhysiciansTable() {
   const router = useRouter()
   const alert = useAlert()
+  const { canEdit, canDelete } = useModulePermissions(PermissionModule.PHYSICIANS)
   
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [inputValue, setInputValue] = useState("")
@@ -174,8 +177,9 @@ export function usePhysiciansTable() {
       align: "right" as const,
       render: (physician: Physician) => (
         <div className="flex justify-end gap-2">
-          <button
-            onClick={() => router.push(`/my-company/physicians/${physician.id}/edit`)}
+          {canEdit && (
+            <button
+              onClick={() => router.push(`/my-company/physicians/${physician.id}/edit`)}
             className="
               group/edit
               relative
@@ -219,9 +223,11 @@ export function usePhysiciansTable() {
               duration-200
             " />
           </button>
+          )}
 
-          <button
-            onClick={() => handleDeleteClick(physician)}
+          {canDelete && (
+            <button
+              onClick={() => handleDeleteClick(physician)}
             disabled={isDeleting}
             className="
               group/delete
@@ -262,6 +268,7 @@ export function usePhysiciansTable() {
               duration-200
             " />
           </button>
+          )}
         </div>
       ),
     },

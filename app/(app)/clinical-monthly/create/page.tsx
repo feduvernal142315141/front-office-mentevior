@@ -4,9 +4,16 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Hospital } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { ClinicalMonthlyForm } from "../components/ClinicalMonthlyForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function CreateClinicalMonthlyPage() {
   const router = useRouter()
+  const canCreate = useRequirePermission(PermissionModule.CLINICAL_MONTHLY, PermissionAction.CREATE)
+
+  if (!canCreate) {
+    return null
+  }
 
   return (
     <div className="px-6 py-6">

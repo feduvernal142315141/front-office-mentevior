@@ -20,6 +20,8 @@ import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { GroupedSelect } from "@/components/custom/GroupedSelect"
 import { Button } from "@/components/custom/Button"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 import { useAlert } from "@/lib/contexts/alert-context"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
@@ -194,6 +196,7 @@ export function ItemDetailPanel({
   onSaved,
   onDirtyChange,
 }: ItemDetailPanelProps) {
+  const { canEdit: canEditDatasheets } = useModulePermissions(PermissionModule.DATASHEETS)
   const params = useParams()
   const clientId = typeof params?.id === "string" ? params.id : null
   const { client } = useClientById(clientId)
@@ -1016,6 +1019,7 @@ export function ItemDetailPanel({
                 <span className="ml-2 text-sm font-normal text-slate-500">({baselines.length})</span>
               )}
             </h3>
+            {canEditDatasheets && (
             <Button
               type="button"
               onClick={() => {
@@ -1028,6 +1032,7 @@ export function ItemDetailPanel({
               <Plus className="h-3.5 w-3.5" />
               Add baseline
             </Button>
+            )}
           </div>
           <BaselinesTabContent
             baselines={baselines}
@@ -1035,6 +1040,7 @@ export function ItemDetailPanel({
             mode="item"
             periodSelectOptions={periodSelectOptions}
             hideAddButton
+            readOnly={!canEditDatasheets}
           />
         </div>
 
@@ -1086,7 +1092,7 @@ export function ItemDetailPanel({
                 type="submit"
                 variant="primary"
                 loading={isSaving}
-                disabled={!hasUnsavedChanges && !isSaving}
+                disabled={!canEditDatasheets || (!hasUnsavedChanges && !isSaving)}
                 className="gap-2"
               >
                 <Save className="h-4 w-4" />

@@ -4,9 +4,16 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, ClipboardCheck } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AssessmentForm } from "../components/AssessmentForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function CreateAssessmentPage() {
   const router = useRouter()
+  const canCreate = useRequirePermission(PermissionModule.ASSESSMENT, PermissionAction.CREATE)
+
+  if (!canCreate) {
+    return null
+  }
 
   return (
     <div className="px-6 py-6">

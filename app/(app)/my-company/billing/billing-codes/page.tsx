@@ -3,14 +3,14 @@
 import { useState, useRef } from "react"
 import { Plus, FileText } from "lucide-react"
 import { Button } from "@/components/custom/Button"
-import { useRouter } from "next/navigation"
 import { BillingCodesTable, type BillingCodesTableRef } from "./components/BillingCodesTable"
 import { BillingCodeDrawer } from "./components/BillingCodeDrawer"
 import { NoActiveServiceGate } from "@/components/custom/NoActiveServiceGate"
 import { useHasActiveService } from "@/lib/modules/services/hooks/use-has-active-service"
+import { CreateGate } from "@/components/layout/PermissionGate"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function BillingCodesPage() {
-  const router = useRouter()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const tableRef = useRef<BillingCodesTableRef>(null)
   const { hasActiveService, isLoading } = useHasActiveService()
@@ -37,14 +37,16 @@ export default function BillingCodesPage() {
           </div>
 
           {hasActiveService && (
-            <Button
-              variant="primary"
-              onClick={() => setIsDrawerOpen(true)}
-              className="gap-2 flex items-center"
-            >
-              <Plus className="w-4 h-4" />
-              Add Billing Code
-            </Button>
+            <CreateGate module={PermissionModule.BILLING_CODE}>
+              <Button
+                variant="primary"
+                onClick={() => setIsDrawerOpen(true)}
+                className="gap-2 flex items-center"
+              >
+                <Plus className="w-4 h-4" />
+                Add Billing Code
+              </Button>
+            </CreateGate>
           )}
         </div>
 

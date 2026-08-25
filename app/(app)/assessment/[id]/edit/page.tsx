@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, ClipboardCheck } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AssessmentForm } from "../../components/AssessmentForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function EditAssessmentPage({
   params,
@@ -13,6 +15,11 @@ export default function EditAssessmentPage({
 }) {
   const { id } = use(params)
   const router = useRouter()
+  const canEdit = useRequirePermission(PermissionModule.ASSESSMENT, PermissionAction.EDIT)
+
+  if (!canEdit) {
+    return null
+  }
 
   return (
     <div className="px-6 py-6">

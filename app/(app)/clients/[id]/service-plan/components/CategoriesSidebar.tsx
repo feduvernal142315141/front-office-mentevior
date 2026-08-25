@@ -4,6 +4,8 @@ import { ChevronRight, Edit2, Sliders } from "lucide-react"
 
 import { Card } from "@/components/custom/Card"
 import { DataCollectionBadge } from "@/app/(app)/my-company/service-plans/components/data-collection/DataCollectionBadge"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { ClientServicePlanCategorySummary } from "@/lib/types/client-service-plan.types"
 
 interface CategoriesSidebarProps {
@@ -21,12 +23,14 @@ export function CategoriesSidebar({
   onConfigureDataCollection,
   onEditServicePlan,
 }: CategoriesSidebarProps) {
+  const { canEdit } = useModulePermissions(PermissionModule.CLIENTS)
+
   return (
     <Card variant="elevated" padding="none" className="overflow-hidden">
       <div className="border-b border-slate-200 px-4 py-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Categories</h3>
-          {onEditServicePlan && (
+          {onEditServicePlan && canEdit && (
             <button
               type="button"
               onClick={onEditServicePlan}

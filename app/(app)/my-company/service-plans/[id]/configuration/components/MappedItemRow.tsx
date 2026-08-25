@@ -20,6 +20,8 @@ interface MappedItemRowProps {
   onSaveEdit: (item: ServicePlanCategoryMappedItem) => void
   onDelete: (item: ServicePlanCategoryMappedItem) => void
   onConfigureDataCollection: (item: ServicePlanCategoryMappedItem) => void
+  canEdit?: boolean
+  canDelete?: boolean
 }
 
 export function MappedItemRow({
@@ -35,6 +37,8 @@ export function MappedItemRow({
   onSaveEdit,
   onDelete,
   onConfigureDataCollection,
+  canEdit = true,
+  canDelete = true,
 }: MappedItemRowProps) {
   const containerClassName = isEditing
     ? `transition-opacity ${isDeleting ? "opacity-60" : ""}`
@@ -96,7 +100,7 @@ export function MappedItemRow({
             >
               <Sliders className="h-4 w-4" />
             </button>
-            {item.canEdit === true && (
+            {item.canEdit === true && canEdit && (
               <button
                 type="button"
                 aria-label={`Edit ${item.itemName}`}
@@ -107,15 +111,17 @@ export function MappedItemRow({
                 <Pencil className="h-4 w-4" />
               </button>
             )}
-            <button
-              type="button"
-              aria-label={`Remove ${item.itemName} from category`}
-              onClick={() => onDelete(item)}
-              disabled={isAnyDeleting || isSavingEdit}
-              className="rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            {canDelete && (
+              <button
+                type="button"
+                aria-label={`Remove ${item.itemName} from category`}
+                onClick={() => onDelete(item)}
+                disabled={isAnyDeleting || isSavingEdit}
+                className="rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
           </div>
         )}
       </div>

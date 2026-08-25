@@ -93,7 +93,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
   const alert = useAlert()
   const { user } = useAuth()
   const { user: fullUser } = useUserById(user?.id || null)
-  const { block: canBlock } = usePermission()
+  const { block: canBlock, create, edit } = usePermission()
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
   const canAdminAction = isAdmin && canBlock(PermissionModule.ASSESSMENT)
 
@@ -148,6 +148,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     handleSubmit,
     isSaving,
   } = useAssessmentForm({ assessmentId })
+
+  const canPersist = isEditing ? edit(PermissionModule.ASSESSMENT) : create(PermissionModule.ASSESSMENT)
 
   const statusInfo = deriveAssessmentStatusInfo(
     assessment?.status ?? "active",
@@ -735,7 +737,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         isSubmitting={isSaving}
         onCancel={() => router.push("/assessment")}
         submitText={isEditing ? "Update Assessment" : "Create Assessment"}
-        disabled={isSaving || formDisabled || !statusInfo.canSave}
+        disabled={isSaving || formDisabled || !statusInfo.canSave || !canPersist}
       />
 
       {previewId && (

@@ -8,6 +8,7 @@ import { CalendarClock, Settings } from "lucide-react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 import { Card } from "@/components/custom/Card"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
+import { EditGate } from "@/components/layout/PermissionGate"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { FloatingColorPicker } from "@/components/custom/FloatingColorPicker"
@@ -34,6 +35,7 @@ import type { AppointmentConfig } from "@/lib/types/appointment-config.types"
 import { cn } from "@/lib/utils"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 import { formatTimeTo24h } from "@/lib/utils/time-format"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { EventTimeField } from "@/lib/types/appointment-config.types"
 
 /**
@@ -592,12 +594,14 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
         </div>
       </Card>
 
-      <FormBottomBar
-        isSubmitting={isSaving}
-        onCancel={() => router.push(COMPANY_PATH)}
-        cancelText="Back"
-        submitText="Save changes"
-      />
+      <EditGate module={PermissionModule.APPOINTMENT}>
+        <FormBottomBar
+          isSubmitting={isSaving}
+          onCancel={() => router.push(COMPANY_PATH)}
+          cancelText="Back"
+          submitText="Save changes"
+        />
+      </EditGate>
     </form>
   )
 }

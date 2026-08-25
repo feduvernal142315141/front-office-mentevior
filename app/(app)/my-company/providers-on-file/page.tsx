@@ -4,6 +4,8 @@ import { Contact, Plus } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { ProvidersOnFileTable } from "./components/ProvidersOnFileTable"
 import { useProvidersOnFileTable } from "./hooks/useProvidersOnFileTable"
+import { CreateGate } from "@/components/layout/PermissionGate"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function ProvidersOnFilePage() {
   const table = useProvidersOnFileTable()
@@ -24,10 +26,12 @@ export default function ProvidersOnFilePage() {
             </div>
           </div>
 
-          <Button variant="primary" onClick={table.openCreateModal} className="gap-2 flex items-center">
-            <Plus className="w-4 h-4" />
-            New Provider
-          </Button>
+          <CreateGate module={PermissionModule.PROVIDER_ON_FILE}>
+            <Button variant="primary" onClick={table.openCreateModal} className="gap-2 flex items-center">
+              <Plus className="w-4 h-4" />
+              New Provider
+            </Button>
+          </CreateGate>
         </div>
 
         <ProvidersOnFileTable table={table} />

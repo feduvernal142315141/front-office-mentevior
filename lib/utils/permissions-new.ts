@@ -8,7 +8,11 @@ export enum PermissionAction {
   ALL = 31,
 }
 
-import { getPermissionName, LEGACY_PERMISSION_ID_TO_MODULE } from "@/lib/constants/permissions-map"
+import {
+  getPermissionName,
+  LEGACY_PERMISSION_ID_TO_MODULE,
+  normalizePermissionModule,
+} from "@/lib/constants/permissions-map"
 
 export enum PermissionModule {
   USERS_PROVIDERS = "users_providers",
@@ -36,6 +40,8 @@ export enum PermissionModule {
   APPOINTMENT = "appointment",
   SERVICE_PLAN = "service_plan",
   SUPERVISION = "supervision",
+  CASE_SUPERVISION = "case_supervision",
+  PROVIDER_ON_FILE = "provider_on_file",
   PHYSICIANS = "physicians",
   SERVICE_PLANS = "service_plans",
   MONTHLY_REPORT = "monthly_report",
@@ -71,8 +77,9 @@ export function parsePermission(permission: string): { module: string; value: nu
   const value = parseInt(match[2], 10)
   if (isNaN(value)) return null
 
-  const module =
+  const rawModule =
     getPermissionName(prefix) ?? LEGACY_PERMISSION_ID_TO_MODULE[prefix] ?? prefix
+  const module = normalizePermissionModule(rawModule)
   return { module, value }
 }
 

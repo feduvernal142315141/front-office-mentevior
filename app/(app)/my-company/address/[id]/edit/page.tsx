@@ -4,6 +4,8 @@ import { MapPin } from "lucide-react"
 import { Card } from "@/components/custom/Card"
 import { AddressForm } from "../../components/AddressForm"
 import { use } from "react"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 interface EditAddressPageProps {
   params: Promise<{ id: string }>
@@ -11,6 +13,11 @@ interface EditAddressPageProps {
 
 export default function EditAddressPage({ params }: EditAddressPageProps) {
   const { id } = use(params)
+  const allowed = useRequirePermission(PermissionModule.ACCOUNT_PROFILE, PermissionAction.EDIT)
+
+  if (!allowed) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6">

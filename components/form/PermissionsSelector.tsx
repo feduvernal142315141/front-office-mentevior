@@ -22,6 +22,7 @@ const CORE_MODULES = [
   { key: PermissionModule.SESSION_NOTE, label: "Session Note" },
   { key: PermissionModule.CLINICAL_MONTHLY, label: "Clinical Monthly" },
   { key: PermissionModule.MONTHLY_SUPERVISIONS, label: "Monthly Supervisions" },
+  { key: PermissionModule.CASE_SUPERVISION, label: "Case Supervision Log" },
   { key: PermissionModule.SERVICE_LOG, label: "Service Log" },
   { key: PermissionModule.ASSESSMENT, label: "Assessment" },
 ]
@@ -89,6 +90,7 @@ const MY_COMPANY_MODULES = [
   { key: PermissionModule.ROLE, label: "Roles" },
   { key: PermissionModule.ACCOUNT_PROFILE, label: "Account Profile" },
   { key: PermissionModule.PHYSICIANS, label: "Physicians" },
+  { key: PermissionModule.PROVIDER_ON_FILE, label: "Providers on File" },
   { key: PermissionModule.SERVICE_PLANS, label: "Service Plans" },
   { key: PermissionModule.MONTHLY_REPORT, label: "Monthly Report" },
   { key: PermissionModule.SIGNATURES_CAREGIVER, label: "Signatures Caregiver" },

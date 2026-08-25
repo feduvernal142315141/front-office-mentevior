@@ -9,6 +9,8 @@ import { CreateServicePlanModal } from "./components/CreateServicePlanModal"
 import { ServicePlanConfigurationSection } from "./components/ServicePlanConfigurationSection"
 import { useHasActiveService } from "@/lib/modules/services/hooks/use-has-active-service"
 import type { CompanyServicePlan } from "@/lib/types/company-service-plan.types"
+import { CreateGate } from "@/components/layout/PermissionGate"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function ServicePlansPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -52,14 +54,16 @@ export default function ServicePlansPage() {
           </div>
 
           {hasActiveService && (
-            <Button
-              variant="primary"
-              onClick={handleOpenCreate}
-              className="gap-2 flex items-center"
-            >
-              <Plus className="w-4 h-4" />
-              Add Service Plan
-            </Button>
+            <CreateGate module={PermissionModule.SERVICE_PLANS}>
+              <Button
+                variant="primary"
+                onClick={handleOpenCreate}
+                className="gap-2 flex items-center"
+              >
+                <Plus className="w-4 h-4" />
+                Add Service Plan
+              </Button>
+            </CreateGate>
           )}
         </div>
 

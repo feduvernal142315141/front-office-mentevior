@@ -15,6 +15,8 @@ import {
 } from "@/lib/modules/service-plans/services/company-service-plans.service"
 import { parseLocalDate } from "@/lib/date"
 import { toast } from "@/lib/compat/sonner"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export interface ServicePlansTableRef {
   refetch: () => void
@@ -36,6 +38,7 @@ function formatDateLabel(value?: string): string {
 export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTableProps>(
   ({ onEdit }, ref) => {
   const router = useRouter()
+  const { canEdit, canDelete } = useModulePermissions(PermissionModule.SERVICE_PLANS)
   const { data, isLoading, error, pagination, refetch } = useServicePlansTable()
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [categoriesByPlanId, setCategoriesByPlanId] = useState<Record<string, ServicePlanCategorySummary[]>>({})
@@ -213,10 +216,11 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => router.push(`/my-company/service-plans/${plan.id}/configuration`)}
-                            className="
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/my-company/service-plans/${plan.id}/configuration`)}
+                              className="
                               group/manage
                               relative
                               h-9 w-9
@@ -242,50 +246,55 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
                               focus:ring-[#037ECC]/20
                               focus:ring-offset-2
                             "
-                            title="Configuration"
-                            aria-label="Configuration"
-                          >
-                            <Sliders className="w-4 h-4 text-slate-600 group-hover/manage:text-[#037ECC] transition-colors duration-200" />
-                          </button>
+                              title="Configuration"
+                              aria-label="Configuration"
+                            >
+                              <Sliders className="w-4 h-4 text-slate-600 group-hover/manage:text-[#037ECC] transition-colors duration-200" />
+                            </button>
+                          )}
 
-                          <button
-                            type="button"
-                            onClick={() => onEdit?.(plan)}
-                            className={cn(
-                              "group/edit relative h-9 w-9",
-                              "flex items-center justify-center rounded-xl",
-                              "bg-gradient-to-b from-blue-50 to-blue-100/80",
-                              "border border-blue-200/60 shadow-sm shadow-blue-900/5",
-                              "hover:from-blue-100 hover:to-blue-200/90",
-                              "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
-                              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-                              "transition-all duration-200 ease-out",
-                              "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
-                            )}
-                            title="Edit service plan"
-                            aria-label="Edit service plan"
-                          >
-                            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
-                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => onEdit?.(plan)}
+                              className={cn(
+                                "group/edit relative h-9 w-9",
+                                "flex items-center justify-center rounded-xl",
+                                "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                                "border border-blue-200/60 shadow-sm shadow-blue-900/5",
+                                "hover:from-blue-100 hover:to-blue-200/90",
+                                "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
+                                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                                "transition-all duration-200 ease-out",
+                                "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+                              )}
+                              title="Edit service plan"
+                              aria-label="Edit service plan"
+                            >
+                              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+                            </button>
+                          )}
 
-                          <button
-                            type="button"
-                            onClick={() => setPlanToDelete(plan)}
-                            className={cn(
-                              "group/del h-9 w-9",
-                              "flex items-center justify-center rounded-xl",
-                              "bg-gradient-to-b from-red-50 to-red-100/80",
-                              "border border-red-200/60 shadow-sm",
-                              "hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80",
-                              "hover:-translate-y-0.5 active:translate-y-0",
-                              "transition-all duration-200 ease-out",
-                              "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
-                            )}
-                            title="Delete service plan"
-                            aria-label="Delete service plan"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-red-500 transition-colors group-hover/del:text-red-700" />
-                          </button>
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={() => setPlanToDelete(plan)}
+                              className={cn(
+                                "group/del h-9 w-9",
+                                "flex items-center justify-center rounded-xl",
+                                "bg-gradient-to-b from-red-50 to-red-100/80",
+                                "border border-red-200/60 shadow-sm",
+                                "hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80",
+                                "hover:-translate-y-0.5 active:translate-y-0",
+                                "transition-all duration-200 ease-out",
+                                "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+                              )}
+                              title="Delete service plan"
+                              aria-label="Delete service plan"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-red-500 transition-colors group-hover/del:text-red-700" />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -372,10 +381,11 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
                       </div>
 
                       <div className="xl:justify-self-end flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/my-company/service-plans/${plan.id}/configuration`)}
-                          className="
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/my-company/service-plans/${plan.id}/configuration`)}
+                            className="
                             group/manage
                             relative
                             h-9 w-9
@@ -401,50 +411,55 @@ export const ServicePlansTable = forwardRef<ServicePlansTableRef, ServicePlansTa
                             focus:ring-[#037ECC]/20
                             focus:ring-offset-2
                           "
-                          title="Configuration"
-                          aria-label="Configuration"
-                        >
-                          <Sliders className="w-4 h-4 text-slate-600 group-hover/manage:text-[#037ECC] transition-colors duration-200" />
-                        </button>
+                            title="Configuration"
+                            aria-label="Configuration"
+                          >
+                            <Sliders className="w-4 h-4 text-slate-600 group-hover/manage:text-[#037ECC] transition-colors duration-200" />
+                          </button>
+                        )}
 
-                        <button
-                          type="button"
-                          onClick={() => onEdit?.(plan)}
-                          className={cn(
-                            "group/edit relative h-9 w-9",
-                            "flex items-center justify-center rounded-xl",
-                            "bg-gradient-to-b from-blue-50 to-blue-100/80",
-                            "border border-blue-200/60 shadow-sm shadow-blue-900/5",
-                            "hover:from-blue-100 hover:to-blue-200/90",
-                            "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
-                            "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-                            "transition-all duration-200 ease-out",
-                            "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
-                          )}
-                          title="Edit service plan"
-                          aria-label="Edit service plan"
-                        >
-                          <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => onEdit?.(plan)}
+                            className={cn(
+                              "group/edit relative h-9 w-9",
+                              "flex items-center justify-center rounded-xl",
+                              "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                              "border border-blue-200/60 shadow-sm shadow-blue-900/5",
+                              "hover:from-blue-100 hover:to-blue-200/90",
+                              "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
+                              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                              "transition-all duration-200 ease-out",
+                              "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+                            )}
+                            title="Edit service plan"
+                            aria-label="Edit service plan"
+                          >
+                            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+                          </button>
+                        )}
 
-                        <button
-                          type="button"
-                          onClick={() => setPlanToDelete(plan)}
-                          className={cn(
-                            "group/del h-9 w-9",
-                            "flex items-center justify-center rounded-xl",
-                            "bg-gradient-to-b from-red-50 to-red-100/80",
-                            "border border-red-200/60 shadow-sm",
-                            "hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80",
-                            "hover:-translate-y-0.5 active:translate-y-0",
-                            "transition-all duration-200 ease-out",
-                            "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
-                          )}
-                          title="Delete service plan"
-                          aria-label="Delete service plan"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-red-500 transition-colors group-hover/del:text-red-700" />
-                        </button>
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={() => setPlanToDelete(plan)}
+                            className={cn(
+                              "group/del h-9 w-9",
+                              "flex items-center justify-center rounded-xl",
+                              "bg-gradient-to-b from-red-50 to-red-100/80",
+                              "border border-red-200/60 shadow-sm",
+                              "hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80",
+                              "hover:-translate-y-0.5 active:translate-y-0",
+                              "transition-all duration-200 ease-out",
+                              "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+                            )}
+                            title="Delete service plan"
+                            aria-label="Delete service plan"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-red-500 transition-colors group-hover/del:text-red-700" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

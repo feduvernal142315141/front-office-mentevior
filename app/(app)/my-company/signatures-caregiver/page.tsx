@@ -8,8 +8,11 @@ import {
   updateCaregiverSignatureConfig,
 } from "@/lib/services/caregiver-signature-config.service"
 import { useAlert } from "@/lib/contexts/alert-context"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function SignaturesCaregiverPage() {
+  const { canEdit } = useModulePermissions(PermissionModule.SIGNATURES_CAREGIVER)
   const [selectedType, setSelectedType] = useState<SignatureType>(SignatureType.CHECKMARK)
   const [configId, setConfigId] = useState<string | undefined>()
   const [isLoading, setIsLoading] = useState(true)
@@ -18,7 +21,7 @@ export default function SignaturesCaregiverPage() {
 
   useEffect(() => {
     loadConfiguration()
-  }, [])
+  }, [canEdit])
 
   const loadConfiguration = async () => {
     try {
@@ -34,7 +37,7 @@ export default function SignaturesCaregiverPage() {
         setConfigId(config.id)
         
         // If it was NONE, update it to CHECKMARK in the database
-        if (config.signatureType === SignatureType.NONE) {
+        if (config.signatureType === SignatureType.NONE && canEdit) {
           await updateCaregiverSignatureConfig({
             id: config.id,
             signatureType: SignatureType.CHECKMARK,
@@ -55,7 +58,7 @@ export default function SignaturesCaregiverPage() {
   }
 
   const handleSelectType = async (type: SignatureType) => {
-    if (isSaving) return
+    if (isSaving || !canEdit) return
 
     try {
       setIsSaving(true)
@@ -116,7 +119,7 @@ export default function SignaturesCaregiverPage() {
         {/* Check Mark Option */}
         <button
           onClick={() => handleSelectType(SignatureType.CHECKMARK)}
-          disabled={isSaving}
+          disabled={isSaving || !canEdit}
           className={`
             relative p-8 rounded-2xl border-2 transition-all duration-200 bg-white
             ${
@@ -124,7 +127,7 @@ export default function SignaturesCaregiverPage() {
                 ? "border-blue-500 bg-blue-50 shadow-lg shadow-blue-100"
                 : "border-gray-200 hover:border-blue-300 hover:shadow-md"
             }
-            ${isSaving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+            ${isSaving || !canEdit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
           `}
         >
           {selectedType === SignatureType.CHECKMARK && (
@@ -168,7 +171,7 @@ export default function SignaturesCaregiverPage() {
         {/* Signature Option */}
         <button
           onClick={() => handleSelectType(SignatureType.SIGNATURE)}
-          disabled={isSaving}
+          disabled={isSaving || !canEdit}
           className={`
             relative p-8 rounded-2xl border-2 transition-all duration-200 bg-white
             ${
@@ -176,7 +179,7 @@ export default function SignaturesCaregiverPage() {
                 ? "border-blue-500 bg-blue-50 shadow-lg shadow-blue-100"
                 : "border-gray-200 hover:border-blue-300 hover:shadow-md"
             }
-            ${isSaving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+            ${isSaving || !canEdit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
           `}
         >
           {selectedType === SignatureType.SIGNATURE && (

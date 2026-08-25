@@ -4,6 +4,8 @@ import { FileText } from "lucide-react"
 import { Card } from "@/components/custom/Card"
 import { BillingCodeForm } from "../../components/BillingCodeForm"
 import { use } from "react"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 interface EditBillingCodePageProps {
   params: Promise<{ id: string }>
@@ -11,6 +13,11 @@ interface EditBillingCodePageProps {
 
 export default function EditBillingCodePage({ params }: EditBillingCodePageProps) {
   const { id } = use(params)
+  const allowed = useRequirePermission(PermissionModule.BILLING_CODE, PermissionAction.EDIT)
+
+  if (!allowed) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6">

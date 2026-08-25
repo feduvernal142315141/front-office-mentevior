@@ -4,9 +4,16 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, CalendarClock } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { MonthlySupervisionForm } from "../components/MonthlySupervisionForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function CreateMonthlySupervisionPage() {
   const router = useRouter()
+  const canCreate = useRequirePermission(PermissionModule.MONTHLY_SUPERVISIONS, PermissionAction.CREATE)
+
+  if (!canCreate) {
+    return null
+  }
 
   return (
     <div className="px-6 py-6">

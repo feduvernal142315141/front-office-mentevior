@@ -13,6 +13,7 @@ interface CategoriesSidebarProps {
   onSelectCategory: (id: string) => void
   onEditServicePlan: () => void
   onConfigureDataCollection: (category: ServicePlanCategorySummary) => void
+  canEdit?: boolean
 }
 
 export function CategoriesSidebar({
@@ -21,21 +22,24 @@ export function CategoriesSidebar({
   onSelectCategory,
   onEditServicePlan,
   onConfigureDataCollection,
+  canEdit = true,
 }: CategoriesSidebarProps) {
   return (
     <Card variant="elevated" padding="none" className="overflow-hidden">
       <div className="border-b border-slate-200 px-4 py-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Categories</h3>
-          <button
-            type="button"
-            onClick={onEditServicePlan}
-            className="group/edit relative h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-b from-blue-50 to-blue-100/80 border border-blue-200/60 shadow-sm shadow-blue-900/5 hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
-            title="Edit service plan"
-            aria-label="Edit service plan"
-          >
-            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={onEditServicePlan}
+              className="group/edit relative h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-b from-blue-50 to-blue-100/80 border border-blue-200/60 shadow-sm shadow-blue-900/5 hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+              title="Edit service plan"
+              aria-label="Edit service plan"
+            >
+              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            </button>
+          )}
         </div>
       </div>
 

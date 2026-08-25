@@ -18,6 +18,8 @@ import { CLINICAL_MONTHLY_SUMMARY_GUIDANCE } from "@/lib/constants/clinical-mont
 import { getNarrativeLengthState, validateNarrativeLength } from "@/lib/utils/narrative-length"
 import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
 import { formatReportMonthShort, parseReportMonth } from "@/lib/utils/report-month"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 interface ClinicalMonthlyFormProps {
   /** Presente al editar un reporte existente */
@@ -33,6 +35,8 @@ interface ClinicalMonthlyFormProps {
 export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormProps) {
   const router = useRouter()
   const isEditing = !!clinicalMonthlyId
+  const { create, edit } = usePermission()
+  const canPersist = isEditing ? edit(PermissionModule.CLINICAL_MONTHLY) : create(PermissionModule.CLINICAL_MONTHLY)
 
   const [clientId, setClientId] = useState("")
   const [startMonthYear, setStartMonthYear] = useState("")
@@ -132,7 +136,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
   const hasRange = !!startMonthYear && !!endMonthYear
   // Guardar y previsualizar son la misma operación (el preview persiste), así que
   // ambos exigen lo mismo: cliente, período y summary.
-  const canSave = !!clientId && hasRange && getNarrativeLengthState(summary).isValid && !isBusy
+  const canSave = !!clientId && hasRange && getNarrativeLengthState(summary).isValid && !isBusy && canPersist
 
   if (isEditing && detailLoading) {
     return (

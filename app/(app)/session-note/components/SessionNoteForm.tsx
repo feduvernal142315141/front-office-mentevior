@@ -27,6 +27,8 @@ import type {
   ParticipantCatalogItem,
 } from "@/lib/types/appointment-note.types"
 import { cn } from "@/lib/utils"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import { formatHoursAndUnits, splitBillingCodesAndUnits } from "@/lib/utils/session-note-units"
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
 import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
@@ -104,10 +106,12 @@ export function SessionNoteForm({
   noteStatus = "read",
   appointmentId,
 }: SessionNoteFormProps) {
+  const { edit } = usePermission()
+  const canEditSessionNote = edit(PermissionModule.SESSION_NOTE)
   const statusInfo = deriveNoteStatusInfo(noteStatus, false)
   const formDisabled = !statusInfo.isFormEditable
   const dataCollectionDisabled = !statusInfo.isDataCollectionEditable
-  const saveDisabled = !statusInfo.canSave
+  const saveDisabled = !statusInfo.canSave || !canEditSessionNote
 
   const categoriesWithItems = categories.filter((c) => c.items.length > 0)
   const categoriesEmpty = categories.filter((c) => c.items.length === 0)

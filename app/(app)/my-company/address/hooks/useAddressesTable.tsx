@@ -14,11 +14,14 @@ import { FilterOperator } from "@/lib/models/filterOperator"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { deleteAddress } from "@/lib/modules/addresses/services/addresses.service"
 import { toast } from "sonner"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 type StatusFilter = "all" | "active" | "inactive"
 
 export function useAddressesTable() {
   const router = useRouter()
+  const { canEdit, canDelete } = useModulePermissions(PermissionModule.ACCOUNT_PROFILE)
   
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
@@ -158,8 +161,9 @@ export function useAddressesTable() {
       align: "right" as const,
       render: (address: AddressListItem) => (
         <div className="flex justify-end gap-2">
-          <button
-            onClick={() => router.push(`/my-company/address/${address.id}/edit`)}
+          {canEdit && (
+            <button
+              onClick={() => router.push(`/my-company/address/${address.id}/edit`)}
             className="
               group/edit
               relative
@@ -211,8 +215,9 @@ export function useAddressesTable() {
               duration-200
             " />
           </button>
+          )}
 
-          {!address.isPrincipal ? (<button
+          {canDelete && !address.isPrincipal ? (<button
             onClick={() => handleDeleteClick(address)}
             className="
               group/delete
@@ -240,12 +245,12 @@ export function useAddressesTable() {
               group-hover/delete:text-red-700
               transition-colors duration-200
             " />
-          </button>) : (<div className="h-9 w-9"/>)
+          </button>) : canEdit ? (<div className="h-9 w-9"/>) : null
             }
         </div>
       ),
     },
-  ], [router, handleDeleteClick])
+  ], [router, handleDeleteClick, canEdit, canDelete])
 
   const pagination = {
     page,

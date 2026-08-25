@@ -7,6 +7,8 @@ import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import {
   Clock,
   Shield,
@@ -50,6 +52,7 @@ export function AppointmentModal({
   onSaved,
 }: AppointmentModalProps) {
   const router = useRouter()
+  const { canCreate, canEdit } = useModulePermissions(PermissionModule.SCHEDULE)
 
   const {
     formData,
@@ -106,6 +109,8 @@ export function AppointmentModal({
     appointment?.status === "Cancelled" ||
     appointment?.status === "NoShow"
   )
+
+  const canSaveSession = isEditing ? canEdit : canCreate
 
   return (
     <CustomModal
@@ -398,7 +403,13 @@ export function AppointmentModal({
             type="submit"
             variant="primary"
             loading={isSubmitting}
-            disabled={isLockedStatus || isValidatingMain || pendingValidation || !!validationError}
+            disabled={
+              !canSaveSession ||
+              isLockedStatus ||
+              isValidatingMain ||
+              pendingValidation ||
+              !!validationError
+            }
             className="h-10 min-w-[180px]"
             onClick={handleSubmit}
           >

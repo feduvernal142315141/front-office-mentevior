@@ -25,6 +25,8 @@ import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { GroupedSelect } from "@/components/custom/GroupedSelect"
 import { Button } from "@/components/custom/Button"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 import { LevelsTable } from "@/app/(app)/my-company/service-plans/components/data-collection/LevelsTable"
 import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
@@ -160,6 +162,7 @@ export function ClientDataCollectionModal({
   itemName,
   onSaved,
 }: ClientDataCollectionModalProps) {
+  const { canEdit: canEditDatasheets } = useModulePermissions(PermissionModule.DATASHEETS)
   const params = useParams()
   const clientId = typeof params?.id === "string" ? params.id : null
   const { client } = useClientById(clientId)
@@ -957,6 +960,7 @@ export function ClientDataCollectionModal({
                 mode={mode}
                 periodSelectOptions={periodSelectOptions}
                 showErrors={baselinesError}
+                readOnly={!canEditDatasheets}
               />
             </div>
           ),
@@ -1101,9 +1105,11 @@ export function ClientDataCollectionModal({
             <Button type="button" variant="secondary" onClick={handleClose} disabled={isSaving}>
               Cancel
             </Button>
+            {canEditDatasheets && (
             <Button type="submit" variant="primary" loading={isSaving}>
               {isSaving ? "Saving..." : "Save"}
             </Button>
+            )}
           </div>
         </form>
       )}

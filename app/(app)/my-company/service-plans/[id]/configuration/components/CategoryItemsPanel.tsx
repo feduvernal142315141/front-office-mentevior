@@ -41,6 +41,9 @@ interface CategoryItemsPanelProps {
   onDeleteItem: (item: ServicePlanCategoryMappedItem) => void
   onConfigureDataCollection: (item: ServicePlanCategoryMappedItem) => void
   onOpenAddItemsDrawer: () => void
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
 }
 
 export function CategoryItemsPanel({
@@ -54,6 +57,9 @@ export function CategoryItemsPanel({
   onDeleteItem,
   onConfigureDataCollection,
   onOpenAddItemsDrawer,
+  canCreate = true,
+  canEdit = true,
+  canDelete = true,
 }: CategoryItemsPanelProps) {
   if (!activeCategory) {
     return (
@@ -73,22 +79,26 @@ export function CategoryItemsPanel({
       <div className="mt-1 flex items-center justify-between gap-3">
         <p className="text-sm text-slate-500">Mapped items for this category.</p>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-9 px-4 text-xs"
-            onClick={createForm.start}
-            disabled={createForm.isSaving}
-          >
-            Create item
-          </Button>
-          <Button type="button" className="h-9 px-4 text-xs" onClick={onOpenAddItemsDrawer}>
-            Add items
-          </Button>
+          {canCreate && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-9 px-4 text-xs"
+              onClick={createForm.start}
+              disabled={createForm.isSaving}
+            >
+              Create item
+            </Button>
+          )}
+          {canCreate && (
+            <Button type="button" className="h-9 px-4 text-xs" onClick={onOpenAddItemsDrawer}>
+              Add items
+            </Button>
+          )}
         </div>
       </div>
 
-      {createForm.visible && (
+      {canCreate && createForm.visible && (
         <CreateItemInlineForm
           name={createForm.name}
           isSaving={createForm.isSaving}
@@ -131,6 +141,8 @@ export function CategoryItemsPanel({
                 onSaveEdit={editForm.save}
                 onDelete={onDeleteItem}
                 onConfigureDataCollection={onConfigureDataCollection}
+                canEdit={canEdit}
+                canDelete={canDelete}
               />
             ))}
           </div>

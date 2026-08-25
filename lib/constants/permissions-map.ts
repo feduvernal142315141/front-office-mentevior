@@ -31,12 +31,15 @@ export const PERMISSION_IDS: Record<string, string> = {
   // Company Configuration modules
   "role": "7b5b5e20-ea82-478d-90f6-995fc6e72c94",
   "account_profile": "a1a2a3a4-b5b6-47c8-d9e0-f1a2b3c4d5e6",
+  "billing_code": "626ee971-9bfa-485c-9330-5d3ba4f4977c",
   "services_pending_billing": "a9b0c1d2-e3f4-45a6-b7c8-d9e0f1a2b3c4",
   "billed_claims": "b0c1d2e3-f4a5-46b7-c8d9-e0f1a2b3c4d5",
   "payers": "47f4abe2-daff-4b2d-b554-1cc7801acc1e",
   "appointment": "c4d5e6f7-a8b9-41c0-d1e2-f3a4b5c6d7e8",
   "service_plan": "d5e6f7a8-b9c0-42d1-e2f3-a4b5c6d7e8f9",
   "supervision": "e6f7a8b9-c0d1-43e2-f3a4-b5c6d7e8f9a0",
+  "case_supervision": "958ad798-98e9-4fe6-b76d-400b99eb71c2",
+  "provider_on_file": "f7a1799c-b825-464a-a5b4-19b1f4cf5e9d",
   "physicians": "a3b4c5d6-e7f8-49a0-b1c2-d3e4f5a6b7c8",
   "service_plans": "b4c5d6e7-f8a9-40b1-c2d3-e4f5a6b7c8d9",
   "monthly_report": "f8a9b0c1-d2e3-44f5-a6b7-c8d9e0f1a2b3",
@@ -74,6 +77,28 @@ export const PERMISSION_NAMES: Record<string, string> = Object.fromEntries(
 /** UUIDs antiguos del backend que deben resolverse al mismo módulo (tokens aún no reemitidos) */
 export const LEGACY_PERMISSION_ID_TO_MODULE: Record<string, string> = {
   "a8b9c0d1-e2f3-44a5-b6c7-d8e9f0a1b2c3": "payers",
+}
+
+/**
+ * Nombres alternativos del backend → slug canónico del front.
+ * El JWT puede traer `datasheets_configuration-31` mientras el enum usa `datasheets`.
+ */
+export const PERMISSION_MODULE_ALIASES: Record<string, string> = {
+  datasheets_configuration: "datasheets",
+  on_site_collection_configuration: "on_site_collection",
+  charts_configuration: "charts",
+  data_analysis_configuration: "data_analysis",
+  raw_data_configuration: "raw_data",
+  signature_caregiver: "signatures_caregiver",
+  clinical_documents_configuration: "clinical_documents",
+  hr_documents_configuration: "hr_documents",
+  agreements_configuration: "agreements",
+  applicants_configuration: "applicants",
+  payers_configuration: "payers",
+}
+
+export function normalizePermissionModule(moduleName: string): string {
+  return PERMISSION_MODULE_ALIASES[moduleName] ?? moduleName
 }
 
 /**

@@ -10,13 +10,15 @@ import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { deleteHRDocument } from "@/lib/modules/hr-documents/services/hr-documents.service"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Check, X } from "lucide-react"
 
 export function useHRDocumentsTable() {
   const router = useRouter()
-  
+  const { canEdit, canDelete } = useModulePermissions(PermissionModule.HR_DOCUMENTS)
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [page, setPage] = useState(1)
@@ -196,9 +198,10 @@ export function useHRDocumentsTable() {
       align: "right" as const,
       render: (item: HRDocumentListItem) => (
         <div className="flex justify-end gap-2">
-          <button
-            onClick={() => router.push(`/hr-documents/${item.id}/edit`)}
-            className="
+          {canEdit && (
+            <button
+              onClick={() => router.push(`/hr-documents/${item.id}/edit`)}
+              className="
               group/edit
               relative
               h-9 w-9
@@ -215,20 +218,22 @@ export function useHRDocumentsTable() {
               transition-all duration-200 ease-out
               focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2
             "
-            title="Edit document"
-            aria-label="Edit document"
-          >
-            <Edit2 className="
+              title="Edit document"
+              aria-label="Edit document"
+            >
+              <Edit2 className="
               w-4 h-4
               text-blue-600
               group-hover/edit:text-blue-700
               transition-colors duration-200
             " />
-          </button>
+            </button>
+          )}
           
-          <button
-            onClick={() => handleDeleteClick(item)}
-            className="
+          {canDelete && (
+            <button
+              onClick={() => handleDeleteClick(item)}
+              className="
               group/delete
               relative
               h-9 w-9
@@ -245,20 +250,21 @@ export function useHRDocumentsTable() {
               transition-all duration-200 ease-out
               focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2
             "
-            title="Delete document"
-            aria-label="Delete document"
-          >
-            <Trash2 className="
+              title="Delete document"
+              aria-label="Delete document"
+            >
+              <Trash2 className="
               w-4 h-4
               text-red-600
               group-hover/delete:text-red-700
               transition-colors duration-200
             " />
-          </button>
+            </button>
+          )}
         </div>
       ),
     },
-  ], [router])
+  ], [canDelete, canEdit, router])
 
   const deleteModal = (
     <DeleteConfirmModal

@@ -26,6 +26,8 @@ import {
 } from "./ObjectiveFormModal"
 import { GenerateObjectivesModal } from "./GenerateObjectivesModal"
 import { buildGeneratedObjectiveName } from "./generate-objective-name"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 interface ObjectivesTabContentProps {
   objectives: ObjectiveRow[]
@@ -124,6 +126,9 @@ export function ObjectivesTabContent({
   objetiveType = null,
   onObjetiveTypeChange,
 }: ObjectivesTabContentProps) {
+  const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENTS)
+  const actionsDisabled = disableActions || !canEdit
+
   const [formOpen, setFormOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
@@ -325,20 +330,24 @@ export function ObjectivesTabContent({
               )}
             </h3>
             <div className="flex items-center gap-2">
-              <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions || masteryLocked} title={masteryLockTitle}>
-                <Plus className="h-3.5 w-3.5" />
-                Mastery Criteria Objective
-              </Button>
-              {objectives.length > 0 && (
-                <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions}>
+              {canCreate && (
+                <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3" disabled={actionsDisabled || masteryLocked} title={masteryLockTitle}>
+                  <Plus className="h-3.5 w-3.5" />
+                  Mastery Criteria Objective
+                </Button>
+              )}
+              {objectives.length > 0 && canEdit && (
+                <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={actionsDisabled}>
                   <Pencil className="h-3.5 w-3.5" />
                   Edit All
                 </Button>
               )}
-              <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={disableActions || stoLocked} title={stoLockTitle}>
-                <Sparkles className="h-3.5 w-3.5" />
-                STO Objective Generate
-              </Button>
+              {canCreate && (
+                <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={actionsDisabled || stoLocked} title={stoLockTitle}>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  STO Objective Generate
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -410,18 +419,20 @@ export function ObjectivesTabContent({
                       </Badge>
                     </div>
                     <div className="flex justify-center pt-0.5">
-                      <button
-                        type="button"
-                        onClick={(e) => void handleInlineDelete(e, obj)}
-                        disabled={deletingId === obj.localId}
-                        className={cn(
-                          "rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600",
-                          "disabled:opacity-50 disabled:cursor-not-allowed"
-                        )}
-                        title="Remove objective"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={(e) => void handleInlineDelete(e, obj)}
+                          disabled={deletingId === obj.localId || actionsDisabled}
+                          className={cn(
+                            "rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600",
+                            "disabled:opacity-50 disabled:cursor-not-allowed"
+                          )}
+                          title="Remove objective"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 )
@@ -437,20 +448,24 @@ export function ObjectivesTabContent({
 
         {!hideButtons && (
           <div className="flex shrink-0 justify-center gap-3 border-t border-slate-100 pt-3">
-            <Button type="button" onClick={handleAdd} className="gap-2" disabled={masteryLocked} title={masteryLockTitle}>
-              <Plus className="h-4 w-4" />
-              Mastery Criteria Objective
-            </Button>
-            {objectives.length > 0 && (
-              <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-2">
+            {canCreate && (
+              <Button type="button" onClick={handleAdd} className="gap-2" disabled={actionsDisabled || masteryLocked} title={masteryLockTitle}>
+                <Plus className="h-4 w-4" />
+                Mastery Criteria Objective
+              </Button>
+            )}
+            {objectives.length > 0 && canEdit && (
+              <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-2" disabled={actionsDisabled}>
                 <Pencil className="h-4 w-4" />
                 Edit All
               </Button>
             )}
-            <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-2" disabled={stoLocked} title={stoLockTitle}>
-              <Sparkles className="h-4 w-4" />
-              STO Objective Generate
-            </Button>
+            {canCreate && (
+              <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-2" disabled={actionsDisabled || stoLocked} title={stoLockTitle}>
+                <Sparkles className="h-4 w-4" />
+                STO Objective Generate
+              </Button>
+            )}
           </div>
         )}
       </div>

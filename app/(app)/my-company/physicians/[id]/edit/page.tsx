@@ -4,6 +4,8 @@ import { Stethoscope } from "lucide-react";
 import { Card } from "@/components/custom/Card";
 import { PhysicianForm } from "../../components/PhysicianForm";
 import { use } from "react";
+import { useRequirePermission } from "@/lib/hooks/use-require-permission";
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new";
 
 interface EditPhysicianPageProps {
   params: Promise<{
@@ -13,6 +15,11 @@ interface EditPhysicianPageProps {
 
 export default function EditPhysicianPage({ params }: EditPhysicianPageProps) {
   const { id } = use(params);
+  const allowed = useRequirePermission(PermissionModule.PHYSICIANS, PermissionAction.EDIT);
+
+  if (!allowed) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6">

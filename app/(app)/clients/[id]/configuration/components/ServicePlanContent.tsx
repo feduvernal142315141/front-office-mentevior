@@ -6,6 +6,8 @@ import { toast } from "sonner"
 
 import { SelectServicePlanModal } from "../../../components/SelectServicePlanModal"
 import { ServicePlanConfigView } from "./ServicePlanConfigView"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import { useCompanyServicePlans } from "@/lib/modules/service-plans/hooks/use-company-service-plans"
 import { cloneServicePlanToClient } from "@/lib/modules/client-service-plan/services/client-service-plan.service"
 import type { NavigateToItemRequest } from "./DataCollectionContent"
@@ -20,6 +22,7 @@ interface ServicePlanContentProps {
 }
 
 export function ServicePlanContent({ clientId, clientServicePlanId, onServicePlanAssigned, autoOpenItem, onAutoOpenItemConsumed, onItemDirtyChange }: ServicePlanContentProps) {
+  const { canCreate } = useModulePermissions(PermissionModule.CLIENTS)
   const [spId, setSpId] = useState<string | null>(clientServicePlanId)
   const [showModal, setShowModal] = useState(false)
   const [isAutoAssigning, setIsAutoAssigning] = useState(false)
@@ -34,7 +37,7 @@ export function ServicePlanContent({ clientId, clientServicePlanId, onServicePla
 
   // Auto-assign if company has exactly 1 service plan and client has none
   useEffect(() => {
-    if (spId || isLoadingPlans || autoAssignAttemptedRef.current) return
+    if (!canCreate || spId || isLoadingPlans || autoAssignAttemptedRef.current) return
     if (servicePlans.length !== 1) return
 
     autoAssignAttemptedRef.current = true
@@ -53,7 +56,7 @@ export function ServicePlanContent({ clientId, clientServicePlanId, onServicePla
       .finally(() => {
         setIsAutoAssigning(false)
       })
-  }, [spId, isLoadingPlans, servicePlans, clientId])
+  }, [canCreate, spId, isLoadingPlans, servicePlans, clientId, onServicePlanAssigned])
 
   if (spId) {
     return (
@@ -90,7 +93,8 @@ export function ServicePlanContent({ clientId, clientServicePlanId, onServicePla
         <button
           type="button"
           onClick={() => setShowModal(true)}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-[#037ECC] to-[#079CFB] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
+          disabled={!canCreate}
+          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-[#037ECC] to-[#079CFB] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
         >
           Select Service Plan
         </button>

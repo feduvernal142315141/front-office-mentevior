@@ -4,6 +4,8 @@ import { Award } from "lucide-react"
 import { Card } from "@/components/custom/Card"
 import { CredentialForm } from "../../components/CredentialForm"
 import { use } from "react"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 interface EditCredentialPageProps {
   params: Promise<{ id: string }>
@@ -11,6 +13,11 @@ interface EditCredentialPageProps {
 
 export default function EditCredentialPage({ params }: EditCredentialPageProps) {
   const { id } = use(params)
+  const allowed = useRequirePermission(PermissionModule.ACCOUNT_PROFILE, PermissionAction.EDIT)
+
+  if (!allowed) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6">

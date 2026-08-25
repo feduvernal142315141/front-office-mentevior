@@ -3,6 +3,8 @@
 import { useState, useRef } from "react"
 import { Plus, FolderOpen } from "lucide-react"
 import { Button } from "@/components/custom/Button"
+import { CreateGate } from "@/components/layout/PermissionGate"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import { HRDocumentsTable, type HRDocumentsTableRef } from "./components/HRDocumentsTable"
 import { HRDocumentDrawer } from "./components/HRDocumentDrawer"
 
@@ -31,14 +33,16 @@ export default function HRDocumentsPage() {
             </div>
           </div>
 
-          <Button
-            variant="primary"
-            onClick={() => setIsDrawerOpen(true)}
-            className="gap-2 flex items-center"
-          >
-            <Plus className="w-4 h-4" />
-            Add Document
-          </Button>
+          <CreateGate module={PermissionModule.HR_DOCUMENTS}>
+            <Button
+              variant="primary"
+              onClick={() => setIsDrawerOpen(true)}
+              className="gap-2 flex items-center"
+            >
+              <Plus className="w-4 h-4" />
+              Add Document
+            </Button>
+          </CreateGate>
         </div>
 
         <HRDocumentsTable ref={tableRef} />

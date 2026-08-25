@@ -12,7 +12,10 @@ import {
   Users,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { AppointmentStatus } from "@/lib/types/appointment.types"
+import type { ModulePermissions } from "@/lib/hooks/use-module-permissions"
 
 interface AppointmentContextMenuProps {
   x: number
@@ -20,15 +23,14 @@ interface AppointmentContextMenuProps {
   appointmentId: string
   appointmentStatus?: AppointmentStatus
   hasSupervision?: boolean
-  /** "add_supervision" | "add_new_session" | "none" — determined by parent billing code */
   billingCodeAction?: "add_supervision" | "add_new_session" | "none"
-  /** When true, shows sub-event-specific items instead of appointment items */
   isSupervision?: boolean
-  /** Parent billing code action — helps differentiate supervision vs session/supervision menus */
   parentBillingCodeAction?: "add_supervision" | "add_new_session" | "none"
   onAction: (action: string, appointmentId: string) => void
   onClose: () => void
 }
+
+type PermissionLevel = "create" | "edit" | "delete" | "view"
 
 interface MenuItem {
   action: string
@@ -36,6 +38,7 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>
   danger?: boolean
   hideForStatus?: AppointmentStatus[]
+  requires?: PermissionLevel
 }
 
 interface MenuSection {
@@ -43,10 +46,24 @@ interface MenuSection {
   items: MenuItem[]
 }
 
-function buildSupervisionSections(parentBillingCodeAction?: string): MenuSection[] {
-  // Parent is 97153/97152 → sub-event is a "Session / Supervision" → "Edit Session"
-  const isSessionSupervision = parentBillingCodeAction === "add_new_session"
+function isItemAllowed(item: MenuItem, perms: ModulePermissions): boolean {
+  if (!item.requires) return true
+  switch (item.requires) {
+    case "create":
+      return perms.canCreate
+    case "edit":
+      return perms.canEdit
+    case "delete":
+      return perms.canDelete
+    case "view":
+      return perms.canView
+    default:
+      return true
+  }
+}
 
+function buildSupervisionSections(parentBillingCodeAction?: string): MenuSection[] {
+  const isSessionSupervision = parentBillingCodeAction === "add_new_session"
   const deleteLabel = isSessionSupervision ? "Delete Session" : "Delete Supervision"
 
   return [
@@ -57,12 +74,14 @@ function buildSupervisionSections(parentBillingCodeAction?: string): MenuSection
           action: isSessionSupervision ? "edit_session_supervision" : "supervision",
           label: isSessionSupervision ? "Edit Session" : "Edit Supervision",
           icon: Pencil,
+          requires: "edit",
         },
         {
           action: "delete_sub_event",
           label: deleteLabel,
           icon: Trash2,
           danger: true,
+          requires: "delete",
         },
       ],
     },
@@ -75,23 +94,22 @@ function buildSections(
 ): MenuSection[] {
   const actionItems: MenuItem[] = []
 
-  // Only show add actions when parent doesn't already have a sub-event
   if (!hasSupervision) {
-    // 97153/97152 codes → Add New Session
     if (billingCodeAction === "add_new_session") {
       actionItems.push({
         action: "add_new_session",
         label: "Add New Session",
         icon: Users,
+        requires: "create",
       })
     }
 
-    // 97155 codes → Add Supervision
     if (billingCodeAction === "add_supervision") {
       actionItems.push({
         action: "supervision",
         label: "Add Supervision",
         icon: Users,
+        requires: "create",
       })
     }
   }
@@ -103,19 +121,37 @@ function buildSections(
       icon: XCircle,
       danger: true,
       hideForStatus: ["Completed", "Cancelled", "NoShow"],
+      requires: "edit",
     },
-    { action: "delete", label: "Delete Session", icon: Trash2, danger: true },
-    { action: "duplicate", label: "Duplicate Session", icon: Copy },
-    { action: "edit", label: "Edit Session", icon: Pencil },
+    {
+      action: "delete",
+      label: "Delete Session",
+      icon: Trash2,
+      danger: true,
+      requires: "delete",
+    },
+    {
+      action: "duplicate",
+      label: "Duplicate Session",
+      icon: Copy,
+      requires: "create",
+    },
+    {
+      action: "edit",
+      label: "Edit Session",
+      icon: Pencil,
+      requires: "edit",
+    },
     {
       action: "noshow",
       label: "Mark as No Show",
       icon: UserX,
       hideForStatus: ["Completed", "Cancelled", "NoShow"],
+      requires: "edit",
     },
   )
 
-  const sections: MenuSection[] = [
+  return [
     {
       label: "Actions",
       items: actionItems,
@@ -123,13 +159,11 @@ function buildSections(
     {
       label: "Navigate",
       items: [
-        { action: "data_collection", label: "Data Collection", icon: BarChart3 },
-        { action: "session_note", label: "Session Note", icon: FileText },
+        { action: "data_collection", label: "Data Collection", icon: BarChart3, requires: "view" },
+        { action: "session_note", label: "Session Note", icon: FileText, requires: "view" },
       ],
     },
   ]
-
-  return sections
 }
 
 export function AppointmentContextMenu({
@@ -144,10 +178,16 @@ export function AppointmentContextMenu({
   onAction,
   onClose,
 }: AppointmentContextMenuProps) {
+  const perms = useModulePermissions(PermissionModule.SCHEDULE)
+
   const SECTIONS = useMemo(
-    () => (isSupervision ? buildSupervisionSections(parentBillingCodeAction) : buildSections(hasSupervision, billingCodeAction)),
+    () =>
+      isSupervision
+        ? buildSupervisionSections(parentBillingCodeAction)
+        : buildSections(hasSupervision, billingCodeAction),
     [isSupervision, parentBillingCodeAction, hasSupervision, billingCodeAction],
   )
+
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -191,9 +231,10 @@ export function AppointmentContextMenu({
       {SECTIONS.map((section, sIndex) => {
         const visibleItems = section.items.filter(
           (item) =>
-            !item.hideForStatus ||
-            !appointmentStatus ||
-            !item.hideForStatus.includes(appointmentStatus),
+            isItemAllowed(item, perms) &&
+            (!item.hideForStatus ||
+              !appointmentStatus ||
+              !item.hideForStatus.includes(appointmentStatus)),
         )
         if (visibleItems.length === 0) return null
 

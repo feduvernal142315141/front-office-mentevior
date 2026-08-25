@@ -4,6 +4,8 @@ import { Stethoscope, Plus } from "lucide-react";
 import { Button } from "@/components/custom/Button";
 import { useRouter } from "next/navigation";
 import { PhysiciansTable } from "./components/PhysiciansTable";
+import { CreateGate } from "@/components/layout/PermissionGate";
+import { PermissionModule } from "@/lib/utils/permissions-new";
 
 export default function PhysiciansPage() {
   const router = useRouter();
@@ -24,14 +26,16 @@ export default function PhysiciansPage() {
             </div>
           </div>
 
-          <Button
-            variant="primary"
-            onClick={() => router.push("/my-company/physicians/create")}
-            className="gap-2 flex items-center"
-          >
-            <Plus className="w-4 h-4" />
-            New Physician
-          </Button>
+          <CreateGate module={PermissionModule.PHYSICIANS}>
+            <Button
+              variant="primary"
+              onClick={() => router.push("/my-company/physicians/create")}
+              className="gap-2 flex items-center"
+            >
+              <Plus className="w-4 h-4" />
+              New Physician
+            </Button>
+          </CreateGate>
         </div>
 
         <PhysiciansTable />

@@ -15,12 +15,15 @@ import { deleteBillingCode } from "@/lib/modules/billing-codes/services/billing-
 import { toast } from "sonner"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 type StatusFilter = "all" | "active" | "inactive"
 type TypeFilter = "all" | "CPT" | "HCPCS"
 
 export function useBillingCodesTable() {
   const router = useRouter()
+  const { canEdit, canDelete } = useModulePermissions(PermissionModule.BILLING_CODE)
   
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
@@ -181,7 +184,7 @@ export function useBillingCodesTable() {
           </div>
         ) : (
         <div className="flex justify-end gap-2">
-          {item.canEdit && (
+          {item.canEdit && canEdit && (
             <button
               onClick={() => router.push(`/my-company/billing/billing-codes/${item.id}/edit`)}
               className="
@@ -212,9 +215,10 @@ export function useBillingCodesTable() {
               " />
             </button>
           )}
-          
-          <button
-            onClick={() => handleDeleteClick(item)}
+
+          {canDelete && (
+            <button
+              onClick={() => handleDeleteClick(item)}
             className="
               group/delete
               relative
@@ -242,11 +246,12 @@ export function useBillingCodesTable() {
               transition-colors duration-200
             " />
           </button>
+          )}
         </div>
         )
       ),
     },
-  ], [router, handleDeleteClick])
+  ], [router, handleDeleteClick, canEdit, canDelete])
 
   const pagination = {
     page,

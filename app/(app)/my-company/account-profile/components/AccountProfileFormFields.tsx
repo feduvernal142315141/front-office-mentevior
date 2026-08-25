@@ -97,16 +97,20 @@ function ChartIdConfiguration({ control }: { control: ReturnType<typeof useFormC
 interface AccountProfileFormFieldsProps {
   isSubmitting: boolean
   onCancel: () => void
+  canEdit: boolean
 }
 
 export function AccountProfileFormFields({
   isSubmitting,
   onCancel,
+  canEdit,
 }: AccountProfileFormFieldsProps) {
   const { control } = useFormContext()
+  const fieldsDisabled = isSubmitting || !canEdit
 
   return (
     <>
+      <fieldset disabled={fieldsDisabled} className="min-w-0 border-0 p-0 m-0">
       <div className="pb-12">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -356,12 +360,15 @@ export function AccountProfileFormFields({
           <ChartIdConfiguration control={control} />
         </div>
       </div>
+      </fieldset>
 
+      {canEdit && (
       <FormBottomBar
         isSubmitting={isSubmitting}
         onCancel={onCancel}
         submitText="Save Changes"
       />
+      )}
     </>
   )
 }

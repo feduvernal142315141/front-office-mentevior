@@ -4,12 +4,19 @@ import { useParams } from "next/navigation"
 import { Loader2, FolderOpen } from "lucide-react"
 import { useHRDocumentById } from "@/lib/modules/hr-documents/hooks/use-hr-document-by-id"
 import { HRDocumentEditForm } from "./components/HRDocumentEditForm"
+import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function EditHRDocumentPage() {
   const params = useParams()
   const id = params.id as string
+  const canEdit = useRequirePermission(PermissionModule.HR_DOCUMENTS, PermissionAction.EDIT)
 
   const { data: document, isLoading, error } = useHRDocumentById(id)
+
+  if (!canEdit) {
+    return null
+  }
 
   if (isLoading) {
     return (

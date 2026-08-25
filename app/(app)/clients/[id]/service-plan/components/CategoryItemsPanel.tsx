@@ -3,6 +3,8 @@
 import { useMemo } from "react"
 import { Button } from "@/components/custom/Button"
 import { Card } from "@/components/custom/Card"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import type {
   ClientServicePlanCategoryMappedItem,
   ClientServicePlanCategorySummary,
@@ -46,6 +48,7 @@ export function CategoryItemsPanel({
   onConfigureDataCollection,
   onOpenAddItemsDrawer,
 }: CategoryItemsPanelProps) {
+  const { canCreate } = useModulePermissions(PermissionModule.CLIENTS)
   const { items: teachingProcedures } = useTeachingProcedureCatalog()
   const { itemsMap: typeEventMap } = useTypeEventCatalog()
 
@@ -72,18 +75,22 @@ export function CategoryItemsPanel({
       <div className="mt-1 flex items-center justify-between gap-3">
         <p className="text-sm text-slate-500">Mapped items for this category.</p>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-9 px-4 text-xs"
-            onClick={createForm.start}
-            disabled={createForm.isSaving}
-          >
-            Create item
-          </Button>
-          <Button type="button" className="h-9 px-4 text-xs" onClick={onOpenAddItemsDrawer}>
-            Add items
-          </Button>
+          {canCreate && (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-9 px-4 text-xs"
+                onClick={createForm.start}
+                disabled={createForm.isSaving}
+              >
+                Create item
+              </Button>
+              <Button type="button" className="h-9 px-4 text-xs" onClick={onOpenAddItemsDrawer}>
+                Add items
+              </Button>
+            </>
+          )}
         </div>
       </div>
 

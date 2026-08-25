@@ -3,14 +3,14 @@
 import { useState, useRef } from "react"
 import { Plus, Award } from "lucide-react"
 import { Button } from "@/components/custom/Button"
-import { useRouter } from "next/navigation"
 import { CredentialsTable, type CredentialsTableRef } from "./components/CredentialsTable"
 import { CredentialDrawer } from "./components/CredentialDrawer"
 import { NoActiveServiceGate } from "@/components/custom/NoActiveServiceGate"
 import { useHasActiveService } from "@/lib/modules/services/hooks/use-has-active-service"
+import { CreateGate } from "@/components/layout/PermissionGate"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 export default function CredentialsPage() {
-  const router = useRouter()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const tableRef = useRef<CredentialsTableRef>(null)
   const { hasActiveService, isLoading } = useHasActiveService()
@@ -37,14 +37,16 @@ export default function CredentialsPage() {
           </div>
 
           {hasActiveService && (
-            <Button
-              variant="primary"
-              onClick={() => setIsDrawerOpen(true)}
-              className="gap-2 flex items-center"
-            >
-              <Plus className="w-4 h-4" />
-              Add Credential
-            </Button>
+            <CreateGate module={PermissionModule.ACCOUNT_PROFILE}>
+              <Button
+                variant="primary"
+                onClick={() => setIsDrawerOpen(true)}
+                className="gap-2 flex items-center"
+              >
+                <Plus className="w-4 h-4" />
+                Add Credential
+              </Button>
+            </CreateGate>
           )}
         </div>
 
