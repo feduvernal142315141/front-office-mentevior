@@ -39,7 +39,6 @@ const APP_ROUTES = [
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  console.log(pathname, "PIMGA");
   // Allow public paths, dynamic login routes, and dynamic forgot-password routes
   if (
     PUBLIC_PATHS.includes(pathname) || 

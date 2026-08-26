@@ -266,7 +266,7 @@ function markSessionEndReason(reason: "expired") {
 interface AuthStore extends AuthState {
   // Actions
   login: (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
   refresh: () => Promise<boolean>
   /** Igual que refresh() pero indicando por qué falló, para no cerrar sesión ante fallos transitorios */
   refreshSession: () => Promise<RefreshOutcome>
@@ -583,7 +583,7 @@ export const useAuthStore = create<AuthStore>()(
       // ============================================
       // LOGOUT
       // ============================================
-      logout: () => {
+      logout: (): Promise<void> => {
         // Limpiar worker
         get().clearWorker()
 
@@ -604,14 +604,17 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: false,
         })
 
-        // Limpiar cookie del servidor
-        fetch("/api/auth/logout", { method: "POST" }).catch(console.error)
+        // Limpiar cookie del servidor. `keepalive` para que la petición sobreviva
+        // a la navegación dura que hacen los llamadores justo después.
+        return fetch("/api/auth/logout", { method: "POST", keepalive: true })
+          .catch(console.error)
+          .then(() => undefined)
       },
 
       /** Cierre de sesión provocado por expiración: deja constancia para avisar en el login */
       endSession: () => {
         markSessionEndReason("expired")
-        get().logout()
+        void get().logout()
         if (typeof window !== "undefined") {
           window.location.href = getLoginUrl()
         }
