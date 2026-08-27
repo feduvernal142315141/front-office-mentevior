@@ -4,9 +4,58 @@ import * as React from 'react'
 import { Drawer as DrawerPrimitive } from 'vaul'
 import { cn } from '@/lib/utils'
 
+/**
+ * vaul@0.9 sólo restaura `document.body.style.pointerEvents` cuando el drawer se
+ * cierra *desde adentro* (Escape, click en el overlay o `DrawerClose`), porque el
+ * reset vive en el `onChange` de su `useControllableState`. Si el padre baja la
+ * prop `open` a `false` de forma programática — por ejemplo al terminar de guardar —
+ * ese `onChange` nunca corre y el `pointer-events: none` que puso Radix se queda
+ * pegado en el `<body>`: la página entera deja de responder a los clicks.
+ *
+ * Lo restauramos nosotros al terminar la animación de cierre, y sólo si no quedó
+ * otro overlay modal abierto que legítimamente lo necesite.
+ */
+const CLOSE_TRANSITION_MS = 550
+
+function releaseBodyPointerEvents() {
+  if (typeof document === 'undefined') return
+  if (document.body.style.pointerEvents !== 'none') return
+  // Otro dialog/drawer modal sigue abierto: es suyo el bloqueo, no lo tocamos.
+  if (document.querySelector('[data-vaul-drawer][data-state="open"], [role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) {
+    return
+  }
+  document.body.style.removeProperty('pointer-events')
+}
+
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
+  const { open } = props
+  const wasOpenRef = React.useRef(false)
+
+  React.useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true
+      return
+    }
+    if (!wasOpenRef.current) return
+    wasOpenRef.current = false
+
+    const timeout = window.setTimeout(releaseBodyPointerEvents, CLOSE_TRANSITION_MS)
+    return () => window.clearTimeout(timeout)
+  }, [open])
+
+  // Si el drawer se desmonta estando abierto, el reset de vaul tampoco llega.
+  React.useEffect(
+    () => () => {
+      if (wasOpenRef.current) {
+        wasOpenRef.current = false
+        window.setTimeout(releaseBodyPointerEvents, CLOSE_TRANSITION_MS)
+      }
+    },
+    []
+  )
+
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />
 }
 

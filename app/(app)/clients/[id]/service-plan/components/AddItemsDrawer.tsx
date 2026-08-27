@@ -27,6 +27,7 @@ interface AddItemsDrawerProps {
 }
 
 const PAGE_SIZE = 50
+const SEARCH_DEBOUNCE_MS = 300
 
 function sortByName(items: ClientItemCatalogItem[]): ClientItemCatalogItem[] {
   return [...items].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
@@ -51,6 +52,7 @@ export function AddItemsDrawer({
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [appliedSearch, setAppliedSearch] = useState("")
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
   const [isAssigning, setIsAssigning] = useState(false)
 
@@ -65,8 +67,15 @@ export function AddItemsDrawer({
     setPage(0)
     setHasMore(true)
     setSearchTerm("")
+    setAppliedSearch("")
     setSelectedItemIds(new Set())
   }, [])
+
+  // La búsqueda viaja al backend, así que se debouncea antes de disparar el fetch.
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setAppliedSearch(searchTerm.trim()), SEARCH_DEBOUNCE_MS)
+    return () => window.clearTimeout(timeout)
+  }, [searchTerm])
 
   useEffect(() => {
     if (!open) {
@@ -82,8 +91,6 @@ export function AddItemsDrawer({
       return
     }
 
-    setSearchTerm("")
-    setSelectedItemIds(new Set())
     setLoadError(null)
     setCatalog([])
     setPage(0)
@@ -97,7 +104,8 @@ export function AddItemsDrawer({
         const { items, hasMore: more } = await getClientServicePlanItemCatalog(
           clientServicePlanId,
           0,
-          PAGE_SIZE
+          PAGE_SIZE,
+          appliedSearch
         )
 
         if (!isActive) return
@@ -118,7 +126,7 @@ export function AddItemsDrawer({
     return () => {
       isActive = false
     }
-  }, [open, activeCategory, clientServicePlanId, resetDrawer])
+  }, [open, activeCategory, clientServicePlanId, appliedSearch, resetDrawer])
 
   useEffect(() => {
     if (open) {
@@ -135,7 +143,8 @@ export function AddItemsDrawer({
       const { items, hasMore: more } = await getClientServicePlanItemCatalog(
         clientServicePlanId,
         nextPage,
-        PAGE_SIZE
+        PAGE_SIZE,
+        appliedSearch
       )
 
       setCatalog((current) => sortByName(dedupeById([...current, ...items])))
@@ -146,7 +155,7 @@ export function AddItemsDrawer({
     } finally {
       setIsLoadingMore(false)
     }
-  }, [clientServicePlanId, hasMore, isLoading, isLoadingMore, page])
+  }, [appliedSearch, clientServicePlanId, hasMore, isLoading, isLoadingMore, page])
 
   const handleScroll = () => {
     const container = scrollRef.current
@@ -162,17 +171,39 @@ export function AddItemsDrawer({
     onClose()
   }
 
+  const activeCategoryId = activeCategory?.categoryId
+
   const availableItems = useMemo(
-    () => catalog.filter((item) => !mappedItemIds.has(item.id)),
-    [catalog, mappedItemIds]
+    () =>
+      catalog.filter((item) => {
+        if (mappedItemIds.has(item.id)) return false
+        // El catálogo del plan devuelve ítems de todas las categorías: sólo tienen
+        // sentido los de la categoría activa. Si el backend no informó `categoryId`
+        // se deja pasar el ítem antes que esconder el catálogo entero.
+        if (activeCategoryId && item.categoryId && item.categoryId !== activeCategoryId) return false
+        return true
+      }),
+    [activeCategoryId, catalog, mappedItemIds]
   )
 
+  // El backend ya filtra por nombre; esto sólo mantiene la lista coherente mientras
+  // el debounce está en vuelo.
   const normalizedSearch = searchTerm.trim().toLowerCase()
 
   const filteredItems = useMemo(() => {
     if (normalizedSearch.length === 0) return availableItems
     return availableItems.filter((item) => item.name.toLowerCase().includes(normalizedSearch))
   }, [availableItems, normalizedSearch])
+
+  // El filtro por categoría y el descarte de ítems ya mapeados se aplican sobre la
+  // página cargada, así que una página entera puede quedar vacía aunque queden
+  // coincidencias más adelante. Sin esto la lista se ve vacía y el scroll infinito
+  // nunca arranca, porque no hay nada que scrollear.
+  useEffect(() => {
+    if (!open || isLoading || isLoadingMore || !hasMore) return
+    if (filteredItems.length > 0) return
+    void loadMore()
+  }, [open, isLoading, isLoadingMore, hasMore, filteredItems.length, loadMore])
 
   const isAllVisibleSelected =
     filteredItems.length > 0 && filteredItems.every((item) => selectedItemIds.has(item.id))

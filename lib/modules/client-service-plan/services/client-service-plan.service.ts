@@ -495,10 +495,26 @@ export async function createClientServicePlanItem(
 export async function getClientServicePlanItemCatalog(
   clientServicePlanId: string,
   page: number,
-  pageSize: number
+  pageSize: number,
+  search?: string
 ): Promise<{ items: ClientItemCatalogItem[]; hasMore: boolean }> {
+  // El endpoint acepta el DSL de `filters` (ver OpenAPI de
+  // `/client-service-plan/{clientServicePlanId}/item/catalog`), así que la búsqueda
+  // se resuelve en el backend sobre el catálogo completo. Filtrar sólo en memoria
+  // dejaba fuera cualquier coincidencia que viviera en una página no cargada.
+  const filters = buildFilters(
+    [],
+    search && search.trim() !== "" ? { fields: ["name"], search } : undefined
+  )
+
+  const query = getQueryString({
+    page,
+    pageSize,
+    ...(filters.length > 0 ? { filters } : {}),
+  })
+
   const response = await serviceGet<unknown>(
-    `/client-service-plan/${clientServicePlanId}/item/catalog?page=${page}&pageSize=${pageSize}`
+    `/client-service-plan/${clientServicePlanId}/item/catalog?${query}`
   )
 
   if (response.status !== 200 || !response.data) {
