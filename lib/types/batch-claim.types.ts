@@ -3,6 +3,12 @@
 // Types for the Billed Claims (BatchClaim) module
 // ============================================
 
+import type {
+  ClaimMdAdjudicationStatus,
+  ClaimMdSubmissionStatus,
+  ClaimMdTransmissionStatus,
+} from "./claim-md.types"
+
 /** Row from GET /batch-claims (paginated list) */
 export interface BatchClaimSummary {
   id: string
@@ -14,6 +20,11 @@ export interface BatchClaimSummary {
   comments: string
   createAt: string
   active: boolean
+  /**
+   * El contrato del listado no documenta los campos `claimMd*`. Se parsea si viene y
+   * la columna de Claim.MD sólo aparece cuando el backend lo envía.
+   */
+  claimMdTransmissionStatus?: ClaimMdTransmissionStatus | null
 }
 
 /** Service line inside a client group — GET /batch-claims/{id} */
@@ -32,6 +43,11 @@ export interface BatchClaimAppointmentDetail {
 
 /** Appointments grouped by clientId + priorAuthorizationId + insuranceId */
 export interface BatchClaimClientGroup {
+  /**
+   * Identifica el grupo dentro del batch. Es la clave para cruzarlo con su
+   * `ClaimMdSubmission` y para el flujo de resolución de UNKNOWN.
+   */
+  batchClaimServiceLogId: string
   clientId: string
   clientName: string
   payerName: string
@@ -54,6 +70,18 @@ export interface BatchClaim {
   /** Selección vigente del batch; los appointments de abajo se derivan de estos */
   serviceLogIds: string[]
   appointments: BatchClaimClientGroup[]
+
+  // ── Claim.MD (contrato 2026-08-28) ──
+  /** Estado del 837P subido. `null` = todavía no se envió. Gobierna las acciones de la UI. */
+  claimMdTransmissionStatus: ClaimMdTransmissionStatus | null
+  /** Estado agregado de los claims individuales dentro del archivo. */
+  claimMdSubmissionStatus: ClaimMdSubmissionStatus | null
+  /** Estado agregado de adjudicación/remesa. */
+  claimMdAdjudicationStatus: ClaimMdAdjudicationStatus | null
+  claimMdLastResponseAt: string | null
+  claimMdHasRemittance: boolean
+  claimMdPaidAmount: number | null
+  claimMdReconciliationStatus: string | null
 }
 
 /** Appointment nested inside an eligible service log */

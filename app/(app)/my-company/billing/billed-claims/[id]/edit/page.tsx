@@ -2,10 +2,11 @@
 
 import { use, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, FileCheck } from "lucide-react"
+import { ArrowLeft, FileCheck, Lock } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { usePermission } from "@/lib/hooks/use-permission"
+import { getBatchDecision } from "@/lib/modules/batch-claims/claim-md-status"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { BatchClaimForm } from "../../components/BatchClaimForm"
 import { useBatchClaimForm } from "../../hooks/useBatchClaimForm"
@@ -23,6 +24,13 @@ export default function EditBatchClaimPage({ params }: { params: Promise<{ id: s
   }, [user, canEditBatch, router])
 
   if (!canEditBatch) return null
+
+  /*
+   * Un batch enviado a Claim.MD ya no se puede editar (confirmado con backend): el
+   * 837P subido quedaría sin corresponder con lo que muestra la pantalla. El botón
+   * del detalle ya no lleva aquí, pero la ruta es accesible por URL directa.
+   */
+  const isLocked = getBatchDecision(form.batchClaim?.claimMdTransmissionStatus).isLocked
 
   return (
     <div className="px-6 py-6">
@@ -63,7 +71,27 @@ export default function EditBatchClaimPage({ params }: { params: Promise<{ id: s
           </div>
         )}
 
-        {!form.isLoadingBatch && !form.batchError && (
+        {!form.isLoadingBatch && !form.batchError && isLocked && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
+              <Lock className="h-6 w-6 text-slate-400" />
+            </div>
+            <p className="font-semibold text-slate-800">This batch was already submitted to Claim.MD</p>
+            <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
+              Its service log selection can no longer change, because the 837P file sent to the
+              clearing house was generated from it.
+            </p>
+            <Button
+              type="button"
+              className="mt-6"
+              onClick={() => router.push(`/my-company/billing/billed-claims/${id}`)}
+            >
+              Back to batch
+            </Button>
+          </div>
+        )}
+
+        {!form.isLoadingBatch && !form.batchError && !isLocked && (
           <BatchClaimForm
             form={form}
             onSaved={(savedId) => router.push(`/my-company/billing/billed-claims/${savedId}`)}

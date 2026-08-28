@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { format } from "date-fns"
 import { AlertTriangle, FileDown, FileText, Loader2, User } from "lucide-react"
 import { Button } from "@/components/custom/Button"
@@ -11,8 +11,18 @@ import {
   getBatchClaimPdfPreviewUrl,
 } from "@/lib/modules/batch-claims/services/batch-claims.service"
 import { useDownload837P } from "@/lib/modules/batch-claims/hooks/use-download-837p"
+import { useBatchClaimSubmissions } from "@/lib/modules/batch-claims/hooks/use-batch-claim-submissions"
+import { useClaimMdActions } from "@/lib/modules/batch-claims/hooks/use-claim-md-actions"
+import { getBatchDecision, getSubmissionBadge } from "@/lib/modules/batch-claims/claim-md-status"
 import type { BatchClaim, BatchClaimClientGroup } from "@/lib/types/batch-claim.types"
+import type { ClaimMdResolveUnknownResult, ClaimMdSubmissionSummary } from "@/lib/types/claim-md.types"
 import { cn } from "@/lib/utils"
+
+import { ClaimMdStatusBadge } from "./ClaimMdStatusBadge"
+import { ClaimMdStatusPanel } from "./ClaimMdStatusPanel"
+import { ClaimMdSubmissionDetailModal } from "./ClaimMdSubmissionDetailModal"
+import { ClaimMdSubmissionsPanel } from "./ClaimMdSubmissionsPanel"
+import { ClaimMdVerifyUnknownModal } from "./ClaimMdVerifyUnknownModal"
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 
@@ -39,11 +49,71 @@ function groupTotals(group: BatchClaimClientGroup) {
 
 interface BatchClaimDetailViewProps {
   batchClaim: BatchClaim
+  /** El usuario puede enviar/reintentar (permiso de edición sobre billed claims). */
+  canSubmit: boolean
+  isPolling: boolean
+  pollTimedOut: boolean
+  onRefresh: () => Promise<void> | void
 }
 
-export function BatchClaimDetailView({ batchClaim }: BatchClaimDetailViewProps) {
+export function BatchClaimDetailView({
+  batchClaim,
+  canSubmit,
+  isPolling,
+  pollTimedOut,
+  onRefresh,
+}: BatchClaimDetailViewProps) {
   const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string } | null>(null)
   const { download, isDownloading } = useDownload837P()
+
+  const decision = getBatchDecision(batchClaim.claimMdTransmissionStatus)
+  const claimMd = useClaimMdActions()
+
+  const { submissions, isLoading: isLoadingSubmissions, error: submissionsError, refetch: refetchSubmissions } =
+    useBatchClaimSubmissions(batchClaim.id, decision.showsClaimLevelDetail || decision.canResolveUnknown)
+
+  const [isVerifyOpen, setIsVerifyOpen] = useState(false)
+  const [verifyResult, setVerifyResult] = useState<ClaimMdResolveUnknownResult | null>(null)
+  const [detailTarget, setDetailTarget] = useState<
+    { submission: ClaimMdSubmissionSummary; clientName: string } | null
+  >(null)
+
+  const submissionByServiceLog = useMemo(
+    () => new Map(submissions.map((submission) => [submission.batchClaimServiceLogId, submission])),
+    [submissions],
+  )
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([onRefresh(), refetchSubmissions()])
+  }, [onRefresh, refetchSubmissions])
+
+  const handleSubmit = useCallback(async () => {
+    const result = await claimMd.submit(batchClaim.id)
+    if (result) await refreshAll()
+  }, [batchClaim.id, claimMd, refreshAll])
+
+  const handleRetry = useCallback(async () => {
+    const result = await claimMd.retry(batchClaim.id)
+    if (result) await refreshAll()
+  }, [batchClaim.id, claimMd, refreshAll])
+
+  const handleVerify = useCallback(async () => {
+    // Todos los submissions de un batch comparten `transmissionId`, así que resolver
+    // uno resuelve la transmisión entera: basta con el primero en UNKNOWN.
+    const target =
+      submissions.find((submission) => submission.transmissionStatus === "UNKNOWN") ?? submissions[0]
+
+    const result = await claimMd.resolveUnknown({
+      batchClaimId: batchClaim.id,
+      batchClaimServiceLogId: target?.batchClaimServiceLogId ?? null,
+      submissionId: target?.submissionId ?? null,
+    })
+
+    if (result) {
+      setVerifyResult(result)
+      await refreshAll()
+    }
+  }, [batchClaim.id, claimMd, refreshAll, submissions])
 
   const totals = useMemo(() => {
     let appointments = 0
@@ -125,6 +195,35 @@ export function BatchClaimDetailView({ batchClaim }: BatchClaimDetailViewProps) 
         )}
       </div>
 
+      {/* ─── Claim.MD ─── */}
+      <ClaimMdStatusPanel
+        batchClaim={batchClaim}
+        canAct={canSubmit}
+        hasClaims={totals.appointments > 0}
+        isPolling={isPolling}
+        pollTimedOut={pollTimedOut}
+        isSubmitting={claimMd.isSubmitting}
+        isRetrying={claimMd.isRetrying}
+        isResolving={claimMd.isResolving}
+        onSubmit={() => void handleSubmit()}
+        onRetry={() => void handleRetry()}
+        onVerify={() => {
+          setVerifyResult(null)
+          setIsVerifyOpen(true)
+        }}
+        onRefresh={() => void refreshAll()}
+      />
+
+      {decision.showsClaimLevelDetail && (
+        <ClaimMdSubmissionsPanel
+          submissions={submissions}
+          isLoading={isLoadingSubmissions}
+          error={submissionsError}
+          clientGroups={batchClaim.appointments}
+          onOpenDetail={(submission, clientName) => setDetailTarget({ submission, clientName })}
+        />
+      )}
+
       {/* ─── Totals strip ─── */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {[
@@ -178,6 +277,11 @@ export function BatchClaimDetailView({ batchClaim }: BatchClaimDetailViewProps) 
                 <span className="text-xs text-slate-500">
                   Member: <span className="font-medium text-slate-700">{group.memberNumber || "—"}</span>
                 </span>
+                <ClaimMdStatusBadge
+                  badge={getSubmissionBadge(
+                    submissionByServiceLog.get(group.batchClaimServiceLogId)?.submissionStatus,
+                  )}
+                />
                 <div className="ml-auto">
                   <Button
                     type="button"
@@ -255,6 +359,31 @@ export function BatchClaimDetailView({ batchClaim }: BatchClaimDetailViewProps) 
           )
         })
       )}
+
+      <ClaimMdVerifyUnknownModal
+        open={isVerifyOpen}
+        onClose={() => {
+          setIsVerifyOpen(false)
+          setVerifyResult(null)
+        }}
+        isResolving={claimMd.isResolving}
+        result={verifyResult}
+        onVerify={() => void handleVerify()}
+        onRetry={() => {
+          setIsVerifyOpen(false)
+          setVerifyResult(null)
+          void handleRetry()
+        }}
+      />
+
+      <ClaimMdSubmissionDetailModal
+        open={detailTarget !== null}
+        onClose={() => setDetailTarget(null)}
+        batchClaimId={batchClaim.id}
+        batchClaimServiceLogId={detailTarget?.submission.batchClaimServiceLogId ?? null}
+        submissionId={detailTarget?.submission.submissionId ?? null}
+        clientName={detailTarget?.clientName}
+      />
 
       {/* PDF viewer */}
       {pdfPreview && (

@@ -2,9 +2,10 @@
 
 import { use } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Edit2, FileCheck } from "lucide-react"
+import { ArrowLeft, Edit2, FileCheck, Lock } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { useBatchClaimById } from "@/lib/modules/batch-claims/hooks/use-batch-claim-by-id"
+import { getBatchDecision } from "@/lib/modules/batch-claims/claim-md-status"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { BatchClaimDetailView } from "../components/BatchClaimDetailView"
@@ -12,8 +13,13 @@ import { BatchClaimDetailView } from "../components/BatchClaimDetailView"
 export default function BatchClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const { edit: canEdit } = usePermission()
-  const { batchClaim, isLoading, error } = useBatchClaimById(id)
+  const { edit: canEditModule } = usePermission()
+  const { batchClaim, isLoading, error, refetch, isPolling, pollTimedOut } = useBatchClaimById(id, {
+    poll: true,
+  })
+
+  const canEdit = canEditModule(PermissionModule.BILLED_CLAIMS)
+  const decision = getBatchDecision(batchClaim?.claimMdTransmissionStatus)
 
   return (
     <div className="px-6 py-6">
@@ -33,18 +39,34 @@ export default function BatchClaimDetailPage({ params }: { params: Promise<{ id:
             <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
               Batch Claim
             </h1>
-            <p className="mt-1 text-slate-600">Review the batch, preview CMS-1500 forms and generate the 837P file</p>
+            <p className="mt-1 text-slate-600">
+              Review the batch, preview CMS-1500 forms and submit it to Claim.MD
+            </p>
           </div>
-          {canEdit(PermissionModule.BILLED_CLAIMS) && batchClaim && (
+          {canEdit && batchClaim && (
             <div className="ml-auto">
-              <Button
-                variant="secondary"
-                className="gap-2"
-                onClick={() => router.push(`/my-company/billing/billed-claims/${id}/edit`)}
-              >
-                <Edit2 className="h-4 w-4" />
-                Edit
-              </Button>
+              {/*
+                Una vez existe transmisión el batch queda congelado: editarlo dejaría el
+                837P ya subido sin correspondencia con lo que muestra la pantalla.
+              */}
+              {decision.isLocked ? (
+                <span
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-500"
+                  title="This batch was already submitted to Claim.MD and can no longer be edited"
+                >
+                  <Lock className="h-4 w-4" />
+                  Locked after submission
+                </span>
+              ) : (
+                <Button
+                  variant="secondary"
+                  className="gap-2"
+                  onClick={() => router.push(`/my-company/billing/billed-claims/${id}/edit`)}
+                >
+                  <Edit2 className="h-4 w-4" />
+                  Edit
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -70,7 +92,15 @@ export default function BatchClaimDetailPage({ params }: { params: Promise<{ id:
           </div>
         )}
 
-        {!isLoading && !error && batchClaim && <BatchClaimDetailView batchClaim={batchClaim} />}
+        {!isLoading && !error && batchClaim && (
+          <BatchClaimDetailView
+            batchClaim={batchClaim}
+            canSubmit={canEdit}
+            isPolling={isPolling}
+            pollTimedOut={pollTimedOut}
+            onRefresh={refetch}
+          />
+        )}
       </div>
     </div>
   )

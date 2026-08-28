@@ -8,9 +8,13 @@ import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { useBatchClaims } from "@/lib/modules/batch-claims/hooks/use-batch-claims"
+import { getBatchDecision } from "@/lib/modules/batch-claims/claim-md-status"
 import { cn } from "@/lib/utils"
+import { ClaimMdStatusBadge } from "./ClaimMdStatusBadge"
 
 const GRID_COLS = "grid-cols-[minmax(160px,1.2fr)_minmax(160px,1.2fr)_minmax(160px,1.2fr)_minmax(120px,1fr)_90px_88px]"
+const GRID_COLS_WITH_CLAIM_MD =
+  "grid-cols-[minmax(150px,1.1fr)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(110px,0.9fr)_90px_130px_88px]"
 
 interface BatchClaimsTableProps {
   canEdit: boolean
@@ -51,6 +55,10 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
   }
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+
+  // El listado sólo muestra la columna de Claim.MD si el backend manda el campo.
+  const showClaimMd = batchClaims.some((batch) => batch.claimMdTransmissionStatus != null)
+  const gridCols = showClaimMd ? GRID_COLS_WITH_CLAIM_MD : GRID_COLS
 
   if (error) {
     return (
@@ -117,12 +125,15 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
       {!isLoading && batchClaims.length > 0 && (
         <div className="space-y-3">
           {/* Column headers */}
-          <div className={cn("hidden xl:grid items-center gap-3 px-5 pb-1", GRID_COLS)}>
+          <div className={cn("hidden xl:grid items-center gap-3 px-5 pb-1", gridCols)}>
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Reference</span>
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Payer</span>
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Plan</span>
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Created</span>
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Status</span>
+            {showClaimMd && (
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Claim.MD</span>
+            )}
             <span className="text-center text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Actions</span>
           </div>
 
@@ -131,7 +142,7 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
               key={batch.id}
               className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
             >
-              <div className={cn("grid items-center gap-3 px-5 py-4", GRID_COLS)}>
+              <div className={cn("grid items-center gap-3 px-5 py-4", gridCols)}>
                 <div className="min-w-0">
                   <span className="block truncate font-semibold text-slate-900">{batch.reference || "—"}</span>
                   {batch.comments && (
@@ -151,6 +162,19 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
                 >
                   {batch.active ? "Active" : "Inactive"}
                 </span>
+                {showClaimMd && (
+                  <ClaimMdStatusBadge
+                    badge={
+                      batch.claimMdTransmissionStatus
+                        ? {
+                            label: getBatchDecision(batch.claimMdTransmissionStatus).label,
+                            tone: getBatchDecision(batch.claimMdTransmissionStatus).tone,
+                          }
+                        : null
+                    }
+                    className="w-fit"
+                  />
+                )}
                 <div className="flex w-[88px] items-center justify-end gap-2">
                   <button
                     type="button"
@@ -167,7 +191,7 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
                   >
                     <Eye className="h-3.5 w-3.5 text-slate-600 transition-colors group-hover/view:text-slate-800" />
                   </button>
-                  {canEdit && (
+                  {canEdit && !getBatchDecision(batch.claimMdTransmissionStatus).isLocked && (
                     <button
                       type="button"
                       onClick={() => router.push(`/my-company/billing/billed-claims/${batch.id}/edit`)}
