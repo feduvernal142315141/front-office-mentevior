@@ -10,12 +10,18 @@ interface UseCountriesReturn {
   error: Error | null
 }
 
-export function useCountries(): UseCountriesReturn {
+export function useCountries(options?: { enabled?: boolean }): UseCountriesReturn {
   const [countries, setCountries] = useState<Country[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const enabled = options?.enabled ?? true
+  const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      return
+    }
+
     const fetchCountries = async () => {
       try {
         setIsLoading(true)
@@ -31,7 +37,7 @@ export function useCountries(): UseCountriesReturn {
     }
 
     fetchCountries()
-  }, [])
+  }, [enabled])
 
   return {
     countries,

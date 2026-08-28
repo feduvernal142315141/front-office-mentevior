@@ -10,12 +10,18 @@ interface UsePhysicianSpecialtiesReturn {
   error: Error | null
 }
 
-export function usePhysicianSpecialties(): UsePhysicianSpecialtiesReturn {
+export function usePhysicianSpecialties(options?: { enabled?: boolean }): UsePhysicianSpecialtiesReturn {
   const [physicianSpecialties, setPhysicianSpecialties] = useState<PhysicianSpecialty[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const enabled = options?.enabled ?? true
+  const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      return
+    }
+
     const fetchPhysicianSpecialties = async () => {
       try {
         setIsLoading(true)
@@ -31,7 +37,7 @@ export function usePhysicianSpecialties(): UsePhysicianSpecialtiesReturn {
     }
 
     fetchPhysicianSpecialties()
-  }, [])
+  }, [enabled])
 
   return {
     physicianSpecialties,

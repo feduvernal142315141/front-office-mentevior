@@ -36,7 +36,7 @@ export const diagnosisFormSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["treatmentEndDate"],
-      message: "Treatment end date must be after treatment start date",
+      message: "Treatment end date must be on or after treatment start date",
     })
   }
 })

@@ -12,12 +12,18 @@ interface UseProvidersOnFileReturn {
 }
 
 /** Providers on file de la compañía (lista completa, para selects) */
-export function useProvidersOnFile(): UseProvidersOnFileReturn {
+export function useProvidersOnFile(options?: { enabled?: boolean }): UseProvidersOnFileReturn {
+  const enabled = options?.enabled ?? true
   const [providers, setProviders] = useState<ProviderOnFile[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<Error | null>(null)
 
   const fetchProviders = useCallback(async () => {
+    if (!enabled) {
+      setIsLoading(false)
+      return
+    }
+
     try {
       setIsLoading(true)
       setError(null)
@@ -29,7 +35,7 @@ export function useProvidersOnFile(): UseProvidersOnFileReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
     fetchProviders()

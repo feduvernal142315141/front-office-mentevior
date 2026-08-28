@@ -35,10 +35,10 @@ export interface CreateDiagnosisDto {
   referralDate: string
   treatmentStartDate: string
   status: boolean
-  treatmentEndDate?: string
+  treatmentEndDate?: string | null
   isPrimary: boolean
-  attachment?: string
-  attachmentFileName?: string
+  attachment?: string | null
+  attachmentFileName?: string | null
   providerOnFileIds?: string[]
 }
 
@@ -48,9 +48,12 @@ export interface UpdateDiagnosisDto {
   referralDate: string
   treatmentStartDate: string
   status: boolean
-  treatmentEndDate?: string
+  /** `null` = limpiar el campo. Omitirlo y mandar `null` llegan igual al backend
+   *  (Jackson deserializa ambos como `null`), pero `null` deja la intención explícita. */
+  treatmentEndDate?: string | null
   isPrimary: boolean
-  attachment?: string
-  attachmentFileName?: string
+  /** `null` = eliminar el adjunto guardado. Ver nota de `treatmentEndDate`. */
+  attachment?: string | null
+  attachmentFileName?: string | null
   providerOnFileIds?: string[]
 }

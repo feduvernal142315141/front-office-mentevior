@@ -30,7 +30,7 @@ export function DiagnosisCodeCombobox({
 }: DiagnosisCodeComboboxProps) {
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState(value)
-  const { items, totalCount, isLoading, termForFetch } = useDiagnosisCatalogSearch(inputValue, open)
+  const { items, totalCount, isLoading, error, termForFetch } = useDiagnosisCatalogSearch(inputValue, open)
   // Tracks whether the latest mousedown came from the input itself, so we can
   // prevent Radix from closing the popover when the user clicks back on it.
   const clickedInputRef = useRef(false)
@@ -53,11 +53,13 @@ export function DiagnosisCodeCombobox({
 
   const trimmed = termForFetch.trim()
   const isSearchMode = trimmed.length >= MIN_SEARCH
+  const hasFailed = open && !!error && !isLoading
   const showInitialLoading = open && !isSearchMode && isLoading && items.length === 0
   const showSearchLoading = open && isSearchMode && isLoading && items.length === 0
-  const showHint = open && inputValue.trim().length === 1 && !isSearchMode
-  const showList = open && items.length > 0
-  const showEmptySearch = open && isSearchMode && !isLoading && items.length === 0
+  const showList = open && !hasFailed && items.length > 0
+  // Un fallo de red se mostraba como "No diagnosis codes found", que se lee como
+  // "ese código no existe" y no como "no se pudo consultar el catálogo".
+  const showEmptySearch = open && !hasFailed && isSearchMode && !isLoading && items.length === 0
 
   return (
     <Popover
@@ -140,9 +142,10 @@ export function DiagnosisCodeCombobox({
           </div>
         )}
 
-        {showHint && (
-          <div className="px-4 py-2 text-xs text-slate-400 border-b border-slate-100">
-            Type one more character to search the full catalog, or choose from the list below
+        {hasFailed && (
+          <div className="px-4 py-3">
+            <p className="text-sm font-medium text-red-600">Could not load the diagnosis catalog.</p>
+            <p className="mt-1 text-xs text-slate-500">{error?.message}</p>
           </div>
         )}
 

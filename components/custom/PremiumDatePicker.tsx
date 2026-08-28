@@ -18,6 +18,10 @@ interface PremiumDatePickerProps {
   description?: string
   required?: boolean
   disabled?: boolean
+  /** Fecha mínima seleccionable, `yyyy-MM-dd`. Los días anteriores se deshabilitan. */
+  minDate?: string
+  /** Fecha máxima seleccionable, `yyyy-MM-dd`. Los días posteriores se deshabilitan. */
+  maxDate?: string
 }
 
 export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePickerProps>(function PremiumDatePicker({
@@ -31,6 +35,8 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
   description,
   required = false,
   disabled = false,
+  minDate,
+  maxDate,
 }, ref) {
   const [isFocused, setIsFocused] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -52,6 +58,20 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
 
   const dateValue = useMemo(() => parseLocalDate(value), [value])
   const hasValue = value && value.length > 0
+
+  // Matcher de react-day-picker: sin `minDate`/`maxDate` queda `undefined` y el
+  // calendario se comporta exactamente igual que antes.
+  const disabledDays = useMemo(() => {
+    const min = parseLocalDate(minDate ?? "")
+    const max = parseLocalDate(maxDate ?? "")
+    // Array de matchers, no un objeto: `{before, after}` en un solo objeto es un
+    // `DateInterval` y significa lo contrario (los días *entre* ambos).
+    const matchers = [
+      ...(min ? [{ before: min }] : []),
+      ...(max ? [{ after: max }] : []),
+    ]
+    return matchers.length > 0 ? matchers : undefined
+  }, [minDate, maxDate])
 
   useEffect(() => {
     if (!dateValue) return
@@ -304,6 +324,7 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
               mode="single"
               selected={dateValue}
               onSelect={handleSelect}
+              disabled={disabledDays}
               month={displayMonth}
               onMonthChange={setDisplayMonth}
               captionLayout="label"
