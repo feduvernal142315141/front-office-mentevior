@@ -136,10 +136,10 @@ export class ApiPayersService implements PayersServiceContract {
       return { items: [], totalCount: 0 }
     }
 
-    const filters = [`searchText__CONTAINS_IGNORE_CASE__${searchText}`]
+    const filters = [`searchText__CONTAINS_IGNORE_CASE__${searchText}__AND`]
     const payerState = sanitizeCatalogFilterValue(query.payerState ?? "")
     if (payerState) {
-      filters.push(`payerState__CONTAINS_IGNORE_CASE__${payerState}`)
+      filters.push(`payerState__CONTAINS_IGNORE_CASE__${payerState}__AND`)
     }
 
     const qsString = qsLib.stringify(
