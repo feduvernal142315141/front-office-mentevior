@@ -12,9 +12,9 @@ import { getBatchDecision } from "@/lib/modules/batch-claims/claim-md-status"
 import { cn } from "@/lib/utils"
 import { ClaimMdStatusBadge } from "./ClaimMdStatusBadge"
 
-const GRID_COLS = "grid-cols-[minmax(160px,1.2fr)_minmax(160px,1.2fr)_minmax(160px,1.2fr)_minmax(120px,1fr)_90px_88px]"
+const GRID_COLS = "grid-cols-[minmax(180px,1.4fr)_minmax(160px,1.2fr)_minmax(160px,1.2fr)_minmax(120px,1fr)_88px]"
 const GRID_COLS_WITH_CLAIM_MD =
-  "grid-cols-[minmax(150px,1.1fr)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(110px,0.9fr)_90px_130px_88px]"
+  "grid-cols-[minmax(170px,1.3fr)_minmax(150px,1.1fr)_minmax(150px,1.1fr)_minmax(120px,1fr)_130px_88px]"
 
 interface BatchClaimsTableProps {
   canEdit: boolean
@@ -130,7 +130,6 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Payer</span>
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Plan</span>
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Created</span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Status</span>
             {showClaimMd && (
               <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Claim.MD</span>
             )}
@@ -152,28 +151,23 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
                 <span className="truncate text-sm font-medium text-slate-700">{batch.payerName || "—"}</span>
                 <span className="truncate text-sm text-slate-600">{batch.payerPlanName || "—"}</span>
                 <span className="text-sm text-slate-500">{formatDate(batch.createAt)}</span>
-                <span
-                  className={cn(
-                    "inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
-                    batch.active
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      : "bg-slate-100 text-slate-500 border border-slate-200",
-                  )}
-                >
-                  {batch.active ? "Active" : "Inactive"}
-                </span>
+                {/*
+                  La celda se renderiza siempre: `ClaimMdStatusBadge` devuelve `null` sin
+                  estado, y una celda de menos corre el resto de la fila una columna.
+                */}
                 {showClaimMd && (
-                  <ClaimMdStatusBadge
-                    badge={
-                      batch.claimMdTransmissionStatus
-                        ? {
-                            label: getBatchDecision(batch.claimMdTransmissionStatus).label,
-                            tone: getBatchDecision(batch.claimMdTransmissionStatus).tone,
-                          }
-                        : null
-                    }
-                    className="w-fit"
-                  />
+                  <span className="min-w-0">
+                    {batch.claimMdTransmissionStatus ? (
+                      <ClaimMdStatusBadge
+                        badge={{
+                          label: getBatchDecision(batch.claimMdTransmissionStatus).label,
+                          tone: getBatchDecision(batch.claimMdTransmissionStatus).tone,
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm text-slate-400">—</span>
+                    )}
+                  </span>
                 )}
                 <div className="flex w-[88px] items-center justify-end gap-2">
                   <button

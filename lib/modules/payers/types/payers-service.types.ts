@@ -15,6 +15,17 @@ export interface PayersListResult {
   totalCount: number
 }
 
+export interface PayerCatalogSearchResult {
+  items: PayerCatalogSearchItem[]
+  totalCount: number
+  /**
+   * El clearing house no tiene proveedor de catálogo (Availity y Sunshine Health hoy).
+   * No es un fallo transitorio: reintentar da 422 siempre, así que quien consuma esto
+   * debe dejar de pedir para ese clearing house.
+   */
+  unsupported: boolean
+}
+
 export interface PayersServiceContract {
   list(query: ListPayersQueryDto): Promise<PayersListResult>
   getById(id: string): Promise<Payer>
@@ -27,7 +38,7 @@ export interface PayersServiceContract {
   searchPayerCatalog(
     clearingHouseId: string,
     query: SearchPayerCatalogQuery,
-  ): Promise<{ items: PayerCatalogSearchItem[]; totalCount: number }>
+  ): Promise<PayerCatalogSearchResult>
   getPlanTypeCatalog(): Promise<PlanTypeCatalogItem[]>
   refresh(): Promise<void>
 }

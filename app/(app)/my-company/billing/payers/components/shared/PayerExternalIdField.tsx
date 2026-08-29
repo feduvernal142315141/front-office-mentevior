@@ -37,7 +37,7 @@ export function PayerExternalIdField({
   const autoFilledForRef = useRef<string>("")
   const isEmpty = !value.trim()
   const canSearch = Boolean(clearingHouseId && searchText.trim() && !disabled)
-  const { items, isLoading } = usePayerCatalogSearch({
+  const { items, isLoading, isUnsupported } = usePayerCatalogSearch({
     clearingHouseId,
     searchText,
     payerState,
@@ -67,7 +67,11 @@ export function PayerExternalIdField({
   }
 
   const showList = open && items.length > 0
-  const showEmpty = open && canSearch && !isLoading && items.length === 0 && Boolean(searchText.trim())
+  // Sin catálogo no hay nada que sugerir: decirlo, en vez de "no encontré coincidencias",
+  // que sugiere que el ID no existe cuando lo que pasa es que no se puede buscar.
+  const showUnsupported = open && isUnsupported && Boolean(clearingHouseId)
+  const showEmpty =
+    open && canSearch && !isUnsupported && !isLoading && items.length === 0 && Boolean(searchText.trim())
   const showHint = open && !clearingHouseId
   const showNeedName = open && Boolean(clearingHouseId) && !searchText.trim()
 
@@ -138,7 +142,7 @@ export function PayerExternalIdField({
           onOpenAutoFocus={(e) => e.preventDefault()}
           onWheel={(e) => e.stopPropagation()}
         >
-          {isLoading && items.length === 0 && (
+          {isLoading && !isUnsupported && items.length === 0 && (
             <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin text-[#037ECC]" />
               Searching catalog…
@@ -152,6 +156,11 @@ export function PayerExternalIdField({
           {showNeedName && (
             <div className="px-4 py-3 text-sm text-slate-500">
               Enter the payer name to search the catalog
+            </div>
+          )}
+          {showUnsupported && (
+            <div className="px-4 py-3 text-sm text-slate-500">
+              This clearing house has no payer catalog — type the External ID manually.
             </div>
           )}
           {showEmpty && (

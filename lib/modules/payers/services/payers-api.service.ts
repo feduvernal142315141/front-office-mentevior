@@ -14,7 +14,14 @@ import type {
   UpdatePayerDto,
 } from "@/lib/types/payer.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
-import type { PayersListResult, PayersServiceContract } from "../types/payers-service.types"
+import type {
+  PayerCatalogSearchResult,
+  PayersListResult,
+  PayersServiceContract,
+} from "../types/payers-service.types"
+
+/** Mensaje del backend cuando el clearing house no ofrece catálogo de payers. */
+const CATALOG_UNSUPPORTED = /does not have a payer catalog provider/i
 
 export class ApiPayersService implements PayersServiceContract {
   private normalizePayer(raw: Payer): Payer {
@@ -130,10 +137,10 @@ export class ApiPayersService implements PayersServiceContract {
   async searchPayerCatalog(
     clearingHouseId: string,
     query: SearchPayerCatalogQuery,
-  ): Promise<{ items: PayerCatalogSearchItem[]; totalCount: number }> {
+  ): Promise<PayerCatalogSearchResult> {
     const searchText = sanitizeCatalogFilterValue(query.searchText)
     if (!clearingHouseId || !searchText) {
-      return { items: [], totalCount: 0 }
+      return { items: [], totalCount: 0, unsupported: false }
     }
 
     const filters = [`searchText__CONTAINS_IGNORE_CASE__${searchText}__AND`]
@@ -155,13 +162,20 @@ export class ApiPayersService implements PayersServiceContract {
       `/clearing-houses/${clearingHouseId}/payer-catalog/search?${qsString}`,
     )
 
+    // 422 "does not have a payer catalog provider": es una característica que ese
+    // clearing house no tiene, no un fallo. Se devuelve como estado para que el
+    // llamador deje de reintentar en cada tecla.
+    if (response?.status === 422 && CATALOG_UNSUPPORTED.test(response?.data?.message ?? "")) {
+      return { items: [], totalCount: 0, unsupported: true }
+    }
+
     if (!response || response.status !== 200 || !response.data) {
       throw new Error(response?.data?.message || "Failed to search payer catalog")
     }
 
     const data = response.data as unknown
     if (Array.isArray(data)) {
-      return { items: data as PayerCatalogSearchItem[], totalCount: data.length }
+      return { items: data as PayerCatalogSearchItem[], totalCount: data.length, unsupported: false }
     }
 
     const paginated = data as PaginatedResponse<PayerCatalogSearchItem>
@@ -169,6 +183,7 @@ export class ApiPayersService implements PayersServiceContract {
     return {
       items: entities,
       totalCount: paginated.pagination?.total ?? entities.length,
+      unsupported: false,
     }
   }
 

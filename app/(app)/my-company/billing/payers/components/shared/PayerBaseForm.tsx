@@ -364,7 +364,16 @@ export function PayerBaseForm({
           render={({ field, fieldState }) => (
             <PayerExternalIdField
               value={field.value ?? ""}
-              onChange={field.onChange}
+              onChange={(value) => {
+                field.onChange(value)
+                /*
+                 * El formulario valida `onBlur`, y el catálogo autocompleta el External ID
+                 * sin que el campo llegue a perder el foco. Sin esto, el error de requerido
+                 * se quedaba pegado encima de un campo que ya tenía valor. Sólo se
+                 * revalida si hay un error visible, para no validar en cada tecla.
+                 */
+                if (fieldState.error) void form.trigger("externalId")
+              }}
               onBlur={field.onBlur}
               hasError={!!fieldState.error}
               errorMessage={fieldState.error?.message}
