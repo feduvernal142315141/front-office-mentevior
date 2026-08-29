@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, type RefObject } from "react"
-import { Controller, type UseFormReturn } from "react-hook-form"
+import { Controller, useWatch, type UseFormReturn } from "react-hook-form"
 import { ChevronDown, FileText, X } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -50,8 +50,13 @@ export function PlanSection({
   }, [ratesError])
 
   const planTypeOptions = planTypes.map((p) => ({ value: p.id, label: p.name }))
-  const planName = form.watch(`payerPlans.${planIndex}.planName` as const)
-  const selectedPlanTypeId = form.watch(`payerPlans.${planIndex}.insurancePlanTypeId` as const)
+  // `useWatch` en vez de `form.watch`: se suscribe sólo a este campo. `form.watch` en el
+  // cuerpo del componente re-renderiza con cada cambio de cualquier campo del formulario.
+  const planName = useWatch({ control: form.control, name: `payerPlans.${planIndex}.planName` as const })
+  const selectedPlanTypeId = useWatch({
+    control: form.control,
+    name: `payerPlans.${planIndex}.insurancePlanTypeId` as const,
+  })
   const selectedPlanTypeName = planTypes.find((p) => p.id === selectedPlanTypeId)?.name ?? ""
   const planSummary = [planName?.trim(), selectedPlanTypeName?.trim()].filter(Boolean).join(" · ")
 

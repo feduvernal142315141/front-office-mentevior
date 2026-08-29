@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import { Building2, ChevronDown, ShieldCheck } from "lucide-react"
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
-import { useFieldArray, useForm, type FieldErrors } from "react-hook-form"
+import { useFieldArray, useForm, useWatch, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Card } from "@/components/custom/Card"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -142,7 +142,9 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     })
   }, [planFields])
 
-  const watchCountryId = form.watch("countryId")
+  // `useWatch` en vez de `form.watch`: se suscribe sólo a este campo. `form.watch` en el
+  // cuerpo del componente re-renderiza con cada cambio de cualquier campo del formulario.
+  const watchCountryId = useWatch({ control: form.control, name: "countryId" })
   useEffect(() => {
     if (hydrated && !canCreatePayers) {
       router.replace("/dashboard")
@@ -354,7 +356,7 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
     removePlan(planIndex)
   }
 
-  const nameValue = form.watch("name")
+  const nameValue = useWatch({ control: form.control, name: "name" })
   const isCatalogDataPending = isCatalogSource && isLoadingCatalogs
 
   if (!hydrated || !canCreatePayers) {

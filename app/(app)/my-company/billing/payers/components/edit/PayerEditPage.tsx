@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { useFieldArray, useForm, type FieldErrors } from "react-hook-form"
+import { useFieldArray, useForm, useWatch, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Building2, ChevronDown, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
@@ -93,7 +93,9 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     name: "payerPlans",
   })
 
-  const watchCountryId = form.watch("countryId")
+  // `useWatch` en vez de `form.watch`: se suscribe sólo a este campo. `form.watch` en el
+  // cuerpo del componente re-renderiza con cada cambio de cualquier campo del formulario.
+  const watchCountryId = useWatch({ control: form.control, name: "countryId" })
   useEffect(() => {
     if (hydrated && !canEditPayers) {
       router.replace("/dashboard")
