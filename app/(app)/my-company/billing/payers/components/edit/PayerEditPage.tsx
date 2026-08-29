@@ -18,6 +18,7 @@ import { normalizePhone } from "@/lib/utils/phone-format"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { usePayersPermissionFallback } from "../../hooks/usePayersPermissionFallback"
 import { PayerBaseForm } from "../shared/PayerBaseForm"
+import { ClaimMdEnrollmentSection } from "../shared/ClaimMdEnrollmentSection"
 import { PlanSection } from "../shared/PlanSection"
 import { RateModal, type RateFormValues } from "../shared/RateModal"
 import { usePlanTypeCatalog } from "@/lib/modules/payers/hooks/use-plan-type-catalog"
@@ -40,8 +41,8 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
   const router = useRouter()
   const backPath = returnTo ?? PAYERS_LIST
   const { hydrated } = useAuth()
-  const { canEditPayers } = usePayersPermissionFallback()
-  const { payer, isLoading: isLoadingPayer } = usePayerById(payerId)
+  const { canEditPayers, canCreatePayers } = usePayersPermissionFallback()
+  const { payer, isLoading: isLoadingPayer, refetch: refetchPayer } = usePayerById(payerId)
   const { update, isLoading: isSaving } = useUpdatePayer()
   const { countries, isLoading: isLoadingCountries } = useCountries()
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null)
@@ -516,6 +517,27 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
               )}
             </div>
           </Card>
+
+          {/*
+            El alta en Claim.MD vive fuera del formulario: no es un campo del payer sino
+            una acción sobre uno ya guardado, y el propio componente se oculta si el
+            clearing house no es Claim.MD.
+          */}
+          {payer && (
+            <ClaimMdEnrollmentSection
+              payerId={payer.id}
+              payerName={payer.name}
+              clearingHouseName={
+                payer.clearingHouseName ??
+                clearingHouses.find((house) => house.id === payer.clearingHouseId)?.name ??
+                null
+              }
+              externalId={payer.externalId}
+              enrollments={payer.claimMdEnrollments ?? []}
+              canStart={canCreatePayers}
+              onStarted={() => void refetchPayer()}
+            />
+          )}
 
           <div className="mt-4 space-y-4">
             <div className="flex justify-end">

@@ -83,6 +83,8 @@ export interface Payer {
   updatedAt?: string
   /** Embedded plans — present only on GET /payers/{id} */
   payerPlans?: PayerPlanEmbed[]
+  /** Enrollments de Claim.MD — presentes sólo en GET /payers/{id} (contrato 2026-08-29) */
+  claimMdEnrollments?: ClaimMdEnrollment[]
   /** Legacy embedded plan fallback */
   payerPlan?: PayerPlanEmbed | null
   /** Legacy embedded rates fallback */
@@ -202,4 +204,80 @@ export interface LocalInsurancePlanRate {
   alias?: string
   startDate?: string
   endDate?: string
+}
+
+// ============================================
+// CLAIM.MD PROVIDER ENROLLMENT (contrato 2026-08-29)
+// ============================================
+
+/** Estado normalizado local del enrollment. */
+export type ClaimMdEnrollmentStatus =
+  | "REQUESTED"
+  | "ENROLLED"
+  | "RECEIVED"
+  | "COMPLETED"
+  | "REJECTED"
+  | "UNKNOWN"
+
+/** Estado del procesamiento local del webhook de Claim.MD. */
+export type ClaimMdEnrollmentProcessingStatus =
+  | "REQUESTED"
+  | "MATCHED"
+  | "UNMATCHED"
+  | "IGNORED"
+  | "INVALID"
+
+export const CLAIM_MD_ENROLLMENT_STATUSES: readonly ClaimMdEnrollmentStatus[] = [
+  "REQUESTED",
+  "ENROLLED",
+  "RECEIVED",
+  "COMPLETED",
+  "REJECTED",
+  "UNKNOWN",
+]
+
+export const CLAIM_MD_ENROLLMENT_PROCESSING_STATUSES: readonly ClaimMdEnrollmentProcessingStatus[] = [
+  "REQUESTED",
+  "MATCHED",
+  "UNMATCHED",
+  "IGNORED",
+  "INVALID",
+]
+
+/** Enrollment embebido en `GET /payers/{id}`. Ya no hay endpoint de listado propio. */
+export interface ClaimMdEnrollment {
+  id: string
+  payerExternalId: string
+  /** Lo asigna Claim.MD por webhook: es `null` hasta que llega. */
+  enrollId: string | null
+  enrollType: string
+  status: ClaimMdEnrollmentStatus | null
+  /** Estado original de Claim.MD, sin normalizar. */
+  externalStatus: string | null
+  processingStatus: ClaimMdEnrollmentProcessingStatus | null
+  providerNpi: string | null
+  providerId: string | null
+  eventDetail: string | null
+  requestedAt: string | null
+  lastEventAt: string | null
+  completedAt: string | null
+  rejectedAt: string | null
+}
+
+/**
+ * Respuesta de `POST /payers/{payerId}/claim-md-enrollments`.
+ *
+ * `enrollmentUrl` es de un solo uso y **sólo llega aquí**: no vuelve en
+ * `GET /payers/{id}`. Si se pierde hay que iniciar otro enrollment.
+ */
+export interface ClaimMdEnrollmentStartResult {
+  id: string
+  payerId: string
+  payerExternalId: string
+  enrollType: string
+  status: ClaimMdEnrollmentStatus | null
+  processingStatus: ClaimMdEnrollmentProcessingStatus | null
+  providerNpi: string | null
+  enrollmentUrl: string
+  requestedAt: string | null
 }

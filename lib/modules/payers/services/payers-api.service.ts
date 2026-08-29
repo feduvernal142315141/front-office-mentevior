@@ -1,17 +1,31 @@
 import type { QueryModel } from "@/lib/models/queryModel"
-import { serviceGet, serviceGetSilent, servicePost, servicePut, serviceDelete } from "@/lib/services/baseService"
+import {
+  serviceGet,
+  serviceGetSilent,
+  servicePost,
+  servicePostSilent,
+  servicePut,
+  serviceDelete,
+} from "@/lib/services/baseService"
 import { getQueryString } from "@/lib/utils/format"
+import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import qsLib from "qs"
 import type { PlanTypeCatalogItem } from "@/lib/types/plan-type.types"
-import type {
-  CreatePayerDto,
-  ListPayersQueryDto,
-  PayerClearingHouseItem,
-  Payer,
-  PayerCatalogItem,
-  PayerCatalogSearchItem,
-  SearchPayerCatalogQuery,
-  UpdatePayerDto,
+import {
+  CLAIM_MD_ENROLLMENT_PROCESSING_STATUSES,
+  CLAIM_MD_ENROLLMENT_STATUSES,
+  type ClaimMdEnrollment,
+  type ClaimMdEnrollmentProcessingStatus,
+  type ClaimMdEnrollmentStartResult,
+  type ClaimMdEnrollmentStatus,
+  type CreatePayerDto,
+  type ListPayersQueryDto,
+  type PayerClearingHouseItem,
+  type Payer,
+  type PayerCatalogItem,
+  type PayerCatalogSearchItem,
+  type SearchPayerCatalogQuery,
+  type UpdatePayerDto,
 } from "@/lib/types/payer.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import type {
@@ -22,6 +36,46 @@ import type {
 
 /** Mensaje del backend cuando el clearing house no ofrece catálogo de payers. */
 const CATALOG_UNSUPPORTED = /does not have a payer catalog provider/i
+
+// ── Enrollments de Claim.MD ───────────────────────────────────────────────────
+
+const enrollStr = (v: unknown): string => (typeof v === "string" ? v : v == null ? "" : String(v))
+
+const enrollStrOrNull = (v: unknown): string | null => {
+  const text = enrollStr(v).trim()
+  return text.length > 0 ? text : null
+}
+
+/** Un valor desconocido cae a `null` en vez de romper la pantalla. */
+function asEnrollmentEnum<T extends string>(v: unknown, allowed: readonly T[]): T | null {
+  const text = enrollStr(v).trim().toUpperCase()
+  return (allowed as readonly string[]).includes(text) ? (text as T) : null
+}
+
+const asEnrollmentStatus = (v: unknown) =>
+  asEnrollmentEnum<ClaimMdEnrollmentStatus>(v, CLAIM_MD_ENROLLMENT_STATUSES)
+
+const asEnrollmentProcessingStatus = (v: unknown) =>
+  asEnrollmentEnum<ClaimMdEnrollmentProcessingStatus>(v, CLAIM_MD_ENROLLMENT_PROCESSING_STATUSES)
+
+function parseClaimMdEnrollment(e: Record<string, unknown>): ClaimMdEnrollment {
+  return {
+    id: enrollStr(e.id),
+    payerExternalId: enrollStr(e.payerExternalId),
+    enrollId: enrollStrOrNull(e.enrollId),
+    enrollType: enrollStr(e.enrollType),
+    status: asEnrollmentStatus(e.status),
+    externalStatus: enrollStrOrNull(e.externalStatus),
+    processingStatus: asEnrollmentProcessingStatus(e.processingStatus),
+    providerNpi: enrollStrOrNull(e.providerNpi),
+    providerId: enrollStrOrNull(e.providerId),
+    eventDetail: enrollStrOrNull(e.eventDetail),
+    requestedAt: enrollStrOrNull(e.requestedAt),
+    lastEventAt: enrollStrOrNull(e.lastEventAt),
+    completedAt: enrollStrOrNull(e.completedAt),
+    rejectedAt: enrollStrOrNull(e.rejectedAt),
+  }
+}
 
 export class ApiPayersService implements PayersServiceContract {
   private normalizePayer(raw: Payer): Payer {
@@ -34,6 +88,47 @@ export class ApiPayersService implements PayersServiceContract {
     return {
       ...raw,
       payerPlans,
+      claimMdEnrollments: Array.isArray(raw.claimMdEnrollments)
+        ? raw.claimMdEnrollments.map((entry) =>
+            parseClaimMdEnrollment(entry as unknown as Record<string, unknown>),
+          )
+        : [],
+    }
+  }
+
+  /**
+   * Inicia el alta del provider en Claim.MD para este payer. Sin body: el backend toma
+   * el `payerid` del payer y el NPI/EIN de la Company autenticada.
+   *
+   * Devuelve una URL de un solo uso que hay que enseñarle al usuario; no vuelve a
+   * aparecer en `GET /payers/{id}`.
+   */
+  async startClaimMdEnrollment(payerId: string): Promise<ClaimMdEnrollmentStartResult> {
+    const response = await servicePostSilent<undefined, unknown>(
+      `/payers/${encodeURIComponent(payerId)}/claim-md-enrollments`,
+      undefined,
+    )
+
+    const status = response?.status
+    if (status !== 200 && status !== 201 && status !== 202) {
+      throw new Error(
+        getApiErrorMessage(response?.data, "Failed to start the Claim.MD enrollment"),
+      )
+    }
+
+    const raw = (response.data ?? {}) as Record<string, unknown>
+    const data = ((raw.entity ?? raw.data ?? raw) ?? {}) as Record<string, unknown>
+
+    return {
+      id: enrollStr(data.id),
+      payerId: enrollStr(data.payerId),
+      payerExternalId: enrollStr(data.payerExternalId),
+      enrollType: enrollStr(data.enrollType),
+      status: asEnrollmentStatus(data.status),
+      processingStatus: asEnrollmentProcessingStatus(data.processingStatus),
+      providerNpi: enrollStrOrNull(data.providerNpi),
+      enrollmentUrl: enrollStr(data.enrollmentUrl),
+      requestedAt: enrollStrOrNull(data.requestedAt),
     }
   }
 
