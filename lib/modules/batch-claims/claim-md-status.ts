@@ -1,16 +1,19 @@
 import type {
   ClaimMdAdjudicationStatus,
+  ClaimMdEffectiveStatus,
   ClaimMdSubmissionStatus,
   ClaimMdTransmissionStatus,
 } from "@/lib/types/claim-md.types"
 
 /**
- * Traducción de las tablas de decisión del contrato de Claim.MD (2026-08-28).
+ * Todo lo que la UI muestra y ofrece sobre Claim.MD se decide aquí, a partir del
+ * estado único del contrato 2026-08-28 (`claimMdEffectiveStatus` en el BatchClaim,
+ * `effectiveStatus` en cada claim).
  *
  * Módulo puro a propósito: sin React y sin fetch. Ningún componente decide por su
- * cuenta qué acción ofrecer — todos preguntan aquí. Si estas reglas se reparten por
- * el JSX se desincronizan en el primer cambio, y una de ellas duplica claims
- * facturados si se rompe (ver `canRetry`).
+ * cuenta qué acción ofrecer. Si estas reglas se reparten por el JSX se desincronizan
+ * en el primer cambio, y una de ellas duplica claims facturados si se rompe
+ * (ver `canRetry`).
  */
 
 export type StatusTone = "neutral" | "info" | "success" | "warning" | "danger"
@@ -26,12 +29,12 @@ export interface ClaimMdBatchDecision {
   /** El batch nunca se envió. */
   canSubmit: boolean
   /**
-   * SÓLO cuando la transmisión es FAILED. Un claim rechazado (`submissionStatus`
-   * REJECTED) NO habilita retry: significa que Claim.MD sí respondió, y reenviar
-   * duplicaría el claim en el clearing house.
+   * SÓLO con `UPLOAD_FAILED`. Un claim rechazado (`REJECTED`) NO habilita retry:
+   * significa que Claim.MD sí respondió, y reenviar duplicaría el claim en el
+   * clearing house.
    */
   canRetry: boolean
-  /** UNKNOWN: hay que consultar el uploadlist antes de permitir nada más. */
+  /** `VERIFY_REQUIRED`: hay que consultar el uploadlist antes de permitir nada más. */
   canResolveUnknown: boolean
   /** Claim.MD ya respondió: tiene sentido mostrar el detalle por claim. */
   showsClaimLevelDetail: boolean
@@ -51,8 +54,28 @@ const NOT_SUBMITTED: ClaimMdBatchDecision = {
   isLocked: false,
 }
 
-const BY_STATUS: Record<ClaimMdTransmissionStatus, ClaimMdBatchDecision> = {
-  CREATED: {
+/** Base de un estado ya resuelto: sin acciones, con detalle por claim y bloqueado. */
+function settled(
+  label: string,
+  tone: StatusTone,
+  description: string,
+): ClaimMdBatchDecision {
+  return {
+    label,
+    tone,
+    description,
+    shouldPoll: false,
+    canSubmit: false,
+    canRetry: false,
+    canResolveUnknown: false,
+    showsClaimLevelDetail: true,
+    isLocked: true,
+  }
+}
+
+const BY_STATUS: Record<ClaimMdEffectiveStatus, ClaimMdBatchDecision> = {
+  NOT_SUBMITTED,
+  PREPARING: {
     label: "Preparing",
     tone: "info",
     description: "The submission is being prepared.",
@@ -63,8 +86,8 @@ const BY_STATUS: Record<ClaimMdTransmissionStatus, ClaimMdBatchDecision> = {
     showsClaimLevelDetail: false,
     isLocked: true,
   },
-  UPLOADING: {
-    label: "Uploading",
+  PROCESSING: {
+    label: "Processing",
     tone: "info",
     description: "The 837P file is being uploaded to Claim.MD.",
     shouldPoll: true,
@@ -74,53 +97,7 @@ const BY_STATUS: Record<ClaimMdTransmissionStatus, ClaimMdBatchDecision> = {
     showsClaimLevelDetail: false,
     isLocked: true,
   },
-  RECEIVED: {
-    label: "Received",
-    tone: "success",
-    description: "Claim.MD received the file. Check the status of each claim below.",
-    shouldPoll: false,
-    canSubmit: false,
-    canRetry: false,
-    canResolveUnknown: false,
-    showsClaimLevelDetail: true,
-    isLocked: true,
-  },
-  PARTIAL: {
-    label: "Partial",
-    tone: "warning",
-    description: "Claim.MD accepted some claims and rejected others. Review each claim below.",
-    shouldPoll: false,
-    canSubmit: false,
-    canRetry: false,
-    canResolveUnknown: false,
-    showsClaimLevelDetail: true,
-    isLocked: true,
-  },
-  REJECTED: {
-    label: "Rejected",
-    tone: "danger",
-    description:
-      "Claim.MD rejected every claim in this file. Read the response messages, fix the data and create a corrected batch.",
-    shouldPoll: false,
-    canSubmit: false,
-    canRetry: false,
-    canResolveUnknown: false,
-    showsClaimLevelDetail: true,
-    isLocked: true,
-  },
-  UNKNOWN: {
-    label: "Needs verification",
-    tone: "warning",
-    description:
-      "The upload could not be confirmed. Verify in Claim.MD before doing anything else — resending now could duplicate the claims.",
-    shouldPoll: false,
-    canSubmit: false,
-    canRetry: false,
-    canResolveUnknown: true,
-    showsClaimLevelDetail: false,
-    isLocked: true,
-  },
-  FAILED: {
+  UPLOAD_FAILED: {
     label: "Upload failed",
     tone: "danger",
     description: "The file did not reach Claim.MD. You can retry the upload safely.",
@@ -131,10 +108,54 @@ const BY_STATUS: Record<ClaimMdTransmissionStatus, ClaimMdBatchDecision> = {
     showsClaimLevelDetail: false,
     isLocked: true,
   },
+  VERIFY_REQUIRED: {
+    label: "Verification required",
+    tone: "warning",
+    description:
+      "The upload could not be confirmed. Verify in Claim.MD before doing anything else — resending now could duplicate the claims.",
+    shouldPoll: false,
+    canSubmit: false,
+    canRetry: false,
+    canResolveUnknown: true,
+    showsClaimLevelDetail: false,
+    isLocked: true,
+  },
+  RECEIVED: settled(
+    "Received",
+    "success",
+    "Claim.MD received the file. Check the status of each claim below.",
+  ),
+  ACKNOWLEDGED: settled(
+    "Acknowledged",
+    "info",
+    "Claim.MD acknowledged the claims. Final acceptance may still be pending.",
+  ),
+  ACCEPTED: settled(
+    "Accepted",
+    "success",
+    "Claim.MD accepted the claims. Waiting for the payer to adjudicate.",
+  ),
+  PARTIAL: settled(
+    "Partial",
+    "warning",
+    "Claim.MD accepted some claims and rejected others. Review each claim below.",
+  ),
+  REJECTED: settled(
+    "Rejected",
+    "danger",
+    "Claim.MD rejected the claims. Read the response messages, fix the data and create a corrected batch.",
+  ),
+  DENIED: settled("Denied", "danger", "The payer denied this claim."),
+  PARTIALLY_PAID: settled(
+    "Partially paid",
+    "warning",
+    "The payer paid this claim partially.",
+  ),
+  PAID: settled("Paid", "success", "The payer paid this claim."),
 }
 
 export function getBatchDecision(
-  status: ClaimMdTransmissionStatus | null | undefined,
+  status: ClaimMdEffectiveStatus | null | undefined,
 ): ClaimMdBatchDecision {
   if (!status) return NOT_SUBMITTED
   return BY_STATUS[status] ?? NOT_SUBMITTED
@@ -145,72 +166,60 @@ export interface StatusBadge {
   tone: StatusTone
 }
 
-const SUBMISSION_BADGES: Record<ClaimMdSubmissionStatus, StatusBadge> = {
-  CREATED: { label: "Pending", tone: "neutral" },
-  UPLOADING: { label: "Uploading", tone: "info" },
-  ACKNOWLEDGED: { label: "Acknowledged", tone: "info" },
-  ACCEPTED: { label: "Accepted", tone: "success" },
-  REJECTED: { label: "Rejected", tone: "danger" },
-  UNKNOWN: { label: "Unknown", tone: "warning" },
-}
-
-export function getSubmissionBadge(
-  status: ClaimMdSubmissionStatus | null | undefined,
+/** Badge de un claim individual. Comparte la tabla del BatchClaim salvo `PARTIAL`. */
+export function getEffectiveBadge(
+  status: ClaimMdEffectiveStatus | null | undefined,
 ): StatusBadge | null {
   if (!status) return null
-  return SUBMISSION_BADGES[status] ?? null
+  const decision = BY_STATUS[status]
+  return decision ? { label: decision.label, tone: decision.tone } : null
 }
 
-const ADJUDICATION_BADGES: Record<ClaimMdAdjudicationStatus, StatusBadge> = {
-  NOT_ADJUDICATED: { label: "Awaiting payment", tone: "neutral" },
-  PAID: { label: "Paid", tone: "success" },
-  PARTIAL: { label: "Partially paid", tone: "warning" },
-  DENIED: { label: "Denied", tone: "danger" },
-}
-
-export function getAdjudicationBadge(
-  status: ClaimMdAdjudicationStatus | null | undefined,
-): StatusBadge | null {
-  if (!status) return null
-  return ADJUDICATION_BADGES[status] ?? null
-}
+// ── Compatibilidad con el contrato anterior ───────────────────────────────────
 
 /**
- * Fila de la tabla combinada del contrato. Una vez la transmisión deja de estar en
- * curso, la adjudicación es lo que mejor describe dónde está el dinero, así que gana
- * al estado de claim cuando ya hay remesa.
+ * Deriva el estado único a partir de los tres estados del contrato anterior.
+ *
+ * Existe sólo mientras la API no despliegue `effectiveStatus`: hoy dev sigue
+ * devolviendo `transmissionStatus` / `submissionStatus` / `adjudicationStatus`, y
+ * migrar en frío dejaría todas las pantallas en "Not submitted". En cuanto la API
+ * mande el campo nuevo, esta función y los tipos que consume se borran.
  */
-export function describeCombined(
-  transmission: ClaimMdTransmissionStatus | null | undefined,
-  submission: ClaimMdSubmissionStatus | null | undefined,
-  adjudication: ClaimMdAdjudicationStatus | null | undefined,
-): string {
-  if (!transmission) return NOT_SUBMITTED.description
+export function deriveEffectiveStatus(legacy: {
+  transmission: ClaimMdTransmissionStatus | null | undefined
+  submission?: ClaimMdSubmissionStatus | null
+  adjudication?: ClaimMdAdjudicationStatus | null
+}): ClaimMdEffectiveStatus | null {
+  const { transmission, submission, adjudication } = legacy
 
-  if (transmission === "CREATED" || transmission === "UPLOADING") {
-    return BY_STATUS[transmission].description
+  if (!transmission) return submission || adjudication ? null : "NOT_SUBMITTED"
+
+  switch (transmission) {
+    case "CREATED":
+      return "PREPARING"
+    case "UPLOADING":
+      return "PROCESSING"
+    case "FAILED":
+      return "UPLOAD_FAILED"
+    case "UNKNOWN":
+      return "VERIFY_REQUIRED"
+    default:
+      break
   }
 
-  if (transmission === "UNKNOWN" || transmission === "FAILED") {
-    return BY_STATUS[transmission].description
-  }
+  // Transmisión resuelta: manda el resultado del pagador si ya llegó.
+  if (adjudication === "PAID") return "PAID"
+  if (adjudication === "PARTIAL") return "PARTIALLY_PAID"
+  if (adjudication === "DENIED") return "DENIED"
 
-  // Transmisión resuelta: manda la adjudicación si ya llegó.
-  if (adjudication === "PAID") return "The payer paid this claim."
-  if (adjudication === "PARTIAL") return "The payer paid this claim partially."
-  if (adjudication === "DENIED") return "The payer denied this claim."
+  if (transmission === "REJECTED") return "REJECTED"
+  if (transmission === "PARTIAL") return "PARTIAL"
 
-  if (submission === "REJECTED") {
-    return "Claim.MD rejected at least one claim. Read the response messages to fix the data."
-  }
-  if (submission === "ACCEPTED") {
-    return "Claim.MD accepted the claims. Waiting for the payer to adjudicate."
-  }
-  if (submission === "ACKNOWLEDGED") {
-    return "Claim.MD acknowledged the claims. Final acceptance may still be pending."
-  }
+  if (submission === "REJECTED") return "REJECTED"
+  if (submission === "ACCEPTED") return "ACCEPTED"
+  if (submission === "ACKNOWLEDGED") return "ACKNOWLEDGED"
 
-  return BY_STATUS[transmission].description
+  return "RECEIVED"
 }
 
 /** Clases del badge por tono, para no repetir el mapa en cada componente. */

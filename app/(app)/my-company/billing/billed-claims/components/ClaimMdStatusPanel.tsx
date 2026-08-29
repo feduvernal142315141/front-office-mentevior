@@ -54,7 +54,7 @@ export function ClaimMdStatusPanel({
   onRefresh,
 }: ClaimMdStatusPanelProps) {
   const alert = useAlert()
-  const decision = getBatchDecision(batchClaim.claimMdTransmissionStatus)
+  const decision = getBatchDecision(batchClaim.claimMdEffectiveStatus)
   const isBusy = isSubmitting || isRetrying || isResolving || isPolling
 
   const confirmSubmit = () => {
@@ -117,14 +117,6 @@ export function ClaimMdStatusPanel({
                     {batchClaim.claimMdPaidAmount != null
                       ? currency.format(batchClaim.claimMdPaidAmount)
                       : "—"}
-                  </span>
-                </span>
-              )}
-              {batchClaim.claimMdReconciliationStatus && (
-                <span className="text-xs text-slate-500">
-                  Reconciliation:{" "}
-                  <span className="font-medium text-slate-700">
-                    {batchClaim.claimMdReconciliationStatus}
                   </span>
                 </span>
               )}

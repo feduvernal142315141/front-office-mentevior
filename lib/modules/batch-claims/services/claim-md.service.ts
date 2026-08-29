@@ -1,10 +1,13 @@
 import { serviceGetSilent, servicePostSilent } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
+import { deriveEffectiveStatus } from "../claim-md-status"
 import {
   CLAIM_MD_ADJUDICATION_STATUSES,
+  CLAIM_MD_EFFECTIVE_STATUSES,
   CLAIM_MD_SUBMISSION_STATUSES,
   CLAIM_MD_TRANSMISSION_STATUSES,
   type ClaimMdAdjudicationStatus,
+  type ClaimMdEffectiveStatus,
   type ClaimMdResolveUnknownResult,
   type ClaimMdRetryResult,
   type ClaimMdSubmissionDetail,
@@ -98,8 +101,28 @@ const asSubmissionStatus = (v: unknown) =>
   asStatus<ClaimMdSubmissionStatus>(v, CLAIM_MD_SUBMISSION_STATUSES)
 const asAdjudicationStatus = (v: unknown) =>
   asStatus<ClaimMdAdjudicationStatus>(v, CLAIM_MD_ADJUDICATION_STATUSES)
+const asEffectiveStatus = (v: unknown) =>
+  asStatus<ClaimMdEffectiveStatus>(v, CLAIM_MD_EFFECTIVE_STATUSES)
 
-export { asTransmissionStatus, asSubmissionStatus, asAdjudicationStatus }
+/**
+ * El estado único del contrato nuevo, cayendo a derivarlo de los tres estados del
+ * contrato anterior mientras la API no lo despliegue.
+ */
+function readEffectiveStatus(
+  e: Record<string, unknown>,
+  keys: { effective: string; transmission: string; submission?: string; adjudication?: string },
+): ClaimMdEffectiveStatus | null {
+  const direct = asEffectiveStatus(e[keys.effective])
+  if (direct) return direct
+
+  return deriveEffectiveStatus({
+    transmission: asTransmissionStatus(e[keys.transmission]),
+    submission: keys.submission ? asSubmissionStatus(e[keys.submission]) : null,
+    adjudication: keys.adjudication ? asAdjudicationStatus(e[keys.adjudication]) : null,
+  })
+}
+
+export { asTransmissionStatus, asSubmissionStatus, asAdjudicationStatus, readEffectiveStatus }
 
 // ── Parsers ───────────────────────────────────────────────────────────────────
 
@@ -108,9 +131,12 @@ function parseSubmissionSummary(e: Record<string, unknown>): ClaimMdSubmissionSu
     submissionId: str(e.submissionId ?? e.id),
     transmissionId: str(e.transmissionId),
     batchClaimServiceLogId: str(e.batchClaimServiceLogId),
-    submissionStatus: asSubmissionStatus(e.submissionStatus),
-    adjudicationStatus: asAdjudicationStatus(e.adjudicationStatus),
-    transmissionStatus: asTransmissionStatus(e.transmissionStatus),
+    effectiveStatus: readEffectiveStatus(e, {
+      effective: "effectiveStatus",
+      transmission: "transmissionStatus",
+      submission: "submissionStatus",
+      adjudication: "adjudicationStatus",
+    }),
     fileName: str(e.fileName),
     remoteClaimId: strOrNull(e.remoteClaimId),
     patientControlNumber: strOrNull(e.patientControlNumber),
@@ -144,7 +170,6 @@ function parseResponse(e: Record<string, unknown>): ClaimMdSubmissionResponse {
     id: str(e.id),
     externalResponseId: strOrNull(e.externalResponseId),
     messageId: strOrNull(e.messageId),
-    externalStatus: strOrNull(e.externalStatus),
     message: str(e.message),
     responseAt: strOrNull(e.responseAt),
   }

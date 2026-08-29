@@ -12,11 +12,7 @@ import type {
   EligibleServiceLogsQuery,
 } from "@/lib/types/batch-claim.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
-import {
-  asAdjudicationStatus,
-  asSubmissionStatus,
-  asTransmissionStatus,
-} from "./claim-md.service"
+import { readEffectiveStatus } from "./claim-md.service"
 
 function toNumberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null
@@ -33,7 +29,14 @@ function parseSummary(e: Record<string, unknown>): BatchClaimSummary {
     comments: String(e.comments ?? ""),
     createAt: String(e.createAt ?? ""),
     active: e.active !== false,
-    claimMdTransmissionStatus: asTransmissionStatus(e.claimMdTransmissionStatus),
+    claimMdEffectiveStatus: readEffectiveStatus(e, {
+      effective: "claimMdEffectiveStatus",
+      transmission: "claimMdTransmissionStatus",
+      submission: "claimMdSubmissionStatus",
+      adjudication: "claimMdAdjudicationStatus",
+    }),
+    total: toNumberOrNull(e.total),
+    claimCount: toNumberOrNull(e.claimCount),
   }
 }
 
@@ -122,17 +125,16 @@ export async function getBatchClaimById(batchClaimId: string): Promise<BatchClai
     appointments: Array.isArray(data.appointments)
       ? data.appointments.map((g: Record<string, unknown>) => parseClientGroup(g))
       : [],
-    claimMdTransmissionStatus: asTransmissionStatus(data.claimMdTransmissionStatus),
-    claimMdSubmissionStatus: asSubmissionStatus(data.claimMdSubmissionStatus),
-    claimMdAdjudicationStatus: asAdjudicationStatus(data.claimMdAdjudicationStatus),
+    claimMdEffectiveStatus: readEffectiveStatus(data, {
+      effective: "claimMdEffectiveStatus",
+      transmission: "claimMdTransmissionStatus",
+      submission: "claimMdSubmissionStatus",
+      adjudication: "claimMdAdjudicationStatus",
+    }),
     claimMdLastResponseAt:
       typeof data.claimMdLastResponseAt === "string" ? data.claimMdLastResponseAt : null,
     claimMdHasRemittance: data.claimMdHasRemittance === true,
     claimMdPaidAmount: toNumberOrNull(data.claimMdPaidAmount),
-    claimMdReconciliationStatus:
-      typeof data.claimMdReconciliationStatus === "string" && data.claimMdReconciliationStatus
-        ? data.claimMdReconciliationStatus
-        : null,
   }
 }
 

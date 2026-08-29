@@ -4,10 +4,7 @@ import { format } from "date-fns"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/custom/Button"
-import {
-  getAdjudicationBadge,
-  getSubmissionBadge,
-} from "@/lib/modules/batch-claims/claim-md-status"
+import { getEffectiveBadge } from "@/lib/modules/batch-claims/claim-md-status"
 import type { BatchClaimClientGroup } from "@/lib/types/batch-claim.types"
 import type { ClaimMdSubmissionSummary } from "@/lib/types/claim-md.types"
 
@@ -80,7 +77,7 @@ export function ClaimMdSubmissionsPanel({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left">
-                {["Client", "Claim status", "Payment", "Claim.MD id", "Charge", "Last response", ""].map(
+                {["Client", "Status", "Claim.MD id", "Charge", "Last response", ""].map(
                   (header, index) => (
                     <th
                       key={header || `actions-${index}`}
@@ -100,10 +97,7 @@ export function ClaimMdSubmissionsPanel({
                   <tr key={submission.submissionId} className="hover:bg-slate-50/60">
                     <td className="px-5 py-3 font-medium text-slate-800">{clientName}</td>
                     <td className="px-5 py-3">
-                      <ClaimMdStatusBadge badge={getSubmissionBadge(submission.submissionStatus)} />
-                    </td>
-                    <td className="px-5 py-3">
-                      <ClaimMdStatusBadge badge={getAdjudicationBadge(submission.adjudicationStatus)} />
+                      <ClaimMdStatusBadge badge={getEffectiveBadge(submission.effectiveStatus)} />
                     </td>
                     <td className="px-5 py-3 font-mono text-xs text-slate-600">
                       {submission.claimMdClaimId ?? "—"}

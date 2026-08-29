@@ -19,7 +19,7 @@ export default function BatchClaimDetailPage({ params }: { params: Promise<{ id:
   })
 
   const canEdit = canEditModule(PermissionModule.BILLED_CLAIMS)
-  const decision = getBatchDecision(batchClaim?.claimMdTransmissionStatus)
+  const decision = getBatchDecision(batchClaim?.claimMdEffectiveStatus)
 
   return (
     <div className="px-6 py-6">

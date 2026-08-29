@@ -5,10 +5,7 @@ import { format } from "date-fns"
 import { Loader2 } from "lucide-react"
 
 import { CustomModal } from "@/components/custom/CustomModal"
-import {
-  getAdjudicationBadge,
-  getSubmissionBadge,
-} from "@/lib/modules/batch-claims/claim-md-status"
+import { getEffectiveBadge } from "@/lib/modules/batch-claims/claim-md-status"
 import {
   getSubmissionById,
   getSubmissionByServiceLog,
@@ -137,10 +134,7 @@ export function ClaimMdSubmissionDetailModal({
 
         {!isLoading && !error && detail && (
           <div className="space-y-6">
-            <div className="flex flex-wrap items-center gap-2">
-              <ClaimMdStatusBadge badge={getSubmissionBadge(detail.submissionStatus)} />
-              <ClaimMdStatusBadge badge={getAdjudicationBadge(detail.adjudicationStatus)} />
-            </div>
+            <ClaimMdStatusBadge badge={getEffectiveBadge(detail.effectiveStatus)} />
 
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-3">
               <Field label="Claim.MD claim id" value={detail.claimMdClaimId ?? ""} />
@@ -170,11 +164,6 @@ export function ClaimMdSubmissionDetailModal({
                       className="rounded-xl border border-slate-200 bg-white px-4 py-3"
                     >
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        {response.externalStatus && (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-medium text-slate-600">
-                            {response.externalStatus}
-                          </span>
-                        )}
                         {response.messageId && (
                           <span className="font-mono text-[11px] text-slate-400">{response.messageId}</span>
                         )}

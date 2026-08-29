@@ -30,7 +30,7 @@ export default function EditBatchClaimPage({ params }: { params: Promise<{ id: s
    * 837P subido quedaría sin corresponder con lo que muestra la pantalla. El botón
    * del detalle ya no lleva aquí, pero la ruta es accesible por URL directa.
    */
-  const isLocked = getBatchDecision(form.batchClaim?.claimMdTransmissionStatus).isLocked
+  const isLocked = getBatchDecision(form.batchClaim?.claimMdEffectiveStatus).isLocked
 
   return (
     <div className="px-6 py-6">

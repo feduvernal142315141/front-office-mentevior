@@ -85,7 +85,7 @@ export function useBatchClaimById(
   }, [load])
 
   const shouldPoll =
-    poll && !pollTimedOut && getBatchDecision(batchClaim?.claimMdTransmissionStatus).shouldPoll
+    poll && !pollTimedOut && getBatchDecision(batchClaim?.claimMdEffectiveStatus).shouldPoll
 
   useEffect(() => {
     if (!shouldPoll) {

@@ -3,11 +3,7 @@
 // Types for the Billed Claims (BatchClaim) module
 // ============================================
 
-import type {
-  ClaimMdAdjudicationStatus,
-  ClaimMdSubmissionStatus,
-  ClaimMdTransmissionStatus,
-} from "./claim-md.types"
+import type { ClaimMdEffectiveStatus } from "./claim-md.types"
 
 /** Row from GET /batch-claims (paginated list) */
 export interface BatchClaimSummary {
@@ -20,11 +16,11 @@ export interface BatchClaimSummary {
   comments: string
   createAt: string
   active: boolean
-  /**
-   * El contrato del listado no documenta los campos `claimMd*`. Se parsea si viene y
-   * la columna de Claim.MD sólo aparece cuando el backend lo envía.
-   */
-  claimMdTransmissionStatus?: ClaimMdTransmissionStatus | null
+  /** Estado único de Claim.MD. La columna sólo aparece cuando el backend lo envía. */
+  claimMdEffectiveStatus?: ClaimMdEffectiveStatus | null
+  /** Totales del contrato 2026-08-28; opcionales mientras la API no los despliegue. */
+  total?: number | null
+  claimCount?: number | null
 }
 
 /** Service line inside a client group — GET /batch-claims/{id} */
@@ -72,16 +68,14 @@ export interface BatchClaim {
   appointments: BatchClaimClientGroup[]
 
   // ── Claim.MD (contrato 2026-08-28) ──
-  /** Estado del 837P subido. `null` = todavía no se envió. Gobierna las acciones de la UI. */
-  claimMdTransmissionStatus: ClaimMdTransmissionStatus | null
-  /** Estado agregado de los claims individuales dentro del archivo. */
-  claimMdSubmissionStatus: ClaimMdSubmissionStatus | null
-  /** Estado agregado de adjudicación/remesa. */
-  claimMdAdjudicationStatus: ClaimMdAdjudicationStatus | null
+  /**
+   * Estado único del BatchClaim. `NOT_SUBMITTED` = todavía no se envió. Es lo único
+   * que la UI mira para decidir qué mostrar y qué acción ofrecer.
+   */
+  claimMdEffectiveStatus: ClaimMdEffectiveStatus | null
   claimMdLastResponseAt: string | null
   claimMdHasRemittance: boolean
   claimMdPaidAmount: number | null
-  claimMdReconciliationStatus: string | null
 }
 
 /** Appointment nested inside an eligible service log */

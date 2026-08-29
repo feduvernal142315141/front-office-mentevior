@@ -3,7 +3,50 @@
 // Envío del 837P de un BatchClaim al clearing house (contrato 2026-08-28)
 // ============================================
 
-/** Estado del archivo 837P completo subido a Claim.MD. Gobierna las acciones de la UI. */
+/**
+ * Estado único del contrato 2026-08-28. Es el que gobierna todo lo que muestra y
+ * ofrece la UI, tanto a nivel de BatchClaim (`claimMdEffectiveStatus`) como de claim
+ * individual (`effectiveStatus`).
+ *
+ * `PARTIAL` sólo aplica al BatchClaim: un claim individual nunca es parcial.
+ */
+export type ClaimMdEffectiveStatus =
+  | "NOT_SUBMITTED"
+  | "PREPARING"
+  | "PROCESSING"
+  | "UPLOAD_FAILED"
+  | "VERIFY_REQUIRED"
+  | "RECEIVED"
+  | "ACKNOWLEDGED"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "PARTIAL"
+  | "DENIED"
+  | "PARTIALLY_PAID"
+  | "PAID"
+
+export const CLAIM_MD_EFFECTIVE_STATUSES: readonly ClaimMdEffectiveStatus[] = [
+  "NOT_SUBMITTED",
+  "PREPARING",
+  "PROCESSING",
+  "UPLOAD_FAILED",
+  "VERIFY_REQUIRED",
+  "RECEIVED",
+  "ACKNOWLEDGED",
+  "ACCEPTED",
+  "REJECTED",
+  "PARTIAL",
+  "DENIED",
+  "PARTIALLY_PAID",
+  "PAID",
+]
+
+// ── Contrato anterior ─────────────────────────────────────────────────────────
+// Retirado del contrato público el 2026-08-28, pero todavía es lo que devuelve dev.
+// Se sigue parseando para derivar el estado único mientras la API no despliegue el
+// cambio; en cuanto dev y producción manden `effectiveStatus`, todo esto se borra.
+
+/** @deprecated Estado del archivo 837P. Sustituido por `ClaimMdEffectiveStatus`. */
 export type ClaimMdTransmissionStatus =
   | "CREATED"
   | "UPLOADING"
@@ -13,7 +56,7 @@ export type ClaimMdTransmissionStatus =
   | "UNKNOWN"
   | "FAILED"
 
-/** Estado de cada claim individual dentro del 837P, una vez Claim.MD leyó el archivo. */
+/** @deprecated Estado por claim. Sustituido por `ClaimMdEffectiveStatus`. */
 export type ClaimMdSubmissionStatus =
   | "CREATED"
   | "UPLOADING"
@@ -22,7 +65,7 @@ export type ClaimMdSubmissionStatus =
   | "REJECTED"
   | "UNKNOWN"
 
-/** Resultado del pagador vía ERA/remesa. Llega horas o días después del envío. */
+/** @deprecated Resultado del pagador. Sustituido por `ClaimMdEffectiveStatus`. */
 export type ClaimMdAdjudicationStatus = "NOT_ADJUDICATED" | "PAID" | "PARTIAL" | "DENIED"
 
 export const CLAIM_MD_TRANSMISSION_STATUSES: readonly ClaimMdTransmissionStatus[] = [
@@ -54,6 +97,7 @@ export const CLAIM_MD_ADJUDICATION_STATUSES: readonly ClaimMdAdjudicationStatus[
 /** Respuesta de `POST /batch-claims/{batchClaimId}/submissions` */
 export interface ClaimMdSubmitResult {
   transmissionId: string
+  /** Los POST de submit/retry no entran en el cambio de contrato de los GET. */
   status: ClaimMdTransmissionStatus | null
   fileName: string
   externalFileId: string | null
@@ -74,9 +118,8 @@ export interface ClaimMdSubmissionSummary {
   submissionId: string
   transmissionId: string
   batchClaimServiceLogId: string
-  submissionStatus: ClaimMdSubmissionStatus | null
-  adjudicationStatus: ClaimMdAdjudicationStatus | null
-  transmissionStatus: ClaimMdTransmissionStatus | null
+  /** Estado único del claim. Derivado del contrato anterior mientras la API no lo mande. */
+  effectiveStatus: ClaimMdEffectiveStatus | null
   fileName: string
   remoteClaimId: string | null
   patientControlNumber: string | null
@@ -107,7 +150,6 @@ export interface ClaimMdSubmissionResponse {
   id: string
   externalResponseId: string | null
   messageId: string | null
-  externalStatus: string | null
   message: string
   responseAt: string | null
 }

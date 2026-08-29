@@ -298,7 +298,39 @@ Respondida la pregunta 3: **un batch enviado no se puede editar** (confirmado co
 3. ~~¿Un batch ya enviado se puede seguir editando?~~ **Respondido: no.** Implementado, ver la sección 5.
 4. ¿Qué pantalla quiere producto para remesas y conciliación (fase 8)?
 
-## 8. Verificación contra dev (2026-08-28, compañía Sample Practice)
+## 8. Cambio de contrato 2026-08-28: estado único
+
+El backend colapsa los tres estados en uno: `claimMdEffectiveStatus` en el BatchClaim
+y `effectiveStatus` en cada claim. Se retiran del contrato público
+`claimMdTransmissionStatus`, `claimMdSubmissionStatus`, `claimMdAdjudicationStatus`,
+`claimMdReconciliationStatus`, `submissionStatus`, `adjudicationStatus`,
+`transmissionStatus`, `paymentStatus`, `allowedActions` y `responses[].externalStatus`.
+
+**El cambio todavía no está desplegado en dev**: la API sigue devolviendo el contrato
+anterior. Migrar en frío dejaría todas las pantallas en "Not submitted", así que el
+front lee `effectiveStatus` si viene y, si no, lo deriva de los tres estados viejos
+(`deriveEffectiveStatus` en `claim-md-status.ts`). El día que backend despliegue no hay
+que coordinar nada; cuando dev y producción estén en el contrato nuevo se borra la
+derivación, los tipos `@deprecated` y `readEffectiveStatus`.
+
+La correspondencia entre contratos:
+
+| Anterior | Nuevo |
+| --- | --- |
+| `transmission = null` | `NOT_SUBMITTED` |
+| `CREATED` | `PREPARING` |
+| `UPLOADING` | `PROCESSING` |
+| `FAILED` | `UPLOAD_FAILED` |
+| `UNKNOWN` | `VERIFY_REQUIRED` |
+| `RECEIVED` + submission `ACKNOWLEDGED` / `ACCEPTED` / `REJECTED` | el del claim |
+| `PARTIAL` | `PARTIAL` |
+| adjudication `PAID` / `PARTIAL` / `DENIED` | `PAID` / `PARTIALLY_PAID` / `DENIED` |
+
+La regla crítica sobrevive intacta: `canRetry` sólo con `UPLOAD_FAILED`. Verificado con
+33 aserciones sobre el módulo real, incluida la de que ningún otro estado —`REJECTED`
+entre ellos— ofrece retry.
+
+## 9. Verificación contra dev (2026-08-28, compañía Sample Practice)
 
 Ejecutado contra la API real con sesión activa. **Los cuatro endpoints de lectura devuelven exactamente los campos que el contrato dice.**
 

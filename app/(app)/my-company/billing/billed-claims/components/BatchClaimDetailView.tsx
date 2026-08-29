@@ -13,7 +13,7 @@ import {
 import { useDownload837P } from "@/lib/modules/batch-claims/hooks/use-download-837p"
 import { useBatchClaimSubmissions } from "@/lib/modules/batch-claims/hooks/use-batch-claim-submissions"
 import { useClaimMdActions } from "@/lib/modules/batch-claims/hooks/use-claim-md-actions"
-import { getBatchDecision, getSubmissionBadge } from "@/lib/modules/batch-claims/claim-md-status"
+import { getBatchDecision, getEffectiveBadge } from "@/lib/modules/batch-claims/claim-md-status"
 import type { BatchClaim, BatchClaimClientGroup } from "@/lib/types/batch-claim.types"
 import type { ClaimMdResolveUnknownResult, ClaimMdSubmissionSummary } from "@/lib/types/claim-md.types"
 import { cn } from "@/lib/utils"
@@ -66,7 +66,7 @@ export function BatchClaimDetailView({
   const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string } | null>(null)
   const { download, isDownloading } = useDownload837P()
 
-  const decision = getBatchDecision(batchClaim.claimMdTransmissionStatus)
+  const decision = getBatchDecision(batchClaim.claimMdEffectiveStatus)
   const claimMd = useClaimMdActions()
 
   const { submissions, isLoading: isLoadingSubmissions, error: submissionsError, refetch: refetchSubmissions } =
@@ -101,7 +101,7 @@ export function BatchClaimDetailView({
     // Todos los submissions de un batch comparten `transmissionId`, así que resolver
     // uno resuelve la transmisión entera: basta con el primero en UNKNOWN.
     const target =
-      submissions.find((submission) => submission.transmissionStatus === "UNKNOWN") ?? submissions[0]
+      submissions.find((submission) => submission.effectiveStatus === "VERIFY_REQUIRED") ?? submissions[0]
 
     const result = await claimMd.resolveUnknown({
       batchClaimId: batchClaim.id,
@@ -278,8 +278,8 @@ export function BatchClaimDetailView({
                   Member: <span className="font-medium text-slate-700">{group.memberNumber || "—"}</span>
                 </span>
                 <ClaimMdStatusBadge
-                  badge={getSubmissionBadge(
-                    submissionByServiceLog.get(group.batchClaimServiceLogId)?.submissionStatus,
+                  badge={getEffectiveBadge(
+                    submissionByServiceLog.get(group.batchClaimServiceLogId)?.effectiveStatus,
                   )}
                 />
                 <div className="ml-auto">

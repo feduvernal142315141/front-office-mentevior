@@ -8,7 +8,7 @@ import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { useBatchClaims } from "@/lib/modules/batch-claims/hooks/use-batch-claims"
-import { getBatchDecision } from "@/lib/modules/batch-claims/claim-md-status"
+import { getBatchDecision, getEffectiveBadge } from "@/lib/modules/batch-claims/claim-md-status"
 import { cn } from "@/lib/utils"
 import { ClaimMdStatusBadge } from "./ClaimMdStatusBadge"
 
@@ -57,7 +57,7 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
   // El listado sólo muestra la columna de Claim.MD si el backend manda el campo.
-  const showClaimMd = batchClaims.some((batch) => batch.claimMdTransmissionStatus != null)
+  const showClaimMd = batchClaims.some((batch) => batch.claimMdEffectiveStatus != null)
   const gridCols = showClaimMd ? GRID_COLS_WITH_CLAIM_MD : GRID_COLS
 
   if (error) {
@@ -157,13 +157,8 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
                 */}
                 {showClaimMd && (
                   <span className="min-w-0">
-                    {batch.claimMdTransmissionStatus ? (
-                      <ClaimMdStatusBadge
-                        badge={{
-                          label: getBatchDecision(batch.claimMdTransmissionStatus).label,
-                          tone: getBatchDecision(batch.claimMdTransmissionStatus).tone,
-                        }}
-                      />
+                    {batch.claimMdEffectiveStatus ? (
+                      <ClaimMdStatusBadge badge={getEffectiveBadge(batch.claimMdEffectiveStatus)} />
                     ) : (
                       <span className="text-sm text-slate-400">—</span>
                     )}
@@ -185,7 +180,7 @@ export function BatchClaimsTable({ canEdit }: BatchClaimsTableProps) {
                   >
                     <Eye className="h-3.5 w-3.5 text-slate-600 transition-colors group-hover/view:text-slate-800" />
                   </button>
-                  {canEdit && !getBatchDecision(batch.claimMdTransmissionStatus).isLocked && (
+                  {canEdit && !getBatchDecision(batch.claimMdEffectiveStatus).isLocked && (
                     <button
                       type="button"
                       onClick={() => router.push(`/my-company/billing/billed-claims/${batch.id}/edit`)}
