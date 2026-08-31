@@ -1,4 +1,6 @@
 import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { buildFilters } from "@/lib/utils/query-filters"
+import { getQueryString } from "@/lib/utils/format"
 import type {
   AssignItemsToServicePlanCategoryPayload,
   CompanyServicePlan,
@@ -330,11 +332,28 @@ export async function getItemCatalogByServicePlanId(servicePlanId: string): Prom
   return normalizeItemCatalogCollection(response.data)
 }
 
-export async function getItemCatalogPage(page: number, pageSize: number): Promise<{
+/** Filtro por nombre resuelto en el backend; sin él la búsqueda sólo miraba la página cargada. */
+function buildCatalogQuery(page: number, pageSize: number, search?: string): string {
+  const filters = buildFilters(
+    [],
+    search && search.trim() !== "" ? { fields: ["name"], search } : undefined,
+  )
+  return getQueryString({
+    page,
+    pageSize,
+    ...(filters.length > 0 ? { filters } : {}),
+  })
+}
+
+export async function getItemCatalogPage(
+  page: number,
+  pageSize: number,
+  search?: string,
+): Promise<{
   items: ItemCatalogItem[]
   hasMore: boolean
 }> {
-  const response = await serviceGet<unknown>(`/item/catalog?page=${page}&pageSize=${pageSize}`)
+  const response = await serviceGet<unknown>(`/item/catalog?${buildCatalogQuery(page, pageSize, search)}`)
 
   if (response.status !== 200 || !response.data) {
     throw new Error("Failed to fetch item catalog")
@@ -350,12 +369,15 @@ export async function getItemCatalogPage(page: number, pageSize: number): Promis
 export async function getItemCatalogByCategoryPage(
   categoryId: string,
   page: number,
-  pageSize: number
+  pageSize: number,
+  search?: string,
 ): Promise<{
   items: ItemCatalogItem[]
   hasMore: boolean
 }> {
-  const response = await serviceGet<unknown>(`/item/catalog/by-category-id/${categoryId}?page=${page}&pageSize=${pageSize}`)
+  const response = await serviceGet<unknown>(
+    `/item/catalog/by-category-id/${encodeURIComponent(categoryId)}?${buildCatalogQuery(page, pageSize, search)}`,
+  )
 
   if (response.status !== 200 || !response.data) {
     throw new Error("Failed to fetch item catalog")

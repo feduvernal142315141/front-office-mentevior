@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Check, Loader2, Search, X } from "lucide-react"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { toast } from "sonner"
@@ -12,6 +12,7 @@ import {
   assignItemsToClientServicePlanCategory,
   getClientServicePlanItemCatalog,
 } from "@/lib/modules/client-service-plan/services/client-service-plan.service"
+import { useItemCatalogSearch } from "@/lib/modules/service-plans/hooks/use-item-catalog-search"
 import type {
   ClientItemCatalogItem,
   ClientServicePlanCategorySummary,
@@ -26,16 +27,7 @@ interface AddItemsDrawerProps {
   onAssignSuccess: () => Promise<void> | void
 }
 
-const PAGE_SIZE = 50
-const SEARCH_DEBOUNCE_MS = 300
-
-function sortByName(items: ClientItemCatalogItem[]): ClientItemCatalogItem[] {
-  return [...items].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
-}
-
-function dedupeById(items: ClientItemCatalogItem[]): ClientItemCatalogItem[] {
-  return items.filter((item, index, list) => index === list.findIndex((entry) => entry.id === item.id))
-}
+const CLIENT_PAGE_HINT = 50
 
 export function AddItemsDrawer({
   open,
@@ -45,165 +37,75 @@ export function AddItemsDrawer({
   mappedItemIds,
   onAssignSuccess,
 }: AddItemsDrawerProps) {
-  const [catalog, setCatalog] = useState<ClientItemCatalogItem[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [page, setPage] = useState(0)
-  const [hasMore, setHasMore] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [appliedSearch, setAppliedSearch] = useState("")
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
   const [isAssigning, setIsAssigning] = useState(false)
+  const [assignError, setAssignError] = useState<string | null>(null)
 
   const searchRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const resetDrawer = useCallback(() => {
-    setCatalog([])
-    setIsLoading(false)
-    setIsLoadingMore(false)
-    setLoadError(null)
-    setPage(0)
-    setHasMore(true)
-    setSearchTerm("")
-    setAppliedSearch("")
-    setSelectedItemIds(new Set())
-  }, [])
+  const activeCategoryId = activeCategory?.categoryId
 
-  // La búsqueda viaja al backend, así que se debouncea antes de disparar el fetch.
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setAppliedSearch(searchTerm.trim()), SEARCH_DEBOUNCE_MS)
-    return () => window.clearTimeout(timeout)
-  }, [searchTerm])
+  const fetchPage = useCallback(
+    ({ page, pageSize, search }: { page: number; pageSize: number; search: string }) =>
+      getClientServicePlanItemCatalog(clientServicePlanId, page, pageSize, search),
+    [clientServicePlanId],
+  )
+
+  /**
+   * El catálogo del plan devuelve ítems de todas las categorías: sólo tienen sentido
+   * los de la categoría activa y los que no estén ya mapeados. Si el backend no informó
+   * `categoryId` se deja pasar el ítem antes que esconder el catálogo entero.
+   */
+  const isSelectable = useCallback(
+    (item: ClientItemCatalogItem) => {
+      if (mappedItemIds.has(item.id)) return false
+      if (activeCategoryId && item.categoryId && item.categoryId !== activeCategoryId) return false
+      return true
+    },
+    [activeCategoryId, mappedItemIds],
+  )
+
+  const catalog = useItemCatalogSearch<ClientItemCatalogItem>({
+    open: open && Boolean(activeCategoryId) && Boolean(clientServicePlanId),
+    fetchPage,
+    getId: (item) => item.id,
+    getName: (item) => item.name,
+    isSelectable,
+    resetKey: activeCategoryId ?? "",
+  })
+
+  const { searchTerm, setSearchTerm, items: filteredItems, isLoading, isLoadingMore } = catalog
+  const loadError = catalog.error ?? assignError
 
   useEffect(() => {
     if (!open) {
-      resetDrawer()
+      setSelectedItemIds(new Set())
+      setAssignError(null)
       return
     }
-
-    if (!activeCategory?.categoryId || !clientServicePlanId) {
+    if (!activeCategoryId || !clientServicePlanId) {
       const message = "Select a valid category before adding items"
-      setCatalog([])
-      setLoadError(message)
+      setAssignError(message)
       toast.error(message)
-      return
     }
-
-    setLoadError(null)
-    setCatalog([])
-    setPage(0)
-    setHasMore(true)
-
-    let isActive = true
-
-    void (async () => {
-      try {
-        setIsLoading(true)
-        const { items, hasMore: more } = await getClientServicePlanItemCatalog(
-          clientServicePlanId,
-          0,
-          PAGE_SIZE,
-          appliedSearch
-        )
-
-        if (!isActive) return
-
-        setCatalog(sortByName(items))
-        setHasMore(more)
-      } catch (err) {
-        if (!isActive) return
-        const message = err instanceof Error ? err.message : "Failed to load item catalog"
-        setCatalog([])
-        setLoadError(message)
-        toast.error(message)
-      } finally {
-        if (isActive) setIsLoading(false)
-      }
-    })()
-
-    return () => {
-      isActive = false
-    }
-  }, [open, activeCategory, clientServicePlanId, appliedSearch, resetDrawer])
+  }, [open, activeCategoryId, clientServicePlanId])
 
   useEffect(() => {
-    if (open) {
-      searchRef.current?.focus()
-    }
+    if (open) searchRef.current?.focus()
   }, [open])
-
-  const loadMore = useCallback(async () => {
-    if (isLoading || isLoadingMore || !hasMore || !clientServicePlanId) return
-
-    try {
-      setIsLoadingMore(true)
-      const nextPage = page + 1
-      const { items, hasMore: more } = await getClientServicePlanItemCatalog(
-        clientServicePlanId,
-        nextPage,
-        PAGE_SIZE,
-        appliedSearch
-      )
-
-      setCatalog((current) => sortByName(dedupeById([...current, ...items])))
-      setPage(nextPage)
-      setHasMore(more)
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load more catalog items")
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }, [appliedSearch, clientServicePlanId, hasMore, isLoading, isLoadingMore, page])
 
   const handleScroll = () => {
     const container = scrollRef.current
-    if (!container || isLoading || isLoadingMore || !hasMore) return
+    if (!container) return
     const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-    if (distanceToBottom <= 120) {
-      void loadMore()
-    }
+    if (distanceToBottom <= 120) catalog.loadMore()
   }
 
   const handleClose = () => {
     if (isAssigning) return
     onClose()
   }
-
-  const activeCategoryId = activeCategory?.categoryId
-
-  const availableItems = useMemo(
-    () =>
-      catalog.filter((item) => {
-        if (mappedItemIds.has(item.id)) return false
-        // El catálogo del plan devuelve ítems de todas las categorías: sólo tienen
-        // sentido los de la categoría activa. Si el backend no informó `categoryId`
-        // se deja pasar el ítem antes que esconder el catálogo entero.
-        if (activeCategoryId && item.categoryId && item.categoryId !== activeCategoryId) return false
-        return true
-      }),
-    [activeCategoryId, catalog, mappedItemIds]
-  )
-
-  // El backend ya filtra por nombre; esto sólo mantiene la lista coherente mientras
-  // el debounce está en vuelo.
-  const normalizedSearch = searchTerm.trim().toLowerCase()
-
-  const filteredItems = useMemo(() => {
-    if (normalizedSearch.length === 0) return availableItems
-    return availableItems.filter((item) => item.name.toLowerCase().includes(normalizedSearch))
-  }, [availableItems, normalizedSearch])
-
-  // El filtro por categoría y el descarte de ítems ya mapeados se aplican sobre la
-  // página cargada, así que una página entera puede quedar vacía aunque queden
-  // coincidencias más adelante. Sin esto la lista se ve vacía y el scroll infinito
-  // nunca arranca, porque no hay nada que scrollear.
-  useEffect(() => {
-    if (!open || isLoading || isLoadingMore || !hasMore) return
-    if (filteredItems.length > 0) return
-    void loadMore()
-  }, [open, isLoading, isLoadingMore, hasMore, filteredItems.length, loadMore])
 
   const isAllVisibleSelected =
     filteredItems.length > 0 && filteredItems.every((item) => selectedItemIds.has(item.id))
@@ -254,7 +156,7 @@ export function AddItemsDrawer({
       onClose()
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to assign items"
-      setLoadError(message)
+      setAssignError(message)
       toast.error(message)
     } finally {
       setIsAssigning(false)
@@ -298,8 +200,13 @@ export function AddItemsDrawer({
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search by item name..."
-              className="h-14 w-full rounded-xl border-2 border-gray-200 pl-12 pr-4 text-base outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+              className="h-14 w-full rounded-xl border-2 border-gray-200 pl-12 pr-12 text-base outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
             />
+            {/* La lista sigue mostrando el resultado anterior mientras se escribe; el
+                spinner avisa de que hay una búsqueda en camino sin vaciar la pantalla. */}
+            {(catalog.isSearchPending || (isLoading && searchTerm.trim() !== "")) && (
+              <Loader2 className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-blue-600" />
+            )}
           </div>
 
           {!isLoading && (
@@ -336,20 +243,14 @@ export function AddItemsDrawer({
               <p className="text-sm font-medium text-red-700">Could not load item catalog.</p>
               <p className="mt-1 text-sm text-red-600">{loadError}</p>
             </div>
-          ) : catalog.length === 0 ? (
-            <div className="flex h-64 flex-col items-center justify-center px-6">
-              <p className="text-center text-gray-600">No items available in catalog.</p>
-            </div>
-          ) : availableItems.length === 0 ? (
-            <div className="flex h-64 flex-col items-center justify-center px-6">
-              <p className="text-center text-gray-600">
-                All catalog items are already mapped to this category.
-              </p>
-            </div>
           ) : filteredItems.length === 0 ? (
             <div className="flex h-64 flex-col items-center justify-center px-6">
               <Search className="mb-4 h-12 w-12 text-gray-300" />
-              <p className="text-center text-gray-600">No items found. Try a different search term.</p>
+              <p className="text-center text-gray-600">
+                {searchTerm.trim()
+                  ? "No items found. Try a different search term."
+                  : "All catalog items are already mapped to this category."}
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
