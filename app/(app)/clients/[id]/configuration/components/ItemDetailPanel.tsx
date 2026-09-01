@@ -196,7 +196,7 @@ export function ItemDetailPanel({
   onSaved,
   onDirtyChange,
 }: ItemDetailPanelProps) {
-  const { canEdit: canEditDatasheets } = useModulePermissions(PermissionModule.DATASHEETS)
+  const { canCreate, canEdit } = useModulePermissions(PermissionModule.CLIENTS)
   const params = useParams()
   const clientId = typeof params?.id === "string" ? params.id : null
   const { client } = useClientById(clientId)
@@ -1019,7 +1019,7 @@ export function ItemDetailPanel({
                 <span className="ml-2 text-sm font-normal text-slate-500">({baselines.length})</span>
               )}
             </h3>
-            {canEditDatasheets && (
+            {canCreate && (
             <Button
               type="button"
               onClick={() => {
@@ -1040,7 +1040,7 @@ export function ItemDetailPanel({
             mode="item"
             periodSelectOptions={periodSelectOptions}
             hideAddButton
-            readOnly={!canEditDatasheets}
+            readOnly={!canEdit}
           />
         </div>
 
@@ -1092,7 +1092,7 @@ export function ItemDetailPanel({
                 type="submit"
                 variant="primary"
                 loading={isSaving}
-                disabled={!canEditDatasheets || (!hasUnsavedChanges && !isSaving)}
+                disabled={!canEdit || (!hasUnsavedChanges && !isSaving)}
                 className="gap-2"
               >
                 <Save className="h-4 w-4" />
