@@ -94,7 +94,6 @@ export function ProfessionalInformationSection({ forceOpen }: ProfessionalInform
                 placeholder=" "
                 hasError={!!fieldState.error}
                 type="text"
-                required
               />
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">

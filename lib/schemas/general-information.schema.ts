@@ -106,12 +106,15 @@ export const generalInformationSchema = z.object({
     .min(1, "MPI is required")
     .regex(/^\d+$/, "MPI must contain only numbers"),
   
+  /** Opcional: sólo se valida el formato cuando el usuario escribe algo. */
   caqhNumber: z
     .preprocess((val) => (val === null || val === undefined ? "" : String(val)), z
       .string()
       .trim()
-      .min(1, "CAQH Number is required")
-      .regex(/^\d+$/, "CAQH Number must contain only numbers")
+      .refine(
+        (value) => value === "" || /^\d+$/.test(value),
+        "CAQH Number must contain only numbers",
+      )
     ),
   
   companyName: z
