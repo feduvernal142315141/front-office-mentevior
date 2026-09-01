@@ -2,7 +2,7 @@
  * Reglas de extensión para los campos de texto libre de las session notes
  * (Session Summary, los Narrative de 97155) y el Summary del Clinical Monthly.
  *
- * Requisito clínico: no menos de 250 caracteres, y entre 250 y 400 palabras.
+ * Requisito clínico: no menos de 250 caracteres, y entre 250 y 800 palabras.
  * En la práctica el mínimo de palabras domina —250 palabras siempre superan los
  * 250 caracteres— pero se validan las dos cotas para no depender de esa
  * coincidencia si alguna de las dos cambia.
@@ -10,7 +10,7 @@
 
 export const NARRATIVE_MIN_CHARS = 250
 export const NARRATIVE_MIN_WORDS = 250
-export const NARRATIVE_MAX_WORDS = 400
+export const NARRATIVE_MAX_WORDS = 800
 
 /** Palabras = grupos separados por espacios en blanco */
 export function countWords(text: string): number {
