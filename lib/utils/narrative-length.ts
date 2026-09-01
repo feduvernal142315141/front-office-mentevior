@@ -2,15 +2,11 @@
  * Reglas de extensión para los campos de texto libre de las session notes
  * (Session Summary, los Narrative de 97155) y el Summary del Clinical Monthly.
  *
- * Requisito clínico: no menos de 250 caracteres, y entre 250 y 800 palabras.
- * En la práctica el mínimo de palabras domina —250 palabras siempre superan los
- * 250 caracteres— pero se validan las dos cotas para no depender de esa
- * coincidencia si alguna de las dos cambia.
+ * Requisito clínico: mínimo 250 palabras y 250 caracteres. Sin máximo.
  */
 
 export const NARRATIVE_MIN_CHARS = 250
 export const NARRATIVE_MIN_WORDS = 250
-export const NARRATIVE_MAX_WORDS = 800
 
 /** Palabras = grupos separados por espacios en blanco */
 export function countWords(text: string): number {
@@ -28,7 +24,7 @@ export interface NarrativeLengthState {
   words: number
   chars: number
   isEmpty: boolean
-  /** true cuando cumple las tres cotas */
+  /** true cuando cumple el mínimo de palabras y caracteres */
   isValid: boolean
 }
 
@@ -39,10 +35,7 @@ export function getNarrativeLengthState(text: string): NarrativeLengthState {
     words,
     chars,
     isEmpty: words === 0,
-    isValid:
-      words >= NARRATIVE_MIN_WORDS &&
-      words <= NARRATIVE_MAX_WORDS &&
-      chars >= NARRATIVE_MIN_CHARS,
+    isValid: words >= NARRATIVE_MIN_WORDS && chars >= NARRATIVE_MIN_CHARS,
   }
 }
 
@@ -56,9 +49,6 @@ export function validateNarrativeLength(text: string): string | null {
   if (isEmpty) return "This field is required"
   if (words < NARRATIVE_MIN_WORDS) {
     return `Write at least ${NARRATIVE_MIN_WORDS} words (currently ${words})`
-  }
-  if (words > NARRATIVE_MAX_WORDS) {
-    return `Use at most ${NARRATIVE_MAX_WORDS} words (currently ${words})`
   }
   if (chars < NARRATIVE_MIN_CHARS) {
     return `Write at least ${NARRATIVE_MIN_CHARS} characters (currently ${chars})`

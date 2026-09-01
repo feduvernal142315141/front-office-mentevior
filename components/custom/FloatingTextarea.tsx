@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils"
 import type { FieldGuidance } from "@/lib/constants/field-guidance"
 import {
   getNarrativeLengthState,
-  NARRATIVE_MAX_WORDS,
   NARRATIVE_MIN_CHARS,
   NARRATIVE_MIN_WORDS,
 } from "@/lib/utils/narrative-length"
@@ -174,13 +173,7 @@ export function FloatingTextarea({
 function LengthCounter({ value }: { value: string }) {
   const { words, chars, isEmpty, isValid } = getNarrativeLengthState(value)
 
-  const tone = isEmpty
-    ? "neutral"
-    : isValid
-      ? "valid"
-      : words > NARRATIVE_MAX_WORDS
-        ? "over"
-        : "under"
+  const tone = isEmpty ? "neutral" : isValid ? "valid" : "under"
 
   return (
     <div className="mt-1.5 flex items-center justify-end gap-2 px-1 text-[11px] tabular-nums">
@@ -190,10 +183,9 @@ function LengthCounter({ value }: { value: string }) {
           tone === "neutral" && "text-slate-400",
           tone === "valid" && "text-emerald-600",
           tone === "under" && "text-amber-600",
-          tone === "over" && "text-red-500",
         )}
       >
-        {words} / {NARRATIVE_MIN_WORDS}–{NARRATIVE_MAX_WORDS} words
+        {words} words (min {NARRATIVE_MIN_WORDS})
       </span>
       <span className="text-slate-300" aria-hidden="true">
         ·
