@@ -5,11 +5,25 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { XIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { useOverlayLockRelease } from '@/lib/hooks/use-overlay-lock-release'
 
 function Dialog({
+  open,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+  // Sin esto, un diálogo que se cierra puede dejar el `<body>` sin clicks.
+  // El detalle está en `lib/utils/overlay-lock.ts`.
+  const handleOpenChange = useOverlayLockRelease(open, onOpenChange)
+
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      open={open}
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  )
 }
 
 function DialogTrigger({

@@ -5,11 +5,25 @@ import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog'
 
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
+import { useOverlayLockRelease } from '@/lib/hooks/use-overlay-lock-release'
 
 function AlertDialog({
+  open,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+  // Sin esto, un diálogo que se cierra puede dejar el `<body>` sin clicks.
+  // El detalle está en `lib/utils/overlay-lock.ts`.
+  const handleOpenChange = useOverlayLockRelease(open, onOpenChange)
+
+  return (
+    <AlertDialogPrimitive.Root
+      data-slot="alert-dialog"
+      open={open}
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  )
 }
 
 function AlertDialogTrigger({

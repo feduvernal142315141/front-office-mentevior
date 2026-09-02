@@ -6,6 +6,7 @@ import {InterceptorsInitializer} from "@/components/interceptors-initializer"
 import { InterceptorProvider } from "@/lib/contexts/interceptor-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthInitializer } from "@/components/auth-initializer"
+import { OverlayLockWatchdog } from "@/components/overlay-lock-watchdog"
 
 export const metadata: Metadata = {
     title: "MenteVior Front Office",
@@ -33,6 +34,7 @@ export default function RootLayout({
                 <InterceptorProvider>
                   <AuthInitializer />
                   <InterceptorsInitializer />
+                  <OverlayLockWatchdog />
                   {children}
                 </InterceptorProvider>
               </AlertProvider>
