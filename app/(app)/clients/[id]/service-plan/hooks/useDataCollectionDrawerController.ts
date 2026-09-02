@@ -12,7 +12,10 @@ type DataCollectionDrawerMode = "category" | "item"
 interface DataCollectionDrawerState {
   open: boolean
   mode: DataCollectionDrawerMode
+  /** Fila de client-service-plan-category (única por plan del cliente) */
   categoryId: string
+  /** Id del catálogo global de categorías */
+  categoryCatalogId: string
   categoryName: string
   clientServicePlanCategoryItemId?: string
   itemName?: string
@@ -23,8 +26,7 @@ interface UseDataCollectionDrawerControllerResult {
   openForCategory: (category: ClientServicePlanCategorySummary) => void
   openForItem: (
     item: ClientServicePlanCategoryMappedItem,
-    categoryName: string,
-    clientServicePlanCategoryId: string
+    category: ClientServicePlanCategorySummary
   ) => void
   close: () => void
 }
@@ -34,6 +36,7 @@ export function useDataCollectionDrawerController(): UseDataCollectionDrawerCont
     open: false,
     mode: "category",
     categoryId: "",
+    categoryCatalogId: "",
     categoryName: "",
     clientServicePlanCategoryItemId: undefined,
     itemName: undefined,
@@ -44,6 +47,7 @@ export function useDataCollectionDrawerController(): UseDataCollectionDrawerCont
       open: true,
       mode: "category",
       categoryId: category.id,
+      categoryCatalogId: category.categoryId,
       categoryName: category.categoryName,
       clientServicePlanCategoryItemId: undefined,
       itemName: undefined,
@@ -53,14 +57,14 @@ export function useDataCollectionDrawerController(): UseDataCollectionDrawerCont
   const openForItem = useCallback(
     (
       item: ClientServicePlanCategoryMappedItem,
-      categoryName: string,
-      clientServicePlanCategoryId: string
+      category: ClientServicePlanCategorySummary
     ) => {
       setState({
         open: true,
         mode: "item",
-        categoryId: clientServicePlanCategoryId,
-        categoryName,
+        categoryId: category.id,
+        categoryCatalogId: category.categoryId,
+        categoryName: category.categoryName,
         clientServicePlanCategoryItemId: item.id,
         itemName: item.itemName,
       })

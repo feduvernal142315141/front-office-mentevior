@@ -179,6 +179,8 @@ function FieldErrorText({ message }: { message?: string }) {
 
 interface ItemDetailPanelProps {
   categoryId: string
+  /** Id del catálogo global de categorías; decide el sentido de los objectives */
+  categoryCatalogId?: string
   categoryName: string
   clientServicePlanCategoryItemId: string
   itemName: string
@@ -189,6 +191,7 @@ interface ItemDetailPanelProps {
 
 export function ItemDetailPanel({
   categoryId,
+  categoryCatalogId,
   categoryName,
   clientServicePlanCategoryItemId,
   itemName,
@@ -455,6 +458,7 @@ export function ItemDetailPanel({
   // --- Watched values ---
   const watchedType = watch("type")
   const watchedIntervalLength = watch("intervalLength")
+  const watchedUnitOfTime = watch("unitOfTime")
 
   const resolvedType = useMemo(() => {
     const item = typeItemsMap.get(watchedType)
@@ -1054,6 +1058,10 @@ export function ItemDetailPanel({
           clientFirstName={clientFirstName}
           targetName={itemName}
           dataCollectionTypeName={resolvedType.name}
+          categoryCatalogId={categoryCatalogId}
+          categoryName={categoryName}
+          unitOfTime={watchedUnitOfTime}
+          baselines={baselines}
           externalTitle
           hideButtons
           disableActions={baselines.length === 0}

@@ -15,6 +15,10 @@ import {
   deleteClientItemObjective,
 } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
 import { OPERATOR_SMART_CRITERIA_OPTIONS } from "@/lib/types/data-collection.types"
+import {
+  defaultOperatorForDirection,
+  type ObjectiveDirection,
+} from "@/lib/modules/service-plans/constants/objective-direction"
 
 type ObjectiveFieldErrorKey =
   | "name"
@@ -34,7 +38,8 @@ function validateObjectiveForm(form: ObjectiveRow): ObjectiveFieldErrors {
   if (!form.operatorSmartCriteria) errors.operatorSmartCriteria = true
   if (!form.valueSmartCriteria) errors.valueSmartCriteria = true
   if (!form.periodSmartCriteriaCatalogId) errors.periodSmartCriteriaCatalogId = true
-  if (!form.valueDuration) errors.valueDuration = true
+  // "0 sesiones consecutivas" no es un criterio de dominio válido
+  if (!form.valueDuration || Number(form.valueDuration) < 1) errors.valueDuration = true
   if (!form.periodDurationCatalogId) errors.periodDurationCatalogId = true
   return errors
 }
@@ -55,14 +60,14 @@ export interface ObjectiveRow {
   periodDurationCatalogId: string
 }
 
-export function createEmptyObjective(): ObjectiveRow {
+export function createEmptyObjective(direction: ObjectiveDirection = "decrease"): ObjectiveRow {
   return {
     localId: crypto.randomUUID(),
     name: "",
     startDate: "",
     estimatedEndDate: "",
     endDate: "",
-    operatorSmartCriteria: "LTE",
+    operatorSmartCriteria: defaultOperatorForDirection(direction),
     valueSmartCriteria: "",
     periodSmartCriteriaCatalogId: "",
     valueDuration: "",
@@ -78,6 +83,8 @@ interface ObjectiveFormModalProps {
   onSave: (objective: ObjectiveRow) => void
   onDelete: (objective: ObjectiveRow) => void
   periodSelectOptions: { value: string; label: string }[]
+  /** Sentido de la serie según la categoría (Maladaptive reduce, skills adquieren) */
+  direction: ObjectiveDirection
   /** Builds the Mastery criteria name from the row values, so the Name field stays live-synced */
   buildAutoName?: (objective: ObjectiveRow) => string
 }
@@ -90,11 +97,12 @@ export function ObjectiveFormModal({
   onSave,
   onDelete,
   periodSelectOptions,
+  direction,
   buildAutoName,
 }: ObjectiveFormModalProps) {
   const isEdit = !!objective?.recordId
 
-  const [form, setForm] = useState<ObjectiveRow>(objective ?? createEmptyObjective())
+  const [form, setForm] = useState<ObjectiveRow>(() => objective ?? createEmptyObjective(direction))
   const [fieldErrors, setFieldErrors] = useState<ObjectiveFieldErrors>({})
   const [isDeleting, setIsDeleting] = useState(false)
   // Name captured at open time. It decides WHICH template rebuilds the name (Mastery vs
@@ -104,7 +112,7 @@ export function ObjectiveFormModal({
 
   useEffect(() => {
     if (open) {
-      const initial = objective ?? createEmptyObjective()
+      const initial = objective ?? createEmptyObjective(direction)
       const name = initial.name.trim()
       const isAutoName = !objective || !name || name.startsWith("Mastery") || /^STO#\d+/.test(name)
       const seed = buildAutoName && isAutoName ? name : null
@@ -112,7 +120,7 @@ export function ObjectiveFormModal({
       setForm(seed !== null && !name ? { ...initial, name: buildAutoName!(initial) } : initial)
       setFieldErrors({})
     }
-  }, [open, objective, buildAutoName])
+  }, [open, objective, buildAutoName, direction])
 
   const update = useCallback(
     (field: keyof ObjectiveRow, value: string) => {
@@ -174,7 +182,7 @@ export function ObjectiveFormModal({
   const handleClear = useCallback(() => {
     setForm((prev) => {
       const cleared = {
-        ...createEmptyObjective(),
+        ...createEmptyObjective(direction),
         localId: prev.localId,
         recordId: prev.recordId,
       }
@@ -182,7 +190,7 @@ export function ObjectiveFormModal({
     })
     setAutoNameSeed("")
     setFieldErrors({})
-  }, [buildAutoName])
+  }, [buildAutoName, direction])
 
   return (
     <CustomModal
@@ -244,7 +252,7 @@ export function ObjectiveFormModal({
             <FloatingInput
               label="Value"
               value={form.valueSmartCriteria}
-              onChange={(v) => update("valueSmartCriteria", v.replace(/[^0-9.-]/g, ""))}
+              onChange={(v) => update("valueSmartCriteria", v.replace(/[^0-9.]/g, ""))}
               onBlur={() => {}}
               inputMode="numeric"
               required
@@ -268,7 +276,7 @@ export function ObjectiveFormModal({
             <FloatingInput
               label="Value"
               value={form.valueDuration}
-              onChange={(v) => update("valueDuration", v.replace(/[^0-9.-]/g, ""))}
+              onChange={(v) => update("valueDuration", v.replace(/[^0-9.]/g, ""))}
               onBlur={() => {}}
               inputMode="numeric"
               required

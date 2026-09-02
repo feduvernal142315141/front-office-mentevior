@@ -20,6 +20,7 @@ import type { NavigateToItemRequest } from "./DataCollectionContent"
 interface SelectedItemDetail {
   item: ClientServicePlanCategoryMappedItem
   categoryId: string
+  categoryCatalogId: string
   categoryName: string
 }
 
@@ -134,6 +135,7 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
       setSelectedItemDetail({
         item: targetItem,
         categoryId: autoOpenItem.categoryId,
+        categoryCatalogId: activeCategory.categoryId,
         categoryName: activeCategory.categoryName,
       })
       onAutoOpenItemConsumed?.()
@@ -165,6 +167,7 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
       setSelectedItemDetail({
         item,
         categoryId: activeCategoryId,
+        categoryCatalogId: activeCategory.categoryId,
         categoryName: activeCategory.categoryName,
       })
     },
@@ -225,6 +228,7 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
           {selectedItemDetail ? (
             <ItemDetailPanel
               categoryId={selectedItemDetail.categoryId}
+              categoryCatalogId={selectedItemDetail.categoryCatalogId}
               categoryName={selectedItemDetail.categoryName}
               clientServicePlanCategoryItemId={selectedItemDetail.item.id}
               itemName={selectedItemDetail.item.itemName}
@@ -275,6 +279,7 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
         onClose={dcDrawer.close}
         mode={dcDrawer.state.mode}
         categoryId={dcDrawer.state.categoryId}
+        categoryCatalogId={dcDrawer.state.categoryCatalogId}
         categoryName={dcDrawer.state.categoryName}
         clientServicePlanCategoryItemId={dcDrawer.state.clientServicePlanCategoryItemId}
         itemName={dcDrawer.state.itemName}

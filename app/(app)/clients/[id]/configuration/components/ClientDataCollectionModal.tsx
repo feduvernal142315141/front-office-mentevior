@@ -146,6 +146,8 @@ interface ClientDataCollectionModalProps {
   onClose: () => void
   mode: "category" | "item"
   categoryId: string
+  /** Id del catálogo global de categorías; decide el sentido de los objectives */
+  categoryCatalogId?: string
   categoryName: string
   clientServicePlanCategoryItemId?: string
   itemName?: string
@@ -157,6 +159,7 @@ export function ClientDataCollectionModal({
   onClose,
   mode,
   categoryId,
+  categoryCatalogId,
   categoryName,
   clientServicePlanCategoryItemId,
   itemName,
@@ -384,6 +387,7 @@ export function ClientDataCollectionModal({
   const watchedLevels = watch("levels")
   const watchedCumulative = watch("cumulative")
   const watchedIntervalLength = watch("intervalLength")
+  const watchedUnitOfTime = watch("unitOfTime")
 
   const resolvedType = useMemo(() => {
     const item = typeItemsMap.get(watchedType)
@@ -982,6 +986,10 @@ export function ClientDataCollectionModal({
                 clientFirstName={clientFirstName}
                 targetName={targetName}
                 dataCollectionTypeName={resolvedType.name}
+                categoryCatalogId={categoryCatalogId}
+                categoryName={categoryName}
+                unitOfTime={watchedUnitOfTime}
+                baselines={baselines}
                 objetiveType={objetiveType}
                 onObjetiveTypeChange={setObjetiveType}
               />
@@ -996,6 +1004,7 @@ export function ClientDataCollectionModal({
       watchedLevels,
       watchedCumulative,
       watchedIntervalLength,
+      watchedUnitOfTime,
       resolvedType,
       errors,
       typeGroups,
@@ -1016,6 +1025,8 @@ export function ClientDataCollectionModal({
       periodSelectOptions,
       clientFirstName,
       targetName,
+      categoryCatalogId,
+      categoryName,
       mode,
     ]
   )

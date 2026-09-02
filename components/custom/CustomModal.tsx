@@ -8,6 +8,8 @@ interface CustomModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
+  /** Rendered inline next to the title (e.g. a status badge) */
+  titleAccessory?: ReactNode
   description?: string
   children: ReactNode
   maxWidthClassName?: string
@@ -26,6 +28,7 @@ export function CustomModal({
   open,
   onOpenChange,
   title,
+  titleAccessory,
   description,
   children,
   maxWidthClassName = "sm:max-w-[860px]",
@@ -84,7 +87,16 @@ export function CustomModal({
           )}
           {!hideHeader && (
             <DialogHeader className="shrink-0 px-6 py-5 border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50/70 to-white rounded-t-2xl">
-              <DialogTitle className="text-xl font-semibold text-gray-900">{title}</DialogTitle>
+              <DialogTitle className="text-xl font-semibold text-gray-900">
+                {titleAccessory ? (
+                  <span className="flex items-center gap-3">
+                    <span>{title}</span>
+                    {titleAccessory}
+                  </span>
+                ) : (
+                  title
+                )}
+              </DialogTitle>
               {description && <DialogDescription className="text-sm text-gray-600">{description}</DialogDescription>}
             </DialogHeader>
           )}

@@ -1,16 +1,97 @@
-import { typeRequiresWeeklyDaily } from "@/lib/modules/service-plans/constants/data-collection.constants"
+import {
+  typeRequiresDailyAndWeekly,
+  typeRequiresWeeklyDaily,
+} from "@/lib/modules/service-plans/constants/data-collection.constants"
+import {
+  resolveDirectionFromOperator,
+  type ObjectiveDirection,
+} from "@/lib/modules/service-plans/constants/objective-direction"
 
-const OPERATOR_PHRASE: Record<string, string> = {
-  GT: "greater than",
-  GTE: "greater or equal to",
-  EQ: "equal to",
-  LT: "less than",
-  LTE: "less or equal to",
-}
-
-/** Frequency and Rate use integer display; all other types use percentage (%) in the template. */
+/** Frequency and Rate use integer display; all other types use decimals in the template. */
 export function typeUsesIntegerDisplay(typeName: string): boolean {
   return typeRequiresWeeklyDaily(typeName)
+}
+
+/**
+ * Unidad del criterio según el tipo de medición: Frequency/Rate cuentan ocurrencias,
+ * Duration/Latency/IRT se miden en tiempo y el resto (Percentage, Trials, intervalos)
+ * en porcentaje.
+ */
+export type CriteriaUnitKind = "occurrences" | "time" | "percent"
+
+export function resolveCriteriaUnitKind(typeName: string): CriteriaUnitKind {
+  if (typeRequiresWeeklyDaily(typeName)) return "occurrences"
+  if (typeRequiresDailyAndWeekly(typeName)) return "time"
+  return "percent"
+}
+
+const UNIT_OF_TIME_NOUNS: Record<string, string> = {
+  SECONDS: "second",
+  MINUTES: "minute",
+  HOURS: "hour",
+  DAYS: "day",
+}
+
+function unitOfTimeNoun(unitOfTime: string | undefined): string {
+  return UNIT_OF_TIME_NOUNS[unitOfTime?.trim().toUpperCase() ?? ""] ?? "minute"
+}
+
+function formatCriteriaNumber(value: number, typeName: string): string {
+  if (typeUsesIntegerDisplay(typeName)) return String(Math.round(value))
+  return String(Math.round(value * 100) / 100)
+}
+
+const UNIT_OF_TIME_ABBREVIATIONS: Record<string, string> = {
+  SECONDS: "sec",
+  MINUTES: "min",
+  HOURS: "hr",
+  DAYS: "day",
+}
+
+/** Valor compacto para chips de preview: "10", "40%", "5 min". */
+export function formatCriteriaChipValue(
+  value: number,
+  typeName: string,
+  unitOfTime?: string,
+): string {
+  const kind = resolveCriteriaUnitKind(typeName)
+  const display = formatCriteriaNumber(value, typeName)
+  if (kind === "percent") return `${display}%`
+  if (kind === "time") {
+    return `${display} ${UNIT_OF_TIME_ABBREVIATIONS[unitOfTime?.trim().toUpperCase() ?? ""] ?? "min"}`
+  }
+  return display
+}
+
+function valueWithUnit(value: number, typeName: string, unitOfTime?: string): string {
+  const kind = resolveCriteriaUnitKind(typeName)
+  const display = formatCriteriaNumber(value, typeName)
+  if (kind === "percent") return `${display}%`
+  const noun = kind === "occurrences" ? "occurrence" : unitOfTimeNoun(unitOfTime)
+  return `${display} ${Number(display) === 1 ? noun : `${noun}s`}`
+}
+
+/**
+ * Frase natural del criterio: en ABA la meta se redacta como tope o piso
+ * ("4 or fewer occurrences", "80% or more"), no con el operador matemático crudo.
+ * "fewer" para conteos, "less" para porcentaje y tiempo.
+ */
+export function buildCriteriaPhrase(
+  operator: string,
+  value: number,
+  typeName: string,
+  unitOfTime?: string,
+): string {
+  const withUnit = valueWithUnit(value, typeName, unitOfTime)
+  const less = resolveCriteriaUnitKind(typeName) === "occurrences" ? "fewer" : "less"
+  switch (operator?.trim().toUpperCase()) {
+    case "GTE": return `${withUnit} or more`
+    case "GT": return `more than ${withUnit}`
+    case "LTE": return `${withUnit} or ${less}`
+    case "LT": return `${less} than ${withUnit}`
+    case "EQ": return `exactly ${withUnit}`
+    default: return withUnit
+  }
 }
 
 export interface GenerateObjectiveNameInput {
@@ -24,18 +105,20 @@ export interface GenerateObjectiveNameInput {
   targetName?: string
   periodMap?: Map<string, string>
   dataCollectionTypeName?: string
+  /** Sentido efectivo de la serie (valores → operador → categoría); manda sobre el verbo */
+  direction?: ObjectiveDirection
+  /** Start Value de la serie; en reducción se redacta como "from a baseline of X" */
+  baselineValue?: string
+  /** ServicePlanUnitOfTime del item (SECONDS/MINUTES/…), para tipos de duración */
+  unitOfTime?: string
+}
+
+export function objectiveVerbForDirection(direction: ObjectiveDirection | undefined): string {
+  return direction === "increase" ? "increase" : "reduce"
 }
 
 function getPeriodLabel(periodMap: Map<string, string> | undefined, id: string): string {
   return periodMap?.get(id)?.toLowerCase() ?? "period"
-}
-
-export function formatCriteriaValueForDisplay(value: number, typeName: string): string {
-  if (typeUsesIntegerDisplay(typeName)) {
-    return String(Math.round(value))
-  }
-  const rounded = Math.round(value * 100) / 100
-  return `${rounded}%`
 }
 
 export function formatCriteriaValueForStorage(value: number, typeName: string): string {
@@ -45,9 +128,18 @@ export function formatCriteriaValueForStorage(value: number, typeName: string): 
   return String(Math.round(value * 100) / 100)
 }
 
-export function buildGeneratedObjectiveName(input: GenerateObjectiveNameInput): string {
+/** Recupera el baseline de un nombre ya generado, para no perderlo al re-redactar. */
+export function extractBaselineFromName(name: string): string | undefined {
+  const match = name.match(/from a baseline of (\d+(?:\.\d+)?)%?/)
+  return match?.[1]
+}
+
+/**
+ * Cuerpo común de la redacción: "{Client} will {verb} {target}[ from a baseline of X]
+ * to {criteria phrase} per {period} for {N} consecutive {periods}."
+ */
+function buildObjectiveSentence(input: Omit<GenerateObjectiveNameInput, "index">): string {
   const {
-    index,
     operatorSmartCriteria,
     valueSmartCriteria,
     periodSmartCriteriaCatalogId,
@@ -57,28 +149,51 @@ export function buildGeneratedObjectiveName(input: GenerateObjectiveNameInput): 
     targetName,
     periodMap,
     dataCollectionTypeName = "",
+    direction,
+    baselineValue,
+    unitOfTime,
   } = input
 
   const client = clientFirstName?.trim() || "Client"
   const target = targetName?.trim() || "target behavior"
-  const operator = OPERATOR_PHRASE[operatorSmartCriteria] ?? operatorSmartCriteria.toLowerCase()
   const criteriaPeriod = getPeriodLabel(periodMap, periodSmartCriteriaCatalogId)
   const durationPeriod = getPeriodLabel(periodMap, periodDurationCatalogId)
 
   const numericValue = Number(valueSmartCriteria)
-  const criteriaValue = Number.isFinite(numericValue)
-    ? formatCriteriaValueForDisplay(numericValue, dataCollectionTypeName)
+  const criteriaPhrase = Number.isFinite(numericValue)
+    ? buildCriteriaPhrase(operatorSmartCriteria, numericValue, dataCollectionTypeName, unitOfTime)
     : valueSmartCriteria.trim() || "—"
   const durationValue = valueDuration.trim() || "—"
-
-  // Unit label based on type (e.g. "occurrences", "%")
-  const unitLabel = typeUsesIntegerDisplay(dataCollectionTypeName) ? "occurrences" : ""
 
   // Pluralize duration period (e.g. "week" → "weeks")
   const durationNum = Number(durationValue)
   const pluralDurationPeriod = durationNum !== 1 ? `${durationPeriod}s` : durationPeriod
 
-  return `STO#${index}: ${client} will reduce ${target} to ${operator} ${criteriaValue}${unitLabel ? ` ${unitLabel}` : ""} per ${criteriaPeriod} for ${durationValue} consecutive ${pluralDurationPeriod}.`
+  const resolvedDirection: ObjectiveDirection =
+    direction ?? resolveDirectionFromOperator(operatorSmartCriteria, "decrease")
+  const verb = objectiveVerbForDirection(resolvedDirection)
+
+  // Convención ABA: la reducción se redacta desde el baseline hacia el tope
+  const baselineNumber = Number(baselineValue)
+  const baselineClause =
+    resolvedDirection === "decrease" && baselineValue && Number.isFinite(baselineNumber)
+      ? ` from a baseline of ${formatCriteriaNumber(baselineNumber, dataCollectionTypeName)}${
+          resolveCriteriaUnitKind(dataCollectionTypeName) === "percent" ? "%" : ""
+        }`
+      : ""
+
+  return `${client} will ${verb} ${target}${baselineClause} to ${criteriaPhrase} per ${criteriaPeriod} for ${durationValue} consecutive ${pluralDurationPeriod}.`
+}
+
+export function buildGeneratedObjectiveName(input: GenerateObjectiveNameInput): string {
+  return `STO#${input.index}: ${buildObjectiveSentence(input)}`
+}
+
+/** Nombre de un objetivo de Mastery criteria, con la misma redacción que los STO. */
+export function buildMasteryObjectiveName(
+  input: Omit<GenerateObjectiveNameInput, "index">,
+): string {
+  return `Mastery criteria: ${buildObjectiveSentence(input)}`
 }
 
 export function buildGeneratedObjectiveNames(
@@ -99,30 +214,70 @@ export function buildGeneratedObjectiveNames(
 
 export type ObjectiveGenerationMode = "number_of_objectives" | "percentage_from_start_value"
 
-/** Fixed amount per step until End Value or quantity limit (first STO = start - amount). */
+/** Tope de STOs por serie. En ABA lo habitual son 3–10; 50 es el techo duro. */
+export const MAX_GENERATED_OBJECTIVES = 50
+
+/**
+ * Cuántos pasos caben realmente entre Start y End: nunca más que el tope, y con pasos
+ * enteros tampoco más que unidades tenga el rango.
+ */
+export function clampObjectiveQuantity(quantity: number, range: number): number {
+  const capped = Math.min(Math.max(Math.round(quantity), 0), MAX_GENERATED_OBJECTIVES)
+  if (range <= 0 || capped === 0) return capped
+  return Math.min(capped, Math.max(1, Math.ceil(range)))
+}
+
+/** Paso necesario para que `quantity` objetivos cubran todo el rango. */
+export function suggestAmountForQuantity(range: number, quantity: number): number {
+  if (range <= 0 || quantity <= 0) return 0
+  return Math.max(1, Math.round(range / quantity))
+}
+
+/** Cuántos objetivos hacen falta para cubrir el rango con ese paso, ya topeados. */
+export function suggestQuantityForAmount(range: number, amount: number): number {
+  if (range <= 0 || amount <= 0) return 0
+  return clampObjectiveQuantity(Math.ceil(range / amount), range)
+}
+
+/** Alcanzó el End Value: hacia abajo se pasa por debajo, hacia arriba por encima. */
+function reachesEnd(value: number, end: number, direction: ObjectiveDirection): boolean {
+  return direction === "increase" ? value >= end : value <= end
+}
+
+/**
+ * El último STO de la serie siempre es la meta. Sin esto, el redondeo del paso o el tope
+ * de objetivos dejaban la serie cortada a mitad de camino sin ningún aviso.
+ */
+function closeSeriesOnEnd(values: number[], end: number): number[] {
+  if (values.length === 0) return [end]
+  if (values[values.length - 1] !== end) values[values.length - 1] = end
+  return values
+}
+
+/** Fixed amount per step until End Value or quantity limit (first STO = start ± amount). */
 function computeNumberOfObjectivesValues(
   start: number,
   end: number,
   quantity: number,
   amount: number,
   isIntegerType: boolean,
+  direction: ObjectiveDirection,
 ): number[] {
-  if (quantity <= 0) return []
+  // Sin cantidad, sin paso o sin recorrido no hay serie: preview vacío en vez de
+  // N copias del Start Value (la validación bloquea igual estos casos al guardar)
+  if (quantity <= 0 || amount <= 0 || start === end) return []
 
   const fmt = (v: number) => (isIntegerType ? Math.round(v) : Math.round(v * 100) / 100)
 
-  if (amount <= 0) {
-    return Array.from({ length: quantity }, () => fmt(start))
-  }
+  const step = direction === "increase" ? Math.abs(amount) : -Math.abs(amount)
 
   const values: number[] = []
   let current = start
 
-  while (values.length < quantity && values.length < 50) {
-    const raw = current - amount
+  while (values.length < quantity && values.length < MAX_GENERATED_OBJECTIVES) {
+    const raw = current + step
 
-    // If subtracting goes at or below end, clamp to end and finish
-    if (raw <= end) {
+    if (reachesEnd(raw, end, direction)) {
       values.push(fmt(end))
       break
     }
@@ -131,31 +286,39 @@ function computeNumberOfObjectivesValues(
     current = raw
   }
 
-  return values.length > 0 ? values : [fmt(end)]
+  return closeSeriesOnEnd(values, fmt(end))
 }
 
-/** Percentage from Start Value: subtract a fixed slice of start until reaching end. */
+/**
+ * Percentage from Start Value: avanza una tajada fija hasta llegar al end.
+ * Al reducir la tajada sale del Start Value; al adquirir, el start suele ser 0 y no
+ * daría ningún paso, así que la tajada se toma sobre el End Value (la meta).
+ */
 function computePercentageFromStartValues(
   start: number,
   end: number,
   percentageFromStart: number,
   isIntegerType: boolean,
+  direction: ObjectiveDirection,
 ): number[] {
-  if (percentageFromStart <= 0) return [isIntegerType ? Math.round(start) : start]
+  // Igual que en el modo por cantidad: entradas inválidas dan preview vacío
+  if (percentageFromStart <= 0 || start === end) return []
 
-  const decrement = isIntegerType
-    ? Math.round(start * (percentageFromStart / 100))
-    : start * (percentageFromStart / 100)
+  const base = direction === "increase" ? Math.abs(end) : Math.abs(start)
+  const rawStep = base * (percentageFromStart / 100)
+  const stepMagnitude = isIntegerType ? Math.round(rawStep) : rawStep
 
-  if (decrement <= 0) return [isIntegerType ? Math.round(start) : start]
+  if (stepMagnitude <= 0) return []
+
+  const step = direction === "increase" ? stepMagnitude : -stepMagnitude
 
   const values: number[] = []
   let current = start
 
-  while (values.length < 50) {
-    const next = current - decrement
+  while (values.length < MAX_GENERATED_OBJECTIVES) {
+    const next = current + step
 
-    if (next <= end) {
+    if (reachesEnd(next, end, direction)) {
       values.push(isIntegerType ? Math.round(end) : end)
       break
     }
@@ -164,7 +327,7 @@ function computePercentageFromStartValues(
     current = next
   }
 
-  return values.length > 0 ? values : [isIntegerType ? Math.round(end) : end]
+  return closeSeriesOnEnd(values, isIntegerType ? Math.round(end) : end)
 }
 
 export function computeGeneratedObjectiveCriteriaValues(params: {
@@ -175,6 +338,7 @@ export function computeGeneratedObjectiveCriteriaValues(params: {
   startValue: string
   endValue: string
   dataCollectionTypeName: string
+  direction: ObjectiveDirection
 }): number[] {
   const start = Number(params.startValue) || 0
   const end = Number(params.endValue) || 0
@@ -182,7 +346,14 @@ export function computeGeneratedObjectiveCriteriaValues(params: {
 
   if (params.mode === "number_of_objectives") {
     const amount = Number(params.amountToDecreaseIncrease) || 0
-    return computeNumberOfObjectivesValues(start, end, params.quantity, amount, isIntegerType)
+    return computeNumberOfObjectivesValues(
+      start,
+      end,
+      params.quantity,
+      amount,
+      isIntegerType,
+      params.direction,
+    )
   }
 
   return computePercentageFromStartValues(
@@ -190,5 +361,6 @@ export function computeGeneratedObjectiveCriteriaValues(params: {
     end,
     params.percentageFromStart,
     isIntegerType,
+    params.direction,
   )
 }

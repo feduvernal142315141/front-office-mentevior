@@ -73,7 +73,7 @@ export default function ClientServicePlanPage() {
   const handleConfigureItemDc = useCallback(
     (item: ClientServicePlanCategoryMappedItem) => {
       if (!activeCategory || !activeCategoryId) return
-      dcDrawer.openForItem(item, activeCategory.categoryName, activeCategoryId)
+      dcDrawer.openForItem(item, activeCategory)
     },
     [activeCategory, activeCategoryId, dcDrawer]
   )

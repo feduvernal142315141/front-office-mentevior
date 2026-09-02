@@ -21,11 +21,20 @@ import {
 
 import {
   ObjectiveFormModal,
-  createEmptyObjective,
   type ObjectiveRow,
 } from "./ObjectiveFormModal"
+import type { BaselineRow } from "./BaselinesTabContent"
 import { GenerateObjectivesModal } from "./GenerateObjectivesModal"
-import { buildGeneratedObjectiveName } from "./generate-objective-name"
+import {
+  buildGeneratedObjectiveName,
+  buildMasteryObjectiveName,
+  extractBaselineFromName,
+} from "./generate-objective-name"
+import {
+  resolveDirectionFromOperator,
+  resolveObjectiveDirection,
+  type ObjectiveDirection,
+} from "@/lib/modules/service-plans/constants/objective-direction"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 
@@ -38,6 +47,13 @@ interface ObjectivesTabContentProps {
   clientFirstName?: string
   targetName?: string
   dataCollectionTypeName?: string
+  /** Id del catálogo global de categorías; decide si la serie reduce o adquiere */
+  categoryCatalogId?: string
+  categoryName?: string
+  /** ServicePlanUnitOfTime del item (SECONDS/MINUTES/…), para tipos de duración */
+  unitOfTime?: string
+  /** Baselines del item; el más reciente pre-carga el Start Value del generador */
+  baselines?: BaselineRow[]
   hideButtons?: boolean
   externalTitle?: boolean
   disableActions?: boolean
@@ -119,6 +135,10 @@ export function ObjectivesTabContent({
   clientFirstName,
   targetName,
   dataCollectionTypeName,
+  categoryCatalogId,
+  categoryName,
+  unitOfTime,
+  baselines,
   hideButtons = false,
   externalTitle = false,
   disableActions = false,
@@ -126,6 +146,20 @@ export function ObjectivesTabContent({
   objetiveType = null,
   onObjetiveTypeChange,
 }: ObjectivesTabContentProps) {
+  const direction: ObjectiveDirection = useMemo(
+    () => resolveObjectiveDirection(categoryCatalogId, categoryName),
+    [categoryCatalogId, categoryName]
+  )
+
+  // Último baseline registrado (por fecha); pre-carga el Start Value del generador
+  const latestBaseline = useMemo(() => {
+    const rows = (baselines ?? []).filter(
+      (b) => b.value.trim() !== "" && Number.isFinite(Number(b.value))
+    )
+    if (rows.length === 0) return undefined
+    const last = [...rows].sort((a, b) => (a.date || "").localeCompare(b.date || ""))[rows.length - 1]
+    return { value: last.value, date: last.date, periodCatalogId: last.periodCatalogId }
+  }, [baselines])
   const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENTS)
   const actionsDisabled = disableActions || !canEdit
 
@@ -158,23 +192,22 @@ export function ObjectivesTabContent({
   }, [])
 
   const buildMasteryCriteriaName = useCallback(
-    (obj: ObjectiveRow): string => {
-      const OPERATOR_PHRASE: Record<string, string> = {
-        GT: "greater than", GTE: "greater or equal to", EQ: "equal to",
-        LT: "less than", LTE: "less or equal to",
-      }
-      const client = clientFirstName?.trim() || "Client"
-      const target = targetName?.trim() || "target behavior"
-      const op = OPERATOR_PHRASE[obj.operatorSmartCriteria] ?? obj.operatorSmartCriteria.toLowerCase()
-      const value = obj.valueSmartCriteria || "0"
-      const numValue = Number(value)
-      const unitLabel = numValue === 1 ? "occurrence" : "occurrences"
-      const criteriaPeriod = periodMap.get(obj.periodSmartCriteriaCatalogId)?.toLowerCase() ?? "period"
-      const durValue = obj.valueDuration || "1"
-
-      return `Mastery criteria: ${client} will reduce ${target} to ${value} ${unitLabel} per ${criteriaPeriod} for ${durValue} consecutive sessions.`
-    },
-    [clientFirstName, targetName, periodMap],
+    (obj: ObjectiveRow): string =>
+      buildMasteryObjectiveName({
+        operatorSmartCriteria: obj.operatorSmartCriteria,
+        valueSmartCriteria: obj.valueSmartCriteria,
+        periodSmartCriteriaCatalogId: obj.periodSmartCriteriaCatalogId,
+        valueDuration: obj.valueDuration,
+        periodDurationCatalogId: obj.periodDurationCatalogId,
+        clientFirstName,
+        targetName,
+        periodMap,
+        dataCollectionTypeName,
+        // Objetivo suelto, sin serie: el sentido lo da su operador y después la categoría
+        direction: resolveDirectionFromOperator(obj.operatorSmartCriteria, direction),
+        unitOfTime,
+      }),
+    [clientFirstName, targetName, periodMap, dataCollectionTypeName, direction, unitOfTime],
   )
 
   // Live name for the edit modal: values typed in the form rewrite the name as you type.
@@ -194,11 +227,15 @@ export function ObjectivesTabContent({
           targetName,
           periodMap,
           dataCollectionTypeName,
+          direction: resolveDirectionFromOperator(obj.operatorSmartCriteria, direction),
+          // El baseline vive en el nombre generado; se rescata para no perderlo al editar
+          baselineValue: extractBaselineFromName(obj.name),
+          unitOfTime,
         })
       }
       return buildMasteryCriteriaName(obj)
     },
-    [buildMasteryCriteriaName, clientFirstName, targetName, periodMap, dataCollectionTypeName],
+    [buildMasteryCriteriaName, clientFirstName, targetName, periodMap, dataCollectionTypeName, direction, unitOfTime],
   )
 
   const handleSave = useCallback(
@@ -478,6 +515,7 @@ export function ObjectivesTabContent({
         onSave={handleSave}
         onDelete={handleDelete}
         periodSelectOptions={periodSelectOptions}
+        direction={direction}
         buildAutoName={buildLiveName}
       />
 
@@ -491,6 +529,10 @@ export function ObjectivesTabContent({
         clientFirstName={clientFirstName}
         targetName={targetName}
         dataCollectionTypeName={dataCollectionTypeName}
+        direction={direction}
+        categoryName={categoryName}
+        unitOfTime={unitOfTime}
+        latestBaseline={latestBaseline}
       />
 
       <GenerateObjectivesModal
@@ -503,6 +545,10 @@ export function ObjectivesTabContent({
         clientFirstName={clientFirstName}
         targetName={targetName}
         dataCollectionTypeName={dataCollectionTypeName}
+        direction={direction}
+        categoryName={categoryName}
+        unitOfTime={unitOfTime}
+        latestBaseline={latestBaseline}
         editMode
         initialObjectives={objectives}
       />
