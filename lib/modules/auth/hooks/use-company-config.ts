@@ -3,12 +3,14 @@
 import {useState, useEffect} from "react";
 import {serviceGetCompanyConfig} from "@/lib/services/login/login";
 import type {CompanyConfigResponse} from "@/lib/models/login/login";
-import {useCompanySlug} from "@/lib/modules/auth/hooks/use-company-slug";
+import {isNeutralSlug, useCompanySlug} from "@/lib/modules/auth/hooks/use-company-slug";
 
 interface UseCompanyConfigReturn {
     companyConfig: CompanyConfigResponse | null;
     isLoading: boolean;
     error: string | null;
+    /** El host es el login neutral (`app.…`): todavía no hay compañía que resolver. */
+    isNeutral: boolean;
 }
 
 export function useCompanyConfig(): UseCompanyConfigReturn {
@@ -16,8 +18,18 @@ export function useCompanyConfig(): UseCompanyConfigReturn {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const {companySlug} = useCompanySlug()
+    const isNeutral = isNeutralSlug(companySlug)
 
     useEffect(() => {
+        // En el login neutral no existe una compañía `app`: pedir su config daría 404
+        // y la pantalla mostraría "Company Not Found" en vez del formulario.
+        if (isNeutralSlug(companySlug)) {
+            setCompanyConfig(null)
+            setError(null)
+            setIsLoading(false)
+            return
+        }
+
         if (companySlug === null) {
             setCompanyConfig(null)
             setError("Company identifier is required")
@@ -63,5 +75,6 @@ export function useCompanyConfig(): UseCompanyConfigReturn {
         companyConfig,
         isLoading,
         error,
+        isNeutral,
     };
 }

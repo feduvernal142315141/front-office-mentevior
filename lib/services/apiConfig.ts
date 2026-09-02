@@ -42,9 +42,32 @@ const processQueue = (token: string | null) => {
     failedQueue = []
 }
 
+/**
+ * Endpoints de autenticación que se llaman SIN sesión. No llevan token, y un 401
+ * suyo significa "credenciales inválidas", no "sesión vencida".
+ * `/auth/validate-otp` y `/auth/resend-otp` cubren también sus variantes `-global`
+ * (match por substring), y `/auth/login` NO cubre `global-login` ni `company-login`:
+ * esos van explícitos.
+ */
+const PUBLIC_AUTH_ROUTES = [
+    '/auth/login',
+    '/auth/global-login',
+    '/auth/company-login',
+    '/auth/validate-otp',
+    '/auth/resend-otp',
+]
+
+/** Rutas públicas que NO deben enviar token. El refresh sí lo necesita, por eso no está. */
+const PUBLIC_ROUTES = [
+    ...PUBLIC_AUTH_ROUTES,
+    "/security/public-key",
+    "/dashboard/public-info",
+    "/company/get-config-by-identifier",
+]
+
 // Rutas de auth que NO deben triggear retry en 401
 const SKIP_RETRY_ROUTES = [
-    '/auth/login',
+    ...PUBLIC_AUTH_ROUTES,
     '/auth/refresh-token',
 ]
 
@@ -85,14 +108,6 @@ apiInstance.interceptors.request.use(
         interceptorHandlers.onActivity?.()
 
         try {
-            // Rutas públicas que NO deben enviar token
-            const PUBLIC_ROUTES = [
-                "/auth/login",
-                "/security/public-key",
-                "/dashboard/public-info",
-                "/company/get-config-by-identifier",
-            ]
-
             const isPublicRoute = PUBLIC_ROUTES.some((path) => config.url?.includes(path))
 
             if (!isPublicRoute) {

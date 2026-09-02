@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login-error", "/set-cookie"];
+// `/session-handoff` recibe la sesión que viene del login neutral: llega SIN cookie
+// y como un único segmento, así que sin listarlo acá el proxy lo confundiría con un
+// identificador de compañía y lo mandaría a `/login`, cortando el traspaso.
+const PUBLIC_PATHS = ["/", "/login-error", "/set-cookie", "/session-handoff"];
 
 /**
  * Rutas de la aplicación autenticada que NO deben ser interceptadas.

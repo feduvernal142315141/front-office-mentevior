@@ -56,7 +56,7 @@ export interface LoginResponse {
   accessTokenExpiresIn: string
   refreshToken: string
   refreshTokenExpiresIn: string
-  passwordExpirationDate?: string
+  passwordExpirationDate?: string | null
   /** @deprecated nombre anterior de `accessTokenExpiresIn` */
   accessExpiresIn?: string
   /** @deprecated nombre anterior de `refreshTokenExpiresIn` */

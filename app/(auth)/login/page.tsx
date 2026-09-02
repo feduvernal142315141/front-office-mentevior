@@ -1,13 +1,22 @@
 "use client"
 
+import { Loader2 } from "lucide-react"
+
+import { CompanyAccessNotice } from "@/components/auth/CompanyAccessNotice"
+import { useCompanyConfig } from "@/lib/modules/auth/hooks/use-company-config"
+import type { CompanyInfo } from "@/lib/types/auth.types"
+
 import { BrandSection } from "./BrandSection"
 import { LoginForm } from "./LoginForm"
-import { useCompanyConfig } from "@/lib/modules/auth/hooks/use-company-config"
-import { Loader2 } from "lucide-react"
-import { CompanyAccessNotice } from "@/components/auth/CompanyAccessNotice"
+
+/** Marca de la plataforma para el login neutral, donde todavía no hay compañía. */
+const NEUTRAL_BRAND = {
+  name: "Mentevior",
+  logo: "/logoMenteVior.png",
+}
 
 export default function LoginPage() {
-  const { companyConfig, isLoading, error } = useCompanyConfig()
+  const { companyConfig, isLoading, error, isNeutral } = useCompanyConfig()
 
   if (isLoading) {
     return (
@@ -20,7 +29,9 @@ export default function LoginPage() {
     )
   }
 
-  if (error || !companyConfig) {
+  // En el login neutral no hay compañía que resolver, así que la falta de config
+  // no es un error: es justamente el caso que este flujo viene a cubrir.
+  if (!isNeutral && (error || !companyConfig)) {
     return (
       <CompanyAccessNotice
         tone="error"
@@ -34,11 +45,15 @@ export default function LoginPage() {
     )
   }
 
+  const company: CompanyInfo | null = companyConfig
+    ? { id: companyConfig.id, name: companyConfig.legalName, logo: companyConfig.logo }
+    : null
+
   return (
     <div className="min-h-screen login-background flex relative overflow-hidden">
-      <BrandSection 
-        companyName={companyConfig.legalName} 
-        companyLogo={companyConfig.logo} 
+      <BrandSection
+        companyName={company?.name ?? NEUTRAL_BRAND.name}
+        companyLogo={company?.logo || NEUTRAL_BRAND.logo}
       />
 
       <div className="
@@ -48,11 +63,7 @@ export default function LoginPage() {
         relative z-10
         bg-white/70 backdrop-blur-xl
       ">
-        <LoginForm 
-          companyId={companyConfig.id}
-          companyName={companyConfig.legalName}
-          companyLogo={companyConfig.logo}
-        />
+        <LoginForm company={company} />
       </div>
     </div>
   )

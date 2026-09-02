@@ -1,9 +1,25 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { jwtDecode } from "jwt-decode"
-import type { User, AuthState, LoginResponse, RefreshTokenResponse, RequiredOptions } from "@/lib/types/auth.types"
+import type { User, AuthState, CompanyInfo, LoginResponse, RefreshTokenResponse, RequiredOptions } from "@/lib/types/auth.types"
+import type {
+  AuthTokensResponse,
+  MatchedCompany,
+  OtpChallengeIssued,
+  ValidateOtpGlobalResponse,
+} from "@/lib/models/login/login"
 import { encryptRsa } from "@/lib/utils/encrypt"
-import { serviceLoginManagerUserAuth, serviceRefreshToken } from "@/lib/services/login/login"
+import {
+  serviceCompanyLogin,
+  serviceGlobalLogin,
+  serviceLoginManagerUserAuth,
+  serviceRefreshToken,
+  serviceResendOtp,
+  serviceResendOtpGlobal,
+  serviceValidateOtp,
+  serviceValidateOtpGlobal,
+} from "@/lib/services/login/login"
+import { NEUTRAL_SLUG } from "@/lib/modules/auth/hooks/use-company-slug"
 import { createRefreshTokenWorker, type RefreshTokenWorker } from "@/lib/workers/refresh-token-worker"
 import { getLoginUrl } from "@/lib/utils/company-identifier"
 
@@ -250,6 +266,81 @@ function readPersistedTokens(): PersistedTokens | null {
   }
 }
 
+/**
+ * Resultado de un paso del login. El store nunca navega: describe qué pasó y deja
+ * que la pantalla decida (mostrar el OTP, listar compañías o saltar al subdominio).
+ */
+export type AuthAttempt =
+  /** Credenciales válidas: el backend mandó el código y abrió un challenge */
+  | { status: "otp_sent"; challenge: OtpChallengeIssued }
+  /** Sesión abierta en este mismo origen */
+  | { status: "authenticated" }
+  /** Hay tokens, pero la sesión pertenece a otro subdominio */
+  | { status: "company_session"; tokens: AuthTokensResponse; slug: string; companyName: string }
+  /** El email existe en varias compañías: falta elegir una */
+  | { status: "select_company"; companies: MatchedCompany[]; otpChallengeId: string }
+  /**
+   * `rejected` = el backend dijo que no (credenciales, código malo, cooldown).
+   * `network` = no llegamos a preguntar, así que no consume intentos.
+   */
+  | { status: "error"; message: string; kind: "rejected" | "network" }
+
+const GENERIC_AUTH_ERROR = "Something went wrong. Please try again."
+const NETWORK_AUTH_ERROR = "We couldn't reach the server. Please check your connection and try again."
+const OTP_NOT_SENT_ERROR = "We couldn't send your verification code. Please try again."
+
+/** Respaldos por si el backend no informa estos datos en el challenge */
+const DEFAULT_OTP_LENGTH = 6
+const DEFAULT_RESEND_COOLDOWN_SECONDS = 30
+
+/**
+ * El backend nuevo responde `true` cuando ya mandó el OTP; uno anterior a este
+ * cambio devuelve los tokens directamente. Distinguirlo acá permite desplegar
+ * frontend y backend por separado sin dejar el login caído en el medio.
+ */
+function tokensFromChallenge(payload: unknown): AuthTokensResponse | null {
+  if (!payload || typeof payload !== "object") return null
+  const candidate = payload as Partial<AuthTokensResponse>
+  return typeof candidate.accessToken === "string" && candidate.accessToken.length > 0
+    ? (candidate as AuthTokensResponse)
+    : null
+}
+
+/** El reto OTP recién abierto, si la respuesta trae uno. */
+function issuedChallenge(payload: unknown): OtpChallengeIssued | null {
+  if (!payload || typeof payload !== "object") return null
+  const candidate = payload as Partial<OtpChallengeIssued>
+  if (typeof candidate.otpChallengeId !== "string" || !candidate.otpChallengeId) return null
+
+  return {
+    otpSent: candidate.otpSent !== false,
+    otpChallengeId: candidate.otpChallengeId,
+    otpExpiresIn: candidate.otpExpiresIn ?? "",
+    otpLength: typeof candidate.otpLength === "number" ? candidate.otpLength : DEFAULT_OTP_LENGTH,
+    resendCooldownSeconds:
+      typeof candidate.resendCooldownSeconds === "number"
+        ? candidate.resendCooldownSeconds
+        : DEFAULT_RESEND_COOLDOWN_SECONDS,
+  }
+}
+
+/** Error de autenticación con el mensaje del backend (`message`/`details`) si lo hay. */
+function authError(
+  response: { data?: unknown } | undefined,
+  fallback: string,
+): Extract<AuthAttempt, { status: "error" }> {
+  // Sin respuesta no llegamos a preguntar: no cuenta como intento consumido
+  if (!response) return { status: "error", message: NETWORK_AUTH_ERROR, kind: "network" }
+
+  const data = response.data as { message?: string; details?: string } | undefined
+  const message = data?.message?.trim() || data?.details?.trim()
+  return { status: "error", message: message || fallback, kind: "rejected" }
+}
+
+function isSuccess(status: number | undefined): boolean {
+  return status !== undefined && status >= 200 && status < 300
+}
+
 function markSessionEndReason(reason: "expired") {
   if (typeof window === "undefined") return
   try {
@@ -264,8 +355,40 @@ function markSessionEndReason(reason: "expired") {
 // ============================================
 
 interface AuthStore extends AuthState {
-  // Actions
-  login: (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => Promise<boolean>
+  // --- Login por subdominio de compañía (paso 1: credenciales, paso 2: OTP) ---
+  requestLoginOtp: (email: string, password: string, company: CompanyInfo) => Promise<AuthAttempt>
+  /** Manda un código nuevo sin volver a pedir la contraseña */
+  resendLoginOtp: (
+    email: string,
+    company: CompanyInfo,
+    otpChallengeId: string,
+  ) => Promise<AuthAttempt>
+  verifyLoginOtp: (
+    email: string,
+    otpCode: string,
+    company: CompanyInfo,
+    otpChallengeId: string,
+  ) => Promise<AuthAttempt>
+
+  // --- Login neutral (slug `app`) ---
+  requestGlobalOtp: (email: string, password: string) => Promise<AuthAttempt>
+  resendGlobalOtp: (email: string, otpChallengeId: string) => Promise<AuthAttempt>
+  verifyGlobalOtp: (
+    email: string,
+    otpCode: string,
+    otpChallengeId: string,
+  ) => Promise<AuthAttempt>
+  /** Cierra el login neutral con la compañía que eligió el usuario */
+  loginToCompany: (
+    email: string,
+    password: string,
+    slug: string,
+    otpChallengeId: string,
+  ) => Promise<AuthAttempt>
+
+  /** Abre la sesión con tokens ya obtenidos (lo usa el handoff entre subdominios) */
+  establishSession: (tokens: AuthTokensResponse, company: CompanyInfo | null) => Promise<boolean>
+
   logout: () => Promise<void>
   refresh: () => Promise<boolean>
   /** Igual que refresh() pero indicando por qué falló, para no cerrar sesión ante fallos transitorios */
@@ -490,6 +613,66 @@ export const useAuthStore = create<AuthStore>()(
         }
       }
 
+      /**
+       * Único punto donde una respuesta con tokens se convierte en sesión abierta:
+       * decodifica el usuario, mide el desfase de reloj, persiste el estado, renueva
+       * la cookie httpOnly y arranca el worker. Los cuatro caminos de login (OTP por
+       * compañía, OTP global, selección de compañía y el handoff entre subdominios)
+       * terminan acá, así que la sesión siempre queda armada igual.
+       */
+      const openSession = async (
+        tokens: LoginResponse,
+        company: CompanyInfo | null,
+      ): Promise<boolean> => {
+        try {
+          const user = decodeUserFromToken(tokens.accessToken)
+
+          const refreshTokenExpiresAt =
+            parseExpiresIn(tokens.refreshTokenExpiresIn) ??
+            parseExpiresIn(tokens.refreshExpiresIn) ??
+            0
+
+          // El login es el mejor momento para medir el desfase de reloj: el token
+          // acaba de emitirse, así que su `iat` es prácticamente el "ahora" del servidor.
+          const clockSkewMs = measureClockSkew(tokens.accessToken) ?? 0
+          const accessTokenExpiresAt = resolveAccessTokenExpiresAt(
+            tokens.accessToken,
+            tokens.accessTokenExpiresIn ?? tokens.accessExpiresIn,
+          )
+
+          if (clockSkewMs !== 0) {
+            console.warn(
+              `[AuthStore] El reloj del equipo va ${clockSkewMs > 0 ? "adelantado" : "atrasado"} ` +
+                `${Math.round(Math.abs(clockSkewMs) / 1000)}s respecto del servidor; se compensa.`,
+            )
+          }
+
+          set({
+            user,
+            company,
+            accessToken: tokens.accessToken,
+            accessTokenExpiresAt,
+            accessTokenRefreshAt: computeRefreshAt(tokens.accessToken, accessTokenExpiresAt, clockSkewMs),
+            refreshToken: tokens.refreshToken,
+            refreshTokenExpiresAt,
+            clockSkewMs,
+            isAuthenticated: true,
+          })
+
+          if (typeof window !== "undefined") {
+            window.sessionStorage.removeItem(SESSION_END_REASON_KEY)
+          }
+
+          await updateServerCookie(tokens.accessToken, cookieMaxAgeFor(refreshTokenExpiresAt, clockSkewMs))
+          get().initWorker()
+
+          return true
+        } catch (error) {
+          console.error("[AuthStore] Could not open session:", error)
+          return false
+        }
+      }
+
       return {
       // State inicial
       user: null,
@@ -504,81 +687,187 @@ export const useAuthStore = create<AuthStore>()(
       hydrated: false,
 
       // ============================================
-      // LOGIN
+      // LOGIN — subdominio de compañía
       // ============================================
-      login: async (email: string, password: string, companyId: string, companyName: string, companyLogo: string) => {
-        try {
-          const encrypted = await encryptRsa(password)
+      requestLoginOtp: async (email, password, company): Promise<AuthAttempt> => {
+        const encrypted = await encryptRsa(password)
+        if (!encrypted) return { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
 
-          const response = await serviceLoginManagerUserAuth({
-            email,
-            password: encrypted,
-            companyId,
-          })
+        const response = await serviceLoginManagerUserAuth({
+          email,
+          password: encrypted,
+          companyId: company.id,
+        })
 
-          if (response?.status !== 200) {
-            console.error("[AuthStore] Login failed:", response?.status)
-            return false
-          }
-
-          const data: LoginResponse = response.data
-
-          const user = decodeUserFromToken(data.accessToken)
-
-          const refreshTokenExpiresAt =
-            parseExpiresIn(data.refreshTokenExpiresIn) ??
-            parseExpiresIn(data.refreshExpiresIn) ??
-            0
-
-          // El login es el mejor momento para medir el desfase de reloj: el token
-          // acaba de emitirse, así que su `iat` es prácticamente el "ahora" del servidor.
-          const clockSkewMs = measureClockSkew(data.accessToken) ?? 0
-          const accessTokenExpiresAt = resolveAccessTokenExpiresAt(
-            data.accessToken,
-            data.accessTokenExpiresIn ?? data.accessExpiresIn,
-          )
-
-          if (clockSkewMs !== 0) {
-            console.warn(
-              `[AuthStore] El reloj del equipo va ${clockSkewMs > 0 ? "adelantado" : "atrasado"} ` +
-                `${Math.round(Math.abs(clockSkewMs) / 1000)}s respecto del servidor; se compensa.`,
-            )
-          }
-
-          const newState = {
-            user,
-            company: {
-              id: companyId,
-              name: companyName,
-              logo: companyLogo,
-            },
-            accessToken: data.accessToken,
-            accessTokenExpiresAt,
-            accessTokenRefreshAt: computeRefreshAt(data.accessToken, accessTokenExpiresAt, clockSkewMs),
-            refreshToken: data.refreshToken,
-            refreshTokenExpiresAt,
-            clockSkewMs,
-            isAuthenticated: true,
-          }
-
-          set(newState)
-
-          if (typeof window !== "undefined") {
-            window.sessionStorage.removeItem(SESSION_END_REASON_KEY)
-          }
-
-          // Actualizar cookie del servidor
-          await updateServerCookie(data.accessToken, cookieMaxAgeFor(refreshTokenExpiresAt, clockSkewMs))
-
-          // Iniciar worker
-          get().initWorker()
-
-          return true
-        } catch (error) {
-          console.error("[AuthStore] Login error:", error)
-          return false
+        if (!isSuccess(response?.status)) {
+          return authError(response, "Invalid credentials")
         }
+
+        const payload = response.data as unknown
+
+        // Backend anterior al OTP: devolvió los tokens y ya no hay segundo paso
+        const legacyTokens = tokensFromChallenge(payload)
+        if (legacyTokens) {
+          const opened = await openSession(legacyTokens, company)
+          return opened
+            ? { status: "authenticated" }
+            : { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
+        }
+
+        const challenge = issuedChallenge(payload)
+        if (!challenge?.otpSent) {
+          return { status: "error", message: OTP_NOT_SENT_ERROR, kind: "rejected" }
+        }
+
+        return { status: "otp_sent", challenge }
       },
+
+      resendLoginOtp: async (email, company, otpChallengeId): Promise<AuthAttempt> => {
+        const response = await serviceResendOtp({ email, companyId: company.id, otpChallengeId })
+
+        if (!isSuccess(response?.status)) {
+          return authError(response, OTP_NOT_SENT_ERROR)
+        }
+
+        const challenge = issuedChallenge(response.data as unknown)
+        if (!challenge?.otpSent) {
+          return { status: "error", message: OTP_NOT_SENT_ERROR, kind: "rejected" }
+        }
+
+        return { status: "otp_sent", challenge }
+      },
+
+      verifyLoginOtp: async (email, otpCode, company, otpChallengeId): Promise<AuthAttempt> => {
+        const response = await serviceValidateOtp({
+          email,
+          companyId: company.id,
+          otpChallengeId,
+          otpCode,
+        })
+
+        if (!isSuccess(response?.status)) {
+          return authError(response, "That code isn't valid or has expired.")
+        }
+
+        const tokens = tokensFromChallenge(response.data as unknown)
+        if (!tokens) return { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
+
+        const opened = await openSession(tokens, company)
+        return opened
+          ? { status: "authenticated" }
+          : { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
+      },
+
+      // ============================================
+      // LOGIN — neutral (slug `app`)
+      // ============================================
+      requestGlobalOtp: async (email, password): Promise<AuthAttempt> => {
+        const encrypted = await encryptRsa(password)
+        if (!encrypted) return { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
+
+        const response = await serviceGlobalLogin({
+          email,
+          password: encrypted,
+          slug: NEUTRAL_SLUG,
+        })
+
+        if (!isSuccess(response?.status)) {
+          return authError(response, "Invalid credentials")
+        }
+
+        const challenge = issuedChallenge(response.data as unknown)
+        if (!challenge?.otpSent) {
+          return { status: "error", message: OTP_NOT_SENT_ERROR, kind: "rejected" }
+        }
+
+        return { status: "otp_sent", challenge }
+      },
+
+      resendGlobalOtp: async (email, otpChallengeId): Promise<AuthAttempt> => {
+        const response = await serviceResendOtpGlobal({
+          email,
+          slug: NEUTRAL_SLUG,
+          otpChallengeId,
+        })
+
+        if (!isSuccess(response?.status)) {
+          return authError(response, OTP_NOT_SENT_ERROR)
+        }
+
+        const challenge = issuedChallenge(response.data as unknown)
+        if (!challenge?.otpSent) {
+          return { status: "error", message: OTP_NOT_SENT_ERROR, kind: "rejected" }
+        }
+
+        return { status: "otp_sent", challenge }
+      },
+
+      verifyGlobalOtp: async (email, otpCode, otpChallengeId): Promise<AuthAttempt> => {
+        const response = await serviceValidateOtpGlobal({
+          email,
+          slug: NEUTRAL_SLUG,
+          otpChallengeId,
+          otpCode,
+        })
+
+        if (!isSuccess(response?.status)) {
+          return authError(response, "That code isn't valid or has expired.")
+        }
+
+        const data = response.data as unknown as ValidateOtpGlobalResponse | undefined
+        const companies = Array.isArray(data?.companies) ? data.companies : []
+
+        if (companies.length === 0) {
+          return {
+            status: "error",
+            message: "We couldn't find an organization for this account.",
+            kind: "rejected",
+          }
+        }
+
+        // Con una sola compañía el backend ya emite los tokens; con varias vienen en null
+        const tokens = tokensFromChallenge(data)
+        if (tokens && companies.length === 1) {
+          return {
+            status: "company_session",
+            tokens,
+            slug: companies[0].slug,
+            companyName: companies[0].companyName,
+          }
+        }
+
+        // El challenge queda verificado y es lo único que autoriza `company-login`,
+        // así que sin él no hay forma de cerrar la elección de compañía.
+        const verifiedChallengeId = data?.otpChallengeId || otpChallengeId
+        if (!verifiedChallengeId) {
+          return { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
+        }
+
+        return { status: "select_company", companies, otpChallengeId: verifiedChallengeId }
+      },
+
+      loginToCompany: async (email, password, slug, otpChallengeId): Promise<AuthAttempt> => {
+        const encrypted = await encryptRsa(password)
+        if (!encrypted) return { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
+
+        const response = await serviceCompanyLogin({
+          email,
+          password: encrypted,
+          slug,
+          otpChallengeId,
+        })
+
+        if (!isSuccess(response?.status)) {
+          return authError(response, "Invalid credentials")
+        }
+
+        const tokens = tokensFromChallenge(response.data as unknown)
+        if (!tokens) return { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
+
+        return { status: "company_session", tokens, slug, companyName: "" }
+      },
+
+      establishSession: (tokens, company) => openSession(tokens, company),
 
       // ============================================
       // LOGOUT

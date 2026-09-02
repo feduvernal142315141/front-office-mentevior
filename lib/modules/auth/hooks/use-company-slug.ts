@@ -7,6 +7,16 @@ const COMPANY_SLUG_REGEX =
 
 export const DEFAULT_BASE_DOMAIN = "frontoffice.mentevior.com"
 
+/**
+ * Slug reservado del login neutral. No es una compañía: es la puerta común a la que
+ * apunta la landing, donde el usuario entra sin saber a qué organización pertenece.
+ */
+export const NEUTRAL_SLUG = "app"
+
+export function isNeutralSlug(slug: string | null | undefined): boolean {
+    return slug === NEUTRAL_SLUG
+}
+
 const BASE_DOMAINS = [
     "frontoffice.dev.mentevior.com",
     "frontoffice.mentevior.com",
@@ -54,6 +64,27 @@ function getCompanySlug(hostname: string): string | null {
     }
 
     return null
+}
+
+/**
+ * Origen de una compañía a partir de su slug, conservando protocolo y puerto del host
+ * actual. Devuelve `null` si no estamos en un dominio conocido, para que el llamador
+ * se quede donde está en vez de mandar al usuario a una URL inventada.
+ *
+ * La URL se arma siempre acá a partir del slug validado: nunca se navega a una
+ * dirección que venga del backend, así este camino no puede volverse un open redirect.
+ */
+export function buildCompanyOrigin(slug: string): string | null {
+    if (typeof window === "undefined") return null
+
+    const normalized = slug.trim().toLowerCase()
+    if (!COMPANY_SLUG_REGEX.test(normalized) || normalized === NEUTRAL_SLUG) return null
+
+    const baseDomain = getBaseDomain(window.location.hostname)
+    if (!baseDomain) return null
+
+    const port = window.location.port ? `:${window.location.port}` : ""
+    return `${window.location.protocol}//${normalized}.${baseDomain}${port}`
 }
 
 export function useCompanySlug() {

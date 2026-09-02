@@ -11,7 +11,6 @@ export function useAuth() {
   const hydrated = useAuthStore(selectHydrated)
   const requiredOptions = useAuthStore(selectRequiredOptions)
 
-  const login = useAuthStore((state) => state.login)
   const logout = useAuthStore((state) => state.logout)
   const refresh = useAuthStore((state) => state.refresh)
 
@@ -23,7 +22,6 @@ export function useAuth() {
     isAuthenticated,
     hydrated,
     requiredOptions,
-    login,
     logout,
     refresh,
   }
