@@ -102,9 +102,7 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         terminated: data.terminated,
         memberUserTypeIds: data.memberUserTypeIds,
         billingCodes: data.billingCodes,
-        // El backend ignora `resendEmail` si el correo no cambió, pero no se manda en
-        // ese caso para que el request diga exactamente lo que se pretende.
-        ...(emailChanged ? { resendEmail: data.resendEmail !== false } : {}),
+        ...(emailChanged ? { resendEmail: data.resendEmail === true } : {}),
       }
       
       const result = await update(dto)

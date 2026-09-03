@@ -75,26 +75,63 @@ export function ConfirmationModal({
           </div>
           
           <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-sm text-gray-600 mb-6">{description}</p>
+          <p className="text-sm text-gray-600 mb-6 whitespace-pre-line">{description}</p>
 
-          <div className="flex items-center gap-3 w-full">
-            <Button
-              variant="secondary"
-              onClick={handleCancel}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              {cancelText}
-            </Button>
-            <Button
-              onClick={handleConfirm}
-              loading={isLoading}
-              disabled={isLoading}
-              className={`flex-1 ${buttonVariants[variant]}`}
-            >
-              {confirmText}
-            </Button>
-          </div>
+          {onDiscard && discardText ? (
+            <div className="flex flex-col gap-2.5 w-full">
+              <Button
+                type="button"
+                onClick={handleConfirm}
+                loading={isLoading}
+                disabled={isLoading}
+                className={`w-full ${buttonVariants[variant]}`}
+              >
+                {confirmText}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  if (isLoading) return
+                  void onDiscard()
+                }}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {discardText}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleCancel}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {cancelText}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 w-full">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleCancel}
+                disabled={isLoading}
+                className="flex-1"
+              >
+                {cancelText}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirm}
+                loading={isLoading}
+                disabled={isLoading}
+                className={`flex-1 ${buttonVariants[variant]}`}
+              >
+                {confirmText}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </CustomModal>

@@ -1,8 +1,7 @@
 "use client"
 
-import { Controller, useFormContext, useWatch } from "react-hook-form"
+import { Controller, useFormContext } from "react-hook-form"
 import Link from "next/link"
-import { Checkbox } from "@/components/custom/Checkbox"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { formatPhoneInput } from "@/lib/utils/phone-format"
 import { FilterSelect } from "@/components/custom/FilterSelect"
@@ -19,8 +18,6 @@ interface RoleOption {
 
 interface UserFormFieldsProps {
   isEditing: boolean
-  /** Correo guardado del usuario; sirve para saber si el del formulario cambió. */
-  savedEmail?: string
   roles: RoleOption[]
   isLoadingRoles: boolean
   isSubmitting: boolean
@@ -35,7 +32,6 @@ interface UserFormFieldsProps {
 
 export function UserFormFields({
   isEditing,
-  savedEmail,
   roles,
   isLoadingRoles,
   isSubmitting,
@@ -48,14 +44,6 @@ export function UserFormFields({
   isLoadingBillingCodes,
 }: UserFormFieldsProps) {
   const { control, setValue } = useFormContext()
-
-  // El backend sólo manda el correo cuando el email cambia de verdad, así que la
-  // opción se ofrece exactamente en ese caso.
-  const currentEmail = useWatch({ control, name: "email" }) as string | undefined
-  const emailChanged =
-    isEditing &&
-    Boolean(savedEmail?.trim()) &&
-    (currentEmail ?? "").trim().toLowerCase() !== (savedEmail ?? "").trim().toLowerCase()
 
   const roleOptions = [
     { value: "", label: "Select a role" },
@@ -188,36 +176,6 @@ export function UserFormFields({
                         <p className="text-sm text-red-600 mt-2">
                           {fieldState.error.message}
                         </p>
-                      )}
-
-                      {/*
-                        El correo es el usuario de acceso, así que cambiarlo deja a la
-                        persona sin poder entrar hasta que fije contraseña con el correo
-                        nuevo. La opción aparece sólo cuando cambia de verdad —que es la
-                        única situación en la que el backend envía algo— y va marcada por
-                        defecto, pero visible: nunca se manda un correo en silencio.
-                      */}
-                      {emailChanged && (
-                        <Controller
-                          name="resendEmail"
-                          control={control}
-                          render={({ field: resendField }) => (
-                            <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-blue-200/70 bg-blue-50/50 px-4 py-3">
-                              <Checkbox
-                                checked={resendField.value ?? true}
-                                onCheckedChange={(checked) => resendField.onChange(checked === true)}
-                                size="md"
-                              />
-                              <span className="text-sm text-slate-700">
-                                Email this address a link to set a password
-                                <span className="mt-0.5 block text-xs text-slate-500">
-                                  The link expires in 15 minutes. Without it the user cannot sign in
-                                  with the new address.
-                                </span>
-                              </span>
-                            </label>
-                          )}
-                        />
                       )}
                     </div>
                   )}
