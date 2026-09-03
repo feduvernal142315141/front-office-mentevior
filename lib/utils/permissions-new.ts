@@ -17,6 +17,7 @@ import {
 export enum PermissionModule {
   USERS_PROVIDERS = "users_providers",
   CLIENTS = "clients",
+  CLIENT_SERVICE_PLAN = "client_service_plan",
   SCHEDULE = "schedule",
   SESSION_NOTE = "session_note",
   CLINICAL_MONTHLY = "clinical_monthly",

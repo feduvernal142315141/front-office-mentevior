@@ -15,6 +15,7 @@ export const PERMISSION_IDS: Record<string, string> = {
   // Core modules
   "users_providers": "a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6",
   "clients": "b2c3d4e5-f6a7-48b9-c0d1-e2f3a4b5c6d7",
+  "client_service_plan": "84c2f5d5-5e36-4b42-8aeb-1d60a43d78ba",
   "schedule": "c3d4e5f6-a7b8-49c0-d1e2-f3a4b5c6d7e8",
   "session_note": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
   "clinical_monthly": "e5f6a7b8-c9d0-41e2-f3a4-b5c6d7e8f9a0",
@@ -101,11 +102,17 @@ export function normalizePermissionModule(moduleName: string): string {
   return PERMISSION_MODULE_ALIASES[moduleName] ?? moduleName
 }
 
+/** ID provisional para permisos cuyo UUID real aún no llega del backend. */
+const PENDING_PERMISSION_ID = "00000000-0000-0000-0000-000000000000"
+
 /**
- * Obtiene el ID de un módulo por su nombre
+ * Obtiene el ID de un módulo por su nombre.
+ * Un módulo con ID provisional se trata como inexistente para que nunca se
+ * envíe un UUID falso al backend.
  */
 export function getPermissionId(moduleName: string): string | null {
-  return PERMISSION_IDS[moduleName] || null
+  const id = PERMISSION_IDS[moduleName] || null
+  return id === PENDING_PERMISSION_ID ? null : id
 }
 
 /**

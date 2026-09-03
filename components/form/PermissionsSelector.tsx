@@ -25,6 +25,7 @@ function visibleRows(rows: PermissionRow[]): PermissionRow[] {
 const CORE_MODULES = visibleRows([
   { key: PermissionModule.USERS_PROVIDERS, label: "Users" },
   { key: PermissionModule.CLIENTS, label: "Clients" },
+  { key: PermissionModule.CLIENT_SERVICE_PLAN, label: "Client Service Plan" },
   { key: PermissionModule.SCHEDULE, label: "Schedules" },
   { key: PermissionModule.SESSION_NOTE, label: "Session Note" },
   { key: PermissionModule.CLINICAL_MONTHLY, label: "Clinical Monthly" },
@@ -52,15 +53,6 @@ const DATA_COLLECTION = {
     { key: PermissionModule.CHARTS, label: "Charts" },
     { key: PermissionModule.DATA_ANALYSIS, label: "Data Analysis" },
     { key: PermissionModule.RAW_DATA, label: "Raw Data" },
-  ]),
-}
-
-const EVENTS = {
-  label: "Session",
-  children: visibleRows([
-    { key: PermissionModule.APPOINTMENT, label: "Session" },
-    { key: PermissionModule.SERVICE_PLAN, label: "Service Plan Events" },
-    { key: PermissionModule.SUPERVISION, label: "Supervision" },
   ]),
 }
 
@@ -94,6 +86,9 @@ const DOCUMENTS = {
 }
 
 const MY_COMPANY_MODULES = visibleRows([
+  { key: PermissionModule.APPOINTMENT, label: "Session" },
+  { key: PermissionModule.SERVICE_PLAN, label: "Service Plan Events" },
+  { key: PermissionModule.SUPERVISION, label: "Supervision" },
   { key: PermissionModule.ROLE, label: "Roles" },
   { key: PermissionModule.ACCOUNT_PROFILE, label: "Account Profile" },
   { key: PermissionModule.PHYSICIANS, label: "Referring Physicians" },
@@ -106,7 +101,6 @@ const MY_COMPANY_MODULES = visibleRows([
 ])
 
 const MY_COMPANY_EXPANDABLES = [
-  EVENTS,
   BILLING,
   DATA_COLLECTION,
   TEMPLATE_DOCUMENTS,
@@ -133,6 +127,25 @@ const ACTIONS = [
   { key: PermissionAction.BLOCK, label: "Block" },
 ] as const
 
+/**
+ * Módulos de configuración (pantallas de setup de Session/Events): solo admiten
+ * la acción Edit. Las demás acciones se muestran deshabilitadas y cualquier bit
+ * extra que traiga un rol viejo se ignora al mostrar y al guardar.
+ */
+const EDIT_ONLY_MODULES = new Set<string>([
+  PermissionModule.APPOINTMENT,
+  PermissionModule.SERVICE_PLAN,
+  PermissionModule.SUPERVISION,
+])
+
+function allowedActionsMask(module: string): number {
+  return EDIT_ONLY_MODULES.has(module) ? PermissionAction.EDIT : PermissionAction.ALL
+}
+
+function isActionAllowed(module: string, action: PermissionAction): boolean {
+  return (allowedActionsMask(module) & action) === action
+}
+
 interface PermissionsSelectorProps {
   name?: string
   disabled?: boolean
@@ -154,46 +167,51 @@ export function PermissionsSelector({
     setPermissionsObj(obj)
   }, [currentPermissions])
   
+  /** Valor del módulo limitado a sus acciones permitidas. */
+  const effectiveValue = (module: string): number => {
+    return (permissionsObj[module] || 0) & allowedActionsMask(module)
+  }
+
   const toggleAction = (module: string, action: PermissionAction) => {
-    if (disabled) return
-    
-    const currentValue = permissionsObj[module] || 0
+    if (disabled || !isActionAllowed(module, action)) return
+
+    const currentValue = effectiveValue(module)
     let newValue: number
-    
+
     if (currentValue & action) {
       newValue = currentValue & ~action
     } else {
       newValue = currentValue | action
     }
-    
+
     const newObj = { ...permissionsObj, [module]: newValue }
     setPermissionsObj(newObj)
-    
+
     const newPermissions = objectToPermissions(newObj)
     setValue(name, newPermissions, { shouldDirty: true, shouldValidate: true })
   }
-  
+
   const setModuleAccess = (module: string, value: number) => {
     if (disabled) return
-    
-    const newObj = { ...permissionsObj, [module]: value }
+
+    const newObj = { ...permissionsObj, [module]: value & allowedActionsMask(module) }
     setPermissionsObj(newObj)
-    
+
     const newPermissions = objectToPermissions(newObj)
     setValue(name, newPermissions, { shouldDirty: true, shouldValidate: true })
   }
-  
+
   const hasAction = (module: string, action: PermissionAction): boolean => {
-    const value = permissionsObj[module] || 0
-    return (value & action) === action
+    return (effectiveValue(module) & action) === action
   }
-  
+
   const hasFullAccess = (module: string): boolean => {
-    return (permissionsObj[module] || 0) === PermissionAction.ALL
+    const mask = allowedActionsMask(module)
+    return effectiveValue(module) === mask
   }
-  
+
   const hasAnyPermission = (module: string): boolean => {
-    return (permissionsObj[module] || 0) > 0
+    return effectiveValue(module) > 0
   }
   
   const toggleAllMyCompany = () => {
@@ -201,7 +219,7 @@ export function PermissionsSelector({
     
     const newObj = { ...permissionsObj }
     ALL_COMPANY_SELECTOR_MODULES.forEach(m => {
-      newObj[m] = allHaveFullAccess ? 0 : PermissionAction.ALL
+      newObj[m] = allHaveFullAccess ? 0 : allowedActionsMask(m)
     })
     
     setPermissionsObj(newObj)
@@ -217,10 +235,10 @@ export function PermissionsSelector({
     if (disabled) return
     
     const allModules = ALL_SELECTOR_MODULES
-    
+
     const newObj: Record<string, number> = {}
     allModules.forEach(m => {
-      newObj[m] = PermissionAction.ALL
+      newObj[m] = allowedActionsMask(m)
     })
     
     setPermissionsObj(newObj)
@@ -241,10 +259,13 @@ export function PermissionsSelector({
     const newObj: Record<string, number> = {}
     
     if (preset === 'readonly') {
-      // Read Only: Solo lectura en TODOS los módulos (Core + Behavior Plan + Company Configuration expandables)
+      // Read Only: Solo lectura en TODOS los módulos (Core + Behavior Plan + Company Configuration expandables).
+      // Los módulos solo-Edit no admiten Read, así que quedan fuera.
       const allModules = ALL_SELECTOR_MODULES
       allModules.forEach(m => {
-        newObj[m] = PermissionAction.READ
+        if (isActionAllowed(m, PermissionAction.READ)) {
+          newObj[m] = PermissionAction.READ
+        }
       })
     } else if (preset === 'clinical') {
       const clinicalModules = [
@@ -282,14 +303,15 @@ export function PermissionsSelector({
     setValue(name, newPermissions, { shouldDirty: true, shouldValidate: true })
   }
   
-  const totalModulesWithPermissions = Object.values(permissionsObj).filter(v => v > 0).length
-  const totalModulesWithFullAccess = Object.values(permissionsObj).filter(v => v === PermissionAction.ALL).length
+  const totalModulesWithPermissions = Object.keys(permissionsObj).filter(m => effectiveValue(m) > 0).length
+  const totalModulesWithFullAccess = Object.keys(permissionsObj).filter(m => hasFullAccess(m) && effectiveValue(m) > 0).length
   
   // Detect which preset is currently active
   const detectActivePreset = (): 'readonly' | 'clinical' | 'supervisor' | null => {
     const allModules = ALL_SELECTOR_MODULES
-    const matchesReadOnly = allModules.every(m => permissionsObj[m] === PermissionAction.READ) &&
-      totalModulesWithPermissions === allModules.length
+    const readableModules = allModules.filter(m => isActionAllowed(m, PermissionAction.READ))
+    const matchesReadOnly = readableModules.every(m => permissionsObj[m] === PermissionAction.READ) &&
+      totalModulesWithPermissions === readableModules.length
     if (matchesReadOnly) {
       return 'readonly'
     }
@@ -343,14 +365,14 @@ export function PermissionsSelector({
   }
   
   const activePreset = detectActivePreset()
-  const allPermissionsSelected = ALL_SELECTOR_MODULES.every((m) => permissionsObj[m] === PermissionAction.ALL)
-  
+  const allPermissionsSelected = ALL_SELECTOR_MODULES.every((m) => hasFullAccess(m))
+
   const getAccessLevelBadge = (moduleKey: string) => {
-    const value = permissionsObj[moduleKey] || 0
+    const value = effectiveValue(moduleKey)
     const actions = getModuleActions([`${moduleKey}-${value}`], moduleKey)
-    
+
     if (value === 0) return null
-    
+
     if (value === PermissionAction.ALL) {
       return (
         <Tooltip>
@@ -415,7 +437,7 @@ export function PermissionsSelector({
     const toggleAllChildren = (checked: boolean) => {
       const newObj = { ...permissionsObj }
       module.children.forEach(child => {
-        newObj[child.key] = checked ? PermissionAction.ALL : 0
+        newObj[child.key] = checked ? allowedActionsMask(child.key) : 0
       })
       setPermissionsObj(newObj)
       const newPermissions = objectToPermissions(newObj)
@@ -525,7 +547,7 @@ export function PermissionsSelector({
               <Checkbox
                 checked={hasAction(module.key, action)}
                 onCheckedChange={() => toggleAction(module.key, action)}
-                disabled={disabled}
+                disabled={disabled || !isActionAllowed(module.key, action)}
                 size="sm"
               />
             </div>
@@ -833,8 +855,8 @@ export function PermissionsSelector({
         <div className="flex items-center gap-2 text-sm text-blue-800">
           <div className="w-2 h-2 rounded-full bg-blue-500" />
           <span>
-            <strong>{Object.entries(permissionsObj).filter(([key, v]) => v > 0 && !isHiddenPermissionModule(key)).length}</strong> modules with permissions • 
-            <strong className="ml-2">{Object.entries(permissionsObj).filter(([key, v]) => v === PermissionAction.ALL && !isHiddenPermissionModule(key)).length}</strong> with full access
+            <strong>{Object.keys(permissionsObj).filter((key) => effectiveValue(key) > 0 && !isHiddenPermissionModule(key)).length}</strong> modules with permissions •
+            <strong className="ml-2">{Object.keys(permissionsObj).filter((key) => hasFullAccess(key) && effectiveValue(key) > 0 && !isHiddenPermissionModule(key)).length}</strong> with full access
           </span>
         </div>
       </div>
