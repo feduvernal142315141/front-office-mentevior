@@ -152,7 +152,8 @@ export function useClientsTable(): UseClientsTableReturn {
     },
     {
       key: "rbt",
-      header: "RBT",
+      // El dato sigue llegando en `rbt`; sólo cambia la etiqueta que ve el usuario.
+      header: "Primary Provider",
       render: (client) => (
         <span className="text-sm text-slate-700">{client.rbt || "—"}</span>
       ),
