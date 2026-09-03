@@ -96,6 +96,17 @@ export function SessionNote97155Form({
   const formDisabled = !statusInfo.isFormEditable
   const saveDisabled = !statusInfo.canSave
 
+  // ABC per narrative section — lifted here so toggling a section off/on doesn't wipe it.
+  // Never included in the save payload.
+  const [abcBySection, setAbcBySection] = useState({
+    faceToFace: "",
+    adjustments: "",
+    qhp: "",
+    activeDirection: "",
+  })
+  const setAbc = (key: keyof typeof abcBySection, value: string) =>
+    setAbcBySection((prev) => ({ ...prev, [key]: value }))
+
   const participantItems = participantCatalog.map((p) => ({ id: p.id, name: p.name }))
 
   // Las unidades llegan pegadas al string de billing codes; en Service Details
@@ -319,6 +330,8 @@ export function SessionNote97155Form({
                   billingCode="97155"
                   summaryType="FACE_TO_FACE_OBSERVATION"
                   buildMetadata={buildFaceToFaceSummaryMetadata}
+                  abcNotes={abcBySection.faceToFace}
+                  onAbcNotesChange={(v) => setAbc("faceToFace", v)}
                 />
                 <FieldError message={errors.faceToFaceProtocolNarrative} />
               </div>
@@ -367,6 +380,8 @@ export function SessionNote97155Form({
                   billingCode="97155"
                   summaryType="PROTOCOL_ADJUSTMENTS"
                   buildMetadata={buildAdjustmentsSummaryMetadata}
+                  abcNotes={abcBySection.adjustments}
+                  onAbcNotesChange={(v) => setAbc("adjustments", v)}
                 />
                 <FieldError message={errors.adjustmentsNarrative} />
               </div>
@@ -443,6 +458,8 @@ export function SessionNote97155Form({
                   billingCode="97155"
                   summaryType="QHP_IMPLEMENTATION"
                   buildMetadata={buildQhpSummaryMetadata}
+                  abcNotes={abcBySection.qhp}
+                  onAbcNotesChange={(v) => setAbc("qhp", v)}
                 />
                 <FieldError message={errors.qhpNarrative} />
               </div>
@@ -504,6 +521,8 @@ export function SessionNote97155Form({
                   billingCode="97155"
                   summaryType="ACTIVE_DIRECTION"
                   buildMetadata={buildActiveDirectionSummaryMetadata}
+                  abcNotes={abcBySection.activeDirection}
+                  onAbcNotesChange={(v) => setAbc("activeDirection", v)}
                 />
                 <FieldError message={errors.activeDirectionNarrative} />
               </div>

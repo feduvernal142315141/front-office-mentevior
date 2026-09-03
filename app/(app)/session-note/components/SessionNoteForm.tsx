@@ -118,6 +118,8 @@ export function SessionNoteForm({
 
   // Track which item is active in the chart per category
   const [activeChartItems, setActiveChartItems] = useState<Record<string, string>>({})
+  // ABC is ephemeral: feeds the AI only, never saved with the note
+  const [abcNotes, setAbcNotes] = useState("")
   const handleItemFocus = useCallback((categoryId: string, itemId: string) => {
     setActiveChartItems((prev) => ({ ...prev, [categoryId]: itemId }))
   }, [])
@@ -350,6 +352,8 @@ export function SessionNoteForm({
             required
             billingCode="97153"
             buildMetadata={buildSummaryMetadata}
+            abcNotes={abcNotes}
+            onAbcNotesChange={setAbcNotes}
           />
           <FieldError message={errors.sessionSummary} />
         </div>

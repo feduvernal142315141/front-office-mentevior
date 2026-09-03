@@ -109,6 +109,8 @@ export function SessionNote97156Form({
   const categoriesEmpty = categories.filter((c) => c.items.length === 0)
 
   const [activeChartItems, setActiveChartItems] = useState<Record<string, string>>({})
+  // ABC is ephemeral: feeds the AI only, never saved with the note
+  const [abcNotes, setAbcNotes] = useState("")
   const handleItemFocus = useCallback((categoryId: string, itemId: string) => {
     setActiveChartItems((prev) => ({ ...prev, [categoryId]: itemId }))
   }, [])
@@ -425,6 +427,8 @@ export function SessionNote97156Form({
               required
               billingCode="97156"
               buildMetadata={buildSummaryMetadata}
+              abcNotes={abcNotes}
+              onAbcNotesChange={setAbcNotes}
             />
             <FieldError message={errors.sessionSummary} />
           </div>
