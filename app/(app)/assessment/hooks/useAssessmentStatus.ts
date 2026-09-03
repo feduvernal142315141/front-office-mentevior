@@ -62,7 +62,7 @@ export function deriveAssessmentStatusInfo(
           ? "You can lock it for billing or re-activate it for editing"
           : "The editing window has expired. Contact an administrator to re-open",
       }
-    case "lock":
+        case "lock":
       return {
         status: "lock",
         label: "Locked",
@@ -73,6 +73,18 @@ export function deriveAssessmentStatusInfo(
         bannerVariant: "danger",
         bannerMessage: "This assessment is permanently locked",
         bannerDescription: "It has been locked for billing and cannot be modified",
+      }
+    default:
+      return {
+        status: "active",
+        label: "Active",
+        isFormEditable: !notCanEdit,
+        canSave: !notCanEdit,
+        canLock: false,
+        canActivate: false,
+        bannerVariant: "success",
+        bannerMessage: "Editing is enabled",
+        bannerDescription: "Complete and save the assessment before the editing window closes",
       }
   }
 }

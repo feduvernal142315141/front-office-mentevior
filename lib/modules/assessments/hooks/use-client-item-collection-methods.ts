@@ -100,8 +100,9 @@ export function useClientItemCollectionMethods(
     const result: Record<string, string> = {}
     for (const category of categories) {
       const categoryTypeId =
-        raw.byCategoryId[category.id] ?? raw.byCategoryName[category.name.trim().toLowerCase()]
-      for (const item of category.items) {
+        raw.byCategoryId[category.id] ??
+        raw.byCategoryName[(category.name ?? "").trim().toLowerCase()]
+      for (const item of category.items ?? []) {
         const typeId = raw.byItemId[item.id] ?? categoryTypeId
         const name = typeId ? typeEventMap.get(typeId)?.name : undefined
         if (name) result[item.id] = name

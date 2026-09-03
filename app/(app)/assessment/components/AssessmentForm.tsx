@@ -242,7 +242,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     )
   }
 
-  const gradeOptions = grades.map((g) => ({ value: g.id, label: g.name }))
+  const gradeOptions = (grades ?? []).map((g) => ({ value: g.id, label: g.name }))
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5 pb-32">
@@ -535,7 +535,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         contentHidden={!formData.pdfFlags.showAssessmentConducted} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAssessmentConducted} onChange={(v) => updatePdfFlag("showAssessmentConducted", v)} disabled={isSaving} />}
       >
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2" data-field="assessmentConductedCatalogIds">
-          {conductedOptions.map((option) => {
+          {(conductedOptions ?? []).map((option) => {
             const checked = formData.assessmentConductedCatalogIds.includes(option.id)
             return (
               <label
@@ -563,7 +563,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               </label>
             )
           })}
-          {conductedOptions.length === 0 && !isLoadingCatalogs && (
+          {(conductedOptions ?? []).length === 0 && !isLoadingCatalogs && (
             <p className="text-sm text-slate-500 md:col-span-2">No assessment options available</p>
           )}
         </div>

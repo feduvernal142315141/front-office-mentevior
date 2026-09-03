@@ -18,7 +18,17 @@ async function getCatalog(path: string, label: string): Promise<AssessmentCatalo
   const entities = (response.data as unknown as PaginatedResponse<AssessmentCatalogItem>).entities
   if (!Array.isArray(entities)) return []
 
-  return [...entities].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
+  return [...entities]
+    .filter((item): item is AssessmentCatalogItem => Boolean(item?.id))
+    .map((item) => ({
+      ...item,
+      name: typeof item.name === "string" ? item.name : "",
+    }))
+    .sort(
+      (a, b) =>
+        (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    )
 }
 
 export function getGradeCatalog(): Promise<AssessmentCatalogItem[]> {

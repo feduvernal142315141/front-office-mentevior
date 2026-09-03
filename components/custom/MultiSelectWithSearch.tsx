@@ -35,7 +35,7 @@ interface MultiSelectWithSearchProps {
 export function MultiSelectWithSearch({
   label,
   placeholder,
-  items,
+  items: itemsProp,
   selectedIds,
   onChange,
   isLoading = false,
@@ -49,6 +49,7 @@ export function MultiSelectWithSearch({
   required = false,
   lockedIds = [],
 }: MultiSelectWithSearchProps) {
+  const items = itemsProp ?? []
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreating, setIsCreating] = useState(false)
@@ -62,7 +63,7 @@ export function MultiSelectWithSearch({
   const normalizedSearch = searchTerm.trim().toLowerCase()
 
   const filteredItems = normalizedSearch
-    ? items.filter((item) => item.name.toLowerCase().includes(normalizedSearch))
+    ? items.filter((item) => (item.name ?? "").toLowerCase().includes(normalizedSearch))
     : items
 
   // Group items by item.group when grouped=true

@@ -21,7 +21,7 @@ export function useRelationshipCatalog(): UseRelationshipCatalogReturn {
         setIsLoading(true)
         setError(null)
         const data = await getRelationshipCatalog()
-        setRelationships(data)
+        setRelationships(Array.isArray(data) ? data : [])
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Failed to fetch relationships"))
         setRelationships([])

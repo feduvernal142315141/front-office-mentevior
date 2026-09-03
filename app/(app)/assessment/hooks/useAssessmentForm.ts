@@ -256,7 +256,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     useClientItemCollectionMethods(formData.clientId || null, categories)
 
   const clientOptions = useMemo(
-    () => clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
+    () => (clients ?? []).filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
     [clients],
   )
 
@@ -264,14 +264,17 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   // estricto dejaría el select vacío
   const billingCodeOptions = useMemo(
     () =>
-      companyBillingCodes
+      (companyBillingCodes ?? [])
         .filter((b) => b.active !== false)
         .map((b) => ({ value: b.id, label: b.description ? `${b.code} — ${b.description}` : b.code })),
     [companyBillingCodes],
   )
 
   const credentialOptions = useMemo(
-    () => companyCredentials.filter((c) => c.active !== false).map((c) => ({ value: c.id, label: c.name })),
+    () =>
+      (companyCredentials ?? [])
+        .filter((c) => c.active !== false)
+        .map((c) => ({ value: c.id, label: c.name })),
     [companyCredentials],
   )
 
@@ -286,75 +289,75 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     if (!assessment) return
 
     const categoryItems: Record<string, CategoryItemFormValue> = {}
-    for (const entry of assessment.categoriesItems) {
+    for (const entry of assessment.categoriesItems ?? []) {
       if (!entry.clientServicePlanCategoryItemId) continue
       categoryItems[entry.clientServicePlanCategoryItemId] = {
         intensityKey: entry.intensityKey ?? "",
-        intensityDescription: entry.intensityDescription,
+        intensityDescription: entry.intensityDescription ?? "",
         hypothesizedFunction: entry.hypothesizedFunction ?? "",
-        prevalentSetting: entry.prevalentSetting,
-        preventiveStrategies: entry.preventiveStrategies,
-        managementStrategies: entry.managementStrategies,
+        prevalentSetting: entry.prevalentSetting ?? "",
+        preventiveStrategies: entry.preventiveStrategies ?? "",
+        managementStrategies: entry.managementStrategies ?? "",
       }
     }
 
     setFormData({
-      clientId: assessment.clientId,
-      schoolName: assessment.schoolName,
-      timeInit: assessment.timeInit,
-      timeEnd: assessment.timeEnd,
-      gradeCatalogId: assessment.gradeCatalogId,
-      schoolAddress: assessment.schoolAddress,
-      housingType: assessment.housingType,
-      housingNumberRooms: assessment.housingNumberRooms,
-      housingNumberBathrooms: assessment.housingNumberBathrooms,
-      housingMemberRelationshipCatalogIds: assessment.housingMembers
+      clientId: assessment.clientId ?? "",
+      schoolName: assessment.schoolName ?? "",
+      timeInit: assessment.timeInit ?? "",
+      timeEnd: assessment.timeEnd ?? "",
+      gradeCatalogId: assessment.gradeCatalogId ?? "",
+      schoolAddress: assessment.schoolAddress ?? "",
+      housingType: assessment.housingType ?? "",
+      housingNumberRooms: assessment.housingNumberRooms ?? 0,
+      housingNumberBathrooms: assessment.housingNumberBathrooms ?? 0,
+      housingMemberRelationshipCatalogIds: (assessment.housingMembers ?? [])
         .map((m) => m.relationshipCatalogId)
         .filter(Boolean),
-      housingInformation: assessment.housingInformation,
-      medicalHistoryOtherDiagnosis: assessment.medicalHistoryOtherDiagnosis,
-      medicalHistoryMorbidities: assessment.medicalHistoryMorbidities,
-      medicalHistoryAllergies: assessment.medicalHistoryAllergies,
-      medicalHistoryTypeOfBirth: assessment.medicalHistoryTypeOfBirth,
-      previousAbaTherapy: assessment.previousAbaTherapy,
-      previousAgencyName: assessment.previousAgencyName,
-      backgroundSummary: assessment.backgroundSummary,
-      backgroundStrengths: assessment.backgroundStrengths,
-      backgroundWeaknesses: assessment.backgroundWeaknesses,
-      backgroundInterest: assessment.backgroundInterest,
-      backgroundCommunicationSkills: assessment.backgroundCommunicationSkills,
-      backgroundAcademicSkills: assessment.backgroundAcademicSkills,
-      backgroundSelfCareSkills: assessment.backgroundSelfCareSkills,
-      backgroundSocialSkills: assessment.backgroundSocialSkills,
-      backgroundSafetySkills: assessment.backgroundSafetySkills,
-      backgroundSelfAdvocacy: assessment.backgroundSelfAdvocacy,
-      backgroundSelfPreservationSkills: assessment.backgroundSelfPreservationSkills,
-      backgroundMotorSkills: assessment.backgroundMotorSkills,
-      currentMedications: assessment.currentMedications,
-      observations: assessment.observations,
-      assessmentConductedCatalogIds: assessment.assessmentConductedList
+      housingInformation: assessment.housingInformation ?? "",
+      medicalHistoryOtherDiagnosis: assessment.medicalHistoryOtherDiagnosis ?? "N/A",
+      medicalHistoryMorbidities: assessment.medicalHistoryMorbidities ?? "N/A",
+      medicalHistoryAllergies: assessment.medicalHistoryAllergies ?? "N/A",
+      medicalHistoryTypeOfBirth: assessment.medicalHistoryTypeOfBirth ?? "",
+      previousAbaTherapy: assessment.previousAbaTherapy ?? "",
+      previousAgencyName: assessment.previousAgencyName ?? "",
+      backgroundSummary: assessment.backgroundSummary ?? "",
+      backgroundStrengths: assessment.backgroundStrengths ?? "",
+      backgroundWeaknesses: assessment.backgroundWeaknesses ?? "",
+      backgroundInterest: assessment.backgroundInterest ?? "",
+      backgroundCommunicationSkills: assessment.backgroundCommunicationSkills ?? "",
+      backgroundAcademicSkills: assessment.backgroundAcademicSkills ?? "",
+      backgroundSelfCareSkills: assessment.backgroundSelfCareSkills ?? "",
+      backgroundSocialSkills: assessment.backgroundSocialSkills ?? "",
+      backgroundSafetySkills: assessment.backgroundSafetySkills ?? "",
+      backgroundSelfAdvocacy: assessment.backgroundSelfAdvocacy ?? "",
+      backgroundSelfPreservationSkills: assessment.backgroundSelfPreservationSkills ?? "",
+      backgroundMotorSkills: assessment.backgroundMotorSkills ?? "",
+      currentMedications: assessment.currentMedications ?? [],
+      observations: assessment.observations ?? [],
+      assessmentConductedCatalogIds: (assessment.assessmentConductedList ?? [])
         .map((c) => c.assessmentConductedCatalogId)
         .filter(Boolean),
       categoryItems,
-      billingCodes: assessment.billingCodes.map((b) => ({
+      billingCodes: (assessment.billingCodes ?? []).map((b) => ({
         billingCodeId: b.billingCodeId,
         unitsPeriod: b.unitsPeriod ? String(b.unitsPeriod) : "",
         unitsWeek: b.unitsWeek ? String(b.unitsWeek) : "",
         settings: normalizeBillingCodeSettings(b.settings),
       })),
-      proposedSchedule: assessment.proposedSchedule.map((s) => ({
+      proposedSchedule: (assessment.proposedSchedule ?? []).map((s) => ({
         credentialId: s.credentialId,
         hours: parseProposedSchedule(s.schedule),
       })),
-      abcData: assessment.abcData,
-      providerFiles: assessment.providerFiles,
+      abcData: assessment.abcData ?? [],
+      providerFiles: assessment.providerFiles ?? [],
       // Una narrativa persistida vacía (registros previos a los defaults del
       // backend) se rellena con su texto estándar: nunca se muestra vacía
       pdfTexts: Object.fromEntries(
         ASSESSMENT_PDF_TEXT_KEYS.map((key) => [key, assessment[key] || ASSESSMENT_PDF_DEFAULT_TEXTS[key]]),
       ) as AssessmentPdfTexts,
       pdfFlags: Object.fromEntries(
-        ASSESSMENT_PDF_FLAG_KEYS.map((key) => [key, assessment[key]]),
+        ASSESSMENT_PDF_FLAG_KEYS.map((key) => [key, assessment[key] ?? false]),
       ) as AssessmentPdfFlags,
     })
   }, [assessment])
