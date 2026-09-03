@@ -302,20 +302,29 @@ export function GenerateObjectivesModal({
           const end = Number(next.endValue) || 0
           const range = Math.abs(start - end)
 
-          if (field === "quantity" || field === "startValue" || field === "endValue") {
+          // El paso lo decide el clínico: sólo el stepper de cantidad lo deriva. Mover
+          // Start o End recalcula la cantidad, nunca reescribe el paso (si no, teclear
+          // el End Value lo copiaba tal cual en Amount cuando la cantidad era 1).
+          if (field === "quantity") {
             const qty = clampObjectiveQuantity(next.quantity, range)
             next.quantity = qty
             if (qty > 0 && range > 0) {
               next.amountToDecreaseIncrease = String(suggestAmountForQuantity(range, qty))
             }
-          } else if (field === "amountToDecreaseIncrease") {
-            const amount = Number(value as string) || 0
+          } else if (
+            field === "amountToDecreaseIncrease" ||
+            field === "startValue" ||
+            field === "endValue"
+          ) {
+            const amount = Number(next.amountToDecreaseIncrease) || 0
             if (amount > 0 && range > 0) {
               const qty = suggestQuantityForAmount(range, amount)
               next.quantity = qty
-              // Si el tope recortó la cantidad, agrandamos el paso para igual llegar al End
+              // Sólo al topar el máximo de STOs agrandamos el paso, para igual llegar al End
               const needed = suggestAmountForQuantity(range, qty)
               if (needed > amount) next.amountToDecreaseIncrease = String(needed)
+            } else {
+              next.quantity = clampObjectiveQuantity(next.quantity, range)
             }
           }
         }
