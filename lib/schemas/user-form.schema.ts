@@ -31,6 +31,8 @@ export const userFormSchema = z.object({
   
   active: z.boolean().optional(),
   terminated: z.boolean().optional(),
+  /** Sólo se ofrece al editar y cuando el correo cambia; ver `UserFormFields`. */
+  resendEmail: z.boolean().optional(),
   memberUserTypeIds: z.array(z.string()).optional().default([]),
   billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),
 })
@@ -46,6 +48,7 @@ export const getUserFormDefaults = (): UserFormValues => ({
   roleId: "",
   active: true,
   terminated: false,
+  resendEmail: true,
   memberUserTypeIds: [],
   billingCodes: [],
 })

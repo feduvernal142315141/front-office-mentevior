@@ -86,6 +86,10 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
   
   const onSubmit = async (data: UserFormValues) => {
     if (isEditing && userId) {
+      const savedEmail = (user?.email ?? "").trim().toLowerCase()
+      const emailChanged =
+        savedEmail.length > 0 && data.email.trim().toLowerCase() !== savedEmail
+
       const dto: UpdateMemberUserDto = {
         id: userId,
         firstName: data.firstName,
@@ -98,6 +102,9 @@ export function useUserForm({ userId = null }: UseUserFormProps = {}): UseUserFo
         terminated: data.terminated,
         memberUserTypeIds: data.memberUserTypeIds,
         billingCodes: data.billingCodes,
+        // El backend ignora `resendEmail` si el correo no cambió, pero no se manda en
+        // ese caso para que el request diga exactamente lo que se pretende.
+        ...(emailChanged ? { resendEmail: data.resendEmail !== false } : {}),
       }
       
       const result = await update(dto)

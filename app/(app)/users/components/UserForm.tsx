@@ -47,6 +47,7 @@ export function UserForm({ userId = null }: UserFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
         <UserFormFields
           isEditing={isEditing}
+          savedEmail={user?.email}
           roles={roles}
           isLoadingRoles={isLoadingRoles}
           isSubmitting={isSubmitting}

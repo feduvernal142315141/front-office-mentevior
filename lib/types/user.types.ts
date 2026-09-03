@@ -40,6 +40,12 @@ export interface UpdateMemberUserDto {
   terminated?: boolean
   memberUserTypeIds?: string[]
   billingCodes?: string[]
+  /**
+   * Manda al correo nuevo el mismo mensaje de `forgotPassword` para que la persona
+   * establezca su contraseña. El backend sólo lo envía si `email` cambió de verdad;
+   * omitirlo o mandarlo en `false` no genera correo. (Contrato 2026-09-03.)
+   */
+  resendEmail?: boolean
 }
 
 export interface CreateMemberUserResponse {
