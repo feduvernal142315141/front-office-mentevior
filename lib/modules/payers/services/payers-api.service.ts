@@ -18,6 +18,7 @@ import {
   type ClaimMdEnrollmentProcessingStatus,
   type ClaimMdEnrollmentStartResult,
   type ClaimMdEnrollmentStatus,
+  type ClaimMdEnrollType,
   type CreatePayerDto,
   type ListPayersQueryDto,
   type PayerClearingHouseItem,
@@ -100,19 +101,32 @@ export class ApiPayersService implements PayersServiceContract {
    * Inicia el alta del provider en Claim.MD para este payer. Sin body: el backend toma
    * el `payerid` del payer y el NPI/EIN de la Company autenticada.
    *
+   * - `1500` → `POST .../claim-md-enrollments` (professional claims, default)
+   * - `era`  → `POST .../claim-md-enrollments/era` (Electronic Remittance Advice)
+   *
    * Devuelve una URL de un solo uso que hay que enseñarle al usuario; no vuelve a
    * aparecer en `GET /payers/{id}`.
    */
-  async startClaimMdEnrollment(payerId: string): Promise<ClaimMdEnrollmentStartResult> {
-    const response = await servicePostSilent<undefined, unknown>(
-      `/payers/${encodeURIComponent(payerId)}/claim-md-enrollments`,
-      undefined,
-    )
+  async startClaimMdEnrollment(
+    payerId: string,
+    enrollType: ClaimMdEnrollType = "1500",
+  ): Promise<ClaimMdEnrollmentStartResult> {
+    const path =
+      enrollType === "era"
+        ? `/payers/${encodeURIComponent(payerId)}/claim-md-enrollments/era`
+        : `/payers/${encodeURIComponent(payerId)}/claim-md-enrollments`
+
+    const response = await servicePostSilent<undefined, unknown>(path, undefined)
 
     const status = response?.status
     if (status !== 200 && status !== 201 && status !== 202) {
       throw new Error(
-        getApiErrorMessage(response?.data, "Failed to start the Claim.MD enrollment"),
+        getApiErrorMessage(
+          response?.data,
+          enrollType === "era"
+            ? "Failed to start the Claim.MD ERA enrollment"
+            : "Failed to start the Claim.MD enrollment",
+        ),
       )
     }
 
@@ -123,7 +137,7 @@ export class ApiPayersService implements PayersServiceContract {
       id: enrollStr(data.id),
       payerId: enrollStr(data.payerId),
       payerExternalId: enrollStr(data.payerExternalId),
-      enrollType: enrollStr(data.enrollType),
+      enrollType: enrollStr(data.enrollType) || enrollType,
       status: asEnrollmentStatus(data.status),
       processingStatus: asEnrollmentProcessingStatus(data.processingStatus),
       providerNpi: enrollStrOrNull(data.providerNpi),

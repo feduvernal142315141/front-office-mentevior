@@ -13,6 +13,7 @@ import type {
   ClaimMdEnrollment,
   ClaimMdEnrollmentStartResult,
   ClaimMdEnrollmentStatus,
+  ClaimMdEnrollType,
 } from "@/lib/types/payer.types"
 import { cn } from "@/lib/utils"
 
@@ -23,6 +24,13 @@ const STATUS_STYLES: Record<ClaimMdEnrollmentStatus, { label: string; className:
   COMPLETED: { label: "Completed", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   REJECTED: { label: "Rejected", className: "border-red-200 bg-red-50 text-red-700" },
   UNKNOWN: { label: "Unknown", className: "border-amber-200 bg-amber-50 text-amber-700" },
+}
+
+function formatEnrollType(value: string | null | undefined): string {
+  const normalized = (value ?? "").trim().toLowerCase()
+  if (normalized === "era") return "ERA"
+  if (normalized === "1500") return "1500"
+  return value?.trim() || "—"
 }
 
 function formatTimestamp(value: string | null): string {
@@ -56,7 +64,7 @@ export function ClaimMdEnrollmentSection({
   onStarted,
 }: ClaimMdEnrollmentSectionProps) {
   const alert = useAlert()
-  const { start, isStarting } = useClaimMdEnrollment()
+  const { start, startingType, isStarting } = useClaimMdEnrollment()
   const [result, setResult] = useState<ClaimMdEnrollmentStartResult | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -66,21 +74,24 @@ export function ClaimMdEnrollmentSection({
 
   const hasExternalId = Boolean(externalId?.trim())
 
-  const runStart = async () => {
-    const started = await start(payerId)
+  const runStart = async (enrollType: ClaimMdEnrollType) => {
+    const started = await start(payerId, enrollType)
     if (!started) return
     setCopied(false)
     setResult(started)
     onStarted()
   }
 
-  const confirmStart = () => {
+  const confirmStart = (enrollType: ClaimMdEnrollType) => {
+    const isEra = enrollType === "era"
     alert.confirm({
-      title: "Start the Claim.MD enrollment?",
-      description: `Claim.MD will create an enrollment for ${payerName} using your company's NPI and EIN, and return a one-time link to finish the process on their site.`,
-      confirmText: "Start enrollment",
+      title: isEra ? "Start Claim.MD ERA enrollment?" : "Start Claim.MD 1500 enrollment?",
+      description: isEra
+        ? `Claim.MD will start Electronic Remittance Advice enrollment for ${payerName} using your company's NPI and EIN, and return a one-time link to finish on their site.`
+        : `Claim.MD will create a professional claims (1500) enrollment for ${payerName} using your company's NPI and EIN, and return a one-time link to finish on their site.`,
+      confirmText: isEra ? "Enroll ERA" : "Enroll 1500",
       cancelText: "Cancel",
-      onConfirm: () => void runStart(),
+      onConfirm: () => void runStart(enrollType),
     })
   }
 
@@ -105,26 +116,43 @@ export function ClaimMdEnrollmentSection({
             <div>
               <h3 className="text-base font-semibold text-gray-900">Claim.MD Enrollment</h3>
               <p className="text-sm text-gray-500">
-                Enroll your provider with this payer so Claim.MD can accept its claims.
+                Enroll your provider with this payer for professional claims (1500) and ERA.
               </p>
             </div>
           </div>
 
           {canStart && (
-            <Button
-              type="button"
-              className="gap-2"
-              onClick={confirmStart}
-              disabled={isStarting || !hasExternalId}
-              title={hasExternalId ? undefined : "Set the payer's External ID first"}
-            >
-              {isStarting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ShieldCheck className="h-4 w-4" />
-              )}
-              Start enrollment
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                className="gap-2"
+                onClick={() => confirmStart("1500")}
+                disabled={isStarting || !hasExternalId}
+                title={hasExternalId ? undefined : "Set the payer's External ID first"}
+              >
+                {startingType === "1500" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="h-4 w-4" />
+                )}
+                Enroll 1500
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="gap-2"
+                onClick={() => confirmStart("era")}
+                disabled={isStarting || !hasExternalId}
+                title={hasExternalId ? undefined : "Set the payer's External ID first"}
+              >
+                {startingType === "era" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="h-4 w-4" />
+                )}
+                Enroll ERA
+              </Button>
+            </div>
           )}
         </div>
 
@@ -148,7 +176,7 @@ export function ClaimMdEnrollmentSection({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/70 text-left">
-                    {["Status", "Claim.MD id", "Provider NPI", "Requested", "Last event", "Detail"].map(
+                    {["Type", "Status", "Claim.MD id", "Provider NPI", "Requested", "Last event", "Detail"].map(
                       (header) => (
                         <th
                           key={header}
@@ -165,6 +193,11 @@ export function ClaimMdEnrollmentSection({
                     const style = enrollment.status ? STATUS_STYLES[enrollment.status] : null
                     return (
                       <tr key={enrollment.id} className="hover:bg-slate-50/60">
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+                            {formatEnrollType(enrollment.enrollType)}
+                          </span>
+                        </td>
                         <td className="px-4 py-3">
                           {style ? (
                             <span
@@ -216,7 +249,11 @@ export function ClaimMdEnrollmentSection({
         onOpenChange={(next) => {
           if (!next) setResult(null)
         }}
-        title="Finish the enrollment in Claim.MD"
+        title={
+          formatEnrollType(result?.enrollType) === "ERA"
+            ? "Finish the ERA enrollment in Claim.MD"
+            : "Finish the 1500 enrollment in Claim.MD"
+        }
         description="Claim.MD created the enrollment and returned a single-use link"
         maxWidthClassName="sm:max-w-[620px]"
         constrainHeight

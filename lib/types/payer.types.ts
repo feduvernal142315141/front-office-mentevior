@@ -265,11 +265,14 @@ export interface ClaimMdEnrollment {
 }
 
 /**
- * Respuesta de `POST /payers/{payerId}/claim-md-enrollments`.
+ * Respuesta de `POST /payers/{payerId}/claim-md-enrollments` (1500) o
+ * `POST /payers/{payerId}/claim-md-enrollments/era` (ERA).
  *
  * `enrollmentUrl` es de un solo uso y **sólo llega aquí**: no vuelve en
  * `GET /payers/{id}`. Si se pierde hay que iniciar otro enrollment.
  */
+export type ClaimMdEnrollType = "1500" | "era"
+
 export interface ClaimMdEnrollmentStartResult {
   id: string
   payerId: string

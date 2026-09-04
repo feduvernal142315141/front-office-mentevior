@@ -1,6 +1,7 @@
 import type { PlanTypeCatalogItem } from "@/lib/types/plan-type.types"
 import type {
   ClaimMdEnrollmentStartResult,
+  ClaimMdEnrollType,
   CreatePayerDto,
   ListPayersQueryDto,
   PayerClearingHouseItem,
@@ -41,6 +42,9 @@ export interface PayersServiceContract {
     query: SearchPayerCatalogQuery,
   ): Promise<PayerCatalogSearchResult>
   getPlanTypeCatalog(): Promise<PlanTypeCatalogItem[]>
-  startClaimMdEnrollment(payerId: string): Promise<ClaimMdEnrollmentStartResult>
+  startClaimMdEnrollment(
+    payerId: string,
+    enrollType?: ClaimMdEnrollType,
+  ): Promise<ClaimMdEnrollmentStartResult>
   refresh(): Promise<void>
 }
