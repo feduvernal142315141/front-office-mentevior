@@ -3,10 +3,8 @@
 import { FolderOpen, Loader2, RotateCcw } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
-import {
-  HYPOTHESIZED_FUNCTION_OPTIONS,
-  INTENSITY_KEY_OPTIONS,
-} from "@/lib/constants/assessment.constants"
+import { INTENSITY_KEY_OPTIONS } from "@/lib/constants/assessment.constants"
+import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
 import { typeIsFrequency } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import type { ClientCategoryWithItems } from "@/lib/types/assessment.types"
 import {
@@ -22,6 +20,11 @@ interface CategoryItemsSectionProps {
    * sólo aplican a items Frequency; un item sin entrada (método desconocido) los muestra.
    */
   collectionMethodByItemId?: Record<string, string>
+  /**
+   * Valor inicial por item, configurado en el Client Service Plan. Se muestra
+   * mientras el usuario no elija otro; cambiarlo acá no toca el Service Plan.
+   */
+  hypothesizedFunctionByItemId?: Record<string, string>
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
   /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
@@ -50,6 +53,7 @@ export function CategoryItemsSection({
   clientSelected,
   categories,
   collectionMethodByItemId = {},
+  hypothesizedFunctionByItemId = {},
   isLoading,
   values,
   hasError,
@@ -100,6 +104,8 @@ export function CategoryItemsSection({
               const touched = isTouched(value)
               const collectionMethod = collectionMethodByItemId[item.id]
               const showIntensity = !collectionMethod || typeIsFrequency(collectionMethod)
+              // Precarga del Service Plan: se muestra hasta que el usuario elija otra
+              const hypothesizedFunction = hypothesizedFunctionByItemId[item.id]
 
               return (
                 <div
@@ -145,7 +151,7 @@ export function CategoryItemsSection({
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <FloatingSelect
                       label="Hypothesized function"
-                      value={value.hypothesizedFunction}
+                      value={value.hypothesizedFunction || hypothesizedFunction || ""}
                       onChange={(v) => onUpdate(item.id, "hypothesizedFunction", v)}
                       options={HYPOTHESIZED_FUNCTION_OPTIONS}
                       disabled={disabled}

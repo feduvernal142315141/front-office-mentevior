@@ -6,6 +6,7 @@ import {
 } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { serviceDelete, serviceGet, servicePatch, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
+import { parseHypothesizedFunction } from "@/lib/constants/hypothesized-function"
 import {
   AxisPositionX,
   AxisPositionY,
@@ -25,6 +26,7 @@ import type {
   DataCollectionLevel,
   DataCollectionObjectiveData,
   DataCollectionType,
+  HypothesizedFunction,
   ItemDataCollectionConfig,
   ObjetiveType,
 } from "@/lib/types/data-collection.types"
@@ -258,6 +260,7 @@ interface ClientItemPayload {
   status: boolean
   teachingProcedureId?: string | null
   objetiveType?: ObjetiveType
+  hypothesizedFunction?: HypothesizedFunction | null
   dataCollection: ApiDataCollection
   chart?: ApiChart
   baseline?: ApiBaseline[]
@@ -285,6 +288,7 @@ interface ApiResponse {
   /** @deprecated Backend now returns teachingProcedureId */
   teachingMethodId?: string
   objetiveType?: string
+  hypothesizedFunction?: string
   clientServicePlanCategoryItemId?: string
 }
 
@@ -313,6 +317,11 @@ export interface UpsertClientItemDataCollectionDto {
   teachingProcedureId?: string | null
   /** Omitted (or null) leaves the persisted value untouched on the backend */
   objetiveType?: ObjetiveType | null
+  /**
+   * Omitir la clave deja intacto lo persistido; `null` explícito lo borra.
+   * Sólo la manda la pantalla que expone el select (ItemDetailPanel).
+   */
+  hypothesizedFunction?: HypothesizedFunction | null
   type: DataCollectionType
   weeklyDailyValue?: ServicePlanValueType
   dailyValue?: ServicePlanValueType
@@ -551,6 +560,7 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
   const active = typeof itemEntity.status === "boolean" ? itemEntity.status : true
   const name = asString(itemEntity.name)
   const itemId = asOptionalString(itemEntity.clientServicePlanCategoryItemId) ?? fallbackItemId
+  const hypothesizedFunction = parseHypothesizedFunction(itemEntity.hypothesizedFunction)
   const base = dataCollection
     ? fromApiDataCollection(dataCollection)
     : { type: "", levels: [] as DataCollectionLevel[] }
@@ -563,6 +573,7 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
     !!base.chart ||
     topography.length > 0 ||
     typeof itemEntity.status === "boolean" ||
+    !!hypothesizedFunction ||
     (base.baselines && base.baselines.length > 0) ||
     (base.objectives && base.objectives.length > 0) ||
     !!base.recommendations
@@ -582,6 +593,7 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
       itemEntity.objetiveType === "Mastery" || itemEntity.objetiveType === "STO"
         ? itemEntity.objetiveType
         : null,
+    hypothesizedFunction,
     isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
   }
 }
@@ -728,6 +740,9 @@ export async function upsertClientItemDataCollection(
   }
   if (dto.name?.trim()) payload.name = dto.name.trim()
   if (dto.teachingProcedureId !== undefined) payload.teachingProcedureId = dto.teachingProcedureId || null
+  if (dto.hypothesizedFunction !== undefined) {
+    payload.hypothesizedFunction = dto.hypothesizedFunction || null
+  }
   // Only valid enum values travel; null/undefined keep the backend's stored value
   if (dto.objetiveType) payload.objetiveType = dto.objetiveType
   if (dto.chart) payload.chart = toApiChart(dto.chart)

@@ -3,7 +3,6 @@ import type {
   AssessmentPdfFlagKey,
   AssessmentPdfTextKey,
   HousingType,
-  HypothesizedFunction,
   MedicalHistoryTypeOfBirth,
 } from "@/lib/types/assessment.types"
 
@@ -19,13 +18,6 @@ export const INTENSITY_KEY_LABELS: Record<AssessmentIntensityKey, string> = {
   HIGH: "High",
 }
 
-export const HYPOTHESIZED_FUNCTION_LABELS: Record<HypothesizedFunction, string> = {
-  ESCAPE: "Escape",
-  ATTENTION: "Attention",
-  SENSORY: "Sensory",
-  TANGIBLE: "Tangible",
-}
-
 export const TYPE_OF_BIRTH_LABELS: Record<MedicalHistoryTypeOfBirth, string> = {
   NaturalChildbirth: "Natural childbirth",
   CaesareanSection: "Caesarean section",
@@ -37,7 +29,8 @@ function toOptions<T extends string>(labels: Record<T, string>): { value: T; lab
 
 export const HOUSING_TYPE_OPTIONS = toOptions(HOUSING_TYPE_LABELS)
 export const INTENSITY_KEY_OPTIONS = toOptions(INTENSITY_KEY_LABELS)
-export const HYPOTHESIZED_FUNCTION_OPTIONS = toOptions(HYPOTHESIZED_FUNCTION_LABELS)
+// HYPOTHESIZED_FUNCTION_* vive en @/lib/constants/hypothesized-function: el dato
+// se configura en el Client Service Plan, no en el Assessment.
 export const TYPE_OF_BIRTH_OPTIONS = toOptions(TYPE_OF_BIRTH_LABELS)
 
 /** Campos de background con el label del template del PDF, en su orden */

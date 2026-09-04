@@ -10,12 +10,19 @@
  * Status lifecycle (2026-08-24): Read | Active | Close | Lock.
  */
 
+/**
+ * El valor se configura en el item del Client Service Plan y desde ahí precarga
+ * el Assessment (contrato 2026-09-03). Se re-exporta para no romper imports.
+ */
+import type { HypothesizedFunction } from "@/lib/types/data-collection.types"
+
+export type { HypothesizedFunction }
+
 /** Effective assessment lifecycle status from GET list/detail */
 export type AssessmentStatus = "read" | "active" | "close" | "lock"
 
 export type HousingType = "HOME" | "FOSTER_HOME" | "PPEC"
 export type AssessmentIntensityKey = "MILD" | "MODERATE" | "HIGH"
-export type HypothesizedFunction = "ESCAPE" | "ATTENTION" | "SENSORY" | "TANGIBLE"
 /** Ojo: PascalCase, no SCREAMING_SNAKE como los demás enums */
 export type MedicalHistoryTypeOfBirth = "CaesareanSection" | "NaturalChildbirth"
 
@@ -31,7 +38,14 @@ export interface AssessmentCatalogItem {
 export interface ClientCategoryWithItems {
   id: string
   name: string
-  items: { id: string; name: string }[]
+  items: ClientCategoryItemSummary[]
+}
+
+export interface ClientCategoryItemSummary {
+  id: string
+  name: string
+  /** Configurada en el item del Client Service Plan; precarga del Assessment */
+  hypothesizedFunction?: HypothesizedFunction | null
 }
 
 export interface AssessmentMedicationInput {
@@ -48,6 +62,12 @@ export interface AssessmentObservationInput {
   summary: string
 }
 
+/**
+ * `hypothesizedFunction` se precarga desde el item del Client Service Plan
+ * (`GET /client-service-plan/client/{clientId}/assessment-data`) y viaja en el
+ * request: el valor enviado sobrescribe el del snapshot del Assessment, sin
+ * tocar el del Service Plan (contrato 2026-09-03).
+ */
 export interface AssessmentCategoryItemInput {
   clientServicePlanCategoryItemId: string
   intensityKey: AssessmentIntensityKey | null

@@ -9,6 +9,13 @@ export { ServicePlanUnitOfTime, ServicePlanValueType }
 
 export type DataCollectionType = string
 
+/**
+ * Función hipotetizada de la conducta. Vive en el item del Client Service Plan
+ * (`PUT /client-service-plan-category-item/level`, contrato 2026-09-03); el
+ * Assessment sólo la lee del snapshot que copia el backend.
+ */
+export type HypothesizedFunction = "ESCAPE" | "ATTENTION" | "SENSORY" | "TANGIBLE"
+
 export interface DataCollectionLevel {
   /** Client-only row key (React / form). Never sent to the API. */
   id: string
@@ -96,6 +103,7 @@ export interface ItemDataCollectionConfig extends DataCollectionConfig {
   active: boolean
   teachingProcedureId?: string | null
   objetiveType?: ObjetiveType | null
+  hypothesizedFunction?: HypothesizedFunction | null
   isCustomOverride?: boolean
 }
 

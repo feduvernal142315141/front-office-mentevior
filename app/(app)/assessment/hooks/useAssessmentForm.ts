@@ -53,6 +53,7 @@ import { useRelationshipCatalog } from "@/lib/modules/relationships/hooks/use-re
 export interface CategoryItemFormValue {
   intensityKey: AssessmentIntensityKey | ""
   intensityDescription: string
+  /** "" = el usuario no la tocó; se muestra la precarga del Service Plan */
   hypothesizedFunction: HypothesizedFunction | ""
   prevalentSetting: string
   preventiveStrategies: string
@@ -194,6 +195,11 @@ function isObservationEmpty(o: AssessmentObservationInput): boolean {
   return !o.date && !o.setting.trim() && !o.summary.trim()
 }
 
+/**
+ * Sólo hay entrada en `categoryItems` cuando el usuario tocó el item (o cuando
+ * se precargó un assessment existente): la precarga del Service Plan vive fuera
+ * del form, así que no marca items como tocados por sí sola.
+ */
 function isCategoryItemTouched(v: CategoryItemFormValue): boolean {
   return (
     !!v.intensityKey ||
@@ -254,6 +260,21 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   // Método de colección por item: decide si se muestran los campos de intensidad
   const { methodByItemId: collectionMethodByItemId, isLoading: collectionMethodsLoading } =
     useClientItemCollectionMethods(formData.clientId || null, categories)
+
+  /**
+   * Valor inicial de la función hipotetizada por item, tal como lo configura el
+   * Client Service Plan (contrato 2026-09-03). Es sólo la precarga: en cuanto el
+   * usuario elige algo, manda `formData.categoryItems[itemId]`.
+   */
+  const hypothesizedFunctionByItemId = useMemo(() => {
+    const byItemId: Record<string, HypothesizedFunction> = {}
+    for (const category of categories) {
+      for (const item of category.items) {
+        if (item.hypothesizedFunction) byItemId[item.id] = item.hypothesizedFunction
+      }
+    }
+    return byItemId
+  }, [categories])
 
   const clientOptions = useMemo(
     () => (clients ?? []).filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
@@ -694,7 +715,10 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         clientServicePlanCategoryItemId: itemId,
         intensityKey: value.intensityKey || null,
         intensityDescription: value.intensityDescription.trim(),
-        hypothesizedFunction: value.hypothesizedFunction || null,
+        // Viaja lo que el usuario ve: su elección o, si no tocó el select, la
+        // precarga del Service Plan.
+        hypothesizedFunction:
+          value.hypothesizedFunction || hypothesizedFunctionByItemId[itemId] || null,
         prevalentSetting: value.prevalentSetting.trim(),
         preventiveStrategies: value.preventiveStrategies.trim(),
         managementStrategies: value.managementStrategies.trim(),
@@ -782,7 +806,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       ) as AssessmentPdfTextsPayload),
       ...formData.pdfFlags,
     }
-  }, [formData])
+  }, [formData, hypothesizedFunctionByItemId])
 
   const scrollToFirstError = useCallback((newErrors: Record<string, string>) => {
     setTimeout(() => {
@@ -837,6 +861,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     categories,
     categoriesLoading: categoriesLoading || collectionMethodsLoading,
     collectionMethodByItemId,
+    hypothesizedFunctionByItemId,
     billingCodeOptions,
     credentialOptions,
     isLoadingCatalogs: catalogsLoading || relationshipsLoading,

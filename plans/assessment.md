@@ -162,6 +162,9 @@ La ruta `/assessment` ya está cableada en nav y permisos (`PermissionModule.ASS
 2. **Enums como constantes con label map** (no catálogos): `SchoolType`, `SchoolSetting`,
    `InstructionRatio` (labels `1:5`…`1:30`), `HousingType`, `AssessmentIntensityKey`,
    `HypothesizedFunction`. Se envía/recibe el nombre Java exacto.
+   **2026-09-03:** `HypothesizedFunction` pasó a vivir en el item del Client Service Plan;
+   sus labels están en `lib/constants/hypothesized-function.ts` y el tipo en
+   `lib/types/data-collection.types.ts` (`assessment.types.ts` lo re-exporta).
 3. **Snapshot del diagnóstico primario**: el front NO lo manda. En create se muestra
    informativo (el dx actual del cliente, vía módulo `diagnoses`/perfil) y en edit se muestra
    `medicalHistoryPrimaryDiagnosisName` persistido, siempre solo lectura.
@@ -223,10 +226,12 @@ Reutilizables existentes: `useClientsByLoggedUser` (select de cliente),
 - Sub-tipos: `AssessmentMedicationInput { name, dosage, frequency, details }`,
   `AssessmentObservationInput { date, setting, summary }`,
   `AssessmentCategoryItemInput { clientServicePlanCategoryItemId, intensityKey,
-  intensityDescription, hypothesizedFunction }`.
+  intensityDescription, hypothesizedFunction, prevalentSetting, preventiveStrategies,
+  managementStrategies }`.
 - Catálogos: `GradeCatalogItem` y `AssessmentConductedCatalogItem`
   `{ id, code, name, sortOrder }`.
-- `ClientCategoryWithItems { id, name, items: { id, name }[] }`.
+- `ClientCategoryWithItems { id, name, items: { id, name, hypothesizedFunction? }[] }`,
+  desde `GET /client-service-plan/client/{clientId}/assessment-data`.
 
 ## 4. Fases
 
@@ -264,8 +269,11 @@ como red de seguridad. Sin UI todavía; `tsc` como gate.
    `assessmentConductedCatalogIds`.
 8. **Categories & Items** — agrupado por categoría del SP activo; por item: Intensity
    (MILD/MODERATE/HIGH), Intensity description, Hypothesized Function
-   (ESCAPE/ATTENTION/SENSORY/TANGIBLE). Solo los items tocados van al payload (un item sin
-   intensidad ni función no se manda — confirmar obligatoriedad, §6-Q6).
+   (ESCAPE/ATTENTION/SENSORY/TANGIBLE), Prevalent setting y las estrategias.
+   **Desde 2026-09-03 la función hipotetizada se precarga** desde el item del Client Service
+   Plan (`GET .../assessment-data`) y puede sobrescribirse para ese assessment sin tocar el
+   Service Plan. Solo los items tocados van al payload (un item sin nada capturado no se
+   manda — confirmar obligatoriedad, §6-Q6).
 
 Validación con scroll-al-error (`[data-field]` + `#main-scroll`, patrón 97156). Guardar →
 toast + redirect al listado.

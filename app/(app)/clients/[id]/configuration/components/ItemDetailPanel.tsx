@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
+import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
 
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -76,12 +77,29 @@ import type {
   DataCollectionLevel,
   ItemDataCollectionConfig,
   DataCollectionType,
+  HypothesizedFunction,
   ObjetiveType,
 } from "@/lib/types/data-collection.types"
 
 // ---------------------------------------------------------------------------
 // Helpers (shared with modal)
 // ---------------------------------------------------------------------------
+
+/**
+ * Teaching Procedure y Hypothesized Function van siempre uno al lado del otro.
+ * La grilla auto-ubica de izquierda a derecha, así que el par se parte cuando la
+ * fila ya no tiene dos columnas libres: ahí Teaching Procedure abre fila nueva.
+ * `spans` son las celdas que van ANTES del par, con su col-span.
+ */
+function pairSplitsAt(spans: number[], columns: number): boolean {
+  let cursor = 0
+  for (const span of spans) {
+    if (cursor + span > columns) cursor = 0
+    cursor += span
+    if (cursor >= columns) cursor = 0
+  }
+  return cursor + 2 > columns
+}
 
 function resolveChartConfig(chart?: ChartConfig): ChartConfig {
   if (!chart) return DEFAULT_CHART_CONFIG
@@ -214,6 +232,7 @@ export function ItemDetailPanel({
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [teachingProcedure, setTeachingProcedure] = useState("")
+  const [hypothesizedFunction, setHypothesizedFunction] = useState<HypothesizedFunction | "">("")
   const [objetiveType, setObjetiveType] = useState<ObjetiveType | null>(null)
 
   // --- Catalogs ---
@@ -287,6 +306,7 @@ export function ItemDetailPanel({
         setItemConfig(itemData)
         setConfig(itemData)
         setTeachingProcedure(itemData.teachingProcedureId ?? "")
+        setHypothesizedFunction(itemData.hypothesizedFunction ?? "")
         setObjetiveType(itemData.objetiveType ?? null)
         setBaselines(
           (itemData.baselines ?? []).map((b) => ({
@@ -320,6 +340,7 @@ export function ItemDetailPanel({
         setConfig(catData ? stripPersistedLevelIds(catData) : fallback)
         setItemConfig(null)
         setTeachingProcedure("")
+        setHypothesizedFunction("")
         setObjetiveType(null)
         setBaselines([])
         setObjectives([])
@@ -341,15 +362,18 @@ export function ItemDetailPanel({
   const baselinesSnapshotRef = useRef("")
   const objectivesSnapshotRef = useRef("")
   const teachingProcedureSnapshotRef = useRef("")
+  const hypothesizedFunctionSnapshotRef = useRef<HypothesizedFunction | "">("")
 
   // While false, hasUnsavedChanges stays false (no footer flash on enter).
   const [initialized, setInitialized] = useState(false)
   const baselinesRef = useRef(baselines)
   const objectivesRef = useRef(objectives)
   const teachingProcedureRef = useRef(teachingProcedure)
+  const hypothesizedFunctionRef = useRef(hypothesizedFunction)
   baselinesRef.current = baselines
   objectivesRef.current = objectives
   teachingProcedureRef.current = teachingProcedure
+  hypothesizedFunctionRef.current = hypothesizedFunction
 
   const catalogsReady = !isLoadingCatalog && !isLoadingTeachingProcedures
 
@@ -373,6 +397,7 @@ export function ItemDetailPanel({
     baselinesSnapshotRef.current = snapshotRows(baselinesRef.current)
     objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
     teachingProcedureSnapshotRef.current = teachingProcedureRef.current
+    hypothesizedFunctionSnapshotRef.current = hypothesizedFunctionRef.current
     setInitialized(false)
 
     let cancelled = false
@@ -386,6 +411,7 @@ export function ItemDetailPanel({
         baselinesSnapshotRef.current = snapshotRows(baselinesRef.current)
         objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
         teachingProcedureSnapshotRef.current = teachingProcedureRef.current
+        hypothesizedFunctionSnapshotRef.current = hypothesizedFunctionRef.current
         setInitialized(true)
       })
     })
@@ -419,9 +445,16 @@ export function ItemDetailPanel({
   const hasTeachingProcedureChanges =
     initialized && teachingProcedure !== teachingProcedureSnapshotRef.current
 
+  const hasHypothesizedFunctionChanges =
+    initialized && hypothesizedFunction !== hypothesizedFunctionSnapshotRef.current
+
   const hasUnsavedChanges =
     initialized &&
-    (isFormDirty || hasBaselineChanges || hasObjectiveChanges || hasTeachingProcedureChanges)
+    (isFormDirty ||
+      hasBaselineChanges ||
+      hasObjectiveChanges ||
+      hasTeachingProcedureChanges ||
+      hasHypothesizedFunctionChanges)
 
   useEffect(() => {
     onDirtyChange?.(hasUnsavedChanges)
@@ -466,8 +499,28 @@ export function ItemDetailPanel({
   }, [watchedType, typeItemsMap])
 
   const isMeasurementLogType = typeIsMeasurementLog(resolvedType.name)
+
   const { groups: unitMeasurementGroups, isLoading: isLoadingUnitMeasurement } =
     useUnitMeasurementCatalog(isMeasurementLogType)
+
+  // Celdas que la grilla dibuja antes del par Teaching Procedure + Hypothesized
+  // Function, en el mismo orden del JSX. Mantener sincronizado si se agregan campos.
+  const leadingGridSpans = useMemo(() => {
+    const spans = [1] // Type
+    if (typeRequiresWeeklyDaily(resolvedType.name) && !typeRequiresUnitOfTime(resolvedType.name)) {
+      spans.push(1) // Weekly / Daily value
+    }
+    if (typeRequiresUnitOfTime(resolvedType.name)) spans.push(1, 1) // Unit of time + Weekly value
+    if (typeIsMeasurementLog(resolvedType.name)) spans.push(1, 1, 1) // Unit of measurement + Daily + Weekly
+    if (typeRequiresDailyAndWeekly(resolvedType.name)) spans.push(1, 1, 1, 1)
+    if (typeRequiresInterval(resolvedType.group)) spans.push(1, 1, 2) // Interval + Unit of time + Suggested
+    return spans
+  }, [resolvedType])
+
+  const pairStartClassName = cn(
+    pairSplitsAt(leadingGridSpans, 2) ? "sm:col-start-1" : "sm:col-start-auto",
+    pairSplitsAt(leadingGridSpans, 3) ? "lg:col-start-1" : "lg:col-start-auto",
+  )
 
   // Clear conditional fields only when the user changes type (after init).
   // Initial cleanup is done inside buildItemFormValues to keep defaults in sync.
@@ -574,6 +627,7 @@ export function ItemDetailPanel({
         clientServicePlanCategoryItemId,
         name: itemName,
         teachingProcedureId: teachingProcedure || null,
+        hypothesizedFunction: hypothesizedFunction || null,
         objetiveType: objetiveType ?? inferObjetiveType(objectives),
         type: values.type as DataCollectionType,
         weeklyDailyValue: values.weeklyDailyValue,
@@ -595,6 +649,7 @@ export function ItemDetailPanel({
       baselinesSnapshotRef.current = snapshotRows(baselines)
       objectivesSnapshotRef.current = snapshotRows(objectives)
       teachingProcedureSnapshotRef.current = teachingProcedure
+      hypothesizedFunctionSnapshotRef.current = hypothesizedFunction
       reset(values)
 
       toast.success("Item configuration saved")
@@ -983,15 +1038,26 @@ export function ItemDetailPanel({
             </>
           )}
 
-          {/* Teaching Procedure — always last in the grid */}
-          <FloatingSelect
-            label="Teaching Procedure"
-            value={teachingProcedure}
-            onChange={setTeachingProcedure}
-            options={teachingProcedureOptions}
-            searchable
-            disabled={isLoadingTeachingProcedures}
-          />
+          {/* Teaching Procedure + Hypothesized Function — siempre juntos y al final */}
+          <div className={pairStartClassName}>
+            <FloatingSelect
+              label="Teaching Procedure"
+              value={teachingProcedure}
+              onChange={setTeachingProcedure}
+              options={teachingProcedureOptions}
+              searchable
+              disabled={isLoadingTeachingProcedures}
+            />
+          </div>
+
+          <div>
+            <FloatingSelect
+              label="Hypothesized Function"
+              value={hypothesizedFunction}
+              onChange={(value) => setHypothesizedFunction(value as HypothesizedFunction | "")}
+              options={HYPOTHESIZED_FUNCTION_OPTIONS}
+            />
+          </div>
 
           {/* Description — full width row */}
           <div className="space-y-1 sm:col-span-2 lg:col-span-3">
