@@ -124,7 +124,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
           {/* Puerta de entrada a la vista con todas las gráficas del cliente */}
           <button
             type="button"
-            onClick={() => guard(() => router.push(`/clients/${clientId}/charts`))}
+            onClick={() => guard(() => router.push(spId ? `/clients/${clientId}/charts?spId=${spId}` : `/clients/${clientId}/charts`))}
             className="shrink-0 inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-all hover:-translate-y-0.5 hover:border-[#037ECC]/40 hover:text-[#037ECC] hover:shadow-md"
           >
             <LineChart className="h-4 w-4" />

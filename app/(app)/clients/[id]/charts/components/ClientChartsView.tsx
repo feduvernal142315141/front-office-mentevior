@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { LineChart, Loader2 } from "lucide-react"
 
@@ -33,11 +33,28 @@ interface CategoryWithItems {
  * por tarjeta la pantalla se vuelve ilegible. Es sólo lectura — para capturar o
  * configurar se entra al item desde la tarjeta.
  */
-export function ClientChartsView({ clientId }: { clientId: string }) {
+interface ClientChartsViewProps {
+  clientId: string
+  /** El del `spId` de la URL, si se entró desde Configuration. */
+  clientServicePlanId?: string | null
+  /** Avisa el service plan que se resolvió, para que los links de vuelta lo lleven. */
+  onServicePlanResolved?: (servicePlanId: string) => void
+}
+
+export function ClientChartsView({
+  clientId,
+  clientServicePlanId,
+  onServicePlanResolved,
+}: ClientChartsViewProps) {
   const router = useRouter()
   const [groups, setGroups] = useState<CategoryWithItems[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasServicePlan, setHasServicePlan] = useState(true)
+
+  // Por ref: el aviso no debe hacer que la carga se vuelva a disparar si quien
+  // nos usa pasa la función en línea.
+  const onServicePlanResolvedRef = useRef(onServicePlanResolved)
+  onServicePlanResolvedRef.current = onServicePlanResolved
 
   const { itemsMap: typeEventMap, isLoading: isLoadingCatalog } = useTypeEventCatalog()
   const chartRange = useChartDateRange("1M")
@@ -70,6 +87,7 @@ export function ClientChartsView({ clientId }: { clientId: string }) {
         if (active) {
           setGroups(loaded)
           setHasServicePlan(true)
+          onServicePlanResolvedRef.current?.(servicePlan.id)
         }
       } catch {
         if (active) {
@@ -90,10 +108,13 @@ export function ClientChartsView({ clientId }: { clientId: string }) {
 
   // La pantalla de configuración todavía no acepta el item por URL (sólo `spId`,
   // `section`, `appointmentId` y `appointmentDate`), así que la tarjeta lleva al
-  // Service Plan del cliente y desde ahí se entra al item.
+  // Service Plan del cliente y desde ahí se entra al item. El `spId` va sí o sí:
+  // sin él la configuración abre en "No service plan assigned".
   const openServicePlan = useCallback(() => {
-    router.push(`/clients/${clientId}/configuration?section=service-plan`)
-  }, [clientId, router])
+    const query = new URLSearchParams({ section: "service-plan" })
+    if (clientServicePlanId) query.set("spId", clientServicePlanId)
+    router.push(`/clients/${clientId}/configuration?${query.toString()}`)
+  }, [clientId, clientServicePlanId, router])
 
   const totalItems = useMemo(
     () => groups.reduce((sum, group) => sum + group.items.length, 0),

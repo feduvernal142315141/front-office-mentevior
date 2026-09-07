@@ -1,7 +1,7 @@
 "use client"
 
-import { use } from "react"
-import { useRouter } from "next/navigation"
+import { use, useCallback, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, LineChart } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
@@ -21,6 +21,18 @@ export default function ClientChartsPage({ params }: ClientChartsPageProps) {
   const { client } = useClientById(id)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // La pantalla de configuración se arma a partir del `spId` de la URL: sin él
+  // muestra "No service plan assigned" aunque el cliente tenga uno. Lo traemos
+  // en la URL al entrar, y si se llegó acá por link directo lo completa la
+  // vista cuando resuelve el service plan del cliente.
+  const [spId, setSpId] = useState<string | null>(() => searchParams.get("spId"))
+
+  const goToConfiguration = useCallback(() => {
+    router.push(spId ? `/clients/${id}/configuration?spId=${spId}` : `/clients/${id}/configuration`)
+  }, [id, router, spId])
+
   const clientName = [client?.firstName, client?.lastName].filter(Boolean).join(" ")
 
   return (
@@ -29,7 +41,7 @@ export default function ClientChartsPage({ params }: ClientChartsPageProps) {
         <div className="mb-8 flex flex-wrap items-center gap-4">
           <button
             type="button"
-            onClick={() => router.push(`/clients/${id}/configuration`)}
+            onClick={goToConfiguration}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:-translate-y-0.5 hover:border-[#037ECC]/40 hover:text-[#037ECC] hover:shadow-md"
             aria-label="Back to configuration"
           >
@@ -50,7 +62,7 @@ export default function ClientChartsPage({ params }: ClientChartsPageProps) {
           </div>
         </div>
 
-        <ClientChartsView clientId={id} />
+        <ClientChartsView clientId={id} clientServicePlanId={spId} onServicePlanResolved={setSpId} />
       </div>
     </div>
   )
