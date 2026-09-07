@@ -350,8 +350,13 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         </div>
       </Section>
 
-      {/* ─── Housing & Family ─── */}
-      <Section icon={<Home className="h-4 w-4" />} title="Housing & Family" contentHidden={!formData.pdfFlags.showHousingFamily} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showHousingFamily} onChange={(v) => updatePdfFlag("showHousingFamily", v)} disabled={isSaving} />}>
+      {/* ─── Background (incluye Housing & Family) ─── */}
+      <Section
+        icon={<BookOpenText className="h-4 w-4" />}
+        title="Background"
+        subtitle="Home, family and current functioning"
+      >
+        <SubHeading icon={<Home className="h-3.5 w-3.5" />} title="Housing & family" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div data-field="housingType">
             <FloatingSelect
@@ -396,26 +401,58 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           />
           <FieldError message={errors.housingInformation} />
         </div>
+
+        <SubHeading
+          icon={<BookOpenText className="h-3.5 w-3.5" />}
+          title="Current functioning, strengths and skills"
+          className="mt-6"
+        />
+        <div data-field="backgroundSummary">
+          <FloatingTextarea
+            label="Summary"
+            value={formData.backgroundSummary}
+            onChange={(v) => updateField("backgroundSummary", v)}
+            onBlur={() => {}}
+            guidance={ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE}
+            rows={6}
+            hasError={!!errors.backgroundSummary}
+          />
+          <FieldError message={errors.backgroundSummary} />
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {ASSESSMENT_BACKGROUND_FIELDS.map(({ key, label }) => (
+            <div key={key} data-field={key}>
+              <FloatingTextarea
+                label={label}
+                value={formData[key]}
+                onChange={(v) => updateField(key, v)}
+                onBlur={() => {}}
+                guidance={ASSESSMENT_BACKGROUND_GUIDANCE[key]}
+                rows={4}
+                hasError={!!errors[key]}
+              />
+              <FieldError message={errors[key]} />
+            </div>
+          ))}
+        </div>
       </Section>
 
       {/* ─── Medical History ─── */}
-      <Section icon={<Stethoscope className="h-4 w-4" />} title="Medical History" contentHidden={!formData.pdfFlags.showMedicalHistory} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showMedicalHistory} onChange={(v) => updatePdfFlag("showMedicalHistory", v)} disabled={isSaving} />}>
-        {/* El dx primario lo captura el backend como snapshot al crear; acá solo se informa */}
-        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#037ECC]/20 bg-[#037ECC]/[0.04] px-4 py-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#037ECC]" />
-          <p className="text-sm text-slate-600">
-            {isEditing ? (
-              <>
-                Primary diagnosis (snapshot):{" "}
-                <span className="font-medium text-slate-800">
-                  {assessment?.medicalHistoryPrimaryDiagnosisName || "—"}
-                </span>
-              </>
-            ) : (
-              "The client's current primary diagnosis is captured automatically when the assessment is created."
-            )}
-          </p>
-        </div>
+      <Section icon={<Stethoscope className="h-4 w-4" />} title="Medical History">
+        {/* Snapshot del dx primario que guardó el backend. En create todavía no
+            existe, así que no se anuncia nada: pedido F9.2a, 2026-09-05. Cuando
+            backend entregue B4 esto pasa a ser un campo editable. */}
+        {isEditing && (
+          <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#037ECC]/20 bg-[#037ECC]/[0.04] px-4 py-3">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#037ECC]" />
+            <p className="text-sm text-slate-600">
+              Primary diagnosis (snapshot):{" "}
+              <span className="font-medium text-slate-800">
+                {assessment?.medicalHistoryPrimaryDiagnosisName || "—"}
+              </span>
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div data-field="medicalHistoryOtherDiagnosis">
             <FloatingInput
@@ -460,45 +497,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         </div>
       </Section>
 
-      {/* ─── Background ─── */}
-      <Section
-        icon={<BookOpenText className="h-4 w-4" />}
-        title="Background"
-        subtitle="Current functioning, strengths and skills"
-        contentHidden={!formData.pdfFlags.showBackgroundInformation} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showBackgroundInformation} onChange={(v) => updatePdfFlag("showBackgroundInformation", v)} disabled={isSaving} />}
-      >
-        <div data-field="backgroundSummary">
-          <FloatingTextarea
-            label="Summary"
-            value={formData.backgroundSummary}
-            onChange={(v) => updateField("backgroundSummary", v)}
-            onBlur={() => {}}
-            guidance={ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE}
-            rows={6}
-            hasError={!!errors.backgroundSummary}
-          />
-          <FieldError message={errors.backgroundSummary} />
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {ASSESSMENT_BACKGROUND_FIELDS.map(({ key, label }) => (
-            <div key={key} data-field={key}>
-              <FloatingTextarea
-                label={label}
-                value={formData[key]}
-                onChange={(v) => updateField(key, v)}
-                onBlur={() => {}}
-                guidance={ASSESSMENT_BACKGROUND_GUIDANCE[key]}
-                rows={4}
-                hasError={!!errors[key]}
-              />
-              <FieldError message={errors[key]} />
-            </div>
-          ))}
-        </div>
-      </Section>
-
       {/* ─── Current Medications ─── */}
-      <Section icon={<Pill className="h-4 w-4" />} title="Current Medications" contentHidden={!formData.pdfFlags.showCurrentMedications} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showCurrentMedications} onChange={(v) => updatePdfFlag("showCurrentMedications", v)} disabled={isSaving} />}>
+      <Section icon={<Pill className="h-4 w-4" />} title="Current Medications">
         <div data-field="currentMedications">
         <MedicationsSection
           medications={formData.currentMedications}
@@ -576,7 +576,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         icon={<Target className="h-4 w-4" />}
         title="Categories & Items"
         subtitle="Evaluate each item of the client's active service plan"
-        contentHidden={!formData.pdfFlags.showAssessmentCategories} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAssessmentCategories} onChange={(v) => updatePdfFlag("showAssessmentCategories", v)} disabled={isSaving} />}
       >
         <div data-field="categoriesItems">
         <CategoryItemsSection
@@ -600,7 +599,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         icon={<Receipt className="h-4 w-4" />}
         title="Billing Codes"
         subtitle="Proposed billing codes and units for this assessment"
-        contentHidden={!formData.pdfFlags.showRecommendedServices} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showRecommendedServices} onChange={(v) => updatePdfFlag("showRecommendedServices", v)} disabled={isSaving} />}
       >
         <div data-field="billingCodesSection">
         <BillingCodesSection
@@ -667,7 +665,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         icon={<Contact className="h-4 w-4" />}
         title="Providers"
         subtitle="Other providers involved with the client"
-        contentHidden={!formData.pdfFlags.showProvidersOnFile} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showProvidersOnFile} onChange={(v) => updatePdfFlag("showProvidersOnFile", v)} disabled={isSaving} />}
       >
         <div data-field="providerFiles">
         <ProviderFilesSection
@@ -815,6 +812,22 @@ function AssessmentStatusBanner({
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
   return <p className="mt-1.5 text-xs font-medium text-red-500">{message}</p>
+}
+
+/** Separador de sub-bloque dentro de una Section (p.ej. Housing dentro de Background) */
+function SubHeading({ icon, title, className }: {
+  icon: React.ReactNode
+  title: string
+  className?: string
+}) {
+  return (
+    <div className={`mb-3 flex items-center gap-2 ${className ?? ""}`}>
+      <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+        {icon}
+      </span>
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</h4>
+    </div>
+  )
 }
 
 function Section({ icon, title, subtitle, headerAction, contentHidden = false, children }: {

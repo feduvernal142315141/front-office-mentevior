@@ -116,6 +116,24 @@ export const ASSESSMENT_PDF_STRATEGY_GROUPS: {
  * Secciones del PDF que se arman desde el expediente del cliente y no tienen
  * sección propia en este formulario; sus switches viven agrupados aparte.
  */
+/**
+ * Secciones que van siempre en el assessment y siempre en el PDF: no tienen
+ * switch y su flag viaja en `true` (pedido F9, 2026-09-05).
+ *
+ * Ojo: "siempre sale en el PDF" **no** es lo mismo que "no se puede guardar sin
+ * esto" — la obligatoriedad para guardar se resuelve aparte en
+ * `useAssessmentForm` (decisión D4, `plans/iteracion-2026-09-05-definiciones.md`).
+ */
+export const ASSESSMENT_PDF_MANDATORY_FLAGS: ReadonlySet<AssessmentPdfFlagKey> = new Set([
+  "showHousingFamily",
+  "showBackgroundInformation",
+  "showMedicalHistory",
+  "showCurrentMedications",
+  "showAssessmentCategories",
+  "showRecommendedServices",
+  "showProvidersOnFile",
+])
+
 export const ASSESSMENT_PDF_CLIENT_RECORD_FLAGS: { key: AssessmentPdfFlagKey; label: string }[] = [
   { key: "showEmergencyContactInformation", label: "Emergency Contact Information" },
   { key: "showReferringPhysicians", label: "Referring Physicians" },

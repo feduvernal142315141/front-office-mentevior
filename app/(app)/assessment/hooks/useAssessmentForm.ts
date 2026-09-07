@@ -28,6 +28,7 @@ import type {
 import {
   ASSESSMENT_BACKGROUND_FIELDS,
   ASSESSMENT_PDF_GENERAL_NARRATIVES,
+  ASSESSMENT_PDF_MANDATORY_FLAGS,
   ASSESSMENT_PDF_STRATEGY_GROUPS,
 } from "@/lib/constants/assessment.constants"
 import { ASSESSMENT_PDF_DEFAULT_TEXTS } from "@/lib/constants/assessment-pdf-default-texts"
@@ -126,7 +127,9 @@ function buildDefaultPdfTexts(): AssessmentPdfTexts {
  */
 function buildDefaultPdfFlags(): AssessmentPdfFlags {
   const flags = {} as AssessmentPdfFlags
-  for (const key of ASSESSMENT_PDF_FLAG_KEYS) flags[key] = false
+  for (const key of ASSESSMENT_PDF_FLAG_KEYS) {
+    flags[key] = ASSESSMENT_PDF_MANDATORY_FLAGS.has(key)
+  }
   return flags
 }
 
@@ -185,6 +188,18 @@ const EMPTY_FORM: AssessmentFormData = {
   providerFiles: [],
   pdfTexts: buildDefaultPdfTexts(),
   pdfFlags: buildDefaultPdfFlags(),
+}
+
+/**
+ * Hasta 2026-09-05 el switch de PDF era también la condición de obligatoriedad:
+ * sección encendida = campos requeridos. Al volverse obligatorias seis secciones
+ * (F9) eso habría hecho imposible guardar un assessment a medio llenar, así que
+ * las dos cosas quedan separadas — se imprimen siempre, pero no bloquean el
+ * guardado (decisión D4). El resto de las secciones sigue igual que antes.
+ */
+function sectionBlocksSave(flags: AssessmentPdfFlags, key: AssessmentPdfFlagKey): boolean {
+  if (ASSESSMENT_PDF_MANDATORY_FLAGS.has(key)) return false
+  return flags[key]
 }
 
 function isMedicationEmpty(m: AssessmentMedicationInput): boolean {
@@ -377,8 +392,13 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       pdfTexts: Object.fromEntries(
         ASSESSMENT_PDF_TEXT_KEYS.map((key) => [key, assessment[key] || ASSESSMENT_PDF_DEFAULT_TEXTS[key]]),
       ) as AssessmentPdfTexts,
+      // Las obligatorias se normalizan a `true` aunque el registro viejo las
+      // tenga apagadas: ya no hay switch para volver a encenderlas.
       pdfFlags: Object.fromEntries(
-        ASSESSMENT_PDF_FLAG_KEYS.map((key) => [key, assessment[key] ?? false]),
+        ASSESSMENT_PDF_FLAG_KEYS.map((key) => [
+          key,
+          ASSESSMENT_PDF_MANDATORY_FLAGS.has(key) || (assessment[key] ?? false),
+        ]),
       ) as AssessmentPdfFlags,
     })
   }, [assessment])
@@ -602,7 +622,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       newErrors.timeEnd = "End time must be after start time"
     }
 
-    if (flags.showSchoolInformation) {
+    if (sectionBlocksSave(flags, "showSchoolInformation")) {
       if (!formData.schoolName.trim()) newErrors.schoolName = required
       if (!formData.gradeCatalogId) newErrors.gradeCatalogId = "Select a grade"
       if (!formData.timeInit) newErrors.timeInit = required
@@ -610,74 +630,74 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       if (!formData.schoolAddress.trim()) newErrors.schoolAddress = required
     }
 
-    if (flags.showHousingFamily) {
+    if (sectionBlocksSave(flags, "showHousingFamily")) {
       if (!formData.housingType) newErrors.housingType = "Select a housing type"
       if (!formData.housingInformation.trim()) newErrors.housingInformation = required
     }
 
-    if (flags.showMedicalHistory) {
+    if (sectionBlocksSave(flags, "showMedicalHistory")) {
       if (!formData.medicalHistoryOtherDiagnosis.trim()) newErrors.medicalHistoryOtherDiagnosis = required
       if (!formData.medicalHistoryMorbidities.trim()) newErrors.medicalHistoryMorbidities = required
       if (!formData.medicalHistoryAllergies.trim()) newErrors.medicalHistoryAllergies = required
       if (!formData.medicalHistoryTypeOfBirth) newErrors.medicalHistoryTypeOfBirth = "Select the type of birth"
     }
 
-    if (flags.showOtherServices) {
+    if (sectionBlocksSave(flags, "showOtherServices")) {
       if (!formData.previousAbaTherapy.trim()) newErrors.previousAbaTherapy = required
       if (!formData.previousAgencyName.trim()) newErrors.previousAgencyName = required
     }
 
-    if (flags.showBackgroundInformation) {
+    if (sectionBlocksSave(flags, "showBackgroundInformation")) {
       if (!formData.backgroundSummary.trim()) newErrors.backgroundSummary = required
       for (const { key } of ASSESSMENT_BACKGROUND_FIELDS) {
         if (!formData[key].trim()) newErrors[key] = required
       }
     }
 
-    if (flags.showCurrentMedications && !formData.currentMedications.some((m) => !isMedicationEmpty(m))) {
+    if (sectionBlocksSave(flags, "showCurrentMedications") && !formData.currentMedications.some((m) => !isMedicationEmpty(m))) {
       newErrors.currentMedications = "Add at least one medication, or turn the section off"
     }
 
-    if (flags.showObservations && !formData.observations.some((o) => !isObservationEmpty(o))) {
+    if (sectionBlocksSave(flags, "showObservations") && !formData.observations.some((o) => !isObservationEmpty(o))) {
       newErrors.observations = "Add at least one observation, or turn the section off"
     }
 
-    if (flags.showAssessmentConducted && formData.assessmentConductedCatalogIds.length === 0) {
+    if (sectionBlocksSave(flags, "showAssessmentConducted") && formData.assessmentConductedCatalogIds.length === 0) {
       newErrors.assessmentConductedCatalogIds = "Select at least one assessment, or turn the section off"
     }
 
     if (
-      flags.showAssessmentCategories &&
+      sectionBlocksSave(flags, "showAssessmentCategories") &&
       !Object.values(formData.categoryItems).some((v) => isCategoryItemTouched(v))
     ) {
       newErrors.categoriesItems = "Evaluate at least one item, or turn the section off"
     }
 
-    if (flags.showRecommendedServices && !formData.billingCodes.some((row) => !isBillingCodeEmpty(row))) {
+    if (sectionBlocksSave(flags, "showRecommendedServices") && !formData.billingCodes.some((row) => !isBillingCodeEmpty(row))) {
       newErrors.billingCodesSection = "Add at least one billing code, or turn the section off"
     }
 
-    if (flags.showProposedSchedule && !formData.proposedSchedule.some((row) => !isScheduleEmpty(row))) {
+    if (sectionBlocksSave(flags, "showProposedSchedule") && !formData.proposedSchedule.some((row) => !isScheduleEmpty(row))) {
       newErrors.proposedScheduleSection = "Add at least one schedule, or turn the section off"
     }
 
-    if (flags.showAbcDataRecording && !formData.abcData.some((row) => !isAbcEmpty(row))) {
+    if (sectionBlocksSave(flags, "showAbcDataRecording") && !formData.abcData.some((row) => !isAbcEmpty(row))) {
       newErrors.abcData = "Add at least one ABC row, or turn the section off"
     }
 
-    if (flags.showProvidersOnFile && !formData.providerFiles.some((row) => !isProviderFileEmpty(row))) {
+    if (sectionBlocksSave(flags, "showProvidersOnFile") && !formData.providerFiles.some((row) => !isProviderFileEmpty(row))) {
       newErrors.providerFiles = "Add at least one provider, or turn the section off"
     }
 
     // Narrativas: parten con el texto estándar precargado, así que encendidas
     // no pueden quedar vacías (create y edit por igual)
     for (const { key, flagKey, label } of ASSESSMENT_PDF_GENERAL_NARRATIVES) {
-      if (flags[flagKey] && !formData.pdfTexts[key].trim()) {
+      if (sectionBlocksSave(flags, flagKey) && !formData.pdfTexts[key].trim()) {
         newErrors[key] = `${label} cannot be empty while included in the PDF`
       }
     }
     for (const group of ASSESSMENT_PDF_STRATEGY_GROUPS) {
-      if (flags[group.flagKey] && group.fields.every(({ key }) => !formData.pdfTexts[key].trim())) {
+      if (sectionBlocksSave(flags, group.flagKey) && group.fields.every(({ key }) => !formData.pdfTexts[key].trim())) {
         newErrors[group.flagKey] = "Fill at least one strategy, or turn the section off"
       }
     }
