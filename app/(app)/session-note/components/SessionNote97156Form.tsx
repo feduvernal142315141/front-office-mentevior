@@ -406,6 +406,7 @@ export function SessionNote97156Form({
               value={formData.goals}
               onChange={(v) => updateField("goals", v)}
               onBlur={() => {}}
+              guidance={SESSION_NOTE_GUIDANCE["97156"].goals}
               rows={4}
               disabled={formDisabled}
               hasError={!!errors.goals}

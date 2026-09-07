@@ -12,6 +12,9 @@
  * - `97156 Session Template_1.03.pdf`
  *
  * Pendientes: 97151, 97152 y 97154 todavía no tienen formulario en el front.
+ *
+ * Excepción: `GOALS_97156` no viene del CASP — lo redactó la clínica. Está
+ * marcado en su comentario para que nadie lo "corrija" contra el PDF.
  */
 
 import type { FieldGuidance } from "./field-guidance"
@@ -151,6 +154,16 @@ const SESSION_SUMMARY_97156: FieldGuidance = {
   ],
 }
 
+/**
+ * Guía del campo Goals de 97156. **No sale del template CASP**: la redactó la
+ * clínica (pedido F6, 2026-09-05) y va en español a pedido expreso, aunque el
+ * resto de la interfaz esté en inglés.
+ */
+const GOALS_97156: FieldGuidance = {
+  intro:
+    "Describa brevemente qué habilidad, estrategia o componente del tratamiento se trabajó con el cuidador; qué se enseñó, explicó, modeló, practicó o revisó; cómo participó o respondió el cuidador; qué retroalimentación se proporcionó; y cualquier recomendación o próximo paso. Puede escribir de manera informal, utilizando frases cortas o viñetas.",
+}
+
 // ============================================
 // Índice por billing code
 // ============================================
@@ -166,6 +179,7 @@ export const SESSION_NOTE_GUIDANCE = {
     qhpNarrative: QHP_IMPLEMENTATION_97155,
   },
   "97156": {
+    goals: GOALS_97156,
     sessionSummary: SESSION_SUMMARY_97156,
   },
 } as const satisfies Record<string, Record<string, FieldGuidance>>

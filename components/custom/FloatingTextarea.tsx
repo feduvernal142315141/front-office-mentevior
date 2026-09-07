@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { FieldGuidance } from "@/lib/constants/field-guidance"
 import {
@@ -52,6 +52,40 @@ export function FloatingTextarea({
   // En una nota bloqueada/read-only la guía no aporta: el campo ya no se puede escribir
   const showHint = !value && !isFocused && !disabled
   const showGuidance = !!guidance && showHint
+
+  // ── Alto del campo cuando hay guía ──────────────────────────────────────────
+  // La guía se pinta como overlay adentro del campo, así que con el alto de
+  // `rows` las guías largas se cortaban. El campo crece hasta que la guía entra
+  // entera y vuelve a su alto normal recién al salir del campo: así el salto
+  // nunca ocurre bajo el cursor.
+  const guidanceContentRef = useRef<HTMLDivElement>(null)
+  const [guidanceHeight, setGuidanceHeight] = useState(0)
+
+  useLayoutEffect(() => {
+    const node = guidanceContentRef.current
+    if (!node) {
+      setGuidanceHeight(0)
+      return
+    }
+
+    const measure = () => setGuidanceHeight(node.scrollHeight)
+    measure()
+
+    // El texto se reacomoda al cambiar el ancho: hay que volver a medir
+    if (typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [guidance])
+
+  const rowsMinHeight = Math.max(100, rows * 24 + 24)
+  // pt-11 (44px) + pb-3 (12px) del overlay de guía
+  const guidanceMinHeight = guidanceHeight > 0 ? guidanceHeight + 56 : 0
+  const keepExpanded = !!guidance && (showGuidance || isFocused)
+  const minHeight = keepExpanded ? Math.max(rowsMinHeight, guidanceMinHeight) : rowsMinHeight
+  // Con el campo expandido la guía entra entera; el degradado queda de red de
+  // seguridad por si la medición falla (SSR, fuentes que todavía no cargaron).
+  const guidanceOverflows = guidanceMinHeight > minHeight
   // El placeholder nativo no se puede usar: el label flotante depende de
   // `placeholder=" "` + `placeholder:text-transparent`. Se pinta como overlay,
   // igual que la guía, y desaparece al enfocar.
@@ -82,11 +116,12 @@ export function FloatingTextarea({
             resize-y
 
             placeholder:text-transparent
+            transition-[min-height] duration-200 ease-out
           `,
             hasError && "premium-input-error",
             extraClassName,
           )}
-          style={{ minHeight: `${Math.max(100, rows * 24 + 24)}px` }}
+          style={{ minHeight: `${minHeight}px` }}
         />
 
         {guidance && (
@@ -100,9 +135,13 @@ export function FloatingTextarea({
               showGuidance ? "opacity-100" : "opacity-0",
             )}
           >
-            <GuidanceContent guidance={guidance} />
+            <div ref={guidanceContentRef}>
+              <GuidanceContent guidance={guidance} />
+            </div>
             {/* Degradado al color del input para cortar las guías largas sin tijeretazo */}
-            <div className="absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-[hsl(240_18%_96%)] via-[hsl(240_18%_96%)]/80 to-transparent" />
+            {guidanceOverflows && (
+              <div className="absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-[hsl(240_18%_96%)] via-[hsl(240_18%_96%)]/80 to-transparent" />
+            )}
           </div>
         )}
 
