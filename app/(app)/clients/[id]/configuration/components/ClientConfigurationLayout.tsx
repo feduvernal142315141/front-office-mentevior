@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ClipboardList, BarChart3, Sliders, ArrowLeft } from "lucide-react"
+import { ClipboardList, BarChart3, LineChart, Sliders, ArrowLeft } from "lucide-react"
 
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { useClientServicePlanById } from "@/lib/modules/client-service-plan/hooks/use-client-service-plan-by-id"
-import { useAlert } from "@/lib/contexts/alert-context"
+import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/custom/Button"
 
@@ -28,7 +28,6 @@ interface ClientConfigurationLayoutProps {
 export function ClientConfigurationLayout({ clientId, clientServicePlanId, initialSection, appointmentId, appointmentDate }: ClientConfigurationLayoutProps) {
   const router = useRouter()
   const { client, isLoading } = useClientById(clientId)
-  const alert = useAlert()
 
   const [activeSectionId, setActiveSectionId] = useState(
     initialSection === "data-collection" ? "data-collection" : "service-plan",
@@ -36,32 +35,23 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
   const [spId, setSpId] = useState<string | null>(clientServicePlanId)
   const { clientServicePlan } = useClientServicePlanById(spId ?? "")
   const [autoOpenItem, setAutoOpenItem] = useState<NavigateToItemRequest | null>(null)
-  const isItemDirtyRef = useRef(false)
+  const [isItemDirty, setIsItemDirty] = useState(false)
 
   const handleItemDirtyChange = useCallback((dirty: boolean) => {
-    isItemDirtyRef.current = dirty
+    setIsItemDirty(dirty)
   }, [])
 
-  const guardedSectionClick = useCallback((sectionId: string) => {
-    if (!isItemDirtyRef.current) {
-      setActiveSectionId(sectionId)
-      return
-    }
-    alert.confirm({
-      title: "Unsaved Changes",
-      description: "You have unsaved changes. Save them before leaving or discard to continue without saving.",
-      confirmText: "Save",
-      cancelText: "Cancel",
-      onConfirm: () => {
-        const form = document.querySelector<HTMLFormElement>("form")
-        form?.requestSubmit()
-      },
-      onCancel: () => {
-        isItemDirtyRef.current = false
-        setActiveSectionId(sectionId)
-      },
-    })
-  }, [alert])
+  const { guard } = useUnsavedChangesGuard({
+    isDirty: isItemDirty,
+    onSave: () => {
+      document.querySelector<HTMLFormElement>("form")?.requestSubmit()
+    },
+  })
+
+  const guardedSectionClick = useCallback(
+    (sectionId: string) => guard(() => setActiveSectionId(sectionId)),
+    [guard],
+  )
 
   const handleNavigateToItem = useCallback((request: NavigateToItemRequest) => {
     setAutoOpenItem(request)
@@ -130,6 +120,16 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
               Service plan and data collection configuration
             </p>
           </div>
+
+          {/* Puerta de entrada a la vista con todas las gráficas del cliente */}
+          <button
+            type="button"
+            onClick={() => guard(() => router.push(`/clients/${clientId}/charts`))}
+            className="shrink-0 inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-all hover:-translate-y-0.5 hover:border-[#037ECC]/40 hover:text-[#037ECC] hover:shadow-md"
+          >
+            <LineChart className="h-4 w-4" />
+            View all charts
+          </button>
         </div>
       </div>
 
