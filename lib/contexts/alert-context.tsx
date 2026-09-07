@@ -100,8 +100,10 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         description: options.description,
         confirmText: options.confirmText,
         cancelText: options.cancelText,
+        discardText: options.discardText,
         onConfirm: options.onConfirm,
         onCancel: options.onCancel,
+        onDiscard: options.onDiscard,
         autoCloseDuration: 0,
       })
     },
@@ -123,6 +125,11 @@ export function AlertProvider({ children }: { children: ReactNode }) {
       close()
     }
   }, [alert.onConfirm, close])
+
+  const handleDiscard = useCallback(() => {
+    alert.onDiscard?.()
+    close()
+  }, [alert.onDiscard, close])
 
   const handleClose = useCallback(() => {
     if (alert.type === "confirm" && alert.onCancel) {
@@ -160,6 +167,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         alert={alert}
         onClose={handleClose}
         onConfirm={handleConfirm}
+        onDiscard={handleDiscard}
       />
     </AlertContext.Provider>
   )

@@ -7,6 +7,8 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { parseLocalDate } from "@/lib/date"
 import { CustomModal } from "@/components/custom/CustomModal"
+import { useDirtyBaseline } from "@/lib/hooks/use-dirty-baseline"
+import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -508,10 +510,17 @@ export function GenerateObjectivesModal({
     onClose()
   }, [form, isPercentType, previewNames, criteriaValues, dataCollectionTypeName, onGenerate, onClose])
 
+  // ── Cambios sin guardar ─────────────────────────────────────────────────
+  const formSnapshot = useMemo(() => JSON.stringify(form), [form])
+  const { hasChanges } = useDirtyBaseline({ ready: open, snapshot: formSnapshot })
+
+  const { guard } = useUnsavedChangesGuard({ isDirty: hasChanges, onSave: handleGenerate })
+  const requestClose = useCallback(() => guard(onClose), [guard, onClose])
+
   return (
     <CustomModal
       open={open}
-      onOpenChange={(next) => { if (!next) onClose() }}
+      onOpenChange={(next) => { if (!next) requestClose() }}
       title={editMode ? "Edit All Objectives" : "Generate Objectives"}
       titleAccessory={
         <span
@@ -741,7 +750,7 @@ export function GenerateObjectivesModal({
 
       {/* Footer */}
       <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-        <Button type="button" variant="secondary" onClick={onClose}>
+        <Button type="button" variant="secondary" onClick={requestClose}>
           Cancel
         </Button>
         <Button type="button" onClick={handleGenerate} disabled={previewNames.length === 0}>

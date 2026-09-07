@@ -6,8 +6,15 @@ export interface AlertConfig {
   description?: string
   confirmText?: string
   cancelText?: string
+  /**
+   * Tercera salida, opcional. Cuando viene, el confirm pasa a tener tres
+   * botones —Cancel · Discard · <confirmText>— en vez de dos. Sin ella el
+   * diálogo se comporta exactamente como siempre.
+   */
+  discardText?: string
   onConfirm?: () => void | Promise<void>
   onCancel?: () => void
+  onDiscard?: () => void
   autoCloseDuration?: number
 }
 
@@ -35,8 +42,11 @@ export interface ConfirmOptions {
   description?: string
   confirmText?: string
   cancelText?: string
+  /** Ver `AlertConfig.discardText`: habilita el tercer botón */
+  discardText?: string
   onConfirm: () => void | Promise<void>
   onCancel?: () => void
+  onDiscard?: () => void
 }
 
 export const ALERT_DEFAULTS: Record<AlertType, { title: string; autoClose: number }> = {

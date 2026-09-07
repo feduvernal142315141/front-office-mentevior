@@ -13,7 +13,7 @@ import { ItemDetailPanel } from "./ItemDetailPanel"
 import { useClientServicePlanCategoryItems } from "../../service-plan/hooks/useClientServicePlanCategoryItems"
 import { useClientServicePlanConfiguration } from "../../service-plan/hooks/useClientServicePlanConfiguration"
 import { useDataCollectionDrawerController } from "../../service-plan/hooks/useDataCollectionDrawerController"
-import { useAlert } from "@/lib/contexts/alert-context"
+import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import type { NavigateToItemRequest } from "./DataCollectionContent"
 
 // State for the inline item detail panel
@@ -61,42 +61,23 @@ export function ServicePlanConfigView({ spId, autoOpenItem, onAutoOpenItemConsum
   })
 
   const dcDrawer = useDataCollectionDrawerController()
-  const alert = useAlert()
 
   const [isAddItemsDrawerOpen, setIsAddItemsDrawerOpen] = useState(false)
   const [selectedItemDetail, setSelectedItemDetail] = useState<SelectedItemDetail | null>(null)
-  const isItemDirtyRef = useRef(false)
+  const [isItemDirty, setIsItemDirty] = useState(false)
 
   const handleItemDirtyChange = useCallback((dirty: boolean) => {
-    isItemDirtyRef.current = dirty
+    setIsItemDirty(dirty)
     onItemDirtyChange?.(dirty)
   }, [onItemDirtyChange])
 
-  const guardedAction = useCallback(
-    (action: () => void) => {
-      if (!isItemDirtyRef.current) {
-        action()
-        return
-      }
-      alert.confirm({
-        title: "Unsaved Changes",
-        description: "You have unsaved changes. Save them before leaving or discard to continue without saving.",
-        confirmText: "Save",
-        cancelText: "Cancel",
-        onConfirm: () => {
-          // Trigger the item form save programmatically
-          const form = document.querySelector<HTMLFormElement>("form")
-          form?.requestSubmit()
-        },
-        onCancel: () => {
-          isItemDirtyRef.current = false
-          onItemDirtyChange?.(false)
-          action()
-        },
-      })
+  const { guard: guardedAction } = useUnsavedChangesGuard({
+    isDirty: isItemDirty,
+    onSave: () => {
+      // El form del item se envía por su propio submit
+      document.querySelector<HTMLFormElement>("form")?.requestSubmit()
     },
-    [alert, onItemDirtyChange]
-  )
+  })
 
   // Guarded category selection
   const handleSelectCategory = useCallback(

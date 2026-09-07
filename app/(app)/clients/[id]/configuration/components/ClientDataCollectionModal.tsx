@@ -18,6 +18,8 @@ import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
 
 import { CustomModal } from "@/components/custom/CustomModal"
+import { useDirtyBaseline } from "@/lib/hooks/use-dirty-baseline"
+import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import { Tabs, type TabItem } from "@/components/custom/Tabs"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -174,6 +176,7 @@ export function ClientDataCollectionModal({
 
   // --- Load / save state ---
   const [isLoading, setIsLoading] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [config, setConfig] = useState<DataCollectionConfig | null>(null)
   const [itemConfig, setItemConfig] = useState<ItemDataCollectionConfig | null>(null)
@@ -227,7 +230,7 @@ export function ClientDataCollectionModal({
     setValue,
     getValues,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty: isFormDirty },
   } = useForm<ClientDataCollectionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -548,6 +551,7 @@ export function ClientDataCollectionModal({
         toast.success("Item configuration saved")
       }
 
+      rebaseline()
       onSaved()
       onClose()
     } catch {
@@ -589,9 +593,30 @@ export function ClientDataCollectionModal({
     if (current > 1) setValue("intervalLength", current - 1)
   }
 
+  // ── Cambios sin guardar ─────────────────────────────────────────────────
+  // Lo que el usuario carga acá (data collection, chart, baselines, objectives
+  // y recomendaciones) se perdía sin aviso al cerrar el modal.
+  const extrasSnapshot = useMemo(
+    () => JSON.stringify({ baselines, objectives, recommendations, objetiveType }),
+    [baselines, objectives, recommendations, objetiveType],
+  )
+
+  const { isBaselineReady, hasChanges: hasExtraChanges, rebaseline } = useDirtyBaseline({
+    ready: open && !isLoading && !!config && !isLoadingCatalog,
+    snapshot: extrasSnapshot,
+    onBaseline: () => reset(getValues()),
+  })
+
+  const hasUnsavedChanges = isBaselineReady && (isFormDirty || hasExtraChanges)
+
+  const { guard } = useUnsavedChangesGuard({
+    isDirty: hasUnsavedChanges && !isSaving,
+    onSave: () => formRef.current?.requestSubmit(),
+  })
+
   const handleClose = () => {
     if (isSaving) return
-    onClose()
+    guard(onClose)
   }
 
   // --- Modal title ---
@@ -1054,7 +1079,7 @@ export function ClientDataCollectionModal({
           <Loader2 className="h-7 w-7 animate-spin text-[#037ECC]" />
         </div>
       ) : (
-        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <form ref={formRef} onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Item header fields */}
           {mode === "item" && (
             <div className="shrink-0 space-y-3 px-6 pt-3 pb-2">

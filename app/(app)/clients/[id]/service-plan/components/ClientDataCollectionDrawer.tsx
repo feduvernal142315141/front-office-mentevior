@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Loader2 } from "lucide-react"
@@ -8,6 +8,7 @@ import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
 
 import { ClientDataCollectionForm } from "./data-collection/ClientDataCollectionForm"
+import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 
 import {
   deleteClientCategoryLevel,
@@ -76,6 +77,19 @@ export function ClientDataCollectionDrawer({
   const [config, setConfig] = useState<DataCollectionConfig | null>(null)
   const [itemConfig, setItemConfig] = useState<ItemDataCollectionConfig | null>(null)
   const [chartLayout, setChartLayout] = useState({ datasetCount: 0, isOpen: false })
+  // Lo reporta el form: sin esto, cerrar el drawer tiraba lo cargado sin aviso
+  const [isFormDirty, setIsFormDirty] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  const { guard } = useUnsavedChangesGuard({
+    isDirty: isFormDirty && !isSaving,
+    onSave: () => formRef.current?.requestSubmit(),
+  })
+
+  const requestClose = useCallback(() => {
+    if (isSaving) return
+    guard(onClose)
+  }, [guard, isSaving, onClose])
 
   const maxWidthPx = useMemo(
     () =>
@@ -213,7 +227,7 @@ export function ClientDataCollectionDrawer({
     <Drawer
       open={open}
       onOpenChange={(o) => {
-        if (!o) onClose()
+        if (!o) requestClose()
       }}
       direction="right"
     >
@@ -251,7 +265,9 @@ export function ClientDataCollectionDrawer({
             onSave={handleSave}
             onDeleteLevel={handleDeleteLevel}
             onChartLayoutChange={setChartLayout}
-            onCancel={onClose}
+            onDirtyChange={setIsFormDirty}
+            formRef={formRef}
+            onCancel={requestClose}
             isSaving={isSaving}
           />
         )}

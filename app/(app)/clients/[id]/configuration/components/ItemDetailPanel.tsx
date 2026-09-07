@@ -24,7 +24,7 @@ import { Button } from "@/components/custom/Button"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 
-import { useAlert } from "@/lib/contexts/alert-context"
+import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import { useTeachingProcedureCatalog } from "@/lib/modules/client-service-plan/hooks/use-teaching-procedure-catalog"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
@@ -268,7 +268,6 @@ export function ItemDetailPanel({
   )
 
   // --- Form ---
-  const alert = useAlert()
 
   const {
     control,
@@ -464,29 +463,13 @@ export function ItemDetailPanel({
   const formRef = useRef<HTMLFormElement>(null)
 
   // Guard navigation when dirty
-  const guardedNavigate = useCallback(
-    (action: () => void) => {
-      if (!hasUnsavedChanges) {
-        action()
-        return
-      }
-      alert.confirm({
-        title: "Unsaved Changes",
-        description: "You have unsaved changes. Save them before leaving or discard to continue without saving.",
-        confirmText: "Save",
-        cancelText: "Cancel",
-        onConfirm: () => {
-          // Trigger form submission programmatically (save then navigate)
-          formRef.current?.requestSubmit()
-        },
-        onCancel: () => {
-          // Discard and navigate
-          action()
-        },
-      })
+  const { guard: guardedNavigate } = useUnsavedChangesGuard({
+    isDirty: hasUnsavedChanges,
+    onSave: () => {
+      // Save, then the submit handler navigates away
+      formRef.current?.requestSubmit()
     },
-    [hasUnsavedChanges, alert]
-  )
+  })
 
   // --- Watched values ---
   const watchedType = watch("type")

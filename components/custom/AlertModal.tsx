@@ -58,9 +58,10 @@ interface AlertModalProps {
   alert: AlertState
   onClose: () => void
   onConfirm: () => void
+  onDiscard?: () => void
 }
 
-export function AlertModal({ alert, onClose, onConfirm }: AlertModalProps) {
+export function AlertModal({ alert, onClose, onConfirm, onDiscard }: AlertModalProps) {
   const { Icon, iconBg, iconBorder, iconColor } = ICON_MAP[alert.type]
   const primaryActionVariant = "primary"
   const isError = alert.type === "error"
@@ -149,18 +150,31 @@ export function AlertModal({ alert, onClose, onConfirm }: AlertModalProps) {
                     )}
                   </div>
 
-                  <div className="flex w-full items-center justify-end gap-3">
+                  <div className="flex w-full flex-wrap items-center justify-end gap-3">
                     {alert.type === "confirm" ? (
                       <>
                         <AlertDialogCancel asChild>
-                          <Button variant="secondary" className="min-w-[120px]">
+                          <Button variant="secondary" className="min-w-[110px]">
                             {alert.cancelText ?? "Cancel"}
                           </Button>
                         </AlertDialogCancel>
+                        {alert.onDiscard && (
+                          <Button
+                            variant="secondary"
+                            className="min-w-[110px] border-[hsl(var(--destructive)/0.35)] text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.06)] hover:border-[hsl(var(--destructive)/0.55)]"
+                            disabled={alert.isConfirming}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              onDiscard?.()
+                            }}
+                          >
+                            {alert.discardText ?? "Discard"}
+                          </Button>
+                        )}
                         <AlertDialogAction asChild>
                           <Button
                             variant={primaryActionVariant}
-                            className={primaryButtonClassName}
+                            className={`min-w-[110px] ${primaryButtonClassName ?? ""}`}
                             disabled={alert.isConfirming}
                             onClick={(e) => {
                               e.preventDefault()

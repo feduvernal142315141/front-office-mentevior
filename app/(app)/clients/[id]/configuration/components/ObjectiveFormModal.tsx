@@ -1,9 +1,11 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "@/lib/compat/sonner"
 
 import { CustomModal } from "@/components/custom/CustomModal"
+import { useDirtyBaseline } from "@/lib/hooks/use-dirty-baseline"
+import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
@@ -157,6 +159,14 @@ export function ObjectiveFormModal({
     onClose()
   }, [form, onSave, onClose])
 
+  // ── Cambios sin guardar ─────────────────────────────────────────────────
+  const formSnapshot = useMemo(() => JSON.stringify(form), [form])
+  const { hasChanges } = useDirtyBaseline({ ready: open, snapshot: formSnapshot })
+
+  const { guard } = useUnsavedChangesGuard({ isDirty: hasChanges, onSave: handleSave })
+
+  const requestClose = useCallback(() => guard(onClose), [guard, onClose])
+
   const handleDelete = useCallback(async () => {
     if (!objective) return
     if (objective.recordId) {
@@ -195,7 +205,7 @@ export function ObjectiveFormModal({
   return (
     <CustomModal
       open={open}
-      onOpenChange={(next) => { if (!next) onClose() }}
+      onOpenChange={(next) => { if (!next) requestClose() }}
       title={isEdit ? "Edit Objective" : "New Objective"}
       maxWidthClassName="sm:max-w-[720px]"
       allowSelectOverflow
@@ -304,7 +314,7 @@ export function ObjectiveFormModal({
           )}
         </div>
         <div className="flex items-center gap-3">
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="secondary" onClick={requestClose}>
             Cancel
           </Button>
           <Button type="button" onClick={handleSave}>

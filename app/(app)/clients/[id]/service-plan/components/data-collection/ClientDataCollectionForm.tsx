@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useDirtyBaseline } from "@/lib/hooks/use-dirty-baseline"
 import { ChevronDown, Minus, Plus } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
@@ -94,6 +95,10 @@ interface ClientDataCollectionFormProps {
   onDeleteLevel?: (level: DataCollectionLevel) => Promise<void>
   onChartLayoutChange?: (layout: { datasetCount: number; isOpen: boolean }) => void
   onCancel: () => void
+  /** Avisa al contenedor si hay algo cargado sin guardar (para el aviso al cerrar) */
+  onDirtyChange?: (dirty: boolean) => void
+  /** Deja que el contenedor dispare el submit desde el diálogo de cambios sin guardar */
+  formRef?: React.Ref<HTMLFormElement>
   isSaving: boolean
 }
 
@@ -108,6 +113,8 @@ export function ClientDataCollectionForm({
   onDeleteLevel,
   onChartLayoutChange,
   onCancel,
+  onDirtyChange,
+  formRef,
   isSaving,
 }: ClientDataCollectionFormProps) {
   const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } =
@@ -143,7 +150,7 @@ export function ClientDataCollectionForm({
     setValue,
     getValues,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty: isFormDirty },
   } = useForm<ClientDataCollectionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -180,6 +187,21 @@ export function ClientDataCollectionForm({
     })
     setRecommendations(initialConfig.recommendations ?? defaultRecommendations)
   }, [initialConfig, initialTopography, initialActive, reset])
+
+  // ── Cambios sin guardar ─────────────────────────────────────────────────
+  const extrasSnapshot = useMemo(() => JSON.stringify(recommendations), [recommendations])
+
+  const { isBaselineReady, hasChanges: hasExtraChanges } = useDirtyBaseline({
+    ready: !isLoadingCatalog,
+    snapshot: extrasSnapshot,
+    onBaseline: () => reset(getValues()),
+  })
+
+  const hasUnsavedChanges = isBaselineReady && (isFormDirty || hasExtraChanges)
+
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges)
+  }, [hasUnsavedChanges, onDirtyChange])
 
   const [openSection, setOpenSection] = useState<"data" | "chart" | "recommendations" | null>(
     "data"
@@ -300,7 +322,7 @@ export function ClientDataCollectionForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col h-full">
+    <form ref={formRef} onSubmit={onSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
         {/* --- Header section --- */}
         {mode === "item" && (
