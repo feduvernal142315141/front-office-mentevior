@@ -141,3 +141,11 @@ export const ASSESSMENT_PDF_CLIENT_RECORD_FLAGS: { key: AssessmentPdfFlagKey; la
   { key: "showDocumentsReviewed", label: "Documents Reviewed" },
   { key: "showServiceLocations", label: "Service Locations" },
 ]
+
+/**
+ * Lo que imprime el PDF cuando `currentMedicationsDenied` es `true` y la nota
+ * quedó vacía: el backend la resuelve así (contrato 2026-09-07). Acá se usa de
+ * placeholder, para que el proveedor lea lo que va a salir sin tener que escribirlo.
+ */
+export const CURRENT_MEDICATIONS_DENIED_DEFAULT_NOTE =
+  "Caregiver denied any medications at this time"

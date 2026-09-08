@@ -335,6 +335,8 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     backgroundSelfAdvocacy: str(raw.backgroundSelfAdvocacy),
     backgroundSelfPreservationSkills: str(raw.backgroundSelfPreservationSkills),
     backgroundMotorSkills: str(raw.backgroundMotorSkills),
+    currentMedicationsDenied: raw.currentMedicationsDenied === true,
+    currentMedicationsNote: str(raw.currentMedicationsNote),
     currentMedications,
     observations,
     assessmentConductedList,

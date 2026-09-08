@@ -98,6 +98,9 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   previousAbaTherapy: string
   previousAgencyName: string
   // Collections
+  /** Contrato 2026-09-07: el caregiver declaró que no hay medicación */
+  currentMedicationsDenied: boolean
+  currentMedicationsNote: string
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
   assessmentConductedCatalogIds: string[]
@@ -178,6 +181,8 @@ const EMPTY_FORM: AssessmentFormData = {
   backgroundSelfAdvocacy: "",
   backgroundSelfPreservationSkills: "",
   backgroundMotorSkills: "",
+  currentMedicationsDenied: false,
+  currentMedicationsNote: "",
   currentMedications: [],
   observations: [],
   assessmentConductedCatalogIds: [],
@@ -369,6 +374,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       backgroundSelfAdvocacy: assessment.backgroundSelfAdvocacy ?? "",
       backgroundSelfPreservationSkills: assessment.backgroundSelfPreservationSkills ?? "",
       backgroundMotorSkills: assessment.backgroundMotorSkills ?? "",
+      currentMedicationsDenied: assessment.currentMedicationsDenied,
+      currentMedicationsNote: assessment.currentMedicationsNote,
       currentMedications: assessment.currentMedications ?? [],
       observations: assessment.observations ?? [],
       assessmentConductedCatalogIds: (assessment.assessmentConductedList ?? [])
@@ -654,8 +661,13 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       }
     }
 
-    if (sectionBlocksSave(flags, "showCurrentMedications") && !formData.currentMedications.some((m) => !isMedicationEmpty(m))) {
-      newErrors.currentMedications = "Add at least one medication, or turn the section off"
+    if (
+      sectionBlocksSave(flags, "showCurrentMedications") &&
+      !formData.currentMedicationsDenied &&
+      !formData.currentMedications.some((m) => !isMedicationEmpty(m))
+    ) {
+      newErrors.currentMedications =
+        "Add at least one medication, or check that the caregiver denied any"
     }
 
     if (sectionBlocksSave(flags, "showObservations") && !formData.observations.some((o) => !isObservationEmpty(o))) {
@@ -792,6 +804,20 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       backgroundSelfAdvocacy: formData.backgroundSelfAdvocacy.trim(),
       backgroundSelfPreservationSkills: formData.backgroundSelfPreservationSkills.trim(),
       backgroundMotorSkills: formData.backgroundMotorSkills.trim(),
+      currentMedicationsDenied: formData.currentMedicationsDenied,
+      /*
+       * Vacía = el backend imprime el texto estándar, así que no la mandamos
+       * rellenada por nosotros. Con la casilla apagada la nota no aplica: se manda
+       * `null` para que no quede un texto viejo colgado en el registro.
+       */
+      currentMedicationsNote: formData.currentMedicationsDenied
+        ? formData.currentMedicationsNote.trim() || null
+        : null,
+      /*
+       * Las filas viajan aunque la casilla esté marcada: el contrato dice que el
+       * PDF las ignora en ese caso, y borrarlas acá haría perder lo tipeado a quien
+       * marque la casilla por error.
+       */
       currentMedications: formData.currentMedications
         .filter((m) => !isMedicationEmpty(m))
         .map((m) => ({

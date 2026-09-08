@@ -243,6 +243,14 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields, Assessmen
   /** Sección Other Services del PDF; requeridos cuando `showOtherServices` es true */
   previousAbaTherapy: string
   previousAgencyName: string
+  /**
+   * Contrato 2026-09-07: el caregiver declaró que no hay medicación. Con `true` el
+   * PDF imprime la nota en vez de la tabla, aunque queden filas persistidas, y
+   * `currentMedications` deja de ser requerido.
+   */
+  currentMedicationsDenied: boolean
+  /** Vacía = el backend imprime el texto estándar. */
+  currentMedicationsNote: string | null
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
   assessmentConductedCatalogIds: string[]
@@ -330,6 +338,8 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | ""
   previousAbaTherapy: string
   previousAgencyName: string
+  currentMedicationsDenied: boolean
+  currentMedicationsNote: string
   currentMedications: AssessmentMedicationInput[]
   observations: AssessmentObservationInput[]
   assessmentConductedList: AssessmentConductedEntry[]

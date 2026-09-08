@@ -504,6 +504,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           medications={formData.currentMedications}
           hasError={!!errors.currentMedications}
           disabled={isSaving}
+          denied={formData.currentMedicationsDenied}
+          note={formData.currentMedicationsNote}
+          onDeniedChange={(denied) => updateField("currentMedicationsDenied", denied)}
+          onNoteChange={(note) => updateField("currentMedicationsNote", note)}
           onAdd={addMedication}
           onRemove={removeMedication}
           onUpdate={updateMedication}
