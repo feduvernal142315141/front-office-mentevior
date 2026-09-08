@@ -11,6 +11,7 @@
 | Front | [`plans/iteracion-2026-09-05-front.md`](./iteracion-2026-09-05-front.md) | Lo que se puede construir ya, sin backend y sin romper nada. Fases, archivos, riesgos y criterios de aceptación |
 | Backend | [`docs/pedidos-backend-2026-09-05.md`](../docs/pedidos-backend-2026-09-05.md) | Pedido formal a backend: contratos propuestos, justificación y criterios de aceptación |
 | Definiciones | [`plans/iteracion-2026-09-05-definiciones.md`](./iteracion-2026-09-05-definiciones.md) | Lo que está bloqueado por una decisión de producto, con las opciones y el impacto de cada una |
+| Entregado | [`docs/contratos-backend-2026-09-07.md`](../docs/contratos-backend-2026-09-07.md) | Los contratos que backend fue entregando: qué llegó, cómo se adaptó el front, qué faltó y qué preguntas siguen abiertas |
 
 ## Tabla maestra
 
@@ -26,11 +27,11 @@
 | **F9.5** | Billing Codes obligatorio en el PDF | Frank | Front | ✅ Hecho — [Front · Fase 2](./iteracion-2026-09-05-front.md#fase-2--assessment-secciones-obligatorias) |
 | **L1** | No perder lo cargado en un box; avisar si va a desechar o guardar | Lidia | Front | ✅ Infraestructura + 4 pantallas — [Front · Fase 3](./iteracion-2026-09-05-front.md#fase-3--guard-de-cambios-sin-guardar-l1) |
 | **L3** | Pantalla con todas las gráficas de maladaptive, replacements y caregivers | Lidia | Front (+ backend deseable) | ✅ Hecho — [Front · Fase 4](./iteracion-2026-09-05-front.md#fase-4--pantalla-de-todas-las-gráficas-l3) · [B7](../docs/pedidos-backend-2026-09-05.md#b7--endpoint-agregado-de-gráficas-por-cliente) |
-| **L2** | Environmental changes con 3 modos de visualización a elección del proveedor | Lidia | Front + Backend | 🔧 [B1](../docs/pedidos-backend-2026-09-05.md#b1--modo-de-visualización-de-environmental-changes-en-el-chart) |
-| **F2** | Más de un teaching procedure por item | Frank | Front + Backend | 🔧 [B2](../docs/pedidos-backend-2026-09-05.md#b2--teaching-procedure-de-uno-a-muchos) |
+| **L2** | Environmental changes con 3 modos de visualización a elección del proveedor | Lidia | Front + Backend | ⚠️ Entregado parcial (`3e7b6e7`) — falta la etiqueta corta · [detalle](../docs/contratos-backend-2026-09-07.md#b1--environmental-changes-display) |
+| **F2** | Más de un teaching procedure por item | Frank | Front + Backend | ✅ Hecho (`52a04b2`) · [detalle](../docs/contratos-backend-2026-09-07.md#b2--teaching-procedures-e-hypothesized-functions) |
 | **F8** | Lista de Other providers debajo de Providers en el cliente | Frank | Front + Backend | 🔧 [B3](../docs/pedidos-backend-2026-09-05.md#b3--other-providers-asociados-al-cliente) |
 | **F9.2b** | Medical history: ver y editar el diagnóstico en pantalla | Frank | Front + Backend | 🔧 [B4](../docs/pedidos-backend-2026-09-05.md#b4--diagnóstico-del-assessment-visible-y-editable) |
-| **F9.3** | Current medications: checkmark "caregiver denied any medications at this time" | Frank | Front + Backend | 🔧 [B5](../docs/pedidos-backend-2026-09-05.md#b5--caregiver-denied-any-medications-at-this-time) |
+| **F9.3** | Current medications: checkmark "caregiver denied any medications at this time" | Frank | Front + Backend | ✅ Hecho (`d1d2901`) · [detalle](../docs/contratos-backend-2026-09-07.md#b5--current-medications-denied) |
 | **F9.6** | Providers del assessment: BCBA halado del service plan + other providers con especialidad | Frank | Front + Backend | 🔧 [B6](../docs/pedidos-backend-2026-09-05.md#b6--providers-del-assessment-halados-del-service-plan) |
 | **F10** | Other services: Speech / OT / PT / Feeding (yes/no) + other + lugar | Frank | Front + Backend | 🔧 [B8](../docs/pedidos-backend-2026-09-05.md#b8--other-services-terapias-activas) |
 | **F11** | Halar todo el service plan al assessment (pantalla + PDF) | Frank | Front + Backend | 🔧 [B9](../docs/pedidos-backend-2026-09-05.md#b9--assessment-data-completo-del-service-plan) |
@@ -44,6 +45,30 @@
 | **L1.x** | ¿En qué pantallas se perdió lo cargado? | Lidia | Definición | ❓ [D5](./iteracion-2026-09-05-definiciones.md#d5--qué-boxes-perdieron-información-l1) |
 | **F4/F5/F6** | ¿Los textos de guía van en español o traducidos al inglés? | Frank | Definición | ❓ [D6](./iteracion-2026-09-05-definiciones.md#d6--idioma-de-los-textos-de-guía-f4-f5-f6) |
 | **F4.x** | En 97155 hay 4 cuadros ABC — ¿el texto va a los cuatro? | Frank | Definición | ❓ [D7](./iteracion-2026-09-05-definiciones.md#d7--los-cuatro-cuadros-abc-de-97155-f4) |
+
+## Estado — 2026-09-08
+
+**13 de 24 pedidos cerrados.** El bloque de front entró completo el 2026-09-05 (8 pedidos) y
+backend entregó tres contratos el 2026-09-07, ya adaptados: **F2** y **F9.3** quedaron
+cerrados y **L2** quedó a medias — llegó el modo de visualización pero no la etiqueta corta
+por cambio, así que el modo `LABEL` numera los cambios en vez de mostrar el texto del
+proveedor. El detalle de los tres, más el contrato de Claim.MD que backend entregó por su
+cuenta, está en
+[`docs/contratos-backend-2026-09-07.md`](../docs/contratos-backend-2026-09-07.md).
+
+### Lo que queda
+
+**Esperando backend — 9 pedidos:** B3 (F8), B4 (F9.2b), B6 (F9.6), B7 (L3, mejora), B8 (F10),
+B9 (F11), B10 (L4a), B11 (L4b), B12 (L5). Más el campo faltante de B1 y la regresión de la
+columna Status de Claim.MD.
+
+**Esperando definición — 3 pedidos:** D1 (F3), D2 (F5), D3 (F12). Más D5, que prioriza lo
+único que quedó a medias del bloque de front: el guard en los modales del wizard del cliente.
+
+**Orden sugerido:** contestar D1, D2 y D3 —son de un renglón y destraban front puro— y
+empujar B9, que es el que más pantallas destraba de una sola vez.
+
+---
 
 ## Estado — 2026-09-05
 

@@ -5,6 +5,31 @@
 > nada de lo que ya funciona.** Todo lo que toca un endpoint va en
 > [`docs/pedidos-backend-2026-09-05.md`](../docs/pedidos-backend-2026-09-05.md).
 
+## Fase 5 — adaptación a los contratos del 2026-09-07
+
+Fuera del plan original: backend entregó cuatro contratos el 2026-09-07 y el front se adaptó
+el mismo día. No cambia nada de las cuatro fases de abajo; lo que hizo fue cerrar **F2** y
+**F9.3**, dejar **L2** a medias y sumar el trabajo de Claim.MD.
+
+| Contrato | Commit | Estado |
+|---|---|---|
+| Claim.MD payer catalog | `db8d885` | ✅ Adaptado — queda una regresión de backend (la columna Status) |
+| B2 · teaching procedures + hypothesized functions | `52a04b2` | ✅ Completo |
+| B5 · current medications denied | `d1d2901` | ✅ Completo |
+| B1 · environmental changes display | `3e7b6e7` | ⚠️ Parcial — falta `environmentalChangesLabel` |
+| Estilo de los MultiSelect nuevos | `0de0fab`, `a3ed586` | ✅ Alineado con el formulario de Users |
+
+Todo el detalle —qué llegó, qué se decidió y por qué, qué preguntas quedaron abiertas— en
+[`docs/contratos-backend-2026-09-07.md`](../docs/contratos-backend-2026-09-07.md).
+
+**Además, un bug encontrado y corregido** (`84ae435`): volver de la pantalla de gráficas a
+Configuration perdía el `spId` de la URL y la configuración abría en "No service plan
+assigned". El botón de entrada ahora lleva el `spId` a la URL de Charts y de ahí sale en los
+dos links de vuelta; si se entra a `/charts` por link directo, la vista avisa cuál service
+plan resolvió y los links igual lo llevan.
+
+---
+
 ## ✅ Estado — implementado 2026-09-05
 
 Las cuatro fases están construidas. `tsc` y `next build` pasan. Lo que se desvió del plan

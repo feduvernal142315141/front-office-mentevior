@@ -7,15 +7,24 @@
 > **contrato propuesto** (borrador, abierto a que backend lo ajuste) y **criterios de
 > aceptación**. Los ids `B*` se usan en el índice y en los commits.
 
+## Estado — 2026-09-08
+
+**B1, B2 y B5 fueron entregados el 2026-09-07 y ya están adaptados en el front.** Lo que
+llegó, cómo se adaptó, qué faltó y qué preguntas quedaron abiertas está en
+[`docs/contratos-backend-2026-09-07.md`](./contratos-backend-2026-09-07.md).
+
+B1 quedó **parcial**: llegó el modo de visualización pero no la etiqueta corta por cambio.
+Los otros nueve puntos siguen sin respuesta.
+
 ## Resumen
 
 | Id | Pedido | Endpoints tocados | Prioridad |
 |---|---|---|---|
-| [B1](#b1--modo-de-visualización-de-environmental-changes-en-el-chart) | Modo de visualización de environmental changes | `PUT`/`GET` `…category-item/level`, `…category/level` | Alta |
-| [B2](#b2--teaching-procedure-de-uno-a-muchos) | Varios teaching procedures por item | `PUT`/`GET` `…category-item/level` | Alta |
+| [B1](#b1--modo-de-visualización-de-environmental-changes-en-el-chart) | Modo de visualización de environmental changes | `PATCH …/{id}/environmental-changes` (nuevo) | ⚠️ Entregado parcial 2026-09-07 |
+| [B2](#b2--teaching-procedure-de-uno-a-muchos) | Varios teaching procedures por item | `PUT`/`GET` `…category-item/level` | ✅ Entregado 2026-09-07 |
 | [B3](#b3--other-providers-asociados-al-cliente) | Other providers asociados al cliente | `/provider-on-file` (nuevos) | Alta |
 | [B4](#b4--diagnóstico-del-assessment-visible-y-editable) | Diagnóstico del assessment visible y editable | `POST`/`PUT`/`GET` `/assessments` | Media |
-| [B5](#b5--caregiver-denied-any-medications-at-this-time) | "Caregiver denied any medications at this time" | `POST`/`PUT`/`GET` `/assessments` | Media |
+| [B5](#b5--caregiver-denied-any-medications-at-this-time) | "Caregiver denied any medications at this time" | `POST`/`PUT`/`GET` `/assessments` | ✅ Entregado 2026-09-07 |
 | [B6](#b6--providers-del-assessment-halados-del-service-plan) | Providers del assessment halados del service plan | `/assessments` + `…/assessment-data` | Alta |
 | [B7](#b7--endpoint-agregado-de-gráficas-por-cliente) | Endpoint agregado de gráficas por cliente | nuevo `GET` | Media |
 | [B8](#b8--other-services-terapias-activas) | Other services: terapias activas | `POST`/`PUT`/`GET` `/assessments` | Media |
@@ -146,9 +155,23 @@ se prefiere el corte limpio, avisar con qué fecha y lo coordinamos.
 
 ### Criterios de aceptación
 
-- [ ] Un item puede guardarse con 0, 1 o N teaching procedures.
-- [ ] Un item que hoy tiene uno se lee con una lista de un elemento.
+- [x] Un item puede guardarse con 0, 1 o N teaching procedures.
+- [x] Un item que hoy tiene uno se lee con una lista de un elemento.
 - [ ] El PDF y cualquier reporte que hoy imprima el teaching procedure imprime todos.
+
+### ✅ Entregado el 2026-09-07
+
+Llegó completo, y con un extra que no habíamos pedido: **`hypothesizedFunction` también pasó
+a ser lista**, en el item y en el Assessment. Los GET devuelven los teaching procedures
+**resueltos** (`{ id, name }`), lo que nos ahorra el cruce contra el catálogo.
+
+Detalle de la adaptación y preguntas abiertas en
+[`docs/contratos-backend-2026-09-07.md`](./contratos-backend-2026-09-07.md#b2--teaching-procedures-e-hypothesized-functions).
+
+⚠️ **Aviso para otros consumidores:** el singular `teachingProcedureId` se sigue aceptando en
+el request pero **desapareció del response**. Una pantalla no migrada lee vacío y, al
+guardar, borra los teaching procedures del item. Nuestro front está migrado entero; conviene
+avisar al backoffice y a cualquier otro cliente del API.
 
 ---
 
@@ -268,9 +291,22 @@ tiene de dónde sacar la frase.
 
 ### Criterios de aceptación
 
-- [ ] Se puede guardar un assessment con `currentMedicationsDenied: true` y lista vacía.
-- [ ] El PDF imprime la frase en ese caso.
-- [ ] Con `false`, el PDF imprime la tabla como hoy.
+- [x] Se puede guardar un assessment con `currentMedicationsDenied: true` y lista vacía.
+- [x] El PDF imprime la frase en ese caso.
+- [x] Con `false`, el PDF imprime la tabla como hoy.
+
+### ✅ Entregado el 2026-09-07
+
+Llegó tal como se pidió, y resuelve el riesgo que habíamos marcado —el estado contradictorio
+de `denied: true` con la lista llena— del lado de la impresión: el PDF ignora las filas. Como
+el backend lo contempla, el front **no las borra**: borrarlas sólo serviría para que alguien
+que marca la casilla por error pierda lo que tipeó.
+
+Extra no pedido: el assessment automático del appointment **97151** arranca con
+`denied: true` si el cliente no tiene medicación activa.
+
+Detalle y preguntas abiertas en
+[`docs/contratos-backend-2026-09-07.md`](./contratos-backend-2026-09-07.md#b5--current-medications-denied).
 
 ---
 
