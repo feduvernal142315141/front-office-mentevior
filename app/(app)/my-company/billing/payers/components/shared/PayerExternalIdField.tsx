@@ -18,6 +18,40 @@ interface PayerExternalIdFieldProps {
   clearingHouseId: string
   searchText: string
   payerState?: string
+  /**
+   * Soporte del payer ya guardado, para rotularlo debajo del campo. `undefined` en
+   * cualquiera de los dos = el backend no se pronunció y no se pinta ese badge.
+   */
+  support?: { professionalClaims?: boolean; era?: boolean }
+  /** Motivo por el que el campo está bloqueado; se explica debajo. */
+  lockedReason?: string
+}
+
+/** Los dos badges que dicen para qué sirve este External ID en Claim.MD. */
+function SupportBadges({
+  professionalClaims,
+  era,
+}: {
+  professionalClaims?: boolean
+  era?: boolean
+}) {
+  const badges: string[] = []
+  if (professionalClaims) badges.push("1500")
+  if (era) badges.push("ERA")
+  if (badges.length === 0) return null
+
+  return (
+    <>
+      {badges.map((badge) => (
+        <span
+          key={badge}
+          className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700"
+        >
+          {badge}
+        </span>
+      ))}
+    </>
+  )
 }
 
 export function PayerExternalIdField({
@@ -31,6 +65,8 @@ export function PayerExternalIdField({
   clearingHouseId,
   searchText,
   payerState,
+  support,
+  lockedReason,
 }: PayerExternalIdFieldProps) {
   const [open, setOpen] = useState(false)
   const clickedInputRef = useRef(false)
@@ -182,9 +218,15 @@ export function PayerExternalIdField({
                     "hover:bg-[#037ECC]/5 border-b border-slate-100 last:border-b-0",
                   )}
                 >
-                  <div className="text-sm font-semibold text-slate-900">
-                    {item.externalPayerId}
-                    <span className="font-normal text-slate-500"> — {item.catalogName}</span>
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
+                    <span>
+                      {item.externalPayerId}
+                      <span className="font-normal text-slate-500"> — {item.catalogName}</span>
+                    </span>
+                    <SupportBadges
+                      professionalClaims={item.supportsProfessionalClaims}
+                      era={item.supportsEra}
+                    />
                   </div>
                   {(item.alternateNames?.length || item.payerState) && (
                     <p className="mt-1 text-xs text-slate-500">
@@ -197,6 +239,13 @@ export function PayerExternalIdField({
           )}
         </PopoverContent>
       </Popover>
+      {(support?.professionalClaims || support?.era) && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Claim.MD supports</span>
+          <SupportBadges professionalClaims={support.professionalClaims} era={support.era} />
+        </div>
+      )}
+      {lockedReason && <p className="mt-2 text-xs text-slate-500">{lockedReason}</p>}
       {!disabled && errorMessage && (
         <p className="text-sm text-red-600 mt-2">{errorMessage}</p>
       )}

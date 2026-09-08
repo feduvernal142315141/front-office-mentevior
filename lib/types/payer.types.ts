@@ -85,6 +85,17 @@ export interface Payer {
   payerPlans?: PayerPlanEmbed[]
   /** Enrollments de Claim.MD — presentes sólo en GET /payers/{id} (contrato 2026-08-29) */
   claimMdEnrollments?: ClaimMdEnrollment[]
+  /**
+   * Soporte del payer en el catálogo de Claim.MD (contrato 2026-09-07). Sólo llegan
+   * para payers de Claim.MD.
+   *
+   * `undefined` es **distinto** de `false`: significa que el backend no se pronunció
+   * —payer viejo, clearing house sin catálogo, External ID tipeado a mano— y ahí no
+   * escondemos nada, porque esconder por falta de dato deja al usuario sin forma de
+   * enrolarse. Sólo un `false` explícito oculta el botón.
+   */
+  supportsProfessionalClaims?: boolean
+  supportsEra?: boolean
   /** Legacy embedded plan fallback */
   payerPlan?: PayerPlanEmbed | null
   /** Legacy embedded rates fallback */
@@ -107,14 +118,16 @@ export interface PayerCatalogSearchItem {
   externalPayerId: string
   catalogName: string
   alternateNames?: string[]
-  professionalClaims?: boolean
-  institutionalClaims?: boolean
-  dentalClaims?: boolean
-  eligibilityStatus?: string
-  eraStatus?: string
-  attachmentsStatus?: string
+  /**
+   * Contrato 2026-09-07: la respuesta del catálogo se simplificó a estos dos flags.
+   * Reemplazan a `professionalClaims` y `eraStatus`, y quedaron fuera los de
+   * institutional, dental, eligibility y attachments, que nadie consumía.
+   */
+  supportsProfessionalClaims?: boolean
+  supportsEra?: boolean
   payerType?: string
-  payerState?: string
+  /** Puede venir `null` aunque el ejemplo del contrato muestre el estado. */
+  payerState?: string | null
 }
 
 export interface SearchPayerCatalogQuery {

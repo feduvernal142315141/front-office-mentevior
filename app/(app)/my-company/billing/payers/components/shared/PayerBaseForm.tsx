@@ -34,6 +34,14 @@ interface PayerBaseFormProps {
   onLogoClear?: () => void
   isCountryDisabled?: boolean
   readOnly?: boolean
+  /** Soporte de Claim.MD del payer guardado, para rotular el External ID. */
+  externalIdSupport?: { professionalClaims?: boolean; era?: boolean }
+  /**
+   * El External ID identifica al payer ante Claim.MD: una vez que hay un enrollment
+   * vivo, cambiarlo dejaría el enrollment apuntando a otro payer.
+   */
+  externalIdLocked?: boolean
+  externalIdLockedReason?: string
 }
 
 export function PayerBaseForm({
@@ -50,6 +58,9 @@ export function PayerBaseForm({
   onLogoClear,
   isCountryDisabled = false,
   readOnly = false,
+  externalIdSupport,
+  externalIdLocked = false,
+  externalIdLockedReason,
 }: PayerBaseFormProps) {
   const { control } = form
   const selectedCountryId = useWatch({ control, name: "countryId" })
@@ -377,11 +388,13 @@ export function PayerBaseForm({
               onBlur={field.onBlur}
               hasError={!!fieldState.error}
               errorMessage={fieldState.error?.message}
-              disabled={readOnly}
+              disabled={readOnly || externalIdLocked}
               required
               clearingHouseId={clearingHouseId ?? ""}
               searchText={payerName ?? ""}
               payerState={payerStateCode}
+              support={externalIdSupport}
+              lockedReason={externalIdLocked ? externalIdLockedReason : undefined}
             />
           )}
         />

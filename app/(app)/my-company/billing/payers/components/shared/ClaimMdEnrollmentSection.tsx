@@ -50,8 +50,24 @@ interface ClaimMdEnrollmentSectionProps {
   /** Sin `externalId` el backend rechaza el enrollment. */
   externalId: string | null | undefined
   enrollments: ClaimMdEnrollment[]
+  /**
+   * Soporte del payer en el catálogo de Claim.MD. `undefined` no es `false`: significa
+   * que el backend no se pronunció (payer viejo, o External ID tipeado a mano fuera del
+   * catálogo) y ahí seguimos ofreciendo el botón — esconderlo por falta de dato dejaría
+   * al usuario sin manera de enrolarse.
+   */
+  supportsProfessionalClaims?: boolean
+  supportsEra?: boolean
   canStart: boolean
   onStarted: () => void
+}
+
+/** Un enrollment rechazado no ocupa el lugar: se puede volver a intentar. */
+function hasLiveEnrollmentOfType(enrollments: ClaimMdEnrollment[], type: ClaimMdEnrollType) {
+  return enrollments.some(
+    (enrollment) =>
+      enrollment.enrollType.trim().toLowerCase() === type && enrollment.status !== "REJECTED",
+  )
 }
 
 export function ClaimMdEnrollmentSection({
@@ -60,6 +76,8 @@ export function ClaimMdEnrollmentSection({
   clearingHouseName,
   externalId,
   enrollments,
+  supportsProfessionalClaims,
+  supportsEra,
   canStart,
   onStarted,
 }: ClaimMdEnrollmentSectionProps) {
@@ -73,6 +91,16 @@ export function ClaimMdEnrollmentSection({
   if (!isClaimMd) return null
 
   const hasExternalId = Boolean(externalId?.trim())
+
+  /*
+   * El botón sale si el catálogo no lo descarta explícitamente y todavía no hay un
+   * enrollment vivo de ese tipo: la regla del backend es uno activo por
+   * compañía + payer + tipo, así que ofrecerlo de nuevo sólo lleva a un error.
+   */
+  const canEnroll1500 = supportsProfessionalClaims !== false && !hasLiveEnrollmentOfType(enrollments, "1500")
+  const canEnrollEra = supportsEra !== false && !hasLiveEnrollmentOfType(enrollments, "era")
+  const showAnyButton = canStart && (canEnroll1500 || canEnrollEra)
+  const unsupported = supportsProfessionalClaims === false && supportsEra === false
 
   const runStart = async (enrollType: ClaimMdEnrollType) => {
     const started = await start(payerId, enrollType)
@@ -121,40 +149,54 @@ export function ClaimMdEnrollmentSection({
             </div>
           </div>
 
-          {canStart && (
+          {showAnyButton && (
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                className="gap-2"
-                onClick={() => confirmStart("1500")}
-                disabled={isStarting || !hasExternalId}
-                title={hasExternalId ? undefined : "Set the payer's External ID first"}
-              >
-                {startingType === "1500" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ShieldCheck className="h-4 w-4" />
-                )}
-                Enroll 1500
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="gap-2"
-                onClick={() => confirmStart("era")}
-                disabled={isStarting || !hasExternalId}
-                title={hasExternalId ? undefined : "Set the payer's External ID first"}
-              >
-                {startingType === "era" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ShieldCheck className="h-4 w-4" />
-                )}
-                Enroll ERA
-              </Button>
+              {canEnroll1500 && (
+                <Button
+                  type="button"
+                  className="gap-2"
+                  onClick={() => confirmStart("1500")}
+                  disabled={isStarting || !hasExternalId}
+                  title={hasExternalId ? undefined : "Set the payer's External ID first"}
+                >
+                  {startingType === "1500" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-4 w-4" />
+                  )}
+                  Enroll 1500
+                </Button>
+              )}
+              {canEnrollEra && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="gap-2"
+                  onClick={() => confirmStart("era")}
+                  disabled={isStarting || !hasExternalId}
+                  title={hasExternalId ? undefined : "Set the payer's External ID first"}
+                >
+                  {startingType === "era" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-4 w-4" />
+                  )}
+                  Enroll ERA
+                </Button>
+              )}
             </div>
           )}
         </div>
+
+        {unsupported && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+            <p className="text-sm text-slate-600">
+              The Claim.MD catalog reports this payer as supporting neither professional claims
+              (1500) nor ERA, so there is nothing to enroll.
+            </p>
+          </div>
+        )}
 
         {!hasExternalId && (
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">

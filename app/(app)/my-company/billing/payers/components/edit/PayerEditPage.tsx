@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { useFieldArray, useForm, useWatch, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -107,6 +107,17 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
     setSelectedCountryId(watchCountryId || null)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchCountryId])
+
+  /*
+   * El External ID es lo que identifica al payer ante Claim.MD, así que con un
+   * enrollment vivo cambiarlo lo dejaría apuntando a otro payer. Los rechazados no
+   * cuentan: si el enrollment se cayó justamente porque el ID estaba mal, hay que
+   * poder corregirlo — si no, un tipeo deja al payer trabado para siempre.
+   */
+  const hasLiveEnrollment = useMemo(
+    () => (payer?.claimMdEnrollments ?? []).some((enrollment) => enrollment.status !== "REJECTED"),
+    [payer?.claimMdEnrollments],
+  )
 
   // Populate form with existing payer data
   useEffect(() => {
@@ -513,6 +524,12 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
                   isLoadingClearingHouses={isLoadingClearingHouses}
                   existingLogoUrl={payer?.logoUrl}
                   isCountryDisabled={Boolean(payer?.countryId)}
+                  externalIdSupport={{
+                    professionalClaims: payer?.supportsProfessionalClaims,
+                    era: payer?.supportsEra,
+                  }}
+                  externalIdLocked={hasLiveEnrollment}
+                  externalIdLockedReason="Locked: this payer already has a Claim.MD enrollment tied to this External ID."
                 />
               )}
             </div>
@@ -534,6 +551,8 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
               }
               externalId={payer.externalId}
               enrollments={payer.claimMdEnrollments ?? []}
+              supportsProfessionalClaims={payer.supportsProfessionalClaims}
+              supportsEra={payer.supportsEra}
               canStart={canCreatePayers}
               onStarted={() => void refetchPayer()}
             />
