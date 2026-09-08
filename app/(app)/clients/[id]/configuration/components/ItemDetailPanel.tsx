@@ -1096,33 +1096,47 @@ export function ItemDetailPanel({
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Environmental changes on the chart
               </p>
-              <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,320px)_1fr] sm:items-center">
-                <FloatingSelect
-                  label="Display"
-                  value={envChanges.displayMode}
-                  onChange={(value) =>
-                    setEnvChanges((prev) => ({
-                      ...prev,
-                      displayMode: value as EnvironmentalChangesDisplay["displayMode"],
-                    }))
-                  }
-                  options={ENVIRONMENTAL_CHANGES_DISPLAY_OPTIONS}
-                />
+              <p className="mt-1 text-xs text-slate-500">
+                How each environmental change is shown on this item’s chart.
+              </p>
+
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="w-full sm:max-w-[320px]">
+                  <FloatingSelect
+                    label="Show on the chart as"
+                    value={envChanges.displayMode}
+                    onChange={(value) =>
+                      setEnvChanges((prev) => ({
+                        ...prev,
+                        displayMode: value as EnvironmentalChangesDisplay["displayMode"],
+                      }))
+                    }
+                    options={ENVIRONMENTAL_CHANGES_DISPLAY_OPTIONS}
+                  />
+                </div>
+
                 <PremiumSwitch
+                  compact
                   checked={envChanges.showLegendBelow}
                   onCheckedChange={(checked) =>
                     setEnvChanges((prev) => ({ ...prev, showLegendBelow: checked }))
                   }
-                  label="List them below the chart"
+                  label="Also list them under the chart, with their dates"
                   /* En "List below only" no hay nada dibujado arriba: apagar el
                      listado dejaría los cambios sin ninguna representación. */
                   disabled={envChanges.displayMode === "LIST_ONLY"}
                 />
               </div>
+
               {envChanges.displayMode === "LABEL" && (
                 <p className="mt-3 text-xs text-slate-500">
-                  Each change is numbered on the chart (EC1, EC2…) and explained in the list
-                  below.
+                  Each change gets a tag on the chart — EC1, EC2… — and the list underneath
+                  says what each one was.
+                </p>
+              )}
+              {envChanges.displayMode === "LIST_ONLY" && (
+                <p className="mt-3 text-xs text-slate-500">
+                  Nothing is drawn on the chart, so the list stays on.
                 </p>
               )}
             </div>
