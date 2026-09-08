@@ -198,9 +198,22 @@ function normalizeClientCategoryMappedItem(raw: unknown): ClientServicePlanCateg
     order: asOptionalNumber(item.order ?? item.sortOrder ?? item.sort_order ?? item.position),
     hasDataCollection: asOptionalBoolean(item.hasDataCollection ?? item.has_data_collection),
     hasCustomDataCollection: asOptionalBoolean(item.hasCustomDataCollection ?? item.has_custom_data_collection),
-    teachingProcedureId: asOptionalString(
-      item.teachingProcedureId ?? item.teaching_procedure_id ?? item.teachingMethodId ?? item.teaching_method_id
-    ) ?? null,
+    // Contrato 2026-09-07: llegan resueltos y pueden ser varios. El id suelto de
+    // los entornos viejos se acepta como lista de uno, sin nombre — la pantalla lo
+    // resuelve contra el catálogo igual que antes.
+    teachingProcedures: Array.isArray(item.teachingProcedures)
+      ? (item.teachingProcedures as Array<Record<string, unknown>>)
+          .map((entry) => ({
+            id: asOptionalString(entry?.id) ?? "",
+            name: asOptionalString(entry?.name) ?? "",
+          }))
+          .filter((entry) => entry.id.length > 0)
+      : (() => {
+          const legacyId = asOptionalString(
+            item.teachingProcedureId ?? item.teaching_procedure_id ?? item.teachingMethodId ?? item.teaching_method_id
+          )
+          return legacyId ? [{ id: legacyId, name: "" }] : []
+        })(),
     baseline: Array.isArray(item.baseline) ? item.baseline as ClientServicePlanCategoryMappedItem["baseline"] : undefined,
     objetive: Array.isArray(item.objetive) ? item.objetive as ClientServicePlanCategoryMappedItem["objetive"] : undefined,
     dataCollection: (item.dataCollection && typeof item.dataCollection === "object") ? item.dataCollection as ClientServicePlanCategoryMappedItem["dataCollection"] : undefined,

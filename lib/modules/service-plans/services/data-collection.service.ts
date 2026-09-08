@@ -417,6 +417,11 @@ function fromApiItemResponse(
     categoryName: "",
     topography,
     active,
+    // El service plan de la compañía no configura teaching procedures ni funciones
+    // hipotetizadas: eso vive en el item del plan del cliente.
+    teachingProcedureIds: [],
+    teachingProcedures: [],
+    hypothesizedFunctions: [],
     isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
   }
 }

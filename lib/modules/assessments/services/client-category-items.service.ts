@@ -3,19 +3,20 @@ import type {
   ClientCategoryItemSummary,
   ClientCategoryWithItems,
 } from "@/lib/types/assessment.types"
-import { parseHypothesizedFunction } from "@/lib/constants/hypothesized-function"
+import { parseHypothesizedFunctions } from "@/lib/constants/hypothesized-function"
 
 /**
- * `hypothesizedFunction` es el valor configurado en el item del Service Plan y
- * hace de precarga del Assessment (contrato 2026-09-03); el usuario puede
- * cambiarlo para ese Assessment sin tocar el Service Plan.
+ * `hypothesizedFunction` son los valores configurados en el item del Service Plan
+ * y hacen de precarga del Assessment (contrato 2026-09-03, lista desde el
+ * 2026-09-07); el usuario puede cambiarlos para ese Assessment sin tocar el
+ * Service Plan.
  */
 function normalizeItem(raw: unknown): ClientCategoryItemSummary {
   const entry = (raw ?? {}) as Record<string, unknown>
   return {
     id: typeof entry.id === "string" ? entry.id : "",
     name: typeof entry.name === "string" ? entry.name : "",
-    hypothesizedFunction: parseHypothesizedFunction(entry.hypothesizedFunction),
+    hypothesizedFunctions: parseHypothesizedFunctions(entry.hypothesizedFunction),
   }
 }
 

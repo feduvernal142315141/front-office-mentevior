@@ -133,7 +133,11 @@ export function CategoryItemsPanel({
               <span className="w-[68px]" />
             </div>
             {items.map((item) => {
-              const tpName = item.teachingProcedureId ? teachingProcedureMap.get(item.teachingProcedureId) : undefined
+              // El backend ya los manda resueltos; el catálogo sólo cubre el caso
+              // de un entorno viejo que todavía devuelva el id suelto.
+              const tpNames = (item.teachingProcedures ?? [])
+                .map((tp) => tp.name || teachingProcedureMap.get(tp.id) || "")
+                .filter(Boolean)
               const typeId = item.dataCollection?.typeEventCatalogId ?? activeCategory.typeEventCatalogId
               const tName = typeId
                 ? (typeEventMap.get(typeId)?.name ?? activeCategory.typeEventCatalogName)
@@ -146,7 +150,7 @@ export function CategoryItemsPanel({
                   isAnyDeleting={deletingItemId !== null}
                   onDelete={onDeleteItem}
                   onConfigureDataCollection={onConfigureDataCollection}
-                  teachingProcedureName={tpName}
+                  teachingProcedureNames={tpNames}
                   typeName={tName}
                 />
               )

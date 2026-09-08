@@ -22,7 +22,7 @@ interface MappedItemRowProps {
   isAnyDeleting: boolean
   onDelete: (item: ClientServicePlanCategoryMappedItem) => void
   onConfigureDataCollection: (item: ClientServicePlanCategoryMappedItem) => void
-  teachingProcedureName?: string
+  teachingProcedureNames?: string[]
   typeName?: string
 }
 
@@ -32,7 +32,7 @@ export function MappedItemRow({
   isAnyDeleting,
   onDelete,
   onConfigureDataCollection,
-  teachingProcedureName,
+  teachingProcedureNames = [],
   typeName,
 }: MappedItemRowProps) {
   const { canDelete } = useModulePermissions(PermissionModule.CLIENTS)
@@ -86,8 +86,22 @@ export function MappedItemRow({
 
       {/* Teaching Procedure */}
       <div className="min-w-0">
-        {teachingProcedureName ? (
-          <span className="text-sm text-slate-700 truncate block">{teachingProcedureName}</span>
+        {teachingProcedureNames.length > 0 ? (
+          /*
+           * Un item puede tener varios (contrato 2026-09-07). La celda es angosta:
+           * se lee el primero y el resto se cuenta, con todos en el tooltip.
+           */
+          <span
+            className="block truncate text-sm text-slate-700"
+            title={teachingProcedureNames.join(", ")}
+          >
+            {teachingProcedureNames[0]}
+            {teachingProcedureNames.length > 1 && (
+              <span className="ml-1 text-xs text-slate-400">
+                +{teachingProcedureNames.length - 1}
+              </span>
+            )}
+          </span>
         ) : (
           <span className="text-xs text-slate-400">—</span>
         )}

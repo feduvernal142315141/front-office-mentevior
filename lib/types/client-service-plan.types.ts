@@ -1,3 +1,5 @@
+import type { TeachingProcedureRef } from "@/lib/types/data-collection.types"
+
 export interface ClientServicePlan {
   id: string
   clientId: string
@@ -99,7 +101,8 @@ export interface ClientServicePlanCategoryMappedItem {
   order?: number
   hasDataCollection?: boolean
   hasCustomDataCollection?: boolean
-  teachingProcedureId?: string | null
+  /** Contrato 2026-09-07: llegan resueltos y pueden ser varios. */
+  teachingProcedures?: TeachingProcedureRef[]
   baseline?: ClientServicePlanItemBaseline[]
   objetive?: ClientServicePlanItemObjective[]
   dataCollection?: ClientServicePlanItemDataCollection | null

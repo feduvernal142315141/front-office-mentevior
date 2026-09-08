@@ -94,6 +94,12 @@ export interface CategoryDataCollectionConfig extends DataCollectionConfig {
 /** How the item's objectives were authored (backend field name, sic) */
 export type ObjetiveType = "Mastery" | "STO"
 
+/** Teaching procedure ya resuelto por el backend (contrato 2026-09-07). */
+export interface TeachingProcedureRef {
+  id: string
+  name: string
+}
+
 export interface ItemDataCollectionConfig extends DataCollectionConfig {
   itemId: string
   itemName: string
@@ -101,9 +107,20 @@ export interface ItemDataCollectionConfig extends DataCollectionConfig {
   categoryName: string
   topography: string
   active: boolean
-  teachingProcedureId?: string | null
+  /**
+   * Contrato 2026-09-07: el item pasó a tener varios teaching procedures y el GET
+   * los devuelve **sólo** resueltos. Los ids salen de ahí; el singular viejo
+   * (`teachingProcedureId`) ya no viaja y sólo se lee como fallback en el mapper.
+   */
+  teachingProcedureIds: string[]
+  teachingProcedures: TeachingProcedureRef[]
   objetiveType?: ObjetiveType | null
-  hypothesizedFunction?: HypothesizedFunction | null
+  /**
+   * Contrato 2026-09-07: también pasó a ser lista. En la API la clave sigue
+   * llamándose `hypothesizedFunction` (singular) aunque lleve un array; acá va en
+   * plural para que el tipo no mienta. La traducción vive en el service.
+   */
+  hypothesizedFunctions: HypothesizedFunction[]
   isCustomOverride?: boolean
 }
 

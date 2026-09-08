@@ -17,6 +17,7 @@ import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-func
 
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { MultiSelect } from "@/components/custom/MultiSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { GroupedSelect } from "@/components/custom/GroupedSelect"
@@ -176,6 +177,15 @@ function snapshotRows<T extends { localId: string }>(rows: T[]): string {
   return JSON.stringify(rows.map(({ localId: _id, ...rest }) => rest))
 }
 
+/**
+ * Los multi-selects guardan una lista, así que el dirty-check compara contenido y
+ * no referencia. Ordenada: reordenar la selección no es un cambio para el backend,
+ * que reemplaza la colección completa.
+ */
+function snapshotSelection(values: readonly string[]): string {
+  return [...values].sort().join("|")
+}
+
 function fromISO(d: string): string {
   if (!d) return ""
   return d.includes("T") ? d.split("T")[0] : d
@@ -231,8 +241,8 @@ export function ItemDetailPanel({
   const [baselines, setBaselines] = useState<BaselineRow[]>([])
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [teachingProcedure, setTeachingProcedure] = useState("")
-  const [hypothesizedFunction, setHypothesizedFunction] = useState<HypothesizedFunction | "">("")
+  const [teachingProcedures, setTeachingProcedures] = useState<string[]>([])
+  const [hypothesizedFunctions, setHypothesizedFunctions] = useState<HypothesizedFunction[]>([])
   const [objetiveType, setObjetiveType] = useState<ObjetiveType | null>(null)
 
   // --- Catalogs ---
@@ -304,8 +314,8 @@ export function ItemDetailPanel({
       if (itemData) {
         setItemConfig(itemData)
         setConfig(itemData)
-        setTeachingProcedure(itemData.teachingProcedureId ?? "")
-        setHypothesizedFunction(itemData.hypothesizedFunction ?? "")
+        setTeachingProcedures(itemData.teachingProcedureIds)
+        setHypothesizedFunctions(itemData.hypothesizedFunctions)
         setObjetiveType(itemData.objetiveType ?? null)
         setBaselines(
           (itemData.baselines ?? []).map((b) => ({
@@ -338,8 +348,8 @@ export function ItemDetailPanel({
         const fallback: DataCollectionConfig = { type: "", levels: [] }
         setConfig(catData ? stripPersistedLevelIds(catData) : fallback)
         setItemConfig(null)
-        setTeachingProcedure("")
-        setHypothesizedFunction("")
+        setTeachingProcedures([])
+        setHypothesizedFunctions([])
         setObjetiveType(null)
         setBaselines([])
         setObjectives([])
@@ -360,19 +370,19 @@ export function ItemDetailPanel({
   // --- Dirty state tracking ---
   const baselinesSnapshotRef = useRef("")
   const objectivesSnapshotRef = useRef("")
-  const teachingProcedureSnapshotRef = useRef("")
-  const hypothesizedFunctionSnapshotRef = useRef<HypothesizedFunction | "">("")
+  const teachingProceduresSnapshotRef = useRef("")
+  const hypothesizedFunctionsSnapshotRef = useRef("")
 
   // While false, hasUnsavedChanges stays false (no footer flash on enter).
   const [initialized, setInitialized] = useState(false)
   const baselinesRef = useRef(baselines)
   const objectivesRef = useRef(objectives)
-  const teachingProcedureRef = useRef(teachingProcedure)
-  const hypothesizedFunctionRef = useRef(hypothesizedFunction)
+  const teachingProceduresRef = useRef(teachingProcedures)
+  const hypothesizedFunctionsRef = useRef(hypothesizedFunctions)
   baselinesRef.current = baselines
   objectivesRef.current = objectives
-  teachingProcedureRef.current = teachingProcedure
-  hypothesizedFunctionRef.current = hypothesizedFunction
+  teachingProceduresRef.current = teachingProcedures
+  hypothesizedFunctionsRef.current = hypothesizedFunctions
 
   const catalogsReady = !isLoadingCatalog && !isLoadingTeachingProcedures
 
@@ -395,8 +405,8 @@ export function ItemDetailPanel({
     reset(values)
     baselinesSnapshotRef.current = snapshotRows(baselinesRef.current)
     objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
-    teachingProcedureSnapshotRef.current = teachingProcedureRef.current
-    hypothesizedFunctionSnapshotRef.current = hypothesizedFunctionRef.current
+    teachingProceduresSnapshotRef.current = snapshotSelection(teachingProceduresRef.current)
+    hypothesizedFunctionsSnapshotRef.current = snapshotSelection(hypothesizedFunctionsRef.current)
     setInitialized(false)
 
     let cancelled = false
@@ -409,8 +419,8 @@ export function ItemDetailPanel({
         reset(getValues())
         baselinesSnapshotRef.current = snapshotRows(baselinesRef.current)
         objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
-        teachingProcedureSnapshotRef.current = teachingProcedureRef.current
-        hypothesizedFunctionSnapshotRef.current = hypothesizedFunctionRef.current
+        teachingProceduresSnapshotRef.current = snapshotSelection(teachingProceduresRef.current)
+        hypothesizedFunctionsSnapshotRef.current = snapshotSelection(hypothesizedFunctionsRef.current)
         setInitialized(true)
       })
     })
@@ -442,10 +452,11 @@ export function ItemDetailPanel({
   }, [objectives, initialized])
 
   const hasTeachingProcedureChanges =
-    initialized && teachingProcedure !== teachingProcedureSnapshotRef.current
+    initialized && snapshotSelection(teachingProcedures) !== teachingProceduresSnapshotRef.current
 
   const hasHypothesizedFunctionChanges =
-    initialized && hypothesizedFunction !== hypothesizedFunctionSnapshotRef.current
+    initialized &&
+    snapshotSelection(hypothesizedFunctions) !== hypothesizedFunctionsSnapshotRef.current
 
   const hasUnsavedChanges =
     initialized &&
@@ -609,8 +620,8 @@ export function ItemDetailPanel({
       await upsertClientItemDataCollection({
         clientServicePlanCategoryItemId,
         name: itemName,
-        teachingProcedureId: teachingProcedure || null,
-        hypothesizedFunction: hypothesizedFunction || null,
+        teachingProcedureIds: teachingProcedures,
+        hypothesizedFunctions,
         objetiveType: objetiveType ?? inferObjetiveType(objectives),
         type: values.type as DataCollectionType,
         weeklyDailyValue: values.weeklyDailyValue,
@@ -631,8 +642,8 @@ export function ItemDetailPanel({
       // Reset dirty state BEFORE navigating away
       baselinesSnapshotRef.current = snapshotRows(baselines)
       objectivesSnapshotRef.current = snapshotRows(objectives)
-      teachingProcedureSnapshotRef.current = teachingProcedure
-      hypothesizedFunctionSnapshotRef.current = hypothesizedFunction
+      teachingProceduresSnapshotRef.current = snapshotSelection(teachingProcedures)
+      hypothesizedFunctionsSnapshotRef.current = snapshotSelection(hypothesizedFunctions)
       reset(values)
 
       toast.success("Item configuration saved")
@@ -1023,22 +1034,25 @@ export function ItemDetailPanel({
 
           {/* Teaching Procedure + Hypothesized Function — siempre juntos y al final */}
           <div className={pairStartClassName}>
-            <FloatingSelect
+            <MultiSelect
               label="Teaching Procedure"
-              value={teachingProcedure}
-              onChange={setTeachingProcedure}
+              value={teachingProcedures}
+              onChange={setTeachingProcedures}
               options={teachingProcedureOptions}
               searchable
               disabled={isLoadingTeachingProcedures}
+              placeholder="Select teaching procedures"
+              searchPlaceholder="Search teaching procedures..."
             />
           </div>
 
           <div>
-            <FloatingSelect
+            <MultiSelect
               label="Hypothesized Function"
-              value={hypothesizedFunction}
-              onChange={(value) => setHypothesizedFunction(value as HypothesizedFunction | "")}
+              value={hypothesizedFunctions}
+              onChange={(values) => setHypothesizedFunctions(values as HypothesizedFunction[])}
               options={HYPOTHESIZED_FUNCTION_OPTIONS}
+              placeholder="Select functions"
             />
           </div>
 

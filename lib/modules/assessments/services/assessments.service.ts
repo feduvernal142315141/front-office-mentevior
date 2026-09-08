@@ -1,4 +1,5 @@
 import { serviceGet, servicePatch, servicePost, servicePut } from "@/lib/services/baseService"
+import { parseHypothesizedFunctions } from "@/lib/constants/hypothesized-function"
 import {
   ASSESSMENT_PDF_FLAG_KEYS,
   ASSESSMENT_PDF_TEXT_KEYS,
@@ -252,8 +253,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     itemName: str(i.clientServicePlanCategoryItemName) || str(i.itemName),
     intensityKey: enumOrEmpty(i.intensityKey, ["MILD", "MODERATE", "HIGH"] as const) || null,
     intensityDescription: str(i.intensityDescription),
-    hypothesizedFunction:
-      enumOrEmpty(i.hypothesizedFunction, ["ESCAPE", "ATTENTION", "SENSORY", "TANGIBLE"] as const) || null,
+    hypothesizedFunction: parseHypothesizedFunctions(i.hypothesizedFunction),
     prevalentSetting: str(i.prevalentSetting),
     preventiveStrategies: str(i.preventiveStrategies),
     managementStrategies: str(i.managementStrategies),

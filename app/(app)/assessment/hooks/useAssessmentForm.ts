@@ -54,8 +54,8 @@ import { useRelationshipCatalog } from "@/lib/modules/relationships/hooks/use-re
 export interface CategoryItemFormValue {
   intensityKey: AssessmentIntensityKey | ""
   intensityDescription: string
-  /** "" = el usuario no la tocó; se muestra la precarga del Service Plan */
-  hypothesizedFunction: HypothesizedFunction | ""
+  /** Vacía = el usuario no la tocó; se muestra la precarga del Service Plan */
+  hypothesizedFunction: HypothesizedFunction[]
   prevalentSetting: string
   preventiveStrategies: string
   managementStrategies: string
@@ -141,7 +141,7 @@ const EMPTY_PROVIDER_FILE: AssessmentProviderFileInput = { type: "", name: "", c
 export const EMPTY_CATEGORY_ITEM: CategoryItemFormValue = {
   intensityKey: "",
   intensityDescription: "",
-  hypothesizedFunction: "",
+  hypothesizedFunction: [],
   prevalentSetting: "",
   preventiveStrategies: "",
   managementStrategies: "",
@@ -219,7 +219,7 @@ function isCategoryItemTouched(v: CategoryItemFormValue): boolean {
   return (
     !!v.intensityKey ||
     !!v.intensityDescription.trim() ||
-    !!v.hypothesizedFunction ||
+    v.hypothesizedFunction.length > 0 ||
     !!v.prevalentSetting.trim() ||
     !!v.preventiveStrategies.trim() ||
     !!v.managementStrategies.trim()
@@ -282,10 +282,10 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
    * usuario elige algo, manda `formData.categoryItems[itemId]`.
    */
   const hypothesizedFunctionByItemId = useMemo(() => {
-    const byItemId: Record<string, HypothesizedFunction> = {}
+    const byItemId: Record<string, HypothesizedFunction[]> = {}
     for (const category of categories) {
       for (const item of category.items) {
-        if (item.hypothesizedFunction) byItemId[item.id] = item.hypothesizedFunction
+        if (item.hypothesizedFunctions.length > 0) byItemId[item.id] = item.hypothesizedFunctions
       }
     }
     return byItemId
@@ -330,7 +330,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       categoryItems[entry.clientServicePlanCategoryItemId] = {
         intensityKey: entry.intensityKey ?? "",
         intensityDescription: entry.intensityDescription ?? "",
-        hypothesizedFunction: entry.hypothesizedFunction ?? "",
+        hypothesizedFunction: entry.hypothesizedFunction,
         prevalentSetting: entry.prevalentSetting ?? "",
         preventiveStrategies: entry.preventiveStrategies ?? "",
         managementStrategies: entry.managementStrategies ?? "",
@@ -476,7 +476,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
   // ── Category items ──
   const updateCategoryItem = useCallback(
-    (itemId: string, field: keyof CategoryItemFormValue, value: string) => {
+    (itemId: string, field: keyof CategoryItemFormValue, value: string | string[]) => {
       setFormData((prev) => ({
         ...prev,
         categoryItems: {
@@ -735,10 +735,12 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         clientServicePlanCategoryItemId: itemId,
         intensityKey: value.intensityKey || null,
         intensityDescription: value.intensityDescription.trim(),
-        // Viaja lo que el usuario ve: su elección o, si no tocó el select, la
+        // Viaja lo que el usuario ve: su elección o, si no tocó el selector, la
         // precarga del Service Plan.
         hypothesizedFunction:
-          value.hypothesizedFunction || hypothesizedFunctionByItemId[itemId] || null,
+          value.hypothesizedFunction.length > 0
+            ? value.hypothesizedFunction
+            : (hypothesizedFunctionByItemId[itemId] ?? []),
         prevalentSetting: value.prevalentSetting.trim(),
         preventiveStrategies: value.preventiveStrategies.trim(),
         managementStrategies: value.managementStrategies.trim(),

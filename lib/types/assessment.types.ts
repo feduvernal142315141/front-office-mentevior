@@ -44,8 +44,11 @@ export interface ClientCategoryWithItems {
 export interface ClientCategoryItemSummary {
   id: string
   name: string
-  /** Configurada en el item del Client Service Plan; precarga del Assessment */
-  hypothesizedFunction?: HypothesizedFunction | null
+  /**
+   * Configuradas en el item del Client Service Plan; precarga del Assessment.
+   * Lista desde el contrato 2026-09-07.
+   */
+  hypothesizedFunctions: HypothesizedFunction[]
 }
 
 export interface AssessmentMedicationInput {
@@ -67,12 +70,15 @@ export interface AssessmentObservationInput {
  * (`GET /client-service-plan/client/{clientId}/assessment-data`) y viaja en el
  * request: el valor enviado sobrescribe el del snapshot del Assessment, sin
  * tocar el del Service Plan (contrato 2026-09-03).
+ *
+ * Desde el contrato 2026-09-07 es una **lista**; la clave de la API sigue siendo
+ * singular, así que el nombre se conserva tal cual acá para no mentirle al wire.
  */
 export interface AssessmentCategoryItemInput {
   clientServicePlanCategoryItemId: string
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string
-  hypothesizedFunction: HypothesizedFunction | null
+  hypothesizedFunction: HypothesizedFunction[]
   prevalentSetting: string
   /** Antecedent interventions del item */
   preventiveStrategies: string
@@ -282,7 +288,8 @@ export interface AssessmentCategoryItemEntry {
   itemName: string
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string
-  hypothesizedFunction: HypothesizedFunction | null
+  /** Lista desde el contrato 2026-09-07; los registros viejos llegan con un solo valor. */
+  hypothesizedFunction: HypothesizedFunction[]
   prevalentSetting: string
   preventiveStrategies: string
   managementStrategies: string

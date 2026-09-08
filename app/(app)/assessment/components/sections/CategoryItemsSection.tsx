@@ -3,10 +3,11 @@
 import { FolderOpen, Loader2, RotateCcw } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { MultiSelect } from "@/components/custom/MultiSelect"
 import { INTENSITY_KEY_OPTIONS } from "@/lib/constants/assessment.constants"
 import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
 import { typeIsFrequency } from "@/lib/modules/service-plans/constants/data-collection.constants"
-import type { ClientCategoryWithItems } from "@/lib/types/assessment.types"
+import type { ClientCategoryWithItems, HypothesizedFunction } from "@/lib/types/assessment.types"
 import {
   EMPTY_CATEGORY_ITEM,
   type CategoryItemFormValue,
@@ -21,16 +22,17 @@ interface CategoryItemsSectionProps {
    */
   collectionMethodByItemId?: Record<string, string>
   /**
-   * Valor inicial por item, configurado en el Client Service Plan. Se muestra
-   * mientras el usuario no elija otro; cambiarlo acá no toca el Service Plan.
+   * Valores iniciales por item, configurados en el Client Service Plan. Se muestran
+   * mientras el usuario no elija otros; cambiarlos acá no toca el Service Plan.
+   * Lista desde el contrato 2026-09-07.
    */
-  hypothesizedFunctionByItemId?: Record<string, string>
+  hypothesizedFunctionByItemId?: Record<string, HypothesizedFunction[]>
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
   /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
   hasError?: boolean
   disabled?: boolean
-  onUpdate: (itemId: string, field: keyof CategoryItemFormValue, value: string) => void
+  onUpdate: (itemId: string, field: keyof CategoryItemFormValue, value: string | string[]) => void
   onClear: (itemId: string) => void
 }
 
@@ -38,7 +40,7 @@ function isTouched(value: CategoryItemFormValue): boolean {
   return (
     !!value.intensityKey ||
     !!value.intensityDescription.trim() ||
-    !!value.hypothesizedFunction ||
+    value.hypothesizedFunction.length > 0 ||
     !!value.prevalentSetting.trim() ||
     !!value.preventiveStrategies.trim() ||
     !!value.managementStrategies.trim()
@@ -104,8 +106,8 @@ export function CategoryItemsSection({
               const touched = isTouched(value)
               const collectionMethod = collectionMethodByItemId[item.id]
               const showIntensity = !collectionMethod || typeIsFrequency(collectionMethod)
-              // Precarga del Service Plan: se muestra hasta que el usuario elija otra
-              const hypothesizedFunction = hypothesizedFunctionByItemId[item.id]
+              // Precarga del Service Plan: se muestra hasta que el usuario elija otras
+              const hypothesizedFunction = hypothesizedFunctionByItemId[item.id] ?? []
 
               return (
                 <div
@@ -149,12 +151,18 @@ export function CategoryItemsSection({
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <FloatingSelect
+                    <MultiSelect
                       label="Hypothesized function"
-                      value={value.hypothesizedFunction || hypothesizedFunction || ""}
+                      value={
+                        value.hypothesizedFunction.length > 0
+                          ? value.hypothesizedFunction
+                          : hypothesizedFunction
+                      }
                       onChange={(v) => onUpdate(item.id, "hypothesizedFunction", v)}
                       options={HYPOTHESIZED_FUNCTION_OPTIONS}
                       disabled={disabled}
+                      placeholder="Select functions"
+                      maxVisibleTags={2}
                     />
                     <FloatingInput
                       label="Prevalent setting"

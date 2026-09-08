@@ -6,7 +6,7 @@ import {
 } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import { serviceDelete, serviceGet, servicePatch, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
-import { parseHypothesizedFunction } from "@/lib/constants/hypothesized-function"
+import { parseHypothesizedFunctions } from "@/lib/constants/hypothesized-function"
 import {
   AxisPositionX,
   AxisPositionY,
@@ -27,6 +27,7 @@ import type {
   DataCollectionObjectiveData,
   DataCollectionType,
   HypothesizedFunction,
+  TeachingProcedureRef,
   ItemDataCollectionConfig,
   ObjetiveType,
 } from "@/lib/types/data-collection.types"
@@ -258,9 +259,11 @@ interface ClientItemPayload {
   name?: string
   topography: string
   status: boolean
-  teachingProcedureId?: string | null
+  /** Reemplaza la colección completa; `[]` la limpia (contrato 2026-09-07). */
+  teachingProcedureIds?: string[]
   objetiveType?: ObjetiveType
-  hypothesizedFunction?: HypothesizedFunction | null
+  /** En la API la clave es singular aunque lleve la lista. */
+  hypothesizedFunction?: HypothesizedFunction[]
   dataCollection: ApiDataCollection
   chart?: ApiChart
   baseline?: ApiBaseline[]
@@ -284,12 +287,31 @@ interface ApiResponse {
   topography?: string
   status?: boolean
   name?: string
+  /** Contrato 2026-09-07: el GET los devuelve resueltos y sin los ids sueltos. */
+  teachingProcedures?: Array<{ id?: unknown; name?: unknown }>
+  /** @deprecated Anterior al 2026-09-07; se sigue leyendo por si queda un entorno viejo */
   teachingProcedureId?: string
-  /** @deprecated Backend now returns teachingProcedureId */
+  /** @deprecated Anterior a `teachingProcedureId` */
   teachingMethodId?: string
   objetiveType?: string
-  hypothesizedFunction?: string
+  /** Lista desde el 2026-09-07; los registros viejos llegan como string suelto. */
+  hypothesizedFunction?: string | string[]
   clientServicePlanCategoryItemId?: string
+}
+
+/**
+ * El GET devuelve los teaching procedures resueltos. Si un entorno todavía manda
+ * el id suelto lo aceptamos, pero sin nombre: la pantalla lo resuelve contra el
+ * catálogo, igual que hacía antes.
+ */
+function normalizeTeachingProcedures(entity: ApiResponse): TeachingProcedureRef[] {
+  if (Array.isArray(entity.teachingProcedures)) {
+    return entity.teachingProcedures
+      .map((entry) => ({ id: asString(entry?.id), name: asString(entry?.name) }))
+      .filter((entry) => entry.id.length > 0)
+  }
+  const legacyId = asOptionalString(entity.teachingProcedureId ?? entity.teachingMethodId)
+  return legacyId ? [{ id: legacyId, name: "" }] : []
 }
 
 export interface UpsertClientCategoryDataCollectionDto {
@@ -314,14 +336,15 @@ export interface UpsertClientItemDataCollectionDto {
   name?: string
   topography: string
   active: boolean
-  teachingProcedureId?: string | null
+  /**
+   * Omitir la clave deja intacto lo persistido; `[]` limpia la colección.
+   * Sólo la manda la pantalla que expone el selector (ItemDetailPanel).
+   */
+  teachingProcedureIds?: string[]
   /** Omitted (or null) leaves the persisted value untouched on the backend */
   objetiveType?: ObjetiveType | null
-  /**
-   * Omitir la clave deja intacto lo persistido; `null` explícito lo borra.
-   * Sólo la manda la pantalla que expone el select (ItemDetailPanel).
-   */
-  hypothesizedFunction?: HypothesizedFunction | null
+  /** Mismo criterio que `teachingProcedureIds`: omitir preserva, `[]` limpia. */
+  hypothesizedFunctions?: HypothesizedFunction[]
   type: DataCollectionType
   weeklyDailyValue?: ServicePlanValueType
   dailyValue?: ServicePlanValueType
@@ -560,7 +583,8 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
   const active = typeof itemEntity.status === "boolean" ? itemEntity.status : true
   const name = asString(itemEntity.name)
   const itemId = asOptionalString(itemEntity.clientServicePlanCategoryItemId) ?? fallbackItemId
-  const hypothesizedFunction = parseHypothesizedFunction(itemEntity.hypothesizedFunction)
+  const hypothesizedFunctions = parseHypothesizedFunctions(itemEntity.hypothesizedFunction)
+  const teachingProcedures = normalizeTeachingProcedures(itemEntity)
   const base = dataCollection
     ? fromApiDataCollection(dataCollection)
     : { type: "", levels: [] as DataCollectionLevel[] }
@@ -573,7 +597,8 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
     !!base.chart ||
     topography.length > 0 ||
     typeof itemEntity.status === "boolean" ||
-    !!hypothesizedFunction ||
+    hypothesizedFunctions.length > 0 ||
+    teachingProcedures.length > 0 ||
     (base.baselines && base.baselines.length > 0) ||
     (base.objectives && base.objectives.length > 0) ||
     !!base.recommendations
@@ -586,14 +611,13 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
     categoryName: "",
     topography,
     active,
-    teachingProcedureId: asOptionalString(
-      itemEntity.teachingProcedureId ?? itemEntity.teachingMethodId
-    ) ?? null,
+    teachingProcedures,
+    teachingProcedureIds: teachingProcedures.map((entry) => entry.id),
     objetiveType:
       itemEntity.objetiveType === "Mastery" || itemEntity.objetiveType === "STO"
         ? itemEntity.objetiveType
         : null,
-    hypothesizedFunction,
+    hypothesizedFunctions,
     isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
   }
 }
@@ -739,9 +763,10 @@ export async function upsertClientItemDataCollection(
     dataCollection: toApiDataCollection(dto),
   }
   if (dto.name?.trim()) payload.name = dto.name.trim()
-  if (dto.teachingProcedureId !== undefined) payload.teachingProcedureId = dto.teachingProcedureId || null
-  if (dto.hypothesizedFunction !== undefined) {
-    payload.hypothesizedFunction = dto.hypothesizedFunction || null
+  // Los dos reemplazan la colección completa: `[]` limpia, omitir preserva.
+  if (dto.teachingProcedureIds !== undefined) payload.teachingProcedureIds = dto.teachingProcedureIds
+  if (dto.hypothesizedFunctions !== undefined) {
+    payload.hypothesizedFunction = dto.hypothesizedFunctions
   }
   // Only valid enum values travel; null/undefined keep the backend's stored value
   if (dto.objetiveType) payload.objetiveType = dto.objetiveType
