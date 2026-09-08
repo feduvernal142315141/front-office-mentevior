@@ -161,6 +161,7 @@ export function CategoryItemsSection({
                       onChange={(v) => onUpdate(item.id, "hypothesizedFunction", v)}
                       options={HYPOTHESIZED_FUNCTION_OPTIONS}
                       disabled={disabled}
+                      tone="neutral"
                       placeholder="Select functions"
                       maxVisibleTags={2}
                     />

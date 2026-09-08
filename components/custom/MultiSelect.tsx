@@ -71,10 +71,10 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
   const selectedTagClass =
     tone === "neutral"
       ? "bg-slate-100 text-slate-700"
-      : "bg-[#037ECC]/10 text-[#037ECC]"
+      : "bg-blue-50 text-blue-700"
 
   const removeTagClass =
-    tone === "neutral" ? "hover:bg-slate-200" : "hover:bg-[#037ECC]/20"
+    tone === "neutral" ? "hover:bg-slate-200" : "hover:bg-blue-100"
 
   const activeLabelClass = tone === "neutral" ? "text-slate-600" : "text-[#2563EB]"
 
@@ -83,12 +83,12 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
   const searchFocusClass =
     tone === "neutral"
       ? "focus:ring-slate-400 focus:border-transparent"
-      : "focus:ring-[#037ECC]/40 focus:border-transparent"
+      : "focus:ring-blue-500 focus:border-transparent"
 
   const selectAllClass =
     tone === "neutral"
       ? "text-slate-700 hover:bg-slate-100"
-      : "text-[#037ECC] hover:bg-[#037ECC]/5"
+      : "text-blue-600 hover:bg-blue-50"
 
   const selectedOptionClass =
     tone === "neutral"

@@ -1071,8 +1071,12 @@ export function ItemDetailPanel({
               options={teachingProcedureOptions}
               searchable
               disabled={isLoadingTeachingProcedures}
+              tone="neutral"
               placeholder="Select teaching procedures"
               searchPlaceholder="Search teaching procedures..."
+              /* El cálculo responsive mira el ancho de la ventana; acá el campo
+                 ocupa un tercio, así que los tags se le montaban al chevron. */
+              maxVisibleTags={2}
             />
           </div>
 
@@ -1082,7 +1086,9 @@ export function ItemDetailPanel({
               value={hypothesizedFunctions}
               onChange={(values) => setHypothesizedFunctions(values as HypothesizedFunction[])}
               options={HYPOTHESIZED_FUNCTION_OPTIONS}
+              tone="neutral"
               placeholder="Select functions"
+              maxVisibleTags={2}
             />
           </div>
 
