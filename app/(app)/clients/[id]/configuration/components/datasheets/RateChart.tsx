@@ -25,6 +25,13 @@ import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
 import { getSessionDurationInUnit, unitOfTimeLabel } from "./rate-datasheet.types"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
+import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
+import type { EnvironmentalChangesDisplay } from "@/lib/types/data-collection.types"
+import {
+  buildEnvChangeMarkers,
+  renderEnvChangeMarkers,
+  shouldShowEnvChangeLegendChip,
+} from "./environmental-changes-display"
 
 interface RateChartProps {
   weekDays: Date[]
@@ -45,6 +52,11 @@ interface RateChartProps {
   interval?: ChartInterval
   appointmentsByDate: Map<string, Appointment>
   unitOfTime: ServicePlanUnitOfTime
+  /**
+   * Cómo pinta este item sus environmental changes (contrato 2026-09-07).
+   * Sin config, el comportamiento histórico: línea de fase + listado.
+   */
+  environmentalChanges?: EnvironmentalChangesDisplay
 }
 
 interface RateChartDataPoint {
@@ -66,6 +78,7 @@ export function RateChart({
   itemBaselines, itemObjectives, gapDateKeys, collectedDateKeys,
   aggregatedData, interval = ChartInterval.DAILY,
   appointmentsByDate, unitOfTime,
+  environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
 }: RateChartProps) {
   const days = chartDays ?? weekDays
   const labelFormat = "MM/dd/yyyy"
@@ -215,6 +228,10 @@ export function RateChart({
     return data.filter((d) => d.hasNote && d.note).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
   }, [data])
 
+  // El proveedor elige cómo se ven (contrato 2026-09-07): línea, etiqueta, o
+  // nada en la gráfica y sólo el listado de abajo.
+  const envChangeMarkers = useMemo(() => buildEnvChangeMarkers(envChangeDates), [envChangeDates])
+
   const activeObjective = useMemo(
     () => resolveActiveObjective(itemObjectives, objectives),
     [itemObjectives, objectives],
@@ -319,7 +336,7 @@ export function RateChart({
               <span className="text-xs text-slate-500">Objective: <span className="font-semibold text-emerald-500">{objectiveValue}</span></span>
             </div>
           )}
-          {envChangeDates.length > 0 && (
+          {shouldShowEnvChangeLegendChip(envChangeMarkers, environmentalChanges) && (
             <div className="flex items-center gap-1.5">
               <div className="h-4 w-0 border-l border-dashed border-teal-400" />
               <span className="text-xs text-slate-500">Env. Change</span>
@@ -409,9 +426,11 @@ export function RateChart({
             />
           )}
 
-          {envChangeDates.map((env) => (
-            <ReferenceLine key={`env-${env.dateLabel}`} x={env.dateLabel} stroke="#14B8A6" strokeWidth={1} strokeDasharray="4 3" />
-          ))}
+          {renderEnvChangeMarkers({
+            markers: envChangeMarkers,
+            display: environmentalChanges,
+            resolveX: (dateLabel) => dateLabel,
+          })}
 
           {treatmentDateLabel && (
             <ReferenceLine

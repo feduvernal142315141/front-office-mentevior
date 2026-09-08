@@ -18,6 +18,11 @@ import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-func
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MultiSelect } from "@/components/custom/MultiSelect"
+import {
+  DEFAULT_ENVIRONMENTAL_CHANGES,
+  ENVIRONMENTAL_CHANGES_DISPLAY_OPTIONS,
+} from "@/lib/constants/environmental-changes"
+import type { EnvironmentalChangesDisplay } from "@/lib/types/data-collection.types"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { GroupedSelect } from "@/components/custom/GroupedSelect"
@@ -41,6 +46,7 @@ import {
   deleteClientItemLevel,
   getClientCategoryDataCollection,
   getClientItemDataCollection,
+  patchClientItemEnvironmentalChanges,
   upsertClientItemDataCollection,
 } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
 
@@ -243,6 +249,9 @@ export function ItemDetailPanel({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [teachingProcedures, setTeachingProcedures] = useState<string[]>([])
   const [hypothesizedFunctions, setHypothesizedFunctions] = useState<HypothesizedFunction[]>([])
+  const [envChanges, setEnvChanges] = useState<EnvironmentalChangesDisplay>(
+    DEFAULT_ENVIRONMENTAL_CHANGES,
+  )
   const [objetiveType, setObjetiveType] = useState<ObjetiveType | null>(null)
 
   // --- Catalogs ---
@@ -316,6 +325,7 @@ export function ItemDetailPanel({
         setConfig(itemData)
         setTeachingProcedures(itemData.teachingProcedureIds)
         setHypothesizedFunctions(itemData.hypothesizedFunctions)
+        setEnvChanges(itemData.environmentalChanges)
         setObjetiveType(itemData.objetiveType ?? null)
         setBaselines(
           (itemData.baselines ?? []).map((b) => ({
@@ -350,6 +360,7 @@ export function ItemDetailPanel({
         setItemConfig(null)
         setTeachingProcedures([])
         setHypothesizedFunctions([])
+        setEnvChanges(DEFAULT_ENVIRONMENTAL_CHANGES)
         setObjetiveType(null)
         setBaselines([])
         setObjectives([])
@@ -372,6 +383,7 @@ export function ItemDetailPanel({
   const objectivesSnapshotRef = useRef("")
   const teachingProceduresSnapshotRef = useRef("")
   const hypothesizedFunctionsSnapshotRef = useRef("")
+  const envChangesSnapshotRef = useRef("")
 
   // While false, hasUnsavedChanges stays false (no footer flash on enter).
   const [initialized, setInitialized] = useState(false)
@@ -379,10 +391,12 @@ export function ItemDetailPanel({
   const objectivesRef = useRef(objectives)
   const teachingProceduresRef = useRef(teachingProcedures)
   const hypothesizedFunctionsRef = useRef(hypothesizedFunctions)
+  const envChangesRef = useRef(envChanges)
   baselinesRef.current = baselines
   objectivesRef.current = objectives
   teachingProceduresRef.current = teachingProcedures
   hypothesizedFunctionsRef.current = hypothesizedFunctions
+  envChangesRef.current = envChanges
 
   const catalogsReady = !isLoadingCatalog && !isLoadingTeachingProcedures
 
@@ -407,6 +421,7 @@ export function ItemDetailPanel({
     objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
     teachingProceduresSnapshotRef.current = snapshotSelection(teachingProceduresRef.current)
     hypothesizedFunctionsSnapshotRef.current = snapshotSelection(hypothesizedFunctionsRef.current)
+    envChangesSnapshotRef.current = JSON.stringify(envChangesRef.current)
     setInitialized(false)
 
     let cancelled = false
@@ -421,6 +436,7 @@ export function ItemDetailPanel({
         objectivesSnapshotRef.current = snapshotRows(objectivesRef.current)
         teachingProceduresSnapshotRef.current = snapshotSelection(teachingProceduresRef.current)
         hypothesizedFunctionsSnapshotRef.current = snapshotSelection(hypothesizedFunctionsRef.current)
+        envChangesSnapshotRef.current = JSON.stringify(envChangesRef.current)
         setInitialized(true)
       })
     })
@@ -458,13 +474,17 @@ export function ItemDetailPanel({
     initialized &&
     snapshotSelection(hypothesizedFunctions) !== hypothesizedFunctionsSnapshotRef.current
 
+  const hasEnvChangesChanges =
+    initialized && JSON.stringify(envChanges) !== envChangesSnapshotRef.current
+
   const hasUnsavedChanges =
     initialized &&
     (isFormDirty ||
       hasBaselineChanges ||
       hasObjectiveChanges ||
       hasTeachingProcedureChanges ||
-      hasHypothesizedFunctionChanges)
+      hasHypothesizedFunctionChanges ||
+      hasEnvChangesChanges)
 
   useEffect(() => {
     onDirtyChange?.(hasUnsavedChanges)
@@ -639,11 +659,21 @@ export function ItemDetailPanel({
         objectives: objectivesPayload,
       })
 
+      /*
+       * Va por su propio endpoint (contrato 2026-09-07) y toca sólo esos dos
+       * campos, así que se guarda después del nivel y sin riesgo de pisarlo. Sólo
+       * se llama si cambió: es una escritura de más en cada guardado, si no.
+       */
+      if (hasEnvChangesChanges) {
+        await patchClientItemEnvironmentalChanges(clientServicePlanCategoryItemId, envChanges)
+      }
+
       // Reset dirty state BEFORE navigating away
       baselinesSnapshotRef.current = snapshotRows(baselines)
       objectivesSnapshotRef.current = snapshotRows(objectives)
       teachingProceduresSnapshotRef.current = snapshotSelection(teachingProcedures)
       hypothesizedFunctionsSnapshotRef.current = snapshotSelection(hypothesizedFunctions)
+      envChangesSnapshotRef.current = JSON.stringify(envChanges)
       reset(values)
 
       toast.success("Item configuration saved")
@@ -1054,6 +1084,48 @@ export function ItemDetailPanel({
               options={HYPOTHESIZED_FUNCTION_OPTIONS}
               placeholder="Select functions"
             />
+          </div>
+
+          {/*
+            Cómo se ven los environmental changes en la gráfica de este item.
+            Es una preferencia de lectura del proveedor, no parte del método de
+            captura, así que va al final y con su propia explicación.
+          */}
+          <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Environmental changes on the chart
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,320px)_1fr] sm:items-center">
+                <FloatingSelect
+                  label="Display"
+                  value={envChanges.displayMode}
+                  onChange={(value) =>
+                    setEnvChanges((prev) => ({
+                      ...prev,
+                      displayMode: value as EnvironmentalChangesDisplay["displayMode"],
+                    }))
+                  }
+                  options={ENVIRONMENTAL_CHANGES_DISPLAY_OPTIONS}
+                />
+                <PremiumSwitch
+                  checked={envChanges.showLegendBelow}
+                  onCheckedChange={(checked) =>
+                    setEnvChanges((prev) => ({ ...prev, showLegendBelow: checked }))
+                  }
+                  label="List them below the chart"
+                  /* En "List below only" no hay nada dibujado arriba: apagar el
+                     listado dejaría los cambios sin ninguna representación. */
+                  disabled={envChanges.displayMode === "LIST_ONLY"}
+                />
+              </div>
+              {envChanges.displayMode === "LABEL" && (
+                <p className="mt-3 text-xs text-slate-500">
+                  Each change is numbered on the chart (EC1, EC2…) and explained in the list
+                  below.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Description — full width row */}

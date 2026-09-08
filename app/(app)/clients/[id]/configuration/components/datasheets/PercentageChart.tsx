@@ -18,6 +18,13 @@ import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/const
 import { DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
 import { type PercentageDayEntry, getDateKey, calculatePercentage, countYes } from "./percentage-datasheet.types"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
+import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
+import type { EnvironmentalChangesDisplay } from "@/lib/types/data-collection.types"
+import {
+  buildEnvChangeMarkers,
+  renderEnvChangeMarkers,
+  shouldShowEnvChangeLegendChip,
+} from "./environmental-changes-display"
 
 interface PercentageChartProps {
   weekDays: Date[]
@@ -29,6 +36,11 @@ interface PercentageChartProps {
   tickInterval?: number
   /** Calendar days the chart must skip (empty days — see chart-gaps.ts). */
   gapDateKeys?: Set<string>
+  /**
+   * Cómo pinta este item sus environmental changes (contrato 2026-09-07).
+   * Sin config, el comportamiento histórico: línea de fase + listado.
+   */
+  environmentalChanges?: EnvironmentalChangesDisplay
 }
 
 interface ChartDataPoint {
@@ -42,7 +54,10 @@ interface ChartDataPoint {
   note: string
 }
 
-export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickInterval = 0, gapDateKeys }: PercentageChartProps) {
+export function PercentageChart({
+  weekDays, entries, dcConfig, chartDays, tickInterval = 0, gapDateKeys,
+  environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
+}: PercentageChartProps) {
   const allDays = chartDays ?? weekDays
   const days = useMemo(
     () => (gapDateKeys && gapDateKeys.size > 0 ? allDays.filter((day) => !gapDateKeys.has(getDateKey(day))) : allDays),
@@ -119,6 +134,10 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
     return data.filter((d) => d.hasNote).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
   }, [data])
 
+  // El proveedor elige cómo se ven (contrato 2026-09-07): línea, etiqueta, o
+  // nada en la gráfica y sólo el listado de abajo.
+  const envChangeMarkers = useMemo(() => buildEnvChangeMarkers(envChangeDates), [envChangeDates])
+
   // Trend is always evaluated against the objective in progress
   const trendInfo = useMemo(
     () => computeTrendInfo(
@@ -159,7 +178,7 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
               <span className="text-xs text-slate-500">Objective: <span className="font-semibold text-emerald-500">{objectiveValue}%</span></span>
             </div>
           )}
-          {envChangeDates.length > 0 && (
+          {shouldShowEnvChangeLegendChip(envChangeMarkers, environmentalChanges) && (
             <div className="flex items-center gap-1.5">
               <div className="h-4 w-0 border-l border-dashed border-slate-400" />
               <span className="text-xs text-slate-500">Env. Change</span>
@@ -232,9 +251,11 @@ export function PercentageChart({ weekDays, entries, dcConfig, chartDays, tickIn
             />
           )}
 
-          {envChangeDates.map((env) => (
-            <ReferenceLine key={env.dateLabel} x={env.dateLabel} stroke="#14B8A6" strokeWidth={1} strokeDasharray="4 3" />
-          ))}
+          {renderEnvChangeMarkers({
+            markers: envChangeMarkers,
+            display: environmentalChanges,
+            resolveX: (dateLabel) => dateLabel,
+          })}
 
           {lineType === "BAR" ? (
             <Bar dataKey="percentage" fill={lineColor} radius={[4, 4, 0, 0]} maxBarSize={days.length > 30 ? 12 : 32} label={showValues && days.length <= 31 ? { position: "top" as const, fontSize: 10, fill: "#64748B" } : false} />

@@ -12,6 +12,12 @@ import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import type { RangeMode } from "./useFrequencyDatasheet"
+import {
+  DEFAULT_ENVIRONMENTAL_CHANGES,
+  environmentalChangeLabel,
+} from "@/lib/constants/environmental-changes"
+import type { EnvironmentalChangesDisplay } from "@/lib/types/data-collection.types"
+import { shouldShowEnvChangeLegendBelow } from "./environmental-changes-display"
 
 // ─── Premium Header ──────────────────────────────────────────────────────────
 
@@ -349,10 +355,13 @@ export function SaveBar({ label, sublabel, saveLabel, saveState, onSave, onDisca
 export function EnvironmentalChangesLegend({
   entries,
   compact = false,
+  display = DEFAULT_ENVIRONMENTAL_CHANGES,
 }: {
   entries: Record<string, { environmentalNote?: string }>
   /** Narrow layouts (e.g. session note side panel): single column, tighter padding. */
   compact?: boolean
+  /** Cómo eligió verlos el proveedor (contrato 2026-09-07). */
+  display?: EnvironmentalChangesDisplay
 }) {
   const changes = useMemo(() => {
     const result: { dateKey: string; note: string }[] = []
@@ -364,6 +373,15 @@ export function EnvironmentalChangesLegend({
   }, [entries])
 
   if (changes.length === 0) return null
+  if (!shouldShowEnvChangeLegendBelow(display)) return null
+
+  /*
+   * En modo `LABEL` cada cambio se numera y ese número es lo que se pinta arriba,
+   * sobre la gráfica. La numeración es por vista: el contrato no trajo la etiqueta
+   * corta por cambio que se pidió en B1, así que se genera en orden de fecha. En
+   * cuanto backend entregue el campo, acá se muestra el texto del proveedor.
+   */
+  const showLabels = display.displayMode === "LABEL"
 
   return (
     <div className={cn("rounded-2xl border border-slate-200 bg-white shadow-sm", compact ? "px-4 py-3" : "px-5 py-4")}>
@@ -373,12 +391,18 @@ export function EnvironmentalChangesLegend({
         <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-teal-50 border border-teal-200/60 text-[10px] font-bold text-teal-600 tabular-nums">{changes.length}</span>
       </div>
       <div className={cn("grid gap-x-6 gap-y-2", compact ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
-        {changes.map(({ dateKey, note }) => {
+        {changes.map(({ dateKey, note }, index) => {
           const [y, m, d] = dateKey.split("-")
           const dateObj = new Date(Number(y), Number(m) - 1, Number(d))
           return (
             <div key={dateKey} className="flex items-center gap-2 min-w-0">
-              <div className="h-1.5 w-1.5 rounded-full bg-teal-400 shrink-0" />
+              {showLabels ? (
+                <span className="shrink-0 rounded-full bg-teal-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  {environmentalChangeLabel(index)}
+                </span>
+              ) : (
+                <div className="h-1.5 w-1.5 rounded-full bg-teal-400 shrink-0" />
+              )}
               <span className="text-sm font-semibold text-slate-700 tabular-nums shrink-0">{format(dateObj, "MM/dd/yyyy")}</span>
               <span className="text-sm text-slate-500 truncate">{note}</span>
             </div>

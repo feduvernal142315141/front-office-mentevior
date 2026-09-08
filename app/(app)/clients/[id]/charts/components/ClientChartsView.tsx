@@ -190,6 +190,7 @@ export function ClientChartsView({
                     chartDays={chartRange.chartDays}
                     interval={chartRange.interval}
                     tickInterval={chartRange.tickInterval}
+                    environmentalChanges={item.environmentalChanges}
                     onOpen={openServicePlan}
                   />
                 )

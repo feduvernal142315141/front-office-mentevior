@@ -23,6 +23,13 @@ import type { DayEntry } from "./frequency-datasheet.types"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
+import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
+import type { EnvironmentalChangesDisplay } from "@/lib/types/data-collection.types"
+import {
+  buildEnvChangeMarkers,
+  renderEnvChangeMarkers,
+  shouldShowEnvChangeLegendChip,
+} from "./environmental-changes-display"
 
 interface FrequencyChartProps {
   weekDays: Date[]
@@ -43,6 +50,11 @@ interface FrequencyChartProps {
   interval?: ChartInterval
   /** Narrow layouts (e.g. session note side panel): shorter chart, wrapping legend, earlier scroll. */
   compact?: boolean
+  /**
+   * Cómo pinta este item sus environmental changes (contrato 2026-09-07).
+   * Sin config, el comportamiento histórico: línea de fase + listado.
+   */
+  environmentalChanges?: EnvironmentalChangesDisplay
 }
 
 interface ChartDataPoint {
@@ -67,6 +79,7 @@ export function FrequencyChart({
   weekDays, entries, dcConfig, chartDays, tickInterval = 0,
   itemBaselines, itemObjectives, gapDateKeys, collectedDateKeys,
   aggregatedData, interval = ChartInterval.DAILY, compact = false,
+  environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
 }: FrequencyChartProps) {
   const days = chartDays ?? weekDays
   // Narrow panels get short dates so every column can keep its own label instead of being thinned
@@ -232,6 +245,11 @@ export function FrequencyChart({
     return data.filter((d) => d.hasNote && d.note).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
   }, [data])
 
+
+  // El proveedor elige cómo se ven (contrato 2026-09-07): línea, etiqueta, o
+  // nada en la gráfica y sólo el listado de abajo.
+  const envChangeMarkers = useMemo(() => buildEnvChangeMarkers(envChangeDates), [envChangeDates])
+
   // ─── Active objective (drives trend + target line) ─────────────────────
 
   const activeObjective = useMemo(
@@ -363,7 +381,7 @@ export function FrequencyChart({
               <span className="text-xs text-slate-500">Objective: <span className="font-semibold" style={{ color: objectiveColor }}>{objectiveValue}</span></span>
             </div>
           )}
-          {envChangeDates.length > 0 && (
+          {shouldShowEnvChangeLegendChip(envChangeMarkers, environmentalChanges) && (
             <div className="flex items-center gap-1.5">
               <div className="h-4 w-0 border-l border-dashed border-teal-400" />
               <span className="text-xs text-slate-500">Env. Change</span>
@@ -465,9 +483,11 @@ export function FrequencyChart({
           )}
 
           {/* Environmental change dashed lines */}
-          {envChangeDates.map((env) => (
-            <ReferenceLine key={`env-${env.dateLabel}`} x={xByLabel.get(env.dateLabel)} stroke="#14B8A6" strokeWidth={1} strokeDasharray="4 3" />
-          ))}
+          {renderEnvChangeMarkers({
+            markers: envChangeMarkers,
+            display: environmentalChanges,
+            resolveX: (dateLabel) => xByLabel.get(dateLabel),
+          })}
 
           {/* Treatment vertical line */}
           {treatmentDateLabel && xByLabel.has(treatmentDateLabel) && (

@@ -20,6 +20,13 @@ import { ChartInterval, DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
+import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
+import type { EnvironmentalChangesDisplay } from "@/lib/types/data-collection.types"
+import {
+  buildEnvChangeMarkers,
+  renderEnvChangeMarkers,
+  shouldShowEnvChangeLegendChip,
+} from "./environmental-changes-display"
 
 interface DurationChartProps {
   weekDays: Date[]
@@ -39,6 +46,11 @@ interface DurationChartProps {
   aggregatedData?: AggregatedDataPoint[]
   interval?: ChartInterval
   unitLabel: string
+  /**
+   * Cómo pinta este item sus environmental changes (contrato 2026-09-07).
+   * Sin config, el comportamiento histórico: línea de fase + listado.
+   */
+  environmentalChanges?: EnvironmentalChangesDisplay
 }
 
 interface DurationChartDataPoint {
@@ -58,6 +70,7 @@ export function DurationChart({
   itemBaselines, itemObjectives, gapDateKeys, collectedDateKeys,
   aggregatedData, interval = ChartInterval.DAILY,
   unitLabel,
+  environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
 }: DurationChartProps) {
   const days = chartDays ?? weekDays
   const labelFormat = "MM/dd/yyyy"
@@ -172,8 +185,12 @@ export function DurationChart({
   )
 
   const envChangeDates = useMemo(() => {
-    return data.filter((p) => p.hasNote && p.note).map((p) => p.dateLabel)
+    return data.filter((p) => p.hasNote && p.note).map((p) => ({ dateLabel: p.dateLabel, note: p.note }))
   }, [data])
+
+  // El proveedor elige cómo se ven (contrato 2026-09-07): línea, etiqueta, o
+  // nada en la gráfica y sólo el listado de abajo.
+  const envChangeMarkers = useMemo(() => buildEnvChangeMarkers(envChangeDates), [envChangeDates])
 
   const yTitle = `Values (${unitLabel})`
 
@@ -242,7 +259,7 @@ export function DurationChart({
             <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: lineColor }} />
             <span className="text-xs text-slate-500">Total</span>
           </div>
-          {envChangeDates.length > 0 && (
+          {shouldShowEnvChangeLegendChip(envChangeMarkers, environmentalChanges) && (
             <div className="flex items-center gap-1.5">
               <div className="h-4 w-0 border-l-2 border-dashed border-teal-400" />
               <span className="text-xs text-slate-500">Env Changes</span>
@@ -325,9 +342,11 @@ export function DurationChart({
             />)
           })}
 
-          {envChangeDates.map((dateLabel) => (
-            <ReferenceLine key={`env-${dateLabel}`} x={dateLabel} stroke="#2DD4BF" strokeWidth={1.5} strokeDasharray="6 3" />
-          ))}
+          {renderEnvChangeMarkers({
+            markers: envChangeMarkers,
+            display: environmentalChanges,
+            resolveX: (dateLabel) => dateLabel,
+          })}
 
           <Line type="monotone" dataKey="value" stroke={lineColor} strokeWidth={pointCount > 60 ? 1.5 : 2.5} dot={pointCount > 30 ? false : { r: 4, fill: "white", stroke: lineColor, strokeWidth: 2 }} activeDot={{ r: 5, fill: lineColor, stroke: "white", strokeWidth: 2 }} connectNulls={totalDatasetConfig?.spanGaps ?? false} />
         </ComposedChart>

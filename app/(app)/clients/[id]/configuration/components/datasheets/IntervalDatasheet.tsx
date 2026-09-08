@@ -403,6 +403,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <PercentageChart
+          environmentalChanges={activeItem.environmentalChanges}
           weekDays={ds.weekDays}
           entries={percentageChartEntries}
           dcConfig={dcConfig}
@@ -447,7 +448,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
         </p>
       </div>
 
-      <EnvironmentalChangesLegend entries={ds.entries} />
+      <EnvironmentalChangesLegend entries={ds.entries} display={activeItem.environmentalChanges} />
     </div>
   )
 }

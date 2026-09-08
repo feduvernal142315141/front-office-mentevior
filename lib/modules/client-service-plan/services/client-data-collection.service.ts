@@ -7,6 +7,7 @@ import {
 import { serviceDelete, serviceGet, servicePatch, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import { parseHypothesizedFunctions } from "@/lib/constants/hypothesized-function"
+import { parseEnvironmentalChanges } from "@/lib/constants/environmental-changes"
 import {
   AxisPositionX,
   AxisPositionY,
@@ -28,6 +29,7 @@ import type {
   DataCollectionType,
   HypothesizedFunction,
   TeachingProcedureRef,
+  EnvironmentalChangesDisplay,
   ItemDataCollectionConfig,
   ObjetiveType,
 } from "@/lib/types/data-collection.types"
@@ -296,6 +298,8 @@ interface ApiResponse {
   objetiveType?: string
   /** Lista desde el 2026-09-07; los registros viejos llegan como string suelto. */
   hypothesizedFunction?: string | string[]
+  /** Cómo pinta el item sus environmental changes (contrato 2026-09-07). */
+  environmentalChanges?: unknown
   clientServicePlanCategoryItemId?: string
 }
 
@@ -585,6 +589,7 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
   const itemId = asOptionalString(itemEntity.clientServicePlanCategoryItemId) ?? fallbackItemId
   const hypothesizedFunctions = parseHypothesizedFunctions(itemEntity.hypothesizedFunction)
   const teachingProcedures = normalizeTeachingProcedures(itemEntity)
+  const environmentalChanges = parseEnvironmentalChanges(itemEntity.environmentalChanges)
   const base = dataCollection
     ? fromApiDataCollection(dataCollection)
     : { type: "", levels: [] as DataCollectionLevel[] }
@@ -618,6 +623,7 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
         ? itemEntity.objetiveType
         : null,
     hypothesizedFunctions,
+    environmentalChanges,
     isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
   }
 }
@@ -862,5 +868,27 @@ export async function updateBaselineValues(
   )
   if (!response || (response.status !== 200 && response.status !== 201 && response.status !== 204)) {
     throw new Error(getApiErrorMessage(response?.data, "Failed to update baseline values"))
+  }
+}
+
+/**
+ * Guarda cómo se muestran los environmental changes del item.
+ *
+ * Va por su propio endpoint (contrato 2026-09-07) y no por el `PUT …/level`:
+ * toca sólo esos dos campos, así que guardarlo no puede pisar nada del resto de
+ * la configuración del item.
+ */
+export async function patchClientItemEnvironmentalChanges(
+  clientServicePlanCategoryItemId: string,
+  display: EnvironmentalChangesDisplay,
+): Promise<void> {
+  const response = await servicePatch<EnvironmentalChangesDisplay, unknown>(
+    `/client-service-plan-category-item/${clientServicePlanCategoryItemId}/environmental-changes`,
+    display,
+  )
+  if (!response || (response.status !== 200 && response.status !== 204)) {
+    throw new Error(
+      getApiErrorMessage(response?.data, "Failed to save the environmental changes display"),
+    )
   }
 }

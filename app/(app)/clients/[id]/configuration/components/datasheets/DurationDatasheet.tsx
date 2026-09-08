@@ -346,6 +346,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <DurationChart
+          environmentalChanges={activeItem.environmentalChanges}
           weekDays={ds.weekDays} entries={chartCompatibleEntries} dcConfig={dcConfig}
           chartDays={chartRange.chartDays} tickInterval={chartRange.tickInterval}
           itemBaselines={activeItem.baseline} itemObjectives={activeItem.objetive}
@@ -384,7 +385,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
         <p className="text-sm font-semibold text-slate-700">Unit of time: {unitLabel}</p>
       </div>
 
-      <EnvironmentalChangesLegend entries={ds.entries} />
+      <EnvironmentalChangesLegend entries={ds.entries} display={activeItem.environmentalChanges} />
     </div>
   )
 }

@@ -90,11 +90,31 @@ campo hermano:
 - [ ] `PUT …/level` los persiste, y `null` los limpia.
 - [ ] Un registro previo sin estos campos se lee sin error y se comporta como `LINE`.
 
+### ✅ Entregado el 2026-09-07 — con una pieza faltante
+
+Backend entregó el bloque `environmentalChanges` (`displayMode` + `showLegendBelow`) por
+**item**, con default `LINE` / `true` para los registros nuevos y los existentes, leíble en
+los dos GET y escribible por un `PATCH …/{id}/environmental-changes` propio. Que sea un
+endpoint aparte resuelve de raíz el riesgo que teníamos: guardar el modo no puede pisar
+nada del resto de la configuración del item.
+
+**Falta `environmentalChangesLabel`.** El contrato no trae una etiqueta corta por cambio,
+que es lo que pedía el ejemplo de Lidia (`MO` arriba, `motivating operations` abajo). Sin
+ese campo el modo `LABEL` no puede mostrar texto escrito por el proveedor: el front lo
+resolvió numerando los cambios en orden de fecha (`EC1`, `EC2`…) y explicándolos en el
+listado de abajo. Es la forma pedida, no el contenido pedido.
+
+Con el campo entregado, `environmentalChangeLabel()` en
+`lib/constants/environmental-changes.ts` pasa a devolver el texto del proveedor y no hay
+nada más que tocar.
+
 ### Preguntas
 
-1. ¿El modo se configura por **item**, por **categoría**, o se hereda del clonado como el
-   resto del chart?
+1. ~~¿El modo se configura por item o por categoría?~~ Resuelto: por item.
 2. ¿La etiqueta corta se valida en backend (largo máximo) o la valida el front?
+3. ¿El `PATCH` se puede llamar sobre un item que todavía no tiene nivel configurado?
+4. Al clonar el service plan de la compañía al del cliente, ¿el modo se hereda o cada item
+   del cliente arranca en el default?
 
 ---
 

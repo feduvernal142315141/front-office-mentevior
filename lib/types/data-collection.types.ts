@@ -94,6 +94,22 @@ export interface CategoryDataCollectionConfig extends DataCollectionConfig {
 /** How the item's objectives were authored (backend field name, sic) */
 export type ObjetiveType = "Mastery" | "STO"
 
+/**
+ * Cómo se muestran los environmental changes en la gráfica del item
+ * (contrato 2026-09-07). Se configura por item y lo elige el proveedor.
+ *
+ * - `LINE`: línea de fase punteada en la fecha — el comportamiento histórico.
+ * - `LIST_ONLY`: no se dibuja nada en la gráfica; sólo el listado de abajo.
+ * - `LABEL`: una etiqueta corta sobre la gráfica, explicada en el listado.
+ */
+export type EnvironmentalChangesDisplayMode = "LINE" | "LIST_ONLY" | "LABEL"
+
+export interface EnvironmentalChangesDisplay {
+  displayMode: EnvironmentalChangesDisplayMode
+  /** El listado con fecha y nota debajo de la gráfica. */
+  showLegendBelow: boolean
+}
+
 /** Teaching procedure ya resuelto por el backend (contrato 2026-09-07). */
 export interface TeachingProcedureRef {
   id: string
@@ -121,6 +137,8 @@ export interface ItemDataCollectionConfig extends DataCollectionConfig {
    * plural para que el tipo no mienta. La traducción vive en el service.
    */
   hypothesizedFunctions: HypothesizedFunction[]
+  /** Contrato 2026-09-07; los registros sin configurar se leen como el default. */
+  environmentalChanges: EnvironmentalChangesDisplay
   isCustomOverride?: boolean
 }
 

@@ -27,6 +27,7 @@ import type {
   UpsertCategoryDataCollectionDto,
   UpsertItemDataCollectionDto,
 } from "@/lib/types/data-collection.types"
+import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
 
 interface ApiLevel {
   id?: string
@@ -422,6 +423,7 @@ function fromApiItemResponse(
     teachingProcedureIds: [],
     teachingProcedures: [],
     hypothesizedFunctions: [],
+    environmentalChanges: DEFAULT_ENVIRONMENTAL_CHANGES,
     isCustomOverride: !!dataCollection && hasDataCollectionContent(base),
   }
 }

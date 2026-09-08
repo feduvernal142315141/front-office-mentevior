@@ -375,6 +375,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <RateChart
+          environmentalChanges={activeItem.environmentalChanges}
           weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig}
           chartDays={chartRange.chartDays} tickInterval={chartRange.tickInterval}
           itemBaselines={activeItem.baseline} itemObjectives={activeItem.objetive}
@@ -410,7 +411,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
         )}
       </div>
 
-      <EnvironmentalChangesLegend entries={ds.entries} />
+      <EnvironmentalChangesLegend entries={ds.entries} display={activeItem.environmentalChanges} />
     </div>
   )
 }

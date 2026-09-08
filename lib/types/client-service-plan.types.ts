@@ -1,4 +1,7 @@
-import type { TeachingProcedureRef } from "@/lib/types/data-collection.types"
+import type {
+  EnvironmentalChangesDisplay,
+  TeachingProcedureRef,
+} from "@/lib/types/data-collection.types"
 
 export interface ClientServicePlan {
   id: string
@@ -103,6 +106,8 @@ export interface ClientServicePlanCategoryMappedItem {
   hasCustomDataCollection?: boolean
   /** Contrato 2026-09-07: llegan resueltos y pueden ser varios. */
   teachingProcedures?: TeachingProcedureRef[]
+  /** Cómo pinta este item sus environmental changes (contrato 2026-09-07). */
+  environmentalChanges?: EnvironmentalChangesDisplay
   baseline?: ClientServicePlanItemBaseline[]
   objetive?: ClientServicePlanItemObjective[]
   dataCollection?: ClientServicePlanItemDataCollection | null

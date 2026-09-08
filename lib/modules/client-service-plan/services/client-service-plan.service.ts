@@ -10,6 +10,7 @@ import type {
 import { buildFilters } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { getQueryString } from "@/lib/utils/format"
+import { parseEnvironmentalChanges } from "@/lib/constants/environmental-changes"
 
 // --- Helpers de normalización ---
 
@@ -214,6 +215,7 @@ function normalizeClientCategoryMappedItem(raw: unknown): ClientServicePlanCateg
           )
           return legacyId ? [{ id: legacyId, name: "" }] : []
         })(),
+    environmentalChanges: parseEnvironmentalChanges(item.environmentalChanges),
     baseline: Array.isArray(item.baseline) ? item.baseline as ClientServicePlanCategoryMappedItem["baseline"] : undefined,
     objetive: Array.isArray(item.objetive) ? item.objetive as ClientServicePlanCategoryMappedItem["objetive"] : undefined,
     dataCollection: (item.dataCollection && typeof item.dataCollection === "object") ? item.dataCollection as ClientServicePlanCategoryMappedItem["dataCollection"] : undefined,

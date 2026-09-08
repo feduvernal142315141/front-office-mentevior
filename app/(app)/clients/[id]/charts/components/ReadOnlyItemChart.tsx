@@ -23,6 +23,7 @@ import { DurationChart } from "../../configuration/components/datasheets/Duratio
 import { ActiveObjectiveBanner } from "../../configuration/components/datasheets/ActiveObjectiveBanner"
 import { computeHiddenDayKeys } from "../../configuration/components/datasheets/chart-gaps"
 import type { WeekEntries } from "../../configuration/components/datasheets/frequency-datasheet.types"
+import type { EnvironmentalChangesDisplay } from "@/lib/types/data-collection.types"
 
 /**
  * Qué renderer sabe dibujar el item sin la pantalla de captura.
@@ -67,6 +68,8 @@ interface ReadOnlyItemChartProps {
   chartDays: Date[]
   interval: ChartInterval
   tickInterval: number
+  /** Cómo eligió el proveedor ver los environmental changes de este item. */
+  environmentalChanges?: EnvironmentalChangesDisplay
   onOpen?: () => void
 }
 
@@ -84,6 +87,7 @@ export function ReadOnlyItemChart({
   chartDays,
   interval,
   tickInterval,
+  environmentalChanges,
   onOpen,
 }: ReadOnlyItemChartProps) {
   const kind = resolveChartKind(collectionMethodName)
@@ -195,6 +199,7 @@ export function ReadOnlyItemChart({
                 itemBaselines={baselines}
                 itemObjectives={objectives}
                 unitLabel={unitLabelFrom(unitOfTime)}
+                environmentalChanges={environmentalChanges}
               />
             ) : (
               <FrequencyChart
@@ -209,6 +214,7 @@ export function ReadOnlyItemChart({
                 interval={interval}
                 itemBaselines={baselines}
                 itemObjectives={objectives}
+                environmentalChanges={environmentalChanges}
                 compact
               />
             )}

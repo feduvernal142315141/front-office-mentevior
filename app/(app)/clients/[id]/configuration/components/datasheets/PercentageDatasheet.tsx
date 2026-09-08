@@ -389,6 +389,7 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <PercentageChart
+          environmentalChanges={activeItem.environmentalChanges}
           weekDays={ds.weekDays}
           entries={percentageEntries}
           dcConfig={dcConfig}
@@ -423,7 +424,7 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
         )}
       </div>
 
-      <EnvironmentalChangesLegend entries={ds.entries} />
+      <EnvironmentalChangesLegend entries={ds.entries} display={activeItem.environmentalChanges} />
     </div>
   )
 }
