@@ -429,9 +429,10 @@ previo. El niño puede tener otras terapias activas:
 > feeding therapy (yes/no), other: espacio para escribir, más otro espacio para el nombre
 > del lugar.
 
-**Estado.** Sólo existen `previousAbaTherapy` (string Yes/No) y `previousAgencyName`.
+**Estado.** Backend entregado (2026-09). Front cablea los 6 campos en create/edit/GET
+y UI de Other Services. Siguen existiendo `previousAbaTherapy` y `previousAgencyName`.
 
-### Contrato propuesto
+### Contrato
 
 ```json
 {
@@ -450,9 +451,10 @@ ABA previo, que es otra cosa.
 
 ### Criterios de aceptación
 
-- [ ] Los seis campos viajan en `POST`/`PUT` y vuelven en `GET /assessments/{id}`.
-- [ ] El PDF los imprime en la sección Other Services.
-- [ ] Un assessment viejo sin estos campos se lee sin error.
+- [x] Los seis campos viajan en `POST`/`PUT` y vuelven en `GET /assessments/{id}`.
+- [x] El PDF los imprime en la sección Other Services. (backend)
+- [x] Un assessment viejo sin estos campos se lee sin error.
+- [x] Front: form + payload + hydrate.
 
 ### Pregunta
 
@@ -466,55 +468,31 @@ ABA previo, que es otra cosa.
 **Pedido (F11).** *"Falta halar todo del service plan. Toda la información que está ahí debe
 salir en la pantalla para ser modificada y en el PDF."*
 
-**Estado.** `GET /client-service-plan/client/{clientId}/assessment-data` devuelve hoy, por
-item, sólo `id`, `name` y —desde el 2026-09-03— `hypothesizedFunction`.
+**Estado (2026-09).** Backend entregó un **cambio de contrato**: el endpoint es un **borrador
+de Assessment** (misma forma pública que `GET /assessments/{id}`: defaults 97151 + SP activo
++ providers + PA vigente). Front alineado: IDs fuente, hydrate en create, B8/meds/flags.
 
-### Qué necesitamos por item
+### Qué sigue faltando del pedido clínico F11 (por item)
 
 | Campo | Para qué |
 |---|---|
 | `topography` / descripción | Contexto clínico del item en la pantalla y en el PDF |
-| `collectionMethod` | Hoy el front lo resuelve pegándole a **otros** endpoints del service plan sólo para decidir si muestra Intensity (ver `use-client-item-collection-methods.ts`). Con esto se elimina ese rodeo |
+| `collectionMethod` | Hoy el front sigue con el rodeo SP (`useClientItemCollectionMethods`) |
 | `teachingProcedures` | Pedido F2 / B2 |
-| `objetiveType` y objetivos (STO) | Que el assessment refleje las metas vigentes |
+| `objetiveType` y objetivos (STO) | Metas vigentes en assessment |
 | `baseline` | Idem |
-| `intensityDescription` configurada, si existe | Ver [D3](../plans/iteracion-2026-09-05-definiciones.md#d3--descripción-de-la-intensidad-f12) |
+| `intensityDescription` configurada en SP | Ver [D3](../plans/iteracion-2026-09-05-definiciones.md#d3--descripción-de-la-intensidad-f12) |
 
-Y a nivel categoría, su nombre y tipo de colección.
+### Criterios de aceptación (borrador Assessment)
 
-### Contrato propuesto
+- [x] Una sola llamada alimenta create: categories + providers + billing + defaults.
+- [x] IDs fuente listos para `POST /assessments`.
+- [x] 200 con `categories: []` sin SP; `billingCodes: []` sin PA vigente.
+- [ ] Campos clínicos del SP por item (tabla arriba) — pendiente backend.
 
-Extender el item de `assessment-data` a:
+### Pregunta abierta
 
-```json
-{
-  "id": "…",
-  "name": "Aggression",
-  "topography": "Physical aggression toward others",
-  "collectionMethod": "Frequency",
-  "hypothesizedFunction": "ESCAPE",
-  "objetiveType": "Mastery",
-  "teachingProcedures": [ { "id": "…", "name": "Task Analysis" } ],
-  "baseline": [ { "date": "2026-08-24", "value": 0, "period": "Day" } ],
-  "objetive":  [ { "name": "STO#1 …", "startDate": "…", "estimatedEndDate": "…" } ]
-}
-```
-
-**Beneficio inmediato:** elimina el rodeo que hoy hace `useClientItemCollectionMethods` — tres
-llamadas al service plan del cliente sólo para saber el método de colección de cada item.
-
-### Criterios de aceptación
-
-- [ ] Una sola llamada alcanza para pintar la sección Categories & Items completa.
-- [ ] `GET /assessments/{id}` conserva en el snapshot lo que se imprimió.
-- [ ] El endpoint sigue respondiendo 200 con lista vacía si el cliente no tiene SP activo.
-
-### Pregunta abierta del 2026-09-03, todavía sin responder
-
-`/category-items` y `/assessment-data` siguen los dos publicados en dev
-(`getCategoriesWithItemsByClient` y `getAssessmentDataByClient`) y **ninguno está tipado en el
-swagger** (`type: object`). ¿`/category-items` queda deprecado? ¿`assessment-data` devuelve
-siempre `{ categories: [...] }`?
+¿`/category-items` queda deprecado? El front usa sólo `assessment-data`.
 
 ---
 

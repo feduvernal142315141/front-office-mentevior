@@ -118,13 +118,15 @@ export const ASSESSMENT_PDF_STRATEGY_GROUPS: {
  */
 /**
  * Secciones que van siempre en el assessment y siempre en el PDF: no tienen
- * switch y su flag viaja en `true` (pedido F9, 2026-09-05).
+ * switch y su flag viaja en `true` (pedido F9, 2026-09-05 + narrativas/estrategias
+ * del punto 3 del Word).
  *
  * Ojo: "siempre sale en el PDF" **no** es lo mismo que "no se puede guardar sin
  * esto" — la obligatoriedad para guardar se resuelve aparte en
  * `useAssessmentForm` (decisión D4, `plans/iteracion-2026-09-05-definiciones.md`).
  */
 export const ASSESSMENT_PDF_MANDATORY_FLAGS: ReadonlySet<AssessmentPdfFlagKey> = new Set([
+  // Bloques estructurales (F9)
   "showHousingFamily",
   "showBackgroundInformation",
   "showMedicalHistory",
@@ -132,6 +134,17 @@ export const ASSESSMENT_PDF_MANDATORY_FLAGS: ReadonlySet<AssessmentPdfFlagKey> =
   "showAssessmentCategories",
   "showRecommendedServices",
   "showProvidersOnFile",
+  // Narrativas generales + estrategias (Word §3: sin opción de PDF)
+  "showCoordinationOfCare",
+  "showMedicalNecessityStatement",
+  "showFamilyCaregiverTraining",
+  "showGeneralizationTraining",
+  "showServiceFadingTransitionPlan",
+  "showCrisisProcedures",
+  "showDischargePlanCriteria",
+  "showConsentAssessmentTreatment",
+  "showPreventiveAndAntecedentStrategies",
+  "showConsequenceBasedStrategies",
 ])
 
 export const ASSESSMENT_PDF_CLIENT_RECORD_FLAGS: { key: AssessmentPdfFlagKey; label: string }[] = [

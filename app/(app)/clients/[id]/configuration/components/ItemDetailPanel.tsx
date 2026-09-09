@@ -93,20 +93,9 @@ import type {
 // ---------------------------------------------------------------------------
 
 /**
- * Teaching Procedure y Hypothesized Function van siempre uno al lado del otro.
- * La grilla auto-ubica de izquierda a derecha, así que el par se parte cuando la
- * fila ya no tiene dos columnas libres: ahí Teaching Procedure abre fila nueva.
- * `spans` son las celdas que van ANTES del par, con su col-span.
+ * Layout (lg 4 cols): Type + Weekly (1 c/u), Hypothesized Function (2 cols),
+ * Teaching Procedure a ancho completo debajo. Misma grilla que el resto del form.
  */
-function pairSplitsAt(spans: number[], columns: number): boolean {
-  let cursor = 0
-  for (const span of spans) {
-    if (cursor + span > columns) cursor = 0
-    cursor += span
-    if (cursor >= columns) cursor = 0
-  }
-  return cursor + 2 > columns
-}
 
 function resolveChartConfig(chart?: ChartConfig): ChartConfig {
   if (!chart) return DEFAULT_CHART_CONFIG
@@ -517,25 +506,6 @@ export function ItemDetailPanel({
   const { groups: unitMeasurementGroups, isLoading: isLoadingUnitMeasurement } =
     useUnitMeasurementCatalog(isMeasurementLogType)
 
-  // Celdas que la grilla dibuja antes del par Teaching Procedure + Hypothesized
-  // Function, en el mismo orden del JSX. Mantener sincronizado si se agregan campos.
-  const leadingGridSpans = useMemo(() => {
-    const spans = [1] // Type
-    if (typeRequiresWeeklyDaily(resolvedType.name) && !typeRequiresUnitOfTime(resolvedType.name)) {
-      spans.push(1) // Weekly / Daily value
-    }
-    if (typeRequiresUnitOfTime(resolvedType.name)) spans.push(1, 1) // Unit of time + Weekly value
-    if (typeIsMeasurementLog(resolvedType.name)) spans.push(1, 1, 1) // Unit of measurement + Daily + Weekly
-    if (typeRequiresDailyAndWeekly(resolvedType.name)) spans.push(1, 1, 1, 1)
-    if (typeRequiresInterval(resolvedType.group)) spans.push(1, 1, 2) // Interval + Unit of time + Suggested
-    return spans
-  }, [resolvedType])
-
-  const pairStartClassName = cn(
-    pairSplitsAt(leadingGridSpans, 2) ? "sm:col-start-1" : "sm:col-start-auto",
-    pairSplitsAt(leadingGridSpans, 3) ? "lg:col-start-1" : "lg:col-start-auto",
-  )
-
   // Clear conditional fields only when the user changes type (after init).
   // Initial cleanup is done inside buildItemFormValues to keep defaults in sync.
   const prevTypeRef = useRef<string | null>(null)
@@ -760,8 +730,8 @@ export function ItemDetailPanel({
 
       {/* ── Content ── */}
       <div className="px-6 py-5 space-y-5">
-        {/* All fields in one grid: Type + conditional fields + Teaching Procedure (last) + Description (full width) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Type + campos condicionales + Function (2 cols) + Teaching (full) + Description */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Type — always first */}
           <div className="space-y-1">
             <Controller
@@ -1041,7 +1011,7 @@ export function ItemDetailPanel({
                 />
                 <FieldErrorText message={errors.unitOfTime?.message} />
               </div>
-              <div className="space-y-1 sm:col-span-2">
+              <div className="space-y-1 sm:col-span-2 lg:col-span-2">
                 <Controller
                   name="suggestedNumberOfRecordings"
                   control={control}
@@ -1062,8 +1032,18 @@ export function ItemDetailPanel({
             </>
           )}
 
-          {/* Teaching Procedure + Hypothesized Function — siempre juntos y al final */}
-          <div className={pairStartClassName}>
+          <div className="sm:col-span-2">
+            <MultiSelect
+              label="Hypothesized Function"
+              value={hypothesizedFunctions}
+              onChange={(values) => setHypothesizedFunctions(values as HypothesizedFunction[])}
+              options={HYPOTHESIZED_FUNCTION_OPTIONS}
+              tone="neutral"
+              placeholder="Select functions"
+            />
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-4">
             <MultiSelect
               label="Teaching Procedure"
               value={teachingProcedures}
@@ -1074,21 +1054,6 @@ export function ItemDetailPanel({
               tone="neutral"
               placeholder="Select teaching procedures"
               searchPlaceholder="Search teaching procedures..."
-              /* El cálculo responsive mira el ancho de la ventana; acá el campo
-                 ocupa un tercio, así que los tags se le montaban al chevron. */
-              maxVisibleTags={2}
-            />
-          </div>
-
-          <div>
-            <MultiSelect
-              label="Hypothesized Function"
-              value={hypothesizedFunctions}
-              onChange={(values) => setHypothesizedFunctions(values as HypothesizedFunction[])}
-              options={HYPOTHESIZED_FUNCTION_OPTIONS}
-              tone="neutral"
-              placeholder="Select functions"
-              maxVisibleTags={2}
             />
           </div>
 
@@ -1097,7 +1062,7 @@ export function ItemDetailPanel({
             Es una preferencia de lectura del proveedor, no parte del método de
             captura, así que va al final y con su propia explicación.
           */}
-          <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+          <div className="space-y-1 sm:col-span-2 lg:col-span-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Environmental changes on the chart
@@ -1149,7 +1114,7 @@ export function ItemDetailPanel({
           </div>
 
           {/* Description — full width row */}
-          <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+          <div className="space-y-1 sm:col-span-2 lg:col-span-4">
             <Controller
               name="topography"
               control={control}

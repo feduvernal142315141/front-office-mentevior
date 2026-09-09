@@ -34,13 +34,21 @@ export interface AssessmentCatalogItem {
   sortOrder: number
 }
 
-/** `GET /client-service-plan/client/{clientId}/category-items` — SP activo del cliente */
+/**
+ * Categoría del SP activo en `GET …/assessment-data`.
+ * `id` es siempre `clientServicePlanCategoryId` (el `id` del snapshot Assessment
+ * llega `null` en el borrador y no se usa en create).
+ */
 export interface ClientCategoryWithItems {
   id: string
   name: string
   items: ClientCategoryItemSummary[]
 }
 
+/**
+ * Item del SP en el borrador. `id` = `clientServicePlanCategoryItemId` (fuente
+ * para `categoriesItems[]` al guardar).
+ */
 export interface ClientCategoryItemSummary {
   id: string
   name: string
@@ -49,6 +57,71 @@ export interface ClientCategoryItemSummary {
    * Lista desde el contrato 2026-09-07.
    */
   hypothesizedFunctions: HypothesizedFunction[]
+  intensityKey: AssessmentIntensityKey | null
+  intensityDescription: string
+  prevalentSetting: string
+  preventiveStrategies: string
+  managementStrategies: string
+}
+
+/**
+ * Borrador de Assessment por cliente (`GET …/assessment-data`, contrato B9 2026-09).
+ * Misma forma pública que el detalle, con IDs de snapshot en null y IDs fuente
+ * listos para el create. No incluye `categoriesItems`: los items viven en
+ * `categories[].items[]`.
+ */
+export interface AssessmentDraft {
+  clientId: string
+  clientName: string
+  assessmentType: string
+  schoolName: string
+  timeInit: string
+  timeEnd: string
+  gradeCatalogId: string
+  schoolAddress: string
+  housingType: HousingType | ""
+  housingNumberRooms: number
+  housingNumberBathrooms: number
+  housingMemberRelationshipCatalogIds: string[]
+  housingInformation: string
+  medicalHistoryOtherDiagnosis: string
+  medicalHistoryMorbidities: string
+  medicalHistoryAllergies: string
+  medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | ""
+  previousAbaTherapy: string
+  previousAgencyName: string
+  otherServicesSpeechTherapy: boolean
+  otherServicesOccupationalTherapy: boolean
+  otherServicesPhysicalTherapy: boolean
+  otherServicesFeedingTherapy: boolean
+  otherServicesOther: string
+  otherServicesFacilityName: string
+  backgroundSummary: string
+  backgroundStrengths: string
+  backgroundWeaknesses: string
+  backgroundInterest: string
+  backgroundCommunicationSkills: string
+  backgroundAcademicSkills: string
+  backgroundSelfCareSkills: string
+  backgroundSocialSkills: string
+  backgroundSafetySkills: string
+  backgroundSelfAdvocacy: string
+  backgroundSelfPreservationSkills: string
+  backgroundMotorSkills: string
+  currentMedicationsDenied: boolean
+  currentMedicationsNote: string
+  currentMedications: AssessmentMedicationInput[]
+  observations: AssessmentObservationInput[]
+  assessmentConductedCatalogIds: string[]
+  categories: ClientCategoryWithItems[]
+  billingCodes: AssessmentBillingCodeInput[]
+  /** Código resuelto para UI (label); el create manda `billingCodeId`. */
+  billingCodeLabels: Record<string, string>
+  proposedSchedule: AssessmentProposedScheduleInput[]
+  abcData: AssessmentAbcInput[]
+  providerFiles: AssessmentProviderFileInput[]
+  pdfTexts: AssessmentPdfTexts
+  pdfFlags: AssessmentPdfFlags
 }
 
 export interface AssessmentMedicationInput {
@@ -244,6 +317,18 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields, Assessmen
   previousAbaTherapy: string
   previousAgencyName: string
   /**
+   * B8 (2026-09): terapias activas además del historial ABA. Los booleanos default
+   * `false` en backend si llegan omitidos/null. El PDF los pinta como Yes/No.
+   */
+  otherServicesSpeechTherapy: boolean
+  otherServicesOccupationalTherapy: boolean
+  otherServicesPhysicalTherapy: boolean
+  otherServicesFeedingTherapy: boolean
+  /** Texto libre de otra terapia activa (nullable en wire). */
+  otherServicesOther: string | null
+  /** Nombre del lugar / facility de las terapias activas (nullable en wire). */
+  otherServicesFacilityName: string | null
+  /**
    * Contrato 2026-09-07: el caregiver declaró que no hay medicación. Con `true` el
    * PDF imprime la nota en vez de la tabla, aunque queden filas persistidas, y
    * `currentMedications` deja de ser requerido.
@@ -338,6 +423,12 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   medicalHistoryTypeOfBirth: MedicalHistoryTypeOfBirth | ""
   previousAbaTherapy: string
   previousAgencyName: string
+  otherServicesSpeechTherapy: boolean
+  otherServicesOccupationalTherapy: boolean
+  otherServicesPhysicalTherapy: boolean
+  otherServicesFeedingTherapy: boolean
+  otherServicesOther: string
+  otherServicesFacilityName: string
   currentMedicationsDenied: boolean
   currentMedicationsNote: string
   currentMedications: AssessmentMedicationInput[]

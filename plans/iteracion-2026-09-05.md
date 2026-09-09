@@ -33,8 +33,8 @@
 | **F9.2b** | Medical history: ver y editar el diagnóstico en pantalla | Frank | Front + Backend | 🔧 [B4](../docs/pedidos-backend-2026-09-05.md#b4--diagnóstico-del-assessment-visible-y-editable) |
 | **F9.3** | Current medications: checkmark "caregiver denied any medications at this time" | Frank | Front + Backend | ✅ Hecho (`d1d2901`) · [detalle](../docs/contratos-backend-2026-09-07.md#b5--current-medications-denied) |
 | **F9.6** | Providers del assessment: BCBA halado del service plan + other providers con especialidad | Frank | Front + Backend | 🔧 [B6](../docs/pedidos-backend-2026-09-05.md#b6--providers-del-assessment-halados-del-service-plan) |
-| **F10** | Other services: Speech / OT / PT / Feeding (yes/no) + other + lugar | Frank | Front + Backend | 🔧 [B8](../docs/pedidos-backend-2026-09-05.md#b8--other-services-terapias-activas) |
-| **F11** | Halar todo el service plan al assessment (pantalla + PDF) | Frank | Front + Backend | 🔧 [B9](../docs/pedidos-backend-2026-09-05.md#b9--assessment-data-completo-del-service-plan) |
+| **F10** | Other services: Speech / OT / PT / Feeding (yes/no) + other + lugar | Frank | Front + Backend | ✅ [B8](../docs/pedidos-backend-2026-09-05.md#b8--other-services-terapias-activas) |
+| **F11** | Halar todo el service plan al assessment (pantalla + PDF) | Frank | Front + Backend | 🔧 [B9](../docs/pedidos-backend-2026-09-05.md#b9--assessment-data-completo-del-service-plan) (borrador Assessment ✅; campos clínicos SP pendientes) |
 | **L4a** | Service log: por el ojito no sale nada | Lidia | Reproducir + Backend | 🔧 [B10](../docs/pedidos-backend-2026-09-05.md#b10--service-log-vacío-visto-desde-el-ojito) |
 | **L4b** | Si se cambia la nota (fecha, lugar de servicio…), que el service log se actualice | Lidia | Backend | 🔧 [B11](../docs/pedidos-backend-2026-09-05.md#b11--service-log-que-refleje-los-cambios-de-la-nota) |
 | **L5** | Que pase a billing cuando el service log esté bloqueado | Lidia | Backend | 🔧 [B12](../docs/pedidos-backend-2026-09-05.md#b12--bloqueo-del-service-log-y-paso-a-billing) |
@@ -58,9 +58,9 @@ cuenta, está en
 
 ### Lo que queda
 
-**Esperando backend — 9 pedidos:** B3 (F8), B4 (F9.2b), B6 (F9.6), B7 (L3, mejora), B8 (F10),
+**Esperando backend — 8 pedidos:** B3 (F8), B4 (F9.2b), B6 (F9.6), B7 (L3, mejora),
 B9 (F11), B10 (L4a), B11 (L4b), B12 (L5). Más el campo faltante de B1 y la regresión de la
-columna Status de Claim.MD.
+columna Status de Claim.MD. **B8 (F10) cerrado** en front + backend.
 
 **Esperando definición — 3 pedidos:** D1 (F3), D2 (F5), D3 (F12). Más D5, que prioriza lo
 único que quedó a medias del bloque de front: el guard en los modales del wizard del cliente.

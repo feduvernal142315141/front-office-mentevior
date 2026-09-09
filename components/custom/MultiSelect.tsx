@@ -29,6 +29,11 @@ interface MultiSelectProps {
   /** Open the panel above the trigger (e.g. near bottom of a modal) */
   dropdownPosition?: "top" | "bottom"
   tone?: "brand" | "neutral"
+  /**
+   * `comfortable`: más alto, tags en wrap sin clip — para campos anchos donde
+   * el multi-select debe leerse más grande que un select simple.
+   */
+  density?: "default" | "comfortable"
   /** Override the responsive maxVisibleTags calculation (e.g. when the field is narrower than full-width) */
   maxVisibleTags?: number
 }
@@ -48,6 +53,7 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
   searchPlaceholder = "Search...",
   dropdownPosition = "bottom",
   tone = "brand",
+  density = "default",
   maxVisibleTags: maxVisibleTagsProp,
 }, ref) {
   const [isOpen, setIsOpen] = useState(false)
@@ -56,17 +62,20 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const isComfortable = density === "comfortable"
   
   const hasValue = value && value.length > 0
   const selectedOptions = options.filter(opt => value.includes(opt.value))
-  const displayText = hasValue 
-    ? `${selectedOptions.length} selected` 
-    : placeholder
   
-  const [maxVisibleTagsResponsive, setMaxVisibleTagsResponsive] = useState(2)
-  const maxVisibleTags = maxVisibleTagsProp ?? maxVisibleTagsResponsive
-  const visibleTags = selectedOptions.slice(0, maxVisibleTags)
-  const remainingCount = selectedOptions.length - maxVisibleTags
+  // Sin tope por defecto: el campo crece y hace wrap. Quien necesite compacto
+  // (billing codes, etc.) pasa `maxVisibleTags` explícito.
+  const maxVisibleTags = maxVisibleTagsProp ?? Number.POSITIVE_INFINITY
+  const visibleTags = Number.isFinite(maxVisibleTags)
+    ? selectedOptions.slice(0, maxVisibleTags)
+    : selectedOptions
+  const remainingCount = Number.isFinite(maxVisibleTags)
+    ? Math.max(0, selectedOptions.length - maxVisibleTags)
+    : 0
 
   const selectedTagClass =
     tone === "neutral"
@@ -117,29 +126,6 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
       return () => document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [isOpen, onBlur])
-
-  useEffect(() => {
-    const updateMaxVisibleTags = () => {
-      const width = window.innerWidth
-      if (width >= 1280) {
-        setMaxVisibleTagsResponsive(5)
-        return
-      }
-      if (width >= 1000) {
-        setMaxVisibleTagsResponsive(3)
-        return
-      }
-      if (width >= 768) {
-        setMaxVisibleTagsResponsive(2)
-        return
-      }
-      setMaxVisibleTagsResponsive(1)
-    }
-
-    updateMaxVisibleTags()
-    window.addEventListener("resize", updateMaxVisibleTags)
-    return () => window.removeEventListener("resize", updateMaxVisibleTags)
-  }, [])
 
   useEffect(() => {
     if (isOpen && searchable && searchInputRef.current) {
@@ -213,48 +199,57 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
             `
             w-full
             premium-input
+            !h-auto
             min-h-[52px] 2xl:min-h-[56px]
-            px-4 pr-12
+            !px-4 !pr-12 !py-2.5
             rounded-[16px]
             text-[15px] 2xl:text-[16px]
+            overflow-visible
             
             text-left
             cursor-pointer
             
             transition-all duration-200
             
-            flex flex-nowrap md:flex-wrap items-center gap-2
+            flex flex-wrap items-center gap-2
           `,
+            isComfortable && "min-h-[64px] items-start !py-3",
             hasError && "premium-input-error",
             !hasValue && !disabled && "text-gray-400",
             disabled && "!cursor-not-allowed"
           )}
         >
           {hasValue && (
-            <div className="flex items-center gap-2 py-1 overflow-hidden flex-nowrap md:flex-wrap min-w-0">
+            <div className="flex min-w-0 w-full flex-wrap items-center gap-2 py-0.5 pr-1">
               {visibleTags.map((option) => (
                 <span
                   key={option.value}
                   className={cn(
-                    "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm whitespace-nowrap flex-shrink-0 max-w-[180px] truncate",
+                    "inline-flex max-w-full items-center gap-1 rounded-lg px-2 py-1 text-sm",
                     disabled ? "bg-gray-100 text-gray-600" : selectedTagClass
                   )}
                 >
-                  {option.tagLabel ?? option.label}
+                  <span className="min-w-0 truncate">
+                    {option.tagLabel ?? option.label}
+                  </span>
                   {!disabled && (
                     <span
                       role="button"
                       tabIndex={0}
                       onClick={(e) => handleRemove(option.value, e)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault()
                           handleRemove(option.value, e as any)
                         }
                       }}
-                      className={cn("rounded-full p-0.5 cursor-pointer", removeTagClass)}
+                      className={cn(
+                        "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
+                        removeTagClass,
+                      )}
+                      aria-label={`Remove ${option.tagLabel ?? option.label}`}
                     >
-                      <X className="w-3 h-3" />
+                      <X className="h-3 w-3" />
                     </span>
                   )}
                 </span>
@@ -262,11 +257,11 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
               {remainingCount > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap flex-shrink-0 cursor-pointer max-w-[140px] truncate">
+                    <span className="inline-flex shrink-0 cursor-pointer items-center whitespace-nowrap rounded-lg bg-gray-100 px-2 py-1 text-sm font-medium text-gray-600">
                       +{remainingCount} more
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent side="top" sideOffset={6} className="bg-slate-900 text-white max-w-xs z-[9999]">
+                  <TooltipContent side="top" sideOffset={6} className="z-[9999] max-w-xs bg-slate-900 text-white">
                     <div className="flex flex-col gap-1">
                       {selectedOptions.slice(maxVisibleTags).map((opt) => (
                         <span key={opt.value}>{opt.tagLabel ?? opt.label}</span>

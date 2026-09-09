@@ -1,6 +1,5 @@
 "use client"
 
-import { useCallback, useState } from "react"
 import { FileText } from "lucide-react"
 import { CollapsableSection } from "@/components/custom/CollapsableSection"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
@@ -9,72 +8,37 @@ import {
   ASSESSMENT_PDF_STRATEGY_GROUPS,
 } from "@/lib/constants/assessment.constants"
 import type {
-  AssessmentPdfFlagKey,
-  AssessmentPdfFlags,
   AssessmentPdfTextKey,
   AssessmentPdfTexts,
 } from "@/lib/types/assessment.types"
-import { SectionPdfToggle } from "./SectionPdfToggle"
 
 interface PdfNarrativesSectionsProps {
   values: AssessmentPdfTexts
-  flags: AssessmentPdfFlags
   /** Claves: la key del texto (narrativa) o el flagKey del grupo (estrategias) */
   errors: Record<string, string>
   disabled?: boolean
   onUpdate: (key: AssessmentPdfTextKey, value: string) => void
-  onUpdateFlag: (key: AssessmentPdfFlagKey, value: boolean) => void
 }
 
 /**
- * Narrativas editables del PDF, colapsadas por defecto porque son párrafos
- * largos: en create llegan precargadas con el texto estándar (el mismo default
- * del backend) y en edit con lo persistido. Cada sección lleva su switch de
- * visibilidad en el header; los bloques de estrategias tienen un flag único.
+ * Narrativas editables del PDF, colapsadas por defecto. Van siempre al PDF
+ * (pedido Word §3): sin switch "Include in PDF"; el flag se manda `true`.
  */
 export function PdfNarrativesSections({
   values,
-  flags,
   errors,
   disabled,
   onUpdate,
-  onUpdateFlag,
 }: PdfNarrativesSectionsProps) {
-  /**
-   * Encender un switch expande su sección de inmediato (y apagar la cierra);
-   * después el usuario puede colapsarla a mano sin que se vuelva a forzar.
-   * `undefined` = sin override, comportamiento normal del colapsable.
-   */
-  const [openOverrides, setOpenOverrides] = useState<Partial<Record<AssessmentPdfFlagKey, boolean>>>({})
-
-  const handleFlagChange = useCallback(
-    (flagKey: AssessmentPdfFlagKey, value: boolean) => {
-      onUpdateFlag(flagKey, value)
-      setOpenOverrides((prev) => ({ ...prev, [flagKey]: value }))
-    },
-    [onUpdateFlag],
-  )
-
   return (
     <>
-      {ASSESSMENT_PDF_GENERAL_NARRATIVES.map(({ key, flagKey, label }) => (
+      {ASSESSMENT_PDF_GENERAL_NARRATIVES.map(({ key, label }) => (
         <CollapsableSection
           key={key}
           icon={<FileText className="h-4 w-4" />}
           title={label}
           defaultOpen={false}
-          // Con el switch apagado queda plegada y sin expandir (el texto se
-          // conserva y se sigue enviando); encenderlo la expande, y un error
-          // la fuerza abierta para que el mensaje inline sea visible
-          forceOpen={errors[key] ? true : !flags[flagKey] ? false : openOverrides[flagKey]}
-          disabled={!flags[flagKey]}
-          headerAction={
-            <SectionPdfToggle
-              checked={flags[flagKey]}
-              onChange={(v) => handleFlagChange(flagKey, v)}
-              disabled={disabled}
-            />
-          }
+          forceOpen={errors[key] ? true : undefined}
         >
           <div data-field={key}>
             <FloatingTextarea
@@ -98,15 +62,7 @@ export function PdfNarrativesSections({
           title={group.title}
           subtitle={group.subtitle}
           defaultOpen={false}
-          forceOpen={errors[group.flagKey] ? true : !flags[group.flagKey] ? false : openOverrides[group.flagKey]}
-          disabled={!flags[group.flagKey]}
-          headerAction={
-            <SectionPdfToggle
-              checked={flags[group.flagKey]}
-              onChange={(v) => handleFlagChange(group.flagKey, v)}
-              disabled={disabled}
-            />
-          }
+          forceOpen={errors[group.flagKey] ? true : undefined}
         >
           <div data-field={group.flagKey}>
             {errors[group.flagKey] && (

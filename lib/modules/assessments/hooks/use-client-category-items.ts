@@ -1,10 +1,11 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import type { ClientCategoryWithItems } from "@/lib/types/assessment.types"
-import { getClientCategoryItems } from "../services/client-category-items.service"
+import type { AssessmentDraft, ClientCategoryWithItems } from "@/lib/types/assessment.types"
+import { getAssessmentDataByClient } from "../services/client-category-items.service"
 
-interface UseClientCategoryItemsReturn {
+interface UseAssessmentDataByClientReturn {
+  draft: AssessmentDraft | null
   categories: ClientCategoryWithItems[]
   isLoading: boolean
   error: Error | null
@@ -12,17 +13,19 @@ interface UseClientCategoryItemsReturn {
 }
 
 /**
- * Categorías + items del SP activo del cliente elegido en el formulario.
- * Sin cliente no pide nada; lista vacía = cliente sin Service Plan activo.
+ * Borrador de Assessment del cliente (`GET …/assessment-data`).
+ * Sin cliente no pide nada; categories vacías = sin SP activo (200).
  */
-export function useClientCategoryItems(clientId?: string | null): UseClientCategoryItemsReturn {
-  const [categories, setCategories] = useState<ClientCategoryWithItems[]>([])
+export function useAssessmentDataByClient(
+  clientId?: string | null,
+): UseAssessmentDataByClientReturn {
+  const [draft, setDraft] = useState<AssessmentDraft | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchCategories = useCallback(async () => {
+  const fetchDraft = useCallback(async () => {
     if (!clientId) {
-      setCategories([])
+      setDraft(null)
       setError(null)
       return
     }
@@ -30,18 +33,30 @@ export function useClientCategoryItems(clientId?: string | null): UseClientCateg
     try {
       setIsLoading(true)
       setError(null)
-      setCategories(await getClientCategoryItems(clientId))
+      setDraft(await getAssessmentDataByClient(clientId))
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch client category items"))
-      setCategories([])
+      setError(err instanceof Error ? err : new Error("Failed to fetch assessment data"))
+      setDraft(null)
     } finally {
       setIsLoading(false)
     }
   }, [clientId])
 
   useEffect(() => {
-    fetchCategories()
-  }, [fetchCategories])
+    void fetchDraft()
+  }, [fetchDraft])
 
-  return { categories, isLoading, error, refetch: fetchCategories }
+  return {
+    draft,
+    categories: draft?.categories ?? [],
+    isLoading,
+    error,
+    refetch: fetchDraft,
+  }
+}
+
+/** @deprecated Prefer `useAssessmentDataByClient` — mismo endpoint, sólo categorías. */
+export function useClientCategoryItems(clientId?: string | null) {
+  const { categories, isLoading, error, refetch } = useAssessmentDataByClient(clientId)
+  return { categories, isLoading, error, refetch }
 }

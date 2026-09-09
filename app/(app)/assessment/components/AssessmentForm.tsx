@@ -79,6 +79,16 @@ const PREVIOUS_ABA_THERAPY_OPTIONS = [
   { value: "No", label: "No" },
 ]
 
+/** B8: terapias activas viajan como boolean; el PDF las pinta Yes/No */
+const YES_NO_BOOL_OPTIONS = [
+  { value: "true", label: "Yes" },
+  { value: "false", label: "No" },
+]
+
+function boolToYesNo(value: boolean): string {
+  return value ? "true" : "false"
+}
+
 interface AssessmentFormProps {
   /** Presente al editar un assessment existente */
   assessmentId?: string
@@ -123,6 +133,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     isLoadingCatalogs,
     billingCodesLoading,
     credentialsLoading,
+    clientDraft,
     addMedication,
     removeMedication,
     updateMedication,
@@ -151,6 +162,12 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
   } = useAssessmentForm({ assessmentId })
 
   const canPersist = isEditing ? edit(PermissionModule.ASSESSMENT) : create(PermissionModule.ASSESSMENT)
+
+  const draftReady =
+    !isEditing &&
+    !!clientDraft &&
+    !!formData.clientId &&
+    (!clientDraft.clientId || clientDraft.clientId === formData.clientId)
 
   const statusInfo = deriveAssessmentStatusInfo(
     assessment?.status ?? "active",
@@ -288,6 +305,15 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             {isEditing && (
               <p className="mt-2 text-xs text-slate-400">
                 The client cannot be changed on an existing assessment.
+              </p>
+            )}
+            {!isEditing && formData.clientId && categoriesLoading && (
+              <p className="mt-2 text-xs text-slate-400">Loading service plan draft…</p>
+            )}
+            {draftReady && clientDraft?.assessmentType && (
+              <p className="mt-2 text-xs text-slate-500">
+                Draft type: <span className="font-medium text-slate-700">{clientDraft.assessmentType}</span>
+                {" · "}prefilled from active service plan, providers and prior authorization.
               </p>
             )}
           </div>
@@ -602,7 +628,11 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
       <Section
         icon={<Receipt className="h-4 w-4" />}
         title="Billing Codes"
-        subtitle="Proposed billing codes and units for this assessment"
+        subtitle={
+          draftReady && (clientDraft?.billingCodes.length ?? 0) > 0
+            ? "Prefilled from the client's active prior authorization — edit units and settings as needed"
+            : "Proposed billing codes and units for this assessment"
+        }
       >
         <div data-field="billingCodesSection">
         <BillingCodesSection
@@ -668,7 +698,11 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
       <Section
         icon={<Contact className="h-4 w-4" />}
         title="Providers"
-        subtitle="Other providers involved with the client"
+        subtitle={
+          draftReady && (clientDraft?.providerFiles.length ?? 0) > 0
+            ? "Prefilled from client providers (BCBA and related specialties) — you can add or remove rows"
+            : "Other providers involved with the client"
+        }
       >
         <div data-field="providerFiles">
         <ProviderFilesSection
@@ -687,7 +721,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
       <Section
         icon={<History className="h-4 w-4" />}
         title="Other Services"
-        subtitle="Previous ABA therapy history"
+        subtitle="Previous ABA therapy and other active therapies"
         contentHidden={!formData.pdfFlags.showOtherServices}
         headerAction={<SectionPdfToggle checked={formData.pdfFlags.showOtherServices} onChange={(v) => updatePdfFlag("showOtherServices", v)} disabled={isSaving} />}
       >
@@ -719,17 +753,63 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             />
             <FieldError message={errors.previousAgencyName} />
           </div>
+          <div data-field="otherServicesSpeechTherapy">
+            <FloatingSelect
+              label="Speech therapy"
+              value={boolToYesNo(formData.otherServicesSpeechTherapy)}
+              onChange={(v) => updateField("otherServicesSpeechTherapy", v === "true")}
+              options={YES_NO_BOOL_OPTIONS}
+            />
+          </div>
+          <div data-field="otherServicesOccupationalTherapy">
+            <FloatingSelect
+              label="Occupational therapy"
+              value={boolToYesNo(formData.otherServicesOccupationalTherapy)}
+              onChange={(v) => updateField("otherServicesOccupationalTherapy", v === "true")}
+              options={YES_NO_BOOL_OPTIONS}
+            />
+          </div>
+          <div data-field="otherServicesPhysicalTherapy">
+            <FloatingSelect
+              label="Physical therapy"
+              value={boolToYesNo(formData.otherServicesPhysicalTherapy)}
+              onChange={(v) => updateField("otherServicesPhysicalTherapy", v === "true")}
+              options={YES_NO_BOOL_OPTIONS}
+            />
+          </div>
+          <div data-field="otherServicesFeedingTherapy">
+            <FloatingSelect
+              label="Feeding therapy"
+              value={boolToYesNo(formData.otherServicesFeedingTherapy)}
+              onChange={(v) => updateField("otherServicesFeedingTherapy", v === "true")}
+              options={YES_NO_BOOL_OPTIONS}
+            />
+          </div>
+          <div data-field="otherServicesOther">
+            <FloatingInput
+              label="Other"
+              value={formData.otherServicesOther}
+              onChange={(v) => updateField("otherServicesOther", v)}
+              onBlur={() => {}}
+            />
+          </div>
+          <div data-field="otherServicesFacilityName">
+            <FloatingInput
+              label="Facility name"
+              value={formData.otherServicesFacilityName}
+              onChange={(v) => updateField("otherServicesFacilityName", v)}
+              onBlur={() => {}}
+            />
+          </div>
         </div>
       </Section>
 
       {/* ─── PDF: narrativas editables (cada una con su switch en el header) ─── */}
       <PdfNarrativesSections
         values={formData.pdfTexts}
-        flags={formData.pdfFlags}
         errors={errors}
         disabled={fieldsDisabled}
         onUpdate={updatePdfText}
-        onUpdateFlag={updatePdfFlag}
       />
 
       {/* Secciones del PDF que salen del expediente del cliente (sin sección propia acá) */}

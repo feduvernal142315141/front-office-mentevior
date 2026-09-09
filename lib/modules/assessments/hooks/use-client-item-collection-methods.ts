@@ -30,11 +30,14 @@ interface UseClientItemCollectionMethodsReturn {
 }
 
 /**
- * El `GET .../category-items` del Assessment no expone el método de colección,
- * así que se resuelve con los endpoints del Service Plan del cliente (los mismos
- * que usa Configuration > Data Collection): tipo de la categoría + override del
- * item, traducidos a nombre con el catálogo de type-event.
+ * El `GET .../assessment-data` del Assessment no expone el método de colección
+ * por item, así que se resuelve con los endpoints del Service Plan del cliente
+ * (los mismos que usa Configuration > Data Collection): tipo de la categoría +
+ * override del item, traducidos a nombre con el catálogo de type-event.
  * Cualquier fallo deja el mapa vacío: la UI trata "desconocido" como visible.
+ *
+ * Nota B9: cuando el borrador traiga `collectionMethod` por item, este hook se
+ * puede retirar.
  */
 export function useClientItemCollectionMethods(
   clientId: string | null | undefined,

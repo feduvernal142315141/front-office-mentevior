@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ASSESSMENT_PDF_FLAG_KEYS,
   ASSESSMENT_PDF_TEXT_KEYS,
@@ -20,6 +20,8 @@ import type {
   AssessmentObservationInput,
   AssessmentProposedScheduleInput,
   AssessmentProviderFileInput,
+  AssessmentDraft,
+  ClientCategoryWithItems,
   HousingType,
   HypothesizedFunction,
   MedicalHistoryTypeOfBirth,
@@ -30,11 +32,12 @@ import {
   ASSESSMENT_PDF_GENERAL_NARRATIVES,
   ASSESSMENT_PDF_MANDATORY_FLAGS,
   ASSESSMENT_PDF_STRATEGY_GROUPS,
+  CURRENT_MEDICATIONS_DENIED_DEFAULT_NOTE,
 } from "@/lib/constants/assessment.constants"
 import { ASSESSMENT_PDF_DEFAULT_TEXTS } from "@/lib/constants/assessment-pdf-default-texts"
 import { useAssessmentById } from "@/lib/modules/assessments/hooks/use-assessment-by-id"
 import { useAssessmentCatalogs } from "@/lib/modules/assessments/hooks/use-assessment-catalogs"
-import { useClientCategoryItems } from "@/lib/modules/assessments/hooks/use-client-category-items"
+import { useAssessmentDataByClient } from "@/lib/modules/assessments/hooks/use-client-category-items"
 import { useClientItemCollectionMethods } from "@/lib/modules/assessments/hooks/use-client-item-collection-methods"
 import { useSaveAssessment } from "@/lib/modules/assessments/hooks/use-save-assessment"
 import {
@@ -97,6 +100,12 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   // Other services (sección del PDF tras Providers on File)
   previousAbaTherapy: string
   previousAgencyName: string
+  otherServicesSpeechTherapy: boolean
+  otherServicesOccupationalTherapy: boolean
+  otherServicesPhysicalTherapy: boolean
+  otherServicesFeedingTherapy: boolean
+  otherServicesOther: string
+  otherServicesFacilityName: string
   // Collections
   /** Contrato 2026-09-07: el caregiver declaró que no hay medicación */
   currentMedicationsDenied: boolean
@@ -124,9 +133,9 @@ function buildDefaultPdfTexts(): AssessmentPdfTexts {
 }
 
 /**
- * En create todas las secciones parten APAGADAS (feedback Frank 2026-08-19):
- * el usuario enciende explícitamente lo que quiere imprimir y ahí la sección se
- * despliega para llenarse. En edit mandan los flags persistidos del registro.
+ * Antes de elegir cliente: sólo las obligatorias encendidas. Al cargar
+ * `assessment-data` se aplican los flags del borrador (backend: casi todos
+ * `true`, alineado al auto-create 97151). En edit mandan los del registro.
  */
 function buildDefaultPdfFlags(): AssessmentPdfFlags {
   const flags = {} as AssessmentPdfFlags
@@ -134,6 +143,109 @@ function buildDefaultPdfFlags(): AssessmentPdfFlags {
     flags[key] = ASSESSMENT_PDF_MANDATORY_FLAGS.has(key)
   }
   return flags
+}
+
+function categoryItemsFromDraft(
+  categories: ClientCategoryWithItems[],
+): Record<string, CategoryItemFormValue> {
+  const out: Record<string, CategoryItemFormValue> = {}
+  for (const category of categories) {
+    for (const item of category.items) {
+      const value: CategoryItemFormValue = {
+        intensityKey: item.intensityKey ?? "",
+        intensityDescription: item.intensityDescription,
+        // La precarga de hypothesizedFunction vive en hypothesizedFunctionByItemId
+        hypothesizedFunction: [],
+        prevalentSetting: item.prevalentSetting,
+        preventiveStrategies: item.preventiveStrategies,
+        managementStrategies: item.managementStrategies,
+      }
+      if (
+        !!value.intensityKey ||
+        !!value.intensityDescription.trim() ||
+        !!value.prevalentSetting.trim() ||
+        !!value.preventiveStrategies.trim() ||
+        !!value.managementStrategies.trim()
+      ) {
+        out[item.id] = value
+      }
+    }
+  }
+  return out
+}
+
+function billingRowsFromDraft(draft: AssessmentDraft): BillingCodeRow[] {
+  return draft.billingCodes.map((row) => ({
+    billingCodeId: row.billingCodeId,
+    unitsPeriod: row.unitsPeriod ? String(row.unitsPeriod) : "",
+    unitsWeek: row.unitsWeek ? String(row.unitsWeek) : "",
+    settings: row.settings,
+  }))
+}
+
+function scheduleRowsFromDraft(draft: AssessmentDraft): ScheduleRow[] {
+  return draft.proposedSchedule
+    .filter((row) => row.credentialId)
+    .map((row) => ({
+      credentialId: row.credentialId,
+      hours: parseProposedSchedule(row.schedule),
+    }))
+}
+
+/** Aplica el borrador de `assessment-data` al formulario de create. */
+function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft): AssessmentFormData {
+  return {
+    ...prev,
+    clientId: draft.clientId || prev.clientId,
+    schoolName: draft.schoolName,
+    timeInit: draft.timeInit,
+    timeEnd: draft.timeEnd,
+    gradeCatalogId: draft.gradeCatalogId,
+    schoolAddress: draft.schoolAddress,
+    housingType: draft.housingType,
+    housingNumberRooms: draft.housingNumberRooms,
+    housingNumberBathrooms: draft.housingNumberBathrooms,
+    housingMemberRelationshipCatalogIds: draft.housingMemberRelationshipCatalogIds,
+    housingInformation: draft.housingInformation,
+    medicalHistoryOtherDiagnosis: draft.medicalHistoryOtherDiagnosis,
+    medicalHistoryMorbidities: draft.medicalHistoryMorbidities,
+    medicalHistoryAllergies: draft.medicalHistoryAllergies,
+    medicalHistoryTypeOfBirth: draft.medicalHistoryTypeOfBirth,
+    previousAbaTherapy: draft.previousAbaTherapy,
+    previousAgencyName: draft.previousAgencyName,
+    otherServicesSpeechTherapy: draft.otherServicesSpeechTherapy,
+    otherServicesOccupationalTherapy: draft.otherServicesOccupationalTherapy,
+    otherServicesPhysicalTherapy: draft.otherServicesPhysicalTherapy,
+    otherServicesFeedingTherapy: draft.otherServicesFeedingTherapy,
+    otherServicesOther: draft.otherServicesOther,
+    otherServicesFacilityName: draft.otherServicesFacilityName,
+    backgroundSummary: draft.backgroundSummary,
+    backgroundStrengths: draft.backgroundStrengths,
+    backgroundWeaknesses: draft.backgroundWeaknesses,
+    backgroundInterest: draft.backgroundInterest,
+    backgroundCommunicationSkills: draft.backgroundCommunicationSkills,
+    backgroundAcademicSkills: draft.backgroundAcademicSkills,
+    backgroundSelfCareSkills: draft.backgroundSelfCareSkills,
+    backgroundSocialSkills: draft.backgroundSocialSkills,
+    backgroundSafetySkills: draft.backgroundSafetySkills,
+    backgroundSelfAdvocacy: draft.backgroundSelfAdvocacy,
+    backgroundSelfPreservationSkills: draft.backgroundSelfPreservationSkills,
+    backgroundMotorSkills: draft.backgroundMotorSkills,
+    currentMedicationsDenied: draft.currentMedicationsDenied,
+    currentMedicationsNote:
+      draft.currentMedicationsNote ||
+      (draft.currentMedicationsDenied ? CURRENT_MEDICATIONS_DENIED_DEFAULT_NOTE : ""),
+    currentMedications: draft.currentMedications,
+    observations: draft.observations,
+    assessmentConductedCatalogIds: draft.assessmentConductedCatalogIds,
+    categoryItems: categoryItemsFromDraft(draft.categories),
+    billingCodes: billingRowsFromDraft(draft),
+    proposedSchedule: scheduleRowsFromDraft(draft),
+    abcData: draft.abcData,
+    providerFiles: draft.providerFiles,
+    pdfTexts: draft.pdfTexts,
+    pdfFlags: draft.pdfFlags,
+  }
 }
 
 const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", frequency: "", details: "" }
@@ -169,6 +281,12 @@ const EMPTY_FORM: AssessmentFormData = {
   medicalHistoryTypeOfBirth: "",
   previousAbaTherapy: "",
   previousAgencyName: "",
+  otherServicesSpeechTherapy: false,
+  otherServicesOccupationalTherapy: false,
+  otherServicesPhysicalTherapy: false,
+  otherServicesFeedingTherapy: false,
+  otherServicesOther: "",
+  otherServicesFacilityName: "",
   backgroundSummary: "",
   backgroundStrengths: "",
   backgroundWeaknesses: "",
@@ -275,8 +393,14 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
   const [formData, setFormData] = useState<AssessmentFormData>(EMPTY_FORM)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  /** Evita re-aplicar el borrador si el usuario ya lo recibió para ese cliente. */
+  const hydratedDraftClientIdRef = useRef<string | null>(null)
 
-  const { categories, isLoading: categoriesLoading } = useClientCategoryItems(formData.clientId || null)
+  const {
+    draft: clientDraft,
+    categories,
+    isLoading: categoriesLoading,
+  } = useAssessmentDataByClient(formData.clientId || null)
   // Método de colección por item: decide si se muestran los campos de intensidad
   const { methodByItemId: collectionMethodByItemId, isLoading: collectionMethodsLoading } =
     useClientItemCollectionMethods(formData.clientId || null, categories)
@@ -303,13 +427,17 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
   // `active !== false`: algunos listados no incluyen el campo y un filtro
   // estricto dejaría el select vacío
-  const billingCodeOptions = useMemo(
-    () =>
-      (companyBillingCodes ?? [])
-        .filter((b) => b.active !== false)
-        .map((b) => ({ value: b.id, label: b.description ? `${b.code} — ${b.description}` : b.code })),
-    [companyBillingCodes],
-  )
+  const billingCodeOptions = useMemo(() => {
+    const options = (companyBillingCodes ?? [])
+      .filter((b) => b.active !== false)
+      .map((b) => ({ value: b.id, label: b.description ? `${b.code} — ${b.description}` : b.code }))
+
+    const byId = new Map(options.map((o) => [o.value, o]))
+    for (const [id, code] of Object.entries(clientDraft?.billingCodeLabels ?? {})) {
+      if (!byId.has(id)) byId.set(id, { value: id, label: code })
+    }
+    return Array.from(byId.values())
+  }, [companyBillingCodes, clientDraft?.billingCodeLabels])
 
   const credentialOptions = useMemo(
     () =>
@@ -324,6 +452,15 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     if (isEditing || clients.length !== 1) return
     setFormData((prev) => (prev.clientId ? prev : { ...prev, clientId: clients[0].id }))
   }, [clients, isEditing])
+
+  // Create: hidratar desde assessment-data al elegir cliente (alineado al auto-create 97151)
+  useEffect(() => {
+    if (isEditing || !clientDraft || !formData.clientId) return
+    if (clientDraft.clientId && clientDraft.clientId !== formData.clientId) return
+    if (hydratedDraftClientIdRef.current === formData.clientId) return
+    hydratedDraftClientIdRef.current = formData.clientId
+    setFormData((prev) => applyAssessmentDraft(prev, clientDraft))
+  }, [clientDraft, formData.clientId, isEditing])
 
   // Precarga al editar
   useEffect(() => {
@@ -362,6 +499,12 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       medicalHistoryTypeOfBirth: assessment.medicalHistoryTypeOfBirth ?? "",
       previousAbaTherapy: assessment.previousAbaTherapy ?? "",
       previousAgencyName: assessment.previousAgencyName ?? "",
+      otherServicesSpeechTherapy: assessment.otherServicesSpeechTherapy,
+      otherServicesOccupationalTherapy: assessment.otherServicesOccupationalTherapy,
+      otherServicesPhysicalTherapy: assessment.otherServicesPhysicalTherapy,
+      otherServicesFeedingTherapy: assessment.otherServicesFeedingTherapy,
+      otherServicesOther: assessment.otherServicesOther ?? "",
+      otherServicesFacilityName: assessment.otherServicesFacilityName ?? "",
       backgroundSummary: assessment.backgroundSummary ?? "",
       backgroundStrengths: assessment.backgroundStrengths ?? "",
       backgroundWeaknesses: assessment.backgroundWeaknesses ?? "",
@@ -413,9 +556,21 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   const updateField = useCallback(
     <K extends keyof AssessmentFormData>(field: K, value: AssessmentFormData[K]) => {
       setFormData((prev) => {
-        // Cambiar de cliente invalida la evaluación por item: son items de otro SP
+        // Cambiar de cliente invalida la evaluación y el borrador del SP anterior
         if (field === "clientId" && value !== prev.clientId) {
-          return { ...prev, clientId: value as string, categoryItems: {} }
+          hydratedDraftClientIdRef.current = null
+          return {
+            ...prev,
+            clientId: value as string,
+            categoryItems: {},
+            providerFiles: [],
+            billingCodes: [],
+            proposedSchedule: [],
+            abcData: [],
+            observations: [],
+            assessmentConductedCatalogIds: [],
+            currentMedications: [],
+          }
         }
         return { ...prev, [field]: value }
       })
@@ -792,6 +947,12 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       medicalHistoryTypeOfBirth: formData.medicalHistoryTypeOfBirth || null,
       previousAbaTherapy: formData.previousAbaTherapy.trim(),
       previousAgencyName: formData.previousAgencyName.trim(),
+      otherServicesSpeechTherapy: formData.otherServicesSpeechTherapy,
+      otherServicesOccupationalTherapy: formData.otherServicesOccupationalTherapy,
+      otherServicesPhysicalTherapy: formData.otherServicesPhysicalTherapy,
+      otherServicesFeedingTherapy: formData.otherServicesFeedingTherapy,
+      otherServicesOther: formData.otherServicesOther.trim() || null,
+      otherServicesFacilityName: formData.otherServicesFacilityName.trim() || null,
       backgroundSummary: formData.backgroundSummary.trim(),
       backgroundStrengths: formData.backgroundStrengths.trim(),
       backgroundWeaknesses: formData.backgroundWeaknesses.trim(),
@@ -910,6 +1071,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     categoriesLoading: categoriesLoading || collectionMethodsLoading,
     collectionMethodByItemId,
     hypothesizedFunctionByItemId,
+    /** Borrador de create (`assessment-data`); null en edit o sin cliente. */
+    clientDraft,
     billingCodeOptions,
     credentialOptions,
     isLoadingCatalogs: catalogsLoading || relationshipsLoading,
