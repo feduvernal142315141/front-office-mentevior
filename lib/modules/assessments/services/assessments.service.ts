@@ -251,7 +251,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
   const categoriesItems: AssessmentCategoryItemEntry[] = arr(raw.categoriesItems).map((i) => ({
     clientServicePlanCategoryItemId: str(i.clientServicePlanCategoryItemId),
     itemName: str(i.clientServicePlanCategoryItemName) || str(i.itemName),
-    intensityKey: enumOrEmpty(i.intensityKey, ["MILD", "MODERATE", "HIGH"] as const) || null,
+    intensityKey: str(i.intensityKey) || null,
     intensityDescription: str(i.intensityDescription),
     hypothesizedFunction: parseHypothesizedFunctions(i.hypothesizedFunction),
     prevalentSetting: str(i.prevalentSetting),

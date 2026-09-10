@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { FolderOpen, Loader2, RotateCcw } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -7,7 +8,11 @@ import { MultiSelect } from "@/components/custom/MultiSelect"
 import { INTENSITY_KEY_OPTIONS } from "@/lib/constants/assessment.constants"
 import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
 import { typeIsFrequency } from "@/lib/modules/service-plans/constants/data-collection.constants"
-import type { ClientCategoryWithItems, HypothesizedFunction } from "@/lib/types/assessment.types"
+import type {
+  ClientCategoryWithItems,
+  HypothesizedFunction,
+  IntensityCatalogItem,
+} from "@/lib/types/assessment.types"
 import {
   EMPTY_CATEGORY_ITEM,
   type CategoryItemFormValue,
@@ -27,6 +32,8 @@ interface CategoryItemsSectionProps {
    * Lista desde el contrato 2026-09-07.
    */
   hypothesizedFunctionByItemId?: Record<string, HypothesizedFunction[]>
+  /** `GET /intensity/catalog` — name/description se guardan como strings en el assessment. */
+  intensities?: IntensityCatalogItem[]
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
   /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
@@ -56,6 +63,7 @@ export function CategoryItemsSection({
   categories,
   collectionMethodByItemId = {},
   hypothesizedFunctionByItemId = {},
+  intensities = [],
   isLoading,
   values,
   hasError,
@@ -63,6 +71,35 @@ export function CategoryItemsSection({
   onUpdate,
   onClear,
 }: CategoryItemsSectionProps) {
+  const catalogDescriptions = useMemo(
+    () => new Set(intensities.map((item) => item.description.trim()).filter(Boolean)),
+    [intensities],
+  )
+
+  const intensityOptions = useMemo(() => {
+    if (intensities.length === 0) return INTENSITY_KEY_OPTIONS
+    return intensities.map((item) => ({ value: item.name, label: item.name }))
+  }, [intensities])
+
+  const descriptionByName = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const item of intensities) {
+      map.set(item.name, item.description)
+    }
+    return map
+  }, [intensities])
+
+  const handleIntensityChange = (itemId: string, nextKey: string, current: CategoryItemFormValue) => {
+    onUpdate(itemId, "intensityKey", nextKey)
+    const catalogDescription = descriptionByName.get(nextKey)
+    if (catalogDescription == null) return
+    // Precarga del catálogo: sólo pisa si estaba vacío o era otra description del catálogo
+    const trimmed = current.intensityDescription.trim()
+    if (!trimmed || catalogDescriptions.has(trimmed)) {
+      onUpdate(itemId, "intensityDescription", catalogDescription)
+    }
+  }
+
   if (!clientSelected) {
     return (
       <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-8 ${hasError ? "border-red-300 bg-red-50/40" : "border-slate-200 bg-slate-50/60"}`}>
@@ -109,6 +146,11 @@ export function CategoryItemsSection({
               // Precarga del Service Plan: se muestra hasta que el usuario elija otras
               const hypothesizedFunction = hypothesizedFunctionByItemId[item.id] ?? []
 
+              const intensitySelectOptions =
+                value.intensityKey && !intensityOptions.some((o) => o.value === value.intensityKey)
+                  ? [...intensityOptions, { value: value.intensityKey, label: value.intensityKey }]
+                  : intensityOptions
+
               return (
                 <div
                   key={item.id}
@@ -133,12 +175,12 @@ export function CategoryItemsSection({
                     )}
                   </div>
                   {showIntensity && (
-                    <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-[180px_1fr]">
+                    <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-[200px_1fr]">
                       <FloatingSelect
                         label="Intensity"
                         value={value.intensityKey}
-                        onChange={(v) => onUpdate(item.id, "intensityKey", v)}
-                        options={INTENSITY_KEY_OPTIONS}
+                        onChange={(v) => handleIntensityChange(item.id, v, value)}
+                        options={intensitySelectOptions}
                         disabled={disabled}
                       />
                       <FloatingInput

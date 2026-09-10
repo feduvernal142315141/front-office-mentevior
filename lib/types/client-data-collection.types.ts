@@ -25,3 +25,13 @@ export interface ClientDataCollectionRecord {
   appointmentStatusName?: string
   environmentalChange?: string | null
 }
+
+/**
+ * GET /client-data-collection/by-category-id/{categoryId}
+ * Un grupo por item no eliminado de la categoría; el itemId no se repite
+ * dentro de cada registro del array `dataCollection`.
+ */
+export interface ClientDataCollectionByItemGroup {
+  clientServicePlanCategoryItemId: string
+  dataCollection: ClientDataCollectionRecord[]
+}

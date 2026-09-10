@@ -1,5 +1,4 @@
 import type {
-  AssessmentIntensityKey,
   AssessmentPdfFlagKey,
   AssessmentPdfTextKey,
   HousingType,
@@ -12,7 +11,8 @@ export const HOUSING_TYPE_LABELS: Record<HousingType, string> = {
   PPEC: "PPEC",
 }
 
-export const INTENSITY_KEY_LABELS: Record<AssessmentIntensityKey, string> = {
+/** Fallback si el catálogo no carga; el select principal usa `GET /intensity/catalog`. */
+export const INTENSITY_KEY_LABELS: Record<string, string> = {
   MILD: "Mild",
   MODERATE: "Moderate",
   HIGH: "High",

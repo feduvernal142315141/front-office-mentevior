@@ -51,7 +51,9 @@ function normalizeDraftItem(raw: unknown): ClientCategoryItemSummary {
       str(entry.name) ||
       str(entry.itemName),
     hypothesizedFunctions: parseHypothesizedFunctions(entry.hypothesizedFunction),
-    intensityKey: enumOrEmpty(entry.intensityKey, ["MILD", "MODERATE", "HIGH"] as const) || null,
+    intensityKey: typeof entry.intensityKey === "string" && entry.intensityKey.trim()
+      ? entry.intensityKey.trim()
+      : null,
     intensityDescription: str(entry.intensityDescription),
     prevalentSetting: str(entry.prevalentSetting),
     preventiveStrategies: str(entry.preventiveStrategies),

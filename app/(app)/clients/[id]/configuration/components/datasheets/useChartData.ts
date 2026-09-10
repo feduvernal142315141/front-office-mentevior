@@ -5,6 +5,7 @@ import { eachDayOfInterval, format } from "date-fns"
 import type { ChartInterval } from "@/lib/modules/service-plans/constants/chart.constants"
 import { ServicePlanValueType } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
 import type { ClientServicePlanItemBaseline, ClientServicePlanItemObjective } from "@/lib/types/client-service-plan.types"
+import type { ClientDataCollectionRecord } from "@/lib/types/client-data-collection.types"
 import { useClientDataCollectionValues } from "@/lib/modules/client-service-plan/hooks/use-client-data-collection-values"
 import {
   aggregateChartData,
@@ -23,6 +24,13 @@ interface UseChartDataParams {
   gridEntries: WeekEntries
   /** Dates whose value comes from data collection — never aggregated as baseline. */
   collectedDateKeys?: Set<string>
+  /**
+   * Si se pasa (incluso `[]`), no se hace GET por item: usa estos registros.
+   * Para gráficas agregadas precargadas con `…/by-category-id`.
+   */
+  preloadedRecords?: ClientDataCollectionRecord[]
+  /** Loading del preload (p.ej. fetch por categoría). */
+  preloadedLoading?: boolean
 }
 
 interface UseChartDataResult {
@@ -40,7 +48,11 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
     objectives,
     gridEntries,
     collectedDateKeys,
+    preloadedRecords,
+    preloadedLoading = false,
   } = params
+
+  const usePreload = preloadedRecords !== undefined
 
   // Treatment starts at the first STO's startDate
   const treatmentStartDate = useMemo(() => {
@@ -63,12 +75,15 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
     return format(chartDays[chartDays.length - 1], "yyyy-MM-dd")
   }, [chartDays])
 
-  // Fetch DC values for the chart's own range
+  // Fetch DC values for the chart's own range (omitido si vienen precargados)
   const dcValues = useClientDataCollectionValues({
-    clientServicePlanCategoryItemId,
-    startDate: fetchStart,
-    endDate: fetchEnd,
+    clientServicePlanCategoryItemId: usePreload ? "" : clientServicePlanCategoryItemId,
+    startDate: usePreload ? "" : fetchStart,
+    endDate: usePreload ? "" : fetchEnd,
   })
+
+  const records = usePreload ? preloadedRecords : dcValues.records
+  const recordsLoading = usePreload ? preloadedLoading : dcValues.isLoading
 
   // Build baseline date set for quick lookup
   const baselineDateKeys = useMemo(() => {
@@ -95,11 +110,11 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
   // Build DC value map from API response
   const dcValueMap = useMemo(() => {
     const map = new Map<string, number>()
-    for (const rec of dcValues.records) {
+    for (const rec of records) {
       map.set(rec.date.slice(0, 10), rec.value)
     }
     return map
-  }, [dcValues.records])
+  }, [records])
 
   // Merge all data sources into daily points
   const dailyPoints = useMemo<DailyDataPoint[]>(() => {
@@ -158,6 +173,6 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
 
   return {
     aggregatedPoints,
-    isLoading: dcValues.isLoading,
+    isLoading: recordsLoading,
   }
 }

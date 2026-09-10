@@ -15,12 +15,11 @@ import type {
   AssessmentBackgroundFields,
   AssessmentBillingCodeInput,
   AssessmentCategoryItemInput,
-  AssessmentIntensityKey,
+  AssessmentDraft,
   AssessmentMedicationInput,
   AssessmentObservationInput,
   AssessmentProposedScheduleInput,
   AssessmentProviderFileInput,
-  AssessmentDraft,
   ClientCategoryWithItems,
   HousingType,
   HypothesizedFunction,
@@ -55,7 +54,7 @@ import { useRelationshipCatalog } from "@/lib/modules/relationships/hooks/use-re
 
 /** Evaluación por item del SP; "" = sin capturar */
 export interface CategoryItemFormValue {
-  intensityKey: AssessmentIntensityKey | ""
+  intensityKey: string
   intensityDescription: string
   /** Vacía = el usuario no la tocó; se muestra la precarga del Service Plan */
   hypothesizedFunction: HypothesizedFunction[]
@@ -385,7 +384,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   const { save, isSaving } = useSaveAssessment({ assessmentId })
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
-  const { grades, conductedOptions, isLoading: catalogsLoading } = useAssessmentCatalogs()
+  const { grades, conductedOptions, intensities, isLoading: catalogsLoading } = useAssessmentCatalogs()
   const { relationships, isLoading: relationshipsLoading } = useRelationshipCatalog()
   // pageSize 0 = todos los billing codes configurados de la compañía
   const { billingCodes: companyBillingCodes, isLoading: billingCodesLoading } = useBillingCodes({ page: 0, pageSize: 0 })
@@ -1066,6 +1065,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     clientsLoading,
     grades,
     conductedOptions,
+    intensities,
     relationships,
     categories,
     categoriesLoading: categoriesLoading || collectionMethodsLoading,

@@ -12,6 +12,7 @@ import {
   typeRequiresUnitOfTime,
 } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import { useClientDataCollectionValues } from "@/lib/modules/client-service-plan/hooks/use-client-data-collection-values"
+import type { ClientDataCollectionRecord } from "@/lib/types/client-data-collection.types"
 import type {
   ClientServicePlanItemBaseline,
   ClientServicePlanItemObjective,
@@ -70,12 +71,18 @@ interface ReadOnlyItemChartProps {
   tickInterval: number
   /** Cómo eligió el proveedor ver los environmental changes de este item. */
   environmentalChanges?: EnvironmentalChangesDisplay
+  /**
+   * Precarga desde `GET …/by-category-id`. Si se pasa (incluso `[]`), no se
+   * pide el GET por item ni en esta tarjeta ni en `useChartData`.
+   */
+  preloadedRecords?: ClientDataCollectionRecord[]
+  preloadedLoading?: boolean
   onOpen?: () => void
 }
 
 /**
- * Una gráfica de item, de sólo lectura. Trae sus propios valores recolectados
- * del rango y los mezcla con los baselines configurados; no edita nada.
+ * Una gráfica de item, de sólo lectura. Mezcla valores recolectados del rango
+ * con los baselines configurados; no edita nada.
  */
 export function ReadOnlyItemChart({
   itemId,
@@ -88,19 +95,25 @@ export function ReadOnlyItemChart({
   interval,
   tickInterval,
   environmentalChanges,
+  preloadedRecords,
+  preloadedLoading = false,
   onOpen,
 }: ReadOnlyItemChartProps) {
   const kind = resolveChartKind(collectionMethodName)
+  const usePreload = preloadedRecords !== undefined
 
   const fetchStart = chartDays.length > 0 ? format(chartDays[0], "yyyy-MM-dd") : ""
   const fetchEnd =
     chartDays.length > 0 ? format(chartDays[chartDays.length - 1], "yyyy-MM-dd") : ""
 
   const dcValues = useClientDataCollectionValues({
-    clientServicePlanCategoryItemId: kind === "unsupported" ? "" : itemId,
-    startDate: fetchStart,
-    endDate: fetchEnd,
+    clientServicePlanCategoryItemId: usePreload || kind === "unsupported" ? "" : itemId,
+    startDate: usePreload || kind === "unsupported" ? "" : fetchStart,
+    endDate: usePreload || kind === "unsupported" ? "" : fetchEnd,
   })
+
+  const records = usePreload ? preloadedRecords : dcValues.records
+  const isLoadingRecords = usePreload ? preloadedLoading : dcValues.isLoading
 
   // Baselines configurados + valores recolectados (estos últimos pisan al baseline
   // de la misma fecha). Sin valor en vivo: acá nadie está capturando.
@@ -116,7 +129,7 @@ export function ReadOnlyItemChart({
       }
     }
 
-    for (const record of dcValues.records) {
+    for (const record of records) {
       result[record.date.slice(0, 10)] = {
         occurrences: record.value,
         initials: "",
@@ -125,11 +138,11 @@ export function ReadOnlyItemChart({
     }
 
     return result
-  }, [baselines, dcValues.records])
+  }, [baselines, records])
 
   const collectedDateKeys = useMemo(
-    () => new Set(dcValues.records.map((record) => record.date.slice(0, 10))),
-    [dcValues.records],
+    () => new Set(records.map((record) => record.date.slice(0, 10))),
+    [records],
   )
 
   const chartData = useChartData({
@@ -141,6 +154,8 @@ export function ReadOnlyItemChart({
     objectives,
     gridEntries: entries,
     collectedDateKeys,
+    preloadedRecords: usePreload ? preloadedRecords : undefined,
+    preloadedLoading: usePreload ? preloadedLoading : undefined,
   })
 
   const hiddenDayKeys = useMemo(
@@ -178,7 +193,7 @@ export function ReadOnlyItemChart({
       <div className="border-t border-slate-100 px-4 py-3">
         {kind === "unsupported" ? (
           <UnsupportedChart collectionMethodName={collectionMethodName} />
-        ) : dcValues.isLoading ? (
+        ) : isLoadingRecords || chartData.isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-5 w-5 animate-spin text-[#037ECC]" />
           </div>

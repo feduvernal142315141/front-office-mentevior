@@ -22,7 +22,13 @@ export type { HypothesizedFunction }
 export type AssessmentStatus = "read" | "active" | "close" | "lock"
 
 export type HousingType = "HOME" | "FOSTER_HOME" | "PPEC"
-export type AssessmentIntensityKey = "MILD" | "MODERATE" | "HIGH"
+/**
+ * Nivel de intensidad del item. Viaja como **string** en el Assessment
+ * (`intensityKey` + `intensityDescription`). El catálogo
+ * `GET /intensity/catalog` alimenta el select y precarga la description;
+ * registros viejos pueden traer `MILD` / `MODERATE` / `HIGH`.
+ */
+export type AssessmentIntensityKey = string
 /** Ojo: PascalCase, no SCREAMING_SNAKE como los demás enums */
 export type MedicalHistoryTypeOfBirth = "CaesareanSection" | "NaturalChildbirth"
 
@@ -32,6 +38,13 @@ export interface AssessmentCatalogItem {
   code: string
   name: string
   sortOrder: number
+}
+
+/** `GET /intensity/catalog` — name + description (contrato 2026-09-10) */
+export interface IntensityCatalogItem {
+  id: string
+  name: string
+  description: string
 }
 
 /**

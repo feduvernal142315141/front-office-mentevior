@@ -4,6 +4,7 @@ import type {
   UpsertClientDataCollectionDto,
   ClientDataCollectionQuery,
   ClientDataCollectionRecord,
+  ClientDataCollectionByItemGroup,
 } from "@/lib/types/client-data-collection.types"
 
 /**
@@ -28,6 +29,33 @@ export async function getClientDataCollectionValues(
   if (response.status === 204 || !response.data) return []
 
   return normalizeRecords(response.data)
+}
+
+/**
+ * GET /client-data-collection/by-category-id/{categoryId}?startDate&endDate
+ *
+ * Todas las data collections de los items no eliminados de la categoría en el
+ * rango. Un item sin datos en el rango llega con `dataCollection: []`.
+ */
+export async function getClientDataCollectionValuesByCategory(
+  categoryId: string,
+  startDate: string,
+  endDate: string,
+): Promise<ClientDataCollectionByItemGroup[]> {
+  const params = new URLSearchParams({ startDate, endDate })
+  const response = await serviceGet<unknown>(
+    `/client-data-collection/by-category-id/${encodeURIComponent(categoryId)}?${params.toString()}`,
+  )
+
+  if (!response || (response.status !== 200 && response.status !== 204)) {
+    throw new Error(
+      getApiErrorMessage(response?.data, "Failed to fetch data collection values by category"),
+    )
+  }
+
+  if (response.status === 204 || !response.data) return []
+
+  return normalizeByCategoryGroups(response.data)
 }
 
 /**
@@ -59,7 +87,25 @@ export async function upsertClientDataCollectionValue(
 
 // --- Helpers ---
 
-function normalizeRecords(data: unknown): ClientDataCollectionRecord[] {
+function normalizeByCategoryGroups(data: unknown): ClientDataCollectionByItemGroup[] {
+  const arr = extractArray(data)
+  return arr
+    .map((entry): ClientDataCollectionByItemGroup | null => {
+      if (!entry || typeof entry !== "object") return null
+      const raw = entry as Record<string, unknown>
+      const itemId = asString(raw.clientServicePlanCategoryItemId)
+      if (!itemId) return null
+      // El contrato no repite el itemId en cada registro hijo: lo inyectamos.
+      const records = normalizeRecords(raw.dataCollection, itemId)
+      return { clientServicePlanCategoryItemId: itemId, dataCollection: records }
+    })
+    .filter((g): g is ClientDataCollectionByItemGroup => g !== null)
+}
+
+function normalizeRecords(
+  data: unknown,
+  forcedItemId?: string,
+): ClientDataCollectionRecord[] {
   const arr = extractArray(data)
   return arr
     .map((item): ClientDataCollectionRecord | null => {
@@ -71,12 +117,14 @@ function normalizeRecords(data: unknown): ClientDataCollectionRecord[] {
       return {
         id,
         appointmentId: asString(rec.appointmentId),
-        clientServicePlanCategoryItemId: asString(rec.clientServicePlanCategoryItemId),
+        clientServicePlanCategoryItemId:
+          forcedItemId || asString(rec.clientServicePlanCategoryItemId),
         value: typeof rec.value === "number" ? rec.value : Number(rec.value) || 0,
         date,
         appointmentStatusId: asString(rec.appointmentStatusId) || undefined,
         appointmentStatusName: asString(rec.appointmentStatusName) || undefined,
-        environmentalChange: typeof rec.environmentalChange === "string" ? rec.environmentalChange : null,
+        environmentalChange:
+          typeof rec.environmentalChange === "string" ? rec.environmentalChange : null,
       }
     })
     .filter((r): r is ClientDataCollectionRecord => r !== null)

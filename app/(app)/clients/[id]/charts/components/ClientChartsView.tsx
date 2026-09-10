@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { format } from "date-fns"
 import { useRouter } from "next/navigation"
 import { LineChart, Loader2 } from "lucide-react"
 
@@ -10,11 +11,13 @@ import {
   getClientServicePlanCategories,
   getClientServicePlanCategoryItems,
 } from "@/lib/modules/client-service-plan/services/client-service-plan.service"
+import { useClientDataCollectionValuesByCategory } from "@/lib/modules/client-service-plan/hooks/use-client-data-collection-values-by-category"
 import { useTypeEventCatalog } from "@/lib/modules/service-plans/hooks/use-type-event-catalog"
 import type {
   ClientServicePlanCategoryMappedItem,
   ClientServicePlanCategorySummary,
 } from "@/lib/types/client-service-plan.types"
+import type { ChartInterval } from "@/lib/modules/service-plans/constants/chart.constants"
 
 import { ChartDateRangeToolbar } from "../../configuration/components/datasheets/ChartDateRangeToolbar"
 import { useChartDateRange } from "../../configuration/components/datasheets/useChartDateRange"
@@ -32,6 +35,9 @@ interface CategoryWithItems {
  * Un solo control de rango arriba gobierna todas las gráficas: con un toolbar
  * por tarjeta la pantalla se vuelve ilegible. Es sólo lectura — para capturar o
  * configurar se entra al item desde la tarjeta.
+ *
+ * Valores recolectados: 1× `GET …/by-category-id/{categoryId}` por categoría
+ * (no N× GET por item).
  */
 interface ClientChartsViewProps {
   clientId: string
@@ -121,6 +127,13 @@ export function ClientChartsView({
     [groups],
   )
 
+  const fetchStart =
+    chartRange.chartDays.length > 0 ? format(chartRange.chartDays[0], "yyyy-MM-dd") : ""
+  const fetchEnd =
+    chartRange.chartDays.length > 0
+      ? format(chartRange.chartDays[chartRange.chartDays.length - 1], "yyyy-MM-dd")
+      : ""
+
   if (isLoading || isLoadingCatalog) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -157,48 +170,99 @@ export function ClientChartsView({
       </div>
 
       {groups.map(({ category, items }) => (
-        <section key={category.id}>
-          <div className="mb-3 flex items-center gap-2">
-            <LineChart className="h-4 w-4 text-slate-400" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {category.categoryName}
-            </h2>
-            <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-bold tabular-nums text-slate-500">
-              {items.length}
-            </span>
-          </div>
-
-          {items.length === 0 ? (
-            <EmptyChartsCard message={`No items in ${category.categoryName}.`} />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
-              {items.map((item) => {
-                // El item puede pisar el método de la categoría con el suyo
-                const typeId = item.dataCollection?.typeEventCatalogId || category.typeEventCatalogId
-                const methodName =
-                  typeEventMap.get(typeId ?? "")?.name ?? category.typeEventCatalogName ?? ""
-
-                return (
-                  <ReadOnlyItemChart
-                    key={item.id}
-                    itemId={item.id}
-                    itemName={item.itemName}
-                    collectionMethodName={methodName}
-                    unitOfTime={item.dataCollection?.unitOfTime}
-                    baselines={item.baseline}
-                    objectives={item.objetive}
-                    chartDays={chartRange.chartDays}
-                    interval={chartRange.interval}
-                    tickInterval={chartRange.tickInterval}
-                    environmentalChanges={item.environmentalChanges}
-                    onOpen={openServicePlan}
-                  />
-                )
-              })}
-            </div>
-          )}
-        </section>
+        <CategoryChartsSection
+          key={category.id}
+          category={category}
+          items={items}
+          typeEventMap={typeEventMap}
+          chartDays={chartRange.chartDays}
+          interval={chartRange.interval}
+          tickInterval={chartRange.tickInterval}
+          fetchStart={fetchStart}
+          fetchEnd={fetchEnd}
+          onOpen={openServicePlan}
+        />
       ))}
     </div>
+  )
+}
+
+interface CategoryChartsSectionProps {
+  category: ClientServicePlanCategorySummary
+  items: ClientServicePlanCategoryMappedItem[]
+  typeEventMap: Map<string, { name: string }>
+  chartDays: Date[]
+  interval: ChartInterval
+  tickInterval: number
+  fetchStart: string
+  fetchEnd: string
+  onOpen: () => void
+}
+
+/**
+ * Una categoría = un GET de valores. Las tarjetas reciben el slice de su item
+ * y no vuelven a pegarle al endpoint por item.
+ */
+function CategoryChartsSection({
+  category,
+  items,
+  typeEventMap,
+  chartDays,
+  interval,
+  tickInterval,
+  fetchStart,
+  fetchEnd,
+  onOpen,
+}: CategoryChartsSectionProps) {
+  const { recordsByItemId, isLoading } = useClientDataCollectionValuesByCategory(
+    category.id,
+    fetchStart,
+    fetchEnd,
+  )
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-2">
+        <LineChart className="h-4 w-4 text-slate-400" />
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          {category.categoryName}
+        </h2>
+        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-bold tabular-nums text-slate-500">
+          {items.length}
+        </span>
+      </div>
+
+      {items.length === 0 ? (
+        <EmptyChartsCard message={`No items in ${category.categoryName}.`} />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+          {items.map((item) => {
+            // El item puede pisar el método de la categoría con el suyo
+            const typeId = item.dataCollection?.typeEventCatalogId || category.typeEventCatalogId
+            const methodName =
+              typeEventMap.get(typeId ?? "")?.name ?? category.typeEventCatalogName ?? ""
+
+            return (
+              <ReadOnlyItemChart
+                key={item.id}
+                itemId={item.id}
+                itemName={item.itemName}
+                collectionMethodName={methodName}
+                unitOfTime={item.dataCollection?.unitOfTime}
+                baselines={item.baseline}
+                objectives={item.objetive}
+                chartDays={chartDays}
+                interval={interval}
+                tickInterval={tickInterval}
+                environmentalChanges={item.environmentalChanges}
+                preloadedRecords={recordsByItemId.get(item.id) ?? []}
+                preloadedLoading={isLoading}
+                onOpen={onOpen}
+              />
+            )
+          })}
+        </div>
+      )}
+    </section>
   )
 }
