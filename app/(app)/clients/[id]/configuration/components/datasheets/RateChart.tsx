@@ -322,7 +322,7 @@ export function RateChart({
         <div className="flex items-center gap-4">
           {hasBaselineData && (
             <div className="flex items-center gap-1.5">
-              <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: baselineColor }} />
+              <div className="h-0 w-5 border-t-2 border-dashed" style={{ borderColor: baselineColor }} />
               <span className="text-xs text-slate-500">Baseline</span>
             </div>
           )}
@@ -408,6 +408,7 @@ export function RateChart({
               dataKey="baselineValue"
               stroke={baselineColor}
               strokeWidth={2}
+              strokeDasharray="6 3"
               dot={{ r: 4, fill: "white", stroke: baselineColor, strokeWidth: 2 }}
               activeDot={{ r: 6, fill: baselineColor, stroke: "white", strokeWidth: 2 }}
               connectNulls={false}
