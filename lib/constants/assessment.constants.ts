@@ -145,6 +145,8 @@ export const ASSESSMENT_PDF_MANDATORY_FLAGS: ReadonlySet<AssessmentPdfFlagKey> =
   "showConsentAssessmentTreatment",
   "showPreventiveAndAntecedentStrategies",
   "showConsequenceBasedStrategies",
+  // Other Services obligatorio (pedido Miriam 2026-09-14)
+  "showOtherServices",
 ])
 
 export const ASSESSMENT_PDF_CLIENT_RECORD_FLAGS: { key: AssessmentPdfFlagKey; label: string }[] = [

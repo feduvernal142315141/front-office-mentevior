@@ -724,8 +724,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         icon={<History className="h-4 w-4" />}
         title="Other Services"
         subtitle="Previous ABA therapy and other active therapies"
-        contentHidden={!formData.pdfFlags.showOtherServices}
-        headerAction={<SectionPdfToggle checked={formData.pdfFlags.showOtherServices} onChange={(v) => updatePdfFlag("showOtherServices", v)} disabled={isSaving} />}
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div data-field="previousAbaTherapy">
