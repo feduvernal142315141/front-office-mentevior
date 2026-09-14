@@ -178,6 +178,8 @@ export async function getServiceLogById(id: string): Promise<ServiceLogDetail | 
     providerId: toText(root.providerId),
     provider: toText(root.provider),
     credentials: toText(root.credentials),
+    npi: typeof root.npi === "string" ? root.npi : null,
+    mpi: typeof root.mpi === "string" ? root.mpi : null,
     priorAuthorizationNumber: toText(root.priorAuthorizationNumber),
     priorAuthorizationStartDate: toText(root.priorAuthorizationStartDate),
     priorAuthorizationEndDate: toText(root.priorAuthorizationEndDate),

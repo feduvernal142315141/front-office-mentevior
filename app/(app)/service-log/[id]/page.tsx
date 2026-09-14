@@ -134,6 +134,8 @@ export default function ServiceLogDetailPage({ params }: ServiceLogDetailPagePro
               <InfoCard icon={<Building2 className="h-4 w-4 text-[#037ECC]" />} label="Provider">
                 <Field label="Name" value={serviceLog.provider || "—"} />
                 <Field label="Credentials" value={serviceLog.credentials || "—"} />
+                <Field label="NPI" value={serviceLog.npi || "—"} />
+                <Field label="MPI" value={serviceLog.mpi || "—"} />
                 <Field label="Total hours" value={serviceLog.totalHours || "—"} />
               </InfoCard>
             </div>

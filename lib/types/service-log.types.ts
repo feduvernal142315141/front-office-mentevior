@@ -61,6 +61,9 @@ export interface ServiceLogDetail {
   providerId: string
   provider: string
   credentials: string
+  /** Copiados al crear el log; `null` si el proveedor no los tenía o es un log anterior a V32. */
+  npi: string | null
+  mpi: string | null
   /** Con varias autorizaciones en el rango, los valores vienen unidos con ` | ` */
   priorAuthorizationNumber: string
   priorAuthorizationStartDate: string
