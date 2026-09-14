@@ -24,14 +24,14 @@ import { ChartInterval } from "@/lib/modules/service-plans/constants/chart.const
 // Preset definitions
 // ---------------------------------------------------------------------------
 
-export type ChartRangePreset = "1W" | "2W" | "1M" | "3M" | "6M"
+export type ChartRangePreset = "1W" | "2W" | "1M" | "3M" | "6M" | "Custom"
 
 interface PresetConfig {
   label: string
   shiftFn: (date: Date, dir: 1 | -1) => Date
 }
 
-const PRESET_MAP: Record<ChartRangePreset, PresetConfig> = {
+const PRESET_MAP: Record<Exclude<ChartRangePreset, "Custom">, PresetConfig> = {
   "1W": {
     label: "1W",
     shiftFn: (d, dir) => (dir === 1 ? addWeeks(d, 1) : subWeeks(d, 1)),
@@ -61,7 +61,7 @@ const MIN_PRESET_FOR_INTERVAL: Record<string, ChartRangePreset | null> = {
   [ChartInterval.MONTHLY]: null, // monthly uses full-year range, presets disabled
 }
 
-export const CHART_RANGE_PRESETS: ChartRangePreset[] = ["1W", "2W", "1M", "3M", "6M"]
+export const CHART_RANGE_PRESETS: ChartRangePreset[] = ["1W", "2W", "1M", "3M", "6M", "Custom"]
 
 function startOfDayCopy(date: Date): Date {
   const copy = new Date(date)
@@ -89,6 +89,10 @@ interface UseChartDateRangeResult {
   setInterval: (interval: ChartInterval) => void
   /** Whether range presets are disabled (e.g., Monthly uses full year) */
   presetsDisabled: boolean
+  /** Custom range dates (only relevant when preset is "Custom") */
+  customStart: Date | null
+  customEnd: Date | null
+  setCustomRange: (start: Date, end: Date) => void
 }
 
 const WEEK_OPTS = { weekStartsOn: 0 as const } // Sunday
@@ -99,7 +103,7 @@ const WEEK_OPTS = { weekStartsOn: 0 as const } // Sunday
  * previous calendar week, and the month presets cover whole calendar months. The anchor's
  * remaining week/month days sit on the right, so today reads inside its familiar frame.
  */
-function buildRange(anchor: Date, preset: ChartRangePreset) {
+function buildRange(anchor: Date, preset: Exclude<ChartRangePreset, "Custom">) {
   switch (preset) {
     case "1W":
       return { start: startOfWeek(anchor, WEEK_OPTS), end: endOfWeek(anchor, WEEK_OPTS) }
@@ -129,6 +133,10 @@ export function useChartDateRange(
 
   const [anchor, setAnchor] = useState<Date>(endAnchor)
 
+  // Custom range state
+  const [customStart, setCustomStart] = useState<Date | null>(null)
+  const [customEnd, setCustomEnd] = useState<Date | null>(null)
+
   // Re-anchor the window when the item (or its session date) changes
   const syncKey = endAnchor.getTime()
   const prevSyncRef = useRef(syncKey)
@@ -138,17 +146,26 @@ export function useChartDateRange(
     setPresetState(initialPreset)
   }
 
+  const isCustom = preset === "Custom"
+
   // Monthly interval → full year range (Jan 1 - Dec 31)
-  const isMonthlyFullYear = interval === ChartInterval.MONTHLY
+  const isMonthlyFullYear = !isCustom && interval === ChartInterval.MONTHLY
   const presetsDisabled = isMonthlyFullYear
 
   // Baselines older than the window are NOT part of the range: they are drawn anyway, as a
   // pinned prefix, by the chart itself (see FrequencyChart / useChartData).
   const range = useMemo(() => {
+    if (isCustom && customStart && customEnd) {
+      return { start: customStart, end: customEnd }
+    }
+    if (isCustom) {
+      // Fallback to 1M while user hasn't selected dates yet
+      return buildRange(anchor, "1M")
+    }
     return isMonthlyFullYear
       ? { start: startOfYear(anchor), end: endOfYear(anchor) }
-      : buildRange(anchor, preset)
-  }, [anchor, preset, isMonthlyFullYear])
+      : buildRange(anchor, preset as Exclude<ChartRangePreset, "Custom">)
+  }, [anchor, preset, isMonthlyFullYear, isCustom, customStart, customEnd])
 
   const chartDays = useMemo(
     () => eachDayOfInterval({ start: range.start, end: range.end }),
@@ -165,41 +182,53 @@ export function useChartDateRange(
   }, [range, isMonthlyFullYear])
 
   const isAtToday = useMemo(() => {
+    if (isCustom) return true // no navigation in custom mode
     return isSameDay(anchor, endAnchor)
-  }, [anchor, endAnchor])
+  }, [anchor, endAnchor, isCustom])
 
   const setPreset = useCallback((p: ChartRangePreset) => {
-    if (presetsDisabled) return
+    if (presetsDisabled && p !== "Custom") return
     setPresetState(p)
-    setAnchor(endAnchor)
-    // 1W or 2W → auto-select Daily (weekly aggregation doesn't make sense for 1-2 weeks)
-    if ((p === "1W" || p === "2W") && interval !== ChartInterval.DAILY) {
-      setIntervalState(ChartInterval.DAILY)
+    if (p !== "Custom") {
+      setAnchor(endAnchor)
+      // 1W or 2W → auto-select Daily (weekly aggregation doesn't make sense for 1-2 weeks)
+      if ((p === "1W" || p === "2W") && interval !== ChartInterval.DAILY) {
+        setIntervalState(ChartInterval.DAILY)
+      }
     }
   }, [endAnchor, presetsDisabled, interval])
 
   const goToPrev = useCallback(() => {
+    if (isCustom) return
     setAnchor((current) =>
-      isMonthlyFullYear ? subYears(current, 1) : PRESET_MAP[preset].shiftFn(current, -1),
+      isMonthlyFullYear ? subYears(current, 1) : PRESET_MAP[preset as Exclude<ChartRangePreset, "Custom">].shiftFn(current, -1),
     )
-  }, [preset, isMonthlyFullYear])
+  }, [preset, isMonthlyFullYear, isCustom])
 
   const goToNext = useCallback(() => {
+    if (isCustom) return
     setAnchor((current) => {
-      const next = isMonthlyFullYear ? addYears(current, 1) : PRESET_MAP[preset].shiftFn(current, 1)
+      const next = isMonthlyFullYear ? addYears(current, 1) : PRESET_MAP[preset as Exclude<ChartRangePreset, "Custom">].shiftFn(current, 1)
       // Never scroll past the anchor — there is no data ahead of it
       return next.getTime() > endAnchor.getTime() ? endAnchor : next
     })
-  }, [preset, isMonthlyFullYear, endAnchor])
+  }, [preset, isMonthlyFullYear, endAnchor, isCustom])
 
   const goToToday = useCallback(() => {
     setAnchor(endAnchor)
   }, [endAnchor])
 
+  const setCustomRange = useCallback((start: Date, end: Date) => {
+    setCustomStart(startOfDayCopy(start))
+    setCustomEnd(startOfDayCopy(end))
+    setPresetState("Custom")
+  }, [])
+
   const tickInterval = 0
 
   const setInterval = useCallback((i: ChartInterval) => {
     setIntervalState(i)
+    if (isCustom) return
     // Auto-adjust preset when switching intervals
     const minPreset = MIN_PRESET_FOR_INTERVAL[i]
     if (minPreset) {
@@ -211,7 +240,7 @@ export function useChartDateRange(
         setAnchor(endAnchor)
       }
     }
-  }, [preset, endAnchor])
+  }, [preset, endAnchor, isCustom])
 
   return {
     preset,
@@ -228,5 +257,8 @@ export function useChartDateRange(
     interval,
     setInterval,
     presetsDisabled,
+    customStart,
+    customEnd,
+    setCustomRange,
   }
 }

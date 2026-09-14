@@ -160,6 +160,9 @@ export function ClientChartsView({
           onPrev={chartRange.goToPrev}
           onNext={chartRange.goToNext}
           onToday={chartRange.goToToday}
+          customStart={chartRange.customStart}
+          customEnd={chartRange.customEnd}
+          onCustomRangeChange={chartRange.setCustomRange}
         />
 
         {/* Category tabs */}

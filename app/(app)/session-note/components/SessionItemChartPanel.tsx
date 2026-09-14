@@ -392,6 +392,9 @@ function ItemChartView({
         onNext={chartRange.goToNext}
         onToday={chartRange.goToToday}
         compact={compact}
+        customStart={chartRange.customStart}
+        customEnd={chartRange.customEnd}
+        onCustomRangeChange={chartRange.setCustomRange}
       />
 
       <ActiveObjectiveBanner objectives={itemObjectives} />

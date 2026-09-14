@@ -400,7 +400,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
 
       {/* Chart - reuse PercentageChart */}
       <div className="space-y-3">
-        <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} />
+        <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} customStart={chartRange.customStart} customEnd={chartRange.customEnd} onCustomRangeChange={chartRange.setCustomRange} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
         <PercentageChart
           environmentalChanges={activeItem.environmentalChanges}
