@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
-import { LineChart, Loader2 } from "lucide-react"
+import { LayoutGrid, LineChart, Loader2 } from "lucide-react"
 
+import { cn } from "@/lib/utils"
 import { toast } from "@/lib/compat/sonner"
 import {
   getClientServicePlanByClientId,
@@ -29,21 +30,14 @@ interface CategoryWithItems {
 }
 
 /**
- * Todas las gráficas del cliente en una pantalla, agrupadas por categoría
- * (Maladaptive Behaviors, Replacement Behaviors, Caregiver Training…).
+ * Todas las gráficas del cliente organizadas por tabs de categoría.
  *
- * Un solo control de rango arriba gobierna todas las gráficas: con un toolbar
- * por tarjeta la pantalla se vuelve ilegible. Es sólo lectura — para capturar o
- * configurar se entra al item desde la tarjeta.
- *
- * Valores recolectados: 1× `GET …/by-category-id/{categoryId}` por categoría
- * (no N× GET por item).
+ * Solo se carga (GET …/by-category-id) la categoría seleccionada; las demás
+ * no disparan requests hasta que el usuario las activa.
  */
 interface ClientChartsViewProps {
   clientId: string
-  /** El del `spId` de la URL, si se entró desde Configuration. */
   clientServicePlanId?: string | null
-  /** Avisa el service plan que se resolvió, para que los links de vuelta lo lleven. */
   onServicePlanResolved?: (servicePlanId: string) => void
 }
 
@@ -56,9 +50,8 @@ export function ClientChartsView({
   const [groups, setGroups] = useState<CategoryWithItems[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasServicePlan, setHasServicePlan] = useState(true)
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null)
 
-  // Por ref: el aviso no debe hacer que la carga se vuelva a disparar si quien
-  // nos usa pasa la función en línea.
   const onServicePlanResolvedRef = useRef(onServicePlanResolved)
   onServicePlanResolvedRef.current = onServicePlanResolved
 
@@ -81,8 +74,6 @@ export function ClientChartsView({
         }
 
         const categories = await getClientServicePlanCategories(servicePlan.id)
-        // Una llamada por categoría: cada una ya devuelve sus items con baselines,
-        // objetivos y configuración, así que no hace falta pedir nivel por item.
         const loaded = await Promise.all(
           categories.map(async (category) => ({
             category,
@@ -93,6 +84,7 @@ export function ClientChartsView({
         if (active) {
           setGroups(loaded)
           setHasServicePlan(true)
+          if (loaded.length > 0) setActiveCategoryId(loaded[0].category.id)
           onServicePlanResolvedRef.current?.(servicePlan.id)
         }
       } catch {
@@ -112,10 +104,6 @@ export function ClientChartsView({
     }
   }, [clientId])
 
-  // La pantalla de configuración todavía no acepta el item por URL (sólo `spId`,
-  // `section`, `appointmentId` y `appointmentDate`), así que la tarjeta lleva al
-  // Service Plan del cliente y desde ahí se entra al item. El `spId` va sí o sí:
-  // sin él la configuración abre en "No service plan assigned".
   const openServicePlan = useCallback(() => {
     const query = new URLSearchParams({ section: "service-plan" })
     if (clientServicePlanId) query.set("spId", clientServicePlanId)
@@ -125,6 +113,11 @@ export function ClientChartsView({
   const totalItems = useMemo(
     () => groups.reduce((sum, group) => sum + group.items.length, 0),
     [groups],
+  )
+
+  const activeGroup = useMemo(
+    () => groups.find((g) => g.category.id === activeCategoryId) ?? null,
+    [groups, activeCategoryId],
   )
 
   const fetchStart =
@@ -153,8 +146,9 @@ export function ClientChartsView({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="sticky top-0 z-10 -mx-1 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
+    <div className="space-y-6">
+      {/* Sticky control bar: toolbar + category tabs */}
+      <div className="sticky top-0 z-10 -mx-1 space-y-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
         <ChartDateRangeToolbar
           preset={chartRange.preset}
           rangeLabel={chartRange.rangeLabel}
@@ -167,13 +161,47 @@ export function ClientChartsView({
           onNext={chartRange.goToNext}
           onToday={chartRange.goToToday}
         />
+
+        {/* Category tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+          <LayoutGrid className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+          {groups.map(({ category, items }) => {
+            const isActive = category.id === activeCategoryId
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setActiveCategoryId(category.id)}
+                className={cn(
+                  "group relative flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-200",
+                  isActive
+                    ? "bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white shadow-md shadow-[#037ECC]/20"
+                    : "border border-slate-200 bg-white text-slate-600 hover:border-[#037ECC]/30 hover:text-[#037ECC] hover:shadow-sm",
+                )}
+              >
+                <span className="truncate max-w-[180px]">{category.categoryName}</span>
+                <span
+                  className={cn(
+                    "inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums transition-colors",
+                    isActive
+                      ? "bg-white/25 text-white"
+                      : "bg-slate-100 text-slate-500 group-hover:bg-[#037ECC]/10 group-hover:text-[#037ECC]",
+                  )}
+                >
+                  {items.length}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {groups.map(({ category, items }) => (
+      {/* Active category content */}
+      {activeGroup && (
         <CategoryChartsSection
-          key={category.id}
-          category={category}
-          items={items}
+          key={activeGroup.category.id}
+          category={activeGroup.category}
+          items={activeGroup.items}
           typeEventMap={typeEventMap}
           chartDays={chartRange.chartDays}
           interval={chartRange.interval}
@@ -182,7 +210,7 @@ export function ClientChartsView({
           fetchEnd={fetchEnd}
           onOpen={openServicePlan}
         />
-      ))}
+      )}
     </div>
   )
 }
@@ -222,14 +250,18 @@ function CategoryChartsSection({
 
   return (
     <section>
-      <div className="mb-3 flex items-center gap-2">
-        <LineChart className="h-4 w-4 text-slate-400" />
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          {category.categoryName}
-        </h2>
-        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-bold tabular-nums text-slate-500">
-          {items.length}
-        </span>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10">
+          <LineChart className="h-4 w-4 text-[#037ECC]" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-slate-800">
+            {category.categoryName}
+          </h2>
+          <p className="text-xs text-slate-400">
+            {items.length} {items.length === 1 ? "item" : "items"}
+          </p>
+        </div>
       </div>
 
       {items.length === 0 ? (
@@ -237,7 +269,6 @@ function CategoryChartsSection({
       ) : (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
           {items.map((item) => {
-            // El item puede pisar el método de la categoría con el suyo
             const typeId = item.dataCollection?.typeEventCatalogId || category.typeEventCatalogId
             const methodName =
               typeEventMap.get(typeId ?? "")?.name ?? category.typeEventCatalogName ?? ""
