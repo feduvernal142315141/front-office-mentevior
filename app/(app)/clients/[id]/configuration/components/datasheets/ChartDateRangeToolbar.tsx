@@ -208,21 +208,17 @@ function CustomDateRangePicker({
 
   const sz = compact ? "text-[11px]" : "text-xs"
 
+  const btnCls = cn(
+    "flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-medium text-sm transition-all hover:border-[#037ECC]/30 hover:shadow-sm",
+    compact && "px-2 py-1 text-[11px]",
+  )
+
   return (
     <div className="flex items-center gap-2">
       <Popover open={startOpen} onOpenChange={setStartOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              "flex items-center gap-2 rounded-xl border-2 bg-white px-3 py-2 font-semibold transition-all hover:shadow-md",
-              sz,
-              start
-                ? "border-[#037ECC]/40 text-slate-800 shadow-sm"
-                : "border-[#037ECC]/20 text-slate-400 border-dashed",
-            )}
-          >
-            <CalendarDays className="h-4 w-4 text-[#037ECC] shrink-0" />
+          <button type="button" className={cn(btnCls, !start && "text-slate-400")}>
+            <CalendarDays className="h-3.5 w-3.5 text-[#037ECC] shrink-0" />
             {start ? format(start, "MMM dd, yyyy") : "Start date"}
           </button>
         </PopoverTrigger>
@@ -231,21 +227,12 @@ function CustomDateRangePicker({
         </PopoverContent>
       </Popover>
 
-      <span className="text-slate-300 font-bold text-sm">–</span>
+      <span className="text-slate-400 font-medium text-sm">–</span>
 
       <Popover open={endOpen} onOpenChange={setEndOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              "flex items-center gap-2 rounded-xl border-2 bg-white px-3 py-2 font-semibold transition-all hover:shadow-md",
-              sz,
-              end
-                ? "border-[#037ECC]/40 text-slate-800 shadow-sm"
-                : "border-[#037ECC]/20 text-slate-400 border-dashed",
-            )}
-          >
-            <CalendarDays className="h-4 w-4 text-[#037ECC] shrink-0" />
+          <button type="button" className={cn(btnCls, !end && "text-slate-400")}>
+            <CalendarDays className="h-3.5 w-3.5 text-[#037ECC] shrink-0" />
             {end ? format(end, "MMM dd, yyyy") : "End date"}
           </button>
         </PopoverTrigger>
