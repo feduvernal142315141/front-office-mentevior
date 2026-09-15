@@ -226,7 +226,7 @@ function CustomDateRangePicker({
             {start ? format(start, "MMM dd, yyyy") : "Start date"}
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent className="w-auto p-0 bg-white" align="end">
           <Calendar mode="single" selected={start ?? undefined} onSelect={handleStartSelect} initialFocus />
         </PopoverContent>
       </Popover>
@@ -249,7 +249,7 @@ function CustomDateRangePicker({
             {end ? format(end, "MMM dd, yyyy") : "End date"}
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent className="w-auto p-0 bg-white" align="end">
           <Calendar mode="single" selected={end ?? undefined} onSelect={handleEndSelect} disabled={start ? { before: start } : undefined} initialFocus />
         </PopoverContent>
       </Popover>
