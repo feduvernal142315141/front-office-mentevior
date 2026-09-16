@@ -37,7 +37,7 @@ export function PdfNarrativesSections({
           key={key}
           icon={<FileText className="h-4 w-4" />}
           title={label}
-          defaultOpen={false}
+          defaultOpen={true}
           forceOpen={errors[key] ? true : undefined}
         >
           <div data-field={key}>
@@ -61,7 +61,7 @@ export function PdfNarrativesSections({
           icon={<FileText className="h-4 w-4" />}
           title={group.title}
           subtitle={group.subtitle}
-          defaultOpen={false}
+          defaultOpen={true}
           forceOpen={errors[group.flagKey] ? true : undefined}
         >
           <div data-field={group.flagKey}>
