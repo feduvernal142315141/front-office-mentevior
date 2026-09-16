@@ -25,7 +25,7 @@ export interface AppointmentNote97156Intervention {
 export interface AppointmentNote97156 {
   id: string
   appointmentId: string
-  teachingMethod: AppointmentNoteTeachingMethod | null
+  teachingMethods: AppointmentNoteTeachingMethod[]
   modality: { id: string; name: string } | null
   reasonCaregiverNotPresent: string
   medicalConcerns: string
@@ -77,7 +77,7 @@ export interface AppointmentNote97156 {
 /** PUT /appointment/note/97156 request body */
 export interface UpdateAppointmentNote97156Payload {
   id: string
-  teachingMethodId?: string | null
+  teachingMethodIds?: string[]
   modalityId?: string | null
   reasonCaregiverNotPresent?: string
   medicalConcerns?: string
@@ -98,7 +98,7 @@ export interface UpdateAppointmentNote97156Payload {
 /** Client-side form state for 97156 */
 export interface SessionNote97156FormData {
   noteId: string
-  teachingMethodId: string
+  teachingMethodIds: string[]
   modalityId: string
   reasonCaregiverNotPresent: string
   medicalConcerns: string

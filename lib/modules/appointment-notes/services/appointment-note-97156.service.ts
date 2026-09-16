@@ -155,20 +155,23 @@ export async function getAppointmentNote97156(
     if (id) modality = { id, name: String(m.name ?? "") }
   }
 
-  // Parse teaching method (same catalog as 97153)
-  let teachingMethod: AppointmentNote97156["teachingMethod"] = null
-  if (data.teachingMethod && typeof data.teachingMethod === "object") {
+  // Parse teaching methods (multiple, same catalog as 97153)
+  let teachingMethods: AppointmentNote97156["teachingMethods"] = []
+  if (Array.isArray(data.teachingMethods)) {
+    teachingMethods = data.teachingMethods
+      .filter((tm): tm is Record<string, unknown> => tm && typeof tm === "object")
+      .map((tm) => ({ id: String(tm.id ?? ""), name: String(tm.name ?? "") }))
+      .filter((tm) => tm.id.length > 0)
+  } else if (data.teachingMethod && typeof data.teachingMethod === "object") {
     const tm = data.teachingMethod as Record<string, unknown>
     const id = String(tm.id ?? "")
-    if (id) teachingMethod = { id, name: String(tm.name ?? "") }
-  } else if (data.teachingMethodId) {
-    teachingMethod = { id: String(data.teachingMethodId), name: String(data.teachingMethodName ?? "") }
+    if (id) teachingMethods = [{ id, name: String(tm.name ?? "") }]
   }
 
   return {
     id: String(data.id ?? ""),
     appointmentId: String(data.appointmentId ?? appointmentId),
-    teachingMethod,
+    teachingMethods,
     modality,
     reasonCaregiverNotPresent: String(data.reasonCaregiverNotPresent ?? ""),
     medicalConcerns: String(data.medicalConcerns ?? ""),

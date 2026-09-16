@@ -135,7 +135,7 @@ export function SessionNoteForm({
       ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
 
     return buildSessionSummaryMetadata97153({
-      teachingMethodName: teachingMethodOptions.find((o) => o.value === formData.teachingMethodId)?.label ?? "",
+      teachingMethodName: formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label).filter(Boolean).join(", "),
       modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
       reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
       medicalConcerns: formData.medicalConcerns,
@@ -216,18 +216,16 @@ export function SessionNoteForm({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Section icon={<BookOpen className="h-4 w-4" />} title="Teaching Method, Modality & Participants">
           <div className="space-y-4">
-            <div data-field="teachingMethodId">
-              <FloatingSelect
-                label="Teaching Method"
-                value={formData.teachingMethodId}
-                onChange={(val) => updateField("teachingMethodId", val)}
-                options={teachingMethodOptions}
-                searchable
+            <div data-field="teachingMethodIds">
+              <MultiSelectWithSearch
+                label="Teaching Methods"
+                items={teachingMethodOptions.map((o) => ({ id: o.value, name: o.label }))}
+                selectedIds={formData.teachingMethodIds}
+                onChange={(ids) => updateField("teachingMethodIds", ids)}
                 disabled={isLoadingCatalogs || formDisabled}
-                hasError={!!errors.teachingMethodId}
-                required
+                hasError={!!errors.teachingMethodIds}
               />
-              <FieldError message={errors.teachingMethodId} />
+              <FieldError message={errors.teachingMethodIds} />
             </div>
             <div data-field="modalityId">
               <FloatingSelect

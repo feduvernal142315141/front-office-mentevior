@@ -117,7 +117,7 @@ export interface AppointmentNote {
   serviceDetails: AppointmentNoteServiceDetails | null
   billingCodes: string | null
   modality: AppointmentNoteModality | null
-  teachingMethod: AppointmentNoteTeachingMethod | null
+  teachingMethods: AppointmentNoteTeachingMethod[]
   reasonCaregiverNotPresent: string
   medicalConcerns: string
   crisisInvolved: boolean
@@ -154,7 +154,7 @@ export interface UpdateAppointmentNoteDataCollectionItem {
 /** Request body for PUT /appointment/note */
 export interface UpdateAppointmentNotePayload {
   id: string
-  teachingMethodId?: string | null
+  teachingMethodIds?: string[]
   modalityId?: string | null
   reasonCaregiverNotPresent?: string
   medicalConcerns?: string

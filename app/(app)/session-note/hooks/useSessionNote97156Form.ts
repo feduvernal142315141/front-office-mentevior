@@ -23,7 +23,7 @@ import { CLIENT_PARTICIPANT_ID } from "./useSessionNoteForm"
 
 const EMPTY_FORM: SessionNote97156FormData = {
   noteId: "",
-  teachingMethodId: "",
+  teachingMethodIds: [],
   modalityId: "",
   reasonCaregiverNotPresent: "",
   medicalConcerns: "",
@@ -50,7 +50,7 @@ function noteToFormData(note: AppointmentNote97156): SessionNote97156FormData {
 
   return {
     noteId: note.id,
-    teachingMethodId: note.teachingMethod?.id ?? "",
+    teachingMethodIds: note.teachingMethods?.map((m) => m.id) ?? [],
     modalityId: note.modality?.id ?? "",
     reasonCaregiverNotPresent: note.reasonCaregiverNotPresent,
     medicalConcerns: note.medicalConcerns || "N/A",
@@ -236,7 +236,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
     // Validate required fields
     const newErrors: Record<string, string> = {}
     if (status !== "read") {
-      if (!formData.teachingMethodId) newErrors.teachingMethodId = "Select a teaching method"
+      if (formData.teachingMethodIds.length === 0) newErrors.teachingMethodIds = "Select at least one teaching method"
       if (!formData.modalityId) newErrors.modalityId = "Select a modality"
       if (formData.participantIds.length === 0) newErrors.participantIds = "Select at least one participant"
       if (!formData.reasonCaregiverNotPresent.trim()) newErrors.reasonCaregiverNotPresent = "This field is required"
@@ -330,7 +330,7 @@ export function useSessionNote97156Form({ appointmentId, clientId }: UseSessionN
       clientCaregiverId: clientCaregiverId || null,
       providerSignatureImage: providerSignatureImage || null,
       ...(isReadOnly ? {} : {
-        teachingMethodId: formData.teachingMethodId || null,
+        teachingMethodIds: formData.teachingMethodIds,
         modalityId: formData.modalityId || null,
         reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
         medicalConcerns: formData.medicalConcerns,

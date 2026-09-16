@@ -4,6 +4,7 @@ import type {
   AppointmentNote,
   AppointmentNoteParticipantCatalogType,
   AppointmentNoteSummary,
+  AppointmentNoteTeachingMethod,
   NoteStatus,
   UpdateAppointmentNotePayload,
 } from "@/lib/types/appointment-note.types"
@@ -20,20 +21,21 @@ function parseNoteStatus(data: Record<string, unknown>): NoteStatus {
   return "active"
 }
 
-function parseTeachingMethod(data: Record<string, unknown>) {
+function parseTeachingMethods(data: Record<string, unknown>): AppointmentNoteTeachingMethod[] {
+  // New contract: teachingMethods is an array
+  if (Array.isArray(data.teachingMethods)) {
+    return data.teachingMethods
+      .filter((tm): tm is Record<string, unknown> => tm && typeof tm === "object")
+      .map((tm) => ({ id: String(tm.id ?? ""), name: String(tm.name ?? "") }))
+      .filter((tm) => tm.id.length > 0)
+  }
+  // Legacy fallback: singular teachingMethod
   if (data.teachingMethod && typeof data.teachingMethod === "object") {
     const tm = data.teachingMethod as Record<string, unknown>
     const id = String(tm.id ?? "")
-    return id ? { id, name: String(tm.name ?? "") } : null
+    return id ? [{ id, name: String(tm.name ?? "") }] : []
   }
-  // Legacy fallback while backends finish the TeachingMethod / TeachingProcedure split
-  if (data.teachingProcedure && typeof data.teachingProcedure === "object") {
-    const tp = data.teachingProcedure as Record<string, unknown>
-    const id = String(tp.id ?? "")
-    return id ? { id, name: String(tp.name ?? "") } : null
-  }
-  const tmId = String(data.teachingMethodId ?? data.teachingProcedureId ?? "")
-  return tmId ? { id: tmId, name: String(data.teachingMethodName ?? data.teachingProcedureName ?? "") } : null
+  return []
 }
 
 function parseModality(data: Record<string, unknown>) {
@@ -167,7 +169,7 @@ export async function getAppointmentNote(
     serviceDetails: parseServiceDetails(data),
     billingCodes: typeof data.billingCodes === "string" ? data.billingCodes : null,
     modality: parseModality(data),
-    teachingMethod: parseTeachingMethod(data),
+    teachingMethods: parseTeachingMethods(data),
     reasonCaregiverNotPresent: String(data.reasonCaregiverNotPresent ?? ""),
     medicalConcerns: String(data.medicalConcerns ?? ""),
     crisisInvolved: Boolean(data.crisisInvolved),

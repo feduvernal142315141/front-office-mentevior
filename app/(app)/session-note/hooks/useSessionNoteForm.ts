@@ -30,7 +30,7 @@ export interface CategoryItemFormData {
 
 export interface SessionNoteFormData {
   noteId: string
-  teachingMethodId: string
+  teachingMethodIds: string[]
   modalityId: string
   reasonCaregiverNotPresent: string
   medicalConcerns: string
@@ -45,7 +45,7 @@ export interface SessionNoteFormData {
 
 const EMPTY_FORM: SessionNoteFormData = {
   noteId: "",
-  teachingMethodId: "",
+  teachingMethodIds: [],
   modalityId: "",
   reasonCaregiverNotPresent: "",
   medicalConcerns: "",
@@ -70,7 +70,7 @@ function noteToFormData(note: AppointmentNote): SessionNoteFormData {
 
   return {
     noteId: note.id,
-    teachingMethodId: note.teachingMethod?.id ?? "",
+    teachingMethodIds: note.teachingMethods?.map((m) => m.id) ?? [],
     modalityId: note.modality?.id ?? "",
     reasonCaregiverNotPresent: note.reasonCaregiverNotPresent,
     medicalConcerns: note.medicalConcerns || "N/A",
@@ -252,7 +252,7 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
     // Validate required fields (only when form is fully editable)
     const newErrors: Record<string, string> = {}
     if (status !== "read") {
-      if (!formData.teachingMethodId) newErrors.teachingMethodId = "Select a teaching method"
+      if (formData.teachingMethodIds.length === 0) newErrors.teachingMethodIds = "Select at least one teaching method"
       if (!formData.modalityId) newErrors.modalityId = "Select a modality"
       if (formData.participantIds.length === 0) newErrors.participantIds = "Select at least one participant"
       if (!formData.reasonCaregiverNotPresent.trim()) newErrors.reasonCaregiverNotPresent = "This field is required"
@@ -346,7 +346,7 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
       clientCaregiverId: clientCaregiverId || null,
       providerSignatureImage: providerSignatureImage || null,
       ...(isReadOnly ? {} : {
-        teachingMethodId: formData.teachingMethodId || null,
+        teachingMethodIds: formData.teachingMethodIds,
         modalityId: formData.modalityId || null,
         reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
         medicalConcerns: formData.medicalConcerns,
