@@ -58,7 +58,8 @@ export interface CategoryItemFormValue {
   intensityDescription: string
   /** Vacía = el usuario no la tocó; se muestra la precarga del Service Plan */
   hypothesizedFunction: HypothesizedFunction[]
-  prevalentSetting: string
+  /** IDs del catálogo de Prevalent Setting */
+  prevalentSettingIds: string[]
   preventiveStrategies: string
   managementStrategies: string
 }
@@ -155,14 +156,14 @@ function categoryItemsFromDraft(
         intensityDescription: item.intensityDescription,
         // La precarga de hypothesizedFunction vive en hypothesizedFunctionByItemId
         hypothesizedFunction: [],
-        prevalentSetting: item.prevalentSetting,
+        prevalentSettingIds: item.prevalentSetting.map((ps) => ps.id),
         preventiveStrategies: item.preventiveStrategies,
         managementStrategies: item.managementStrategies,
       }
       if (
         !!value.intensityKey ||
         !!value.intensityDescription.trim() ||
-        !!value.prevalentSetting.trim() ||
+        value.prevalentSettingIds.length > 0 ||
         !!value.preventiveStrategies.trim() ||
         !!value.managementStrategies.trim()
       ) {
@@ -256,7 +257,7 @@ export const EMPTY_CATEGORY_ITEM: CategoryItemFormValue = {
   intensityKey: "",
   intensityDescription: "",
   hypothesizedFunction: [],
-  prevalentSetting: "",
+  prevalentSettingIds: [],
   preventiveStrategies: "",
   managementStrategies: "",
 }
@@ -342,7 +343,7 @@ function isCategoryItemTouched(v: CategoryItemFormValue): boolean {
     !!v.intensityKey ||
     !!v.intensityDescription.trim() ||
     v.hypothesizedFunction.length > 0 ||
-    !!v.prevalentSetting.trim() ||
+    v.prevalentSettingIds.length > 0 ||
     !!v.preventiveStrategies.trim() ||
     !!v.managementStrategies.trim()
   )
@@ -384,7 +385,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   const { save, isSaving } = useSaveAssessment({ assessmentId })
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
-  const { grades, conductedOptions, intensities, isLoading: catalogsLoading } = useAssessmentCatalogs()
+  const { grades, conductedOptions, intensities, prevalentSettings, isLoading: catalogsLoading } = useAssessmentCatalogs()
   const { relationships, isLoading: relationshipsLoading } = useRelationshipCatalog()
   // pageSize 0 = todos los billing codes configurados de la compañía
   const { billingCodes: companyBillingCodes, isLoading: billingCodesLoading } = useBillingCodes({ page: 0, pageSize: 0 })
@@ -472,7 +473,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         intensityKey: entry.intensityKey ?? "",
         intensityDescription: entry.intensityDescription ?? "",
         hypothesizedFunction: entry.hypothesizedFunction,
-        prevalentSetting: entry.prevalentSetting ?? "",
+        prevalentSettingIds: (entry.prevalentSetting ?? []).map((ps) => ps.id),
         preventiveStrategies: entry.preventiveStrategies ?? "",
         managementStrategies: entry.managementStrategies ?? "",
       }
@@ -907,7 +908,9 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
           value.hypothesizedFunction.length > 0
             ? value.hypothesizedFunction
             : (hypothesizedFunctionByItemId[itemId] ?? []),
-        prevalentSetting: value.prevalentSetting.trim(),
+        prevalentSetting: value.prevalentSettingIds
+          .map((id) => prevalentSettings.find((ps) => ps.id === id))
+          .filter((ps): ps is NonNullable<typeof ps> => ps != null),
         preventiveStrategies: value.preventiveStrategies.trim(),
         managementStrategies: value.managementStrategies.trim(),
       }))
@@ -1014,7 +1017,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       ) as AssessmentPdfTextsPayload),
       ...formData.pdfFlags,
     }
-  }, [formData, hypothesizedFunctionByItemId])
+  }, [formData, hypothesizedFunctionByItemId, prevalentSettings])
 
   const scrollToFirstError = useCallback((newErrors: Record<string, string>) => {
     setTimeout(() => {
@@ -1066,6 +1069,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     grades,
     conductedOptions,
     intensities,
+    prevalentSettings,
     relationships,
     categories,
     categoriesLoading: categoriesLoading || collectionMethodsLoading,

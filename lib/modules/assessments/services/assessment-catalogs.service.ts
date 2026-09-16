@@ -1,5 +1,5 @@
 import { serviceGet } from "@/lib/services/baseService"
-import type { AssessmentCatalogItem, IntensityCatalogItem } from "@/lib/types/assessment.types"
+import type { AssessmentCatalogItem, IntensityCatalogItem, PrevalentSetting } from "@/lib/types/assessment.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 
 /**
@@ -64,4 +64,23 @@ export async function getIntensityCatalog(): Promise<IntensityCatalogItem[]> {
     }))
     .filter((item) => item.name)
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+}
+
+/**
+ * `GET /prevalent-setting/catalog` — Home / Community / School.
+ */
+export async function getPrevalentSettingCatalog(): Promise<PrevalentSetting[]> {
+  const response = await serviceGet<unknown>(`/prevalent-setting/catalog?page=0&pageSize=200`)
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(response.data?.message || "Failed to fetch prevalent setting catalog")
+  }
+
+  const raw = response.data as { data?: unknown[]; entities?: unknown[] }
+  const entities = Array.isArray(raw.data) ? raw.data : Array.isArray(raw.entities) ? raw.entities : []
+
+  return entities
+    .filter((item): item is Record<string, unknown> => item != null && typeof item === "object")
+    .map((item) => ({ id: String(item.id ?? ""), name: String(item.name ?? "") }))
+    .filter((item) => item.id && item.name)
 }

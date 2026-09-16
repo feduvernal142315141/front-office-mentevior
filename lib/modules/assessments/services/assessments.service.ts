@@ -19,11 +19,22 @@ import type {
   AssessmentObservationInput,
   AssessmentProposedScheduleEntry,
   AssessmentProviderFileInput,
+  PrevalentSetting,
   SaveAssessmentDto,
 } from "@/lib/types/assessment.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import { getQueryString } from "@/lib/utils/format"
 import type { QueryModel } from "@/lib/models/queryModel"
+
+function parsePrevalentSettings(value: unknown): PrevalentSetting[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((v): v is Record<string, unknown> => v != null && typeof v === "object")
+      .map((v) => ({ id: String(v.id ?? ""), name: String(v.name ?? "") }))
+      .filter((v) => v.id.length > 0)
+  }
+  return []
+}
 
 const BASE_URL = "/assessments"
 
@@ -254,7 +265,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     intensityKey: str(i.intensityKey) || null,
     intensityDescription: str(i.intensityDescription),
     hypothesizedFunction: parseHypothesizedFunctions(i.hypothesizedFunction),
-    prevalentSetting: str(i.prevalentSetting),
+    prevalentSetting: parsePrevalentSettings(i.prevalentSetting),
     preventiveStrategies: str(i.preventiveStrategies),
     managementStrategies: str(i.managementStrategies),
   }))

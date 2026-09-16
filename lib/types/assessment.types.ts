@@ -62,6 +62,11 @@ export interface ClientCategoryWithItems {
  * Item del SP en el borrador. `id` = `clientServicePlanCategoryItemId` (fuente
  * para `categoriesItems[]` al guardar).
  */
+export interface PrevalentSetting {
+  id: string
+  name: string
+}
+
 export interface ClientCategoryItemSummary {
   id: string
   name: string
@@ -72,7 +77,7 @@ export interface ClientCategoryItemSummary {
   hypothesizedFunctions: HypothesizedFunction[]
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string
-  prevalentSetting: string
+  prevalentSetting: PrevalentSetting[]
   preventiveStrategies: string
   managementStrategies: string
 }
@@ -165,7 +170,7 @@ export interface AssessmentCategoryItemInput {
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string
   hypothesizedFunction: HypothesizedFunction[]
-  prevalentSetting: string
+  prevalentSetting: PrevalentSetting[]
   /** Antecedent interventions del item */
   preventiveStrategies: string
   /** Consequence interventions del item */
@@ -396,7 +401,7 @@ export interface AssessmentCategoryItemEntry {
   intensityDescription: string
   /** Lista desde el contrato 2026-09-07; los registros viejos llegan con un solo valor. */
   hypothesizedFunction: HypothesizedFunction[]
-  prevalentSetting: string
+  prevalentSetting: PrevalentSetting[]
   preventiveStrategies: string
   managementStrategies: string
 }

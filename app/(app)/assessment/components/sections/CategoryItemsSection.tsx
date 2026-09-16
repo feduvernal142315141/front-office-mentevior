@@ -12,6 +12,7 @@ import type {
   ClientCategoryWithItems,
   HypothesizedFunction,
   IntensityCatalogItem,
+  PrevalentSetting,
 } from "@/lib/types/assessment.types"
 import {
   EMPTY_CATEGORY_ITEM,
@@ -34,6 +35,8 @@ interface CategoryItemsSectionProps {
   hypothesizedFunctionByItemId?: Record<string, HypothesizedFunction[]>
   /** `GET /intensity/catalog` — name/description se guardan como strings en el assessment. */
   intensities?: IntensityCatalogItem[]
+  /** `GET /prevalent-setting/catalog` — Home / Community / School */
+  prevalentSettings?: PrevalentSetting[]
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
   /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
@@ -48,7 +51,7 @@ function isTouched(value: CategoryItemFormValue): boolean {
     !!value.intensityKey ||
     !!value.intensityDescription.trim() ||
     value.hypothesizedFunction.length > 0 ||
-    !!value.prevalentSetting.trim() ||
+    value.prevalentSettingIds.length > 0 ||
     !!value.preventiveStrategies.trim() ||
     !!value.managementStrategies.trim()
   )
@@ -64,6 +67,7 @@ export function CategoryItemsSection({
   collectionMethodByItemId = {},
   hypothesizedFunctionByItemId = {},
   intensities = [],
+  prevalentSettings = [],
   isLoading,
   values,
   hasError,
@@ -207,12 +211,15 @@ export function CategoryItemsSection({
                       placeholder="Select functions"
                       maxVisibleTags={2}
                     />
-                    <FloatingInput
+                    <MultiSelect
                       label="Prevalent setting"
-                      value={value.prevalentSetting}
-                      onChange={(v) => onUpdate(item.id, "prevalentSetting", v)}
-                      onBlur={() => {}}
+                      value={value.prevalentSettingIds}
+                      onChange={(v) => onUpdate(item.id, "prevalentSettingIds", v)}
+                      options={prevalentSettings.map((ps) => ({ value: ps.id, label: ps.name }))}
                       disabled={disabled}
+                      tone="neutral"
+                      placeholder="Select settings"
+                      maxVisibleTags={2}
                     />
                     <FloatingInput
                       label="Preventive strategies (antecedent)"
