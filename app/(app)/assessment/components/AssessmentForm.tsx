@@ -728,12 +728,12 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         subtitle="Previous ABA therapy and other active therapies"
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Row 1: Previous ABA therapy + Agency name */}
           <div data-field="previousAbaTherapy">
             <FloatingSelect
               label="Previous ABA therapy"
               value={formData.previousAbaTherapy}
               onChange={(v) => updateField("previousAbaTherapy", v)}
-              // Registros previos al select pueden traer texto libre: se conserva visible
               options={
                 formData.previousAbaTherapy && !PREVIOUS_ABA_THERAPY_OPTIONS.some((o) => o.value === formData.previousAbaTherapy)
                   ? [...PREVIOUS_ABA_THERAPY_OPTIONS, { value: formData.previousAbaTherapy, label: formData.previousAbaTherapy }]
@@ -755,6 +755,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             />
             <FieldError message={errors.previousAgencyName} />
           </div>
+
+          {/* Row 2: Speech therapy + Facility name */}
           <div data-field="otherServicesSpeechTherapy">
             <FloatingSelect
               label="Speech therapy"
@@ -763,6 +765,9 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
+          <FloatingInput label="Facility name" value="" onChange={() => {}} onBlur={() => {}} disabled placeholder="—" />
+
+          {/* Row 3: Occupational therapy + Facility name */}
           <div data-field="otherServicesOccupationalTherapy">
             <FloatingSelect
               label="Occupational therapy"
@@ -771,6 +776,9 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
+          <FloatingInput label="Facility name" value="" onChange={() => {}} onBlur={() => {}} disabled placeholder="—" />
+
+          {/* Row 4: Physical therapy + Facility name */}
           <div data-field="otherServicesPhysicalTherapy">
             <FloatingSelect
               label="Physical therapy"
@@ -779,6 +787,9 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
+          <FloatingInput label="Facility name" value="" onChange={() => {}} onBlur={() => {}} disabled placeholder="—" />
+
+          {/* Row 5: Feeding therapy + Facility name */}
           <div data-field="otherServicesFeedingTherapy">
             <FloatingSelect
               label="Feeding therapy"
@@ -787,6 +798,9 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
+          <FloatingInput label="Facility name" value="" onChange={() => {}} onBlur={() => {}} disabled placeholder="—" />
+
+          {/* Row 6: Other + Facility name */}
           <div data-field="otherServicesOther">
             <FloatingInput
               label="Other"
