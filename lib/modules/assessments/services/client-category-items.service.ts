@@ -10,18 +10,7 @@ import {
   type AssessmentPdfTexts,
   type ClientCategoryItemSummary,
   type ClientCategoryWithItems,
-  type PrevalentSetting,
 } from "@/lib/types/assessment.types"
-
-function parsePrevalentSettings(value: unknown): PrevalentSetting[] {
-  if (Array.isArray(value)) {
-    return value
-      .filter((v): v is Record<string, unknown> => v != null && typeof v === "object")
-      .map((v) => ({ id: String(v.id ?? ""), name: String(v.name ?? "") }))
-      .filter((v) => v.id.length > 0)
-  }
-  return []
-}
 
 function str(value: unknown): string {
   return typeof value === "string" ? value : ""
@@ -66,7 +55,7 @@ function normalizeDraftItem(raw: unknown): ClientCategoryItemSummary {
       ? entry.intensityKey.trim()
       : null,
     intensityDescription: str(entry.intensityDescription),
-    prevalentSetting: parsePrevalentSettings(entry.prevalentSetting),
+    placesOfService: Array.isArray(entry.placesOfService) ? entry.placesOfService.map((v: unknown) => String(v ?? "")).filter(Boolean) : [],
     preventiveStrategies: str(entry.preventiveStrategies),
     managementStrategies: str(entry.managementStrategies),
   }

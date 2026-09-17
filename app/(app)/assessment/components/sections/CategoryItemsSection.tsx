@@ -8,11 +8,11 @@ import { MultiSelect } from "@/components/custom/MultiSelect"
 import { INTENSITY_KEY_OPTIONS } from "@/lib/constants/assessment.constants"
 import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
 import { typeIsFrequency } from "@/lib/modules/service-plans/constants/data-collection.constants"
+import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
 import type {
   ClientCategoryWithItems,
   HypothesizedFunction,
   IntensityCatalogItem,
-  PrevalentSetting,
 } from "@/lib/types/assessment.types"
 import {
   EMPTY_CATEGORY_ITEM,
@@ -35,8 +35,6 @@ interface CategoryItemsSectionProps {
   hypothesizedFunctionByItemId?: Record<string, HypothesizedFunction[]>
   /** `GET /intensity/catalog` — name/description se guardan como strings en el assessment. */
   intensities?: IntensityCatalogItem[]
-  /** `GET /prevalent-setting/catalog` — Home / Community / School */
-  prevalentSettings?: PrevalentSetting[]
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
   /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
@@ -51,7 +49,7 @@ function isTouched(value: CategoryItemFormValue): boolean {
     !!value.intensityKey ||
     !!value.intensityDescription.trim() ||
     value.hypothesizedFunction.length > 0 ||
-    value.prevalentSettingIds.length > 0 ||
+    value.placesOfServiceIds.length > 0 ||
     !!value.preventiveStrategies.trim() ||
     !!value.managementStrategies.trim()
   )
@@ -67,7 +65,6 @@ export function CategoryItemsSection({
   collectionMethodByItemId = {},
   hypothesizedFunctionByItemId = {},
   intensities = [],
-  prevalentSettings = [],
   isLoading,
   values,
   hasError,
@@ -75,6 +72,12 @@ export function CategoryItemsSection({
   onUpdate,
   onClear,
 }: CategoryItemsSectionProps) {
+  const { placesOfService } = usePlacesOfService()
+  const posOptions = useMemo(
+    () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
+    [placesOfService],
+  )
+
   const catalogDescriptions = useMemo(
     () => new Set(intensities.map((item) => item.description.trim()).filter(Boolean)),
     [intensities],
@@ -214,13 +217,13 @@ export function CategoryItemsSection({
                       maxVisibleTags={2}
                     />
                     <MultiSelect
-                      label="Prevalent setting"
-                      value={value.prevalentSettingIds}
-                      onChange={(v) => onUpdate(item.id, "prevalentSettingIds", v)}
-                      options={prevalentSettings.map((ps) => ({ value: ps.id, label: ps.name }))}
+                      label="Place of Service"
+                      value={value.placesOfServiceIds}
+                      onChange={(v) => onUpdate(item.id, "placesOfServiceIds", v)}
+                      options={posOptions}
                       disabled={disabled}
                       tone="neutral"
-                      placeholder="Select settings"
+                      placeholder="Select POS"
                       maxVisibleTags={2}
                     />
                     <FloatingInput

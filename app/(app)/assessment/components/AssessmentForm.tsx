@@ -132,7 +132,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     collectionMethodByItemId,
     hypothesizedFunctionByItemId,
     intensities,
-    prevalentSettings,
     billingCodeOptions,
     credentialOptions,
     isLoadingCatalogs,
@@ -621,7 +620,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           collectionMethodByItemId={collectionMethodByItemId}
           hypothesizedFunctionByItemId={hypothesizedFunctionByItemId}
           intensities={intensities}
-          prevalentSettings={prevalentSettings}
           isLoading={categoriesLoading}
           values={formData.categoryItems}
           disabled={isSaving}
