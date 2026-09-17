@@ -765,7 +765,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
-          <FloatingInput label="Facility name" value={formData.otherServicesSpeechTherapyFacilityName} onChange={(v) => updateField("otherServicesSpeechTherapyFacilityName", v)} onBlur={() => {}} disabled={isSaving} />
+          <FloatingInput label="Facility name" value={formData.otherServicesSpeechTherapyFacilityName} onChange={(v) => updateField("otherServicesSpeechTherapyFacilityName", v)} onBlur={() => {}} disabled={isSaving || !formData.otherServicesSpeechTherapy} />
 
           {/* Row 3: Occupational therapy + Facility name */}
           <div data-field="otherServicesOccupationalTherapy">
@@ -776,7 +776,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
-          <FloatingInput label="Facility name" value={formData.otherServicesOccupationalTherapyFacilityName} onChange={(v) => updateField("otherServicesOccupationalTherapyFacilityName", v)} onBlur={() => {}} disabled={isSaving} />
+          <FloatingInput label="Facility name" value={formData.otherServicesOccupationalTherapyFacilityName} onChange={(v) => updateField("otherServicesOccupationalTherapyFacilityName", v)} onBlur={() => {}} disabled={isSaving || !formData.otherServicesOccupationalTherapy} />
 
           {/* Row 4: Physical therapy + Facility name */}
           <div data-field="otherServicesPhysicalTherapy">
@@ -787,7 +787,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
-          <FloatingInput label="Facility name" value={formData.otherServicesPhysicalTherapyFacilityName} onChange={(v) => updateField("otherServicesPhysicalTherapyFacilityName", v)} onBlur={() => {}} disabled={isSaving} />
+          <FloatingInput label="Facility name" value={formData.otherServicesPhysicalTherapyFacilityName} onChange={(v) => updateField("otherServicesPhysicalTherapyFacilityName", v)} onBlur={() => {}} disabled={isSaving || !formData.otherServicesPhysicalTherapy} />
 
           {/* Row 5: Feeding therapy + Facility name */}
           <div data-field="otherServicesFeedingTherapy">
@@ -798,7 +798,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
-          <FloatingInput label="Facility name" value={formData.otherServicesFeedingTherapyFacilityName} onChange={(v) => updateField("otherServicesFeedingTherapyFacilityName", v)} onBlur={() => {}} disabled={isSaving} />
+          <FloatingInput label="Facility name" value={formData.otherServicesFeedingTherapyFacilityName} onChange={(v) => updateField("otherServicesFeedingTherapyFacilityName", v)} onBlur={() => {}} disabled={isSaving || !formData.otherServicesFeedingTherapy} />
 
           {/* Row 6: Other + Facility name */}
           <div data-field="otherServicesOther">
