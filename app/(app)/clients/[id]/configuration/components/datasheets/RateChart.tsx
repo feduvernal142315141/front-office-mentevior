@@ -224,6 +224,14 @@ export function RateChart({
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 
+  const lastBaselineX = useMemo(() => {
+    let last: number | null = null
+    for (let i = 0; i < data.length; i++) {
+      if (data[i].baselineValue != null) last = i
+    }
+    return last
+  }, [data])
+
   const envChangeDates = useMemo(() => {
     return data.filter((d) => d.hasNote && d.note).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
   }, [data])
@@ -432,6 +440,10 @@ export function RateChart({
             display: environmentalChanges,
             resolveX: (dateLabel) => dateLabel,
           })}
+
+          {hasBaselineData && lastBaselineX !== null && (
+            <ReferenceLine x={lastBaselineX} stroke="#0F172A" strokeWidth={1.5} strokeDasharray="6 4" />
+          )}
 
           {treatmentDateLabel && (
             <ReferenceLine

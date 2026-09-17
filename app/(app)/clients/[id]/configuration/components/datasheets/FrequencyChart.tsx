@@ -217,6 +217,15 @@ export function FrequencyChart({
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 
+  // Last baseline x position — for the phase separation line
+  const lastBaselineX = useMemo(() => {
+    let last: number | null = null
+    for (const point of data) {
+      if (point.baselineValue != null) last = point.x
+    }
+    return last
+  }, [data])
+
   // ─── Axis position lookups (markers are anchored by date label) ────────
 
   const xByLabel = useMemo(() => {
@@ -489,6 +498,16 @@ export function FrequencyChart({
             display: environmentalChanges,
             resolveX: (dateLabel) => xByLabel.get(dateLabel),
           })}
+
+          {/* Baseline phase separation line — always visible when baselines exist */}
+          {hasBaselineData && lastBaselineX !== null && (
+            <ReferenceLine
+              x={lastBaselineX}
+              stroke="#0F172A"
+              strokeWidth={1.5}
+              strokeDasharray="6 4"
+            />
+          )}
 
           {/* Treatment vertical line */}
           {treatmentDateLabel && xByLabel.has(treatmentDateLabel) && (

@@ -163,6 +163,14 @@ export function DurationChart({
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 
+  const lastBaselineX = useMemo(() => {
+    let last: number | null = null
+    for (let i = 0; i < data.length; i++) {
+      if (data[i].baselineValue != null) last = i
+    }
+    return last
+  }, [data])
+
   const activeObjective = useMemo(
     () => resolveActiveObjective(itemObjectives, objectives),
     [itemObjectives, objectives],
@@ -319,6 +327,10 @@ export function DurationChart({
 
           {objectiveValue !== null && objVisual?.showLine !== false && (
             <ReferenceLine y={objectiveValue} stroke={objVisual?.borderColor ?? "#22C55E"} strokeWidth={1.5} strokeDasharray={objVisual?.lineType === "SOLID" ? undefined : "8 4"} />
+          )}
+
+          {hasBaselineData && lastBaselineX !== null && (
+            <ReferenceLine x={lastBaselineX} stroke="#0F172A" strokeWidth={1.5} strokeDasharray="6 4" />
           )}
 
           {treatmentDateLabel && (
