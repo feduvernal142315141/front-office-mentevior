@@ -248,7 +248,7 @@ Aplica a las tres notas: 97153, 97155 (HN), 97156 (HN).
 | L2 | MPI/NPI en service log | Service Log | Baja | Listo (V32) |
 | L3 | Nombre behavior con lápiz en datasheet | Data Collection | Baja | No |
 | M1 | Other Services obligatorio (sin toggle PDF) | Assessment | Baja | No |
-| M2 | Campo Agency en Other Services | Assessment | Baja | Posible |
+| M2 | Campo Agency en Other Services | Assessment | — | Ya existe |
 | M3 | Estimado masterización | Service Plan | Aclarar | Aclarar |
 | M4 | Multi-select en settings assessment | Assessment | Media | Posible |
 | M5 | BCBA arriba + proveedores separados | Assessment | Media | No |
