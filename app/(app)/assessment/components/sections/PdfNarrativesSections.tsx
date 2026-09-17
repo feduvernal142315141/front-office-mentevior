@@ -46,7 +46,7 @@ export function PdfNarrativesSections({
               value={values[key]}
               onChange={(v) => onUpdate(key, v)}
               onBlur={() => {}}
-              rows={5}
+              rows={10}
               disabled={disabled}
               hasError={!!errors[key]}
             />
@@ -77,7 +77,7 @@ export function PdfNarrativesSections({
                 value={values[key]}
                 onChange={(v) => onUpdate(key, v)}
                 onBlur={() => {}}
-                rows={3}
+                rows={8}
                 disabled={disabled}
               />
             ))}
