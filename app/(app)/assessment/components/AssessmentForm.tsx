@@ -56,6 +56,7 @@ import { usePermission } from "@/lib/hooks/use-permission"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
 import { cn } from "@/lib/utils"
 import { useAssessmentForm } from "../hooks/useAssessmentForm"
 import {
@@ -104,6 +105,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
   const { user } = useAuth()
   const { user: fullUser } = useUserById(user?.id || null)
   const { block: canBlock, create, edit } = usePermission()
+  const { placesOfService } = usePlacesOfService()
+  const posOptions = placesOfService.map((p) => ({ value: p.name, label: p.code ? `${p.name} (${p.code})` : p.name }))
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
   const canAdminAction = isAdmin && canBlock(PermissionModule.ASSESSMENT)
 
@@ -551,6 +554,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           observations={formData.observations}
           hasError={!!errors.observations}
           errors={errors}
+          posOptions={posOptions}
           disabled={isSaving}
           onAdd={addObservation}
           onRemove={removeObservation}

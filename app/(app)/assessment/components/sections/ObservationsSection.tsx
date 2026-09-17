@@ -2,7 +2,7 @@
 
 import { Eye, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
-import { FloatingInput } from "@/components/custom/FloatingInput"
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import type { AssessmentObservationInput } from "@/lib/types/assessment.types"
@@ -10,6 +10,7 @@ import type { AssessmentObservationInput } from "@/lib/types/assessment.types"
 interface ObservationsSectionProps {
   observations: AssessmentObservationInput[]
   errors: Record<string, string>
+  posOptions: { value: string; label: string }[]
   /** Pinta el empty state en rojo cuando la sección exige al menos una fila */
   hasError?: boolean
   disabled?: boolean
@@ -21,6 +22,7 @@ interface ObservationsSectionProps {
 export function ObservationsSection({
   observations,
   errors,
+  posOptions,
   hasError,
   disabled,
   onAdd,
@@ -51,11 +53,16 @@ export function ObservationsSection({
               hasError={!!errors[`observation-${index}`] && !observation.date}
               required
             />
-            <FloatingInput
-              label="Setting"
+            <FloatingSelect
+              label="POS"
               value={observation.setting}
               onChange={(v) => onUpdate(index, "setting", v)}
-              onBlur={() => {}}
+              options={
+                observation.setting && !posOptions.some((o) => o.value === observation.setting)
+                  ? [...posOptions, { value: observation.setting, label: observation.setting }]
+                  : posOptions
+              }
+              searchable
               disabled={disabled}
             />
             <button
