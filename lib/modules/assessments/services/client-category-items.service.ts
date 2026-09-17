@@ -141,7 +141,7 @@ export async function getAssessmentDataByClient(clientId: string): Promise<Asses
         billingCodeId,
         unitsPeriod: typeof row.unitsPeriod === "number" ? row.unitsPeriod : 0,
         unitsWeek: typeof row.unitsWeek === "number" ? row.unitsWeek : 0,
-        settings: str(row.settings),
+        placesOfService: Array.isArray(row.placesOfService) ? row.placesOfService.map((v: unknown) => String(v ?? "")).filter(Boolean) : [],
       }
     })
     .filter((row): row is NonNullable<typeof row> => row != null)
@@ -212,7 +212,7 @@ export async function getAssessmentDataByClient(clientId: string): Promise<Asses
     })),
     observations: arr(raw.observations).map((o) => ({
       date: str(o.date).split("T")[0],
-      setting: str(o.setting),
+      placesOfService: Array.isArray(o.placesOfService) ? o.placesOfService.map((v: unknown) => String(v ?? "")).filter(Boolean) : [],
       summary: str(o.summary),
     })),
     assessmentConductedCatalogIds: assessmentConductedList

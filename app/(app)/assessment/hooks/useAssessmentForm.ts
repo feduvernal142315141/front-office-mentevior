@@ -64,12 +64,12 @@ export interface CategoryItemFormValue {
   managementStrategies: string
 }
 
-/** Fila de billing code; unidades como texto de input, settings texto plano */
+/** Fila de billing code; unidades como texto de input */
 export interface BillingCodeRow {
   billingCodeId: string
   unitsPeriod: string
   unitsWeek: string
-  settings: string
+  placesOfServiceIds: string[]
 }
 
 export interface ScheduleRow {
@@ -183,7 +183,7 @@ function billingRowsFromDraft(draft: AssessmentDraft): BillingCodeRow[] {
     billingCodeId: row.billingCodeId,
     unitsPeriod: row.unitsPeriod ? String(row.unitsPeriod) : "",
     unitsWeek: row.unitsWeek ? String(row.unitsWeek) : "",
-    settings: row.settings,
+    placesOfServiceIds: row.placesOfService ?? [],
   }))
 }
 
@@ -257,8 +257,8 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
 }
 
 const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", frequency: "", details: "" }
-const EMPTY_OBSERVATION: AssessmentObservationInput = { date: "", setting: "", summary: "" }
-const EMPTY_BILLING_CODE: BillingCodeRow = { billingCodeId: "", unitsPeriod: "", unitsWeek: "", settings: "" }
+const EMPTY_OBSERVATION: AssessmentObservationInput = { date: "", placesOfService: [], summary: "" }
+const EMPTY_BILLING_CODE: BillingCodeRow = { billingCodeId: "", unitsPeriod: "", unitsWeek: "", placesOfServiceIds: [] }
 const EMPTY_ABC: AssessmentAbcInput = { antecedent: "", behavior: "", consequence: "" }
 const EMPTY_PROVIDER_FILE: AssessmentProviderFileInput = { type: "", name: "", contactIformation: "" }
 export const EMPTY_CATEGORY_ITEM: CategoryItemFormValue = {
@@ -342,7 +342,7 @@ function isMedicationEmpty(m: AssessmentMedicationInput): boolean {
 }
 
 function isObservationEmpty(o: AssessmentObservationInput): boolean {
-  return !o.date && !o.setting.trim() && !o.summary.trim()
+  return !o.date && o.placesOfService.length === 0 && !o.summary.trim()
 }
 
 /**
@@ -362,7 +362,7 @@ function isCategoryItemTouched(v: CategoryItemFormValue): boolean {
 }
 
 function isBillingCodeEmpty(row: BillingCodeRow): boolean {
-  return !row.billingCodeId && !row.unitsPeriod.trim() && !row.unitsWeek.trim() && !row.settings.trim()
+  return !row.billingCodeId && !row.unitsPeriod.trim() && !row.unitsWeek.trim() && row.placesOfServiceIds.length === 0
 }
 
 function isScheduleEmpty(row: ScheduleRow): boolean {
@@ -545,7 +545,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         billingCodeId: b.billingCodeId,
         unitsPeriod: b.unitsPeriod ? String(b.unitsPeriod) : "",
         unitsWeek: b.unitsWeek ? String(b.unitsWeek) : "",
-        settings: normalizeBillingCodeSettings(b.settings),
+        placesOfServiceIds: b.placesOfService ?? [],
       })),
       proposedSchedule: (assessment.proposedSchedule ?? []).map((s) => ({
         credentialId: s.credentialId,
@@ -642,7 +642,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   }, [])
 
   const updateObservation = useCallback(
-    (index: number, field: keyof AssessmentObservationInput, value: string) => {
+    (index: number, field: keyof AssessmentObservationInput, value: string | string[]) => {
       setFormData((prev) => ({
         ...prev,
         observations: prev.observations.map((o, i) => (i === index ? { ...o, [field]: value } : o)),
@@ -686,7 +686,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   }, [])
 
   const updateBillingCode = useCallback(
-    (index: number, field: keyof BillingCodeRow, value: string) => {
+    (index: number, field: keyof BillingCodeRow, value: string | string[]) => {
       setFormData((prev) => ({
         ...prev,
         billingCodes: prev.billingCodes.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
@@ -935,7 +935,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         billingCodeId: row.billingCodeId,
         unitsPeriod: Number.parseFloat(row.unitsPeriod) || 0,
         unitsWeek: Number.parseFloat(row.unitsWeek) || 0,
-        settings: row.settings.trim(),
+        placesOfService: row.placesOfServiceIds,
       }))
 
     const proposedSchedule: AssessmentProposedScheduleInput[] = formData.proposedSchedule
@@ -1009,7 +1009,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         })),
       observations: formData.observations
         .filter((o) => !isObservationEmpty(o))
-        .map((o) => ({ date: o.date, setting: o.setting.trim(), summary: o.summary.trim() })),
+        .map((o) => ({ date: o.date, placesOfService: o.placesOfService, summary: o.summary.trim() })),
       assessmentConductedCatalogIds: formData.assessmentConductedCatalogIds,
       categoriesItems,
       billingCodes,

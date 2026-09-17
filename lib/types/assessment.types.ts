@@ -152,7 +152,7 @@ export interface AssessmentMedicationInput {
 export interface AssessmentObservationInput {
   /** yyyy-MM-dd; requerido cuando la observación se envía */
   date: string
-  setting: string
+  placesOfService: string[]
   summary: string
 }
 
@@ -182,8 +182,7 @@ export interface AssessmentBillingCodeInput {
   /** No negativos */
   unitsPeriod: number
   unitsWeek: number
-  /** Texto plano (p.ej. "Home, Community") — contrato 2026-08-18; antes era JSON */
-  settings: string
+  placesOfService: string[]
 }
 
 export interface AssessmentProposedScheduleInput {

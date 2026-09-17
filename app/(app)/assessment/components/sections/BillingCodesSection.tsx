@@ -5,6 +5,7 @@ import { Plus, Receipt, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { MultiSelect } from "@/components/custom/MultiSelect"
 import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
 import type { BillingCodeRow } from "../../hooks/useAssessmentForm"
 
@@ -18,7 +19,7 @@ interface BillingCodesSectionProps {
   disabled?: boolean
   onAdd: () => void
   onRemove: (index: number) => void
-  onUpdate: (index: number, field: keyof BillingCodeRow, value: string) => void
+  onUpdate: (index: number, field: keyof BillingCodeRow, value: string | string[]) => void
 }
 
 /** Códigos de facturación propuestos: código + unidades por período/semana + settings (texto plano) */
@@ -35,7 +36,7 @@ export function BillingCodesSection({
 }: BillingCodesSectionProps) {
   const { placesOfService } = usePlacesOfService()
   const posOptions = useMemo(
-    () => placesOfService.map((p) => ({ value: p.code ? `${p.name} (${p.code})` : p.name, label: p.code ? `${p.name} (${p.code})` : p.name })),
+    () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
     [placesOfService],
   )
 
@@ -96,17 +97,15 @@ export function BillingCodesSection({
               </button>
             </div>
             <div className="mt-4">
-              <FloatingSelect
+              <MultiSelect
                 label="POS"
-                value={row.settings}
-                onChange={(v) => onUpdate(index, "settings", v)}
-                options={
-                  row.settings && !posOptions.some((o) => o.value === row.settings)
-                    ? [...posOptions, { value: row.settings, label: row.settings }]
-                    : posOptions
-                }
-                searchable
+                value={row.placesOfServiceIds}
+                onChange={(v) => onUpdate(index, "placesOfServiceIds", v)}
+                options={posOptions}
                 disabled={disabled}
+                tone="neutral"
+                placeholder="Select POS"
+                maxVisibleTags={3}
               />
             </div>
             {rowError && <p className="mt-2 text-xs font-medium text-red-500">{rowError}</p>}

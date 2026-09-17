@@ -1,34 +1,40 @@
 "use client"
 
+import { useMemo } from "react"
 import { Eye, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
-import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { MultiSelect } from "@/components/custom/MultiSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
 import type { AssessmentObservationInput } from "@/lib/types/assessment.types"
 
 interface ObservationsSectionProps {
   observations: AssessmentObservationInput[]
   errors: Record<string, string>
-  posOptions: { value: string; label: string }[]
   /** Pinta el empty state en rojo cuando la sección exige al menos una fila */
   hasError?: boolean
   disabled?: boolean
   onAdd: () => void
   onRemove: (index: number) => void
-  onUpdate: (index: number, field: keyof AssessmentObservationInput, value: string) => void
+  onUpdate: (index: number, field: keyof AssessmentObservationInput, value: string | string[]) => void
 }
 
 export function ObservationsSection({
   observations,
   errors,
-  posOptions,
   hasError,
   disabled,
   onAdd,
   onRemove,
   onUpdate,
 }: ObservationsSectionProps) {
+  const { placesOfService } = usePlacesOfService()
+  const posOptions = useMemo(
+    () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
+    [placesOfService],
+  )
+
   return (
     <div className="space-y-4">
       {observations.length === 0 && (
@@ -53,17 +59,15 @@ export function ObservationsSection({
               hasError={!!errors[`observation-${index}`] && !observation.date}
               required
             />
-            <FloatingSelect
+            <MultiSelect
               label="POS"
-              value={observation.setting}
-              onChange={(v) => onUpdate(index, "setting", v)}
-              options={
-                observation.setting && !posOptions.some((o) => o.value === observation.setting)
-                  ? [...posOptions, { value: observation.setting, label: observation.setting }]
-                  : posOptions
-              }
-              searchable
+              value={observation.placesOfService}
+              onChange={(v) => onUpdate(index, "placesOfService", v)}
+              options={posOptions}
               disabled={disabled}
+              tone="neutral"
+              placeholder="Select POS"
+              maxVisibleTags={2}
             />
             <button
               type="button"
