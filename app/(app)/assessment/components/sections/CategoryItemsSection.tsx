@@ -136,11 +136,13 @@ export function CategoryItemsSection({
 
   return (
     <div className="space-y-6">
-      {categories.map((category) => (
+      {categories.filter((c) => c.items.length > 0).map((category) => (
         <div key={category.id}>
-          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
-            {category.name}
-          </h4>
+          {category.name && (
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+              {category.name}
+            </h4>
+          )}
           <div className="space-y-3">
             {category.items.map((item) => {
               const value = values[item.id] ?? EMPTY_CATEGORY_ITEM
