@@ -109,9 +109,13 @@ export interface AssessmentDraft {
   previousAbaTherapy: string
   previousAgencyName: string
   otherServicesSpeechTherapy: boolean
+  otherServicesSpeechTherapyFacilityName: string
   otherServicesOccupationalTherapy: boolean
+  otherServicesOccupationalTherapyFacilityName: string
   otherServicesPhysicalTherapy: boolean
+  otherServicesPhysicalTherapyFacilityName: string
   otherServicesFeedingTherapy: boolean
+  otherServicesFeedingTherapyFacilityName: string
   otherServicesOther: string
   otherServicesFacilityName: string
   backgroundSummary: string
@@ -339,12 +343,16 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields, Assessmen
    * `false` en backend si llegan omitidos/null. El PDF los pinta como Yes/No.
    */
   otherServicesSpeechTherapy: boolean
+  otherServicesSpeechTherapyFacilityName: string | null
   otherServicesOccupationalTherapy: boolean
+  otherServicesOccupationalTherapyFacilityName: string | null
   otherServicesPhysicalTherapy: boolean
+  otherServicesPhysicalTherapyFacilityName: string | null
   otherServicesFeedingTherapy: boolean
+  otherServicesFeedingTherapyFacilityName: string | null
   /** Texto libre de otra terapia activa (nullable en wire). */
   otherServicesOther: string | null
-  /** Nombre del lugar / facility de las terapias activas (nullable en wire). */
+  /** Nombre del lugar / facility de la fila "Other" (nullable en wire). */
   otherServicesFacilityName: string | null
   /**
    * Contrato 2026-09-07: el caregiver declaró que no hay medicación. Con `true` el
@@ -442,9 +450,13 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   previousAbaTherapy: string
   previousAgencyName: string
   otherServicesSpeechTherapy: boolean
+  otherServicesSpeechTherapyFacilityName: string
   otherServicesOccupationalTherapy: boolean
+  otherServicesOccupationalTherapyFacilityName: string
   otherServicesPhysicalTherapy: boolean
+  otherServicesPhysicalTherapyFacilityName: string
   otherServicesFeedingTherapy: boolean
+  otherServicesFeedingTherapyFacilityName: string
   otherServicesOther: string
   otherServicesFacilityName: string
   currentMedicationsDenied: boolean

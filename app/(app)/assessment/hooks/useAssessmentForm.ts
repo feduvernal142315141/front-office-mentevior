@@ -101,9 +101,13 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   previousAbaTherapy: string
   previousAgencyName: string
   otherServicesSpeechTherapy: boolean
+  otherServicesSpeechTherapyFacilityName: string
   otherServicesOccupationalTherapy: boolean
+  otherServicesOccupationalTherapyFacilityName: string
   otherServicesPhysicalTherapy: boolean
+  otherServicesPhysicalTherapyFacilityName: string
   otherServicesFeedingTherapy: boolean
+  otherServicesFeedingTherapyFacilityName: string
   otherServicesOther: string
   otherServicesFacilityName: string
   // Collections
@@ -214,9 +218,13 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
     previousAbaTherapy: draft.previousAbaTherapy,
     previousAgencyName: draft.previousAgencyName,
     otherServicesSpeechTherapy: draft.otherServicesSpeechTherapy,
+    otherServicesSpeechTherapyFacilityName: draft.otherServicesSpeechTherapyFacilityName,
     otherServicesOccupationalTherapy: draft.otherServicesOccupationalTherapy,
+    otherServicesOccupationalTherapyFacilityName: draft.otherServicesOccupationalTherapyFacilityName,
     otherServicesPhysicalTherapy: draft.otherServicesPhysicalTherapy,
+    otherServicesPhysicalTherapyFacilityName: draft.otherServicesPhysicalTherapyFacilityName,
     otherServicesFeedingTherapy: draft.otherServicesFeedingTherapy,
+    otherServicesFeedingTherapyFacilityName: draft.otherServicesFeedingTherapyFacilityName,
     otherServicesOther: draft.otherServicesOther,
     otherServicesFacilityName: draft.otherServicesFacilityName,
     backgroundSummary: draft.backgroundSummary,
@@ -282,9 +290,13 @@ const EMPTY_FORM: AssessmentFormData = {
   previousAbaTherapy: "",
   previousAgencyName: "",
   otherServicesSpeechTherapy: false,
+  otherServicesSpeechTherapyFacilityName: "",
   otherServicesOccupationalTherapy: false,
+  otherServicesOccupationalTherapyFacilityName: "",
   otherServicesPhysicalTherapy: false,
+  otherServicesPhysicalTherapyFacilityName: "",
   otherServicesFeedingTherapy: false,
+  otherServicesFeedingTherapyFacilityName: "",
   otherServicesOther: "",
   otherServicesFacilityName: "",
   backgroundSummary: "",
@@ -500,9 +512,13 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       previousAbaTherapy: assessment.previousAbaTherapy ?? "",
       previousAgencyName: assessment.previousAgencyName ?? "",
       otherServicesSpeechTherapy: assessment.otherServicesSpeechTherapy,
+      otherServicesSpeechTherapyFacilityName: assessment.otherServicesSpeechTherapyFacilityName ?? "",
       otherServicesOccupationalTherapy: assessment.otherServicesOccupationalTherapy,
+      otherServicesOccupationalTherapyFacilityName: assessment.otherServicesOccupationalTherapyFacilityName ?? "",
       otherServicesPhysicalTherapy: assessment.otherServicesPhysicalTherapy,
+      otherServicesPhysicalTherapyFacilityName: assessment.otherServicesPhysicalTherapyFacilityName ?? "",
       otherServicesFeedingTherapy: assessment.otherServicesFeedingTherapy,
+      otherServicesFeedingTherapyFacilityName: assessment.otherServicesFeedingTherapyFacilityName ?? "",
       otherServicesOther: assessment.otherServicesOther ?? "",
       otherServicesFacilityName: assessment.otherServicesFacilityName ?? "",
       backgroundSummary: assessment.backgroundSummary ?? "",
@@ -950,9 +966,13 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       previousAbaTherapy: formData.previousAbaTherapy.trim(),
       previousAgencyName: formData.previousAgencyName.trim(),
       otherServicesSpeechTherapy: formData.otherServicesSpeechTherapy,
+      otherServicesSpeechTherapyFacilityName: formData.otherServicesSpeechTherapyFacilityName.trim() || null,
       otherServicesOccupationalTherapy: formData.otherServicesOccupationalTherapy,
+      otherServicesOccupationalTherapyFacilityName: formData.otherServicesOccupationalTherapyFacilityName.trim() || null,
       otherServicesPhysicalTherapy: formData.otherServicesPhysicalTherapy,
+      otherServicesPhysicalTherapyFacilityName: formData.otherServicesPhysicalTherapyFacilityName.trim() || null,
       otherServicesFeedingTherapy: formData.otherServicesFeedingTherapy,
+      otherServicesFeedingTherapyFacilityName: formData.otherServicesFeedingTherapyFacilityName.trim() || null,
       otherServicesOther: formData.otherServicesOther.trim() || null,
       otherServicesFacilityName: formData.otherServicesFacilityName.trim() || null,
       backgroundSummary: formData.backgroundSummary.trim(),
