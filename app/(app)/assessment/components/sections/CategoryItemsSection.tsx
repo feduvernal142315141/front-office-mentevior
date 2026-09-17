@@ -138,7 +138,7 @@ export function CategoryItemsSection({
     <div className="space-y-6">
       {categories.filter((c) => c.items.length > 0).map((category) => (
         <div key={category.id}>
-          {category.name && (
+          {category.name && !/^category$/i.test(category.name.trim()) && (
             <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
               {category.name}
             </h4>
