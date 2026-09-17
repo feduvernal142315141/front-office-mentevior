@@ -217,7 +217,7 @@ export function CategoryItemsSection({
                       maxVisibleTags={2}
                     />
                     <MultiSelect
-                      label="Place of Service"
+                      label="POS"
                       value={value.placesOfServiceIds}
                       onChange={(v) => onUpdate(item.id, "placesOfServiceIds", v)}
                       options={posOptions}

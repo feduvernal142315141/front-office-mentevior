@@ -1,9 +1,11 @@
 "use client"
 
+import { useMemo } from "react"
 import { Plus, Receipt, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
 import type { BillingCodeRow } from "../../hooks/useAssessmentForm"
 
 interface BillingCodesSectionProps {
@@ -31,6 +33,12 @@ export function BillingCodesSection({
   onRemove,
   onUpdate,
 }: BillingCodesSectionProps) {
+  const { placesOfService } = usePlacesOfService()
+  const posOptions = useMemo(
+    () => placesOfService.map((p) => ({ value: p.code ? `${p.name} (${p.code})` : p.name, label: p.code ? `${p.name} (${p.code})` : p.name })),
+    [placesOfService],
+  )
+
   return (
     <div className="space-y-4">
       {rows.length === 0 && (
@@ -88,12 +96,16 @@ export function BillingCodesSection({
               </button>
             </div>
             <div className="mt-4">
-              <FloatingInput
-                label="Settings"
+              <FloatingSelect
+                label="POS"
                 value={row.settings}
                 onChange={(v) => onUpdate(index, "settings", v)}
-                onBlur={() => {}}
-                placeholder="Home, Community"
+                options={
+                  row.settings && !posOptions.some((o) => o.value === row.settings)
+                    ? [...posOptions, { value: row.settings, label: row.settings }]
+                    : posOptions
+                }
+                searchable
                 disabled={disabled}
               />
             </div>
