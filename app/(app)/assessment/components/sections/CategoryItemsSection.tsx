@@ -5,7 +5,6 @@ import { FolderOpen, Loader2, RotateCcw } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MultiSelect } from "@/components/custom/MultiSelect"
-import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
 import { INTENSITY_KEY_OPTIONS } from "@/lib/constants/assessment.constants"
 import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
 import { typeIsFrequency } from "@/lib/modules/service-plans/constants/data-collection.constants"
@@ -75,7 +74,7 @@ export function CategoryItemsSection({
 }: CategoryItemsSectionProps) {
   const { placesOfService } = usePlacesOfService()
   const posOptions = useMemo(
-    () => placesOfService.map((p) => ({ id: p.id, name: p.code ? `${p.name} (${p.code})` : p.name })),
+    () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
     [placesOfService],
   )
 
@@ -217,12 +216,16 @@ export function CategoryItemsSection({
                       placeholder="Select functions"
                       maxVisibleTags={2}
                     />
-                    <MultiSelectWithSearch
+                    <MultiSelect
                       label="POS"
-                      items={posOptions}
-                      selectedIds={value.placesOfServiceIds}
-                      onChange={(ids) => onUpdate(item.id, "placesOfServiceIds", ids)}
+                      value={value.placesOfServiceIds}
+                      onChange={(v) => onUpdate(item.id, "placesOfServiceIds", v)}
+                      options={posOptions}
                       disabled={disabled}
+                      searchable
+                      tone="neutral"
+                      placeholder="Select POS"
+                      maxVisibleTags={2}
                     />
                     <FloatingInput
                       label="Preventive strategies (antecedent)"

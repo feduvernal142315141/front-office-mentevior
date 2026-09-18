@@ -5,7 +5,7 @@ import { Plus, Receipt, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
-import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
+import { MultiSelect } from "@/components/custom/MultiSelect"
 import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
 import type { BillingCodeRow } from "../../hooks/useAssessmentForm"
 
@@ -36,7 +36,7 @@ export function BillingCodesSection({
 }: BillingCodesSectionProps) {
   const { placesOfService } = usePlacesOfService()
   const posOptions = useMemo(
-    () => placesOfService.map((p) => ({ id: p.id, name: p.code ? `${p.name} (${p.code})` : p.name })),
+    () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
     [placesOfService],
   )
 
@@ -97,12 +97,16 @@ export function BillingCodesSection({
               </button>
             </div>
             <div className="mt-4">
-              <MultiSelectWithSearch
+              <MultiSelect
                 label="POS"
-                items={posOptions}
-                selectedIds={row.placesOfServiceIds}
-                onChange={(ids) => onUpdate(index, "placesOfServiceIds", ids)}
+                value={row.placesOfServiceIds}
+                onChange={(v) => onUpdate(index, "placesOfServiceIds", v)}
+                options={posOptions}
                 disabled={disabled}
+                searchable
+                tone="neutral"
+                placeholder="Select POS"
+                maxVisibleTags={3}
               />
             </div>
             {rowError && <p className="mt-2 text-xs font-medium text-red-500">{rowError}</p>}
