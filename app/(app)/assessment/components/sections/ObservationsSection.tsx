@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { Eye, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
-import { MultiSelect } from "@/components/custom/MultiSelect"
+import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
@@ -31,7 +31,7 @@ export function ObservationsSection({
 }: ObservationsSectionProps) {
   const { placesOfService } = usePlacesOfService()
   const posOptions = useMemo(
-    () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
+    () => placesOfService.map((p) => ({ id: p.id, name: p.code ? `${p.name} (${p.code})` : p.name })),
     [placesOfService],
   )
 
@@ -59,15 +59,12 @@ export function ObservationsSection({
               hasError={!!errors[`observation-${index}`] && !observation.date}
               required
             />
-            <MultiSelect
+            <MultiSelectWithSearch
               label="POS"
-              value={observation.placesOfService}
-              onChange={(v) => onUpdate(index, "placesOfService", v)}
-              options={posOptions}
+              items={posOptions}
+              selectedIds={observation.placesOfService}
+              onChange={(ids) => onUpdate(index, "placesOfService", ids)}
               disabled={disabled}
-              tone="neutral"
-              placeholder="Select POS"
-              maxVisibleTags={2}
             />
             <button
               type="button"
