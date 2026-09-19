@@ -814,9 +814,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     }
 
     if (sectionBlocksSave(flags, "showMedicalHistory")) {
-      if (!formData.medicalHistoryOtherDiagnosis.trim()) newErrors.medicalHistoryOtherDiagnosis = required
-      if (!formData.medicalHistoryMorbidities.trim()) newErrors.medicalHistoryMorbidities = required
-      if (!formData.medicalHistoryAllergies.trim()) newErrors.medicalHistoryAllergies = required
       if (!formData.medicalHistoryTypeOfBirth) newErrors.medicalHistoryTypeOfBirth = "Select the type of birth"
     }
 
