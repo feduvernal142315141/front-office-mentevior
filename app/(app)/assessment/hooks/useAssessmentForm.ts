@@ -819,7 +819,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
     if (sectionBlocksSave(flags, "showOtherServices")) {
       if (!formData.previousAbaTherapy.trim()) newErrors.previousAbaTherapy = required
-      if (!formData.previousAgencyName.trim()) newErrors.previousAgencyName = required
+      if (formData.previousAbaTherapy === "true" && !formData.previousAgencyName.trim()) newErrors.previousAgencyName = required
     }
 
     if (sectionBlocksSave(flags, "showBackgroundInformation")) {

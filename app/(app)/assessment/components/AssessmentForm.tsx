@@ -751,7 +751,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               onChange={(v) => updateField("previousAgencyName", v)}
               onBlur={() => {}}
               hasError={!!errors.previousAgencyName}
-              required
+              required={formData.previousAbaTherapy === "true"}
+              disabled={isSaving || formData.previousAbaTherapy !== "true"}
             />
             <FieldError message={errors.previousAgencyName} />
           </div>
