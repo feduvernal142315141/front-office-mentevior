@@ -351,6 +351,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               value={formData.timeInit}
               onChange={(v) => updateField("timeInit", v)}
               hasError={!!errors.timeInit}
+              allowManualInput
             />
             <FieldError message={errors.timeInit} />
           </div>
@@ -360,6 +361,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               value={formData.timeEnd}
               onChange={(v) => updateField("timeEnd", v)}
               hasError={!!errors.timeEnd}
+              allowManualInput
               defaultPeriod="PM"
             />
             <FieldError message={errors.timeEnd} />
