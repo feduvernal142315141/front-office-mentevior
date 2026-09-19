@@ -28,14 +28,6 @@ interface UseClientServicePlanConfigurationResult {
   handleServicePlanUpdated: () => Promise<void>
 }
 
-function sortCategoriesByName(
-  categories: ClientServicePlanCategorySummary[]
-): ClientServicePlanCategorySummary[] {
-  return [...categories].sort((a, b) =>
-    a.categoryName.localeCompare(b.categoryName, undefined, { sensitivity: "base" })
-  )
-}
-
 export function useClientServicePlanConfiguration(
   spId: string,
   appointmentId?: string,
@@ -50,7 +42,7 @@ export function useClientServicePlanConfiguration(
   const reloadCategories = useCallback(async () => {
     if (!clientServicePlan?.id) return
     const categoryData = await getClientServicePlanCategories(clientServicePlan.id, appointmentId)
-    setCategories(sortCategoriesByName(categoryData))
+    setCategories(categoryData)
   }, [clientServicePlan?.id, appointmentId])
 
   const reloadClientServicePlan = useCallback(async () => {
@@ -79,7 +71,7 @@ export function useClientServicePlanConfiguration(
 
         const categoryData = await getClientServicePlanCategories(plan.id, appointmentId)
         if (!active) return
-        setCategories(sortCategoriesByName(categoryData))
+        setCategories(categoryData)
       } catch (err) {
         if (!active) return
         setError(
