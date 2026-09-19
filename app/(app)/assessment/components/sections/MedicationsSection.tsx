@@ -92,7 +92,7 @@ export function MedicationsSection({
           data-field={`medication-${index}`}
           className="rounded-xl border border-slate-200 bg-slate-50/40 p-4"
         >
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_140px_140px_1fr_auto]">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_140px_180px_1fr_auto]">
             <FloatingInput
               label="Medication name"
               value={medication.name}
@@ -115,7 +115,7 @@ export function MedicationsSection({
               disabled={disabled}
             />
             <FloatingInput
-              label="Details"
+              label="Prescriber"
               value={medication.details}
               onChange={(v) => onUpdate(index, "details", v)}
               onBlur={() => {}}
