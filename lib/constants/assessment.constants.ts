@@ -59,7 +59,6 @@ export const ASSESSMENT_PDF_GENERAL_NARRATIVES: {
   label: string
 }[] = [
   { key: "coordinationCare", flagKey: "showCoordinationOfCare", label: "Coordination of Care" },
-  { key: "medicalNecessity", flagKey: "showMedicalNecessityStatement", label: "Medical Necessity Statement" },
   { key: "caregiverTraining", flagKey: "showFamilyCaregiverTraining", label: "Family & Caregiver Training" },
   { key: "generalizationTraining", flagKey: "showGeneralizationTraining", label: "Generalization Training" },
   { key: "fadingTransitionPlan", flagKey: "showServiceFadingTransitionPlan", label: "Service Fading & Transition Plan" },

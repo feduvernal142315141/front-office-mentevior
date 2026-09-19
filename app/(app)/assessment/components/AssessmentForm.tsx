@@ -7,6 +7,7 @@ import {
   BookOpenText,
   CalendarClock,
   Clock,
+  FileText,
   History,
   ClipboardList,
   Contact,
@@ -35,6 +36,7 @@ import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
+import { CollapsableSection } from "@/components/custom/CollapsableSection"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
 import {
@@ -604,6 +606,46 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         <FieldError message={errors.assessmentConductedCatalogIds} />
       </Section>
 
+      {/* ─── ABC Data ─── */}
+      <Section
+        icon={<ListTree className="h-4 w-4" />}
+        title="ABC Data"
+        subtitle="Antecedent, behavior and consequence observations"
+        contentHidden={!formData.pdfFlags.showAbcDataRecording} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAbcDataRecording} onChange={(v) => updatePdfFlag("showAbcDataRecording", v)} disabled={isSaving} />}
+      >
+        <div data-field="abcData">
+        <AbcDataSection
+          rows={formData.abcData}
+          hasError={!!errors.abcData}
+          disabled={isSaving}
+          onAdd={addAbcRow}
+          onRemove={removeAbcRow}
+          onUpdate={updateAbcRow}
+        />
+          <FieldError message={errors.abcData} />
+        </div>
+      </Section>
+
+      {/* ─── Medical Necessity Statement ─── */}
+      <CollapsableSection
+        icon={<FileText className="h-4 w-4" />}
+        title="Medical Necessity Statement"
+        defaultOpen={true}
+      >
+        <div data-field="medicalNecessity">
+          <FloatingTextarea
+            label="Medical Necessity Statement"
+            value={formData.pdfTexts.medicalNecessity}
+            onChange={(v) => updatePdfText("medicalNecessity", v)}
+            onBlur={() => {}}
+            rows={10}
+            disabled={fieldsDisabled}
+            hasError={!!errors.medicalNecessity}
+          />
+          {errors.medicalNecessity && <p className="mt-1.5 text-xs font-medium text-red-500">{errors.medicalNecessity}</p>}
+        </div>
+      </CollapsableSection>
+
       {/* ─── Categories & Items ─── */}
       <Section
         icon={<Target className="h-4 w-4" />}
@@ -628,32 +670,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         </div>
       </Section>
 
-      {/* ─── Billing Codes ─── */}
-      <Section
-        icon={<Receipt className="h-4 w-4" />}
-        title="Billing Codes"
-        subtitle={
-          draftReady && (clientDraft?.billingCodes.length ?? 0) > 0
-            ? "Prefilled from the client's active prior authorization — edit units and settings as needed"
-            : "Proposed billing codes and units for this assessment"
-        }
-      >
-        <div data-field="billingCodesSection">
-        <BillingCodesSection
-          rows={formData.billingCodes}
-          hasError={!!errors.billingCodesSection}
-          options={billingCodeOptions}
-          optionsLoading={billingCodesLoading}
-          errors={errors}
-          disabled={isSaving}
-          onAdd={addBillingCode}
-          onRemove={removeBillingCode}
-          onUpdate={updateBillingCode}
-        />
-          <FieldError message={errors.billingCodesSection} />
-        </div>
-      </Section>
-
       {/* ─── Proposed Schedule ─── */}
       <Section
         icon={<CalendarClock className="h-4 w-4" />}
@@ -675,26 +691,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           onUpdateHours={updateScheduleHours}
         />
           <FieldError message={errors.proposedScheduleSection} />
-        </div>
-      </Section>
-
-      {/* ─── ABC Data ─── */}
-      <Section
-        icon={<ListTree className="h-4 w-4" />}
-        title="ABC Data"
-        subtitle="Antecedent, behavior and consequence observations"
-        contentHidden={!formData.pdfFlags.showAbcDataRecording} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAbcDataRecording} onChange={(v) => updatePdfFlag("showAbcDataRecording", v)} disabled={isSaving} />}
-      >
-        <div data-field="abcData">
-        <AbcDataSection
-          rows={formData.abcData}
-          hasError={!!errors.abcData}
-          disabled={isSaving}
-          onAdd={addAbcRow}
-          onRemove={removeAbcRow}
-          onUpdate={updateAbcRow}
-        />
-          <FieldError message={errors.abcData} />
         </div>
       </Section>
 
@@ -828,6 +824,32 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         disabled={fieldsDisabled}
         onUpdate={updatePdfText}
       />
+
+      {/* ─── Billing Codes (después de Consent for Assessment & Treatment) ─── */}
+      <Section
+        icon={<Receipt className="h-4 w-4" />}
+        title="Billing Codes"
+        subtitle={
+          draftReady && (clientDraft?.billingCodes.length ?? 0) > 0
+            ? "Prefilled from the client's active prior authorization — edit units and settings as needed"
+            : "Proposed billing codes and units for this assessment"
+        }
+      >
+        <div data-field="billingCodesSection">
+        <BillingCodesSection
+          rows={formData.billingCodes}
+          hasError={!!errors.billingCodesSection}
+          options={billingCodeOptions}
+          optionsLoading={billingCodesLoading}
+          errors={errors}
+          disabled={isSaving}
+          onAdd={addBillingCode}
+          onRemove={removeBillingCode}
+          onUpdate={updateBillingCode}
+        />
+          <FieldError message={errors.billingCodesSection} />
+        </div>
+      </Section>
 
       {/* Secciones del PDF que salen del expediente del cliente (sin sección propia acá) */}
       <PdfSectionsVisibility flags={formData.pdfFlags} disabled={fieldsDisabled} onUpdate={updatePdfFlag} />
