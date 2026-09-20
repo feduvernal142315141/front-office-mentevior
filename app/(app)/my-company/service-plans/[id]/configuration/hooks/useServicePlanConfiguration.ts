@@ -27,14 +27,6 @@ interface UseServicePlanConfigurationResult {
   handleServicePlanUpdated: () => Promise<void>
 }
 
-function sortCategoriesByName(
-  categories: ServicePlanCategorySummary[]
-): ServicePlanCategorySummary[] {
-  return [...categories].sort((a, b) =>
-    a.categoryName.localeCompare(b.categoryName, undefined, { sensitivity: "base" })
-  )
-}
-
 export function useServicePlanConfiguration(servicePlanId: string): UseServicePlanConfigurationResult {
   const [servicePlan, setServicePlan] = useState<CompanyServicePlan | null>(null)
   const [categories, setCategories] = useState<ServicePlanCategorySummary[]>([])
@@ -45,7 +37,7 @@ export function useServicePlanConfiguration(servicePlanId: string): UseServicePl
 
   const reloadCategories = useCallback(async () => {
     const categoryData = await getServicePlanCategoriesByServicePlanId(servicePlanId)
-    setCategories(sortCategoriesByName(categoryData))
+    setCategories(categoryData)
   }, [servicePlanId])
 
   const reloadServicePlan = useCallback(async () => {
