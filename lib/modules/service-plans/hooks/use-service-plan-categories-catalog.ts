@@ -51,13 +51,7 @@ function mergeCategoryOptions(
     map.set(dedupeKey, option)
   })
 
-  return sortCategoryOptions(Array.from(map.values()))
-}
-
-function sortCategoryOptions(
-  options: ServicePlanCategoryCatalogOption[]
-): ServicePlanCategoryCatalogOption[] {
-  return [...options].sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
+  return Array.from(map.values())
 }
 
 export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatalogReturn {
@@ -93,24 +87,21 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
       const data = await inflightCatalogRequest!
 
       if (data.length > 0) {
-        const sortedData = sortCategoryOptions(data)
-        cachedOptions = sortedData
+        cachedOptions = data
         cachedUsingFallback = false
-        setOptions(sortedData)
+        setOptions(data)
         return
       }
 
       setUsingFallback(true)
-      const sortedFallback = sortCategoryOptions(SERVICE_PLAN_CATEGORY_OPTIONS)
-      setOptions(sortedFallback)
-      cachedOptions = sortedFallback
+      setOptions(SERVICE_PLAN_CATEGORY_OPTIONS)
+      cachedOptions = SERVICE_PLAN_CATEGORY_OPTIONS
       cachedUsingFallback = true
     } catch (e) {
       setError(e instanceof Error ? e : new Error("Failed to load categories catalog"))
       setUsingFallback(true)
-      const sortedFallback = sortCategoryOptions(SERVICE_PLAN_CATEGORY_OPTIONS)
-      setOptions(sortedFallback)
-      cachedOptions = sortedFallback
+      setOptions(SERVICE_PLAN_CATEGORY_OPTIONS)
+      cachedOptions = SERVICE_PLAN_CATEGORY_OPTIONS
       cachedUsingFallback = true
     } finally {
       setIsLoading(false)
@@ -177,9 +168,8 @@ export function useServicePlanCategoriesCatalog(): UseServicePlanCategoriesCatal
               }
             : option
         )
-        const sorted = sortCategoryOptions(next)
-        cachedOptions = sorted
-        return sorted
+        cachedOptions = next
+        return next
       })
 
       await refreshCatalog(true)
