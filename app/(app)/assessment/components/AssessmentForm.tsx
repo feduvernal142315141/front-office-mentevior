@@ -675,12 +675,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
       {/* ─── Providers ─── */}
       <Section
         icon={<Contact className="h-4 w-4" />}
-        title="Providers"
-        subtitle={
-          draftReady && (clientDraft?.providerFiles.length ?? 0) > 0
-            ? "Prefilled from client providers (BCBA and related specialties) — you can add or remove rows"
-            : "Other providers involved with the client"
-        }
+        title="Other Providers"
+        subtitle="Other providers involved with the client"
       >
         <div data-field="providerFiles">
         <ProviderFilesSection
