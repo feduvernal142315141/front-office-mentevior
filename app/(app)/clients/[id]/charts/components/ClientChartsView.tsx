@@ -104,8 +104,8 @@ export function ClientChartsView({
     }
   }, [clientId])
 
-  const openServicePlan = useCallback(() => {
-    const query = new URLSearchParams({ section: "service-plan" })
+  const openDataCollection = useCallback(() => {
+    const query = new URLSearchParams({ section: "data-collection" })
     if (clientServicePlanId) query.set("spId", clientServicePlanId)
     router.push(`/clients/${clientId}/configuration?${query.toString()}`)
   }, [clientId, clientServicePlanId, router])
@@ -211,7 +211,7 @@ export function ClientChartsView({
           tickInterval={chartRange.tickInterval}
           fetchStart={fetchStart}
           fetchEnd={fetchEnd}
-          onOpen={openServicePlan}
+          onOpen={openDataCollection}
         />
       )}
     </div>
