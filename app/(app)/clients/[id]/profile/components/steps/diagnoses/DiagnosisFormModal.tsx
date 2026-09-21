@@ -540,7 +540,7 @@ export function DiagnosisFormModal({
               <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Providers on File</p>
+                    <p className="text-sm font-semibold text-slate-800">Other Providers</p>
                     <p className="mt-1 text-sm text-slate-500">
                       {providerIds.length === 0
                         ? "No providers selected"
@@ -562,7 +562,7 @@ export function DiagnosisFormModal({
                     selectedIds={providerIds}
                     onChange={setProviderIds}
                     isLoading={isLoadingProviders}
-                    placeholder="Select providers on file..."
+                    placeholder="Select other providers..."
                   />
                 </div>
               </div>
