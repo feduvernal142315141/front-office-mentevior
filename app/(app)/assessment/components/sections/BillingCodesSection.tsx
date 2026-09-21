@@ -77,13 +77,11 @@ export function BillingCodesSection({
                 hasError={!!rowError && !!row.billingCodeId}
               />
               <FloatingInput
-                label="Units / week"
-                value={row.unitsWeek}
-                onChange={(v) => onUpdate(index, "unitsWeek", v)}
+                label="Hours / week"
+                value={row.unitsPeriod ? String(Math.round((Number.parseFloat(row.unitsPeriod) || 0) / 4 * 100) / 100) : ""}
+                onChange={() => {}}
                 onBlur={() => {}}
-                inputMode="decimal"
-                disabled={disabled}
-                hasError={!!rowError && !!row.billingCodeId}
+                disabled
               />
               <button
                 type="button"
