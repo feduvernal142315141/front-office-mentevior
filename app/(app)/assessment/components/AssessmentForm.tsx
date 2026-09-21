@@ -323,65 +323,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         </div>
       </Section>
 
-      {/* ─── School Information ─── */}
-      <Section icon={<GraduationCap className="h-4 w-4" />} title="School Information" contentHidden={!formData.pdfFlags.showSchoolInformation} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showSchoolInformation} onChange={(v) => updatePdfFlag("showSchoolInformation", v)} disabled={isSaving} />}>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div className="lg:col-span-2" data-field="schoolName">
-            <FloatingInput
-              label="School name"
-              value={formData.schoolName}
-              onChange={(v) => updateField("schoolName", v)}
-              onBlur={() => {}}
-              hasError={!!errors.schoolName}
-            />
-            <FieldError message={errors.schoolName} />
-          </div>
-          <div data-field="gradeCatalogId">
-            <FloatingSelect
-              label="Grade"
-              value={formData.gradeCatalogId}
-              onChange={(v) => updateField("gradeCatalogId", v)}
-              options={gradeOptions}
-              disabled={isLoadingCatalogs}
-              hasError={!!errors.gradeCatalogId}
-            />
-            <FieldError message={errors.gradeCatalogId} />
-          </div>
-          <div data-field="timeInit">
-            <FloatingTimePicker
-              label="School start time"
-              value={formData.timeInit}
-              onChange={(v) => updateField("timeInit", v)}
-              hasError={!!errors.timeInit}
-              allowManualInput
-            />
-            <FieldError message={errors.timeInit} />
-          </div>
-          <div data-field="timeEnd">
-            <FloatingTimePicker
-              label="School end time"
-              value={formData.timeEnd}
-              onChange={(v) => updateField("timeEnd", v)}
-              hasError={!!errors.timeEnd}
-              allowManualInput
-              defaultPeriod="PM"
-            />
-            <FieldError message={errors.timeEnd} />
-          </div>
-          <div className="lg:col-span-3" data-field="schoolAddress">
-            <FloatingInput
-              label="School address"
-              value={formData.schoolAddress}
-              onChange={(v) => updateField("schoolAddress", v)}
-              onBlur={() => {}}
-              hasError={!!errors.schoolAddress}
-            />
-            <FieldError message={errors.schoolAddress} />
-          </div>
-        </div>
-      </Section>
-
-      {/* ─── Background (incluye Housing & Family) ─── */}
+      {/* ─── Background (Housing & Family + School + Current Functioning) ─── */}
       <Section
         icon={<BookOpenText className="h-4 w-4" />}
         title="Background"
@@ -423,14 +365,62 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
         </div>
         <div className="mt-4" data-field="housingInformation">
           <FloatingTextarea
-            label="Housing / family information"
+            label="Housing and family information"
             value={formData.housingInformation}
             onChange={(v) => updateField("housingInformation", v)}
             onBlur={() => {}}
-            rows={4}
+            guidance={ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE}
+            rows={8}
             hasError={!!errors.housingInformation}
           />
           <FieldError message={errors.housingInformation} />
+        </div>
+
+        {/* School fields (opcionales, dentro de Background) */}
+        <SubHeading icon={<GraduationCap className="h-3.5 w-3.5" />} title="School information" className="mt-6" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="lg:col-span-2" data-field="schoolName">
+            <FloatingInput
+              label="School name"
+              value={formData.schoolName}
+              onChange={(v) => updateField("schoolName", v)}
+              onBlur={() => {}}
+            />
+          </div>
+          <div data-field="gradeCatalogId">
+            <FloatingSelect
+              label="Grade"
+              value={formData.gradeCatalogId}
+              onChange={(v) => updateField("gradeCatalogId", v)}
+              options={gradeOptions}
+              disabled={isLoadingCatalogs}
+            />
+          </div>
+          <div data-field="timeInit">
+            <FloatingTimePicker
+              label="School start time"
+              value={formData.timeInit}
+              onChange={(v) => updateField("timeInit", v)}
+              allowManualInput
+            />
+          </div>
+          <div data-field="timeEnd">
+            <FloatingTimePicker
+              label="School end time"
+              value={formData.timeEnd}
+              onChange={(v) => updateField("timeEnd", v)}
+              allowManualInput
+              defaultPeriod="PM"
+            />
+          </div>
+          <div className="lg:col-span-3" data-field="schoolAddress">
+            <FloatingInput
+              label="School address"
+              value={formData.schoolAddress}
+              onChange={(v) => updateField("schoolAddress", v)}
+              onBlur={() => {}}
+            />
+          </div>
         </div>
 
         <SubHeading
@@ -438,19 +428,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           title="Current functioning, strengths and skills"
           className="mt-6"
         />
-        <div data-field="backgroundSummary">
-          <FloatingTextarea
-            label="Summary"
-            value={formData.backgroundSummary}
-            onChange={(v) => updateField("backgroundSummary", v)}
-            onBlur={() => {}}
-            guidance={ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE}
-            rows={6}
-            hasError={!!errors.backgroundSummary}
-          />
-          <FieldError message={errors.backgroundSummary} />
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {ASSESSMENT_BACKGROUND_FIELDS.map(({ key, label }) => (
             <div key={key} data-field={key}>
               <FloatingTextarea

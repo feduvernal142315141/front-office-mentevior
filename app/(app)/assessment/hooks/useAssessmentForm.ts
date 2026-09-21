@@ -800,13 +800,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       newErrors.timeEnd = "End time must be after start time"
     }
 
-    if (sectionBlocksSave(flags, "showSchoolInformation")) {
-      if (!formData.schoolName.trim()) newErrors.schoolName = required
-      if (!formData.gradeCatalogId) newErrors.gradeCatalogId = "Select a grade"
-      if (!formData.timeInit) newErrors.timeInit = required
-      if (!formData.timeEnd && !newErrors.timeEnd) newErrors.timeEnd = required
-      if (!formData.schoolAddress.trim()) newErrors.schoolAddress = required
-    }
+    // School fields are optional — only validate time order if both provided
 
     if (sectionBlocksSave(flags, "showHousingFamily")) {
       if (!formData.housingType) newErrors.housingType = "Select a housing type"
@@ -823,7 +817,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     }
 
     if (sectionBlocksSave(flags, "showBackgroundInformation")) {
-      if (!formData.backgroundSummary.trim()) newErrors.backgroundSummary = required
       for (const { key } of ASSESSMENT_BACKGROUND_FIELDS) {
         if (!formData[key].trim()) newErrors[key] = required
       }
