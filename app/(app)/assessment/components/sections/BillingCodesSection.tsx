@@ -78,7 +78,7 @@ export function BillingCodesSection({
               />
               <FloatingInput
                 label="Hours / week"
-                value={row.unitsPeriod ? String(Math.round((Number.parseFloat(row.unitsPeriod) || 0) / 4 * 100) / 100) : ""}
+                value={row.unitsPeriod ? String(Math.round((Number.parseFloat(row.unitsPeriod) || 0) / 26 / 4 * 100) / 100) : ""}
                 onChange={() => {}}
                 onBlur={() => {}}
                 disabled
