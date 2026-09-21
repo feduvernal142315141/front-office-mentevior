@@ -78,6 +78,14 @@ export function CategoryItemsSection({
     [placesOfService],
   )
 
+  const preventiveStrategyOptions = useMemo(
+    () => {
+      const group = ASSESSMENT_PDF_STRATEGY_GROUPS.find((g) => g.flagKey === "showPreventiveAndAntecedentStrategies")
+      return (group?.fields ?? []).map((f) => ({ value: f.label, label: f.label }))
+    },
+    [],
+  )
+
   const consequenceStrategyOptions = useMemo(
     () => {
       const group = ASSESSMENT_PDF_STRATEGY_GROUPS.find((g) => g.flagKey === "showConsequenceBasedStrategies")
@@ -235,12 +243,16 @@ export function CategoryItemsSection({
                       placeholder="Select POS"
                       maxVisibleTags={2}
                     />
-                    <FloatingInput
-                      label="Preventive strategies (antecedent)"
-                      value={value.preventiveStrategies}
-                      onChange={(v) => onUpdate(item.id, "preventiveStrategies", v)}
-                      onBlur={() => {}}
+                    <MultiSelect
+                      label="Preventive & Antecedent Strategies"
+                      value={value.preventiveStrategies ? value.preventiveStrategies.split(", ").filter(Boolean) : []}
+                      onChange={(v) => onUpdate(item.id, "preventiveStrategies", v.join(", "))}
+                      options={preventiveStrategyOptions}
                       disabled={disabled}
+                      searchable
+                      tone="neutral"
+                      placeholder="Select strategies"
+                      maxVisibleTags={1}
                     />
                     <MultiSelect
                       label="Consequence-Based Strategies"
