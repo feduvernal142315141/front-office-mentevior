@@ -32,29 +32,7 @@ export function PdfNarrativesSections({
 }: PdfNarrativesSectionsProps) {
   return (
     <>
-      {ASSESSMENT_PDF_GENERAL_NARRATIVES.map(({ key, label }) => (
-        <CollapsableSection
-          key={key}
-          icon={<FileText className="h-4 w-4" />}
-          title={label}
-          defaultOpen={true}
-          forceOpen={errors[key] ? true : undefined}
-        >
-          <div data-field={key}>
-            <FloatingTextarea
-              label={label}
-              value={values[key]}
-              onChange={(v) => onUpdate(key, v)}
-              onBlur={() => {}}
-              rows={10}
-              disabled={disabled}
-              hasError={!!errors[key]}
-            />
-            {errors[key] && <p className="mt-1.5 text-xs font-medium text-red-500">{errors[key]}</p>}
-          </div>
-        </CollapsableSection>
-      ))}
-
+      {/* Strategies first */}
       {ASSESSMENT_PDF_STRATEGY_GROUPS.map((group) => (
         <CollapsableSection
           key={group.title}
@@ -81,6 +59,30 @@ export function PdfNarrativesSections({
                 disabled={disabled}
               />
             ))}
+          </div>
+        </CollapsableSection>
+      ))}
+
+      {/* General narratives after strategies */}
+      {ASSESSMENT_PDF_GENERAL_NARRATIVES.map(({ key, label }) => (
+        <CollapsableSection
+          key={key}
+          icon={<FileText className="h-4 w-4" />}
+          title={label}
+          defaultOpen={true}
+          forceOpen={errors[key] ? true : undefined}
+        >
+          <div data-field={key}>
+            <FloatingTextarea
+              label={label}
+              value={values[key]}
+              onChange={(v) => onUpdate(key, v)}
+              onBlur={() => {}}
+              rows={10}
+              disabled={disabled}
+              hasError={!!errors[key]}
+            />
+            {errors[key] && <p className="mt-1.5 text-xs font-medium text-red-500">{errors[key]}</p>}
           </div>
         </CollapsableSection>
       ))}
