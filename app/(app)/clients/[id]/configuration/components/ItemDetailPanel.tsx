@@ -131,6 +131,7 @@ function buildItemFormValues(
     cumulative: config.cumulative ?? false,
     levels: config.levels ?? [],
     topography: itemConfig?.topography ?? "",
+    procedures: itemConfig?.procedures ?? "",
     active: itemConfig?.active ?? true,
     chart: resolveChartConfig(config.chart),
   }
@@ -298,6 +299,7 @@ export function ItemDetailPanel({
       cumulative: false,
       levels: [],
       topography: "",
+      procedures: "",
       active: true,
       chart: DEFAULT_CHART_CONFIG,
     },
@@ -623,6 +625,7 @@ export function ItemDetailPanel({
         suggestedNumberOfRecordings: values.suggestedNumberOfRecordings,
         cumulative: values.cumulative,
         topography: values.topography ?? "",
+        procedures: values.procedures ?? "",
         active: values.active ?? true,
         chart: values.chart,
         baselines: baselinesPayload,
@@ -1132,6 +1135,25 @@ export function ItemDetailPanel({
             />
             <FieldErrorText message={errors.topography?.message} />
           </div>
+
+          {/* Procedures — only for non-Maladaptive categories */}
+          {!/maladaptive/i.test(categoryName) && (
+            <div className="space-y-1 sm:col-span-2 lg:col-span-4">
+              <Controller
+                name="procedures"
+                control={control}
+                render={({ field }) => (
+                  <FloatingTextarea
+                    label="Procedures"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    rows={2}
+                  />
+                )}
+              />
+            </div>
+          )}
         </div>
 
         {/* ── Baselines ── */}
