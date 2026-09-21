@@ -257,7 +257,7 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
 }
 
 const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", frequency: "", details: "" }
-const EMPTY_OBSERVATION: AssessmentObservationInput = { date: "", placesOfService: [], summary: "" }
+const EMPTY_OBSERVATION: AssessmentObservationInput = { date: "", placesOfService: [], abcEntries: [] }
 const EMPTY_BILLING_CODE: BillingCodeRow = { billingCodeId: "", unitsPeriod: "", unitsWeek: "", placesOfServiceIds: [] }
 const EMPTY_ABC: AssessmentAbcInput = { antecedent: "", behavior: "", consequence: "" }
 const EMPTY_PROVIDER_FILE: AssessmentProviderFileInput = { type: "", name: "", contactIformation: "" }
@@ -342,7 +342,7 @@ function isMedicationEmpty(m: AssessmentMedicationInput): boolean {
 }
 
 function isObservationEmpty(o: AssessmentObservationInput): boolean {
-  return !o.date && o.placesOfService.length === 0 && !o.summary.trim()
+  return !o.date && o.placesOfService.length === 0 && o.abcEntries.length === 0
 }
 
 /**
@@ -642,7 +642,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   }, [])
 
   const updateObservation = useCallback(
-    (index: number, field: keyof AssessmentObservationInput, value: string | string[]) => {
+    (index: number, field: keyof AssessmentObservationInput, value: string | string[] | AssessmentObservationInput["abcEntries"]) => {
       setFormData((prev) => ({
         ...prev,
         observations: prev.observations.map((o, i) => (i === index ? { ...o, [field]: value } : o)),
@@ -999,7 +999,15 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         })),
       observations: formData.observations
         .filter((o) => !isObservationEmpty(o))
-        .map((o) => ({ date: o.date, placesOfService: o.placesOfService, summary: o.summary.trim() })),
+        .map((o) => ({
+          date: o.date,
+          placesOfService: o.placesOfService,
+          abcEntries: o.abcEntries.map((e) => ({
+            antecedent: e.antecedent.trim(),
+            behavior: e.behavior.trim(),
+            consequence: e.consequence.trim(),
+          })),
+        })),
       assessmentConductedCatalogIds: formData.assessmentConductedCatalogIds,
       categoriesItems,
       billingCodes,

@@ -213,7 +213,11 @@ export async function getAssessmentDataByClient(clientId: string): Promise<Asses
     observations: arr(raw.observations).map((o) => ({
       date: str(o.date).split("T")[0],
       placesOfService: Array.isArray(o.placesOfService) ? o.placesOfService.map((v: unknown) => String(v ?? "")).filter(Boolean) : [],
-      summary: str(o.summary),
+      abcEntries: arr(o.abcEntries).map((e: Record<string, unknown>) => ({
+        antecedent: str(e.antecedent),
+        behavior: str(e.behavior),
+        consequence: str(e.consequence),
+      })),
     })),
     assessmentConductedCatalogIds: assessmentConductedList
       .map((c) => str(c.assessmentConductedCatalogId))

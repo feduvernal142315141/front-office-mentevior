@@ -149,11 +149,17 @@ export interface AssessmentMedicationInput {
   details: string
 }
 
+export interface AssessmentObservationAbcEntry {
+  antecedent: string
+  behavior: string
+  consequence: string
+}
+
 export interface AssessmentObservationInput {
   /** yyyy-MM-dd; requerido cuando la observación se envía */
   date: string
   placesOfService: string[]
-  summary: string
+  abcEntries: AssessmentObservationAbcEntry[]
 }
 
 /**

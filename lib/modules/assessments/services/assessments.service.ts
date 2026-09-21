@@ -245,7 +245,11 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
   const observations: AssessmentObservationInput[] = arr(raw.observations).map((o) => ({
     date: str(o.date).split("T")[0],
     placesOfService: parseStringArray(o.placesOfService),
-    summary: str(o.summary),
+    abcEntries: arr(o.abcEntries).map((e) => ({
+      antecedent: str(e.antecedent),
+      behavior: str(e.behavior),
+      consequence: str(e.consequence),
+    })),
   }))
 
   const assessmentConductedList: AssessmentConductedEntry[] = arr(raw.assessmentConductedList).map((c) => ({
