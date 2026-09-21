@@ -200,6 +200,7 @@ export function ClientDataCollectionDrawer({
           suggestedNumberOfRecordings: values.suggestedNumberOfRecordings,
           cumulative: values.cumulative,
           topography: values.topography ?? "",
+          procedures: values.procedures ?? "",
           active: values.active ?? true,
           chart: values.chart,
           baselines: loadedBaselines,
@@ -261,6 +262,7 @@ export function ClientDataCollectionDrawer({
             itemName={itemName}
             initialConfig={config ?? undefined}
             initialTopography={itemConfig?.topography}
+            initialProcedures={itemConfig?.procedures}
             initialActive={itemConfig?.active}
             onSave={handleSave}
             onDeleteLevel={handleDeleteLevel}

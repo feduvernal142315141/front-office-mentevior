@@ -72,6 +72,10 @@ export interface ClientCategoryItemSummary {
   hypothesizedFunctions: HypothesizedFunction[]
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string
+  /** Descripción del item (topography/description del SP) */
+  description: string
+  /** Procedures del item (null para Maladaptive) */
+  procedures: string | null
   /** UUIDs del catálogo de Place of Service */
   placesOfService: string[]
   preventiveStrategies: string

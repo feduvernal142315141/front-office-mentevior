@@ -72,6 +72,7 @@ export function createClientDataCollectionFormSchema(
       cumulative: z.boolean().optional(),
       levels: z.array(dataCollectionLevelSchema),
       topography: z.string().optional(),
+      procedures: z.string().optional(),
       active: z.boolean().optional(),
       chart: z.preprocess((value) => {
         if (!value || typeof value !== "object") return value

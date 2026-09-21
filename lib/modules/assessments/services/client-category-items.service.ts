@@ -55,6 +55,8 @@ function normalizeDraftItem(raw: unknown): ClientCategoryItemSummary {
       ? entry.intensityKey.trim()
       : null,
     intensityDescription: str(entry.intensityDescription),
+    description: str(entry.description) || str(entry.topography),
+    procedures: typeof entry.procedures === "string" ? entry.procedures : null,
     placesOfService: Array.isArray(entry.placesOfService) ? entry.placesOfService.map((v: unknown) => String(v ?? "")).filter(Boolean) : [],
     preventiveStrategies: str(entry.preventiveStrategies),
     managementStrategies: str(entry.managementStrategies),

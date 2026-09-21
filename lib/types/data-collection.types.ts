@@ -122,6 +122,7 @@ export interface ItemDataCollectionConfig extends DataCollectionConfig {
   categoryId: string
   categoryName: string
   topography: string
+  procedures: string
   active: boolean
   /**
    * Contrato 2026-09-07: el item pasó a tener varios teaching procedures y el GET

@@ -417,6 +417,7 @@ function fromApiItemResponse(
     categoryId: "",
     categoryName: "",
     topography,
+    procedures: "",
     active,
     // El service plan de la compañía no configura teaching procedures ni funciones
     // hipotetizadas: eso vive en el item del plan del cliente.

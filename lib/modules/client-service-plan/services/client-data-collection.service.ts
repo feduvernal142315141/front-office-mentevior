@@ -259,7 +259,8 @@ interface ClientCategoryPayload {
 interface ClientItemPayload {
   clientServicePlanCategoryItemId: string
   name?: string
-  topography: string
+  description: string
+  procedures?: string | null
   status: boolean
   /** Reemplaza la colección completa; `[]` la limpia (contrato 2026-09-07). */
   teachingProcedureIds?: string[]
@@ -286,7 +287,9 @@ interface ApiResponse {
   recordingsNumber?: number
   intervalLength?: number
   levels?: ApiLevel[]
+  description?: string
   topography?: string
+  procedures?: string
   status?: boolean
   name?: string
   /** Contrato 2026-09-07: el GET los devuelve resueltos y sin los ids sueltos. */
@@ -339,6 +342,7 @@ export interface UpsertClientItemDataCollectionDto {
   clientServicePlanCategoryItemId: string
   name?: string
   topography: string
+  procedures?: string
   active: boolean
   /**
    * Omitir la clave deja intacto lo persistido; `[]` limpia la colección.
@@ -583,7 +587,8 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
   const dataCollection = extractApiDataCollection(itemEntity)
   const chartRaw = itemEntity.chart
   const hasChart = hasChartContent(chartRaw)
-  const topography = asString(itemEntity.topography)
+  const topography = asString(itemEntity.description) || asString(itemEntity.topography)
+  const procedures = asString(itemEntity.procedures)
   const active = typeof itemEntity.status === "boolean" ? itemEntity.status : true
   const name = asString(itemEntity.name)
   const itemId = asOptionalString(itemEntity.clientServicePlanCategoryItemId) ?? fallbackItemId
@@ -615,6 +620,7 @@ function fromApiItemResponse(raw: unknown, fallbackItemId: string): ItemDataColl
     categoryId: "",
     categoryName: "",
     topography,
+    procedures,
     active,
     teachingProcedures,
     teachingProcedureIds: teachingProcedures.map((entry) => entry.id),
@@ -764,7 +770,8 @@ export async function upsertClientItemDataCollection(
 ): Promise<void> {
   const payload: ClientItemPayload = {
     clientServicePlanCategoryItemId: dto.clientServicePlanCategoryItemId,
-    topography: dto.topography,
+    description: dto.topography,
+    procedures: dto.procedures ?? null,
     status: dto.active,
     dataCollection: toApiDataCollection(dto),
   }

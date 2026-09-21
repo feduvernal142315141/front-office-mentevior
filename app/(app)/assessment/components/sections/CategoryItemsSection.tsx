@@ -168,6 +168,7 @@ export function CategoryItemsSection({
               const touched = isTouched(value)
               const collectionMethod = collectionMethodByItemId[item.id]
               const showIntensity = !collectionMethod || typeIsFrequency(collectionMethod)
+              const isMaladaptive = /maladaptive/i.test(category.name)
               // Precarga del Service Plan: se muestra hasta que el usuario elija otras
               const hypothesizedFunction = hypothesizedFunctionByItemId[item.id] ?? []
 
@@ -243,28 +244,49 @@ export function CategoryItemsSection({
                       placeholder="Select POS"
                       maxVisibleTags={2}
                     />
-                    <MultiSelect
-                      label="Preventive & Antecedent Strategies"
-                      value={value.preventiveStrategies ? value.preventiveStrategies.split(", ").filter(Boolean) : []}
-                      onChange={(v) => onUpdate(item.id, "preventiveStrategies", v.join(", "))}
-                      options={preventiveStrategyOptions}
-                      disabled={disabled}
-                      searchable
-                      tone="neutral"
-                      placeholder="Select strategies"
-                      maxVisibleTags={1}
-                    />
-                    <MultiSelect
-                      label="Consequence-Based Strategies"
-                      value={value.managementStrategies ? value.managementStrategies.split(", ").filter(Boolean) : []}
-                      onChange={(v) => onUpdate(item.id, "managementStrategies", v.join(", "))}
-                      options={consequenceStrategyOptions}
-                      disabled={disabled}
-                      searchable
-                      tone="neutral"
-                      placeholder="Select strategies"
-                      maxVisibleTags={1}
-                    />
+                    {isMaladaptive ? (
+                      <>
+                        <MultiSelect
+                          label="Preventive & Antecedent Strategies"
+                          value={value.preventiveStrategies ? value.preventiveStrategies.split(", ").filter(Boolean) : []}
+                          onChange={(v) => onUpdate(item.id, "preventiveStrategies", v.join(", "))}
+                          options={preventiveStrategyOptions}
+                          disabled={disabled}
+                          searchable
+                          tone="neutral"
+                          placeholder="Select strategies"
+                          maxVisibleTags={1}
+                        />
+                        <MultiSelect
+                          label="Consequence-Based Strategies"
+                          value={value.managementStrategies ? value.managementStrategies.split(", ").filter(Boolean) : []}
+                          onChange={(v) => onUpdate(item.id, "managementStrategies", v.join(", "))}
+                          options={consequenceStrategyOptions}
+                          disabled={disabled}
+                          searchable
+                          tone="neutral"
+                          placeholder="Select strategies"
+                          maxVisibleTags={1}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <FloatingInput
+                          label="Description"
+                          value={item.description ?? ""}
+                          onChange={() => {}}
+                          onBlur={() => {}}
+                          disabled
+                        />
+                        <FloatingInput
+                          label="Procedures"
+                          value={item.procedures ?? ""}
+                          onChange={() => {}}
+                          onBlur={() => {}}
+                          disabled
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               )

@@ -90,6 +90,7 @@ interface ClientDataCollectionFormProps {
   itemName?: string
   initialConfig?: DataCollectionConfig
   initialTopography?: string
+  initialProcedures?: string
   initialActive?: boolean
   onSave: (values: ClientDataCollectionFormValues & { recommendations: RecommendationsConfig }) => Promise<void>
   onDeleteLevel?: (level: DataCollectionLevel) => Promise<void>
@@ -108,6 +109,7 @@ export function ClientDataCollectionForm({
   itemName,
   initialConfig,
   initialTopography,
+  initialProcedures,
   initialActive,
   onSave,
   onDeleteLevel,
@@ -164,6 +166,7 @@ export function ClientDataCollectionForm({
       cumulative: initialConfig?.cumulative ?? false,
       levels: initialConfig?.levels ?? [],
       topography: initialTopography ?? "",
+      procedures: initialProcedures ?? "",
       active: initialActive ?? true,
       chart: resolveChartConfig(initialConfig?.chart),
     },
@@ -182,6 +185,7 @@ export function ClientDataCollectionForm({
       cumulative: initialConfig.cumulative ?? false,
       levels: initialConfig.levels ?? [],
       topography: initialTopography ?? "",
+      procedures: initialProcedures ?? "",
       active: initialActive ?? true,
       chart: resolveChartConfig(initialConfig.chart),
     })
@@ -362,6 +366,24 @@ export function ClientDataCollectionForm({
               />
               <FieldErrorText message={errors.topography?.message} />
             </div>
+
+            {!/maladaptive/i.test(categoryName) && (
+              <div className="space-y-1">
+                <Controller
+                  name="procedures"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingTextarea
+                      label="Procedures"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      rows={3}
+                    />
+                  )}
+                />
+              </div>
+            )}
 
             <Controller
               name="active"
