@@ -5,7 +5,7 @@ import { FolderOpen, Loader2, RotateCcw } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MultiSelect } from "@/components/custom/MultiSelect"
-import { INTENSITY_KEY_OPTIONS } from "@/lib/constants/assessment.constants"
+import { INTENSITY_KEY_OPTIONS, ASSESSMENT_PDF_STRATEGY_GROUPS } from "@/lib/constants/assessment.constants"
 import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
 import { typeIsFrequency } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
@@ -76,6 +76,14 @@ export function CategoryItemsSection({
   const posOptions = useMemo(
     () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
     [placesOfService],
+  )
+
+  const consequenceStrategyOptions = useMemo(
+    () => {
+      const group = ASSESSMENT_PDF_STRATEGY_GROUPS.find((g) => g.flagKey === "showConsequenceBasedStrategies")
+      return (group?.fields ?? []).map((f) => ({ value: f.label, label: f.label }))
+    },
+    [],
   )
 
   const catalogDescriptions = useMemo(
@@ -234,12 +242,16 @@ export function CategoryItemsSection({
                       onBlur={() => {}}
                       disabled={disabled}
                     />
-                    <FloatingInput
-                      label="Management strategies (consequence)"
-                      value={value.managementStrategies}
-                      onChange={(v) => onUpdate(item.id, "managementStrategies", v)}
-                      onBlur={() => {}}
+                    <MultiSelect
+                      label="Consequence-Based Strategies"
+                      value={value.managementStrategies ? value.managementStrategies.split(", ").filter(Boolean) : []}
+                      onChange={(v) => onUpdate(item.id, "managementStrategies", v.join(", "))}
+                      options={consequenceStrategyOptions}
                       disabled={disabled}
+                      searchable
+                      tone="neutral"
+                      placeholder="Select strategies"
+                      maxVisibleTags={1}
                     />
                   </div>
                 </div>
