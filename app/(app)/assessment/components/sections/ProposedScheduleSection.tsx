@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarClock, Plus, Trash2 } from "lucide-react"
+import { CalendarClock, Copy, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import {
@@ -102,6 +102,21 @@ export function ProposedScheduleSection({
                 </div>
               ))}
             </div>
+            {row.hours.Monday.trim() && !disabled && (
+              <button
+                type="button"
+                onClick={() => {
+                  const mon = row.hours.Monday
+                  for (const day of ["Tuesday", "Wednesday", "Thursday", "Friday"] as const) {
+                    onUpdateHours(index, day, mon)
+                  }
+                }}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-[#037ECC] transition-colors hover:bg-[#037ECC]/10"
+              >
+                <Copy className="h-3 w-3" />
+                Apply Mon–Fri
+              </button>
+            )}
             {rowError && <p className="mt-2 text-xs font-medium text-red-500">{rowError}</p>}
           </div>
         )
