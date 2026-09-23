@@ -182,11 +182,67 @@ POST /auth/login
 
 ---
 
+## Ticket #32 — Eliminar Observations, absorber Date+POS en ABC Data
+
+### Contexto
+
+Actualmente el Assessment tiene dos secciones separadas:
+- **Observations**: Date + POS + tabla ABC (abcEntries) por observación
+- **ABC Data**: Antecedent + Behavior + Consequence (sin fecha ni POS)
+
+El pedido es:
+1. **Eliminar la sección Observations** completamente
+2. **Mover ABC Data** entre Assessment Conducted y Categories & Items
+3. **Agregar Date y POS** a cada fila de ABC Data
+
+### Cambio requerido
+
+En `abcData[]` de POST/PUT/GET `/assessments`, cada fila debe incluir `date` y
+`placesOfService`:
+
+```json
+{
+  "abcData": [
+    {
+      "date": "2026-09-22",
+      "placesOfService": ["uuid-pos-1"],
+      "antecedent": "The preferred toy was removed.",
+      "behavior": "The client pushed the worksheet, yelled 'No'.",
+      "consequence": "The worksheet was removed, a break was provided."
+    }
+  ]
+}
+```
+
+### Campos a agregar en `AssessmentAbcInput`
+
+| Campo | Tipo | Requerido |
+|-------|------|-----------|
+| `date` | `string` (yyyy-MM-dd) | Sí |
+| `placesOfService` | `UUID[]` | No |
+
+### Observations
+
+- Eliminar `observations[]` del contrato POST/PUT.
+- En GET, `observations` puede devolver `[]` o ser omitido.
+- La migración puede migrar datos existentes de `assessment_observation` →
+  `assessment_abc_data` si se quiere preservar historial, o dejarlos en la tabla vieja.
+
+### Frontend (cuando backend esté listo)
+
+- Quitar sección Observations del form
+- Mover ABC Data después de Assessment Conducted
+- Agregar Date (PremiumDatePicker) + POS (MultiSelect) por fila de ABC Data
+- El form ya no maneja `observations` ni `abcEntries` por observación
+
+---
+
 ## Resumen
 
 | Ticket | Descripción | Estado |
 |--------|-------------|--------|
-| #8 | Tabla ABC en Observations | Pendiente backend |
-| #13 | Campo Procedures en SP | Pendiente backend |
-| #14 | Description + Procedures en Assessment | Pendiente backend (depende de #13) |
+| #8 | Tabla ABC en Observations | Reemplazado por #32 |
+| #13 | Campo Procedures en SP | Implementado |
+| #14 | Description + Procedures en Assessment | Implementado |
 | #22 | Auditoría, login web, OTP/dispositivo | Pendiente backend |
+| #32 | Eliminar Observations, Date+POS en ABC Data | Pendiente backend |
