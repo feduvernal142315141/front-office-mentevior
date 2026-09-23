@@ -1,22 +1,30 @@
 "use client"
 
+import { useMemo } from "react"
 import { ListTree, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
+import { MultiSelect } from "@/components/custom/MultiSelect"
+import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { usePlacesOfService } from "@/lib/modules/addresses/hooks/use-places-of-service"
 import type { AssessmentAbcInput } from "@/lib/types/assessment.types"
 
 interface AbcDataSectionProps {
   rows: AssessmentAbcInput[]
-  /** Pinta el empty state en rojo cuando la sección exige al menos una fila */
   hasError?: boolean
   disabled?: boolean
   onAdd: () => void
   onRemove: (index: number) => void
-  onUpdate: (index: number, field: keyof AssessmentAbcInput, value: string) => void
+  onUpdate: (index: number, field: keyof AssessmentAbcInput, value: string | string[]) => void
 }
 
-/** Filas Antecedent / Behavior / Consequence */
 export function AbcDataSection({ rows, hasError, disabled, onAdd, onRemove, onUpdate }: AbcDataSectionProps) {
+  const { placesOfService } = usePlacesOfService()
+  const posOptions = useMemo(
+    () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
+    [placesOfService],
+  )
+
   return (
     <div className="space-y-4">
       {rows.length === 0 && (
@@ -27,8 +35,38 @@ export function AbcDataSection({ rows, hasError, disabled, onAdd, onRemove, onUp
       )}
 
       {rows.map((row, index) => (
-        <div key={index} className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_1fr_auto]">
+        <div key={index} className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[200px_1fr_auto]">
+            <PremiumDatePicker
+              label="Date"
+              value={row.date}
+              onChange={(v) => onUpdate(index, "date", v)}
+              onClear={() => onUpdate(index, "date", "")}
+              required
+            />
+            <MultiSelect
+              label="POS"
+              value={row.placesOfService}
+              onChange={(v) => onUpdate(index, "placesOfService", v)}
+              options={posOptions}
+              disabled={disabled}
+              searchable
+              tone="neutral"
+              placeholder="Select POS"
+              maxVisibleTags={2}
+            />
+            <button
+              type="button"
+              onClick={() => onRemove(index)}
+              disabled={disabled}
+              className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-xl border border-red-200/60 bg-gradient-to-b from-red-50 to-red-100/80 text-red-600 transition-all hover:from-red-100 hover:to-red-200/90 disabled:opacity-50"
+              title="Remove ABC row"
+              aria-label="Remove ABC row"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <FloatingInput
               label="Antecedent"
               value={row.antecedent}
@@ -50,16 +88,6 @@ export function AbcDataSection({ rows, hasError, disabled, onAdd, onRemove, onUp
               onBlur={() => {}}
               disabled={disabled}
             />
-            <button
-              type="button"
-              onClick={() => onRemove(index)}
-              disabled={disabled}
-              className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-xl border border-red-200/60 bg-gradient-to-b from-red-50 to-red-100/80 text-red-600 transition-all hover:from-red-100 hover:to-red-200/90 disabled:opacity-50"
-              title="Remove ABC row"
-              aria-label="Remove ABC row"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
           </div>
         </div>
       ))}

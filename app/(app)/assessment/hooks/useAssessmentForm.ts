@@ -115,7 +115,6 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   currentMedicationsDenied: boolean
   currentMedicationsNote: string
   currentMedications: AssessmentMedicationInput[]
-  observations: AssessmentObservationInput[]
   assessmentConductedCatalogIds: string[]
   /** Por id de item del SP; solo los items "tocados" van al payload */
   categoryItems: Record<string, CategoryItemFormValue>
@@ -244,7 +243,6 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
       draft.currentMedicationsNote ||
       (draft.currentMedicationsDenied ? CURRENT_MEDICATIONS_DENIED_DEFAULT_NOTE : ""),
     currentMedications: draft.currentMedications,
-    observations: draft.observations,
     assessmentConductedCatalogIds: draft.assessmentConductedCatalogIds,
     categoryItems: categoryItemsFromDraft(draft.categories),
     billingCodes: billingRowsFromDraft(draft),
@@ -257,9 +255,8 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
 }
 
 const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", frequency: "", details: "" }
-const EMPTY_OBSERVATION: AssessmentObservationInput = { date: "", placesOfService: [], abcEntries: [] }
 const EMPTY_BILLING_CODE: BillingCodeRow = { billingCodeId: "", unitsPeriod: "", unitsWeek: "", placesOfServiceIds: [] }
-const EMPTY_ABC: AssessmentAbcInput = { antecedent: "", behavior: "", consequence: "" }
+const EMPTY_ABC: AssessmentAbcInput = { date: "", placesOfService: [], antecedent: "", behavior: "", consequence: "" }
 const EMPTY_PROVIDER_FILE: AssessmentProviderFileInput = { type: "", name: "", contactIformation: "" }
 export const EMPTY_CATEGORY_ITEM: CategoryItemFormValue = {
   intensityKey: "",
@@ -314,7 +311,6 @@ const EMPTY_FORM: AssessmentFormData = {
   currentMedicationsDenied: false,
   currentMedicationsNote: "",
   currentMedications: [],
-  observations: [],
   assessmentConductedCatalogIds: [],
   categoryItems: {},
   billingCodes: [],
@@ -341,9 +337,6 @@ function isMedicationEmpty(m: AssessmentMedicationInput): boolean {
   return !m.name.trim() && !m.dosage.trim() && !m.frequency.trim() && !m.details.trim()
 }
 
-function isObservationEmpty(o: AssessmentObservationInput): boolean {
-  return !o.date && o.placesOfService.length === 0 && o.abcEntries.length === 0
-}
 
 /**
  * Sólo hay entrada en `categoryItems` cuando el usuario tocó el item (o cuando
@@ -370,7 +363,7 @@ function isScheduleEmpty(row: ScheduleRow): boolean {
 }
 
 function isAbcEmpty(row: AssessmentAbcInput): boolean {
-  return !row.antecedent.trim() && !row.behavior.trim() && !row.consequence.trim()
+  return !row.date && row.placesOfService.length === 0 && !row.antecedent.trim() && !row.behavior.trim() && !row.consequence.trim()
 }
 
 function isProviderFileEmpty(row: AssessmentProviderFileInput): boolean {
@@ -536,7 +529,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       currentMedicationsDenied: assessment.currentMedicationsDenied,
       currentMedicationsNote: assessment.currentMedicationsNote,
       currentMedications: assessment.currentMedications ?? [],
-      observations: assessment.observations ?? [],
       assessmentConductedCatalogIds: (assessment.assessmentConductedList ?? [])
         .map((c) => c.assessmentConductedCatalogId)
         .filter(Boolean),
@@ -583,7 +575,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
             billingCodes: [],
             proposedSchedule: [],
             abcData: [],
-            observations: [],
             assessmentConductedCatalogIds: [],
             currentMedications: [],
           }
@@ -628,26 +619,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         currentMedications: prev.currentMedications.map((m, i) => (i === index ? { ...m, [field]: value } : m)),
       }))
       clearRowError(`medication-${index}`)
-    },
-    [clearRowError],
-  )
-
-  // ── Observations ──
-  const addObservation = useCallback(() => {
-    setFormData((prev) => ({ ...prev, observations: [...prev.observations, { ...EMPTY_OBSERVATION }] }))
-  }, [])
-
-  const removeObservation = useCallback((index: number) => {
-    setFormData((prev) => ({ ...prev, observations: prev.observations.filter((_, i) => i !== index) }))
-  }, [])
-
-  const updateObservation = useCallback(
-    (index: number, field: keyof AssessmentObservationInput, value: string | string[] | AssessmentObservationInput["abcEntries"]) => {
-      setFormData((prev) => ({
-        ...prev,
-        observations: prev.observations.map((o, i) => (i === index ? { ...o, [field]: value } : o)),
-      }))
-      clearRowError(`observation-${index}`)
     },
     [clearRowError],
   )
@@ -742,7 +713,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
   }, [])
 
   const updateAbcRow = useCallback(
-    (index: number, field: keyof AssessmentAbcInput, value: string) => {
+    (index: number, field: keyof AssessmentAbcInput, value: string | string[]) => {
       setFormData((prev) => ({
         ...prev,
         abcData: prev.abcData.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
@@ -831,10 +802,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         "Add at least one medication, or check that the caregiver denied any"
     }
 
-    if (sectionBlocksSave(flags, "showObservations") && !formData.observations.some((o) => !isObservationEmpty(o))) {
-      newErrors.observations = "Add at least one observation, or turn the section off"
-    }
-
     if (sectionBlocksSave(flags, "showAssessmentConducted") && formData.assessmentConductedCatalogIds.length === 0) {
       newErrors.assessmentConductedCatalogIds = "Select at least one assessment, or turn the section off"
     }
@@ -874,11 +841,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         newErrors[group.flagKey] = "Fill at least one strategy, or turn the section off"
       }
     }
-
-    formData.observations.forEach((o, index) => {
-      if (isObservationEmpty(o)) return
-      if (!o.date) newErrors[`observation-${index}`] = "Date is required for each observation"
-    })
 
     formData.billingCodes.forEach((row, index) => {
       if (isBillingCodeEmpty(row)) return
@@ -997,17 +959,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
           frequency: m.frequency.trim(),
           details: m.details.trim(),
         })),
-      observations: formData.observations
-        .filter((o) => !isObservationEmpty(o))
-        .map((o) => ({
-          date: o.date,
-          placesOfService: o.placesOfService,
-          abcEntries: o.abcEntries.map((e) => ({
-            antecedent: e.antecedent.trim(),
-            behavior: e.behavior.trim(),
-            consequence: e.consequence.trim(),
-          })),
-        })),
       assessmentConductedCatalogIds: formData.assessmentConductedCatalogIds,
       categoriesItems,
       billingCodes,
@@ -1015,6 +966,8 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       abcData: formData.abcData
         .filter((row) => !isAbcEmpty(row))
         .map((row) => ({
+          date: row.date,
+          placesOfService: row.placesOfService,
           antecedent: row.antecedent.trim(),
           behavior: row.behavior.trim(),
           consequence: row.consequence.trim(),
@@ -1101,9 +1054,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     addMedication,
     removeMedication,
     updateMedication,
-    addObservation,
-    removeObservation,
-    updateObservation,
     updateCategoryItem,
     clearCategoryItem,
     addBillingCode,

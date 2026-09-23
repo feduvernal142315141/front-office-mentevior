@@ -212,15 +212,6 @@ export async function getAssessmentDataByClient(clientId: string): Promise<Asses
       frequency: str(m.frequency),
       details: str(m.details),
     })),
-    observations: arr(raw.observations).map((o) => ({
-      date: str(o.date).split("T")[0],
-      placesOfService: Array.isArray(o.placesOfService) ? o.placesOfService.map((v: unknown) => String(v ?? "")).filter(Boolean) : [],
-      abcEntries: arr(o.abcEntries).map((e: Record<string, unknown>) => ({
-        antecedent: str(e.antecedent),
-        behavior: str(e.behavior),
-        consequence: str(e.consequence),
-      })),
-    })),
     assessmentConductedCatalogIds: assessmentConductedList
       .map((c) => str(c.assessmentConductedCatalogId))
       .filter(Boolean),
@@ -232,6 +223,8 @@ export async function getAssessmentDataByClient(clientId: string): Promise<Asses
       schedule: str(s.schedule),
     })),
     abcData: arr(raw.abcData).map((a) => ({
+      date: str(a.date).split("T")[0],
+      placesOfService: Array.isArray(a.placesOfService) ? a.placesOfService.map((v: unknown) => String(v ?? "")).filter(Boolean) : [],
       antecedent: str(a.antecedent),
       behavior: str(a.behavior),
       consequence: str(a.consequence),
@@ -292,7 +285,6 @@ function emptyDraftForClient(clientId: string, categories: ClientCategoryWithIte
     currentMedicationsDenied: false,
     currentMedicationsNote: "",
     currentMedications: [],
-    observations: [],
     assessmentConductedCatalogIds: [],
     categories,
     billingCodes: [],

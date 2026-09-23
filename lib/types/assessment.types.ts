@@ -133,7 +133,6 @@ export interface AssessmentDraft {
   currentMedicationsDenied: boolean
   currentMedicationsNote: string
   currentMedications: AssessmentMedicationInput[]
-  observations: AssessmentObservationInput[]
   assessmentConductedCatalogIds: string[]
   categories: ClientCategoryWithItems[]
   billingCodes: AssessmentBillingCodeInput[]
@@ -205,6 +204,8 @@ export interface AssessmentProposedScheduleInput {
 }
 
 export interface AssessmentAbcInput {
+  date: string
+  placesOfService: string[]
   antecedent: string
   behavior: string
   consequence: string
@@ -368,7 +369,6 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields, Assessmen
   /** Vacía = el backend imprime el texto estándar. */
   currentMedicationsNote: string | null
   currentMedications: AssessmentMedicationInput[]
-  observations: AssessmentObservationInput[]
   assessmentConductedCatalogIds: string[]
   categoriesItems: AssessmentCategoryItemInput[]
   billingCodes: AssessmentBillingCodeInput[]
@@ -467,7 +467,6 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   currentMedicationsDenied: boolean
   currentMedicationsNote: string
   currentMedications: AssessmentMedicationInput[]
-  observations: AssessmentObservationInput[]
   assessmentConductedList: AssessmentConductedEntry[]
   categoriesItems: AssessmentCategoryItemEntry[]
   billingCodes: AssessmentBillingCodeEntry[]

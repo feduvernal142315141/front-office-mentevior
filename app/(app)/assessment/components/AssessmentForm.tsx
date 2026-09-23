@@ -140,9 +140,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     addMedication,
     removeMedication,
     updateMedication,
-    addObservation,
-    removeObservation,
-    updateObservation,
     updateCategoryItem,
     clearCategoryItem,
     addBillingCode,
@@ -522,22 +519,6 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           onUpdate={updateMedication}
         />
           <FieldError message={errors.currentMedications} />
-        </div>
-      </Section>
-
-      {/* ─── Observations ─── */}
-      <Section icon={<Eye className="h-4 w-4" />} title="Observations" contentHidden={!formData.pdfFlags.showObservations} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showObservations} onChange={(v) => updatePdfFlag("showObservations", v)} disabled={isSaving} />}>
-        <div data-field="observations">
-        <ObservationsSection
-          observations={formData.observations}
-          hasError={!!errors.observations}
-          errors={errors}
-          disabled={isSaving}
-          onAdd={addObservation}
-          onRemove={removeObservation}
-          onUpdate={updateObservation}
-        />
-          <FieldError message={errors.observations} />
         </div>
       </Section>
 

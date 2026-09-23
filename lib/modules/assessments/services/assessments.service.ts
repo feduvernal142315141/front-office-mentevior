@@ -242,15 +242,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     details: str(m.details),
   }))
 
-  const observations: AssessmentObservationInput[] = arr(raw.observations).map((o) => ({
-    date: str(o.date).split("T")[0],
-    placesOfService: parseStringArray(o.placesOfService),
-    abcEntries: arr(o.abcEntries).map((e) => ({
-      antecedent: str(e.antecedent),
-      behavior: str(e.behavior),
-      consequence: str(e.consequence),
-    })),
-  }))
+  // observations retired — absorbed into abcData
 
   const assessmentConductedList: AssessmentConductedEntry[] = arr(raw.assessmentConductedList).map((c) => ({
     assessmentConductedCatalogId: str(c.assessmentConductedCatalogId),
@@ -283,6 +275,8 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
   }))
 
   const abcData: AssessmentAbcInput[] = arr(raw.abcData).map((a) => ({
+    date: str(a.date).split("T")[0],
+    placesOfService: parseStringArray(a.placesOfService),
     antecedent: str(a.antecedent),
     behavior: str(a.behavior),
     consequence: str(a.consequence),
@@ -357,7 +351,6 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     currentMedicationsDenied: raw.currentMedicationsDenied === true,
     currentMedicationsNote: str(raw.currentMedicationsNote),
     currentMedications,
-    observations,
     assessmentConductedList,
     categoriesItems,
     billingCodes,
