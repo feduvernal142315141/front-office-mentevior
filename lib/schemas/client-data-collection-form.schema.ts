@@ -54,7 +54,8 @@ export const dataCollectionLevelSchema = z.object({
 export function createClientDataCollectionFormSchema(
   mode: DataCollectionFormMode,
   resolveType: (typeId: string) => ResolvedTypeInfo,
-  resolveDatasetName: (datasetId: string) => string = () => "Dataset"
+  resolveDatasetName: (datasetId: string) => string = () => "Dataset",
+  categoryName = "",
 ) {
   return z
     .object({
@@ -87,6 +88,14 @@ export function createClientDataCollectionFormSchema(
           code: z.ZodIssueCode.custom,
           message: "Description is required",
           path: ["topography"],
+        })
+      }
+
+      if (mode === "item" && !/maladaptive/i.test(categoryName) && !data.procedures?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Procedures is required",
+          path: ["procedures"],
         })
       }
 

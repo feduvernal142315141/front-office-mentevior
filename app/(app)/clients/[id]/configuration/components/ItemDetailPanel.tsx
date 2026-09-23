@@ -271,9 +271,10 @@ export function ItemDetailPanel({
           const item = typeItemsMap.get(typeId)
           return { name: item?.name ?? "", group: item?.group ?? "" }
         },
-        (datasetId) => datasetNameById[datasetId] ?? "Dataset"
+        (datasetId) => datasetNameById[datasetId] ?? "Dataset",
+        categoryName,
       ),
-    [typeItemsMap, datasetNameById]
+    [typeItemsMap, datasetNameById, categoryName]
   )
 
   // --- Form ---
@@ -1125,6 +1126,7 @@ export function ItemDetailPanel({
                 <FloatingTextarea
                   label="Description"
                   required
+                  placeholder="Reason for this program"
                   value={field.value ?? ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
@@ -1145,9 +1147,11 @@ export function ItemDetailPanel({
                 render={({ field }) => (
                   <FloatingTextarea
                     label="Procedures"
+                    required
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
+                    hasError={!!errors.procedures}
                     rows={2}
                   />
                 )}

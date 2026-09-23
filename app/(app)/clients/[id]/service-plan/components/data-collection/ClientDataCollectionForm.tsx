@@ -140,9 +140,10 @@ export function ClientDataCollectionForm({
           const item = typeItemsMap.get(typeId)
           return { name: item?.name ?? "", group: item?.group ?? "" }
         },
-        (datasetId) => datasetNameById[datasetId] ?? "Dataset"
+        (datasetId) => datasetNameById[datasetId] ?? "Dataset",
+        categoryName,
       ),
-    [mode, typeItemsMap, datasetNameById]
+    [mode, typeItemsMap, datasetNameById, categoryName]
   )
 
   const {
@@ -356,6 +357,7 @@ export function ClientDataCollectionForm({
                   <FloatingTextarea
                     label="Description"
                     required
+                    placeholder="Reason for this program"
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
@@ -375,13 +377,16 @@ export function ClientDataCollectionForm({
                   render={({ field }) => (
                     <FloatingTextarea
                       label="Procedures"
+                      required
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
+                      hasError={!!errors.procedures}
                       rows={3}
                     />
                   )}
                 />
+                <FieldErrorText message={errors.procedures?.message} />
               </div>
             )}
 
