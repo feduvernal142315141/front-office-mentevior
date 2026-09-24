@@ -49,7 +49,7 @@ export default function BillingPage() {
       module: PermissionModule.SERVICES_PENDING_BILLING,
     },
     {
-      title: "Billed Claims",
+      title: "Batch Claims",
       description: "View and manage submitted billing claims",
       href: "/my-company/billing/billed-claims",
       icon: FileCheck,
