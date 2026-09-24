@@ -200,7 +200,7 @@ export function CategoryItemsSection({
                       </button>
                     )}
                   </div>
-                  {showIntensity && (
+                  {showIntensity && isMaladaptive && (
                     <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-[200px_1fr]">
                       <FloatingSelect
                         label="Intensity"
