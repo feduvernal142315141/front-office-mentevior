@@ -472,7 +472,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
           </div>
           <div data-field="medicalHistoryMorbidities">
             <FloatingInput
-              label="Morbidities"
+              label="Co-morbidities"
               value={formData.medicalHistoryMorbidities}
               onChange={(v) => updateField("medicalHistoryMorbidities", v)}
               onBlur={() => {}}
