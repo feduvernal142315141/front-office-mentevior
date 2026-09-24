@@ -684,7 +684,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             <FloatingSelect
               label="Previous ABA therapy"
               value={formData.previousAbaTherapy}
-              onChange={(v) => updateField("previousAbaTherapy", v)}
+              onChange={(v) => {
+                updateField("previousAbaTherapy", v)
+                if (v === "No" || v === "false") updateField("previousAgencyName", "")
+              }}
               options={
                 formData.previousAbaTherapy && !PREVIOUS_ABA_THERAPY_OPTIONS.some((o) => o.value === formData.previousAbaTherapy)
                   ? [...PREVIOUS_ABA_THERAPY_OPTIONS, { value: formData.previousAbaTherapy, label: formData.previousAbaTherapy }]
@@ -702,8 +705,8 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
               onChange={(v) => updateField("previousAgencyName", v)}
               onBlur={() => {}}
               hasError={!!errors.previousAgencyName}
-              required={formData.previousAbaTherapy === "Yes"}
-              disabled={isSaving || formData.previousAbaTherapy !== "Yes"}
+              required={/^(Yes|true)$/i.test(formData.previousAbaTherapy)}
+              disabled={isSaving || !/^(Yes|true)$/i.test(formData.previousAbaTherapy)}
             />
             <FieldError message={errors.previousAgencyName} />
           </div>
