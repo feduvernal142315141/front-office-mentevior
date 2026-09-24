@@ -21,7 +21,7 @@ export function CredentialsTable({
     },
     {
       key: "identificationNumber",
-      header: "Identification #",
+      header: "Certification #",
     },
     {
       key: "effectiveDate",
