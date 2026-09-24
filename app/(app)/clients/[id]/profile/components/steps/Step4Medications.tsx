@@ -95,7 +95,7 @@ export function Step4Medications({
     },
     {
       key: "comments",
-      header: "Comments",
+      header: "Prescriber",
     },
     {
       key: "actions",
@@ -394,7 +394,7 @@ export function Step4Medications({
               render={({ field, fieldState }) => (
                 <div className="md:col-span-2">
                   <FloatingTextarea
-                    label="Comments"
+                    label="Prescriber"
                     value={field.value || ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
