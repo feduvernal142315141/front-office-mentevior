@@ -716,7 +716,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             <FloatingSelect
               label="Speech therapy"
               value={boolToYesNo(formData.otherServicesSpeechTherapy)}
-              onChange={(v) => updateField("otherServicesSpeechTherapy", v === "true")}
+              onChange={(v) => {
+                updateField("otherServicesSpeechTherapy", v === "true")
+                if (v === "false") updateField("otherServicesSpeechTherapyFacilityName", "")
+              }}
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
@@ -727,7 +730,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             <FloatingSelect
               label="Occupational therapy"
               value={boolToYesNo(formData.otherServicesOccupationalTherapy)}
-              onChange={(v) => updateField("otherServicesOccupationalTherapy", v === "true")}
+              onChange={(v) => {
+                updateField("otherServicesOccupationalTherapy", v === "true")
+                if (v === "false") updateField("otherServicesOccupationalTherapyFacilityName", "")
+              }}
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
@@ -738,7 +744,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             <FloatingSelect
               label="Physical therapy"
               value={boolToYesNo(formData.otherServicesPhysicalTherapy)}
-              onChange={(v) => updateField("otherServicesPhysicalTherapy", v === "true")}
+              onChange={(v) => {
+                updateField("otherServicesPhysicalTherapy", v === "true")
+                if (v === "false") updateField("otherServicesPhysicalTherapyFacilityName", "")
+              }}
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
@@ -749,7 +758,10 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
             <FloatingSelect
               label="Feeding therapy"
               value={boolToYesNo(formData.otherServicesFeedingTherapy)}
-              onChange={(v) => updateField("otherServicesFeedingTherapy", v === "true")}
+              onChange={(v) => {
+                updateField("otherServicesFeedingTherapy", v === "true")
+                if (v === "false") updateField("otherServicesFeedingTherapyFacilityName", "")
+              }}
               options={YES_NO_BOOL_OPTIONS}
             />
           </div>
