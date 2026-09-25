@@ -561,7 +561,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
         </div>
       </Card>
 
-      <EditGate module={PermissionModule.APPOINTMENT}>
+      <EditGate module={PermissionModule.SESSION_CONFIG}>
         <FormBottomBar
           isSubmitting={isSaving}
           onCancel={() => router.push(BACK_PATH)}

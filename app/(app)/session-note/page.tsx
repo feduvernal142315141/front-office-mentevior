@@ -78,7 +78,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
   const { user: fullUser } = useUserById(user?.id || null)
   const { block: canBlock } = usePermission()
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
-  const hasBlockPermission = canBlock(PermissionModule.APPOINTMENT)
+  const hasBlockPermission = canBlock(PermissionModule.SESSION_CONFIG)
   const canAdminAction = isAdmin && hasBlockPermission
 
   const [isChangingStatus, setIsChangingStatus] = useState(false)
@@ -192,7 +192,7 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
   const { user: fullUser } = useUserById(user?.id || null)
   const { block: canBlock } = usePermission()
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
-  const hasBlockPermission = canBlock(PermissionModule.APPOINTMENT)
+  const hasBlockPermission = canBlock(PermissionModule.SESSION_CONFIG)
   const canAdminAction = isAdmin && hasBlockPermission
 
   const [isChangingStatus, setIsChangingStatus] = useState(false)
@@ -296,7 +296,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
   const { user: fullUser } = useUserById(user?.id || null)
   const { block: canBlock } = usePermission()
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
-  const hasBlockPermission = canBlock(PermissionModule.APPOINTMENT)
+  const hasBlockPermission = canBlock(PermissionModule.SESSION_CONFIG)
   const canAdminAction = isAdmin && hasBlockPermission
 
   const [isChangingStatus, setIsChangingStatus] = useState(false)

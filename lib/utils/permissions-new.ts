@@ -38,7 +38,7 @@ export enum PermissionModule {
   BILLED_CLAIMS = "billed_claims",
   BILLING_CODE = "billing_code",
   PAYERS = "payers",
-  APPOINTMENT = "appointment",
+  SESSION_CONFIG = "session_config",
   SERVICE_PLAN = "service_plan",
   SUPERVISION = "supervision",
   CASE_SUPERVISION = "case_supervision",

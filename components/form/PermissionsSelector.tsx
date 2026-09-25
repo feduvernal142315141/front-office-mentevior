@@ -86,7 +86,7 @@ const DOCUMENTS = {
 }
 
 const MY_COMPANY_MODULES = visibleRows([
-  { key: PermissionModule.APPOINTMENT, label: "Session" },
+  { key: PermissionModule.SESSION_CONFIG, label: "Session" },
   { key: PermissionModule.SERVICE_PLAN, label: "Service Plan Events" },
   { key: PermissionModule.SUPERVISION, label: "Supervision" },
   { key: PermissionModule.ROLE, label: "Roles" },
@@ -133,7 +133,7 @@ const ACTIONS = [
  * extra que traiga un rol viejo se ignora al mostrar y al guardar.
  */
 const EDIT_ONLY_MODULES = new Set<string>([
-  PermissionModule.APPOINTMENT,
+  PermissionModule.SESSION_CONFIG,
   PermissionModule.SERVICE_PLAN,
   PermissionModule.SUPERVISION,
 ])

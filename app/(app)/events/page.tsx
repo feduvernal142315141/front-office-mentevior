@@ -15,7 +15,7 @@ export default function EventsPage() {
       description: "Schedule and manage client appointments",
       href: "/events/appointment",
       icon: CalendarCheck,
-      module: PermissionModule.APPOINTMENT,
+      module: PermissionModule.SESSION_CONFIG,
     },
     {
       title: "Supervision",

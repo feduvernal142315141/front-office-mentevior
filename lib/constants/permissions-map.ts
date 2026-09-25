@@ -36,7 +36,7 @@ export const PERMISSION_IDS: Record<string, string> = {
   "services_pending_billing": "a9b0c1d2-e3f4-45a6-b7c8-d9e0f1a2b3c4",
   "billed_claims": "b0c1d2e3-f4a5-46b7-c8d9-e0f1a2b3c4d5",
   "payers": "47f4abe2-daff-4b2d-b554-1cc7801acc1e",
-  "appointment": "c4d5e6f7-a8b9-41c0-d1e2-f3a4b5c6d7e8",
+  "session_config": "c4d5e6f7-a8b9-41c0-d1e2-f3a4b5c6d7e8",
   "service_plan": "d5e6f7a8-b9c0-42d1-e2f3-a4b5c6d7e8f9",
   "supervision": "e6f7a8b9-c0d1-43e2-f3a4-b5c6d7e8f9a0",
   "case_supervision": "958ad798-98e9-4fe6-b76d-400b99eb71c2",
@@ -85,6 +85,9 @@ export const LEGACY_PERMISSION_ID_TO_MODULE: Record<string, string> = {
  * El JWT puede traer `datasheets_configuration-31` mientras el enum usa `datasheets`.
  */
 export const PERMISSION_MODULE_ALIASES: Record<string, string> = {
+  appointment: "session_config",
+  service_plan_config: "service_plan",
+  supervision_config: "supervision",
   datasheets_configuration: "datasheets",
   on_site_collection_configuration: "on_site_collection",
   charts_configuration: "charts",
