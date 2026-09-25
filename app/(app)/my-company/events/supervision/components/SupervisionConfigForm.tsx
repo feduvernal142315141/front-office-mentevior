@@ -496,7 +496,7 @@ export function SupervisionConfigForm({ config }: SupervisionConfigFormProps) {
         </div>
       </Card>
 
-      <EditGate module={PermissionModule.SUPERVISION}>
+      <EditGate module={PermissionModule.SUPERVISION_CONFIG}>
         <FormBottomBar
           isSubmitting={isSaving}
           onCancel={() => router.push(COMPANY_PATH)}

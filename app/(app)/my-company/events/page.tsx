@@ -22,7 +22,7 @@ export default function EventsPage() {
       description: "Coordinate supervision sessions",
       href: "/my-company/events/supervision",
       icon: Users,
-      module: PermissionModule.SUPERVISION,
+      module: PermissionModule.SUPERVISION_CONFIG,
     },
   ]
   

@@ -37,8 +37,8 @@ export const PERMISSION_IDS: Record<string, string> = {
   "billed_claims": "b0c1d2e3-f4a5-46b7-c8d9-e0f1a2b3c4d5",
   "payers": "47f4abe2-daff-4b2d-b554-1cc7801acc1e",
   "session_config": "c4d5e6f7-a8b9-41c0-d1e2-f3a4b5c6d7e8",
-  "service_plan": "d5e6f7a8-b9c0-42d1-e2f3-a4b5c6d7e8f9",
-  "supervision": "e6f7a8b9-c0d1-43e2-f3a4-b5c6d7e8f9a0",
+  "service_plan_config": "d5e6f7a8-b9c0-42d1-e2f3-a4b5c6d7e8f9",
+  "supervision_config": "e6f7a8b9-c0d1-43e2-f3a4-b5c6d7e8f9a0",
   "case_supervision": "958ad798-98e9-4fe6-b76d-400b99eb71c2",
   "provider_on_file": "f7a1799c-b825-464a-a5b4-19b1f4cf5e9d",
   "physicians": "a3b4c5d6-e7f8-49a0-b1c2-d3e4f5a6b7c8",
@@ -86,8 +86,8 @@ export const LEGACY_PERMISSION_ID_TO_MODULE: Record<string, string> = {
  */
 export const PERMISSION_MODULE_ALIASES: Record<string, string> = {
   appointment: "session_config",
-  service_plan_config: "service_plan",
-  supervision_config: "supervision",
+  service_plan: "service_plan_config",
+  supervision: "supervision_config",
   datasheets_configuration: "datasheets",
   on_site_collection_configuration: "on_site_collection",
   charts_configuration: "charts",

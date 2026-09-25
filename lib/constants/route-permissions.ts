@@ -29,8 +29,8 @@ export const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
 
   "/my-company/session": PermissionModule.SESSION_CONFIG,
   "/my-company/events/appointment": PermissionModule.SESSION_CONFIG,
-  "/my-company/events/service-plan": PermissionModule.SERVICE_PLAN,
-  "/my-company/events/supervision": PermissionModule.SUPERVISION,
+  "/my-company/events/service-plan": PermissionModule.SERVICE_PLAN_CONFIG,
+  "/my-company/events/supervision": PermissionModule.SUPERVISION_CONFIG,
 
   "/my-company/billing/billing-codes": PermissionModule.BILLING_CODE,
   "/my-company/billing/payers": PermissionModule.PAYERS,

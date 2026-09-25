@@ -87,8 +87,8 @@ const DOCUMENTS = {
 
 const MY_COMPANY_MODULES = visibleRows([
   { key: PermissionModule.SESSION_CONFIG, label: "Session" },
-  { key: PermissionModule.SERVICE_PLAN, label: "Service Plan Events" },
-  { key: PermissionModule.SUPERVISION, label: "Supervision" },
+  { key: PermissionModule.SERVICE_PLAN_CONFIG, label: "Service Plan Events" },
+  { key: PermissionModule.SUPERVISION_CONFIG, label: "Supervision" },
   { key: PermissionModule.ROLE, label: "Roles" },
   { key: PermissionModule.ACCOUNT_PROFILE, label: "Account Profile" },
   { key: PermissionModule.PHYSICIANS, label: "Referring Physicians" },
@@ -134,8 +134,8 @@ const ACTIONS = [
  */
 const EDIT_ONLY_MODULES = new Set<string>([
   PermissionModule.SESSION_CONFIG,
-  PermissionModule.SERVICE_PLAN,
-  PermissionModule.SUPERVISION,
+  PermissionModule.SERVICE_PLAN_CONFIG,
+  PermissionModule.SUPERVISION_CONFIG,
 ])
 
 function allowedActionsMask(module: string): number {

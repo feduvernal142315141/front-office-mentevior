@@ -516,7 +516,7 @@ export function ServicePlanConfigForm({
       ) : configurationContent}
 
       {showBottomBar ? (
-        <EditGate module={PermissionModule.SERVICE_PLAN}>
+        <EditGate module={PermissionModule.SERVICE_PLAN_CONFIG}>
           <FormBottomBar
             isSubmitting={isSaving}
             onCancel={() => router.push(onCancelRedirectPath)}
