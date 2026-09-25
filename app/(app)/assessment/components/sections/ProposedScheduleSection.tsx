@@ -1,14 +1,35 @@
 "use client"
 
+import { useCallback } from "react"
 import { CalendarClock, Copy, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
+import { formatTimeTo12h, formatTimeTo24h } from "@/lib/utils/time-format"
 import {
   SCHEDULE_DAY_KEYS,
   parseTimeRangeHours,
   type ScheduleHours,
 } from "@/lib/modules/assessments/utils/assessment-json-fields"
 import type { ScheduleRow } from "../../hooks/useAssessmentForm"
+
+/** Parse "h:mm AM/PM-h:mm AM/PM" into { start24, end24 } in 24h format for the time picker */
+function parseRange(range: string): { start: string; end: string } {
+  if (!range || !range.includes("-")) return { start: "", end: "" }
+  const [s, e] = range.split("-").map((v) => v.trim())
+  return {
+    start: formatTimeTo24h(s ?? "") ?? "",
+    end: formatTimeTo24h(e ?? "") ?? "",
+  }
+}
+
+/** Build "h:mm AM/PM-h:mm AM/PM" from 24h start/end */
+function buildRange(start24: string, end24: string): string {
+  const s = start24 ? formatTimeTo12h(start24) : ""
+  const e = end24 ? formatTimeTo12h(end24) : ""
+  if (!s && !e) return ""
+  return `${s || ""}-${e || ""}`
+}
 
 interface ProposedScheduleSectionProps {
   rows: ScheduleRow[]
@@ -86,21 +107,30 @@ export function ProposedScheduleSection({
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-              {SCHEDULE_DAY_KEYS.map((day) => (
-                <div key={day}>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">{day.slice(0, 3)}</label>
-                  <input
-                    type="text"
-                    value={row.hours[day]}
-                    onChange={(e) => onUpdateHours(index, day, e.target.value)}
-                    disabled={disabled}
-                    placeholder="—"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-center text-xs text-slate-800 placeholder:text-slate-300 focus:border-[#037ECC] focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 disabled:opacity-50"
-                    aria-label={`Time range on ${day}`}
-                  />
-                </div>
-              ))}
+            <div className="mt-4 space-y-3">
+              {SCHEDULE_DAY_KEYS.map((day) => {
+                const { start, end } = parseRange(row.hours[day])
+                return (
+                  <div key={day} className="grid grid-cols-[60px_1fr_1fr] items-center gap-2">
+                    <span className="text-xs font-medium text-slate-500">{day.slice(0, 3)}</span>
+                    <FloatingTimePicker
+                      label="From"
+                      value={start}
+                      onChange={(v) => onUpdateHours(index, day, buildRange(v, end))}
+                      allowManualInput
+                      disabled={disabled}
+                    />
+                    <FloatingTimePicker
+                      label="To"
+                      value={end}
+                      onChange={(v) => onUpdateHours(index, day, buildRange(start, v))}
+                      allowManualInput
+                      defaultPeriod="PM"
+                      disabled={disabled}
+                    />
+                  </div>
+                )
+              })}
             </div>
             {row.hours.Monday.trim() && !disabled && (
               <button
