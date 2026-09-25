@@ -855,8 +855,6 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
       if (isScheduleEmpty(row)) return
       if (!row.credentialId) {
         newErrors[`schedule-${index}`] = "Select a credential"
-      } else if (SCHEDULE_DAY_KEYS.some((day) => isInvalidNonNegative(row.hours[day]))) {
-        newErrors[`schedule-${index}`] = "Hours must be zero or a positive number"
       }
     })
 

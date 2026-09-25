@@ -5,6 +5,7 @@ import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import {
   SCHEDULE_DAY_KEYS,
+  parseTimeRangeHours,
   type ScheduleHours,
 } from "@/lib/modules/assessments/utils/assessment-json-fields"
 import type { ScheduleRow } from "../../hooks/useAssessmentForm"
@@ -48,9 +49,9 @@ export function ProposedScheduleSection({
       {rows.map((row, index) => {
         const rowError = errors[`schedule-${index}`]
         const total = SCHEDULE_DAY_KEYS.reduce((sum, day) => {
-          const parsed = Number.parseFloat(row.hours[day])
-          return sum + (Number.isFinite(parsed) && parsed > 0 ? parsed : 0)
+          return sum + parseTimeRangeHours(row.hours[day])
         }, 0)
+        const totalLabel = Number.isInteger(total) ? String(total) : total.toFixed(1)
 
         return (
           <div
@@ -81,7 +82,7 @@ export function ProposedScheduleSection({
                 </button>
               </div>
               <div className="flex items-center text-sm text-slate-500">
-                Total: <span className="ml-1 font-semibold tabular-nums text-slate-800">{total} h/week</span>
+                Total: <span className="ml-1 font-semibold tabular-nums text-slate-800">{totalLabel} h/week</span>
               </div>
             </div>
 
@@ -91,13 +92,12 @@ export function ProposedScheduleSection({
                   <label className="mb-1 block text-xs font-medium text-slate-500">{day.slice(0, 3)}</label>
                   <input
                     type="text"
-                    inputMode="decimal"
                     value={row.hours[day]}
                     onChange={(e) => onUpdateHours(index, day, e.target.value)}
                     disabled={disabled}
-                    placeholder="0"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm tabular-nums text-slate-800 placeholder:text-slate-300 focus:border-[#037ECC] focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 disabled:opacity-50"
-                    aria-label={`Hours on ${day}`}
+                    placeholder="—"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-center text-xs text-slate-800 placeholder:text-slate-300 focus:border-[#037ECC] focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 disabled:opacity-50"
+                    aria-label={`Time range on ${day}`}
                   />
                 </div>
               ))}
