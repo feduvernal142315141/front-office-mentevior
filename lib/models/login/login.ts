@@ -74,6 +74,7 @@ export type ValidateOtpRequest = {
   companyId: string;
   otpChallengeId: string;
   otpCode: string;
+  rememberDevice?: boolean;
 };
 
 export type ValidateOtpGlobalRequest = {
@@ -81,6 +82,7 @@ export type ValidateOtpGlobalRequest = {
   slug: string;
   otpChallengeId: string;
   otpCode: string;
+  rememberDevice?: boolean;
 };
 
 export type ResendOtpRequest = {

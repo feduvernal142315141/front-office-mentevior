@@ -15,9 +15,11 @@ interface OtpStepProps {
   error: string | null
   notice: string | null
   isSubmitting: boolean
+  rememberDevice: boolean
   onSubmit: (code: string) => void
   onResend: () => void
   onBack: () => void
+  onRememberDeviceChange: (checked: boolean) => void
 }
 
 /** Segundos que faltan para `target`, o null si el backend no mandó una fecha usable. */
@@ -39,9 +41,11 @@ export function OtpStep({
   error,
   notice,
   isSubmitting,
+  rememberDevice,
   onSubmit,
   onResend,
   onBack,
+  onRememberDeviceChange,
 }: OtpStepProps) {
   const otpLength = challenge.otpLength
 
@@ -191,6 +195,23 @@ export function OtpStep({
             <p className="text-[13px] font-medium text-emerald-700">{notice}</p>
           </div>
         )}
+
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="remember-device"
+            checked={rememberDevice}
+            onChange={(e) => onRememberDeviceChange(e.target.checked)}
+            disabled={isSubmitting}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+          />
+          <label
+            htmlFor="remember-device"
+            className="text-[13px] text-[var(--color-login-text-secondary)] cursor-pointer select-none"
+          >
+            Remember this device for 24 hours
+          </label>
+        </div>
 
         <Button
           type="submit"

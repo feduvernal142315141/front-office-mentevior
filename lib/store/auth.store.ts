@@ -324,6 +324,19 @@ function issuedChallenge(payload: unknown): OtpChallengeIssued | null {
   }
 }
 
+/**
+ * Interpreta el campo `otpRequired` de la respuesta de login/global-login.
+ * - `true`: OTP es obligatorio
+ * - `false`: OTP no se requiere (p. ej. dispositivo confiable)
+ * - `undefined`: Asumir `true` (backward compatible con backends antiguos)
+ */
+function isOtpRequired(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return true
+  const candidate = payload as Partial<{ otpRequired: boolean }>
+  // Si no viene el campo, asumir que se requiere OTP (backward compatible)
+  return candidate.otpRequired !== false
+}
+
 /** Error de autenticación con el mensaje del backend (`message`/`details`) si lo hay. */
 function authError(
   response: { data?: unknown } | undefined,
@@ -368,6 +381,7 @@ interface AuthStore extends AuthState {
     otpCode: string,
     company: CompanyInfo,
     otpChallengeId: string,
+    rememberDevice?: boolean,
   ) => Promise<AuthAttempt>
 
   // --- Login neutral (slug `app`) ---
@@ -377,6 +391,7 @@ interface AuthStore extends AuthState {
     email: string,
     otpCode: string,
     otpChallengeId: string,
+    rememberDevice?: boolean,
   ) => Promise<AuthAttempt>
   /** Cierra el login neutral con la compañía que eligió el usuario */
   loginToCompany: (
@@ -705,7 +720,18 @@ export const useAuthStore = create<AuthStore>()(
 
         const payload = response.data as unknown
 
-        // Backend anterior al OTP: devolvió los tokens y ya no hay segundo paso
+        // Si otpRequired es false y hay tokens (dispositivo confiable), abrir sesión directamente
+        if (!isOtpRequired(payload)) {
+          const tokens = tokensFromChallenge(payload)
+          if (tokens) {
+            const opened = await openSession(tokens, company)
+            return opened
+              ? { status: "authenticated" }
+              : { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
+          }
+        }
+
+        // Backend anterior al OTP o dispositivo confiable sin tokens: devolvió los tokens
         const legacyTokens = tokensFromChallenge(payload)
         if (legacyTokens) {
           const opened = await openSession(legacyTokens, company)
@@ -714,6 +740,7 @@ export const useAuthStore = create<AuthStore>()(
             : { status: "error", message: GENERIC_AUTH_ERROR, kind: "rejected" }
         }
 
+        // otpRequired es true: pedir código OTP
         const challenge = issuedChallenge(payload)
         if (!challenge?.otpSent) {
           return { status: "error", message: OTP_NOT_SENT_ERROR, kind: "rejected" }
@@ -737,12 +764,13 @@ export const useAuthStore = create<AuthStore>()(
         return { status: "otp_sent", challenge }
       },
 
-      verifyLoginOtp: async (email, otpCode, company, otpChallengeId): Promise<AuthAttempt> => {
+      verifyLoginOtp: async (email, otpCode, company, otpChallengeId, rememberDevice): Promise<AuthAttempt> => {
         const response = await serviceValidateOtp({
           email,
           companyId: company.id,
           otpChallengeId,
           otpCode,
+          ...(rememberDevice && { rememberDevice }),
         })
 
         if (!isSuccess(response?.status)) {
@@ -775,7 +803,31 @@ export const useAuthStore = create<AuthStore>()(
           return authError(response, "Invalid credentials")
         }
 
-        const challenge = issuedChallenge(response.data as unknown)
+        const payload = response.data as unknown
+
+        // Si otpRequired es false (dispositivo confiable), puede venir con tokens o con selección de compañía
+        if (!isOtpRequired(payload)) {
+          const tokens = tokensFromChallenge(payload)
+          if (tokens) {
+            // Tokens sin compañías o con una sola compañía: abrir sesión
+            const companies = Array.isArray((payload as any)?.companies) ? (payload as any).companies : []
+            if (companies.length <= 1) {
+              const company = companies.length === 1 ? companies[0] : null
+              return {
+                status: "company_session",
+                tokens,
+                slug: company?.slug || NEUTRAL_SLUG,
+                companyName: company?.companyName || "",
+              }
+            }
+            // Múltiples compañías sin OTP: pasar a selección con tokens ya listos
+            // (el frontend puede mostrar selección con tokens disponibles)
+            return { status: "select_company", companies, otpChallengeId: (payload as any)?.otpChallengeId || "" }
+          }
+        }
+
+        // otpRequired es true: pedir código OTP
+        const challenge = issuedChallenge(payload)
         if (!challenge?.otpSent) {
           return { status: "error", message: OTP_NOT_SENT_ERROR, kind: "rejected" }
         }
@@ -802,12 +854,13 @@ export const useAuthStore = create<AuthStore>()(
         return { status: "otp_sent", challenge }
       },
 
-      verifyGlobalOtp: async (email, otpCode, otpChallengeId): Promise<AuthAttempt> => {
+      verifyGlobalOtp: async (email, otpCode, otpChallengeId, rememberDevice): Promise<AuthAttempt> => {
         const response = await serviceValidateOtpGlobal({
           email,
           slug: NEUTRAL_SLUG,
           otpChallengeId,
           otpCode,
+          ...(rememberDevice && { rememberDevice }),
         })
 
         if (!isSuccess(response?.status)) {
