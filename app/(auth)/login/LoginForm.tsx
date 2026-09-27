@@ -28,6 +28,8 @@ export function LoginForm({ company }: LoginFormProps) {
     notice,
     isSubmitting,
     isNeutral,
+    rememberDevice,
+    setRememberDevice,
     submitCredentials,
     submitOtp,
     resendCode,
@@ -54,6 +56,7 @@ export function LoginForm({ company }: LoginFormProps) {
 
   const handleBack = () => {
     setPassword("")
+    setRememberDevice(false)
     backToCredentials()
   }
 
@@ -67,9 +70,11 @@ export function LoginForm({ company }: LoginFormProps) {
           error={error}
           notice={notice}
           isSubmitting={isSubmitting}
+          rememberDevice={rememberDevice}
           onSubmit={submitOtp}
           onResend={resendCode}
           onBack={handleBack}
+          onRememberDeviceChange={setRememberDevice}
         />
       ) : step === "company" ? (
         <CompanyPickerStep

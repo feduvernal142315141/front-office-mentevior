@@ -15,7 +15,7 @@ import {
     ValidateOtpRequest,
 } from "@/lib/models/login/login"
 import { ServiceResponse } from "@/lib/models/response"
-import { serviceGet, servicePost, servicePostSilent } from "../baseService"
+import { serviceGet, serviceGetSilent, servicePost, servicePostSilent } from "../baseService"
 
 
 export const serviceGetPublicKey = async (
@@ -104,4 +104,14 @@ export const serviceRefreshToken = async (
         `/member-users/auth/refresh-token`,
         data
     )
+}
+
+export interface CsrfTokenResponse {
+    headerName: string;
+    token: string;
+}
+
+/** Obtiene el token CSRF si el entorno lo requiere (cross-site cookies). */
+export const serviceGetCsrfToken = async (): ServiceResponse<CsrfTokenResponse> => {
+    return serviceGetSilent<CsrfTokenResponse>(`/csrf`)
 }

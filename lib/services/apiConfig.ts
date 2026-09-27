@@ -15,11 +15,21 @@ type InterceptorHandlers = {
 // Variable para almacenar los handlers
 let interceptorHandlers: InterceptorHandlers = {}
 
+// Variable para almacenar el token CSRF (si se requiere)
+let csrfToken: { headerName: string; token: string } | null = null
+
 /**
  * Función para configurar los handlers de los interceptores
  */
 export const setInterceptorHandlers = (handlers: Partial<InterceptorHandlers>) => {
     interceptorHandlers = {...interceptorHandlers, ...handlers}
+}
+
+/**
+ * Establece el token CSRF que se incluirá en los headers de auth requests
+ */
+export const setCsrfToken = (token: { headerName: string; token: string } | null) => {
+    csrfToken = token
 }
 
 // ============================================
@@ -93,7 +103,8 @@ const apiInstance = axios.create({
     baseURL: resolveApiBaseURL(),
     headers: {
         'Content-Type': 'application/json',
-    }
+    },
+    withCredentials: false, // Se habilita selectivamente para auth routes
 })
 
 // ============================================
@@ -108,6 +119,17 @@ apiInstance.interceptors.request.use(
         interceptorHandlers.onActivity?.()
 
         try {
+            // Habilitar credenciales (cookies) solo en rutas de auth para trusted devices
+            const isAuthRoute = PUBLIC_AUTH_ROUTES.some((path) => config.url?.includes(path))
+            if (isAuthRoute) {
+                config.withCredentials = true
+
+                // Agregar token CSRF si está disponible (cross-site auth)
+                if (csrfToken && process.env.NEXT_PUBLIC_CSRF_REQUIRED === "true") {
+                    config.headers[csrfToken.headerName] = csrfToken.token
+                }
+            }
+
             const isPublicRoute = PUBLIC_ROUTES.some((path) => config.url?.includes(path))
 
             if (!isPublicRoute) {

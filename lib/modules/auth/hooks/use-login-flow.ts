@@ -8,7 +8,8 @@ import {
   type OtpChallengeIssued,
 } from "@/lib/models/login/login"
 import type { CompanyInfo } from "@/lib/types/auth.types"
-import { serviceGetCompanyConfig } from "@/lib/services/login/login"
+import { serviceGetCompanyConfig, serviceGetCsrfToken } from "@/lib/services/login/login"
+import { setCsrfToken } from "@/lib/services/apiConfig"
 import { useAuthStore, type AuthAttempt } from "@/lib/store/auth.store"
 import { buildCompanyOrigin } from "@/lib/modules/auth/hooks/use-company-slug"
 import { buildSessionHandoffUrl } from "@/lib/modules/auth/session-handoff"
@@ -59,14 +60,19 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [rememberDevice, setRememberDevice] = useState(false)
 
   const passwordRef = useRef("")
   /** El challenge que `validate-otp-global` dejó verificado, para `company-login` */
   const verifiedChallengeRef = useRef("")
+  /** Token CSRF para cross-site auth (si NEXT_PUBLIC_CSRF_REQUIRED=true) */
+  const csrfTokenRef = useRef<{ headerName: string; token: string } | null>(null)
 
   const forgetSecrets = useCallback(() => {
     passwordRef.current = ""
     verifiedChallengeRef.current = ""
+    csrfTokenRef.current = null
+    setRememberDevice(false)
   }, [])
 
   const backToCredentials = useCallback(
@@ -160,6 +166,22 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
       setError(null)
       setNotice(null)
 
+      // Si se requiere CSRF (cross-site), obtener token antes de enviar credenciales
+      if (process.env.NEXT_PUBLIC_CSRF_REQUIRED === "true" && !csrfTokenRef.current) {
+        try {
+          const csrfResponse = await serviceGetCsrfToken()
+          if (csrfResponse?.status === 200 && csrfResponse.data) {
+            csrfTokenRef.current = csrfResponse.data as { headerName: string; token: string }
+            setCsrfToken(csrfTokenRef.current)
+          }
+        } catch (error) {
+          console.error("[LoginFlow] CSRF token fetch failed:", error)
+          setError("We couldn't initialize your session. Please try again.")
+          setIsSubmitting(false)
+          return
+        }
+      }
+
       const trimmedEmail = nextEmail.trim()
       setEmail(trimmedEmail)
       passwordRef.current = password
@@ -186,8 +208,8 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
       setNotice(null)
 
       const attempt = isNeutral
-        ? await verifyGlobalOtp(email, otpCode, challenge.otpChallengeId)
-        : await verifyLoginOtp(email, otpCode, company, challenge.otpChallengeId)
+        ? await verifyGlobalOtp(email, otpCode, challenge.otpChallengeId, rememberDevice)
+        : await verifyLoginOtp(email, otpCode, company, challenge.otpChallengeId, rememberDevice)
 
       // Los fallos de red no llegaron al backend, así que no gastaron intentos
       if (attempt.status === "error" && attempt.kind === "rejected") {
@@ -204,6 +226,7 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
       company,
       email,
       isNeutral,
+      rememberDevice,
       verifyGlobalOtp,
       verifyLoginOtp,
     ],
@@ -285,6 +308,8 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
     notice,
     isSubmitting,
     isNeutral,
+    rememberDevice,
+    setRememberDevice,
     submitCredentials,
     submitOtp,
     resendCode,
