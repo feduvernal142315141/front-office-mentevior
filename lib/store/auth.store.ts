@@ -764,13 +764,13 @@ export const useAuthStore = create<AuthStore>()(
         return { status: "otp_sent", challenge }
       },
 
-      verifyLoginOtp: async (email, otpCode, company, otpChallengeId, rememberDevice): Promise<AuthAttempt> => {
+      verifyLoginOtp: async (email, otpCode, company, otpChallengeId, rememberDevice = false): Promise<AuthAttempt> => {
         const response = await serviceValidateOtp({
           email,
           companyId: company.id,
           otpChallengeId,
           otpCode,
-          ...(rememberDevice && { rememberDevice }),
+          rememberDevice,
         })
 
         if (!isSuccess(response?.status)) {
@@ -854,13 +854,13 @@ export const useAuthStore = create<AuthStore>()(
         return { status: "otp_sent", challenge }
       },
 
-      verifyGlobalOtp: async (email, otpCode, otpChallengeId, rememberDevice): Promise<AuthAttempt> => {
+      verifyGlobalOtp: async (email, otpCode, otpChallengeId, rememberDevice = false): Promise<AuthAttempt> => {
         const response = await serviceValidateOtpGlobal({
           email,
           slug: NEUTRAL_SLUG,
           otpChallengeId,
           otpCode,
-          ...(rememberDevice && { rememberDevice }),
+          rememberDevice,
         })
 
         if (!isSuccess(response?.status)) {
