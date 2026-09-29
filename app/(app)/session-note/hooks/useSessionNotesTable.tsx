@@ -15,6 +15,8 @@ import { parseLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 function formatTime(time?: string): string {
   if (!time) return ""
@@ -27,6 +29,8 @@ function formatTime(time?: string): string {
 export function useSessionNotesTable() {
   const router = useRouter()
   const { canEdit } = useModulePermissions(PermissionModule.SESSION_NOTE)
+  const auditModal = useAuditModalState<AppointmentNoteSummary>()
+  const openAuditModal = auditModal.openFor
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -249,10 +253,17 @@ export function useSessionNotesTable() {
               <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
             </button>
           )}
+          <AuditActionButton
+            label={`View audit for ${note.clientName} session note`}
+            onClick={(event) => {
+              event.stopPropagation()
+              openAuditModal(note)
+            }}
+          />
         </div>
       ),
     },
-  ], [canEdit, handleOpenNote])
+  ], [canEdit, handleOpenNote, openAuditModal])
 
   return {
     data: notes,
@@ -284,5 +295,6 @@ export function useSessionNotesTable() {
     previewAppointmentId,
     setPreviewAppointmentId,
     handleOpenNote,
+    auditModal,
   }
 }

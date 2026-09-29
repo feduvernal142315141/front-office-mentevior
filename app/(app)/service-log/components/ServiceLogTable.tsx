@@ -9,6 +9,7 @@ import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { getServiceLogPdfUrl } from "@/lib/modules/service-log/services/service-log.service"
 import { useServiceLogTable } from "../hooks/useServiceLogTable"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 interface ServiceLogTableProps {
   /** Incrementarlo fuerza un refetch (la generación es asíncrona) */
@@ -30,6 +31,7 @@ export function ServiceLogTable({ reloadKey = 0 }: ServiceLogTableProps) {
     previewId,
     setPreviewId,
     goToDetail,
+    auditModal,
   } = useServiceLogTable(reloadKey)
 
   const pdfUrl = useMemo(
@@ -126,6 +128,13 @@ export function ServiceLogTable({ reloadKey = 0 }: ServiceLogTableProps) {
           fileName="Service Log.pdf"
         />
       )}
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={auditModal.selectedItem?.clientName}
+        title="Audit Logs - Service Log"
+      />
     </div>
   )
 }

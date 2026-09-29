@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/custom/SearchInput"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 export function ClientsTable() {
   const {
@@ -16,6 +17,7 @@ export function ClientsTable() {
     filters,
     pagination,
     clearFilters,
+    auditModal,
   } = useClientsTable()
 
   if (error) {
@@ -81,6 +83,14 @@ export function ClientsTable() {
         }
         getRowKey={(client) => client.id}
         pagination={pagination}
+      />
+
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedClient?.id}
+        entityName={auditModal.selectedClient?.fullName}
+        title="Audit Logs - Client"
       />
 
     </div>

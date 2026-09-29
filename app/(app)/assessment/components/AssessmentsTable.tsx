@@ -10,6 +10,7 @@ import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { getAssessmentPdfUrl } from "@/lib/modules/assessments/services/assessments.service"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 export function AssessmentsTable() {
   const {
@@ -26,6 +27,7 @@ export function AssessmentsTable() {
     pagination,
     canCreate,
     goToCreate,
+    auditModal,
   } = useAssessmentsTable()
 
   const pdfUrl = useMemo(() => (previewId ? getAssessmentPdfUrl(previewId) : null), [previewId])
@@ -124,6 +126,13 @@ export function AssessmentsTable() {
           fileName="Behavior Analysis Assessment and Support Plan.pdf"
         />
       )}
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={auditModal.selectedItem?.clientName}
+        title="Audit Logs - Assessment"
+      />
     </div>
   )
 }

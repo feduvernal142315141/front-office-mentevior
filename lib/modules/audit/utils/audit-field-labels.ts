@@ -1,0 +1,195 @@
+type FieldLabelMap = Record<string, string>
+
+const COMMON_FIELD_LABELS: FieldLabelMap = {
+  id: "Record ID",
+  companyId: "Company",
+  entityId: "Record",
+  active: "Active",
+  status: "Status",
+  createAt: "Created At",
+  createdAt: "Created At",
+  createBy: "Created By",
+  updateAt: "Updated At",
+  updatedAt: "Updated At",
+  updateBy: "Updated By",
+  deleteAt: "Deleted At",
+  deletedAt: "Deleted At",
+  deleteBy: "Deleted By",
+  auditRevision: "Audit Revision",
+}
+
+const ENTITY_FIELD_LABELS: Record<string, FieldLabelMap> = {
+  Client: {
+    firstName: "First Name",
+    lastName: "Last Name",
+    fullName: "Client Name",
+    phoneNumber: "Phone Number",
+    brithDate: "Birth Date",
+    birthDate: "Birth Date",
+    languages: "Languages",
+    genderId: "Gender",
+    email: "Email",
+    ssn: "SSN",
+    chartId: "Chart ID",
+    diagnosis: "Diagnosis",
+    insurance: "Insurance",
+    rbt: "Primary Provider",
+    progress: "Profile Completion",
+    clientServicePlanId: "Client Service Plan",
+  },
+  Company: {
+    name: "Company Name",
+    legalName: "Legal Name",
+    phoneNumber: "Phone Number",
+    email: "Email",
+    taxId: "Tax ID",
+    logo: "Logo",
+  },
+  MemberUser: {
+    firstName: "First Name",
+    lastName: "Last Name",
+    fullName: "User Name",
+    email: "Email",
+    phoneNumber: "Phone Number",
+    roleId: "Role",
+    memberUserTypeId: "User Type",
+    credentialsSignature: "Credentials Signature",
+    professionalInformation: "Professional Information",
+  },
+  Appointment: {
+    clientId: "Client",
+    providerId: "Provider",
+    startDate: "Start Date",
+    endDate: "End Date",
+    startTime: "Start Time",
+    endTime: "End Time",
+    status: "Status",
+    serviceId: "Service",
+    placeOfServiceId: "Place of Service",
+  },
+  AppointmentNote: {
+    clientId: "Client",
+    providerId: "Provider",
+    appointmentId: "Appointment",
+    billingCodeId: "Billing Code",
+    billingCode: "Billing Code",
+    date: "Date",
+    timeInit: "Start Time",
+    timeEnd: "End Time",
+    type: "Type",
+    summary: "Summary",
+    status: "Status",
+    noteStatus: "Note Status",
+    serviceLogId: "Service Log",
+    caregiverSignature: "Caregiver Signature",
+    providerSignature: "Provider Signature",
+    renderedUnits: "Rendered Units",
+  },
+  ClinicalMonthly: {
+    clientId: "Client",
+    providerId: "Provider",
+    providerName: "Provider",
+    clientName: "Client",
+    reportMonth: "Report Month",
+    startDate: "Start Date",
+    endDate: "End Date",
+    status: "Status",
+    documentStatus: "Document Status",
+    summary: "Summary",
+    recommendations: "Recommendations",
+  },
+  MonthlySupervision: {
+    clientId: "Client",
+    clientName: "Client",
+    providerId: "Supervisee",
+    providerName: "Supervisee",
+    requestedReportDate: "Report Month",
+    requestedReportMonthYear: "Report Month",
+    supervisedHours: "Supervised Hours",
+    totalHoursWorked: "Total Hours Worked",
+    status: "Status",
+  },
+  CaseSupervisionLog: {
+    clientId: "Client",
+    clientName: "Client",
+    providerId: "Supervisor",
+    providerName: "Supervisor",
+    monthYear: "Period",
+    totalsHours: "Total Hours",
+    supervisionHours: "Supervision Hours",
+    complianceStatus: "Compliance Status",
+    status: "Status",
+  },
+  ServiceLog: {
+    clientId: "Client",
+    clientName: "Client",
+    providerId: "Provider",
+    providerName: "Provider",
+    initDate: "Start Date",
+    endDate: "End Date",
+    generatedAt: "Generated At",
+    totalUnits: "Total Units",
+    totalHours: "Total Hours",
+    status: "Status",
+  },
+  PriorAuthorization: {
+    clientId: "Client",
+    payerId: "Payer",
+    insuranceId: "Insurance",
+    startDate: "Start Date",
+    endDate: "End Date",
+    authorizationNumber: "Authorization Number",
+    status: "Status",
+  },
+  Assessment: {
+    clientId: "Client",
+    clientName: "Client",
+    schoolName: "School",
+    gradeName: "Grade",
+    housingType: "Housing",
+    medicalHistoryPrimaryDiagnosisName: "Primary Diagnosis",
+    medicalHistorySecondaryDiagnosisName: "Secondary Diagnosis",
+    status: "Status",
+    conductedAt: "Conducted At",
+    conductedBy: "Conducted By",
+    caregiverName: "Caregiver",
+    providerId: "Provider",
+  },
+}
+
+const ENTITY_CLASS_ALIASES: Record<string, string> = {
+  AppointmentNote97155: "AppointmentNote",
+  AppointmentNote97156: "AppointmentNote",
+  ClinicalMonthlySummary: "ClinicalMonthly",
+  MonthlySupervisionReport: "MonthlySupervision",
+  CaseSupervision: "CaseSupervisionLog",
+}
+
+function normalizeEntityClass(entityClass: string | null | undefined): string {
+  const normalized = String(entityClass ?? "").trim().replace(/\s+/g, "")
+  return ENTITY_CLASS_ALIASES[normalized] ?? normalized
+}
+
+function humanizeFieldName(fieldName: string): string {
+  return fieldName
+    .replace(/[_.-]+/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/\bId\b/g, "ID")
+    .replace(/\bSsn\b/g, "SSN")
+    .replace(/\bRbt\b/g, "Primary Provider")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+export function getAuditFieldLabel(
+  entityClass: string | null | undefined,
+  fieldName: string
+): string {
+  const normalizedEntityClass = normalizeEntityClass(entityClass)
+  const entityLabels = ENTITY_FIELD_LABELS[normalizedEntityClass] ?? {}
+
+  return (
+    entityLabels[fieldName] ??
+    COMMON_FIELD_LABELS[fieldName] ??
+    humanizeFieldName(fieldName)
+  )
+}

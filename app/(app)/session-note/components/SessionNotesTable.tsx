@@ -12,6 +12,7 @@ import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { getAppointmentNotePdfPreviewUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 export function SessionNotesTable() {
   const {
@@ -28,6 +29,7 @@ export function SessionNotesTable() {
     previewAppointmentId,
     setPreviewAppointmentId,
     handleOpenNote,
+    auditModal,
   } = useSessionNotesTable()
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
@@ -135,6 +137,13 @@ export function SessionNotesTable() {
           fileName="Session Note.pdf"
         />
       )}
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={auditModal.selectedItem?.clientName}
+        title="Audit Logs - Session Note"
+      />
     </div>
   )
 }

@@ -12,6 +12,7 @@ import { getMonthlySupervisionPdfUrl } from "@/lib/modules/monthly-supervision/s
 import { formatReportMonthLong } from "@/lib/modules/monthly-supervision/utils/report-month"
 import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
 import { useMonthlySupervisionTable } from "../hooks/useMonthlySupervisionTable"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 export function MonthlySupervisionTable() {
   const {
@@ -33,6 +34,7 @@ export function MonthlySupervisionTable() {
     isDeleting,
     canCreate,
     goToCreate,
+    auditModal,
   } = useMonthlySupervisionTable()
 
   const pdfUrl = useMemo(
@@ -137,6 +139,13 @@ export function MonthlySupervisionTable() {
             ? `${pendingDelete.clientName} — ${formatReportMonthLong(pendingDelete.requestedReportDate)}`
             : undefined
         }
+      />
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={auditModal.selectedItem?.clientName}
+        title="Audit Logs - Monthly Supervision"
       />
     </div>
   )

@@ -19,6 +19,8 @@ import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { parseLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 function formatDay(value: string): string {
   if (!value) return "—"
@@ -31,6 +33,8 @@ function formatDay(value: string): string {
 
 export function useServiceLogTable(reloadKey: number) {
   const router = useRouter()
+  const auditModal = useAuditModalState<ServiceLogListItem>()
+  const openAuditModal = auditModal.openFor
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -154,11 +158,18 @@ export function useServiceLogTable(reloadKey: number) {
             >
               <Eye className="h-4 w-4" />
             </IconButton>
+            <AuditActionButton
+              label={`View audit for ${item.clientName || "service log"}`}
+              onClick={(event) => {
+                event.stopPropagation()
+                openAuditModal(item)
+              }}
+            />
           </div>
         ),
       },
     ],
-    [router],
+    [router, openAuditModal],
   )
 
   return {
@@ -192,6 +203,7 @@ export function useServiceLogTable(reloadKey: number) {
     previewId,
     setPreviewId,
     goToDetail: (item: ServiceLogListItem) => router.push(`/service-log/${item.id}`),
+    auditModal,
   }
 }
 

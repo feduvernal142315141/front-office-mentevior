@@ -14,6 +14,8 @@ import {useDebouncedState} from "@/lib/hooks/use-debounced-state";
 import {buildFilters} from "@/lib/utils/query-filters";
 import {FilterOperator} from "@/lib/models/filterOperator";
 import { parseLocalDate } from "@/lib/date";
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState, type AuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 type StatusFilter = "all" | "active" | "inactive" | "terminated"
 
@@ -56,6 +58,7 @@ interface UseUsersTableReturn {
     canEdit: boolean
     canDelete: boolean
   }
+  auditModal: AuditModalState<MemberUserListItem>
 }
 
 export function useUsersTable(): UseUsersTableReturn {
@@ -67,6 +70,8 @@ export function useUsersTable(): UseUsersTableReturn {
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [roleFilter, setRoleFilter] = useState<string>("all")
+  const auditModal = useAuditModalState<MemberUserListItem>()
+  const openAuditModal = auditModal.openFor
 
   const filtersArray = useMemo(() => {
     const filters = []
@@ -334,13 +339,20 @@ export function useUsersTable(): UseUsersTableReturn {
                 " />
               </button>
             )}
+            <AuditActionButton
+              label={`View audit for ${user.fullName}`}
+              onClick={(event) => {
+                event.stopPropagation()
+                openAuditModal(user)
+              }}
+            />
           </div>
         ),
       })
     }
     
     return cols
-  }, [permissions, router])
+  }, [permissions, router, openAuditModal])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)
@@ -394,5 +406,6 @@ export function useUsersTable(): UseUsersTableReturn {
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
     permissions,
+    auditModal,
   }
 }

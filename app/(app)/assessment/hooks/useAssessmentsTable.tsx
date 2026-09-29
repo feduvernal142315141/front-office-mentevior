@@ -15,10 +15,14 @@ import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { cn } from "@/lib/utils"
 import { ASSESSMENT_STATUS_BADGE } from "./useAssessmentStatus"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 export function useAssessmentsTable() {
   const router = useRouter()
   const permission = usePermission()
+  const auditModal = useAuditModalState<AssessmentListItem>()
+  const openAuditModal = auditModal.openFor
 
   const canCreate = permission.create(PermissionModule.ASSESSMENT)
   const canEdit = permission.edit(PermissionModule.ASSESSMENT)
@@ -226,10 +230,17 @@ export function useAssessmentsTable() {
               <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
             </button>
           )}
+          <AuditActionButton
+            label={`View audit for ${item.clientName || "assessment"}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              openAuditModal(item)
+            }}
+          />
         </div>
       ),
     },
-  ], [canEdit, router])
+  ], [canEdit, router, openAuditModal])
 
   return {
     data: assessments,
@@ -261,5 +272,6 @@ export function useAssessmentsTable() {
     canCreate,
     canEdit,
     goToCreate: () => router.push("/assessment/create"),
+    auditModal,
   }
 }

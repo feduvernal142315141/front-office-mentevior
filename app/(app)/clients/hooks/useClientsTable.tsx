@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Edit2, Sliders } from "lucide-react"
+import { Edit2, Eye, Sliders } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { ClientListItem } from "@/lib/types/client.types"
 import { useClients } from "@/lib/modules/clients/hooks/use-clients"
@@ -48,6 +48,11 @@ interface UseClientsTableReturn {
   filteredCount: number
   clearFilters: () => void
   refetch: () => void
+  auditModal: {
+    open: boolean
+    selectedClient: ClientListItem | null
+    onOpenChange: (open: boolean) => void
+  }
 }
 
 export function useClientsTable(): UseClientsTableReturn {
@@ -59,6 +64,8 @@ export function useClientsTable(): UseClientsTableReturn {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [auditModalOpen, setAuditModalOpen] = useState(false)
+  const [selectedAuditClient, setSelectedAuditClient] = useState<ClientListItem | null>(null)
 
   const filtersArray = useMemo(() => {
     const filters: FilterRule[] = []
@@ -117,6 +124,13 @@ export function useClientsTable(): UseClientsTableReturn {
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize)
     setPage(1)
+  }
+
+  const handleAuditModalOpenChange = (open: boolean) => {
+    setAuditModalOpen(open)
+    if (!open) {
+      setSelectedAuditClient(null)
+    }
   }
 
   const columns: CustomTableColumn<ClientListItem>[] = useMemo(() => [
@@ -255,6 +269,27 @@ export function useClientsTable(): UseClientsTableReturn {
                 <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
               </button>
             )}
+            <button
+              onClick={() => {
+                setSelectedAuditClient(client)
+                setAuditModalOpen(true)
+              }}
+              className={cn(
+                "group/audit relative h-9 w-9",
+                "flex items-center justify-center rounded-xl",
+                "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                "border border-blue-200/60 shadow-sm shadow-blue-900/5",
+                "hover:from-blue-100 hover:to-blue-200/90",
+                "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
+                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
+              )}
+              title="View audit"
+              aria-label={`View audit for ${client.fullName}`}
+            >
+              <Eye className="w-4 h-4 text-blue-600 group-hover/audit:text-blue-700 transition-colors duration-200" />
+            </button>
           </div>
         )
       },
@@ -284,5 +319,10 @@ export function useClientsTable(): UseClientsTableReturn {
     filteredCount: clients.length,
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
+    auditModal: {
+      open: auditModalOpen,
+      selectedClient: selectedAuditClient,
+      onOpenChange: handleAuditModalOpenChange,
+    },
   }
 }

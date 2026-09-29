@@ -20,10 +20,14 @@ import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { formatReportMonthLong } from "@/lib/utils/report-month"
 import { cn } from "@/lib/utils"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 export function useCaseSupervisionLogTable() {
   const router = useRouter()
   const { canCreate } = useModulePermissions(PermissionModule.CASE_SUPERVISION)
+  const auditModal = useAuditModalState<CaseSupervisionLogListItem>()
+  const openAuditModal = auditModal.openFor
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -148,11 +152,18 @@ export function useCaseSupervisionLogTable() {
             >
               <Eye className="h-4 w-4" />
             </IconButton>
+            <AuditActionButton
+              label={`View audit for ${item.clientName || "case supervision log"}`}
+              onClick={(event) => {
+                event.stopPropagation()
+                openAuditModal(item)
+              }}
+            />
           </div>
         ),
       },
     ],
-    [router],
+    [router, openAuditModal],
   )
 
   return {
@@ -193,6 +204,7 @@ export function useCaseSupervisionLogTable() {
     goToCreate: () => router.push("/case-supervision-log/create"),
     goToDetail: (item: CaseSupervisionLogListItem) =>
       router.push(`/case-supervision-log/${item.id}`),
+    auditModal,
   }
 }
 

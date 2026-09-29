@@ -10,6 +10,7 @@ import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { getClinicalMonthlyPdfUrl } from "@/lib/modules/clinical-monthly/services/clinical-monthly.service"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 export function ClinicalMonthlyTable() {
   const {
@@ -28,6 +29,7 @@ export function ClinicalMonthlyTable() {
     setPreviewId,
     canCreate,
     goToCreate,
+    auditModal,
   } = useClinicalMonthlyTable()
 
   const pdfUrl = useMemo(
@@ -131,6 +133,13 @@ export function ClinicalMonthlyTable() {
           fileName="Clinical Monthly.pdf"
         />
       )}
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={auditModal.selectedItem?.clientName}
+        title="Audit Logs - Clinical Monthly"
+      />
     </div>
   )
 }

@@ -20,6 +20,8 @@ import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { cn } from "@/lib/utils"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 /**
  * El campo por el que se filtra **no se llama** como el que devuelve el listado
@@ -42,6 +44,8 @@ function formatHours(value?: number): string {
 export function useMonthlySupervisionTable() {
   const router = useRouter()
   const permission = usePermission()
+  const auditModal = useAuditModalState<MonthlySupervisionListItem>()
+  const openAuditModal = auditModal.openFor
 
   // El analista crea, edita y borra; el RBT sólo mira. Gate de UX: el control
   // real lo aplica el backend (exige MONTHLY_SUPERVISIONS_VIEW y permiso DELETE).
@@ -281,10 +285,17 @@ export function useMonthlySupervisionTable() {
               <Trash2 className="h-4 w-4 text-red-600 transition-colors group-hover/del:text-red-700" />
             </button>
           )}
+          <AuditActionButton
+            label={`View audit for ${item.clientName || "monthly supervision"}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              openAuditModal(item)
+            }}
+          />
         </div>
       ),
     },
-  ], [canEdit, canDelete, router])
+  ], [canEdit, canDelete, router, openAuditModal])
 
   return {
     data: items,
@@ -327,5 +338,6 @@ export function useMonthlySupervisionTable() {
     canCreate,
     canEdit,
     goToCreate: () => router.push("/monthly-supervisions/create"),
+    auditModal,
   }
 }

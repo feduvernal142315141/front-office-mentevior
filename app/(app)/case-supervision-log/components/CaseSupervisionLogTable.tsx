@@ -10,6 +10,7 @@ import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
 import { getCaseSupervisionLogPdfUrl } from "@/lib/modules/case-supervision-log/services/case-supervision-log.service"
 import { useCaseSupervisionLogTable } from "../hooks/useCaseSupervisionLogTable"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 export function CaseSupervisionLogTable() {
   const {
@@ -28,6 +29,7 @@ export function CaseSupervisionLogTable() {
     canCreate,
     goToCreate,
     goToDetail,
+    auditModal,
   } = useCaseSupervisionLogTable()
 
   const pdfUrl = useMemo(
@@ -121,6 +123,13 @@ export function CaseSupervisionLogTable() {
           fileName="Case Supervision Log.pdf"
         />
       )}
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={auditModal.selectedItem?.clientName}
+        title="Audit Logs - Case Supervision Log"
+      />
     </div>
   )
 }

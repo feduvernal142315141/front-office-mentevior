@@ -15,6 +15,8 @@ import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { parseLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 /**
  * El Clinical Monthly no tiene provider propio: el provider es el usuario
@@ -53,6 +55,8 @@ function formatDate(value?: string): string {
 export function useClinicalMonthlyTable() {
   const router = useRouter()
   const permission = usePermission()
+  const auditModal = useAuditModalState<ClinicalMonthlyListItem>()
+  const openAuditModal = auditModal.openFor
 
   // El analista crea y edita; el RBT sólo mira. El gate del front es UX:
   // el control real lo tiene que hacer el backend.
@@ -290,10 +294,17 @@ export function useClinicalMonthlyTable() {
               <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
             </button>
           )}
+          <AuditActionButton
+            label={`View audit for ${item.clientName || "clinical monthly"}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              openAuditModal(item)
+            }}
+          />
         </div>
       ),
     },
-  ], [showProviderColumn, canEdit, router])
+  ], [showProviderColumn, canEdit, router, openAuditModal])
 
   return {
     data: clinicalMonthlies,
@@ -330,5 +341,6 @@ export function useClinicalMonthlyTable() {
     canCreate,
     canEdit,
     goToCreate: () => router.push("/clinical-monthly/create"),
+    auditModal,
   }
 }
