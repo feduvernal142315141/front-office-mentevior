@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import type { AssessmentListItem } from "@/lib/types/assessment.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getAssessments } from "../services/assessments.service"
@@ -29,7 +29,10 @@ export function useAssessments(params?: UseAssessmentsParams): UseAssessmentsRet
   const filtersKey = params?.filters?.join("|") ?? ""
   const ordersKey = params?.orders?.join("|") ?? ""
 
+  const requestIdRef = useRef(0)
+
   const fetchAssessments = useCallback(async () => {
+    const requestId = ++requestIdRef.current
     try {
       setIsLoading(true)
       setError(null)
@@ -40,14 +43,16 @@ export function useAssessments(params?: UseAssessmentsParams): UseAssessmentsRet
         orders: ordersKey ? ordersKey.split("|") : undefined,
       }
       const data = await getAssessments(query)
+      if (requestId !== requestIdRef.current) return
       setAssessments(data.assessments)
       setTotalCount(data.totalCount)
     } catch (err) {
+      if (requestId !== requestIdRef.current) return
       setError(err instanceof Error ? err : new Error("Failed to fetch assessments"))
       setAssessments([])
       setTotalCount(0)
     } finally {
-      setIsLoading(false)
+      if (requestId === requestIdRef.current) setIsLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params?.page, params?.pageSize, filtersKey, ordersKey])

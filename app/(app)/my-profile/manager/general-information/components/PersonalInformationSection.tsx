@@ -116,18 +116,42 @@ export function PersonalInformationSection({ canEditRole, forceOpen }: PersonalI
         />
 
         <Controller
-          name="country"
+          name="homeAddressLine1"
           control={control}
           render={({ field, fieldState }) => (
-            <div data-field="country">
+            <div className="lg:col-span-2" data-field="homeAddressLine1">
               <FloatingInput
-                label="Country"
-                name="country"
-                value="United States"
-                onChange={() => {}}
+                label="Home Address - Line 1"
+                name="homeAddressLine1"
+                value={field.value}
+                onChange={field.onChange}
                 onBlur={field.onBlur}
                 placeholder=" "
-                disabled={true}
+                hasError={!!fieldState.error}
+                autoComplete="street-address"
+                required
+              />
+              {fieldState.error && (
+                <p className="text-sm text-red-600 mt-2">
+                  {fieldState.error.message}
+                </p>
+              )}
+            </div>
+          )}
+        />
+
+        <Controller
+          name="city"
+          control={control}
+          render={({ field, fieldState }) => (
+            <div data-field="city">
+              <FloatingInput
+                label="City"
+                name="city"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder=" "
                 hasError={!!fieldState.error}
                 required
               />
@@ -166,30 +190,6 @@ export function PersonalInformationSection({ canEditRole, forceOpen }: PersonalI
         />
 
         <Controller
-          name="city"
-          control={control}
-          render={({ field, fieldState }) => (
-            <div data-field="city">
-              <FloatingInput
-                label="City"
-                name="city"
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                placeholder=" "
-                hasError={!!fieldState.error}
-                required
-              />
-              {fieldState.error && (
-                <p className="text-sm text-red-600 mt-2">
-                  {fieldState.error.message}
-                </p>
-              )}
-            </div>
-          )}
-        />
-
-        <Controller
           name="zipCode"
           control={control}
           render={({ field, fieldState }) => (
@@ -216,19 +216,19 @@ export function PersonalInformationSection({ canEditRole, forceOpen }: PersonalI
         />
 
         <Controller
-          name="homeAddressLine1"
+          name="country"
           control={control}
           render={({ field, fieldState }) => (
-            <div className="lg:col-span-2" data-field="homeAddressLine1">
+            <div data-field="country">
               <FloatingInput
-                label="Home Address - Line 1"
-                name="homeAddressLine1"
-                value={field.value}
-                onChange={field.onChange}
+                label="Country"
+                name="country"
+                value="United States"
+                onChange={() => {}}
                 onBlur={field.onBlur}
                 placeholder=" "
+                disabled={true}
                 hasError={!!fieldState.error}
-                autoComplete="street-address"
                 required
               />
               {fieldState.error && (

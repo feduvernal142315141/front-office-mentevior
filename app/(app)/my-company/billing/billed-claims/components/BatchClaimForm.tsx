@@ -7,7 +7,7 @@ import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
-import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
+import { PremiumDateRangePicker } from "@/components/custom/PremiumDateRangePicker"
 import { useBatchClaimForm } from "../hooks/useBatchClaimForm"
 import { EligibleServiceLogsPicker } from "./EligibleServiceLogsPicker"
 
@@ -57,8 +57,8 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
     planOptions,
     isLoadingPayers,
     isLoadingPlans,
-    startMonth,
-    endMonth,
+    startDate,
+    endDate,
     handleRangeChange,
     serviceLogs,
     isLoadingEligible,
@@ -160,11 +160,11 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
           subtitle="Service logs whose appointments have a locked and signed session note"
         >
           <div className="space-y-4">
-            <div className="max-w-md" data-form-field="dateRange">
-              <MonthRangePicker
+            <div className="max-w-[320px]" data-form-field="dateRange">
+              <PremiumDateRangePicker
                 label="Service Period"
-                startValue={startMonth}
-                endValue={endMonth}
+                startValue={startDate}
+                endValue={endDate}
                 onChange={handleRangeChange}
                 hasError={!!errors.dateRange}
                 required

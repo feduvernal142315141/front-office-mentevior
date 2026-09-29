@@ -107,11 +107,11 @@ export function ProposedScheduleSection({
               </div>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 max-w-[560px] space-y-2">
               {SCHEDULE_DAY_KEYS.map((day) => {
                 const { start, end } = parseRange(row.hours[day])
                 return (
-                  <div key={day} className="grid grid-cols-[60px_1fr_1fr] items-center gap-2">
+                  <div key={day} className="grid grid-cols-[44px_1fr_1fr] items-center gap-2">
                     <span className="text-xs font-medium text-slate-500">{day.slice(0, 3)}</span>
                     <FloatingTimePicker
                       label="From"

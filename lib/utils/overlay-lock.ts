@@ -31,8 +31,9 @@ const OPEN_LAYER_SELECTOR = [
   // Select y dropdown menu, que también bloquean el fondo mientras están desplegados
   '[data-state="open"][role="listbox"]',
   '[data-state="open"][role="menu"]',
-  // Red de seguridad para cualquier popper de Radix que no encaje en los roles de arriba
-  '[data-radix-popper-content-wrapper]',
+  // Nota: se quitó `[data-radix-popper-content-wrapper]` porque matchea tooltips,
+  // popovers y selects que NO bloquean pointer-events. Su presencia residual en el
+  // DOM hacía que el watchdog considerara legítimo un bloqueo huérfano y no liberara.
 ].join(', ')
 
 /** Cubre la animación de salida más larga que tenemos, la de los drawers (500 ms). */

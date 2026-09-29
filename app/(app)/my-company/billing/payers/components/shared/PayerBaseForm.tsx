@@ -236,23 +236,21 @@ export function PayerBaseForm({
         />
       </div>
 
-      {/* Country */}
-      <div data-form-field="countryId">
+      {/* City */}
+      <div data-form-field="city">
         <Controller
-          name="countryId"
+          name="city"
           control={control}
           render={({ field, fieldState }) => (
             <div>
-              <FloatingSelect
-                label="Country"
+              <FloatingInput
+                label="City"
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                options={countries.map((c) => ({ value: c.id, label: c.name }))}
                 hasError={!!fieldState.error}
-                disabled={readOnly || isLoadingCountries || isCountryDisabled}
-                searchable={!readOnly && !isCountryDisabled}
                 required
+                disabled={readOnly}
               />
               {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
@@ -291,30 +289,6 @@ export function PayerBaseForm({
         />
       </div>
 
-      {/* City */}
-      <div data-form-field="city">
-        <Controller
-          name="city"
-          control={control}
-          render={({ field, fieldState }) => (
-            <div>
-              <FloatingInput
-                label="City"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                hasError={!!fieldState.error}
-                required
-                disabled={readOnly}
-              />
-              {!readOnly && fieldState.error && (
-                <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
-              )}
-            </div>
-          )}
-        />
-      </div>
-
       {/* Zip Code */}
       <div data-form-field="zipCode">
         <Controller
@@ -332,6 +306,32 @@ export function PayerBaseForm({
                 hasError={!!fieldState.error}
                 required
                 disabled={readOnly}
+              />
+              {!readOnly && fieldState.error && (
+                <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
+              )}
+            </div>
+          )}
+        />
+      </div>
+
+      {/* Country */}
+      <div data-form-field="countryId">
+        <Controller
+          name="countryId"
+          control={control}
+          render={({ field, fieldState }) => (
+            <div>
+              <FloatingSelect
+                label="Country"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                options={countries.map((c) => ({ value: c.id, label: c.name }))}
+                hasError={!!fieldState.error}
+                disabled={readOnly || isLoadingCountries || isCountryDisabled}
+                searchable={!readOnly && !isCountryDisabled}
+                required
               />
               {!readOnly && fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>

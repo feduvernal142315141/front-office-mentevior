@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import type { ClientListItem } from "@/lib/types/client.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getClients } from "../services/clients.service"
@@ -24,8 +24,10 @@ export function useClients(initialParams?: UseClientsParams): UseClientsReturn {
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const requestIdRef = useRef(0)
 
   const fetchClients = useCallback(async (params?: UseClientsParams) => {
+    const requestId = ++requestIdRef.current
     try {
       setIsLoading(true)
       setError(null)
@@ -36,20 +38,22 @@ export function useClients(initialParams?: UseClientsParams): UseClientsReturn {
         orders: undefined,
       }
       const data = await getClients(query)
+      if (requestId !== requestIdRef.current) return
       setClients(data.clients)
       setTotalCount(data.totalCount)
     } catch (err) {
+      if (requestId !== requestIdRef.current) return
       setError(err instanceof Error ? err : new Error("Failed to fetch clients"))
       setClients([])
       setTotalCount(0)
     } finally {
-      setIsLoading(false)
+      if (requestId === requestIdRef.current) setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
     fetchClients(initialParams)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { clients, isLoading, error, totalCount, refetch: fetchClients }
 }

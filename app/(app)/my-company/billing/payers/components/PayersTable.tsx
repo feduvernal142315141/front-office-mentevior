@@ -96,6 +96,7 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                 [id]: new Set(normalizedPlans.map((plan) => plan.id)),
               }))
             })
+            .catch(() => { /* error is non-blocking; row stays expandable without rates */ })
             .finally(() => {
               setLoadingRateIds((s) => {
                 const n = new Set(s)

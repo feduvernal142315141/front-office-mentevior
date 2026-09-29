@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useRef, ReactNode } from "react"
+import { createContext, useContext, useState, useRef, useCallback, useMemo, ReactNode } from "react"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { getLoginUrl } from "@/lib/utils/company-identifier"
 
@@ -30,34 +30,53 @@ export function InterceptorProvider({ children }: { children: ReactNode }) {
   const [activeRequests, setActiveRequests] = useState(0)
   const [onActivity, setOnActivity] = useState<(() => void) | undefined>(undefined)
 
-  const setLoading = (loading: boolean) => {
+  const setLoading = useCallback((loading: boolean) => {
     setActiveRequests((prev) => {
       const newCount = loading ? prev + 1 : Math.max(0, prev - 1)
       setIsLoading(newCount > 0)
       return newCount
     })
-  }
+  }, [])
 
-  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+  const showNotification = useCallback((message: string, type: "success" | "error" | "warning" | "info") => {
     alert[type](
       type.charAt(0).toUpperCase() + type.slice(1),
       message
     )
-  }
+  }, [alert])
 
-  const showAlert = (
+  const showAlert = useCallback((
     title: string,
     description: string,
     type: "error" | "warning" | "info" = "info"
   ) => {
     alert[type](title, description)
-  }
+  }, [alert])
 
-  const closeAlert = () => {
+  const closeAlert = useCallback(() => {
     alert.close()
-  }
+  }, [alert])
 
-  const handleHttpError = (statusCode: number, message?: string) => {
+  const handleUnauthorized = useCallback(() => {
+    // Guard: evitar múltiples llamadas concurrentes (ej: varias requests 401 simultáneas)
+    if (isHandlingUnauthorized.current) return
+    isHandlingUnauthorized.current = true
+
+    alert.warning(
+      "Session Expired",
+      "Your session has expired. You will be redirected to the login page."
+    )
+
+    if (typeof window !== "undefined") {
+      setTimeout(async () => {
+        const { useAuthStore } = await import("@/lib/store/auth.store")
+        useAuthStore.getState().logout()
+        window.location.href = getLoginUrl()
+      }, 3000)
+    }
+  }, [alert])
+
+  const handleHttpError = useCallback((statusCode: number, message?: string) => {
     switch (statusCode) {
       case 400:
         alert.error("Invalid Request", message || "The request contains invalid data")
@@ -98,28 +117,9 @@ export function InterceptorProvider({ children }: { children: ReactNode }) {
       default:
         alert.error("Error", message || "An unexpected error occurred")
     }
-  }
+  }, [alert, handleUnauthorized])
 
-  const handleUnauthorized = () => {
-    // Guard: evitar múltiples llamadas concurrentes (ej: varias requests 401 simultáneas)
-    if (isHandlingUnauthorized.current) return
-    isHandlingUnauthorized.current = true
-
-    alert.warning(
-      "Session Expired",
-      "Your session has expired. You will be redirected to the login page."
-    )
-
-    if (typeof window !== "undefined") {
-      setTimeout(async () => {
-        const { useAuthStore } = await import("@/lib/store/auth.store")
-        useAuthStore.getState().logout()
-        window.location.href = getLoginUrl()
-      }, 3000)
-    }
-  }
-
-  const value: InterceptorContextType = {
+  const value: InterceptorContextType = useMemo(() => ({
     isLoading,
     activeRequests,
     setLoading,
@@ -130,7 +130,7 @@ export function InterceptorProvider({ children }: { children: ReactNode }) {
     handleUnauthorized,
     onActivity,
     setOnActivity,
-  }
+  }), [isLoading, activeRequests, setLoading, showNotification, showAlert, closeAlert, handleHttpError, handleUnauthorized, onActivity])
 
   return (
     <InterceptorContext.Provider value={value}>
