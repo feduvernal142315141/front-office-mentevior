@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { FolderOpen, Loader2, RotateCcw } from "lucide-react"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { MultiSelect } from "@/components/custom/MultiSelect"
 import { INTENSITY_KEY_OPTIONS, ASSESSMENT_PDF_STRATEGY_GROUPS } from "@/lib/constants/assessment.constants"
 import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
@@ -269,25 +270,28 @@ export function CategoryItemsSection({
                           maxVisibleTags={1}
                         />
                       </>
-                    ) : (
-                      <>
-                        <FloatingInput
-                          label="Description"
-                          value={item.description ?? ""}
-                          onChange={() => {}}
-                          onBlur={() => {}}
-                          disabled
-                        />
-                        <FloatingInput
-                          label="Procedures"
-                          value={item.procedures ?? ""}
-                          onChange={() => {}}
-                          onBlur={() => {}}
-                          disabled
-                        />
-                      </>
-                    )}
+                    ) : null}
                   </div>
+                  {!isMaladaptive && (
+                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FloatingTextarea
+                        label="Description"
+                        value={item.description ?? ""}
+                        onChange={() => {}}
+                        onBlur={() => {}}
+                        disabled
+                        rows={3}
+                      />
+                      <FloatingTextarea
+                        label="Procedures"
+                        value={item.procedures ?? ""}
+                        onChange={() => {}}
+                        onBlur={() => {}}
+                        disabled
+                        rows={3}
+                      />
+                    </div>
+                  )}
                 </div>
               )
             })}

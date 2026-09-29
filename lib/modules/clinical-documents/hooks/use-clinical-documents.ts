@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import type { ClinicalDocumentListItem } from "@/lib/types/clinical-document.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getClinicalDocuments } from "../services/clinical-documents.service"
@@ -27,7 +27,10 @@ export function useClinicalDocuments(initialParams?: UseClinicalDocumentsParams)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
+  const requestIdRef = useRef(0)
+
   const fetchClinicalDocuments = useCallback(async () => {
+    const requestId = ++requestIdRef.current
     try {
       setIsLoading(true)
       setError(null)
@@ -38,14 +41,16 @@ export function useClinicalDocuments(initialParams?: UseClinicalDocumentsParams)
         orders: undefined,
       }
       const data = await getClinicalDocuments(query)
+      if (requestId !== requestIdRef.current) return
       setClinicalDocuments(data.clinicalDocuments)
       setTotalCount(data.totalCount)
     } catch (err) {
+      if (requestId !== requestIdRef.current) return
       setError(err instanceof Error ? err : new Error("Failed to fetch Clinical documents"))
       setClinicalDocuments([])
       setTotalCount(0)
     } finally {
-      setIsLoading(false)
+      if (requestId === requestIdRef.current) setIsLoading(false)
     }
   }, [initialParams?.page, initialParams?.pageSize, initialParams?.filters])
 

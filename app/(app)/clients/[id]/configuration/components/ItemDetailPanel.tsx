@@ -551,6 +551,8 @@ export function ItemDetailPanel({
       !typeRequiresInterval(resolvedType.group)
     ) {
       setValue("unitOfTime", undefined, opts)
+    } else if (!currentValues.unitOfTime) {
+      setValue("unitOfTime", ServicePlanUnitOfTime.SECONDS, opts)
     }
     if (!typeHasCumulativeValueToggles(resolvedType.group)) {
       setValue("cumulative", undefined, opts)
@@ -1131,7 +1133,7 @@ export function ItemDetailPanel({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   hasError={!!errors.topography}
-                  rows={2}
+                  rows={4}
                 />
               )}
             />
@@ -1152,7 +1154,7 @@ export function ItemDetailPanel({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     hasError={!!errors.procedures}
-                    rows={2}
+                    rows={4}
                   />
                 )}
               />

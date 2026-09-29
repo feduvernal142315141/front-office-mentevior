@@ -163,7 +163,7 @@ export function PayerExternalIdField({
                 "peer-[&:not(:placeholder-shown)]:top-0 peer-[&:not(:placeholder-shown)]:-translate-y-1/2 peer-[&:not(:placeholder-shown)]:text-xs",
               )}
             >
-              External ID {required && <span className="text-[#037ECC]">*</span>}
+              Payer ID {required && <span className="text-[#037ECC]">*</span>}
             </label>
           </div>
         </PopoverAnchor>

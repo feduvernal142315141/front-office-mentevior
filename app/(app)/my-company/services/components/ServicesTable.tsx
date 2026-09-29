@@ -56,6 +56,7 @@ export function ServicesTable() {
               [serviceId]: serviceDetails,
             }))
           })
+          .catch(() => { /* error is non-blocking; row stays expandable without detail */ })
           .finally(() => {
             setLoadingDetailIds((prevLoading) => {
               const nextLoading = new Set(prevLoading)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { QueryModel } from "@/lib/models/queryModel"
 import type { MonthlySupervisionListItem } from "@/lib/types/monthly-supervision.types"
 import { getMonthlySupervisions } from "../services/monthly-supervision.service"
@@ -34,7 +34,10 @@ export function useMonthlySupervisions(
   const page = params?.page ?? 0
   const pageSize = params?.pageSize ?? 10
 
+  const requestIdRef = useRef(0)
+
   const fetchItems = useCallback(async () => {
+    const requestId = ++requestIdRef.current
     try {
       setIsLoading(true)
       setError(null)
@@ -47,14 +50,16 @@ export function useMonthlySupervisions(
       }
 
       const data = await getMonthlySupervisions(query)
+      if (requestId !== requestIdRef.current) return
       setItems(data.items)
       setTotalCount(data.totalCount)
     } catch (err) {
+      if (requestId !== requestIdRef.current) return
       setError(err instanceof Error ? err : new Error("Failed to fetch monthly supervisions"))
       setItems([])
       setTotalCount(0)
     } finally {
-      setIsLoading(false)
+      if (requestId === requestIdRef.current) setIsLoading(false)
     }
   }, [page, pageSize, filtersKey, ordersKey])
 

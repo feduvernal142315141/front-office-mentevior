@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { buildReportMonth, splitReportMonth } from "@/lib/utils/report-month"
 import { getBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
 import { formatBillingCodeDisplay } from "@/lib/utils/billing-code-display"
 import { getServiceLogById } from "@/lib/modules/service-log/services/service-log.service"
@@ -30,28 +29,6 @@ interface UseBatchClaimFormProps {
   batchClaimId?: string
 }
 
-/** `"2026-08-10"` → `"202608"` */
-function dateToReportMonth(date: string): string {
-  const [year, month] = date.split("-").map(Number)
-  if (!year || !month) return ""
-  return buildReportMonth(year, month - 1)
-}
-
-/** `"202608"` → `"2026-08-01"` */
-function reportMonthToFirstDay(reportMonth: string): string {
-  const parts = splitReportMonth(reportMonth)
-  if (!parts) return ""
-  return `${parts.year}-${String(parts.monthIndex0 + 1).padStart(2, "0")}-01`
-}
-
-/** `"202608"` → `"2026-08-31"` */
-function reportMonthToLastDay(reportMonth: string): string {
-  const parts = splitReportMonth(reportMonth)
-  if (!parts) return ""
-  const lastDay = new Date(parts.year, parts.monthIndex0 + 1, 0).getDate()
-  return `${parts.year}-${String(parts.monthIndex0 + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
-}
-
 export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {}) {
   const isEdit = !!batchClaimId
   const { batchClaim, isLoading: isLoadingBatch, error: batchError } = useBatchClaimById(batchClaimId ?? null)
@@ -66,8 +43,8 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   const { payerOptions, planOptions, isLoadingPayers, isLoadingPlans } = usePayerPlanOptions(payerId)
 
   // ── Período + selección (ids de service logs) ──
-  const [startMonth, setStartMonth] = useState("")
-  const [endMonth, setEndMonth] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const { serviceLogs, isLoading: isLoadingEligible, hasSearched, search, reset } = useEligibleServiceLogs()
 
@@ -121,8 +98,8 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
         if (!maxDate || detail.date > maxDate) maxDate = detail.date
       }
     }
-    if (minDate) setStartMonth(dateToReportMonth(minDate))
-    if (maxDate) setEndMonth(dateToReportMonth(maxDate))
+    if (minDate) setStartDate(minDate)
+    if (maxDate) setEndDate(maxDate)
   }, [isEdit, batchClaim])
 
   // Un solo plan → se preselecciona; el usuario solo elige cuando hay varios
@@ -138,13 +115,11 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   }, [planOptions])
 
   // ── Búsqueda de elegibles: automática cuando hay plan + período completo ──
-  const initDate = useMemo(() => reportMonthToFirstDay(startMonth), [startMonth])
-  const endDate = useMemo(() => reportMonthToLastDay(endMonth), [endMonth])
-  const canSearch = !!payerPlanId && !!initDate && !!endDate && initDate <= endDate
+  const canSearch = !!payerPlanId && !!startDate && !!endDate && startDate <= endDate
   useEffect(() => {
     if (!canSearch) return
-    void search({ payerPlanId, initDate, endDate })
-  }, [canSearch, payerPlanId, initDate, endDate, search])
+    void search({ payerPlanId, initDate: startDate, endDate })
+  }, [canSearch, payerPlanId, startDate, endDate, search])
 
   // ── Huérfanos: seleccionados que no están en el resultado vigente ──
   const eligibleIds = useMemo(() => new Set(serviceLogs.map((sl) => sl.id)), [serviceLogs])
@@ -224,8 +199,8 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   // Al mover el período se conserva lo seleccionado: puede seguir siendo válido
   // aunque quede fuera del nuevo resultado (se lista aparte en el picker)
   const handleRangeChange = useCallback((start: string, end: string) => {
-    setStartMonth(start)
-    setEndMonth(end)
+    setStartDate(start)
+    setEndDate(end)
     clearFieldError("dateRange")
   }, [clearFieldError])
 
@@ -308,8 +283,8 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     isLoadingPayers,
     isLoadingPlans,
     // Range + selection
-    startMonth,
-    endMonth,
+    startDate,
+    endDate,
     handleRangeChange,
     serviceLogs,
     isLoadingEligible,

@@ -411,28 +411,37 @@ export function PhysicianFormFields({
             )}
           />
 
-          {/* Country - Fixed to USA */}
+          {/* City */}
           <Controller
-            name="country"
+            name="city"
             control={control}
-            render={({ field, fieldState }) => (
-              <div>
-                <FloatingInput
-                  label="Country"
-                  value="United States"
-                  onChange={() => {}}
-                  onBlur={field.onBlur}
-                  disabled={true}
-                  placeholder="United States"
-                  hasError={!!fieldState.error}
-                />
-                {fieldState.error && (
-                  <p className="text-sm text-red-600 mt-2">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </div>
-            )}
+            render={({ field, fieldState }) => {
+              const handleChange = (e: any) => {
+                if (typeof e === 'string') {
+                  field.onChange(e.replace(/[^a-zA-Z\s]/g, ""))
+                } else if (e?.target?.value !== undefined) {
+                  field.onChange(e.target.value.replace(/[^a-zA-Z\s]/g, ""))
+                }
+              }
+
+              return (
+                <div>
+                  <FloatingInput
+                    label="City"
+                    value={field.value || ""}
+                    onChange={handleChange}
+                    onBlur={field.onBlur}
+                    placeholder=" "
+                    hasError={!!fieldState.error}
+                  />
+                  {fieldState.error && (
+                    <p className="text-sm text-red-600 mt-2">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
+              )
+            }}
           />
 
           {/* State - USA States */}
@@ -460,39 +469,6 @@ export function PhysicianFormFields({
             )}
           />
 
-          {/* City */}
-          <Controller
-            name="city"
-            control={control}
-            render={({ field, fieldState }) => {
-              const handleChange = (e: any) => {
-                if (typeof e === 'string') {
-                  field.onChange(e.replace(/[^a-zA-Z\s]/g, ""))
-                } else if (e?.target?.value !== undefined) {
-                  field.onChange(e.target.value.replace(/[^a-zA-Z\s]/g, ""))
-                }
-              }
-              
-              return (
-                <div>
-                  <FloatingInput
-                    label="City"
-                    value={field.value || ""}
-                    onChange={handleChange}
-                    onBlur={field.onBlur}
-                    placeholder=" "
-                    hasError={!!fieldState.error}
-                  />
-                  {fieldState.error && (
-                    <p className="text-sm text-red-600 mt-2">
-                      {fieldState.error.message}
-                    </p>
-                  )}
-                </div>
-              )
-            }}
-          />
-
           {/* ZIP Code */}
           <Controller
             name="zipCode"
@@ -512,6 +488,30 @@ export function PhysicianFormFields({
                   inputMode="numeric"
                   maxLength={5}
                   pattern="[0-9]*"
+                />
+                {fieldState.error && (
+                  <p className="text-sm text-red-600 mt-2">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+
+          {/* Country - Fixed to USA */}
+          <Controller
+            name="country"
+            control={control}
+            render={({ field, fieldState }) => (
+              <div>
+                <FloatingInput
+                  label="Country"
+                  value="United States"
+                  onChange={() => {}}
+                  onBlur={field.onBlur}
+                  disabled={true}
+                  placeholder="United States"
+                  hasError={!!fieldState.error}
                 />
                 {fieldState.error && (
                   <p className="text-sm text-red-600 mt-2">
