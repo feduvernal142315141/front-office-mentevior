@@ -12,6 +12,19 @@ import { getAuditFieldLabel } from "@/lib/modules/audit/utils/audit-field-labels
 import { cn } from "@/lib/utils"
 import type { AuditLogAction, AuditLogListItem } from "@/lib/types/audit-log.types"
 
+const LONG_TEXT_FIELD_NAMES = new Set([
+  "summary",
+  "comment",
+  "comments",
+  "description",
+  "narrative",
+  "note",
+  "notes",
+  "protocol",
+])
+const LONG_TEXT_PREVIEW_LIMIT = 140
+const LONG_TEXT_AUTO_TRUNCATE_LIMIT = 240
+
 interface AuditLogsModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -100,6 +113,16 @@ function formatAuditValue(value: unknown): string {
   }
 }
 
+function isLongTextField(fieldName: string): boolean {
+  const normalized = fieldName.trim().toLowerCase()
+  return Array.from(LONG_TEXT_FIELD_NAMES).some((field) => normalized.includes(field))
+}
+
+function truncateAuditValue(value: string, shouldTruncate: boolean): string {
+  if (!shouldTruncate || value.length <= LONG_TEXT_PREVIEW_LIMIT) return value
+  return `${value.slice(0, LONG_TEXT_PREVIEW_LIMIT).trimEnd()}...`
+}
+
 function getActionBadgeClassName(action: AuditLogAction | null): string {
   switch (action) {
     case "Create":
@@ -144,22 +167,37 @@ function AuditLogDetails({ log }: { log: AuditLogListItem }) {
               </tr>
             </thead>
             <tbody>
-              {log.changes.map((change, index) => (
-                <tr key={`${log.id}-${change.fieldName}-${index}`} className="align-top">
-                  <td
-                    className="px-4 py-3 text-sm font-medium text-slate-800"
-                    title={change.fieldName}
-                  >
-                    {getAuditFieldLabel(log.entityClass, change.fieldName)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-700">
-                    <span className="whitespace-pre-wrap break-words">{formatAuditValue(change.oldValue)}</span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-700">
-                    <span className="whitespace-pre-wrap break-words">{formatAuditValue(change.newValue)}</span>
-                  </td>
-                </tr>
-              ))}
+              {log.changes.map((change, index) => {
+                const fieldLabel = getAuditFieldLabel(log.entityClass, change.fieldName)
+                const previousValue = formatAuditValue(change.oldValue)
+                const currentValue = formatAuditValue(change.newValue)
+                const shouldTruncate =
+                  isLongTextField(change.fieldName) ||
+                  isLongTextField(fieldLabel) ||
+                  previousValue.length > LONG_TEXT_AUTO_TRUNCATE_LIMIT ||
+                  currentValue.length > LONG_TEXT_AUTO_TRUNCATE_LIMIT
+
+                return (
+                  <tr key={`${log.id}-${change.fieldName}-${index}`} className="align-top">
+                    <td
+                      className="px-4 py-3 text-sm font-medium text-slate-800"
+                      title={change.fieldName}
+                    >
+                      {fieldLabel}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-700">
+                      <span className="whitespace-pre-wrap break-words" title={shouldTruncate ? previousValue : undefined}>
+                        {truncateAuditValue(previousValue, shouldTruncate)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-700">
+                      <span className="whitespace-pre-wrap break-words" title={shouldTruncate ? currentValue : undefined}>
+                        {truncateAuditValue(currentValue, shouldTruncate)}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
