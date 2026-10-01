@@ -82,7 +82,9 @@ export function CategoryItemsSection({
   const preventiveStrategyOptions = useMemo(
     () => {
       const group = ASSESSMENT_PDF_STRATEGY_GROUPS.find((g) => g.flagKey === "showPreventiveAndAntecedentStrategies")
-      return (group?.fields ?? []).map((f) => ({ value: f.label, label: f.label }))
+      const opts = (group?.fields ?? []).map((f) => ({ value: f.label, label: f.label }))
+      opts.push({ value: "Other", label: "Other" })
+      return opts
     },
     [],
   )
@@ -258,6 +260,15 @@ export function CategoryItemsSection({
                           placeholder="Select strategies"
                           maxVisibleTags={1}
                         />
+                        {value.preventiveStrategies.includes("Other") && (
+                          <FloatingInput
+                            label="Other preventive strategy"
+                            value={value.otherPreventiveStrategies ?? ""}
+                            onChange={(v) => onUpdate(item.id, "otherPreventiveStrategies", v)}
+                            onBlur={() => {}}
+                            disabled={disabled}
+                          />
+                        )}
                         <MultiSelect
                           label="Consequence-Based Strategies"
                           value={value.managementStrategies ? value.managementStrategies.split(", ").filter(Boolean) : []}

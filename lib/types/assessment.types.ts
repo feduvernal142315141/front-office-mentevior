@@ -182,6 +182,8 @@ export interface AssessmentCategoryItemInput {
   placesOfService: string[]
   /** Antecedent interventions del item */
   preventiveStrategies: string
+  /** Free-text detail when preventiveStrategies includes "Other" */
+  otherPreventiveStrategies: string
   /** Consequence interventions del item */
   managementStrategies: string
 }
@@ -416,6 +418,7 @@ export interface AssessmentCategoryItemEntry {
   hypothesizedFunction: HypothesizedFunction[]
   placesOfService: string[]
   preventiveStrategies: string
+  otherPreventiveStrategies: string | null
   managementStrategies: string
 }
 

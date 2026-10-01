@@ -61,6 +61,7 @@ export interface CategoryItemFormValue {
   /** UUIDs del catálogo de Place of Service */
   placesOfServiceIds: string[]
   preventiveStrategies: string
+  otherPreventiveStrategies: string
   managementStrategies: string
 }
 
@@ -161,6 +162,7 @@ function categoryItemsFromDraft(
         hypothesizedFunction: [],
         placesOfServiceIds: item.placesOfService ?? [],
         preventiveStrategies: item.preventiveStrategies,
+        otherPreventiveStrategies: "",
         managementStrategies: item.managementStrategies,
       }
       if (
@@ -264,6 +266,7 @@ export const EMPTY_CATEGORY_ITEM: CategoryItemFormValue = {
   hypothesizedFunction: [],
   placesOfServiceIds: [],
   preventiveStrategies: "",
+  otherPreventiveStrategies: "",
   managementStrategies: "",
 }
 
@@ -480,6 +483,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
         hypothesizedFunction: entry.hypothesizedFunction,
         placesOfServiceIds: entry.placesOfService ?? [],
         preventiveStrategies: entry.preventiveStrategies ?? "",
+        otherPreventiveStrategies: (entry as any).otherPreventiveStrategies ?? "",
         managementStrategies: entry.managementStrategies ?? "",
       }
     }
@@ -876,6 +880,9 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
             : (hypothesizedFunctionByItemId[itemId] ?? []),
         placesOfService: value.placesOfServiceIds,
         preventiveStrategies: value.preventiveStrategies.trim(),
+        otherPreventiveStrategies: value.preventiveStrategies.includes("Other")
+          ? value.otherPreventiveStrategies.trim()
+          : "",
         managementStrategies: value.managementStrategies.trim(),
       }))
 

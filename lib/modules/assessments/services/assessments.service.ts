@@ -257,6 +257,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     hypothesizedFunction: parseHypothesizedFunctions(i.hypothesizedFunction),
     placesOfService: parseStringArray(i.placesOfService),
     preventiveStrategies: str(i.preventiveStrategies),
+    otherPreventiveStrategies: str(i.otherPreventiveStrategies) || null,
     managementStrategies: str(i.managementStrategies),
   }))
 
