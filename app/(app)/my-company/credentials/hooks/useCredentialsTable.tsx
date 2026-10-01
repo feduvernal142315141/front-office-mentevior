@@ -13,10 +13,14 @@ import { deleteCredential } from "@/lib/modules/credentials/services/credentials
 import { toast } from "sonner"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 export function useCredentialsTable() {
   const router = useRouter()
   const { canEdit, canDelete } = useModulePermissions(PermissionModule.ACCOUNT_PROFILE)
+  const auditModal = useAuditModalState<CredentialListItem>()
+  const openAuditModal = auditModal.openFor
   
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
@@ -114,8 +118,12 @@ export function useCredentialsTable() {
       align: "right" as const,
       render: (item: CredentialListItem) => (
         item.isFromService ? (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             <span className="text-xs text-slate-500">Managed by service</span>
+            <AuditActionButton
+              label="View credential audit logs"
+              onClick={() => openAuditModal(item)}
+            />
           </div>
         ) : (
         <div className="flex justify-end gap-2">
@@ -182,11 +190,15 @@ export function useCredentialsTable() {
             " />
           </button>
           )}
+          <AuditActionButton
+            label="View credential audit logs"
+            onClick={() => openAuditModal(item)}
+          />
         </div>
         )
       ),
     },
-  ], [router, handleDeleteClick, canEdit, canDelete])
+  ], [router, handleDeleteClick, canEdit, canDelete, openAuditModal])
 
   const pagination = {
     page,
@@ -213,6 +225,7 @@ export function useCredentialsTable() {
     filteredCount: credentials.length,
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
+    auditModal,
     deleteModal: (
       <DeleteConfirmModal
         isOpen={deleteModalOpen}

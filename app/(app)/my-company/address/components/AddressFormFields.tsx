@@ -112,17 +112,18 @@ export function AddressFormFields({
             </div>
 
             <Controller
-              name="city"
+              name="countryId"
               control={control}
               render={({ field, fieldState }) => (
                 <div>
-                  <FloatingInput
-                    label="City"
+                  <FloatingSelect
+                    label="Country"
                     value={field.value || ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    placeholder=" "
+                    options={(countries || []).map(c => ({ value: c.id, label: c.name }))}
                     hasError={!!fieldState.error}
+                    disabled={isLoadingCountries}
                     required
                   />
                   {fieldState.error && (
@@ -165,6 +166,29 @@ export function AddressFormFields({
             />
 
             <Controller
+              name="city"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div>
+                  <FloatingInput
+                    label="City"
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder=" "
+                    hasError={!!fieldState.error}
+                    required
+                  />
+                  {fieldState.error && (
+                    <p className="text-sm text-red-600 mt-2">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+
+            <Controller
               name="zipCode"
               control={control}
               render={({ field, fieldState }) => (
@@ -182,30 +206,6 @@ export function AddressFormFields({
                     inputMode="numeric"
                     maxLength={5}
                     pattern="[0-9]*"
-                    required
-                  />
-                  {fieldState.error && (
-                    <p className="text-sm text-red-600 mt-2">
-                      {fieldState.error.message}
-                    </p>
-                  )}
-                </div>
-              )}
-            />
-
-            <Controller
-              name="countryId"
-              control={control}
-              render={({ field, fieldState }) => (
-                <div>
-                  <FloatingSelect
-                    label="Country"
-                    value={field.value || ""}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    options={(countries || []).map(c => ({ value: c.id, label: c.name }))}
-                    hasError={!!fieldState.error}
-                    disabled={isLoadingCountries}
                     required
                   />
                   {fieldState.error && (

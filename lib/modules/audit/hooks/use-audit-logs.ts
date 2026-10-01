@@ -1,13 +1,19 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { getAuditLogsByEntityId } from "@/lib/modules/audit/services/audit-logs.service"
+import {
+  getAuditLogsByEntityId,
+  getAuditLogsByEntityName,
+} from "@/lib/modules/audit/services/audit-logs.service"
 import type { AuditLogListItem } from "@/lib/types/audit-log.types"
 
 interface UseAuditLogsOptions {
   entityId?: string | null
+  entityName?: string | null
   enabled?: boolean
   pageSize?: number
+  filters?: string[]
+  orders?: string[]
 }
 
 interface AuditLogsCursorState {
@@ -18,8 +24,11 @@ interface AuditLogsCursorState {
 
 export function useAuditLogs({
   entityId,
+  entityName,
   enabled = true,
   pageSize = 25,
+  filters,
+  orders,
 }: UseAuditLogsOptions) {
   const [logs, setLogs] = useState<AuditLogListItem[]>([])
   const [cursor, setCursor] = useState<AuditLogsCursorState>({
@@ -32,7 +41,9 @@ export function useAuditLogs({
   const [error, setError] = useState<Error | null>(null)
 
   const loadFirstPage = useCallback(async () => {
-    if (!entityId || !enabled) {
+    const hasTarget = Boolean(entityId || entityName)
+
+    if (!hasTarget || !enabled) {
       setLogs([])
       setCursor({ hasNext: false, nextCursorCreatedAt: null, nextCursorId: null })
       return
@@ -42,7 +53,11 @@ export function useAuditLogs({
     setError(null)
 
     try {
-      const result = await getAuditLogsByEntityId(entityId, { pageSize })
+      const query = { pageSize, filters, orders }
+      const result = entityName
+        ? await getAuditLogsByEntityName(entityName, query)
+        : await getAuditLogsByEntityId(entityId as string, query)
+
       setLogs(result.entities)
       setCursor({
         hasNext: result.hasNext,
@@ -56,11 +71,11 @@ export function useAuditLogs({
     } finally {
       setIsLoading(false)
     }
-  }, [enabled, entityId, pageSize])
+  }, [enabled, entityId, entityName, filters, orders, pageSize])
 
   const loadMore = useCallback(async () => {
     if (
-      !entityId ||
+      (!entityId && !entityName) ||
       !enabled ||
       !cursor.hasNext ||
       !cursor.nextCursorCreatedAt ||
@@ -74,11 +89,16 @@ export function useAuditLogs({
     setError(null)
 
     try {
-      const result = await getAuditLogsByEntityId(entityId, {
+      const query = {
         pageSize,
+        filters,
+        orders,
         cursorCreatedAt: cursor.nextCursorCreatedAt,
         cursorId: cursor.nextCursorId,
-      })
+      }
+      const result = entityName
+        ? await getAuditLogsByEntityName(entityName, query)
+        : await getAuditLogsByEntityId(entityId as string, query)
 
       setLogs((prev) => [...prev, ...result.entities])
       setCursor({
@@ -97,7 +117,10 @@ export function useAuditLogs({
     cursor.nextCursorId,
     enabled,
     entityId,
+    entityName,
+    filters,
     isLoadingMore,
+    orders,
     pageSize,
   ])
 
@@ -115,4 +138,3 @@ export function useAuditLogs({
     loadMore,
   }
 }
-

@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Plus,
   Calendar as CalendarIcon,
+  Settings,
 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -26,6 +27,7 @@ interface CalendarToolbarProps {
   onToday: () => void
   onDateSelect: (date: Date) => void
   onNewSession: () => void
+  onOpenDeletedAuditLogs: () => void
 }
 
 const VIEW_OPTIONS: { value: CalendarView; label: string }[] = [
@@ -44,6 +46,7 @@ export function CalendarToolbar({
   onToday,
   onDateSelect,
   onNewSession,
+  onOpenDeletedAuditLogs,
 }: CalendarToolbarProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false)
 
@@ -133,7 +136,18 @@ export function CalendarToolbar({
       </div>
 
       {/* Right — Actions */}
-      <div className="flex items-center">
+      <div className="flex items-center gap-3">
+        <Button
+          variant="secondary"
+          onClick={onOpenDeletedAuditLogs}
+          className="flex items-center gap-2 px-4"
+          aria-label="View deleted session audit logs"
+          title="View deleted session audit logs"
+        >
+          <Settings className="h-4 w-4" />
+          Logs
+        </Button>
+
         {canCreate && (
           <Button
             variant="primary"

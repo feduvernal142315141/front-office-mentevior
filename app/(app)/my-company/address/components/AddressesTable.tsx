@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/custom/SearchInput"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 export function AddressesTable() {
   const {
@@ -17,6 +18,7 @@ export function AddressesTable() {
     pagination,
     clearFilters,
     deleteModal,
+    auditModal,
   } = useAddressesTable()
 
   if (error) {
@@ -66,6 +68,13 @@ export function AddressesTable() {
       />
 
       {deleteModal}
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={auditModal.selectedItem?.nickName}
+        title="Audit Logs - Address"
+      />
     </div>
   )
 }

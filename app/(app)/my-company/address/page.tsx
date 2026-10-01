@@ -1,14 +1,19 @@
 "use client"
 
-import { MapPin, Plus } from "lucide-react"
+import { useState } from "react"
+import { MapPin, Plus, Settings } from "lucide-react"
 import { Button } from "@/components/custom/Button"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { useRouter } from "next/navigation"
 import { AddressesTable } from "./components/AddressesTable"
 import { CreateGate } from "@/components/layout/PermissionGate"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 
+const DELETED_COMPANY_ADDRESS_AUDIT_FILTERS = ["action__EQ__Delete__AND"]
+
 export default function AddressPage() {
   const router = useRouter()
+  const [deletedAuditOpen, setDeletedAuditOpen] = useState(false)
 
   return (
     <div className="p-8">
@@ -26,20 +31,41 @@ export default function AddressPage() {
             </div>
           </div>
 
-          <CreateGate module={PermissionModule.ACCOUNT_PROFILE}>
+          <div className="flex items-center gap-3">
             <Button
-              variant="primary"
-              onClick={() => router.push("/my-company/address/create")}
-              className="gap-2 flex items-center"
+              variant="secondary"
+              onClick={() => setDeletedAuditOpen(true)}
+              className="gap-2 flex items-center px-4"
+              aria-label="View deleted address audit logs"
+              title="View deleted address audit logs"
             >
-              <Plus className="w-4 h-4" />
-              New Address
+              <Settings className="w-4 h-4" />
+              Logs
             </Button>
-          </CreateGate>
+
+            <CreateGate module={PermissionModule.ACCOUNT_PROFILE}>
+              <Button
+                variant="primary"
+                onClick={() => router.push("/my-company/address/create")}
+                className="gap-2 flex items-center"
+              >
+                <Plus className="w-4 h-4" />
+                New Address
+              </Button>
+            </CreateGate>
+          </div>
         </div>
 
         <AddressesTable />
       </div>
+
+      <AuditLogsModal
+        open={deletedAuditOpen}
+        onOpenChange={setDeletedAuditOpen}
+        entityName="CompanyAddress"
+        title="Deleted Address Audit Logs"
+        filters={DELETED_COMPANY_ADDRESS_AUDIT_FILTERS}
+      />
     </div>
   )
 }

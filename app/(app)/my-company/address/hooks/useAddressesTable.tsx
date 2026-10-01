@@ -16,12 +16,16 @@ import { deleteAddress } from "@/lib/modules/addresses/services/addresses.servic
 import { toast } from "sonner"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 type StatusFilter = "all" | "active" | "inactive"
 
 export function useAddressesTable() {
   const router = useRouter()
   const { canEdit, canDelete } = useModulePermissions(PermissionModule.ACCOUNT_PROFILE)
+  const auditModal = useAuditModalState<AddressListItem>()
+  const openAuditModal = auditModal.openFor
   
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
@@ -245,12 +249,16 @@ export function useAddressesTable() {
               group-hover/delete:text-red-700
               transition-colors duration-200
             " />
-          </button>) : canEdit ? (<div className="h-9 w-9"/>) : null
+          </button>) : null
             }
+          <AuditActionButton
+            label="View address audit logs"
+            onClick={() => openAuditModal(address)}
+          />
         </div>
       ),
     },
-  ], [router, handleDeleteClick, canEdit, canDelete])
+  ], [router, handleDeleteClick, canEdit, canDelete, openAuditModal])
 
   const pagination = {
     page,
@@ -279,6 +287,7 @@ export function useAddressesTable() {
     filteredCount: addresses.length,
     clearFilters,
     refetch: () => refetch({ page: page - 1, pageSize, filters: filtersArray }),
+    auditModal,
     deleteModal: (
       <DeleteConfirmModal
         isOpen={deleteModalOpen}

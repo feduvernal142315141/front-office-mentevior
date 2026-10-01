@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import { CalendarToolbar } from "./CalendarToolbar"
 import { MonthCalendar } from "./MonthCalendar"
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, isSameDay, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
@@ -44,9 +44,10 @@ import { isToday, formatWeekRange } from "@/lib/date"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { Card } from "@/components/custom/Card"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { cn } from "@/lib/utils"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
-import type { AppointmentStatus } from "@/lib/types/appointment.types"
+import type { Appointment, AppointmentStatus } from "@/lib/types/appointment.types"
 
 
 /** Fixed card height for the agency list view (no time-grid positioning) */
@@ -68,6 +69,8 @@ const STATUS_OPTIONS: Array<{ value: AppointmentStatus | "all"; label: string }>
   { value: "NoShow", label: "No Show" },
 ]
 
+const DELETED_APPOINTMENT_AUDIT_FILTERS = ["action__EQ__Delete__AND"]
+
 
 
 export function WeekCalendar({
@@ -85,6 +88,8 @@ export function WeekCalendar({
   const isAgency = scope === "agency"
   const { users: allUsers } = useUsers({ pageSize: 100 })
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
+  const [auditAppointment, setAuditAppointment] = useState<Appointment | null>(null)
+  const [showDeletedAuditLogs, setShowDeletedAuditLogs] = useState(false)
 
   // Only show active, non-terminated member users as providers
   const providerFilterOptions = useMemo(() => {
@@ -171,6 +176,12 @@ export function WeekCalendar({
           return
         }
         router.push(buildDataCollectionUrl(resolvedAppointment))
+        actions.closeContextMenu()
+        return
+      }
+
+      if (action === "audit" && appointment) {
+        setAuditAppointment(appointment)
         actions.closeContextMenu()
         return
       }
@@ -289,6 +300,7 @@ export function WeekCalendar({
           onToday={actions.goToToday}
           onDateSelect={actions.goToDate}
           onNewSession={() => actions.openNewAppointmentModal()}
+          onOpenDeletedAuditLogs={() => setShowDeletedAuditLogs(true)}
         />
       )}
       
@@ -762,6 +774,22 @@ export function WeekCalendar({
           onClose={actions.closeContextMenu}
         />
       )}
+      <AuditLogsModal
+        open={!!auditAppointment}
+        onOpenChange={(open) => {
+          if (!open) setAuditAppointment(null)
+        }}
+        entityId={auditAppointment?.id}
+        entityName={auditAppointment?.clientName}
+        title="Audit Logs - Appointment"
+      />
+      <AuditLogsModal
+        open={showDeletedAuditLogs}
+        onOpenChange={setShowDeletedAuditLogs}
+        entityName="Appointment"
+        title="Deleted Session Audit Logs"
+        filters={DELETED_APPOINTMENT_AUDIT_FILTERS}
+      />
     </div>
   )
 }

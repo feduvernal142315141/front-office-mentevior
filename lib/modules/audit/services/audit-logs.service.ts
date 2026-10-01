@@ -54,6 +54,21 @@ function normalizeAuditLog(log: AuditLog): AuditLogListItem {
   }
 }
 
+function normalizeAuditLogsResult(
+  data: AuditLogsCursorResponse,
+  query?: AuditLogsQuery
+): AuditLogsResult {
+  const entities = Array.isArray(data.entities) ? data.entities.map(normalizeAuditLog) : []
+
+  return {
+    entities,
+    hasNext: Boolean(data.hasNext),
+    nextCursorCreatedAt: data.nextCursorCreatedAt ?? null,
+    nextCursorId: data.nextCursorId ?? null,
+    pageSize: data.pageSize ?? query?.pageSize ?? DEFAULT_PAGE_SIZE,
+  }
+}
+
 export function getAuditLogActionLabel(action: AuditLogAction | null): string {
   switch (action) {
     case "Create":
@@ -81,13 +96,22 @@ export async function getAuditLogsByEntityId(
   }
 
   const data = response.data as unknown as AuditLogsCursorResponse
-  const entities = Array.isArray(data.entities) ? data.entities.map(normalizeAuditLog) : []
+  return normalizeAuditLogsResult(data, query)
+}
 
-  return {
-    entities,
-    hasNext: Boolean(data.hasNext),
-    nextCursorCreatedAt: data.nextCursorCreatedAt ?? null,
-    nextCursorId: data.nextCursorId ?? null,
-    pageSize: data.pageSize ?? query?.pageSize ?? DEFAULT_PAGE_SIZE,
+export async function getAuditLogsByEntityName(
+  entityName: string,
+  query?: AuditLogsQuery
+): Promise<AuditLogsResult> {
+  const queryString = buildAuditLogsQueryString(query)
+  const response = await serviceGet<AuditLogsCursorResponse>(
+    `/audit-logs/entity/${encodeURIComponent(entityName)}${queryString ? `?${queryString}` : ""}`
+  )
+
+  if (response.status !== 200 || !response.data) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to fetch audit logs"))
   }
+
+  const data = response.data as unknown as AuditLogsCursorResponse
+  return normalizeAuditLogsResult(data, query)
 }

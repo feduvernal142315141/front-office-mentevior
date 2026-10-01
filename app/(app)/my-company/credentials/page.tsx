@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Plus, Award } from "lucide-react"
+import { Plus, Award, Settings } from "lucide-react"
 import { Button } from "@/components/custom/Button"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { CredentialsTable, type CredentialsTableRef } from "./components/CredentialsTable"
 import { CredentialDrawer } from "./components/CredentialDrawer"
 import { NoActiveServiceGate } from "@/components/custom/NoActiveServiceGate"
@@ -10,8 +11,11 @@ import { useHasActiveService } from "@/lib/modules/services/hooks/use-has-active
 import { CreateGate } from "@/components/layout/PermissionGate"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 
+const DELETED_CREDENTIAL_AUDIT_FILTERS = ["action__EQ__Delete__AND"]
+
 export default function CredentialsPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [deletedAuditOpen, setDeletedAuditOpen] = useState(false)
   const tableRef = useRef<CredentialsTableRef>(null)
   const { hasActiveService, isLoading } = useHasActiveService()
 
@@ -36,8 +40,20 @@ export default function CredentialsPage() {
             </div>
           </div>
 
-          {hasActiveService && (
-            <CreateGate module={PermissionModule.ACCOUNT_PROFILE}>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setDeletedAuditOpen(true)}
+              className="gap-2 flex items-center px-4"
+              aria-label="View deleted credential audit logs"
+              title="View deleted credential audit logs"
+            >
+              <Settings className="w-4 h-4" />
+              Logs
+            </Button>
+
+            {hasActiveService && (
+              <CreateGate module={PermissionModule.ACCOUNT_PROFILE}>
               <Button
                 variant="primary"
                 onClick={() => setIsDrawerOpen(true)}
@@ -46,8 +62,9 @@ export default function CredentialsPage() {
                 <Plus className="w-4 h-4" />
                 Add Credential
               </Button>
-            </CreateGate>
-          )}
+              </CreateGate>
+            )}
+          </div>
         </div>
 
         <NoActiveServiceGate
@@ -64,6 +81,14 @@ export default function CredentialsPage() {
           />
         </NoActiveServiceGate>
       </div>
+
+      <AuditLogsModal
+        open={deletedAuditOpen}
+        onOpenChange={setDeletedAuditOpen}
+        entityName="Credential"
+        title="Deleted Credential Audit Logs"
+        filters={DELETED_CREDENTIAL_AUDIT_FILTERS}
+      />
     </div>
   )
 }

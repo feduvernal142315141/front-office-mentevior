@@ -10,6 +10,7 @@ import {
   XCircle,
   Trash2,
   Users,
+  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
@@ -141,6 +142,12 @@ function buildSections(
       label: "Edit Session",
       icon: Pencil,
       requires: "edit",
+    },
+    {
+      action: "audit",
+      label: "Audit Logs",
+      icon: Settings,
+      requires: "view",
     },
     {
       action: "noshow",

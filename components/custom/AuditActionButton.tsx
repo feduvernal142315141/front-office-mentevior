@@ -1,7 +1,7 @@
 "use client"
 
 import type { MouseEvent } from "react"
-import { Eye } from "lucide-react"
+import { Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AuditActionButtonProps {
@@ -28,7 +28,7 @@ export function AuditActionButton({ label, onClick }: AuditActionButtonProps) {
       title="View audit"
       aria-label={label}
     >
-      <Eye className="h-4 w-4 text-blue-600 transition-colors duration-200 group-hover/audit:text-blue-700" />
+      <Settings className="h-4 w-4 text-blue-600 transition-colors duration-200 group-hover/audit:text-blue-700" />
     </button>
   )
 }

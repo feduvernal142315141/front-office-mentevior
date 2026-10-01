@@ -6,6 +6,7 @@ import { CustomTable } from "@/components/custom/CustomTable"
 import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 
 export interface CredentialsTableRef {
   refetch: () => void
@@ -22,6 +23,7 @@ export const CredentialsTable = forwardRef<CredentialsTableRef>((props, ref) => 
     clearFilters,
     refetch,
     deleteModal,
+    auditModal,
   } = useCredentialsTable()
 
   useImperativeHandle(ref, () => ({
@@ -40,6 +42,13 @@ export const CredentialsTable = forwardRef<CredentialsTableRef>((props, ref) => 
   return (
     <>
       {deleteModal}
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={auditModal.selectedItem?.name}
+        title="Audit Logs - Credential"
+      />
       <div className="space-y-4">
       <Card variant="elevated" padding="md">
         <div className="flex flex-col sm:flex-row gap-3">

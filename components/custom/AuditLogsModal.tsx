@@ -24,6 +24,10 @@ const LONG_TEXT_FIELD_NAMES = new Set([
 ])
 const LONG_TEXT_PREVIEW_LIMIT = 140
 const LONG_TEXT_AUTO_TRUNCATE_LIMIT = 240
+const SINGLE_VALUE_FIELD_NAMES = new Set([
+  "ssn",
+  "socialSecurityNumber",
+])
 
 interface AuditLogsModalProps {
   open: boolean
@@ -32,6 +36,8 @@ interface AuditLogsModalProps {
   title?: string
   entityName?: string
   pageSize?: number
+  filters?: string[]
+  orders?: string[]
 }
 
 function formatAuditDate(value: string | null): string {
@@ -123,6 +129,11 @@ function truncateAuditValue(value: string, shouldTruncate: boolean): string {
   return `${value.slice(0, LONG_TEXT_PREVIEW_LIMIT).trimEnd()}...`
 }
 
+function isSingleValueField(fieldName: string): boolean {
+  const normalized = fieldName.trim()
+  return SINGLE_VALUE_FIELD_NAMES.has(normalized)
+}
+
 function getActionBadgeClassName(action: AuditLogAction | null): string {
   switch (action) {
     case "Create":
@@ -171,11 +182,29 @@ function AuditLogDetails({ log }: { log: AuditLogListItem }) {
                 const fieldLabel = getAuditFieldLabel(log.entityClass, change.fieldName)
                 const previousValue = formatAuditValue(change.oldValue)
                 const currentValue = formatAuditValue(change.newValue)
+                const isSingleValue = isSingleValueField(change.fieldName)
                 const shouldTruncate =
                   isLongTextField(change.fieldName) ||
                   isLongTextField(fieldLabel) ||
                   previousValue.length > LONG_TEXT_AUTO_TRUNCATE_LIMIT ||
                   currentValue.length > LONG_TEXT_AUTO_TRUNCATE_LIMIT
+
+                if (isSingleValue) {
+                  return (
+                    <tr key={`${log.id}-${change.fieldName}-${index}`} className="align-top">
+                      <td
+                        className="px-4 py-3 text-sm font-medium text-slate-800"
+                        title={change.fieldName}
+                      >
+                        {fieldLabel}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700" />
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        SSN changed
+                      </td>
+                    </tr>
+                  )
+                }
 
                 return (
                   <tr key={`${log.id}-${change.fieldName}-${index}`} className="align-top">
@@ -213,12 +242,18 @@ export function AuditLogsModal({
   title = "Audit Logs",
   entityName,
   pageSize = 25,
+  filters,
+  orders,
 }: AuditLogsModalProps) {
+  const auditEntityName = entityId ? null : entityName
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const { logs, hasNext, isLoading, isLoadingMore, error, refresh, loadMore } = useAuditLogs({
     entityId,
+    entityName: auditEntityName,
     enabled: open,
     pageSize,
+    filters,
+    orders,
   })
 
   const modalTitle = useMemo(() => {
@@ -230,7 +265,7 @@ export function AuditLogsModal({
     if (!open) {
       setExpandedId(null)
     }
-  }, [entityId, open])
+  }, [auditEntityName, entityId, open])
 
   const toggleExpanded = (logId: string) => {
     setExpandedId((current) => (current === logId ? null : logId))
