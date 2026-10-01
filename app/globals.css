@@ -218,6 +218,11 @@
     color: var(--color-login-text-primary);
   }
 
+  /* Textareas usan minHeight inline — el height fijo no aplica */
+  textarea.premium-input {
+    height: auto;
+  }
+
   /* Hover */
   .premium-input:hover {
     border-color: hsl(240 35% 75% / 0.6);

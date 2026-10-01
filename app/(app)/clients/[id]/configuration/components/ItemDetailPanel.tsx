@@ -1133,7 +1133,7 @@ export function ItemDetailPanel({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   hasError={!!errors.topography}
-                  rows={4}
+                  rows={8}
                 />
               )}
             />
@@ -1154,7 +1154,7 @@ export function ItemDetailPanel({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     hasError={!!errors.procedures}
-                    rows={4}
+                    rows={8}
                   />
                 )}
               />

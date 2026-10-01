@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { CalendarRange, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format, differenceInCalendarDays } from "date-fns"
@@ -54,13 +54,44 @@ export function PremiumDateRangePicker({
   const [displayMonth, setDisplayMonth] = useState<Date>(new Date())
   const [pendingStart, setPendingStart] = useState<string | null>(null)
   const [hoveredDate, setHoveredDate] = useState<string | null>(null)
+  const [monthOpen, setMonthOpen] = useState(false)
+  const [yearOpen, setYearOpen] = useState(false)
+  const monthListRef = useRef<HTMLDivElement>(null)
+  const yearListRef = useRef<HTMLDivElement>(null)
+
+  const currentYear = new Date().getFullYear()
+  const fromYear = currentYear - 10
+  const toYear = currentYear + 10
+
+  const scrollToSelected = useCallback(
+    (container: HTMLDivElement | null, selectedAttr: string) => {
+      if (!container) return
+      requestAnimationFrame(() => {
+        const el = container.querySelector(`[data-selected="${selectedAttr}"]`) as HTMLElement
+        if (el) container.scrollTop = el.offsetTop - container.clientHeight / 2 + el.offsetHeight / 2
+      })
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (yearOpen) scrollToSelected(yearListRef.current, String(displayMonth.getFullYear()))
+  }, [yearOpen, displayMonth, scrollToSelected])
+
+  useEffect(() => {
+    if (monthOpen) scrollToSelected(monthListRef.current, String(displayMonth.getMonth()))
+  }, [monthOpen, displayMonth, scrollToSelected])
 
   const startDate = useMemo(() => parseLocalDate(startValue), [startValue])
   const endDate = useMemo(() => parseLocalDate(endValue), [endValue])
 
-  // Reset pending state and navigate on open
+  // Reset state on open/close
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) {
+      setMonthOpen(false)
+      setYearOpen(false)
+      return
+    }
     setPendingStart(null)
     setHoveredDate(null)
     if (startDate) setDisplayMonth(new Date(startDate.getFullYear(), startDate.getMonth(), 1))
@@ -195,7 +226,7 @@ export function PremiumDateRangePicker({
         align="start"
         className="z-[100] w-[320px] rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
       >
-        {/* Month navigation */}
+        {/* Month / year navigation with dropdowns */}
         <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2.5">
           <button
             type="button"
@@ -205,9 +236,78 @@ export function PremiumDateRangePicker({
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-sm font-semibold text-slate-800">
-            {format(displayMonth, "MMMM yyyy")}
-          </span>
+
+          <div className="flex items-center gap-1.5">
+            {/* Month dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setYearOpen(false); setMonthOpen((p) => !p) }}
+                className="h-8 px-2.5 pr-6 rounded-lg text-sm font-semibold bg-white border border-slate-200 text-slate-800 shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 relative"
+              >
+                {format(new Date(2020, displayMonth.getMonth(), 1), "MMM")}
+                <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
+              </button>
+              {monthOpen && (
+                <div
+                  ref={monthListRef}
+                  className="absolute left-0 mt-1.5 z-[60] min-w-[110px] max-h-[180px] overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg"
+                >
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      data-selected={String(i)}
+                      onClick={() => { setDisplayMonth(new Date(displayMonth.getFullYear(), i, 1)); setMonthOpen(false) }}
+                      className={cn(
+                        "w-full px-3 py-1.5 text-xs text-left cursor-pointer transition-colors",
+                        i === displayMonth.getMonth() ? "bg-[#037ECC] text-white" : "text-slate-700 hover:bg-[#037ECC]/10",
+                      )}
+                    >
+                      {format(new Date(2020, i, 1), "MMMM")}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Year dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setMonthOpen(false); setYearOpen((p) => !p) }}
+                className="h-8 px-2.5 pr-6 rounded-lg text-sm font-medium bg-white border border-slate-200 text-slate-700 shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 relative"
+              >
+                {displayMonth.getFullYear()}
+                <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
+              </button>
+              {yearOpen && (
+                <div
+                  ref={yearListRef}
+                  className="absolute right-0 mt-1.5 z-[60] min-w-[80px] max-h-[180px] overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg"
+                >
+                  {Array.from({ length: toYear - fromYear + 1 }).map((_, idx) => {
+                    const yr = fromYear + idx
+                    return (
+                      <button
+                        key={yr}
+                        type="button"
+                        data-selected={String(yr)}
+                        onClick={() => { setDisplayMonth(new Date(yr, displayMonth.getMonth(), 1)); setYearOpen(false) }}
+                        className={cn(
+                          "w-full px-3 py-1.5 text-xs text-left cursor-pointer transition-colors",
+                          yr === displayMonth.getFullYear() ? "bg-[#037ECC] text-white" : "text-slate-700 hover:bg-[#037ECC]/10",
+                        )}
+                      >
+                        {yr}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={() => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1))}

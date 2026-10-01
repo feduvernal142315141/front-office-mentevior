@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { AlertTriangle, CalendarRange, ClipboardList } from "lucide-react"
-import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
@@ -47,9 +46,7 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
     isEdit,
     payerId,
     payerPlanId,
-    reference,
     comments,
-    setReference,
     setComments,
     handlePayerChange,
     handlePlanChange,
@@ -130,24 +127,13 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
                 </div>
               )}
             </div>
-            <div data-form-field="reference">
-              <FloatingInput
-                label="Reference"
-                value={reference}
-                onChange={setReference}
-                onBlur={() => {}}
-                hasError={!!errors.reference}
-                required
-              />
-              <FieldError message={errors.reference} />
-            </div>
             <div data-form-field="comments">
               <FloatingTextarea
                 label="Comments"
                 value={comments}
                 onChange={setComments}
                 onBlur={() => {}}
-                rows={2}
+                rows={6}
               />
             </div>
           </div>
