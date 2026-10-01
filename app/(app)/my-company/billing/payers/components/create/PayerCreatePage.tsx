@@ -321,7 +321,6 @@ export function PayerCreatePage({ source, initialCatalogId, initialName }: Payer
         city: data.city ?? "",
         stateId: data.stateId ?? "",
         zipCode: data.zipCode,
-        clearingHouseId: data.planTypeId ?? "",
         description: data.description ?? "",
         ...(payerPlans.length > 0 && { payerPlans }),
       })

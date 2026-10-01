@@ -170,7 +170,6 @@ export interface CreatePayerDto {
   city: string
   stateId: string
   zipCode: string
-  clearingHouseId: string
   description: string
   payerPlans?: PayerPlanPayload[]
 }
@@ -190,7 +189,6 @@ export interface UpdatePayerDto {
   city: string
   stateId: string
   zipCode: string
-  clearingHouseId: string
   description: string
   payerPlans?: PayerPlanPayload[]
 }

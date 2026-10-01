@@ -341,33 +341,7 @@ export function PayerBaseForm({
         />
       </div>
 
-      {/* Allow Clearing Houses */}
-      <div className="md:col-span-2" data-form-field="planTypeId">
-        <Controller
-          name="planTypeId"
-          control={control}
-          render={({ field, fieldState }) => (
-            <div>
-              <FloatingSelect
-                label="Allow Clearing Houses"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                options={clearingHouses.map((item) => ({ value: item.id, label: item.name }))}
-                hasError={!!fieldState.error}
-                disabled={readOnly || isLoadingClearingHouses}
-                searchable={!readOnly}
-                required
-              />
-              {!readOnly && fieldState.error && (
-                <p className="text-sm text-red-600 mt-2">{fieldState.error.message}</p>
-              )}
-            </div>
-          )}
-        />
-      </div>
-
-      {/* External ID — after clearing house so catalog search can use name + state */}
+      {/* External ID */}
       <div className="md:col-span-2" data-form-field="externalId">
         <Controller
           name="externalId"

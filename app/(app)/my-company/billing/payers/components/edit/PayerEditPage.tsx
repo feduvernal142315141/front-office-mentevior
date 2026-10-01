@@ -402,7 +402,6 @@ export function PayerEditPage({ payerId, returnTo }: PayerEditPageProps) {
         source: payer.source ?? "",
         sourceReferenceId: payer.sourceReferenceId ?? "",
         logo: data.logo || payer.logoUrl || "",
-        clearingHouseId: data.planTypeId ?? payer.clearingHouseId ?? payer.planTypeId ?? "",
         description: data.description ?? payer.description,
         name: data.name.trim(),
         phone: normalizePhone(data.phone),

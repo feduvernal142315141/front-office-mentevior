@@ -37,7 +37,6 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   // ── Cabecera ──
   const [payerId, setPayerId] = useState("")
   const [payerPlanId, setPayerPlanId] = useState("")
-  const [reference, setReference] = useState("")
   const [comments, setComments] = useState("")
 
   const { payerOptions, planOptions, isLoadingPayers, isLoadingPlans } = usePayerPlanOptions(payerId)
@@ -84,7 +83,6 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
 
     setPayerId(batchClaim.payerId)
     setPayerPlanId(batchClaim.payerPlanId)
-    setReference(batchClaim.reference)
     setComments(batchClaim.comments)
     setSelectedIds(new Set(batchClaim.serviceLogIds))
 
@@ -239,7 +237,6 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   const handleSubmit = useCallback(async (): Promise<string | null> => {
     const newErrors: Record<string, string> = {}
     if (!payerPlanId) newErrors.payerPlanId = "Select a payer plan"
-    if (!reference.trim()) newErrors.reference = "Reference is required"
     if (selectedIds.size === 0) newErrors.serviceLogs = "Select at least one service log"
 
     if (Object.keys(newErrors).length > 0) {
@@ -251,7 +248,6 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
 
     const payload: BatchClaimPayload = {
       payerPlanId,
-      reference: reference.trim(),
       comments: comments.trim(),
       serviceLogIds: [...selectedIds],
     }
@@ -259,7 +255,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     return isEdit && batchClaimId
       ? mutation.update(batchClaimId, payload)
       : mutation.create(payload)
-  }, [payerPlanId, reference, comments, selectedIds, isEdit, batchClaimId, mutation])
+  }, [payerPlanId, comments, selectedIds, isEdit, batchClaimId, mutation])
 
   return {
     isEdit,
@@ -269,12 +265,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     // Header fields
     payerId,
     payerPlanId,
-    reference,
     comments,
-    setReference: (v: string) => {
-      setReference(v)
-      clearFieldError("reference")
-    },
     setComments,
     handlePayerChange,
     handlePlanChange,

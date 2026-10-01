@@ -35,8 +35,8 @@ export const appointmentConfigSchema = z.object({
   maxDurationPerDayProvider:          requiredNumberInRange("Max duration / day provider (h)", 0.25, 10),
   maxDurationPerWeekClient:           requiredNumberInRange("Max duration / week client (h)", 0.25, 70),
   maxDurationPerWeekProvider:         requiredNumberInRange("Max duration / week provider (h)", 0.25, 70),
-  maxAllowedDaysClient:               requiredNumberInRange("Max days allowed per client", 1, 6),
-  maxAllowedDaysProvider:             requiredNumberInRange("Max days allowed per provider", 1, 6),
+  maxAllowedDaysClient:               requiredNumberInRange("Max days allowed per client", 1, 7),
+  maxAllowedDaysProvider:             requiredNumberInRange("Max days allowed per provider", 1, 7),
 
   // ── Billing ──────────────────────────────────────────────────────────────────
   billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),

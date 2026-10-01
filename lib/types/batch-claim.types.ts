@@ -116,7 +116,6 @@ export interface EligibleServiceLogsQuery {
 /** Body for POST /batch-claims and PUT /batch-claims/{id} */
 export interface BatchClaimPayload {
   payerPlanId: string
-  reference: string
   comments: string
   /** En PUT reemplaza completamente la selección anterior */
   serviceLogIds: string[]
