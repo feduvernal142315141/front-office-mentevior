@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 import { addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, isToday as isTodayFn } from "date-fns"
 import type { ClientServicePlanItemBaseline } from "@/lib/types/client-service-plan.types"
+import type { UpdateBaselineValueEntry } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
 import {
   type IntervalDayEntry,
   type IntervalWeekEntries,
@@ -229,7 +230,7 @@ export function useIntervalDatasheet(
   }, [entries, originalDcEntries, baselineDateKeys])
 
   const getChangedBaselines = useCallback(() => {
-    const changed: { id: string; value: number }[] = []
+    const changed: UpdateBaselineValueEntry[] = []
     if (!baselines) return changed
     for (const bl of baselines) {
       if (!bl.date) continue
@@ -237,8 +238,10 @@ export function useIntervalDatasheet(
       const current = entries[key]
       if (!current) continue
       const currentCount = countPositive(current)
-      if (currentCount !== bl.value) {
-        changed.push({ id: bl.id, value: currentCount })
+      // A note edited in the grid is a baseline change too, even when the value stays the same
+      const note = current.environmentalNote ?? ""
+      if (currentCount !== bl.value || note !== (bl.environmentalChanges ?? "")) {
+        changed.push({ id: bl.id, value: currentCount, environmentalChanges: note.trim() || null })
       }
     }
     return changed

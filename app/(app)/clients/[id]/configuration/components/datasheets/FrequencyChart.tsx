@@ -21,6 +21,7 @@ import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/const
 import { ChartInterval, DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
 import type { DayEntry } from "./frequency-datasheet.types"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
+import { shouldPinTreatmentDay } from "./chart-gaps"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
 import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
@@ -179,6 +180,8 @@ export function FrequencyChart({
       const d = parseLocalDate(b.date); const key = getDateKey(d)
       if (!allDayKeys.has(key)) { allDayKeys.add(key); allDays.push(d) }
     }
+    // Treatment starting between the pinned baselines and the range keeps its own column
+    if (treatmentStartDate && shouldPinTreatmentDay(treatmentStartDate, allDays)) allDays.push(treatmentStartDate)
     allDays.sort((a, b) => a.getTime() - b.getTime())
 
     return allDays.map((day, index) => {
@@ -216,15 +219,6 @@ export function FrequencyChart({
   }, [days, entries, baselines, labelFormat, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
-
-  // Last baseline x position — for the phase separation line
-  const lastBaselineX = useMemo(() => {
-    let last: number | null = null
-    for (const point of data) {
-      if (point.baselineValue != null) last = point.x
-    }
-    return last
-  }, [data])
 
   // ─── Axis position lookups (markers are anchored by date label) ────────
 
@@ -499,23 +493,12 @@ export function FrequencyChart({
             resolveX: (dateLabel) => xByLabel.get(dateLabel),
           })}
 
-          {/* Baseline phase separation line — always visible when baselines exist */}
-          {hasBaselineData && lastBaselineX !== null && (
-            <ReferenceLine
-              x={lastBaselineX}
-              stroke="#0F172A"
-              strokeWidth={1.5}
-              strokeDasharray="6 4"
-            />
-          )}
-
           {/* Treatment vertical line */}
           {treatmentDateLabel && xByLabel.has(treatmentDateLabel) && (
             <ReferenceLine
               x={xByLabel.get(treatmentDateLabel)}
               stroke="#0F172A"
               strokeWidth={2}
-              strokeDasharray="8 4"
               label={({ viewBox }: { viewBox: { x?: number; y?: number } }) => {
                 const x = viewBox?.x ?? 0
                 const y = (viewBox?.y ?? 0) + 6

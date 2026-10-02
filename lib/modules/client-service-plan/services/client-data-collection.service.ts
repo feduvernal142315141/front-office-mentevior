@@ -864,6 +864,8 @@ export async function patchItemObjectiveStartDate(
 export interface UpdateBaselineValueEntry {
   id: string
   value: number
+  /** Nota del baseline editada desde la grilla del datasheet */
+  environmentalChanges?: string | null
 }
 
 export async function updateBaselineValues(

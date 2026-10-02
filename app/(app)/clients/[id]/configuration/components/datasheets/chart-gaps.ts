@@ -84,3 +84,22 @@ export function computeHiddenDayKeys({
 
   return hidden
 }
+
+/**
+ * Whether the first STO's start date must get its own column on the axis.
+ *
+ * Baselines are pinned before the selected range, so the axis can jump from the last baseline
+ * (e.g. 09/24) straight to the first day of the window (09/27). When treatment starts inside
+ * that jump (09/26) its day isn't drawn and the "Treatment" line has nowhere to land. Pinning
+ * it keeps the phase change on its real date, separate from the end of the baseline.
+ *
+ * Only dates strictly inside the drawn span are pinned: a treatment that hasn't started yet
+ * must not stretch the window into the future.
+ */
+export function shouldPinTreatmentDay(treatmentStart: Date | null, drawnDays: Date[]): boolean {
+  if (!treatmentStart || drawnDays.length === 0) return false
+  const times = drawnDays.map((d) => d.getTime())
+  const time = treatmentStart.getTime()
+  if (times.includes(time)) return false
+  return time > Math.min(...times) && time < Math.max(...times)
+}

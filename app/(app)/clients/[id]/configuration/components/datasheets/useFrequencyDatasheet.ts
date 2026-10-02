@@ -21,6 +21,7 @@ import {
   parseLocalDate,
 } from "./frequency-datasheet.types"
 import type { ClientServicePlanItemBaseline } from "@/lib/types/client-service-plan.types"
+import type { UpdateBaselineValueEntry } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
 
 // ─── Range mode types ────────────────────────────────────────────────────────
 
@@ -386,14 +387,16 @@ export function useFrequencyDatasheet(baselines?: ClientServicePlanItemBaseline[
 
   const getChangedBaselines = useCallback(() => {
     if (!baselines) return []
-    const changed: { id: string; value: number }[] = []
+    const changed: UpdateBaselineValueEntry[] = []
     for (const bl of baselines) {
       if (!bl.date || !bl.id) continue
       const key = getDateKey(parseLocalDate(bl.date))
       const current = entries[key]
       if (!current) continue
-      if (current.occurrences !== bl.value) {
-        changed.push({ id: bl.id, value: current.occurrences })
+      // A note edited in the grid is a baseline change too, even when the value stays the same
+      const note = current.environmentalNote ?? ""
+      if (current.occurrences !== bl.value || note !== (bl.environmentalChanges ?? "")) {
+        changed.push({ id: bl.id, value: current.occurrences, environmentalChanges: note.trim() || null })
       }
     }
     return changed

@@ -22,6 +22,7 @@ import { ServicePlanUnitOfTime } from "@/lib/modules/service-plans/constants/ser
 import type { Appointment } from "@/lib/types/appointment.types"
 import type { DayEntry } from "./frequency-datasheet.types"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
+import { shouldPinTreatmentDay } from "./chart-gaps"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
 import { getSessionDurationInUnit, unitOfTimeLabel } from "./rate-datasheet.types"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
@@ -176,6 +177,8 @@ export function RateChart({
       const d = parseLocalDate(b.date); const key = getDateKey(d)
       if (!allDayKeys.has(key)) { allDayKeys.add(key); allDays.push(d) }
     }
+    // Treatment starting between the pinned baselines and the range keeps its own column
+    if (treatmentStartDate && shouldPinTreatmentDay(treatmentStartDate, allDays)) allDays.push(treatmentStartDate)
     allDays.sort((a, b) => a.getTime() - b.getTime())
 
     return allDays.map((day) => {
@@ -223,14 +226,6 @@ export function RateChart({
   }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, appointmentsByDate, unitOfTime, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
-
-  const lastBaselineX = useMemo(() => {
-    let last: number | null = null
-    for (let i = 0; i < data.length; i++) {
-      if (data[i].baselineValue != null) last = i
-    }
-    return last
-  }, [data])
 
   const envChangeDates = useMemo(() => {
     return data.filter((d) => d.hasNote && d.note).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
@@ -441,16 +436,11 @@ export function RateChart({
             resolveX: (dateLabel) => dateLabel,
           })}
 
-          {hasBaselineData && lastBaselineX !== null && (
-            <ReferenceLine x={lastBaselineX} stroke="#0F172A" strokeWidth={1.5} strokeDasharray="6 4" />
-          )}
-
           {treatmentDateLabel && (
             <ReferenceLine
               x={treatmentDateLabel}
               stroke="#0F172A"
               strokeWidth={2}
-              strokeDasharray="8 4"
               label={({ viewBox }: { viewBox: { x?: number; y?: number } }) => {
                 const x = viewBox?.x ?? 0
                 const y = (viewBox?.y ?? 0) + 6

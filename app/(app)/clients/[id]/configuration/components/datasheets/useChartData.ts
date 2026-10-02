@@ -13,6 +13,7 @@ import {
   type DailyDataPoint,
 } from "./aggregate-chart-data"
 import { type WeekEntries, getDateKey, parseLocalDate } from "./frequency-datasheet.types"
+import { shouldPinTreatmentDay } from "./chart-gaps"
 
 interface UseChartDataParams {
   clientServicePlanCategoryItemId: string
@@ -125,6 +126,11 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
     }
     for (const key of baselineDateKeys) {
       allDateKeys.add(key)
+    }
+    // Treatment starting between the pinned baselines and the range keeps its own slot
+    const drawnDays = [...allDateKeys].map(parseLocalDate)
+    if (treatmentStartDate && shouldPinTreatmentDay(treatmentStartDate, drawnDays)) {
+      allDateKeys.add(getDateKey(treatmentStartDate))
     }
 
     const sorted = [...allDateKeys].sort()
