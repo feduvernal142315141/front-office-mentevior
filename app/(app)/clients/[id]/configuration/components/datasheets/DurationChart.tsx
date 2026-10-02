@@ -18,6 +18,7 @@ import type { ClientServicePlanItemBaseline, ClientServicePlanItemObjective } fr
 import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/constants/chart.constants"
 import { ChartInterval, DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
+import { shouldPinTreatmentDay } from "./chart-gaps"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
 import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
@@ -134,6 +135,8 @@ export function DurationChart({
     const allDays: Date[] = []
     for (const day of days) { const key = getDateKey(day); if (!allDayKeys.has(key) && !gap.has(key)) { allDayKeys.add(key); allDays.push(day) } }
     for (const b of visibleBaselines) { const d = parseLocalDate(b.date); const key = getDateKey(d); if (!allDayKeys.has(key)) { allDayKeys.add(key); allDays.push(d) } }
+    // Treatment starting between the pinned baselines and the range keeps its own column
+    if (treatmentStartDate && shouldPinTreatmentDay(treatmentStartDate, allDays)) allDays.push(treatmentStartDate)
     allDays.sort((a, b) => a.getTime() - b.getTime())
 
     return allDays.map((day) => {
@@ -162,14 +165,6 @@ export function DurationChart({
   }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
-
-  const lastBaselineX = useMemo(() => {
-    let last: number | null = null
-    for (let i = 0; i < data.length; i++) {
-      if (data[i].baselineValue != null) last = i
-    }
-    return last
-  }, [data])
 
   const activeObjective = useMemo(
     () => resolveActiveObjective(itemObjectives, objectives),
@@ -329,12 +324,8 @@ export function DurationChart({
             <ReferenceLine y={objectiveValue} stroke={objVisual?.borderColor ?? "#22C55E"} strokeWidth={1.5} strokeDasharray={objVisual?.lineType === "SOLID" ? undefined : "8 4"} />
           )}
 
-          {hasBaselineData && lastBaselineX !== null && (
-            <ReferenceLine x={lastBaselineX} stroke="#0F172A" strokeWidth={1.5} strokeDasharray="6 4" />
-          )}
-
           {treatmentDateLabel && (
-            <ReferenceLine x={treatmentDateLabel} stroke="#0F172A" strokeWidth={2} strokeDasharray="8 4"
+            <ReferenceLine x={treatmentDateLabel} stroke="#0F172A" strokeWidth={2}
               label={({ viewBox }: { viewBox: { x?: number; y?: number } }) => {
                 const x = viewBox?.x ?? 0; const y = (viewBox?.y ?? 0) + 6
                 return (<g><rect x={x - 38} y={y - 14} width={76} height={20} rx={10} fill="#0F172A" /><text x={x} y={y} textAnchor="middle" fill="#fff" fontSize={10} fontWeight={600} letterSpacing={0.5}>Treatment</text></g>)
