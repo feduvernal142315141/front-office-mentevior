@@ -1,4 +1,4 @@
-import { serviceGet, servicePost } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import { getQueryString } from "@/lib/utils/format"
 import type { QueryModel } from "@/lib/models/queryModel"
@@ -187,6 +187,20 @@ export async function getServiceLogById(id: string): Promise<ServiceLogDetail | 
     totalHours: toText(root.totalHours),
     services,
   }
+}
+
+// ============================================
+// Eliminación
+// ============================================
+
+export async function deleteServiceLog(id: string): Promise<boolean> {
+  const response = await serviceDelete<never, boolean>(`${BASE_URL}/${id}`)
+
+  if (response?.status !== 200) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete service log"))
+  }
+
+  return response.data === true
 }
 
 // ============================================

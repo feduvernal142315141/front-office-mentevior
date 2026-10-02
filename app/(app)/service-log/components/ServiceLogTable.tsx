@@ -7,6 +7,7 @@ import { CustomTable } from "@/components/custom/CustomTable"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { getServiceLogPdfUrl } from "@/lib/modules/service-log/services/service-log.service"
 import { useServiceLogTable } from "../hooks/useServiceLogTable"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
@@ -30,6 +31,10 @@ export function ServiceLogTable({ reloadKey = 0 }: ServiceLogTableProps) {
     pagination,
     previewId,
     setPreviewId,
+    pendingDelete,
+    setPendingDelete,
+    confirmDelete,
+    isDeleting,
     goToDetail,
     auditModal,
   } = useServiceLogTable(reloadKey)
@@ -128,6 +133,21 @@ export function ServiceLogTable({ reloadKey = 0 }: ServiceLogTableProps) {
           fileName="Service Log.pdf"
         />
       )}
+
+      <DeleteConfirmModal
+        isOpen={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        isDeleting={isDeleting}
+        title="Delete Service Log"
+        message="This will remove the Service Log and its service entries. Service Logs linked to an active Batch Claim cannot be deleted."
+        itemName={
+          pendingDelete
+            ? `${pendingDelete.clientName || "Client"} — ${pendingDelete.providerName || "Provider"}`
+            : undefined
+        }
+      />
+
       <AuditLogsModal
         open={auditModal.open}
         onOpenChange={auditModal.onOpenChange}

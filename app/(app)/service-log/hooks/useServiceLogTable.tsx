@@ -3,10 +3,14 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { CalendarRange, Eye, FileDown } from "lucide-react"
+import { CalendarRange, Eye, FileDown, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { ServiceLogListItem } from "@/lib/types/service-log.types"
 import { useServiceLogs } from "@/lib/modules/service-log/hooks/use-service-logs"
+import { deleteServiceLog } from "@/lib/modules/service-log/services/service-log.service"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import {
   DEFAULT_ORDERS,
   clientFilter,
@@ -33,8 +37,10 @@ function formatDay(value: string): string {
 
 export function useServiceLogTable(reloadKey: number) {
   const router = useRouter()
+  const permission = usePermission()
   const auditModal = useAuditModalState<ServiceLogListItem>()
   const openAuditModal = auditModal.openFor
+  const canDelete = permission.remove(PermissionModule.SERVICE_LOG)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -45,6 +51,8 @@ export function useServiceLogTable(reloadKey: number) {
   const [filterProvider, setFilterProvider] = useState("all")
 
   const [previewId, setPreviewId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<ServiceLogListItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { users: allUsers } = useUsers({ pageSize: 100 })
@@ -95,6 +103,25 @@ export function useServiceLogTable(reloadKey: number) {
     setFilterProvider("all")
     setPage(1)
   }, [])
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete) return
+
+    setIsDeleting(true)
+    try {
+      await deleteServiceLog(pendingDelete.id)
+      toast.success("Service Log deleted")
+      setPendingDelete(null)
+      if (items.length === 1 && page > 1) setPage((current) => current - 1)
+      else await refetch()
+    } catch (err) {
+      toast.error("Couldn't delete Service Log", {
+        description: err instanceof Error ? err.message : "Unexpected error",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [pendingDelete, items.length, page, refetch])
 
   const columns: CustomTableColumn<ServiceLogListItem>[] = useMemo(
     () => [
@@ -158,6 +185,18 @@ export function useServiceLogTable(reloadKey: number) {
             >
               <Eye className="h-4 w-4" />
             </IconButton>
+            {canDelete && (
+              <IconButton
+                tone="red"
+                title="Delete service log"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setPendingDelete(item)
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
+            )}
             <AuditActionButton
               label={`View audit for ${item.clientName || "service log"}`}
               onClick={(event) => {
@@ -169,7 +208,7 @@ export function useServiceLogTable(reloadKey: number) {
         ),
       },
     ],
-    [router, openAuditModal],
+    [canDelete, router, openAuditModal],
   )
 
   return {
@@ -202,6 +241,10 @@ export function useServiceLogTable(reloadKey: number) {
     },
     previewId,
     setPreviewId,
+    pendingDelete,
+    setPendingDelete,
+    confirmDelete,
+    isDeleting,
     goToDetail: (item: ServiceLogListItem) => router.push(`/service-log/${item.id}`),
     auditModal,
   }
@@ -210,6 +253,7 @@ export function useServiceLogTable(reloadKey: number) {
 const TONE_STYLES = {
   slate: "from-slate-50 to-slate-100/80 border-slate-200/60 shadow-slate-900/5 hover:from-slate-100 hover:to-slate-200/90 hover:border-slate-300/80 text-slate-600 focus:ring-slate-500/30",
   blue: "from-blue-50 to-blue-100/80 border-blue-200/60 shadow-blue-900/5 hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80 text-blue-600 focus:ring-blue-500/30",
+  red: "from-red-50 to-red-100/80 border-red-200/60 shadow-red-900/5 hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80 text-red-600 focus:ring-red-500/30",
 } as const
 
 function IconButton({
