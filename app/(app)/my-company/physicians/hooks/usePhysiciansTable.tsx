@@ -16,11 +16,15 @@ import { useAlert } from "@/lib/contexts/alert-context"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 export function usePhysiciansTable() {
   const router = useRouter()
   const alert = useAlert()
   const { canEdit, canDelete } = useModulePermissions(PermissionModule.PHYSICIANS)
+  const auditModal = useAuditModalState<Physician>()
+  const openAuditModal = auditModal.openFor
   
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [inputValue, setInputValue] = useState("")
@@ -269,6 +273,10 @@ export function usePhysiciansTable() {
             " />
           </button>
           )}
+          <AuditActionButton
+            label="View physician audit logs"
+            onClick={() => openAuditModal(physician)}
+          />
         </div>
       ),
     },
@@ -290,6 +298,7 @@ export function usePhysiciansTable() {
     onSearchChange: handleSearchQueryChange,
     onClearFilters: clearFilters,
     refetch: () => refetch(queryModel),
+    auditModal,
     deleteModal: (
       <DeleteConfirmModal
         isOpen={deleteModalOpen}

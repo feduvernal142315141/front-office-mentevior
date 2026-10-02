@@ -15,6 +15,8 @@ import type { ProviderOnFile, SaveProviderOnFileDto } from "@/lib/types/provider
 import { cn } from "@/lib/utils"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { AuditActionButton } from "@/components/custom/AuditActionButton"
+import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
 
 export const EMPTY_PROVIDER_FORM: SaveProviderOnFileDto = {
   firstName: "",
@@ -27,6 +29,8 @@ export const EMPTY_PROVIDER_FORM: SaveProviderOnFileDto = {
 
 export function useProvidersOnFileTable() {
   const { canEdit, canDelete } = useModulePermissions(PermissionModule.PROVIDER_ON_FILE)
+  const auditModal = useAuditModalState<ProviderOnFile>()
+  const openAuditModal = auditModal.openFor
   const [providers, setProviders] = useState<ProviderOnFile[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -272,6 +276,10 @@ export function useProvidersOnFileTable() {
             <Trash2 className="h-4 w-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
           </button>
           )}
+          <AuditActionButton
+            label="View provider audit logs"
+            onClick={() => openAuditModal(provider)}
+          />
         </div>
       ),
     },
@@ -302,6 +310,7 @@ export function useProvidersOnFileTable() {
     isSaving,
     specialtyOptions,
     isLoadingSpecialties,
+    auditModal,
     deleteModal: (
       <DeleteConfirmModal
         isOpen={deleteModalOpen}

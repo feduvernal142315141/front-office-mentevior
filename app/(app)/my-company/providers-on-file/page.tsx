@@ -1,13 +1,18 @@
 "use client"
 
-import { Contact, Plus } from "lucide-react"
+import { useState } from "react"
+import { Contact, Plus, Settings } from "lucide-react"
 import { Button } from "@/components/custom/Button"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { ProvidersOnFileTable } from "./components/ProvidersOnFileTable"
 import { useProvidersOnFileTable } from "./hooks/useProvidersOnFileTable"
 import { CreateGate } from "@/components/layout/PermissionGate"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 
+const DELETED_PROVIDER_ON_FILE_AUDIT_FILTERS = ["action__EQ__Delete__AND"]
+
 export default function ProvidersOnFilePage() {
+  const [deletedAuditOpen, setDeletedAuditOpen] = useState(false)
   const table = useProvidersOnFileTable()
 
   return (
@@ -26,16 +31,37 @@ export default function ProvidersOnFilePage() {
             </div>
           </div>
 
-          <CreateGate module={PermissionModule.PROVIDER_ON_FILE}>
-            <Button variant="primary" onClick={table.openCreateModal} className="gap-2 flex items-center">
-              <Plus className="w-4 h-4" />
-              New Provider
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setDeletedAuditOpen(true)}
+              className="gap-2 flex items-center px-4"
+              aria-label="View deleted provider on file audit logs"
+              title="View deleted provider on file audit logs"
+            >
+              <Settings className="w-4 h-4" />
+              Logs
             </Button>
-          </CreateGate>
+
+            <CreateGate module={PermissionModule.PROVIDER_ON_FILE}>
+              <Button variant="primary" onClick={table.openCreateModal} className="gap-2 flex items-center">
+                <Plus className="w-4 h-4" />
+                New Provider
+              </Button>
+            </CreateGate>
+          </div>
         </div>
 
         <ProvidersOnFileTable table={table} />
       </div>
+
+      <AuditLogsModal
+        open={deletedAuditOpen}
+        onOpenChange={setDeletedAuditOpen}
+        entityName="ProviderOnFile"
+        title="Deleted Provider on File Audit Logs"
+        filters={DELETED_PROVIDER_ON_FILE_AUDIT_FILTERS}
+      />
     </div>
   )
 }

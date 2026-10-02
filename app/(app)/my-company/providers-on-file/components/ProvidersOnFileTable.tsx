@@ -7,6 +7,7 @@ import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import type { ProvidersOnFileTableState } from "../hooks/useProvidersOnFileTable"
 
 interface ProvidersOnFileTableProps {
@@ -37,6 +38,7 @@ export function ProvidersOnFileTable({ table }: ProvidersOnFileTableProps) {
     isSaving,
     specialtyOptions,
     isLoadingSpecialties,
+    auditModal,
     deleteModal,
   } = table
 
@@ -199,6 +201,17 @@ export function ProvidersOnFileTable({ table }: ProvidersOnFileTableProps) {
       </CustomModal>
 
       {deleteModal}
+      <AuditLogsModal
+        open={auditModal.open}
+        onOpenChange={auditModal.onOpenChange}
+        entityId={auditModal.selectedItem?.id}
+        entityName={
+          auditModal.selectedItem
+            ? `${auditModal.selectedItem.firstName} ${auditModal.selectedItem.lastName}`
+            : undefined
+        }
+        title="Audit Logs - Provider on File"
+      />
     </div>
   )
 }

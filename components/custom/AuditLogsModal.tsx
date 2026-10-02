@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
+import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { useAuditLogs } from "@/lib/modules/audit/hooks/use-audit-logs"
 import { getAuditLogActionLabel } from "@/lib/modules/audit/services/audit-logs.service"
 import { getAuditFieldLabel } from "@/lib/modules/audit/utils/audit-field-labels"
@@ -247,12 +248,22 @@ export function AuditLogsModal({
 }: AuditLogsModalProps) {
   const auditEntityName = entityId ? null : entityName
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const auditFilters = useMemo(() => {
+    const dateFilters = [
+      startDate ? `createAt__GTE__DateTime_${startDate} 00:00:00__AND` : null,
+      endDate ? `createAt__LTE__DateTime_${endDate} 23:59:59__AND` : null,
+    ].filter((filter): filter is string => Boolean(filter))
+
+    return [...(filters ?? []), ...dateFilters]
+  }, [endDate, filters, startDate])
   const { logs, hasNext, isLoading, isLoadingMore, error, refresh, loadMore } = useAuditLogs({
     entityId,
     entityName: auditEntityName,
     enabled: open,
     pageSize,
-    filters,
+    filters: auditFilters,
     orders,
   })
 
@@ -264,6 +275,8 @@ export function AuditLogsModal({
   useEffect(() => {
     if (!open) {
       setExpandedId(null)
+      setStartDate("")
+      setEndDate("")
     }
   }, [auditEntityName, entityId, open])
 
@@ -282,6 +295,36 @@ export function AuditLogsModal({
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
+          <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center">
+              <PremiumDatePicker
+                label="From"
+                value={startDate}
+                onChange={setStartDate}
+                onClear={() => setStartDate("")}
+                maxDate={endDate || undefined}
+              />
+              <PremiumDatePicker
+                label="To"
+                value={endDate}
+                onChange={setEndDate}
+                onClear={() => setEndDate("")}
+                minDate={startDate || undefined}
+              />
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setStartDate("")
+                  setEndDate("")
+                }}
+                disabled={!startDate && !endDate}
+                className="h-[52px] px-4 2xl:h-[56px]"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-slate-500">
               <Spinner className="h-6 w-6 text-[#037ECC]" />
