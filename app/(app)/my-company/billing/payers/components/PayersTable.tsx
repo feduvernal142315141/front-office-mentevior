@@ -233,7 +233,7 @@ export const PayersTable = forwardRef<PayersTableRef>((_, ref) => {
                 Name
               </span>
               <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">
-                External ID
+                Payer ID
               </span>
               <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">
                 Clearing House
