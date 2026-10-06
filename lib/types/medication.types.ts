@@ -5,7 +5,7 @@ export interface Medication {
   dosage: string
   prescriptionDate: string
   treatmentStartDate: string
-  comments: string
+  prescriber: string
   createdAt?: string
 }
 
@@ -15,7 +15,7 @@ export interface CreateMedicationDto {
   dosage?: string
   prescriptionDate?: string
   treatmentStartDate?: string
-  comments?: string
+  prescriber?: string
 }
 
 export interface UpdateMedicationDto {
@@ -23,5 +23,5 @@ export interface UpdateMedicationDto {
   dosage?: string
   prescriptionDate?: string
   treatmentStartDate?: string
-  comments?: string
+  prescriber?: string
 }

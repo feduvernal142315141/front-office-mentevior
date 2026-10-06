@@ -35,7 +35,7 @@ export function MedicationsSection({
   onUpdate,
 }: MedicationsSectionProps) {
   const savedRows = medications.filter(
-    (m) => m.name.trim() || m.dosage.trim() || m.frequency.trim() || m.details.trim(),
+    (m) => m.name.trim() || m.dosage.trim() || m.frequency.trim() || m.prescriber.trim(),
   ).length
 
   return (
@@ -116,8 +116,8 @@ export function MedicationsSection({
             />
             <FloatingInput
               label="Prescriber"
-              value={medication.details}
-              onChange={(v) => onUpdate(index, "details", v)}
+              value={medication.prescriber}
+              onChange={(v) => onUpdate(index, "prescriber", v)}
               onBlur={() => {}}
               disabled={disabled}
             />

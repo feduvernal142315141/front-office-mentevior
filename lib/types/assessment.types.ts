@@ -149,7 +149,7 @@ export interface AssessmentMedicationInput {
   name: string
   dosage: string
   frequency: string
-  details: string
+  prescriber: string
 }
 
 export interface AssessmentObservationAbcEntry {

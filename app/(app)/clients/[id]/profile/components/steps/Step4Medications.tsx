@@ -94,7 +94,7 @@ export function Step4Medications({
           : "—",
     },
     {
-      key: "comments",
+      key: "prescriber",
       header: "Prescriber",
     },
     {
@@ -111,7 +111,7 @@ export function Step4Medications({
                 dosage: medication.dosage,
                 prescriptionDate: medication.prescriptionDate ? isoToLocalDate(medication.prescriptionDate) : "",
                 treatmentStartDate: medication.treatmentStartDate ? isoToLocalDate(medication.treatmentStartDate) : "",
-                comments: medication.comments,
+                prescriber: medication.prescriber,
               })
               setIsMedicationModalOpen(true)
             }}
@@ -199,7 +199,7 @@ export function Step4Medications({
       dosage: values.dosage || "",
       prescriptionDate: values.prescriptionDate || "",
       treatmentStartDate: values.treatmentStartDate || "",
-      comments: values.comments || "",
+      prescriber: values.prescriber || "",
     }
 
     const result = editingMedication
@@ -389,7 +389,7 @@ export function Step4Medications({
             />
 
             <Controller
-              name="comments"
+              name="prescriber"
               control={form.control}
               render={({ field, fieldState }) => (
                 <div className="md:col-span-2">

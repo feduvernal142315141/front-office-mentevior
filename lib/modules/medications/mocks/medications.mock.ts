@@ -10,7 +10,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "250mg",
     prescriptionDate: "2026-01-10",
     treatmentStartDate: "2026-01-12",
-    comments: "Take after breakfast",
+    prescriber: "Dr. Example",
     createdAt: "2026-01-10",
   },
   {
@@ -20,7 +20,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "200mg",
     prescriptionDate: "2026-01-14",
     treatmentStartDate: "2026-01-14",
-    comments: "Use for pain episodes",
+    prescriber: "Dr. Example",
     createdAt: "2026-01-14",
   },
   {
@@ -30,7 +30,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "1000IU",
     prescriptionDate: "2026-01-18",
     treatmentStartDate: "2026-01-20",
-    comments: "Administer with lunch",
+    prescriber: "Dr. Example",
     createdAt: "2026-01-18",
   },
   {
@@ -40,7 +40,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "10mg",
     prescriptionDate: "2026-01-21",
     treatmentStartDate: "2026-01-21",
-    comments: "Give before bedtime",
+    prescriber: "Dr. Example",
     createdAt: "2026-01-21",
   },
   {
@@ -50,7 +50,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "20mg",
     prescriptionDate: "2026-01-24",
     treatmentStartDate: "2026-01-25",
-    comments: "Take before first meal",
+    prescriber: "Dr. Example",
     createdAt: "2026-01-24",
   },
   {
@@ -60,7 +60,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "5mg",
     prescriptionDate: "2026-01-28",
     treatmentStartDate: "2026-01-29",
-    comments: "Monitor daily response",
+    prescriber: "Dr. Example",
     createdAt: "2026-01-28",
   },
   {
@@ -70,7 +70,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "3mg",
     prescriptionDate: "2026-02-01",
     treatmentStartDate: "2026-02-02",
-    comments: "Use 30 minutes before sleep",
+    prescriber: "Dr. Example",
     createdAt: "2026-02-01",
   },
   {
@@ -80,7 +80,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "10mg",
     prescriptionDate: "2026-02-04",
     treatmentStartDate: "2026-02-05",
-    comments: "Hydrate during treatment",
+    prescriber: "Dr. Example",
     createdAt: "2026-02-04",
   },
   {
@@ -90,7 +90,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "325mg",
     prescriptionDate: "2026-02-07",
     treatmentStartDate: "2026-02-07",
-    comments: "Use only if fever appears",
+    prescriber: "Dr. Example",
     createdAt: "2026-02-07",
   },
   {
@@ -100,7 +100,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "4mg",
     prescriptionDate: "2026-02-11",
     treatmentStartDate: "2026-02-12",
-    comments: "Avoid skipping daily dose",
+    prescriber: "Dr. Example",
     createdAt: "2026-02-11",
   },
   {
@@ -110,7 +110,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "2puffs",
     prescriptionDate: "2026-02-14",
     treatmentStartDate: "2026-02-15",
-    comments: "Track respiratory symptoms",
+    prescriber: "Dr. Example",
     createdAt: "2026-02-14",
   },
   {
@@ -120,7 +120,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "1capsule",
     prescriptionDate: "2026-02-18",
     treatmentStartDate: "2026-02-18",
-    comments: "Take with water",
+    prescriber: "Dr. Example",
     createdAt: "2026-02-18",
   },
   {
@@ -130,7 +130,7 @@ const MOCK_MEDICATIONS_SEED: Medication[] = [
     dosage: "65mg",
     prescriptionDate: "2026-02-20",
     treatmentStartDate: "2026-02-21",
-    comments: "Schedule after breakfast",
+    prescriber: "Dr. Example",
     createdAt: "2026-02-20",
   },
 ]
@@ -172,7 +172,7 @@ export function createMockMedication(data: CreateMedicationDto): string {
       dosage: data.dosage || "",
       prescriptionDate: data.prescriptionDate || "",
       treatmentStartDate: data.treatmentStartDate || "",
-      comments: data.comments || "",
+      prescriber: data.prescriber || "",
       createdAt: new Date().toISOString(),
     },
     ...mockMedicationsDb,

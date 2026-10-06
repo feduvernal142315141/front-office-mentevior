@@ -256,7 +256,7 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
   }
 }
 
-const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", frequency: "", details: "" }
+const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", frequency: "", prescriber: "" }
 const EMPTY_BILLING_CODE: BillingCodeRow = { billingCodeId: "", unitsPeriod: "", unitsWeek: "", placesOfServiceIds: [] }
 const EMPTY_ABC: AssessmentAbcInput = { date: "", placesOfService: [], antecedent: "", behavior: "", consequence: "" }
 const EMPTY_PROVIDER_FILE: AssessmentProviderFileInput = { type: "", name: "", contactIformation: "" }
@@ -337,7 +337,7 @@ function sectionBlocksSave(flags: AssessmentPdfFlags, key: AssessmentPdfFlagKey)
 }
 
 function isMedicationEmpty(m: AssessmentMedicationInput): boolean {
-  return !m.name.trim() && !m.dosage.trim() && !m.frequency.trim() && !m.details.trim()
+  return !m.name.trim() && !m.dosage.trim() && !m.frequency.trim() && !m.prescriber.trim()
 }
 
 
@@ -962,7 +962,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
           name: m.name.trim(),
           dosage: m.dosage.trim(),
           frequency: m.frequency.trim(),
-          details: m.details.trim(),
+          prescriber: m.prescriber.trim(),
         })),
       assessmentConductedCatalogIds: formData.assessmentConductedCatalogIds,
       categoriesItems,

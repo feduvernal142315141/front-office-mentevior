@@ -210,7 +210,7 @@ export async function getAssessmentDataByClient(clientId: string): Promise<Asses
       name: str(m.name),
       dosage: str(m.dosage),
       frequency: str(m.frequency),
-      details: str(m.details),
+      prescriber: str(m.prescriber),
     })),
     assessmentConductedCatalogIds: assessmentConductedList
       .map((c) => str(c.assessmentConductedCatalogId))

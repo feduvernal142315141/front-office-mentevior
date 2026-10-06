@@ -239,7 +239,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     name: str(m.name),
     dosage: str(m.dosage),
     frequency: str(m.frequency),
-    details: str(m.details),
+    prescriber: str(m.prescriber),
   }))
 
   // observations retired — absorbed into abcData

@@ -27,9 +27,9 @@ export const medicationFormSchema = z.object({
     .optional()
     .or(z.literal("")),
 
-  comments: z.string()
+  prescriber: z.string()
     .trim()
-    .max(500, "Comments must be at most 500 characters")
+    .max(500, "Prescriber must be at most 500 characters")
     .optional()
     .or(z.literal("")),
 }).superRefine((values, ctx) => {
@@ -53,5 +53,5 @@ export const medicationFormDefaults: MedicationFormValues = {
   dosage: "",
   prescriptionDate: "",
   treatmentStartDate: "",
-  comments: "",
+  prescriber: "",
 }
