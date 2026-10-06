@@ -9,6 +9,7 @@ import {
   type ClaimMdAdjudicationStatus,
   type ClaimMdEffectiveStatus,
   type ClaimMdResolveUnknownResult,
+  type ClaimMdResubmitResult,
   type ClaimMdRetryResult,
   type ClaimMdSubmissionDetail,
   type ClaimMdSubmissionLine,
@@ -129,6 +130,8 @@ export { asTransmissionStatus, asSubmissionStatus, asAdjudicationStatus, readEff
 function parseSubmissionSummary(e: Record<string, unknown>): ClaimMdSubmissionSummary {
   return {
     submissionId: str(e.submissionId ?? e.id),
+    previousSubmissionId: strOrNull(e.previousSubmissionId),
+    supersededBySubmissionId: strOrNull(e.supersededBySubmissionId),
     transmissionId: str(e.transmissionId),
     batchClaimServiceLogId: str(e.batchClaimServiceLogId),
     effectiveStatus: readEffectiveStatus(e, {
@@ -349,4 +352,30 @@ export async function resolveUnknownBySubmissionId(
   }
 
   return parseResolveResult(unwrap(response.data) ?? {})
+}
+
+/** Regenerates only selected rejected claims; the server validates the batch and states. */
+export async function resubmitClaims(batchClaimId: string, submissionIds: string[]): Promise<ClaimMdResubmitResult> {
+  if (!batchClaimId || submissionIds.length === 0 || submissionIds.length > 100 ||
+      submissionIds.some(id => !id) || new Set(submissionIds).size !== submissionIds.length) {
+    throw new Error("Select between 1 and 100 different rejected claims from this batch.")
+  }
+  const response = await servicePostSilent<{ batchClaimId: string; submissionIds: string[] }, unknown>(
+    "/claim-submissions/resubmit", { batchClaimId, submissionIds },
+  )
+  if (!isOk(response?.status)) {
+    throw toError(response?.data, "Could not resend the selected claims. Refresh their status before trying again.")
+  }
+  const data = unwrap(response.data) ?? {}
+  return {
+    batchClaimId: str(data.batchClaimId),
+    transmissionId: str(data.transmissionId),
+    status: asTransmissionStatus(data.status),
+    fileName: str(data.fileName),
+    claims: unwrapList(data.claims).map(claim => ({
+      submissionId: str(claim.submissionId),
+      previousSubmissionId: str(claim.previousSubmissionId),
+      remoteClaimId: str(claim.remoteClaimId),
+    })),
+  }
 }

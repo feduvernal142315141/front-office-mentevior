@@ -143,7 +143,7 @@ const BY_STATUS: Record<ClaimMdEffectiveStatus, ClaimMdBatchDecision> = {
   REJECTED: settled(
     "Rejected",
     "danger",
-    "Claim.MD rejected the claims. Read the response messages, fix the data and create a corrected batch.",
+    "Claim.MD rejected the claims. Review the responses, correct the information and select the rejected claims below to resend them.",
   ),
   DENIED: settled("Denied", "danger", "The payer denied this claim."),
   PARTIALLY_PAID: settled(

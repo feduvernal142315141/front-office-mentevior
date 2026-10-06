@@ -51,7 +51,7 @@ interface ClaimMdSubmissionDetailModalProps {
   open: boolean
   onClose: () => void
   batchClaimId: string
-  /** Preferido: la ruta por service log es la que el contrato recomienda. */
+  /** Fallback for callers without a submission ID. */
   batchClaimServiceLogId: string | null
   submissionId: string | null
   clientName?: string
@@ -82,10 +82,10 @@ export function ClaimMdSubmissionDetailModal({
       setIsLoading(true)
       setError(null)
       try {
-        const data = batchClaimServiceLogId
-          ? await getSubmissionByServiceLog(batchClaimId, batchClaimServiceLogId)
-          : submissionId
-            ? await getSubmissionById(submissionId)
+        const data = submissionId
+          ? await getSubmissionById(submissionId)
+          : batchClaimServiceLogId
+            ? await getSubmissionByServiceLog(batchClaimId, batchClaimServiceLogId)
             : null
         if (!isActive) return
         setDetail(data)

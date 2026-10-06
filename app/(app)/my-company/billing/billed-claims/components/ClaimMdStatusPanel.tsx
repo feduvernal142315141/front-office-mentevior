@@ -33,6 +33,7 @@ interface ClaimMdStatusPanelProps {
   isSubmitting: boolean
   isRetrying: boolean
   isResolving: boolean
+  isResubmitting?: boolean
   onSubmit: () => void
   onRetry: () => void
   onVerify: () => void
@@ -48,6 +49,7 @@ export function ClaimMdStatusPanel({
   isSubmitting,
   isRetrying,
   isResolving,
+  isResubmitting = false,
   onSubmit,
   onRetry,
   onVerify,
@@ -55,7 +57,7 @@ export function ClaimMdStatusPanel({
 }: ClaimMdStatusPanelProps) {
   const alert = useAlert()
   const decision = getBatchDecision(batchClaim.claimMdEffectiveStatus)
-  const isBusy = isSubmitting || isRetrying || isResolving || isPolling
+  const isBusy = isSubmitting || isRetrying || isResolving || isResubmitting || isPolling
 
   const confirmSubmit = () => {
     alert.confirm({
@@ -131,7 +133,7 @@ export function ClaimMdStatusPanel({
               variant="secondary"
               className={cn("gap-2", isPolling && "opacity-70")}
               onClick={onRefresh}
-              disabled={isSubmitting || isRetrying || isResolving}
+              disabled={isSubmitting || isRetrying || isResolving || isResubmitting}
             >
               <RefreshCw className="h-4 w-4" />
               Refresh

@@ -1,9 +1,10 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { toast } from "@/lib/compat/sonner"
 import type {
   ClaimMdResolveUnknownResult,
+  ClaimMdResubmitResult,
   ClaimMdRetryResult,
   ClaimMdSubmitResult,
 } from "@/lib/types/claim-md.types"
@@ -12,14 +13,16 @@ import {
   resolveUnknownBySubmissionId,
   retryBatchClaimSubmission,
   submitBatchClaim,
+  resubmitClaims,
 } from "../services/claim-md.service"
 
 interface UseClaimMdActionsReturn {
+  resubmit: (batchClaimId: string, submissionIds: string[]) => Promise<ClaimMdResubmitResult | null>
+  isResubmitting: boolean
   submit: (batchClaimId: string) => Promise<ClaimMdSubmitResult | null>
   retry: (batchClaimId: string) => Promise<ClaimMdRetryResult | null>
   /**
-   * Consulta el uploadlist de Claim.MD. Prefiere la variante por `batchClaimServiceLogId`
-   * y cae a la de `submissionId` cuando la UI sólo tiene ese id.
+   * Consulta el uploadlist de Claim.MD. Prefiere `submissionId` para consultar el intento actual después de un reenvío.
    */
   resolveUnknown: (params: {
     batchClaimId: string
@@ -29,11 +32,33 @@ interface UseClaimMdActionsReturn {
   isSubmitting: boolean
   isRetrying: boolean
   isResolving: boolean
-  /** Cualquiera de las tres en vuelo: sirve para bloquear los botones de una vez. */
+  /** Cualquiera de las acciones en vuelo: sirve para bloquear los botones de una vez. */
   isBusy: boolean
 }
 
 export function useClaimMdActions(): UseClaimMdActionsReturn {
+  const [isResubmitting, setIsResubmitting] = useState(false)
+  const resubmitInFlight = useRef(false)
+  const resubmit = useCallback(async (batchClaimId: string, submissionIds: string[]) => {
+    if (resubmitInFlight.current) return null
+    resubmitInFlight.current = true
+    setIsResubmitting(true)
+    try {
+      const result = await resubmitClaims(batchClaimId, submissionIds)
+      toast.success("Selected claims queued for resend", {
+        description: `${submissionIds.length} claim${submissionIds.length === 1 ? "" : "s"} will be sent with the updated information.`,
+      })
+      return result
+    } catch (err) {
+      toast.error("Could not resend the selected claims", {
+        description: err instanceof Error ? err.message : undefined,
+      })
+      return null
+    } finally {
+      resubmitInFlight.current = false
+      setIsResubmitting(false)
+    }
+  }, [])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
   const [isResolving, setIsResolving] = useState(false)
@@ -82,10 +107,10 @@ export function useClaimMdActions(): UseClaimMdActionsReturn {
     }) => {
       setIsResolving(true)
       try {
-        const result = params.batchClaimServiceLogId
-          ? await resolveUnknownByServiceLog(params.batchClaimId, params.batchClaimServiceLogId)
-          : params.submissionId
-            ? await resolveUnknownBySubmissionId(params.submissionId)
+        const result = params.submissionId
+          ? await resolveUnknownBySubmissionId(params.submissionId)
+          : params.batchClaimServiceLogId
+            ? await resolveUnknownByServiceLog(params.batchClaimId, params.batchClaimServiceLogId)
             : null
 
         if (!result) {
@@ -120,10 +145,12 @@ export function useClaimMdActions(): UseClaimMdActionsReturn {
   return {
     submit,
     retry,
+    resubmit,
+    isResubmitting,
     resolveUnknown,
     isSubmitting,
     isRetrying,
     isResolving,
-    isBusy: isSubmitting || isRetrying || isResolving,
+    isBusy: isSubmitting || isRetrying || isResolving || isResubmitting,
   }
 }

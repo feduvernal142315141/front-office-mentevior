@@ -115,6 +115,8 @@ export interface ClaimMdRetryResult {
 
 /** Fila de `GET /batch-claims/{batchClaimId}/submissions` */
 export interface ClaimMdSubmissionSummary {
+  previousSubmissionId?: string | null
+  supersededBySubmissionId?: string | null
   submissionId: string
   transmissionId: string
   batchClaimServiceLogId: string
@@ -174,4 +176,13 @@ export interface ClaimMdResolveUnknownResult {
   transmissionStatus: ClaimMdTransmissionStatus | null
   foundInUploadList: boolean
   message: string
+}
+
+/** POST /claim-submissions/resubmit: one file, selected claims in the same batch. */
+export interface ClaimMdResubmitResult {
+  batchClaimId: string
+  transmissionId: string
+  status: ClaimMdTransmissionStatus | null
+  fileName: string
+  claims: { submissionId: string; previousSubmissionId: string; remoteClaimId: string }[]
 }

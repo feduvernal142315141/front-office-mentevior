@@ -17,6 +17,8 @@ import { getBatchDecision, getEffectiveBadge } from "@/lib/modules/batch-claims/
 import type { BatchClaim, BatchClaimClientGroup } from "@/lib/types/batch-claim.types"
 import type { ClaimMdResolveUnknownResult, ClaimMdSubmissionSummary } from "@/lib/types/claim-md.types"
 import { cn } from "@/lib/utils"
+import { toast } from "@/lib/compat/sonner"
+import { isValidResubmissionSelection } from "@/lib/modules/batch-claims/claim-md-resubmission"
 
 import { ClaimMdStatusBadge } from "./ClaimMdStatusBadge"
 import { ClaimMdStatusPanel } from "./ClaimMdStatusPanel"
@@ -92,14 +94,26 @@ export function BatchClaimDetailView({
     if (result) await refreshAll()
   }, [batchClaim.id, claimMd, refreshAll])
 
+  const handleResubmit = useCallback(async (ids: string[]): Promise<boolean> => {
+    if (!canSubmit || !batchClaim.active || isPolling || claimMd.isBusy || isLoadingSubmissions || submissionsError ||
+        !isValidResubmissionSelection(ids, submissions)) return false
+    const result = await claimMd.resubmit(batchClaim.id, ids)
+    if (result) setDetailTarget(null)
+    try {
+      await refreshAll()
+    } catch {
+      toast.warning("Refresh the batch to see the latest claim status.")
+    }
+    return result !== null
+  }, [batchClaim.id, batchClaim.active, isPolling, canSubmit, claimMd, isLoadingSubmissions, submissionsError, submissions, refreshAll])
+
   const handleRetry = useCallback(async () => {
     const result = await claimMd.retry(batchClaim.id)
     if (result) await refreshAll()
   }, [batchClaim.id, claimMd, refreshAll])
 
   const handleVerify = useCallback(async () => {
-    // Todos los submissions de un batch comparten `transmissionId`, así que resolver
-    // uno resuelve la transmisión entera: basta con el primero en UNKNOWN.
+    // A batch may have several transmissions after resubmission; verify the selected attempt.
     const target =
       submissions.find((submission) => submission.effectiveStatus === "VERIFY_REQUIRED") ?? submissions[0]
 
@@ -205,6 +219,7 @@ export function BatchClaimDetailView({
         isSubmitting={claimMd.isSubmitting}
         isRetrying={claimMd.isRetrying}
         isResolving={claimMd.isResolving}
+        isResubmitting={claimMd.isResubmitting}
         onSubmit={() => void handleSubmit()}
         onRetry={() => void handleRetry()}
         onVerify={() => {
@@ -216,6 +231,11 @@ export function BatchClaimDetailView({
 
       {decision.showsClaimLevelDetail && (
         <ClaimMdSubmissionsPanel
+          key={batchClaim.id}
+          canResubmit={canSubmit && batchClaim.active}
+          isBusy={claimMd.isBusy || isPolling}
+          isResubmitting={claimMd.isResubmitting}
+          onResubmit={handleResubmit}
           submissions={submissions}
           isLoading={isLoadingSubmissions}
           error={submissionsError}
