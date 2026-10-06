@@ -97,12 +97,6 @@ export function PercentageChart({
     [objectives],
   )
 
-  const objectiveValue = useMemo(() => {
-    if (activeObjective?.valueSmartCriteria != null) return activeObjective.valueSmartCriteria
-    if (objectives.length === 0) return null
-    return objectives[0].valueSmartCriteria ?? null
-  }, [activeObjective, objectives])
-
   const yTitle = chartConfig.yAxis?.title ?? "Percentage (%)"
   const xTitle = chartConfig.xAxis?.title ?? "Dates"
 
@@ -147,7 +141,6 @@ export function PercentageChart({
     [data, activeObjective],
   )
 
-  const objVisual = chartConfig.objectives
 
   const PX_PER_POINT = 30
   const needsScroll = days.length > 60
@@ -172,12 +165,6 @@ export function PercentageChart({
             <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: lineColor }} />
             <span className="text-xs text-slate-500">Percentage</span>
           </div>
-          {objectiveValue !== null && (
-            <div className="flex items-center gap-1.5">
-              <div className="h-0.5 w-5 border-t-2 border-dashed border-emerald-500" />
-              <span className="text-xs text-slate-500">Objective: <span className="font-semibold text-emerald-500">{objectiveValue}%</span></span>
-            </div>
-          )}
           {shouldShowEnvChangeLegendChip(envChangeMarkers, environmentalChanges) && (
             <div className="flex items-center gap-1.5">
               <div className="h-4 w-0 border-l border-dashed border-slate-400" />
@@ -242,14 +229,6 @@ export function PercentageChart({
             <ReferenceLine y={baselineValue} stroke={baselineColor} strokeWidth={1.5} strokeDasharray="6 4" />
           )}
 
-          {objectiveValue !== null && objVisual?.showLine !== false && (
-            <ReferenceLine
-              y={objectiveValue}
-              stroke={objVisual?.borderColor ?? "#22C55E"}
-              strokeWidth={1.5}
-              strokeDasharray={objVisual?.lineType === "SOLID" ? undefined : "8 4"}
-            />
-          )}
 
           {renderEnvChangeMarkers({
             markers: envChangeMarkers,

@@ -61,6 +61,8 @@ interface RateChartProps {
 }
 
 interface RateChartDataPoint {
+  /** Horizontal position: the column index, so markers can sit between two columns. */
+  x: number
   dateKey: string
   dateLabel: string
   fullDate: string
@@ -141,7 +143,8 @@ export function RateChart({
       // For aggregated mode, rate is already the value (saved as rate from save)
       // But since we save occurrences, aggregated data shows occurrence totals.
       // We can't calculate rate for aggregated periods easily, so show as-is.
-      return aggregatedData.map((ap) => ({
+      return aggregatedData.map((ap, index) => ({
+        x: index,
         dateKey: ap.periodKey,
         dateLabel: ap.periodLabel,
         fullDate: ap.periodLabel,
@@ -181,7 +184,7 @@ export function RateChart({
     if (treatmentStartDate && shouldPinTreatmentDay(treatmentStartDate, allDays)) allDays.push(treatmentStartDate)
     allDays.sort((a, b) => a.getTime() - b.getTime())
 
-    return allDays.map((day) => {
+    return allDays.map((day, index) => {
       const key = getDateKey(day)
       const entry = entries[key]
       const bl = baselineMap.get(key)
@@ -211,6 +214,7 @@ export function RateChart({
         : (isBaselineDay ? (bl?.value ?? null) : null)
 
       return {
+        x: index,
         dateKey: key,
         dateLabel: format(day, labelFormat),
         fullDate: format(day, "EEEE, MMM dd yyyy"),
@@ -226,6 +230,42 @@ export function RateChart({
   }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, appointmentsByDate, unitOfTime, treatmentStartDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
+
+  // ─── Axis position lookups (markers are anchored by date label) ────────
+
+  const xByLabel = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const point of data) map.set(point.dateLabel, point.x)
+    return map
+  }, [data])
+
+  const labelByX = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const point of data) map.set(point.x, point.dateLabel)
+    return map
+  }, [data])
+
+  // A single datapoint would collapse the numeric domain — give it room so the dot still lands
+  const xDomain = useMemo<[number, number]>(() => {
+    if (data.length === 0) return [0, 1]
+    const first = data[0].x
+    const last = data[data.length - 1].x
+    return first === last ? [first - 1, last + 1] : [first, last]
+  }, [data])
+
+  const xTicks = useMemo(
+    () => data.filter((_, index) => index % (tickInterval + 1) === 0).map((point) => point.x),
+    [data, tickInterval],
+  )
+
+  // The phase change is drawn BETWEEN the previous column and the start date's column, so the
+  // first treatment datapoint (collected on the start date itself) never sits on top of the line.
+  const treatmentLineX = useMemo(() => {
+    if (!treatmentDateLabel) return null
+    const x = xByLabel.get(treatmentDateLabel)
+    if (x === undefined) return null
+    return x > xDomain[0] ? x - 0.5 : x
+  }, [treatmentDateLabel, xByLabel, xDomain])
 
   const envChangeDates = useMemo(() => {
     return data.filter((d) => d.hasNote && d.note).map((d) => ({ dateLabel: d.dateLabel, note: d.note }))
@@ -249,12 +289,6 @@ export function RateChart({
     [data, activeObjective],
   )
 
-  const objectiveValue = useMemo(() => {
-    if (activeObjective?.valueSmartCriteria != null) return activeObjective.valueSmartCriteria
-    if (objectives.length === 0) return null
-    return objectives[0].valueSmartCriteria ?? null
-  }, [activeObjective, objectives])
-
   const yTitle = `Rate (occ/${unitLabel})`
 
   const { yMin, yMax, yTicks } = useMemo(() => {
@@ -263,7 +297,6 @@ export function RateChart({
       if (point.rate != null) allValues.push(point.rate)
       if (point.baselineValue != null) allValues.push(point.baselineValue)
     }
-    if (objectiveValue != null) allValues.push(objectiveValue)
     const dataMax = allValues.length > 0 ? Math.max(...allValues) : 0
     const suggestedMax = chartConfig.yAxis?.suggestedMax ?? 5
     const effectiveMax = Math.max(suggestedMax, dataMax)
@@ -272,7 +305,7 @@ export function RateChart({
     const ticks: number[] = []
     for (let v = 0; v <= ceilMax; v += step) ticks.push(Math.round(v * 100) / 100)
     return { yMin: 0, yMax: ceilMax, yTicks: ticks }
-  }, [data, objectiveValue, chartConfig.yAxis?.suggestedMax])
+  }, [data, chartConfig.yAxis?.suggestedMax])
 
   // ─── Dataset visual configs ────────────────────────────────────────────
 
@@ -299,7 +332,6 @@ export function RateChart({
   const lineType = totalDatasetConfig?.type ?? "LINE"
   const showValues = totalDatasetConfig?.showValues ?? false
   const baselineColor = baselineDatasetConfig?.borderColor ?? "#DC2626"
-  const objVisual = chartConfig.objectives
 
   const pointCount = data.length
   const PX_PER_POINT = isAggregated ? 60 : 30
@@ -333,12 +365,6 @@ export function RateChart({
             <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: lineColor }} />
             <span className="text-xs text-slate-500">Rate</span>
           </div>
-          {objectiveValue !== null && (
-            <div className="flex items-center gap-1.5">
-              <div className="h-0.5 w-5 border-t-2 border-dashed border-emerald-500" />
-              <span className="text-xs text-slate-500">Objective: <span className="font-semibold text-emerald-500">{objectiveValue}</span></span>
-            </div>
-          )}
           {shouldShowEnvChangeLegendChip(envChangeMarkers, environmentalChanges) && (
             <div className="flex items-center gap-1.5">
               <div className="h-4 w-0 border-l border-dashed border-teal-400" />
@@ -354,12 +380,16 @@ export function RateChart({
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 20% 93%)" vertical={false} />
 
           <XAxis
-            dataKey="dateLabel"
+            type="number"
+            dataKey="x"
+            domain={xDomain}
+            ticks={xTicks}
+            tickFormatter={(value: number) => labelByX.get(value) ?? ""}
             tick={{ fontSize, fill: "#64748B" }}
             axisLine={{ stroke: "#E2E8F0" }}
             tickLine={false}
             padding={{ left: 30, right: 10 }}
-            interval={tickInterval}
+            interval={0}
             angle={isAggregated ? 0 : -45}
             textAnchor={isAggregated ? "middle" : "end"}
             height={isAggregated ? 40 : 70}
@@ -421,24 +451,16 @@ export function RateChart({
           <ReferenceLine y={yMin} stroke="transparent" />
           <ReferenceLine y={yMax} stroke="transparent" />
 
-          {objectiveValue !== null && objVisual?.showLine !== false && (
-            <ReferenceLine
-              y={objectiveValue}
-              stroke={objVisual?.borderColor ?? "#22C55E"}
-              strokeWidth={1.5}
-              strokeDasharray={objVisual?.lineType === "SOLID" ? undefined : "8 4"}
-            />
-          )}
 
           {renderEnvChangeMarkers({
             markers: envChangeMarkers,
             display: environmentalChanges,
-            resolveX: (dateLabel) => dateLabel,
+            resolveX: (dateLabel) => xByLabel.get(dateLabel),
           })}
 
-          {treatmentDateLabel && (
+          {treatmentLineX !== null && (
             <ReferenceLine
-              x={treatmentDateLabel}
+              x={treatmentLineX}
               stroke="#0F172A"
               strokeWidth={2}
               label={({ viewBox }: { viewBox: { x?: number; y?: number } }) => {
@@ -455,22 +477,23 @@ export function RateChart({
           )}
 
           {stoPhases.map((sto) =>
-            sto.startLabel !== treatmentDateLabel ? (
-              <ReferenceLine key={`sto-start-${sto.number}`} x={sto.startLabel} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" />
+            sto.startLabel !== treatmentDateLabel && xByLabel.has(sto.startLabel) ? (
+              <ReferenceLine key={`sto-start-${sto.number}`} x={xByLabel.get(sto.startLabel)} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" />
             ) : null
           )}
           {stoPhases.map((sto) =>
-            sto.endLabel ? (
-              <ReferenceLine key={`sto-end-${sto.number}`} x={sto.endLabel} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" />
+            sto.endLabel && xByLabel.has(sto.endLabel) ? (
+              <ReferenceLine key={`sto-end-${sto.number}`} x={xByLabel.get(sto.endLabel)} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 3" />
             ) : null
           )}
           {stoPhases.map((sto) => {
             if (!sto.endLabel) return null
+            if (!xByLabel.has(sto.startLabel) || !xByLabel.has(sto.endLabel)) return null
             return (
               <ReferenceArea
                 key={`sto-area-${sto.number}`}
-                x1={sto.startLabel}
-                x2={sto.endLabel}
+                x1={xByLabel.get(sto.startLabel)}
+                x2={xByLabel.get(sto.endLabel)}
                 fill="transparent"
                 strokeOpacity={0}
                 label={({ viewBox }: { viewBox: { x?: number; y?: number; width?: number; height?: number } }) => {
@@ -488,6 +511,8 @@ export function RateChart({
               dataKey="rate"
               fill={lineColor}
               radius={[4, 4, 0, 0]}
+              // A numeric axis has no band to derive the width from — pin it explicitly
+              barSize={pointCount > 30 ? 8 : pointCount > 12 ? 14 : 24}
               maxBarSize={pointCount > 30 ? 12 : 32}
               label={showValues && pointCount <= 31 ? { position: "top", fontSize: 10, fill: "#64748B", formatter: (v: unknown) => typeof v === "number" ? v.toFixed(2) : String(v ?? "") } : false}
             />

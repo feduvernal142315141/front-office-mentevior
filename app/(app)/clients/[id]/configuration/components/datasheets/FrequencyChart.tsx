@@ -242,6 +242,15 @@ export function FrequencyChart({
     return first === last ? [first - 1, last + 1] : [first, last]
   }, [data])
 
+  // The phase change is drawn BETWEEN the previous column and the start date's column, so the
+  // first treatment datapoint (collected on the start date itself) never sits on top of the line.
+  const treatmentLineX = useMemo(() => {
+    if (!treatmentDateLabel) return null
+    const x = xByLabel.get(treatmentDateLabel)
+    if (x === undefined) return null
+    return x > xDomain[0] ? x - 0.5 : x
+  }, [treatmentDateLabel, xByLabel, xDomain])
+
   // ─── Environmental change dates ────────────────────────────────────────
 
   const envChangeDates = useMemo(() => {
@@ -270,14 +279,6 @@ export function FrequencyChart({
     [data, activeObjective],
   )
 
-  // ─── Objective target value ────────────────────────────────────────────
-
-  const objectiveValue = useMemo(() => {
-    if (activeObjective?.valueSmartCriteria != null) return activeObjective.valueSmartCriteria
-    if (objectives.length === 0) return null
-    return objectives[0].valueSmartCriteria ?? null
-  }, [activeObjective, objectives])
-
   // ─── Y-axis range ──────────────────────────────────────────────────────
 
   const yTitle = chartConfig.yAxis?.title ?? "Number of occurrences"
@@ -288,7 +289,6 @@ export function FrequencyChart({
       if (point.occurrences != null) allValues.push(point.occurrences)
       if (point.baselineValue != null) allValues.push(point.baselineValue)
     }
-    if (objectiveValue != null) allValues.push(objectiveValue)
     const dataMax = allValues.length > 0 ? Math.max(...allValues) : 0
     const suggestedMax = chartConfig.yAxis?.suggestedMax ?? 20
     const effectiveMax = Math.max(suggestedMax, dataMax)
@@ -297,7 +297,7 @@ export function FrequencyChart({
     const ticks: number[] = []
     for (let v = 0; v <= ceilMax; v += step) ticks.push(v)
     return { yMin: 0, yMax: ceilMax, yTicks: ticks }
-  }, [data, objectiveValue, chartConfig.yAxis?.suggestedMax])
+  }, [data, chartConfig.yAxis?.suggestedMax])
 
   // ─── Dataset visual configs ────────────────────────────────────────────
 
@@ -324,8 +324,6 @@ export function FrequencyChart({
   const lineType = totalDatasetConfig?.type ?? "LINE"
   const showValues = totalDatasetConfig?.showValues ?? false
   const baselineColor = baselineDatasetConfig?.borderColor ?? "#DC2626"
-  const objVisual = chartConfig.objectives
-  const objectiveColor = objVisual?.borderColor ?? "#22C55E"
 
   // ─── Layout ────────────────────────────────────────────────────────────
 
@@ -378,12 +376,6 @@ export function FrequencyChart({
             <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: lineColor }} />
             <span className="text-xs text-slate-500">Treatment</span>
           </div>
-          {objectiveValue !== null && (
-            <div className="flex items-center gap-1.5">
-              <div className="h-0.5 w-5 border-t-2 border-dashed" style={{ borderColor: objectiveColor }} />
-              <span className="text-xs text-slate-500">Objective: <span className="font-semibold" style={{ color: objectiveColor }}>{objectiveValue}</span></span>
-            </div>
-          )}
           {shouldShowEnvChangeLegendChip(envChangeMarkers, environmentalChanges) && (
             <div className="flex items-center gap-1.5">
               <div className="h-4 w-0 border-l border-dashed border-teal-400" />
@@ -476,15 +468,6 @@ export function FrequencyChart({
           <ReferenceLine y={yMin} stroke="transparent" />
           <ReferenceLine y={yMax} stroke="transparent" />
 
-          {/* Objective reference line */}
-          {objectiveValue !== null && objVisual?.showLine !== false && (
-            <ReferenceLine
-              y={objectiveValue}
-              stroke={objectiveColor}
-              strokeWidth={1.5}
-              strokeDasharray={objVisual?.lineType === "SOLID" ? undefined : "8 4"}
-            />
-          )}
 
           {/* Environmental change dashed lines */}
           {renderEnvChangeMarkers({
@@ -494,9 +477,9 @@ export function FrequencyChart({
           })}
 
           {/* Treatment vertical line */}
-          {treatmentDateLabel && xByLabel.has(treatmentDateLabel) && (
+          {treatmentLineX !== null && (
             <ReferenceLine
-              x={xByLabel.get(treatmentDateLabel)}
+              x={treatmentLineX}
               stroke="#0F172A"
               strokeWidth={2}
               label={({ viewBox }: { viewBox: { x?: number; y?: number } }) => {
