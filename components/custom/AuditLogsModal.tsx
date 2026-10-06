@@ -54,16 +54,42 @@ function formatAuditDateValue(value: string): string | null {
   const trimmed = value.trim()
   if (!trimmed) return null
 
-  const date = new Date(trimmed)
-  if (Number.isNaN(date.getTime())) return null
+  // Changed values are calendar dates: preserve the written day even when
+  // the backend includes a time/offset. Only log.createAt is an instant.
+  const iso = /^(\d{4})-(\d{2})-(\d{2})(?=$|[T\s])/.exec(trimmed)
+  const slash = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?=$|\s)/.exec(trimmed)
+  const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+  // Also support textual dates emitted by Java/JS and RFC date strings.
+  const monthFirst = /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+(?:\d{2}:\d{2}:\d{2}\s+\S+\s+)?(\d{4})\b/i.exec(trimmed)
+  const dayFirst = /\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})\b/i.exec(trimmed)
 
-  const looksLikeDate =
-    /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/i.test(trimmed) ||
-    /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/i.test(trimmed) ||
-    /^\d{4}-\d{2}-\d{2}/.test(trimmed) ||
-    /^\d{1,2}\/\d{1,2}\/\d{4}/.test(trimmed)
+  let year: number
+  let month: number
+  let day: number
+  if (iso) {
+    year = Number(iso[1])
+    month = Number(iso[2])
+    day = Number(iso[3])
+  } else if (slash) {
+    year = Number(slash[3])
+    month = Number(slash[1])
+    day = Number(slash[2])
+  } else if (monthFirst || dayFirst) {
+    const match = (monthFirst || dayFirst)!
+    year = Number(match[3])
+    month = months.indexOf(match[monthFirst ? 1 : 2].toLowerCase()) + 1
+    day = Number(match[monthFirst ? 2 : 1])
+  } else {
+    return null
+  }
 
-  return looksLikeDate ? formatDateInUserTimeZone(date) : null
+  const date = new Date(0)
+  date.setUTCFullYear(year, month - 1, day)
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return null
+  }
+
+  return `${String(month).padStart(2, "0")}/${String(day).padStart(2, "0")}/${String(year).padStart(4, "0")}`
 }
 
 function getUserTimeZone(): string | undefined {
