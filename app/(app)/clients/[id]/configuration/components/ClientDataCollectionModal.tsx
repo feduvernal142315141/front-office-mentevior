@@ -1094,7 +1094,6 @@ export function ClientDataCollectionModal({
                   render={({ field }) => (
                     <FloatingTextarea
                       label="Description"
-                      required
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}

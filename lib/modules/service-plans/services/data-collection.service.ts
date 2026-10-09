@@ -105,6 +105,7 @@ interface ApiItemPayload {
   servicePlanCategoryItemId: string
   name?: string
   topography: string
+  procedures: string
   status: boolean
   dataCollection: ApiDataCollection
   chart?: ApiChart
@@ -114,6 +115,7 @@ interface ApiItemResponse {
   servicePlanCategoryItemId?: string
   name?: string
   topography?: string
+  procedures?: string | null
   status?: boolean
   dataCollection?: ApiDataCollection
   chart?: ApiChart
@@ -390,6 +392,7 @@ function fromApiItemResponse(
   const chartRaw = itemEntity.chart
   const hasChart = hasChartContent(chartRaw)
   const topography = asString(itemEntity.topography)
+  const procedures = asString(itemEntity.procedures)
   const active = typeof itemEntity.status === "boolean" ? itemEntity.status : true
   const name = asString(itemEntity.name)
   const itemId = asOptionalString(itemEntity.servicePlanCategoryItemId) ?? fallbackItemId
@@ -406,6 +409,7 @@ function fromApiItemResponse(
     hasDataCollectionContent(base) ||
     !!base.chart ||
     topography.length > 0 ||
+    procedures.length > 0 ||
     typeof itemEntity.status === "boolean"
 
   if (!hasContent) return null
@@ -417,7 +421,7 @@ function fromApiItemResponse(
     categoryId: "",
     categoryName: "",
     topography,
-    procedures: "",
+    procedures,
     active,
     // El service plan de la compañía no configura teaching procedures ni funciones
     // hipotetizadas: eso vive en el item del plan del cliente.
@@ -528,6 +532,8 @@ function toApiItemPayload(dto: UpsertItemDataCollectionDto): ApiItemPayload {
   const payload: ApiItemPayload = {
     servicePlanCategoryItemId: dto.servicePlanCategoryItemId,
     topography: dto.topography,
+    // Siempre viaja: omitirlo o mandar null conserva el valor anterior, "" lo limpia.
+    procedures: dto.procedures ?? "",
     status: dto.active,
     dataCollection: toApiDataCollection(dto),
   }

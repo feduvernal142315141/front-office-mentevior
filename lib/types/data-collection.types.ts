@@ -166,6 +166,7 @@ export interface UpsertItemDataCollectionDto {
   servicePlanCategoryItemId: string
   name?: string
   topography: string
+  procedures?: string
   active: boolean
   type: DataCollectionType
   weeklyDailyValue?: ServicePlanValueType

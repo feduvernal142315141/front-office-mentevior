@@ -184,6 +184,7 @@ export function DataCollectionDrawer({
           suggestedNumberOfRecordings: values.suggestedNumberOfRecordings,
           cumulative: values.cumulative,
           topography: values.topography ?? "",
+          procedures: /maladaptive/i.test(categoryName) ? "" : (values.procedures ?? "").trim(),
           active: values.active ?? true,
           chart: values.chart,
         })
@@ -246,6 +247,7 @@ export function DataCollectionDrawer({
             itemName={itemName}
             initialConfig={config ?? undefined}
             initialTopography={itemConfig?.topography}
+            initialProcedures={itemConfig?.procedures}
             initialActive={itemConfig?.active}
             onSave={handleSave}
             onDeleteLevel={handleDeleteLevel}

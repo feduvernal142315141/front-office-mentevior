@@ -83,22 +83,6 @@ export function createClientDataCollectionFormSchema(
     .superRefine((data, ctx) => {
       const { name, group } = resolveType(data.type)
 
-      if (mode === "item" && !data.topography?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Description is required",
-          path: ["topography"],
-        })
-      }
-
-      if (mode === "item" && !/maladaptive/i.test(categoryName) && !data.procedures?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Procedures is required",
-          path: ["procedures"],
-        })
-      }
-
       if (typeIsMeasurementLog(name)) {
         if (!data.unitMeasurementCatalogId?.trim()) {
           ctx.addIssue({

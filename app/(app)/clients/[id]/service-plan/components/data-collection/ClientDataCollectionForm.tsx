@@ -356,7 +356,6 @@ export function ClientDataCollectionForm({
                 render={({ field }) => (
                   <FloatingTextarea
                     label="Description"
-                    required
                     placeholder="Reason for this program"
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -377,7 +376,6 @@ export function ClientDataCollectionForm({
                   render={({ field }) => (
                     <FloatingTextarea
                       label="Procedures"
-                      required
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}

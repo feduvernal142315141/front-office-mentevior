@@ -51,6 +51,7 @@ export function createDataCollectionFormSchema(
       cumulative: z.boolean().optional(),
       levels: z.array(dataCollectionLevelSchema),
       topography: z.string().optional(),
+      procedures: z.string().optional(),
       active: z.boolean().optional(),
       chart: z.preprocess((value) => {
         if (!value || typeof value !== "object") return value
@@ -59,14 +60,6 @@ export function createDataCollectionFormSchema(
     })
     .superRefine((data, ctx) => {
       const { name, group } = resolveType(data.type)
-
-      if (mode === "item" && !data.topography?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Description is required",
-          path: ["topography"],
-        })
-      }
 
       if (typeIsMeasurementLog(name)) {
         if (!data.unitMeasurementCatalogId?.trim()) {

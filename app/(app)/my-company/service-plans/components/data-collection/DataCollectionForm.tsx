@@ -86,6 +86,7 @@ interface DataCollectionFormProps {
   itemName?: string
   initialConfig?: DataCollectionConfig
   initialTopography?: string
+  initialProcedures?: string
   initialActive?: boolean
   onSave: (values: DataCollectionFormValues) => Promise<void>
   onDeleteLevel?: (level: DataCollectionLevel) => Promise<void>
@@ -100,6 +101,7 @@ export function DataCollectionForm({
   itemName,
   initialConfig,
   initialTopography,
+  initialProcedures,
   initialActive,
   onSave,
   onDeleteLevel,
@@ -151,6 +153,7 @@ export function DataCollectionForm({
       cumulative: initialConfig?.cumulative ?? false,
       levels: initialConfig?.levels ?? [],
       topography: initialTopography ?? "",
+      procedures: initialProcedures ?? "",
       active: initialActive ?? true,
       chart: resolveChartConfig(initialConfig?.chart),
     },
@@ -170,10 +173,11 @@ export function DataCollectionForm({
       cumulative: initialConfig.cumulative ?? false,
       levels: initialConfig.levels ?? [],
       topography: initialTopography ?? "",
+      procedures: initialProcedures ?? "",
       active: initialActive ?? true,
       chart: resolveChartConfig(initialConfig.chart),
     })
-  }, [initialConfig, initialTopography, initialActive, reset])
+  }, [initialConfig, initialTopography, initialProcedures, initialActive, reset])
 
   const [openSection, setOpenSection] = useState<"data" | "chart" | null>("data")
   const [chartFocusToken, setChartFocusToken] = useState(0)
@@ -322,7 +326,6 @@ export function DataCollectionForm({
                 render={({ field }) => (
                   <FloatingTextarea
                     label="Description"
-                    required
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
@@ -333,6 +336,25 @@ export function DataCollectionForm({
               />
               <FieldErrorText message={errors.topography?.message} />
             </div>
+
+            {!/maladaptive/i.test(categoryName) && (
+              <div className="space-y-1">
+                <Controller
+                  name="procedures"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingTextarea
+                      label="Procedures"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      hasError={!!errors.procedures}
+                      rows={3}
+                    />
+                  )}
+                />
+              </div>
+            )}
 
             <Controller
               name="active"
