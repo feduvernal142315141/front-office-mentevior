@@ -24,6 +24,7 @@ import type { SessionNote97156FormData } from "@/lib/types/appointment-note-9715
 import type { InterventionCatalog97156Item } from "@/lib/modules/appointment-notes/services/97156-intervention-catalog.service"
 import type { AppointmentNoteCategory, ParticipantCatalogItem, NoteStatus } from "@/lib/types/appointment-note.types"
 import { SessionItemChartPanel } from "./SessionItemChartPanel"
+import { OtherTeachingMethodField } from "./OtherTeachingMethodField"
 
 interface CaregiverOption {
   id: string
@@ -135,7 +136,10 @@ export function SessionNote97156Form({
       .map((c) => c.relationship || c.name)
 
     return buildSessionSummaryMetadata97156({
-      teachingMethodName: formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label).filter(Boolean).join(", "),
+      teachingMethodName: [
+        ...formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label),
+        formData.hasOther ? formData.otherTeachingMethodValue.trim() : "",
+      ].filter(Boolean).join(", "),
       modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
       reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
       medicalConcerns: formData.medicalConcerns,
@@ -237,6 +241,19 @@ export function SessionNote97156Form({
                 hasError={!!errors.teachingMethodIds}
               />
               <FieldError message={errors.teachingMethodIds} />
+              <div data-field="otherTeachingMethodValue">
+                <OtherTeachingMethodField
+                  checked={formData.hasOther}
+                  value={formData.otherTeachingMethodValue}
+                  onCheckedChange={(checked) => {
+                    updateField("hasOther", checked)
+                    if (!checked) updateField("otherTeachingMethodValue", "")
+                  }}
+                  onValueChange={(value) => updateField("otherTeachingMethodValue", value)}
+                  disabled={formDisabled}
+                  error={errors.otherTeachingMethodValue}
+                />
+              </div>
             </div>
             <div data-field="modalityId">
               <FloatingSelect

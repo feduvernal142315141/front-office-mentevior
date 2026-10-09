@@ -172,6 +172,9 @@ export async function getAppointmentNote97156(
     id: String(data.id ?? ""),
     appointmentId: String(data.appointmentId ?? appointmentId),
     teachingMethods,
+    hasOther: data.hasOther === true,
+    otherTeachingMethodValue:
+      typeof data.otherTeachingMethodValue === "string" ? data.otherTeachingMethodValue : null,
     modality,
     reasonCaregiverNotPresent: String(data.reasonCaregiverNotPresent ?? ""),
     medicalConcerns: String(data.medicalConcerns ?? ""),

@@ -170,6 +170,9 @@ export async function getAppointmentNote(
     billingCodes: typeof data.billingCodes === "string" ? data.billingCodes : null,
     modality: parseModality(data),
     teachingMethods: parseTeachingMethods(data),
+    hasOther: data.hasOther === true,
+    otherTeachingMethodValue:
+      typeof data.otherTeachingMethodValue === "string" ? data.otherTeachingMethodValue : null,
     reasonCaregiverNotPresent: String(data.reasonCaregiverNotPresent ?? ""),
     medicalConcerns: String(data.medicalConcerns ?? ""),
     crisisInvolved: Boolean(data.crisisInvolved),

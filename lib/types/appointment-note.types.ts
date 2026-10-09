@@ -118,6 +118,12 @@ export interface AppointmentNote {
   billingCodes: string | null
   modality: AppointmentNoteModality | null
   teachingMethods: AppointmentNoteTeachingMethod[]
+  /**
+   * "Other" teaching method (contrato 2026-10-08): opción local del front, no existe en el
+   * catálogo ni viaja en `teachingMethodIds`. Notas históricas llegan con `false` / `null`.
+   */
+  hasOther: boolean
+  otherTeachingMethodValue: string | null
   reasonCaregiverNotPresent: string
   medicalConcerns: string
   crisisInvolved: boolean
@@ -155,6 +161,9 @@ export interface UpdateAppointmentNoteDataCollectionItem {
 export interface UpdateAppointmentNotePayload {
   id: string
   teachingMethodIds?: string[]
+  /** El PUT los reemplaza: hay que enviarlos en cada guardado para conservarlos. */
+  hasOther?: boolean
+  otherTeachingMethodValue?: string | null
   modalityId?: string | null
   reasonCaregiverNotPresent?: string
   medicalConcerns?: string

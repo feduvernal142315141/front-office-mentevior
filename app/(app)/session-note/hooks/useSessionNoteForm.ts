@@ -31,6 +31,8 @@ export interface CategoryItemFormData {
 export interface SessionNoteFormData {
   noteId: string
   teachingMethodIds: string[]
+  hasOther: boolean
+  otherTeachingMethodValue: string
   modalityId: string
   reasonCaregiverNotPresent: string
   medicalConcerns: string
@@ -46,6 +48,8 @@ export interface SessionNoteFormData {
 const EMPTY_FORM: SessionNoteFormData = {
   noteId: "",
   teachingMethodIds: [],
+  hasOther: false,
+  otherTeachingMethodValue: "",
   modalityId: "",
   reasonCaregiverNotPresent: "",
   medicalConcerns: "",
@@ -71,6 +75,8 @@ function noteToFormData(note: AppointmentNote): SessionNoteFormData {
   return {
     noteId: note.id,
     teachingMethodIds: note.teachingMethods?.map((m) => m.id) ?? [],
+    hasOther: note.hasOther,
+    otherTeachingMethodValue: note.otherTeachingMethodValue ?? "",
     modalityId: note.modality?.id ?? "",
     reasonCaregiverNotPresent: note.reasonCaregiverNotPresent,
     medicalConcerns: note.medicalConcerns || "N/A",
@@ -206,6 +212,11 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
       setErrors((prev) => {
         const next = { ...prev }
         delete next[field as string]
+        // Marcar o desmarcar "Other" cambia qué se exige de los teaching methods
+        if (field === "hasOther") {
+          delete next.teachingMethodIds
+          delete next.otherTeachingMethodValue
+        }
         return next
       })
     },
@@ -252,7 +263,9 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
     // Validate required fields (only when form is fully editable)
     const newErrors: Record<string, string> = {}
     if (status !== "read") {
-      if (formData.teachingMethodIds.length === 0) newErrors.teachingMethodIds = "Select at least one teaching method"
+      // "Other" con su texto cuenta como teaching method aunque no haya ninguno del catálogo
+      if (formData.teachingMethodIds.length === 0 && !formData.hasOther) newErrors.teachingMethodIds = "Select at least one teaching method"
+      if (formData.hasOther && !formData.otherTeachingMethodValue.trim()) newErrors.otherTeachingMethodValue = "Describe the other teaching method"
       if (!formData.modalityId) newErrors.modalityId = "Select a modality"
       if (formData.participantIds.length === 0) newErrors.participantIds = "Select at least one participant"
       if (!formData.reasonCaregiverNotPresent.trim()) newErrors.reasonCaregiverNotPresent = "This field is required"
@@ -345,6 +358,10 @@ export function useSessionNoteForm({ appointmentId, clientId }: UseSessionNoteFo
       caregiverSignatureChecked: useCheckmarkSignature ? caregiverSignatureChecked : null,
       clientCaregiverId: clientCaregiverId || null,
       providerSignatureImage: providerSignatureImage || null,
+      // Fuera del recorte de `read`: el backend los reemplaza en cada PUT, así que
+      // omitirlos borraría el "Other" guardado.
+      hasOther: formData.hasOther,
+      otherTeachingMethodValue: formData.hasOther ? formData.otherTeachingMethodValue.trim() || null : null,
       ...(isReadOnly ? {} : {
         teachingMethodIds: formData.teachingMethodIds,
         modalityId: formData.modalityId || null,

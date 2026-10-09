@@ -34,6 +34,7 @@ import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials
 import type { SessionNoteFormData } from "../hooks/useSessionNoteForm"
 import { CLIENT_PARTICIPANT_ID } from "../hooks/useSessionNoteForm"
 import { SessionItemChartPanel } from "./SessionItemChartPanel"
+import { OtherTeachingMethodField } from "./OtherTeachingMethodField"
 
 interface SessionNoteFormProps {
   formData: SessionNoteFormData
@@ -135,7 +136,10 @@ export function SessionNoteForm({
       ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
 
     return buildSessionSummaryMetadata97153({
-      teachingMethodName: formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label).filter(Boolean).join(", "),
+      teachingMethodName: [
+        ...formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label),
+        formData.hasOther ? formData.otherTeachingMethodValue.trim() : "",
+      ].filter(Boolean).join(", "),
       modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
       reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
       medicalConcerns: formData.medicalConcerns,
@@ -226,6 +230,19 @@ export function SessionNoteForm({
                 hasError={!!errors.teachingMethodIds}
               />
               <FieldError message={errors.teachingMethodIds} />
+              <div data-field="otherTeachingMethodValue">
+                <OtherTeachingMethodField
+                  checked={formData.hasOther}
+                  value={formData.otherTeachingMethodValue}
+                  onCheckedChange={(checked) => {
+                    updateField("hasOther", checked)
+                    if (!checked) updateField("otherTeachingMethodValue", "")
+                  }}
+                  onValueChange={(value) => updateField("otherTeachingMethodValue", value)}
+                  disabled={formDisabled}
+                  error={errors.otherTeachingMethodValue}
+                />
+              </div>
             </div>
             <div data-field="modalityId">
               <FloatingSelect
