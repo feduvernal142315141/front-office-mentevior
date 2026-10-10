@@ -193,7 +193,7 @@ interface GenerateObjectivesModalProps {
   categoryName?: string
   /** ServicePlanUnitOfTime del item (SECONDS/MINUTES/…), para tipos de duración */
   unitOfTime?: string
-  /** Último baseline registrado; pre-carga Start Value y período al abrir en modo generar */
+  /** Último baseline registrado; pre-carga el período al abrir en modo generar */
   latestBaseline?: LatestBaseline
   /** When true, pre-populates form from initialObjectives and replaces on save */
   editMode?: boolean
@@ -231,13 +231,10 @@ export function GenerateObjectivesModal({
         operatorTouchedRef.current = true
       } else {
         const defaults = createDefaultForm(direction)
-        // El punto de partida clínico es el último baseline registrado
-        if (latestBaseline && Number.isFinite(Number(latestBaseline.value))) {
-          defaults.startValue = latestBaseline.value
-          if (latestBaseline.periodCatalogId) {
-            defaults.periodSmartCriteriaCatalogId = latestBaseline.periodCatalogId
-            defaults.periodDurationCatalogId = latestBaseline.periodCatalogId
-          }
+        // El Start Value siempre arranca en 0; del último baseline sólo se hereda el período
+        if (latestBaseline?.periodCatalogId) {
+          defaults.periodSmartCriteriaCatalogId = latestBaseline.periodCatalogId
+          defaults.periodDurationCatalogId = latestBaseline.periodCatalogId
         }
         setForm(defaults)
         operatorTouchedRef.current = false
@@ -322,9 +319,13 @@ export function GenerateObjectivesModal({
             if (amount > 0 && range > 0) {
               const qty = suggestQuantityForAmount(range, amount)
               next.quantity = qty
-              // Sólo al topar el máximo de STOs agrandamos el paso, para igual llegar al End
-              const needed = suggestAmountForQuantity(range, qty)
-              if (needed > amount) next.amountToDecreaseIncrease = String(needed)
+              // Al topar el máximo de STOs hay que agrandar el paso para igual llegar al End,
+              // pero nunca mientras se teclea Amount: escribir "10" pasaba por "1", que se
+              // reescribía a "2" y terminaba en "20". Ese ajuste se hace al salir del campo.
+              if (field !== "amountToDecreaseIncrease") {
+                const needed = suggestAmountForQuantity(range, qty)
+                if (needed > amount) next.amountToDecreaseIncrease = String(needed)
+              }
             } else {
               next.quantity = clampObjectiveQuantity(next.quantity, range)
             }
@@ -363,6 +364,18 @@ export function GenerateObjectivesModal({
     },
     [direction]
   )
+
+  // Paso demasiado chico para llegar al End con el máximo de STOs: se agranda al salir del campo
+  const normalizeAmountOnBlur = useCallback(() => {
+    setForm((prev) => {
+      if (prev.generationMode !== "number_of_objectives") return prev
+      const range = Math.abs((Number(prev.startValue) || 0) - (Number(prev.endValue) || 0))
+      const amount = Number(prev.amountToDecreaseIncrease) || 0
+      if (amount <= 0 || range <= 0) return prev
+      const needed = suggestAmountForQuantity(range, suggestQuantityForAmount(range, amount))
+      return needed > amount ? { ...prev, amountToDecreaseIncrease: String(needed) } : prev
+    })
+  }, [])
 
   const resolvedPeriodMap = useMemo(() => {
     if (periodMap instanceof Map) return periodMap
@@ -589,7 +602,7 @@ export function GenerateObjectivesModal({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <FloatingInput
-              label="Start Value (Baseline)"
+              label="Start Value"
               value={form.startValue}
               onChange={(v) => update("startValue", v.replace(/[^0-9.]/g, ""))}
               onBlur={() => {}}
@@ -620,7 +633,7 @@ export function GenerateObjectivesModal({
               label={isDecrease ? "Amount to Decrease" : "Amount to Increase"}
               value={form.amountToDecreaseIncrease}
               onChange={(v) => update("amountToDecreaseIncrease", v.replace(/[^0-9.]/g, ""))}
-              onBlur={() => {}}
+              onBlur={normalizeAmountOnBlur}
               inputMode="decimal"
               required
               hasError={!!fieldErrors.amountToDecreaseIncrease}
@@ -699,7 +712,7 @@ export function GenerateObjectivesModal({
                   Fill in the values above to preview the objectives.
                 </p>
                 <p className="text-xs text-slate-400">
-                  The series will run from the Start Value (baseline) to the End Value (goal).
+                  The series will run from the Start Value to the End Value (goal).
                 </p>
               </div>
             ) : (

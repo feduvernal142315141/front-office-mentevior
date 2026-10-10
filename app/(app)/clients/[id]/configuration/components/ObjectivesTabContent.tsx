@@ -52,7 +52,7 @@ interface ObjectivesTabContentProps {
   categoryName?: string
   /** ServicePlanUnitOfTime del item (SECONDS/MINUTES/…), para tipos de duración */
   unitOfTime?: string
-  /** Baselines del item; el más reciente pre-carga el Start Value del generador */
+  /** Baselines del item; el más reciente pre-carga el período del generador */
   baselines?: BaselineRow[]
   hideButtons?: boolean
   externalTitle?: boolean
@@ -151,7 +151,7 @@ export function ObjectivesTabContent({
     [categoryCatalogId, categoryName]
   )
 
-  // Último baseline registrado (por fecha); pre-carga el Start Value del generador
+  // Último baseline registrado (por fecha); pre-carga el período del generador
   const latestBaseline = useMemo(() => {
     const rows = (baselines ?? []).filter(
       (b) => b.value.trim() !== "" && Number.isFinite(Number(b.value))
@@ -169,7 +169,9 @@ export function ObjectivesTabContent({
 
   // Mastery and STO objectives are mutually exclusive: picking one path locks the other
   // until the objectives are removed, so providers can't mix both by mistake.
-  const effectiveType = objetiveType ?? inferObjetiveType(objectives)
+  // The lock only applies while objectives exist: a type left stored on the item after its
+  // objectives were removed must not keep the other path disabled.
+  const effectiveType = objectives.length === 0 ? null : (objetiveType ?? inferObjetiveType(objectives))
   const masteryLocked = effectiveType === "STO"
   const stoLocked = effectiveType === "Mastery"
   const masteryLockTitle = masteryLocked ? "This item uses STO objectives — remove them to switch to Mastery criteria" : undefined
