@@ -59,7 +59,7 @@ export function ProposedScheduleSection({
   onUpdateHours,
 }: ProposedScheduleSectionProps) {
   return (
-    <div className="space-y-4">
+    <div className="@container space-y-4">
       {rows.length === 0 && (
         <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-8 ${hasError ? "border-red-300 bg-red-50/40" : "border-slate-200 bg-slate-50/60"}`}>
           <CalendarClock className={`h-6 w-6 ${hasError ? "text-red-300" : "text-slate-300"}`} />
@@ -67,6 +67,9 @@ export function ProposedScheduleSection({
         </div>
       )}
 
+      {/* Los schedules se acomodan de a dos por fila cuando la sección tiene ancho para ambos */}
+      {rows.length > 0 && (
+      <div className="grid grid-cols-1 items-start gap-4 @4xl:grid-cols-2">
       {rows.map((row, index) => {
         const rowError = errors[`schedule-${index}`]
         const total = SCHEDULE_DAY_KEYS.reduce((sum, day) => {
@@ -80,7 +83,8 @@ export function ProposedScheduleSection({
             data-field={`schedule-${index}`}
             className={`rounded-xl border p-4 ${rowError ? "border-red-300 bg-red-50/40" : "border-slate-200 bg-slate-50/40"}`}
           >
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr_auto]">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="min-w-[200px] flex-1">
               <FloatingSelect
                 label="Credential"
                 value={row.credentialId}
@@ -90,7 +94,8 @@ export function ProposedScheduleSection({
                 hasError={!!rowError && !row.credentialId}
                 searchable
               />
-              <div className="flex items-center justify-end text-sm text-slate-500 md:order-last">
+              </div>
+              <div className="order-last flex items-center justify-end text-sm text-slate-500">
                 <button
                   type="button"
                   onClick={() => onRemove(index)}
@@ -102,7 +107,7 @@ export function ProposedScheduleSection({
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
-              <div className="flex items-center text-sm text-slate-500">
+              <div className="flex shrink-0 items-center text-sm text-slate-500">
                 Total: <span className="ml-1 font-semibold tabular-nums text-slate-800">{totalLabel} h/week</span>
               </div>
             </div>
@@ -111,7 +116,7 @@ export function ProposedScheduleSection({
               {SCHEDULE_DAY_KEYS.map((day) => {
                 const { start, end } = parseRange(row.hours[day])
                 return (
-                  <div key={day} className="grid grid-cols-[44px_1fr_1fr] items-center gap-2">
+                  <div key={day} className="grid grid-cols-[44px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2">
                     <span className="text-xs font-medium text-slate-500">{day.slice(0, 3)}</span>
                     <FloatingTimePicker
                       label="From"
@@ -151,6 +156,8 @@ export function ProposedScheduleSection({
           </div>
         )
       })}
+      </div>
+      )}
 
       <Button type="button" variant="secondary" onClick={onAdd} disabled={disabled} className="gap-2 flex items-center">
         <Plus className="h-4 w-4" />

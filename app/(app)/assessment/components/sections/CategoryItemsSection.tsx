@@ -221,7 +221,14 @@ export function CategoryItemsSection({
                       />
                     </div>
                   )}
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {/* Fuera de Maladaptive sólo hay dos selects: se reparten el ancho y muestran hasta 8 tags antes del "+N more" */}
+                  <div
+                    className={
+                      isMaladaptive
+                        ? "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+                        : "grid grid-cols-1 items-start gap-4 md:grid-cols-2"
+                    }
+                  >
                     <MultiSelect
                       label="Hypothesized function"
                       value={
@@ -234,7 +241,7 @@ export function CategoryItemsSection({
                       disabled={disabled}
                       tone="neutral"
                       placeholder="Select functions"
-                      maxVisibleTags={2}
+                      maxVisibleTags={isMaladaptive ? 2 : 8}
                     />
                     <MultiSelect
                       label="POS"
@@ -245,7 +252,7 @@ export function CategoryItemsSection({
                       searchable
                       tone="neutral"
                       placeholder="Select POS"
-                      maxVisibleTags={2}
+                      maxVisibleTags={isMaladaptive ? 2 : 8}
                     />
                     {isMaladaptive ? (
                       <>
@@ -284,14 +291,14 @@ export function CategoryItemsSection({
                     ) : null}
                   </div>
                   {!isMaladaptive && (
-                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="mt-4 space-y-4">
                       <FloatingTextarea
                         label="Description"
                         value={item.description ?? ""}
                         onChange={() => {}}
                         onBlur={() => {}}
                         disabled
-                        rows={3}
+                        rows={8}
                       />
                       <FloatingTextarea
                         label="Procedures"
@@ -299,7 +306,7 @@ export function CategoryItemsSection({
                         onChange={() => {}}
                         onBlur={() => {}}
                         disabled
-                        rows={3}
+                        rows={8}
                       />
                     </div>
                   )}
