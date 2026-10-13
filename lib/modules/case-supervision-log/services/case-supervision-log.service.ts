@@ -1,10 +1,13 @@
-import { serviceGet, servicePost } from "@/lib/services/baseService"
+import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import { getQueryString } from "@/lib/utils/format"
 import type { QueryModel } from "@/lib/models/queryModel"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import type {
+  ActivityCategoryCatalogItem,
   CaseSupervisionAppointment,
+  CaseSupervisionManualEntry,
+  UpdateCaseSupervisionLogDto,
   CaseSupervisionLogDetail,
   CaseSupervisionLogListItem,
   CaseSupervisionPreparation,
@@ -74,6 +77,57 @@ function normalizeAppointments(raw: unknown): CaseSupervisionAppointment[] {
   return raw
     .map(normalizeAppointment)
     .filter((item): item is CaseSupervisionAppointment => item !== undefined)
+}
+
+function normalizeManualEntry(raw: unknown): CaseSupervisionManualEntry | undefined {
+  if (!isObject(raw)) return undefined
+
+  const id = toText(raw.id)
+  // Sin id la entrada no se puede reenviar en el `PUT`
+  if (!id) return undefined
+
+  const activityCategories = Array.isArray(raw.activityCategories)
+    ? raw.activityCategories
+        .filter(isObject)
+        .map((item) => ({ id: toText(item.id), name: toText(item.name) }))
+        .filter((item) => item.id)
+    : []
+
+  const participants = Array.isArray(raw.participants)
+    ? raw.participants
+        .filter(isObject)
+        .map((item) => ({
+          id: toText(item.id),
+          catalogId: toText(item.catalogId),
+          catalogName: toText(item.catalogName),
+        }))
+        .filter((item) => item.catalogId)
+    : []
+
+  return {
+    id,
+    date: toText(raw.date),
+    timeStart: toText(raw.timeStart),
+    timeEnd: toText(raw.timeEnd),
+    duration: toNumber(raw.duration),
+    characteristic: toText(raw.characteristic),
+    serviceType: toText(raw.serviceType),
+    billingCode: toText(raw.billingCode),
+    billingCodeId: toText(raw.billingCodeId),
+    clientAddressId: toText(raw.clientAddressId),
+    clientAddressPlaceServiceName: toText(raw.clientAddressPlaceServiceName),
+    modalityCatalogId: toText(raw.modalityCatalogId),
+    modalityName: toText(raw.modalityName),
+    activityCategories,
+    participants,
+  }
+}
+
+function normalizeManualEntries(raw: unknown): CaseSupervisionManualEntry[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map(normalizeManualEntry)
+    .filter((item): item is CaseSupervisionManualEntry => item !== undefined)
 }
 
 // ============================================
@@ -195,6 +249,7 @@ export async function getCaseSupervisionLogById(
     totalsHours: toNumber(root.totalsHours),
     supervisionHours: toNumber(root.supervisionHours),
     appointments: normalizeAppointments(root.appointments),
+    withoutAppointments: normalizeManualEntries(root.withoutAppointments),
   }
 }
 
@@ -212,6 +267,50 @@ export async function createCaseSupervisionLog(
   }
 
   return extractId(response.data)
+}
+
+// ============================================
+// Edición
+// ============================================
+
+/**
+ * Sólo modifica entradas manuales que ya existen (cada una viaja con su `id`).
+ * No agrega ni borra entradas, y no toca el encabezado ni los appointments.
+ */
+export async function updateCaseSupervisionLog(
+  id: string,
+  data: UpdateCaseSupervisionLogDto,
+): Promise<void> {
+  const response = await servicePut<UpdateCaseSupervisionLogDto, unknown>(`${BASE_URL}/${id}`, data)
+
+  if (response?.status !== 200 && response?.status !== 204) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to update case supervision log"))
+  }
+}
+
+// ============================================
+// Catálogo de Activity Category
+// ============================================
+
+export async function getActivityCategoryCatalog(): Promise<ActivityCategoryCatalogItem[]> {
+  const response = await serviceGet<unknown>("/activity-category/catalog?page=0&pageSize=100")
+
+  if (response?.status !== 200 || !response.data) return []
+
+  const data = response.data as unknown
+  const entities = Array.isArray(data) ? data : toJson(data).entities
+  if (!Array.isArray(entities)) return []
+
+  return entities
+    .filter(isObject)
+    .map((item) => ({
+      id: toText(item.id),
+      code: toText(item.code),
+      name: toText(item.name),
+      sortOrder: toNumber(item.sortOrder),
+    }))
+    .filter((item) => item.id && item.name)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
 }
 
 /** El backend responde con el UUID pelado; algunos entornos lo envuelven. */

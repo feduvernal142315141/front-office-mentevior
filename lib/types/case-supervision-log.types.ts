@@ -7,10 +7,11 @@
  * Dos cosas que lo separan de Monthly Supervision y conviene tener presentes al
  * leer estos tipos:
  *
- * 1. **No hay `PUT` ni `DELETE`.** El reporte se crea y queda. Por eso no existe
- *    un `SaveDto` con todos los campos: el `POST` sólo lleva la identidad.
- * 2. **El usuario no aporta ningún dato del contenido.** Elige el trío
- *    (cliente, provider, mes) y el backend calcula y persiste todo lo demás.
+ * 1. **No hay `DELETE`, y el `PUT` sólo toca las entradas manuales.** El
+ *    encabezado y los appointments quedan como se crearon.
+ * 2. **Lo único que aporta el usuario son las entradas manuales**
+ *    (`withoutAppointments`, contrato 2026-10-12). El trío (cliente, provider,
+ *    mes) lo elige, y el resto lo calcula y persiste el backend.
  */
 
 import type { ReportMonth } from "@/lib/utils/report-month"
@@ -45,6 +46,77 @@ export interface CaseSupervisionAppointment {
    * que renderizarlo respetando el `\n` o las dos etiquetas quedan pegadas.
    */
   characteristic: string
+}
+
+// ============================================
+// Manual Log Entry — `withoutAppointments`
+// ============================================
+
+/** Los dos valores que acepta `serviceType` */
+export const CASE_SUPERVISION_SERVICE_TYPES = ["Direct", "Indirect"] as const
+
+export interface ActivityCategoryCatalogItem {
+  id: string
+  code: string
+  name: string
+  sortOrder: number
+}
+
+export interface CaseSupervisionManualParticipant {
+  id: string
+  catalogId: string
+  catalogName: string
+}
+
+/**
+ * Una actividad cargada a mano, sin appointment detrás. Existen para sumar
+ * tareas cuando el provider no llega al 10% de supervisión.
+ *
+ * Los textos (`billingCode`, `clientAddressPlaceServiceName`, `modalityName`)
+ * son snapshots que genera el backend al guardar; los ids son los que se usan
+ * para precargar los selects y reenviar en el `PUT`.
+ */
+export interface CaseSupervisionManualEntry {
+  id: string
+  /** ISO `yyyy-MM-dd`, o vacío: ningún campo es obligatorio */
+  date: string
+  /** `HH:mm:ss` */
+  timeStart: string
+  /** `HH:mm:ss` */
+  timeEnd: string
+  duration: number
+  /** Description of Activity */
+  characteristic: string
+  serviceType: string
+  /** Snapshot, p. ej. `"Type 97153"`. Vacío cuando no se eligió billing code */
+  billingCode: string
+  billingCodeId: string
+  clientAddressId: string
+  clientAddressPlaceServiceName: string
+  modalityCatalogId: string
+  modalityName: string
+  activityCategories: { id: string; name: string }[]
+  participants: CaseSupervisionManualParticipant[]
+}
+
+/** Una entrada manual tal como viaja en el `POST` y en el `PUT` (éste con `id`) */
+export interface CaseSupervisionManualEntryInput {
+  id?: string
+  activityCategoryIds: string[]
+  billingCodeId: string | null
+  clientAddressId: string | null
+  modalityCatalogId: string | null
+  participantIds: string[]
+  serviceType: string | null
+  date: string | null
+  timeStart: string | null
+  timeEnd: string | null
+  duration: number
+  characteristic: string | null
+}
+
+export interface UpdateCaseSupervisionLogDto {
+  withoutAppointments: CaseSupervisionManualEntryInput[]
 }
 
 // ============================================
@@ -100,6 +172,7 @@ export interface CaseSupervisionLogDetail {
   totalsHours: number
   supervisionHours: number
   appointments: CaseSupervisionAppointment[]
+  withoutAppointments: CaseSupervisionManualEntry[]
 }
 
 // ============================================
@@ -107,15 +180,16 @@ export interface CaseSupervisionLogDetail {
 // ============================================
 
 /**
- * Lo único que viaja al crear. El backend vuelve a consultar los appointments y
- * recalcula horas, duraciones y características: mandar totales desde el front
- * sería mandar datos que el servidor va a ignorar.
+ * Lo que viaja al crear: la identidad y las entradas manuales. El backend vuelve
+ * a consultar los appointments y recalcula horas, duraciones y características:
+ * mandar totales desde el front sería mandar datos que el servidor va a ignorar.
  */
 export interface CreateCaseSupervisionLogDto {
   clientId: string
   providerId: string
   /** ISO `yyyy-MM-dd`. El backend deriva el mes y el año de acá */
   date: string
+  withoutAppointments?: CaseSupervisionManualEntryInput[]
 }
 
 // ============================================

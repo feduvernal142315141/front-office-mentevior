@@ -3,7 +3,10 @@
 import { useCallback, useState } from "react"
 import { buildFilters } from "@/lib/utils/query-filters"
 import type { ReportMonth } from "@/lib/utils/report-month"
-import type { CaseSupervisionLogListItem } from "@/lib/types/case-supervision-log.types"
+import type {
+  CaseSupervisionLogListItem,
+  CaseSupervisionManualEntryInput,
+} from "@/lib/types/case-supervision-log.types"
 import {
   createCaseSupervisionLog,
   getCaseSupervisionLogs,
@@ -16,6 +19,7 @@ interface CreateParams {
   providerId: string
   /** `yyyyMM` */
   reportMonth: ReportMonth
+  withoutAppointments?: CaseSupervisionManualEntryInput[]
 }
 
 interface UseCreateCaseSupervisionLogReturn {
@@ -62,7 +66,7 @@ export function useCreateCaseSupervisionLog(): UseCreateCaseSupervisionLogReturn
     [],
   )
 
-  const create = useCallback(async ({ clientId, providerId, reportMonth }: CreateParams) => {
+  const create = useCallback(async ({ clientId, providerId, reportMonth, withoutAppointments }: CreateParams) => {
     setIsCreating(true)
     try {
       return await createCaseSupervisionLog({
@@ -70,6 +74,7 @@ export function useCreateCaseSupervisionLog(): UseCreateCaseSupervisionLogReturn
         providerId,
         // El backend deriva mes y año de `date`; se manda el día 1 del período
         date: toReportDate(reportMonth),
+        withoutAppointments: withoutAppointments ?? [],
       })
     } finally {
       setIsCreating(false)

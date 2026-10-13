@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, CalendarClock, ClipboardList, Info, Loader2, Lock } from "lucide-react"
+import { AlertTriangle, CalendarClock, ClipboardList, Info, Loader2, Lock, PencilLine } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -14,10 +14,17 @@ import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { useCaseSupervisionAppointments } from "@/lib/modules/case-supervision-log/hooks/use-case-supervision-appointments"
 import { useCreateCaseSupervisionLog } from "@/lib/modules/case-supervision-log/hooks/use-create-case-supervision-log"
+import {
+  getManualEntryDuration,
+  isManualEntryEmpty,
+  toManualEntryInput,
+  type ManualEntryFormValue,
+} from "@/lib/modules/case-supervision-log/utils/manual-entries"
 import { getSupervisionCompliance } from "@/lib/types/case-supervision-log.types"
 import { currentReportMonth, formatReportMonthLong, isReportMonth } from "@/lib/utils/report-month"
 import { CaseSupervisionAppointmentsTable } from "./CaseSupervisionAppointmentsTable"
 import { ComplianceSummary } from "./ComplianceSummary"
+import { ManualLogEntryEditor } from "./ManualLogEntryEditor"
 
 /**
  * Alta de un Case Supervision Log.
@@ -25,8 +32,8 @@ import { ComplianceSummary } from "./ComplianceSummary"
  * Dos etapas en una sola pantalla: se elige el trío (cliente, provider, mes), se
  * revisa lo que el backend calculó para ese período, y recién ahí se persiste.
  *
- * La revisión no es decorativa. **Este reporte no se edita ni se borra**, así que
- * esta pantalla es el único momento en que un error se puede corregir. De ahí
+ * La revisión no es decorativa. **El reporte no se borra, y después de creado
+ * sólo se pueden editar las entradas manuales** (ni agregar ni quitar). De ahí
  * salen las dos guardas: el aviso de duplicado y la confirmación explícita.
  */
 export function CaseSupervisionLogForm() {
@@ -36,6 +43,7 @@ export function CaseSupervisionLogForm() {
   const [clientId, setClientId] = useState("")
   const [providerId, setProviderId] = useState("")
   const [reportMonth, setReportMonth] = useState(currentReportMonth)
+  const [manualEntries, setManualEntries] = useState<ManualEntryFormValue[]>([])
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { users: allUsers } = useUsers({ pageSize: 100 })
@@ -64,6 +72,25 @@ export function CaseSupervisionLogForm() {
     setClientId(clients[0].id)
   }, [clients, clientId])
 
+  // Location sale de las direcciones del cliente: al cambiarlo, la elegida deja de valer
+  const handleClientChange = useCallback((nextClientId: string) => {
+    setClientId(nextClientId)
+    setManualEntries((prev) => prev.map((entry) => ({ ...entry, clientAddressId: "" })))
+  }, [])
+
+  const filledManualEntries = useMemo(
+    () => manualEntries.filter((entry) => !isManualEntryEmpty(entry)),
+    [manualEntries],
+  )
+  const manualHours = useMemo(
+    () =>
+      filledManualEntries.reduce(
+        (sum, entry) => sum + getManualEntryDuration(entry.timeStart, entry.timeEnd),
+        0,
+      ),
+    [filledManualEntries],
+  )
+
   const isTrioComplete = !!clientId && !!providerId && isReportMonth(reportMonth)
   const isBusy = isLoadingPreparation || isCreating || isCheckingDuplicate
   const canSubmit = isTrioComplete && !!preparation && !isBusy
@@ -73,7 +100,12 @@ export function CaseSupervisionLogForm() {
 
   const persist = useCallback(async () => {
     try {
-      const id = await create({ clientId, providerId, reportMonth })
+      const id = await create({
+        clientId,
+        providerId,
+        reportMonth,
+        withoutAppointments: filledManualEntries.map(toManualEntryInput),
+      })
       toast.success("Case Supervision Log created")
       // Se navega al detalle y se relee desde el servidor: el `POST` recalcula
       // todo desde la base, así que lo persistido es la única verdad.
@@ -83,7 +115,7 @@ export function CaseSupervisionLogForm() {
         description: err instanceof Error ? err.message : "Unexpected error",
       })
     }
-  }, [create, clientId, providerId, reportMonth, router])
+  }, [create, clientId, providerId, reportMonth, filledManualEntries, router])
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -113,16 +145,21 @@ export function CaseSupervisionLogForm() {
           ? "There are no hours logged for this month, so the supervision requirement cannot be evaluated."
           : `Supervision is ${percent.toFixed(1)}% of total hours — the requirement is ${isMet ? "Met" : "Unmet"}.`
 
+      const manualEntriesLine =
+        filledManualEntries.length > 0
+          ? ` It includes ${filledManualEntries.length} manual log ${filledManualEntries.length === 1 ? "entry" : "entries"}.`
+          : ""
+
       alert.confirm({
         title: "Create this report?",
-        description: `${clientName} · ${providerName} · ${formatReportMonthLong(reportMonth)}. ${complianceLine} Once created, a Case Supervision Log cannot be edited or deleted.`,
+        description: `${clientName} · ${providerName} · ${formatReportMonthLong(reportMonth)}. ${complianceLine}${manualEntriesLine} Once created, the report cannot be deleted and only its manual log entries can be edited.`,
         confirmText: "Create report",
         cancelText: "Review again",
         onConfirm: persist,
       })
     },
     [
-      alert, canSubmit, clientId, clientName, findExisting, persist, preparation,
+      alert, canSubmit, clientId, clientName, filledManualEntries, findExisting, persist, preparation,
       providerId, providerName, reportMonth, router,
     ],
   )
@@ -139,7 +176,7 @@ export function CaseSupervisionLogForm() {
           <FloatingSelect
             label="Client"
             value={clientId}
-            onChange={setClientId}
+            onChange={handleClientChange}
             options={clientOptions}
             disabled={clientsLoading || isCreating}
             searchable
@@ -165,7 +202,7 @@ export function CaseSupervisionLogForm() {
         <p className="mt-3 flex items-start gap-1.5 text-xs text-slate-400">
           <Info className="mt-px h-3.5 w-3.5 shrink-0" />
           Hours and sessions are calculated by the server from the appointments of the selected
-          month. There is nothing else to fill in.
+          month. Manual log entries are optional.
         </p>
       </SectionCard>
 
@@ -212,13 +249,41 @@ export function CaseSupervisionLogForm() {
         )}
       </SectionCard>
 
+      {/* ─── Entradas manuales ─── */}
+      {isTrioComplete && (
+        <SectionCard
+          icon={<PencilLine className="h-4 w-4" />}
+          title="Manual Log Entry"
+          subtitle={
+            filledManualEntries.length > 0
+              ? `${filledManualEntries.length} added · ${manualHours.toFixed(2)} h`
+              : "Optional"
+          }
+        >
+          {manualEntries.length === 0 && (
+            <p className="mb-4 text-sm text-slate-500">
+              Add activities that have no appointment behind them, for example when supervision is
+              below the 10% requirement.
+            </p>
+          )}
+          <ManualLogEntryEditor
+            entries={manualEntries}
+            onChange={setManualEntries}
+            clientId={clientId}
+            reportMonth={reportMonth}
+            disabled={isCreating}
+          />
+        </SectionCard>
+      )}
+
       {/* Es irreversible y conviene decirlo antes del botón, no después */}
       {canSubmit && (
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
           <p className="text-sm text-amber-800">
-            Once created, this report cannot be edited or deleted. Check the client, the supervisor
-            and the month before continuing.
+            Once created, this report cannot be deleted, and only the manual log entries can be
+            edited — you won&apos;t be able to add or remove them later. Check the client, the
+            supervisor and the month before continuing.
           </p>
         </div>
       )}

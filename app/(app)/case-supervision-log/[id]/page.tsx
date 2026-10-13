@@ -1,6 +1,7 @@
 "use client"
 
 import { use, useState } from "react"
+import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import {
@@ -12,6 +13,8 @@ import {
   FileQuestion,
   Loader2,
   Lock,
+  Pencil,
+  PencilLine,
   User,
 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
@@ -19,10 +22,22 @@ import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { SectionCard } from "@/components/custom/SectionCard"
 import { parseLocalDate } from "@/lib/date"
 import { useCaseSupervisionLogById } from "@/lib/modules/case-supervision-log/hooks/use-case-supervision-log-by-id"
-import { getCaseSupervisionLogPdfUrl } from "@/lib/modules/case-supervision-log/services/case-supervision-log.service"
+import {
+  getCaseSupervisionLogPdfUrl,
+  updateCaseSupervisionLog,
+} from "@/lib/modules/case-supervision-log/services/case-supervision-log.service"
+import {
+  manualEntryToFormValue,
+  toManualEntryInput,
+  type ManualEntryFormValue,
+} from "@/lib/modules/case-supervision-log/utils/manual-entries"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import { formatReportMonthLong } from "@/lib/utils/report-month"
 import { CaseSupervisionAppointmentsTable } from "../components/CaseSupervisionAppointmentsTable"
 import { ComplianceSummary } from "../components/ComplianceSummary"
+import { ManualLogEntriesTable } from "../components/ManualLogEntriesTable"
+import { ManualLogEntryEditor } from "../components/ManualLogEntryEditor"
 
 interface CaseSupervisionLogDetailPageProps {
   params: Promise<{ id: string }>
@@ -41,15 +56,39 @@ function formatReportDate(value: string): string {
 /**
  * Detalle de un Case Supervision Log.
  *
- * Es **sólo lectura y así tiene que verse**: no hay endpoint de actualización, y
- * mostrar campos deshabilitados sugeriría que en algún momento se van a poder
- * editar. Es un documento emitido, no un borrador.
+ * El encabezado y las sesiones son **sólo lectura**: el backend los calculó al
+ * crear y el `PUT` no los toca. Lo único editable son las entradas manuales que
+ * ya existen; no se pueden agregar ni quitar.
  */
 export default function CaseSupervisionLogDetailPage({ params }: CaseSupervisionLogDetailPageProps) {
   const { id } = use(params)
   const router = useRouter()
-  const { report, isLoading, notFound, error } = useCaseSupervisionLogById(id)
+  const { report, isLoading, notFound, error, refetch } = useCaseSupervisionLogById(id)
+  const { canEdit } = useModulePermissions(PermissionModule.CASE_SUPERVISION)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  /** `null` mientras no se está editando */
+  const [draftEntries, setDraftEntries] = useState<ManualEntryFormValue[] | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSaveEntries = async () => {
+    if (!report || !draftEntries) return
+    setIsSaving(true)
+    try {
+      await updateCaseSupervisionLog(report.id, {
+        withoutAppointments: draftEntries.map(toManualEntryInput),
+      })
+      toast.success("Manual log entries updated")
+      setDraftEntries(null)
+      // Se relee: el backend regenera los textos snapshot de lo que cambió
+      await refetch()
+    } catch (err) {
+      toast.error("Couldn't update the entries", {
+        description: err instanceof Error ? err.message : "Unexpected error",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <div className="p-8">
@@ -90,7 +129,7 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
           )}
         </div>
 
-        {isLoading && (
+        {isLoading && !report && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-[#037ECC]" />
           </div>
@@ -120,7 +159,7 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
           </div>
         )}
 
-        {!isLoading && report && (
+        {report && (
           <div className="space-y-5">
             {/* ─── Cabecera ─── */}
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -156,9 +195,59 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
               />
             </SectionCard>
 
+            {report.withoutAppointments.length > 0 && (
+              <SectionCard
+                icon={<PencilLine className="h-4 w-4" />}
+                title="Manual Log Entry"
+                subtitle={`${report.withoutAppointments.length} recorded`}
+                action={
+                  canEdit && !draftEntries ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        setDraftEntries(report.withoutAppointments.map(manualEntryToFormValue))
+                      }
+                      className="flex items-center gap-2"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </Button>
+                  ) : undefined
+                }
+              >
+                {draftEntries ? (
+                  <div className="space-y-4">
+                    <ManualLogEntryEditor
+                      entries={draftEntries}
+                      onChange={setDraftEntries}
+                      clientId={report.clientId}
+                      reportMonth={report.monthYear}
+                      savedEntries={report.withoutAppointments}
+                      allowAddRemove={false}
+                      disabled={isSaving}
+                    />
+                    <div className="flex justify-end gap-3">
+                      <Button
+                        variant="ghost"
+                        onClick={() => setDraftEntries(null)}
+                        disabled={isSaving}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveEntries} loading={isSaving}>
+                        Save changes
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <ManualLogEntriesTable entries={report.withoutAppointments} />
+                )}
+              </SectionCard>
+            )}
+
             <p className="flex items-center justify-center gap-1.5 text-xs text-slate-400">
               <Lock className="h-3.5 w-3.5" />
-              Case supervision logs are a permanent record and cannot be edited.
+              Sessions and totals are a permanent record. Only manual log entries can be edited.
             </p>
           </div>
         )}
