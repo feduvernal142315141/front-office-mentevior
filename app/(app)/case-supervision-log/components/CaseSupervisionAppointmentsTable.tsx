@@ -53,9 +53,7 @@ function formatDuration(value: number): string {
  * No se usa `CustomTable` porque no hay paginación, orden ni click de fila: es
  * una tabla de lectura dentro de una pantalla, no un listado.
  *
- * La columna `Case Supervision Modality` del PDF no aparece acá: hoy el campo no
- * existe en el modelo (§8 de `docs/case-supervision-log-backend.md`) y una
- * columna permanentemente en blanco se lee como "falta cargar esto".
+ * Modality viene sólo como nombre (`modalityName`, contrato 2026-10-14).
  */
 export function CaseSupervisionAppointmentsTable({
   appointments,
@@ -75,7 +73,7 @@ export function CaseSupervisionAppointmentsTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[880px] border-collapse">
+      <table className="w-full min-w-[980px] border-collapse">
         <thead>
           <tr className="border-b border-slate-200">
             <Th>Date</Th>
@@ -83,6 +81,7 @@ export function CaseSupervisionAppointmentsTable({
             <Th align="right">Hours</Th>
             <Th>Billing Code</Th>
             <Th>Service Type</Th>
+            <Th>Modality</Th>
             <Th>Participants</Th>
             <Th>Characteristic</Th>
           </tr>
@@ -107,6 +106,9 @@ export function CaseSupervisionAppointmentsTable({
               </td>
               <td className="whitespace-nowrap px-3 py-3 text-sm text-slate-600">
                 {formatServiceType(appointment.serviceType)}
+              </td>
+              <td className="whitespace-nowrap px-3 py-3 text-sm text-slate-600">
+                {appointment.modalityName || "—"}
               </td>
               <td className="px-3 py-3 text-sm leading-snug text-slate-600">
                 {appointment.participants.join(", ") || "—"}

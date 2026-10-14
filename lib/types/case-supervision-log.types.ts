@@ -50,6 +50,8 @@ export interface CaseSupervisionAppointment {
   serviceType: string
   /** Snapshot, p. ej. `"CPT 97153 (XP)"` */
   billingCode: string
+  /** Sólo el nombre; el appointment no trae el id de la modalidad */
+  modalityName: string
   /** Nombres de los participantes */
   participants: string[]
 }

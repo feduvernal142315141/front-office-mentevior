@@ -76,6 +76,23 @@ export function getManualEntryDuration(timeStart: string, timeEnd: string): numb
   return Math.round(((end - start) / 60) * 100) / 100
 }
 
+/**
+ * Lo que el backend exige en cada entrada: fecha, inicio y fin (la duración se
+ * calcula). Devuelve el error por campo, vacío si la entrada se puede guardar.
+ */
+export function validateManualEntry(
+  entry: ManualEntryFormValue,
+): Partial<Record<"date" | "timeStart" | "timeEnd", string>> {
+  const errors: Partial<Record<"date" | "timeStart" | "timeEnd", string>> = {}
+  if (!entry.date) errors.date = "Date of Service is required"
+  if (!entry.timeStart) errors.timeStart = "Start Time is required"
+  if (!entry.timeEnd) errors.timeEnd = "End Time is required"
+  if (entry.timeStart && entry.timeEnd && getManualEntryDuration(entry.timeStart, entry.timeEnd) <= 0) {
+    errors.timeEnd = "End Time must be after Start Time"
+  }
+  return errors
+}
+
 /** Una entrada recién agregada que nadie llenó no se manda al crear */
 export function isManualEntryEmpty(entry: ManualEntryFormValue): boolean {
   return (

@@ -94,6 +94,7 @@ function normalizeAppointment(raw: unknown): CaseSupervisionAppointment | undefi
     characteristic: toText(raw.characteristic),
     serviceType: toText(raw.serviceType),
     billingCode: toBillingCodeText(raw.billingCode),
+    modalityName: toText(raw.modalityName),
     participants: toParticipantNames(raw.participants),
   }
 }

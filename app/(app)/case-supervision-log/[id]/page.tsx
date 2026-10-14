@@ -27,6 +27,7 @@ import {
 import {
   manualEntryToFormValue,
   toManualEntryInput,
+  validateManualEntry,
   type ManualEntryFormValue,
 } from "@/lib/modules/case-supervision-log/utils/manual-entries"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
@@ -76,6 +77,18 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
    */
   const handleSaveEntry = async (entry: ManualEntryFormValue) => {
     if (!report) return
+
+    // El `PUT` manda todas las entradas y el backend exige fecha y horas en cada una
+    const incompleteIndex = savedEntries.findIndex(
+      (e) => e.key !== entry.key && Object.keys(validateManualEntry(e)).length > 0,
+    )
+    if (incompleteIndex !== -1) {
+      toast.error("Another entry is incomplete", {
+        description: `Entry ${incompleteIndex + 1} is missing its date or times. Complete it first.`,
+      })
+      throw new Error("Incomplete manual entry")
+    }
+
     setIsSaving(true)
     try {
       await updateCaseSupervisionLog(report.id, {

@@ -12,7 +12,7 @@ import {
   createEmptyManualEntry,
   getManualEntryDuration,
   getReportMonthBounds,
-  isManualEntryEmpty,
+  validateManualEntry,
   type ManualEntryFormValue,
 } from "@/lib/modules/case-supervision-log/utils/manual-entries"
 import type { useManualEntryOptions } from "../hooks/useManualEntryOptions"
@@ -45,12 +45,24 @@ export function ManualLogEntryModal({
   isSaving,
 }: ManualLogEntryModalProps) {
   const [draft, setDraft] = useState<ManualEntryFormValue>(() => entry ?? createEmptyManualEntry())
+  /** Los errores se muestran recién después del primer intento de guardar */
+  const [submitted, setSubmitted] = useState(false)
   const isEdit = !!entry
 
   // Cada apertura arranca de la entrada elegida, o de una vacía al agregar
   useEffect(() => {
-    if (open) setDraft(entry ?? createEmptyManualEntry())
+    if (!open) return
+    setDraft(entry ?? createEmptyManualEntry())
+    setSubmitted(false)
   }, [open, entry])
+
+  const errors = submitted ? validateManualEntry(draft) : {}
+
+  const handleSave = () => {
+    setSubmitted(true)
+    if (Object.keys(validateManualEntry(draft)).length > 0) return
+    void onSave(draft)
+  }
 
   const { minDate, maxDate } = useMemo(() => getReportMonthBounds(reportMonth), [reportMonth])
   const duration = getManualEntryDuration(draft.timeStart, draft.timeEnd)
@@ -64,7 +76,7 @@ export function ManualLogEntryModal({
       open={open}
       onOpenChange={(next) => { if (!isSaving) onOpenChange(next) }}
       title={isEdit ? "Edit Log Entry" : "New Log Entry"}
-      description="All fields are optional."
+      description="Date and times are required; everything else is optional."
       maxWidthClassName="sm:max-w-[860px]"
       allowSelectOverflow
       contentClassName="!overflow-visible"
@@ -79,6 +91,9 @@ export function ManualLogEntryModal({
             minDate={minDate}
             maxDate={maxDate}
             disabled={isSaving}
+            required
+            hasError={!!errors.date}
+            errorMessage={errors.date}
           />
           <FloatingTimePicker
             label="Start Time"
@@ -86,6 +101,8 @@ export function ManualLogEntryModal({
             onChange={(v) => update("timeStart", v)}
             allowManualInput
             disabled={isSaving}
+            required
+            hasError={!!errors.timeStart}
           />
           <FloatingTimePicker
             label="End Time"
@@ -94,9 +111,14 @@ export function ManualLogEntryModal({
             allowManualInput
             defaultPeriod="PM"
             disabled={isSaving}
+            required
+            hasError={!!errors.timeEnd}
           />
           <ReadOnlyValue label="Total Time (hrs)" value={formatHours(duration)} />
         </div>
+        {(errors.timeStart || errors.timeEnd) && (
+          <p className="-mt-2 text-xs font-medium text-red-500">{errors.timeEnd ?? errors.timeStart}</p>
+        )}
 
         {/* Service Type no se pide: sale del billing code elegido (97153 directo, el resto indirecto) */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -164,9 +186,8 @@ export function ManualLogEntryModal({
         </Button>
         <Button
           type="button"
-          onClick={() => void onSave(draft)}
+          onClick={handleSave}
           loading={isSaving}
-          disabled={!isEdit && isManualEntryEmpty(draft)}
         >
           {isEdit ? "Update" : "Add"}
         </Button>
