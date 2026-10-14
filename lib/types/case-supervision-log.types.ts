@@ -46,14 +46,27 @@ export interface CaseSupervisionAppointment {
    * que renderizarlo respetando el `\n` o las dos etiquetas quedan pegadas.
    */
   characteristic: string
+  /** `DIRECT` / `INDIRECT`. Vacío en reportes anteriores al contrato 2026-10-14 */
+  serviceType: string
+  /** Snapshot, p. ej. `"CPT 97153 (XP)"` */
+  billingCode: string
+  /** Nombres de los participantes */
+  participants: string[]
 }
 
 // ============================================
 // Manual Log Entry — `withoutAppointments`
 // ============================================
 
-/** Los dos valores que acepta `serviceType` */
-export const CASE_SUPERVISION_SERVICE_TYPES = ["Direct", "Indirect"] as const
+/**
+ * El backend deriva `serviceType` del billing code: 97153 es directo, cualquier
+ * otro es indirecto. Se replica acá para mostrarlo antes de guardar y para
+ * mandarlo en el `PUT`, que sí lo acepta.
+ */
+export function getServiceTypeForBillingCode(code: string | undefined): string {
+  if (!code) return ""
+  return /\b97153\b/.test(code) ? "DIRECT" : "INDIRECT"
+}
 
 export interface ActivityCategoryCatalogItem {
   id: string
@@ -86,9 +99,10 @@ export interface CaseSupervisionManualEntry {
   timeEnd: string
   duration: number
   /** Description of Activity */
-  characteristic: string
+  description: string
+  /** `DIRECT` / `INDIRECT`, calculado por el backend desde el billing code */
   serviceType: string
-  /** Snapshot, p. ej. `"Type 97153"`. Vacío cuando no se eligió billing code */
+  /** Snapshot, p. ej. `"CPT 97155 (XP)"`. Vacío cuando no se eligió billing code */
   billingCode: string
   billingCodeId: string
   clientAddressId: string
@@ -99,7 +113,10 @@ export interface CaseSupervisionManualEntry {
   participants: CaseSupervisionManualParticipant[]
 }
 
-/** Una entrada manual tal como viaja en el `POST` y en el `PUT` (éste con `id`) */
+/**
+ * Una entrada manual tal como viaja en el `POST` y en el `PUT` (éste con `id`).
+ * `serviceType` sólo va en el `PUT`: al crear lo calcula el backend.
+ */
 export interface CaseSupervisionManualEntryInput {
   id?: string
   activityCategoryIds: string[]
@@ -107,12 +124,12 @@ export interface CaseSupervisionManualEntryInput {
   clientAddressId: string | null
   modalityCatalogId: string | null
   participantIds: string[]
-  serviceType: string | null
+  serviceType?: string | null
   date: string | null
   timeStart: string | null
   timeEnd: string | null
   duration: number
-  characteristic: string | null
+  description: string | null
 }
 
 export interface UpdateCaseSupervisionLogDto {

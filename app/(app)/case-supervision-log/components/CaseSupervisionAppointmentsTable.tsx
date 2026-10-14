@@ -36,6 +36,11 @@ function formatTime(value: string): string {
   return `${hours12}:${match[2]} ${suffix}`
 }
 
+function formatServiceType(value: string): string {
+  if (!value) return "—"
+  return value.charAt(0) + value.slice(1).toLowerCase()
+}
+
 function formatDuration(value: number): string {
   return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
@@ -70,12 +75,15 @@ export function CaseSupervisionAppointmentsTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] border-collapse">
+      <table className="w-full min-w-[880px] border-collapse">
         <thead>
           <tr className="border-b border-slate-200">
             <Th>Date</Th>
             <Th>Time</Th>
             <Th align="right">Hours</Th>
+            <Th>Billing Code</Th>
+            <Th>Service Type</Th>
+            <Th>Participants</Th>
             <Th>Characteristic</Th>
           </tr>
         </thead>
@@ -93,6 +101,15 @@ export function CaseSupervisionAppointmentsTable({
               </td>
               <td className="whitespace-nowrap px-3 py-3 text-right text-sm font-semibold tabular-nums text-slate-900">
                 {formatDuration(appointment.duration)}
+              </td>
+              <td className="whitespace-nowrap px-3 py-3 text-sm text-slate-600">
+                {appointment.billingCode || "—"}
+              </td>
+              <td className="whitespace-nowrap px-3 py-3 text-sm text-slate-600">
+                {formatServiceType(appointment.serviceType)}
+              </td>
+              <td className="px-3 py-3 text-sm leading-snug text-slate-600">
+                {appointment.participants.join(", ") || "—"}
               </td>
               {/* `characteristic` trae saltos de línea reales: sin
                   `whitespace-pre-line` el código y "RBT Supervision" quedan

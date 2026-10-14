@@ -17,12 +17,13 @@ export interface ManualEntryFormValue {
   /** `HH:mm` */
   timeEnd: string
   billingCodeId: string
+  /** Derivado del billing code al elegirlo; no se edita a mano */
   serviceType: string
   activityCategoryIds: string[]
   participantIds: string[]
   clientAddressId: string
   modalityCatalogId: string
-  characteristic: string
+  description: string
 }
 
 let nextKey = 0
@@ -40,7 +41,7 @@ export function createEmptyManualEntry(): ManualEntryFormValue {
     participantIds: [],
     clientAddressId: "",
     modalityCatalogId: "",
-    characteristic: "",
+    description: "",
   }
 }
 
@@ -57,7 +58,7 @@ export function manualEntryToFormValue(entry: CaseSupervisionManualEntry): Manua
     participantIds: entry.participants.map((p) => p.catalogId),
     clientAddressId: entry.clientAddressId,
     modalityCatalogId: entry.modalityCatalogId,
-    characteristic: entry.characteristic,
+    description: entry.description,
   }
 }
 
@@ -82,29 +83,31 @@ export function isManualEntryEmpty(entry: ManualEntryFormValue): boolean {
     !entry.timeStart &&
     !entry.timeEnd &&
     !entry.billingCodeId &&
-    !entry.serviceType &&
     entry.activityCategoryIds.length === 0 &&
     entry.participantIds.length === 0 &&
     !entry.clientAddressId &&
     !entry.modalityCatalogId &&
-    !entry.characteristic.trim()
+    !entry.description.trim()
   )
 }
 
+/**
+ * `serviceType` sólo viaja en el `PUT` (entradas con `id`): al crear lo calcula
+ * el backend desde el billing code.
+ */
 export function toManualEntryInput(entry: ManualEntryFormValue): CaseSupervisionManualEntryInput {
   return {
-    ...(entry.id ? { id: entry.id } : {}),
+    ...(entry.id ? { id: entry.id, serviceType: entry.serviceType || null } : {}),
     activityCategoryIds: entry.activityCategoryIds,
     billingCodeId: entry.billingCodeId || null,
     clientAddressId: entry.clientAddressId || null,
     modalityCatalogId: entry.modalityCatalogId || null,
     participantIds: entry.participantIds,
-    serviceType: entry.serviceType || null,
     date: entry.date || null,
     timeStart: entry.timeStart ? `${entry.timeStart}:00` : null,
     timeEnd: entry.timeEnd ? `${entry.timeEnd}:00` : null,
     duration: getManualEntryDuration(entry.timeStart, entry.timeEnd),
-    characteristic: entry.characteristic.trim() || null,
+    description: entry.description.trim() || null,
   }
 }
 

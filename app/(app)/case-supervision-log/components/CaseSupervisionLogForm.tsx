@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, CalendarClock, ClipboardList, Info, Loader2, Lock, PencilLine } from "lucide-react"
+import { AlertTriangle, CalendarClock, ClipboardList, Info, Loader2, Lock } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -15,7 +15,6 @@ import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { useCaseSupervisionAppointments } from "@/lib/modules/case-supervision-log/hooks/use-case-supervision-appointments"
 import { useCreateCaseSupervisionLog } from "@/lib/modules/case-supervision-log/hooks/use-create-case-supervision-log"
 import {
-  getManualEntryDuration,
   isManualEntryEmpty,
   toManualEntryInput,
   type ManualEntryFormValue,
@@ -24,7 +23,7 @@ import { getSupervisionCompliance } from "@/lib/types/case-supervision-log.types
 import { currentReportMonth, formatReportMonthLong, isReportMonth } from "@/lib/utils/report-month"
 import { CaseSupervisionAppointmentsTable } from "./CaseSupervisionAppointmentsTable"
 import { ComplianceSummary } from "./ComplianceSummary"
-import { ManualLogEntryEditor } from "./ManualLogEntryEditor"
+import { ManualLogEntrySection } from "./ManualLogEntrySection"
 
 /**
  * Alta de un Case Supervision Log.
@@ -82,15 +81,6 @@ export function CaseSupervisionLogForm() {
     () => manualEntries.filter((entry) => !isManualEntryEmpty(entry)),
     [manualEntries],
   )
-  const manualHours = useMemo(
-    () =>
-      filledManualEntries.reduce(
-        (sum, entry) => sum + getManualEntryDuration(entry.timeStart, entry.timeEnd),
-        0,
-      ),
-    [filledManualEntries],
-  )
-
   const isTrioComplete = !!clientId && !!providerId && isReportMonth(reportMonth)
   const isBusy = isLoadingPreparation || isCreating || isCheckingDuplicate
   const canSubmit = isTrioComplete && !!preparation && !isBusy
@@ -251,29 +241,21 @@ export function CaseSupervisionLogForm() {
 
       {/* ─── Entradas manuales ─── */}
       {isTrioComplete && (
-        <SectionCard
-          icon={<PencilLine className="h-4 w-4" />}
-          title="Manual Log Entry"
-          subtitle={
-            filledManualEntries.length > 0
-              ? `${filledManualEntries.length} added · ${manualHours.toFixed(2)} h`
-              : "Optional"
+        <ManualLogEntrySection
+          entries={manualEntries}
+          clientId={clientId}
+          reportMonth={reportMonth}
+          canAdd
+          onSaveEntry={(entry) =>
+            setManualEntries((prev) =>
+              prev.some((e) => e.key === entry.key)
+                ? prev.map((e) => (e.key === entry.key ? entry : e))
+                : [...prev, entry],
+            )
           }
-        >
-          {manualEntries.length === 0 && (
-            <p className="mb-4 text-sm text-slate-500">
-              Add activities that have no appointment behind them, for example when supervision is
-              below the 10% requirement.
-            </p>
-          )}
-          <ManualLogEntryEditor
-            entries={manualEntries}
-            onChange={setManualEntries}
-            clientId={clientId}
-            reportMonth={reportMonth}
-            disabled={isCreating}
-          />
-        </SectionCard>
+          onRemoveEntry={(key) => setManualEntries((prev) => prev.filter((e) => e.key !== key))}
+          disabled={isCreating}
+        />
       )}
 
       {/* Es irreversible y conviene decirlo antes del botón, no después */}

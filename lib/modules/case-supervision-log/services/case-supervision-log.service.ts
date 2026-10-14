@@ -54,6 +54,29 @@ function toOptionalNumber(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
+/**
+ * `billingCode` llega como texto (`"CPT 97153 (XP)"`); los reportes viejos lo
+ * traían como objeto `{ type, code, modifier }`. Se aceptan las dos formas.
+ */
+function toBillingCodeText(value: unknown): string {
+  if (typeof value === "string") return value.trim()
+  if (!isObject(value)) return ""
+  return [toText(value.type), toText(value.code), toText(value.modifier) && `(${toText(value.modifier)})`]
+    .filter(Boolean)
+    .join(" ")
+}
+
+/**
+ * En el detalle los participantes de un appointment son strings; en
+ * `/appointments` son objetos con `catalogName`. Se aceptan las dos formas.
+ */
+function toParticipantNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : isObject(item) ? toText(item.catalogName) : ""))
+    .filter(Boolean)
+}
+
 function normalizeAppointment(raw: unknown): CaseSupervisionAppointment | undefined {
   if (!isObject(raw)) return undefined
 
@@ -69,6 +92,9 @@ function normalizeAppointment(raw: unknown): CaseSupervisionAppointment | undefi
     timeEnd: toText(raw.timeEnd),
     duration: toNumber(raw.duration),
     characteristic: toText(raw.characteristic),
+    serviceType: toText(raw.serviceType),
+    billingCode: toBillingCodeText(raw.billingCode),
+    participants: toParticipantNames(raw.participants),
   }
 }
 
@@ -110,9 +136,9 @@ function normalizeManualEntry(raw: unknown): CaseSupervisionManualEntry | undefi
     timeStart: toText(raw.timeStart),
     timeEnd: toText(raw.timeEnd),
     duration: toNumber(raw.duration),
-    characteristic: toText(raw.characteristic),
+    description: toText(raw.description),
     serviceType: toText(raw.serviceType),
-    billingCode: toText(raw.billingCode),
+    billingCode: toBillingCodeText(raw.billingCode),
     billingCodeId: toText(raw.billingCodeId),
     clientAddressId: toText(raw.clientAddressId),
     clientAddressPlaceServiceName: toText(raw.clientAddressPlaceServiceName),

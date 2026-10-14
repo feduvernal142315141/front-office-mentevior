@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
@@ -13,8 +13,6 @@ import {
   FileQuestion,
   Loader2,
   Lock,
-  Pencil,
-  PencilLine,
   User,
 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
@@ -36,8 +34,7 @@ import { PermissionModule } from "@/lib/utils/permissions-new"
 import { formatReportMonthLong } from "@/lib/utils/report-month"
 import { CaseSupervisionAppointmentsTable } from "../components/CaseSupervisionAppointmentsTable"
 import { ComplianceSummary } from "../components/ComplianceSummary"
-import { ManualLogEntriesTable } from "../components/ManualLogEntriesTable"
-import { ManualLogEntryEditor } from "../components/ManualLogEntryEditor"
+import { ManualLogEntrySection } from "../components/ManualLogEntrySection"
 
 interface CaseSupervisionLogDetailPageProps {
   params: Promise<{ id: string }>
@@ -66,25 +63,34 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
   const { report, isLoading, notFound, error, refetch } = useCaseSupervisionLogById(id)
   const { canEdit } = useModulePermissions(PermissionModule.CASE_SUPERVISION)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  /** `null` mientras no se está editando */
-  const [draftEntries, setDraftEntries] = useState<ManualEntryFormValue[] | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
-  const handleSaveEntries = async () => {
-    if (!report || !draftEntries) return
+  const savedEntries = useMemo(
+    () => report?.withoutAppointments.map(manualEntryToFormValue) ?? [],
+    [report],
+  )
+
+  /**
+   * El `PUT` recibe la lista de entradas existentes: se manda la editada junto
+   * con las demás tal como están. Si falla, el modal queda abierto.
+   */
+  const handleSaveEntry = async (entry: ManualEntryFormValue) => {
+    if (!report) return
     setIsSaving(true)
     try {
       await updateCaseSupervisionLog(report.id, {
-        withoutAppointments: draftEntries.map(toManualEntryInput),
+        withoutAppointments: savedEntries
+          .map((e) => (e.key === entry.key ? entry : e))
+          .map(toManualEntryInput),
       })
-      toast.success("Manual log entries updated")
-      setDraftEntries(null)
+      toast.success("Manual log entry updated")
       // Se relee: el backend regenera los textos snapshot de lo que cambió
       await refetch()
     } catch (err) {
-      toast.error("Couldn't update the entries", {
+      toast.error("Couldn't update the entry", {
         description: err instanceof Error ? err.message : "Unexpected error",
       })
+      throw err
     } finally {
       setIsSaving(false)
     }
@@ -196,53 +202,15 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
             </SectionCard>
 
             {report.withoutAppointments.length > 0 && (
-              <SectionCard
-                icon={<PencilLine className="h-4 w-4" />}
-                title="Manual Log Entry"
-                subtitle={`${report.withoutAppointments.length} recorded`}
-                action={
-                  canEdit && !draftEntries ? (
-                    <Button
-                      variant="secondary"
-                      onClick={() =>
-                        setDraftEntries(report.withoutAppointments.map(manualEntryToFormValue))
-                      }
-                      className="flex items-center gap-2"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </Button>
-                  ) : undefined
-                }
-              >
-                {draftEntries ? (
-                  <div className="space-y-4">
-                    <ManualLogEntryEditor
-                      entries={draftEntries}
-                      onChange={setDraftEntries}
-                      clientId={report.clientId}
-                      reportMonth={report.monthYear}
-                      savedEntries={report.withoutAppointments}
-                      allowAddRemove={false}
-                      disabled={isSaving}
-                    />
-                    <div className="flex justify-end gap-3">
-                      <Button
-                        variant="ghost"
-                        onClick={() => setDraftEntries(null)}
-                        disabled={isSaving}
-                      >
-                        Cancel
-                      </Button>
-                      <Button onClick={handleSaveEntries} loading={isSaving}>
-                        Save changes
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <ManualLogEntriesTable entries={report.withoutAppointments} />
-                )}
-              </SectionCard>
+              <ManualLogEntrySection
+                entries={savedEntries}
+                clientId={report.clientId}
+                reportMonth={report.monthYear}
+                savedEntries={report.withoutAppointments}
+                onSaveEntry={handleSaveEntry}
+                canEdit={canEdit}
+                isSaving={isSaving}
+              />
             )}
 
             <p className="flex items-center justify-center gap-1.5 text-xs text-slate-400">
