@@ -1,9 +1,14 @@
 "use client"
 
+import { useMemo } from "react"
 import { format } from "date-fns"
 import { CalendarX2 } from "lucide-react"
+import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
 import type { CaseSupervisionAppointment } from "@/lib/types/case-supervision-log.types"
 import { parseLocalDate } from "@/lib/date"
+import { formatHours } from "./manual-entry-format"
+import { ServiceTypeBadge } from "./ManualLogEntriesTable"
+import { TagList } from "./TagList"
 
 interface CaseSupervisionAppointmentsTableProps {
   appointments: CaseSupervisionAppointment[]
@@ -36,29 +41,80 @@ function formatTime(value: string): string {
   return `${hours12}:${match[2]} ${suffix}`
 }
 
-function formatServiceType(value: string): string {
-  if (!value) return "—"
-  return value.charAt(0) + value.slice(1).toLowerCase()
-}
-
-function formatDuration(value: number): string {
-  return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 /**
- * Las sesiones del período, una por fila. **Siempre de sólo lectura**: en este
- * reporte el usuario no aporta ningún dato de contenido —el backend calcula
- * todo— así que no hay nada editable, ni al preparar ni al consultar.
- *
- * No se usa `CustomTable` porque no hay paginación, orden ni click de fila: es
- * una tabla de lectura dentro de una pantalla, no un listado.
- *
+ * Las sesiones del período, una por fila. **Siempre de sólo lectura**: las
+ * calcula el backend, ni al preparar ni al consultar hay nada que editar.
  * Modality viene sólo como nombre (`modalityName`, contrato 2026-10-14).
  */
 export function CaseSupervisionAppointmentsTable({
   appointments,
   emptyDescription = "There are no appointments for this client in the selected month.",
 }: CaseSupervisionAppointmentsTableProps) {
+  const columns = useMemo<CustomTableColumn<CaseSupervisionAppointment>[]>(
+    () => [
+      {
+        key: "date",
+        header: "Date",
+        className: "whitespace-nowrap",
+        render: (row) => <span className="font-medium text-slate-900">{formatDate(row.date)}</span>,
+      },
+      {
+        key: "time",
+        header: "Time",
+        className: "whitespace-nowrap",
+        render: (row) => (
+          <span className="tabular-nums">
+            {formatTime(row.timeStart)} – {formatTime(row.timeEnd)}
+          </span>
+        ),
+      },
+      {
+        key: "hours",
+        header: "Hours",
+        align: "right",
+        className: "whitespace-nowrap",
+        render: (row) => <span className="font-semibold tabular-nums text-slate-900">{formatHours(row.duration)}</span>,
+      },
+      {
+        key: "billingCode",
+        header: "Billing Code",
+        className: "whitespace-nowrap",
+        render: (row) => row.billingCode || <span className="text-slate-400">—</span>,
+      },
+      {
+        key: "serviceType",
+        header: "Service Type",
+        className: "whitespace-nowrap",
+        render: (row) => <ServiceTypeBadge value={row.serviceType} />,
+      },
+      {
+        key: "modality",
+        header: "Modality",
+        className: "whitespace-nowrap",
+        render: (row) => row.modalityName || <span className="text-slate-400">—</span>,
+      },
+      {
+        key: "participants",
+        header: "Participants",
+        className: "whitespace-nowrap",
+        render: (row) => <TagList items={row.participants} />,
+      },
+      {
+        key: "characteristic",
+        header: "Characteristic",
+        className: "whitespace-nowrap",
+        // `characteristic` trae saltos de línea reales: sin `whitespace-pre-line`
+        // el código y "RBT Supervision" quedan pegados en un solo renglón.
+        render: (row) => (
+          <p className="min-w-[240px] max-w-[360px] whitespace-pre-line leading-snug text-slate-600">
+            {row.characteristic || "—"}
+          </p>
+        ),
+      },
+    ],
+    [],
+  )
+
   if (appointments.length === 0) {
     return (
       <div className="py-10 text-center">
@@ -72,69 +128,10 @@ export function CaseSupervisionAppointmentsTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[980px] border-collapse">
-        <thead>
-          <tr className="border-b border-slate-200">
-            <Th>Date</Th>
-            <Th>Time</Th>
-            <Th align="right">Hours</Th>
-            <Th>Billing Code</Th>
-            <Th>Service Type</Th>
-            <Th>Modality</Th>
-            <Th>Participants</Th>
-            <Th>Characteristic</Th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {appointments.map((appointment, index) => (
-            <tr
-              key={appointment.id ?? `${appointment.date}-${appointment.timeStart}-${index}`}
-              className="transition-colors hover:bg-slate-50/70"
-            >
-              <td className="whitespace-nowrap px-3 py-3 text-sm font-medium text-slate-900">
-                {formatDate(appointment.date)}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm tabular-nums text-slate-600">
-                {formatTime(appointment.timeStart)} – {formatTime(appointment.timeEnd)}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-right text-sm font-semibold tabular-nums text-slate-900">
-                {formatDuration(appointment.duration)}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm text-slate-600">
-                {appointment.billingCode || "—"}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm text-slate-600">
-                {formatServiceType(appointment.serviceType)}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm text-slate-600">
-                {appointment.modalityName || "—"}
-              </td>
-              <td className="px-3 py-3 text-sm leading-snug text-slate-600">
-                {appointment.participants.join(", ") || "—"}
-              </td>
-              {/* `characteristic` trae saltos de línea reales: sin
-                  `whitespace-pre-line` el código y "RBT Supervision" quedan
-                  pegados en un solo renglón. */}
-              <td className="px-3 py-3 text-sm leading-snug text-slate-600 whitespace-pre-line">
-                {appointment.characteristic || "—"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function Th({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
-  return (
-    <th
-      className={`px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 ${
-        align === "right" ? "text-right" : "text-left"
-      }`}
-    >
-      {children}
-    </th>
+    <CustomTable
+      columns={columns}
+      data={appointments}
+      getRowKey={(row, index) => row.id ?? `${row.date}-${row.timeStart}-${index}`}
+    />
   )
 }

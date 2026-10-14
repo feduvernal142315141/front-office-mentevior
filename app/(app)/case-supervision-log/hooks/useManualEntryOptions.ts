@@ -30,9 +30,10 @@ export interface ManualEntryRow {
   duration: number
   billingCode: string
   serviceType: string
-  activityCategories: string
-  participants: string
+  activityCategories: string[]
+  participants: string[]
   location: string
+  modality: string
   description: string
 }
 
@@ -148,15 +149,12 @@ export function useManualEntryOptions(clientId: string, savedEntries: CaseSuperv
       serviceType: entry.serviceType,
       activityCategories: entry.activityCategoryIds
         .map((id) => labelOf(activityCategoryOptions, id))
-        .filter(Boolean)
-        .join(", "),
+        .filter(Boolean),
       participants: entry.participantIds
         .map((id) => labelOf(participantOptions, id))
-        .filter(Boolean)
-        .join(", "),
-      location: [labelOf(locationOptions, entry.clientAddressId), labelOf(modalityOptions, entry.modalityCatalogId)]
-        .filter(Boolean)
-        .join(" · "),
+        .filter(Boolean),
+      location: labelOf(locationOptions, entry.clientAddressId),
+      modality: labelOf(modalityOptions, entry.modalityCatalogId),
       description: entry.description,
     }),
     [activityCategoryOptions, billingCodeOptions, locationOptions, modalityOptions, participantOptions],

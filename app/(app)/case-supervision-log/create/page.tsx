@@ -16,7 +16,7 @@ export default function CreateCaseSupervisionLogPage() {
 
   return (
     <div className="p-8">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1600px]">
         <div className="mb-8 flex items-center gap-4">
           <button
             type="button"
