@@ -97,7 +97,11 @@ export function CaseSupervisionAppointmentsTable({
         key: "participants",
         header: "Participants",
         className: "whitespace-nowrap",
-        render: (row) => <TagList items={row.participants} />,
+        // El cliente participa siempre y no se persiste como participante (igual
+        // que en la session note, donde va fijo): se antepone acá.
+        render: (row) => (
+          <TagList items={["Client", ...row.participants.filter((p) => p.toLowerCase() !== "client")]} />
+        ),
       },
       {
         key: "characteristic",

@@ -235,9 +235,11 @@ export function WeekCalendar({
             "Are you sure you want to delete this session? This action cannot be undone.",
           confirmText: "Delete",
           cancelText: "Go Back",
+          // Se quita del calendario sólo si el backend confirmó el borrado: antes se
+          // quitaba primero y, si el DELETE fallaba, la sesión volvía al refrescar.
           onConfirm: async () => {
-            deleteAppointment(appointmentId)
-            await mutations.remove(appointmentId)
+            const deleted = await mutations.remove(appointmentId)
+            if (deleted) deleteAppointment(appointmentId)
           },
         })
         return
