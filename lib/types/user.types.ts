@@ -48,6 +48,14 @@ export interface UpdateMemberUserDto {
   resendEmail?: boolean
 }
 
+export interface UpdateMemberUserProfileDto {
+  firstName: string
+  lastName: string
+  email: string
+  cellphone: string
+  hiringDate?: string
+}
+
 export interface CreateMemberUserResponse {
   id: string
   email: string

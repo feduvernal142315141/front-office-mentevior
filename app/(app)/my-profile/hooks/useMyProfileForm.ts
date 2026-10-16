@@ -2,22 +2,25 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import { useUpdateUser } from "@/lib/modules/users/hooks/use-update-user"
+import { useUpdateUserProfile } from "@/lib/modules/users/hooks/use-update-user-profile"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { userFormSchema, getUserFormDefaults, type UserFormValues } from "@/lib/schemas/user-form.schema"
-import type { UpdateMemberUserDto } from "@/lib/types/user.types"
+import {
+  myProfileFormSchema,
+  getMyProfileFormDefaults,
+  type MyProfileFormValues,
+} from "@/lib/schemas/user-form.schema"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { isoToLocalDate } from "@/lib/date"
 import {useRoles} from "@/lib/modules/roles/hooks/use-roles"
 
 interface UseMyProfileFormReturn {
-  form: ReturnType<typeof useForm<UserFormValues>>
+  form: ReturnType<typeof useForm<MyProfileFormValues>>
   roles: Array<{ id: string; name: string }>
   isLoadingRoles: boolean
   isLoadingUser: boolean
   user: any
   currentRole: { id: string; name: string } | null
-  onSubmit: (data: UserFormValues) => Promise<void>
+  onSubmit: (data: MyProfileFormValues) => Promise<void>
   isSubmitting: boolean
   actions: {
     goToDashboard: () => void
@@ -29,15 +32,15 @@ export function useMyProfileForm(): UseMyProfileFormReturn {
   const { user: currentUser } = useAuth()
   const userId = currentUser?.id || null
   
-  const { update, isLoading: isUpdating } = useUpdateUser()
+  const { update, isLoading: isUpdating } = useUpdateUserProfile()
   const { user, isLoading: isLoadingUser } = useUserById(userId)
   const { roles, isLoading: isLoadingRoles } = useRoles()
   
   const isSubmitting = isUpdating
 
-  const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
-    defaultValues: getUserFormDefaults(),
+  const form = useForm<MyProfileFormValues>({
+    resolver: zodResolver(myProfileFormSchema),
+    defaultValues: getMyProfileFormDefaults(),
   })
   
   useEffect(() => {
@@ -56,19 +59,15 @@ export function useMyProfileForm(): UseMyProfileFormReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, userId]) 
   
-  const onSubmit = async (data: UserFormValues) => {
+  const onSubmit = async (data: MyProfileFormValues) => {
     if (!userId) return
     
-    const dto: UpdateMemberUserDto = {
-      id: userId,
+    const dto = {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
       cellphone: data.cellphone,
-      hiringDate: data.hiringDate,
-      roleId: data.roleId,
-      active: data.active,
-      terminated: data.terminated,
+      ...(data.hiringDate ? { hiringDate: data.hiringDate } : {}),
     }
     
     const result = await update(dto)

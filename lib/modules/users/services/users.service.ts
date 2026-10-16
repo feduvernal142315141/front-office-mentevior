@@ -1,5 +1,5 @@
 import {serviceGet, servicePost, servicePut} from "@/lib/services/baseService"
-import {type CreateMemberUserDto, MemberUser, MemberUserListItem, UpdateMemberUserDto} from "@/lib/types/user.types";
+import {type CreateMemberUserDto, MemberUser, MemberUserListItem, UpdateMemberUserDto, UpdateMemberUserProfileDto} from "@/lib/types/user.types";
 import {PaginatedResponse} from "@/lib/types/response.types";
 import {getQueryString} from "@/lib/utils/format";
 import {QueryModel} from "@/lib/models/queryModel";
@@ -59,6 +59,16 @@ export async function updateUser( data: UpdateMemberUserDto): Promise<Boolean> {
 
   if (response.status !== 200 && response.status !== 201) {
     throw new Error(response.data?.message || "Failed to update user")
+  }
+
+  return response.data as unknown as Boolean
+}
+
+export async function updateUserProfile(data: UpdateMemberUserProfileDto): Promise<Boolean> {
+  const response = await servicePut<UpdateMemberUserProfileDto, Boolean>("/member-users/profile", data)
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(response.data?.message || "Failed to update profile")
   }
 
   return response.data as unknown as Boolean

@@ -37,7 +37,20 @@ export const userFormSchema = z.object({
   billingCodes: z.array(z.string()).min(1, "At least one billing code is required"),
 })
 
+/**
+ * The self-service profile form does not edit billing codes or member-user
+ * types. Keep those fields required for the user-management form, but do not
+ * make them an invisible requirement when updating one's own profile.
+ */
+export const myProfileFormSchema = userFormSchema.omit({
+  memberUserTypeIds: true,
+  billingCodes: true,
+}).extend({
+  hiringDate: z.string().optional(),
+})
+
 export type UserFormValues = z.infer<typeof userFormSchema>
+export type MyProfileFormValues = z.infer<typeof myProfileFormSchema>
 
 export const getUserFormDefaults = (): UserFormValues => ({
   firstName: "",
@@ -50,4 +63,15 @@ export const getUserFormDefaults = (): UserFormValues => ({
   terminated: false,
   memberUserTypeIds: [],
   billingCodes: [],
+})
+
+export const getMyProfileFormDefaults = (): MyProfileFormValues => ({
+  firstName: "",
+  lastName: "",
+  email: "",
+  cellphone: "",
+  hiringDate: getTodayLocalDate(),
+  roleId: "",
+  active: true,
+  terminated: false,
 })
