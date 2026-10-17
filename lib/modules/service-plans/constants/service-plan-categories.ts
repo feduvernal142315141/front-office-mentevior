@@ -63,3 +63,8 @@ export function createFallbackCategoryIdFromLabel(label: string): string {
   const slug = slugifyCategoryName(normalizedLabel)
   return slug.length > 0 ? `fallback-${slug}` : normalizedLabel
 }
+
+/** Categorías de caregiver (Caregivers Programs, Caregiver Training): el objetivo lo cumple el caregiver, no el cliente. */
+export function isCaregiverCategory(categoryName: string | undefined): boolean {
+  return Boolean(categoryName?.trim().toLowerCase().includes("caregiver"))
+}

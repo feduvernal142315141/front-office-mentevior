@@ -37,6 +37,7 @@ import {
 } from "@/lib/modules/service-plans/constants/objective-direction"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { isCaregiverCategory } from "@/lib/modules/service-plans/constants/service-plan-categories"
 
 interface ObjectivesTabContentProps {
   objectives: ObjectiveRow[]
@@ -132,7 +133,7 @@ export function ObjectivesTabContent({
   mode,
   periodMap,
   periodSelectOptions,
-  clientFirstName,
+  clientFirstName: clientFirstNameProp,
   targetName,
   dataCollectionTypeName,
   categoryCatalogId,
@@ -146,6 +147,9 @@ export function ObjectivesTabContent({
   objetiveType = null,
   onObjetiveTypeChange,
 }: ObjectivesTabContentProps) {
+  // En las categorías de caregiver el sujeto del objetivo es el caregiver, no el cliente
+  const clientFirstName = isCaregiverCategory(categoryName) ? "Caregiver" : clientFirstNameProp
+
   const direction: ObjectiveDirection = useMemo(
     () => resolveObjectiveDirection(categoryCatalogId, categoryName),
     [categoryCatalogId, categoryName]
