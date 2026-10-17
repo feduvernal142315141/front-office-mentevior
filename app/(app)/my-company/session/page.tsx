@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CalendarCheck, Settings } from "lucide-react"
+import { CalendarCheck, ClipboardPenLine } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { useAppointmentConfig } from "@/lib/modules/appointment-config/hooks/use-appointment-config"
@@ -39,7 +39,7 @@ export default function AppointmentPage() {
             aria-label="View session configuration audit logs"
             title="View session configuration audit logs"
           >
-            <Settings className="w-4 h-4" />
+            <ClipboardPenLine className="w-4 h-4" />
             Logs
           </Button>
         </div>

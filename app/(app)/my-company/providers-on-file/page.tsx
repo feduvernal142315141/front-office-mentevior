@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Contact, Plus, Settings } from "lucide-react"
+import { Contact, Plus, ClipboardPenLine } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { ProvidersOnFileTable } from "./components/ProvidersOnFileTable"
@@ -39,7 +39,7 @@ export default function ProvidersOnFilePage() {
               aria-label="View deleted provider on file audit logs"
               title="View deleted provider on file audit logs"
             >
-              <Settings className="w-4 h-4" />
+              <ClipboardPenLine className="w-4 h-4" />
               Logs
             </Button>
 

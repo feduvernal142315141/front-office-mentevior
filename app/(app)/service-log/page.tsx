@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ClipboardList, Settings } from "lucide-react"
+import { ClipboardList, ClipboardPenLine } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { usePermission } from "@/lib/hooks/use-permission"
@@ -59,7 +59,7 @@ export default function ServiceLogPage() {
             aria-label="View service log audit logs"
             title="View service log audit logs"
           >
-            <Settings className="w-4 h-4" />
+            <ClipboardPenLine className="w-4 h-4" />
             Logs
           </Button>
         </div>

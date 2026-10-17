@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Eye, Settings } from "lucide-react"
+import { Eye, ClipboardPenLine } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { useSupervisionConfig } from "@/lib/modules/supervision-config/hooks/use-supervision-config"
@@ -39,7 +39,7 @@ export default function SupervisionPage() {
             aria-label="View supervision configuration audit logs"
             title="View supervision configuration audit logs"
           >
-            <Settings className="w-4 h-4" />
+            <ClipboardPenLine className="w-4 h-4" />
             Logs
           </Button>
         </div>

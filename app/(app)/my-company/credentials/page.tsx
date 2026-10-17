@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Plus, Award, Settings } from "lucide-react"
+import { Plus, Award, ClipboardPenLine } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { CredentialsTable, type CredentialsTableRef } from "./components/CredentialsTable"
@@ -48,7 +48,7 @@ export default function CredentialsPage() {
               aria-label="View deleted credential audit logs"
               title="View deleted credential audit logs"
             >
-              <Settings className="w-4 h-4" />
+              <ClipboardPenLine className="w-4 h-4" />
               Logs
             </Button>
 

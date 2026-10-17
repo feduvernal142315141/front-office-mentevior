@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Building2, Settings } from "lucide-react"
+import { Building2, ClipboardPenLine } from "lucide-react"
 import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
@@ -38,7 +38,7 @@ export default function AccountProfilePage() {
               aria-label="View account profile audit logs"
               title="View account profile audit logs"
             >
-              <Settings className="h-4 w-4" />
+              <ClipboardPenLine className="h-4 w-4" />
               Logs
             </Button>
           </div>

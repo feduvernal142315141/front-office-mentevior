@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { format, parseISO } from "date-fns"
+import { parseISO } from "date-fns"
 import {
   ChevronLeft,
   ChevronRight,
   Plus,
   Calendar as CalendarIcon,
-  Settings,
+  ClipboardPenLine,
 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -144,7 +144,7 @@ export function CalendarToolbar({
           aria-label="View deleted session audit logs"
           title="View deleted session audit logs"
         >
-          <Settings className="h-4 w-4" />
+          <ClipboardPenLine className="h-4 w-4" />
           Logs
         </Button>
 

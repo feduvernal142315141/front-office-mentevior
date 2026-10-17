@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { MapPin, Plus, Settings } from "lucide-react"
+import { MapPin, Plus, ClipboardPenLine } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
 import { useRouter } from "next/navigation"
@@ -39,7 +39,7 @@ export default function AddressPage() {
               aria-label="View deleted address audit logs"
               title="View deleted address audit logs"
             >
-              <Settings className="w-4 h-4" />
+              <ClipboardPenLine className="w-4 h-4" />
               Logs
             </Button>
 
