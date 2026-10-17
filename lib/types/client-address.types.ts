@@ -22,7 +22,7 @@ export interface ClientAddress {
 
 export interface CreateClientAddressDto {
   clientId: string
-  nickName: string
+  nickName?: string
   placeServiceId?: string
   addressLine1: string
   apartmentSuite?: string

@@ -63,16 +63,6 @@ const addressSourceSchema = z.object({
     })
   }
 
-  if (value.sourceType !== "agency") {
-    if (!value.nickName || value.nickName.trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Nickname is required",
-        path: ["nickName"],
-      })
-    }
-  }
-
   if (value.sourceType === "manual") {
     if (!value.placeServiceId) {
       ctx.addIssue({
@@ -391,7 +381,7 @@ export function Step2Addresses({
 
       const result = await update({
         id: editingAddress.id,
-        nickName: values.nickName,
+        nickName: values.nickName?.trim() || undefined,
         placeServiceId: values.placeServiceId,
         addressLine1: values.addressLine1?.trim() || "",
         apartmentSuite: values.apartmentSuite?.trim() || "",
@@ -442,7 +432,7 @@ export function Step2Addresses({
 
       payload = {
         clientId: resolvedClientId,
-        nickName: values.nickName ?? "",
+        nickName: values.nickName?.trim() || undefined,
         placeServiceId: values.placeServiceId,
         addressLine1: values.addressLine1?.trim() || "",
         apartmentSuite: values.apartmentSuite?.trim() || "",
@@ -942,7 +932,6 @@ export function Step2Addresses({
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                           hasError={!!fieldState.error}
-                          required
                           disabled={isAgencyEditMode}
                         />
                         {fieldState.error && <p className="mt-1.5 text-xs text-red-500">{fieldState.error.message}</p>}
