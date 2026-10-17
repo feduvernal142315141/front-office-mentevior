@@ -53,6 +53,13 @@ function labelOf(options: Option[], value: string): string {
   return options.find((o) => o.value === value)?.label ?? ""
 }
 
+function formatPlaceServiceLabel(name?: string, code?: string, fallback = ""): string {
+  const placeServiceName = name?.trim() ?? ""
+  const placeServiceCode = code?.trim() ?? ""
+  if (placeServiceName && placeServiceCode) return `${placeServiceName} (${placeServiceCode})`
+  return placeServiceName || placeServiceCode || fallback
+}
+
 /**
  * Catálogos de las entradas manuales y la resolución de ids a textos para la
  * tabla. Los snapshots de `savedEntries` cubren lo que ya no está en los
@@ -85,10 +92,9 @@ export function useManualEntryOptions(clientId: string, savedEntries: CaseSuperv
     () =>
       withSavedOptions(
         addresses.map((address) => {
-          const placeOfService = address.placeServiceName ?? address.placeService
           return {
             value: address.id,
-            label: [address.nickName, placeOfService].filter(Boolean).join(" · ") || address.addressLine1,
+            label: formatPlaceServiceLabel(address.placeServiceName, address.placeServiceCode, address.addressLine1),
           }
         }),
         savedEntries.map((e) => ({ value: e.clientAddressId, label: e.clientAddressPlaceServiceName })),
@@ -153,11 +159,13 @@ export function useManualEntryOptions(clientId: string, savedEntries: CaseSuperv
       participants: entry.participantIds
         .map((id) => labelOf(participantOptions, id))
         .filter(Boolean),
-      location: labelOf(locationOptions, entry.clientAddressId),
+      location:
+        savedEntries.find((savedEntry) => savedEntry.id === entry.id)?.clientAddressPlaceServiceName
+        ?? labelOf(locationOptions, entry.clientAddressId),
       modality: labelOf(modalityOptions, entry.modalityCatalogId),
       description: entry.description,
     }),
-    [activityCategoryOptions, billingCodeOptions, locationOptions, modalityOptions, participantOptions],
+    [activityCategoryOptions, billingCodeOptions, locationOptions, modalityOptions, participantOptions, savedEntries],
   )
 
   return {

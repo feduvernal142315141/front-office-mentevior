@@ -33,6 +33,7 @@ type ClientAddressApiItem = {
   can_edit?: boolean
   createdAt?: string
   placeServiceName?: string
+  placeServiceCode?: string
 }
 
 type UpdateClientAddressPayload = Omit<UpdateClientAddressDto, "id"> & { id: string }
@@ -57,6 +58,7 @@ function normalizeClientAddress(item: ClientAddressApiItem): ClientAddress {
     canEdit: item.canEdit === true || item.can_edit === true,
     createdAt: item.createdAt,
     placeServiceName: item.placeServiceName ?? "",
+    placeServiceCode: item.placeServiceCode ?? "",
   }
 }
 

@@ -17,6 +17,7 @@ export interface ClientAddress {
   canEdit?: boolean
   createdAt?: string
   placeServiceName?: string
+  placeServiceCode?: string
 }
 
 export interface CreateClientAddressDto {
@@ -35,6 +36,7 @@ export interface CreateClientAddressDto {
   sourceAddressId?: string
   sourceClientId?: string
   placeServiceName?: string
+  placeServiceCode?: string
 }
 
 export interface CreateClientAddressByCompanyAddressIdDto {

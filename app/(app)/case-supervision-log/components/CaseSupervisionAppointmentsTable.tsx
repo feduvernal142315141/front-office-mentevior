@@ -94,6 +94,12 @@ export function CaseSupervisionAppointmentsTable({
         render: (row) => row.modalityName || <span className="text-slate-400">—</span>,
       },
       {
+        key: "location",
+        header: "Location",
+        className: "whitespace-nowrap",
+        render: (row) => row.location || <span className="text-slate-400">—</span>,
+      },
+      {
         key: "participants",
         header: "Participants",
         className: "whitespace-nowrap",

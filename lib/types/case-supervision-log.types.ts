@@ -52,6 +52,8 @@ export interface CaseSupervisionAppointment {
   billingCode: string
   /** Sólo el nombre; el appointment no trae el id de la modalidad */
   modalityName: string
+  /** Lugar de servicio, por ejemplo `Home (12)` */
+  location: string
   /** Nombres de los participantes */
   participants: string[]
 }
