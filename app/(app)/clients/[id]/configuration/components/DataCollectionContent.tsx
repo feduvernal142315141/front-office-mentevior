@@ -430,14 +430,30 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, appo
                       No type configured
                     </span>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setIsFullscreen((v) => !v)}
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-[#037ECC] hover:border-[#037ECC]/30 transition-colors"
-                    title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                  >
-                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                  </button>
+                  {/* En pantalla completa estas acciones viven en la barra superior; data-html2canvas-ignore las deja fuera del PDF */}
+                  {!isFullscreen && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleExportPdf}
+                        disabled={isExporting}
+                        data-html2canvas-ignore
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#037ECC]/30 bg-[#037ECC]/5 text-sm font-medium text-[#037ECC] hover:bg-[#037ECC]/10 transition-colors disabled:opacity-50"
+                      >
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                        {isExporting ? "Exporting..." : "Export PDF"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsFullscreen(true)}
+                        data-html2canvas-ignore
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-[#037ECC] hover:border-[#037ECC]/30 transition-colors"
+                      >
+                        <Maximize2 className="h-4 w-4" />
+                        Fullscreen
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
