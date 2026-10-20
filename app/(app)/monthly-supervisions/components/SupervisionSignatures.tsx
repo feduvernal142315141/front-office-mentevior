@@ -3,17 +3,24 @@
 import { useState } from "react"
 import { PenLine } from "lucide-react"
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
+import { Button } from "@/components/custom/Button"
+import { CustomModal } from "@/components/custom/CustomModal"
+import { useSignature } from "@/lib/modules/signature/hooks/use-signature"
 import { cn } from "@/lib/utils"
 
 interface SupervisionSignaturesProps {
+  supervisorId: string
   supervisorName: string
   supervisorCredentials?: string
+  superviseeId: string
   superviseeName: string
   /** Data URL o `null` */
   supervisorSign: string | null
   superviseeSign: string | null
   onSupervisorSignChange: (dataUrl: string | null) => void
   onSuperviseeSignChange: (dataUrl: string | null) => void
+  canEditSupervisorSignature?: boolean
+  canEditSuperviseeSignature?: boolean
   disabled?: boolean
   hasError?: boolean
 }
@@ -27,17 +34,56 @@ interface SupervisionSignaturesProps {
  * que espera el contrato.
  */
 export function SupervisionSignatures({
+  supervisorId,
   supervisorName,
   supervisorCredentials,
+  superviseeId,
   superviseeName,
   supervisorSign,
   superviseeSign,
   onSupervisorSignChange,
   onSuperviseeSignChange,
+  canEditSupervisorSignature = true,
+  canEditSuperviseeSignature = true,
   disabled,
   hasError,
 }: SupervisionSignaturesProps) {
   const [editing, setEditing] = useState<"supervisor" | "supervisee" | null>(null)
+  const [choosingSignatureFor, setChoosingSignatureFor] = useState<"supervisor" | "supervisee" | null>(null)
+  const {
+    signature: registeredSupervisorSignature,
+    isLoading: isLoadingRegisteredSupervisorSignature,
+  } = useSignature(supervisorId || null, canEditSupervisorSignature)
+  const {
+    signature: registeredSuperviseeSignature,
+    isLoading: isLoadingRegisteredSuperviseeSignature,
+  } = useSignature(superviseeId || null, canEditSuperviseeSignature)
+
+  const handleEdit = (role: "supervisor" | "supervisee") => {
+    const isLoadingRegisteredSignature = role === "supervisor"
+      ? isLoadingRegisteredSupervisorSignature
+      : isLoadingRegisteredSuperviseeSignature
+    const registeredSignature = role === "supervisor"
+      ? registeredSupervisorSignature
+      : registeredSuperviseeSignature
+
+    if (disabled || isLoadingRegisteredSignature) return
+    if (registeredSignature?.url) {
+      setChoosingSignatureFor(role)
+      return
+    }
+    setEditing(role)
+  }
+
+  const handleUseRegisteredSignature = () => {
+    if (choosingSignatureFor === "supervisor" && registeredSupervisorSignature?.url) {
+      onSupervisorSignChange(registeredSupervisorSignature.url)
+    }
+    if (choosingSignatureFor === "supervisee" && registeredSuperviseeSignature?.url) {
+      onSuperviseeSignChange(registeredSuperviseeSignature.url)
+    }
+    setChoosingSignatureFor(null)
+  }
 
   const handleSave = (base64: string) => {
     const dataUrl = `data:image/png;base64,${base64}`
@@ -49,8 +95,7 @@ export function SupervisionSignatures({
   return (
     <div className="space-y-4">
       <p className="text-sm italic text-slate-600">
-        By signing below, both parties certify that the supervision described in this report took
-        place as documented.
+        The supervisor certifies that the supervision described in this report took place as documented.
       </p>
 
       <div
@@ -64,21 +109,29 @@ export function SupervisionSignatures({
           name={supervisorName}
           credentials={supervisorCredentials}
           signature={supervisorSign}
-          onEdit={() => !disabled && setEditing("supervisor")}
-          disabled={disabled}
+          onEdit={() => handleEdit("supervisor")}
+          disabled={
+            disabled ||
+            !canEditSupervisorSignature ||
+            isLoadingRegisteredSupervisorSignature
+          }
         />
         <SignatureRow
           role="Supervisee"
           name={superviseeName}
           signature={superviseeSign}
-          onEdit={() => !disabled && setEditing("supervisee")}
-          disabled={disabled}
+          onEdit={() => handleEdit("supervisee")}
+          disabled={
+            disabled ||
+            !canEditSuperviseeSignature ||
+            isLoadingRegisteredSuperviseeSignature
+          }
           isLast
         />
       </div>
 
       {hasError && (
-        <p className="text-xs font-medium text-red-500">Both signatures are required</p>
+        <p className="text-xs font-medium text-red-500">The supervisor signature is required</p>
       )}
 
       <SignatureEditorModal
@@ -86,6 +139,47 @@ export function SupervisionSignatures({
         onOpenChange={(open) => !open && setEditing(null)}
         onSave={handleSave}
       />
+
+      <CustomModal
+        open={choosingSignatureFor !== null}
+        onOpenChange={(open) => !open && setChoosingSignatureFor(null)}
+        title={`${choosingSignatureFor === "supervisor" ? "Supervisor" : "Supervisee"} signature`}
+        description="This user already has a registered signature. Choose how to sign this Monthly Supervision."
+        maxWidthClassName="sm:max-w-[520px]"
+      >
+        <div className="space-y-4 p-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            {/* The registered signature is read-only here; choosing it never updates the user's saved signature. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={choosingSignatureFor === "supervisor"
+                ? registeredSupervisorSignature?.url
+                : registeredSuperviseeSignature?.url}
+              alt="Registered signature"
+              className="max-h-24 max-w-full object-contain brightness-50 contrast-150"
+            />
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setChoosingSignatureFor(null)
+                if (choosingSignatureFor) setEditing(choosingSignatureFor)
+              }}
+            >
+              Use a new signature
+            </Button>
+            <Button
+              onClick={() => {
+                handleUseRegisteredSignature()
+              }}
+            >
+              Use registered signature
+            </Button>
+          </div>
+        </div>
+      </CustomModal>
     </div>
   )
 }

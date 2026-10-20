@@ -1,5 +1,5 @@
 
-import {useEffect, useMemo, useState} from "react"
+import {useMemo, useState} from "react"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -138,14 +138,6 @@ export function useUsersTable(): UseUsersTableReturn {
     }),
     [view, create, edit, remove]
   )
-
-  useEffect(() => {
-    refetch({
-      page: page - 1,
-      pageSize,
-      filters: filtersArray,
-    })
-  }, [searchQuery, statusFilter, roleFilter, page, pageSize, filtersArray]);
 
   const uniqueRoles = useMemo(() => {
     const rolesList = new Set(roles.map((r) => r.name).filter(Boolean) as string[])

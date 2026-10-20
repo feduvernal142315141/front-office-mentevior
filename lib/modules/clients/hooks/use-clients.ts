@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
 import type { ClientListItem } from "@/lib/types/client.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getClients } from "../services/clients.service"
+import { usePaginatedResource } from "@/lib/hooks/use-paginated-resource"
 
 interface UseClientsParams {
   page?: number
@@ -20,17 +20,16 @@ interface UseClientsReturn {
 }
 
 export function useClients(initialParams?: UseClientsParams): UseClientsReturn {
-  const [clients, setClients] = useState<ClientListItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const requestIdRef = useRef(0)
+  const initialParamsKey = JSON.stringify({
+    page: initialParams?.page ?? 0,
+    pageSize: initialParams?.pageSize ?? 10,
+    filters: initialParams?.filters ?? [],
+  })
 
-  const fetchClients = useCallback(async (params?: UseClientsParams) => {
-    const requestId = ++requestIdRef.current
-    try {
-      setIsLoading(true)
-      setError(null)
+  const resource = usePaginatedResource<ClientListItem, UseClientsParams>({
+    params: initialParams,
+    paramsKey: initialParamsKey,
+    fetcher: async (params) => {
       const query: QueryModel = {
         page: params?.page ?? 0,
         pageSize: params?.pageSize ?? 10,
@@ -38,22 +37,15 @@ export function useClients(initialParams?: UseClientsParams): UseClientsReturn {
         orders: undefined,
       }
       const data = await getClients(query)
-      if (requestId !== requestIdRef.current) return
-      setClients(data.clients)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      if (requestId !== requestIdRef.current) return
-      setError(err instanceof Error ? err : new Error("Failed to fetch clients"))
-      setClients([])
-      setTotalCount(0)
-    } finally {
-      if (requestId === requestIdRef.current) setIsLoading(false)
-    }
-  }, [])
+      return { items: data.clients, totalCount: data.totalCount }
+    },
+  })
 
-  useEffect(() => {
-    fetchClients(initialParams)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  return { clients, isLoading, error, totalCount, refetch: fetchClients }
+  return {
+    clients: resource.items,
+    isLoading: resource.isLoading,
+    error: resource.error,
+    totalCount: resource.totalCount,
+    refetch: resource.refetch,
+  }
 }

@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import type { CredentialListItem } from "@/lib/types/credential.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getCredentials } from "../services/credentials.service"
+import { usePaginatedResource } from "@/lib/hooks/use-paginated-resource"
 
 interface UseCredentialsParams {
   page?: number
@@ -20,15 +20,16 @@ interface UseCredentialsReturn {
 }
 
 export function useCredentials(initialParams?: UseCredentialsParams): UseCredentialsReturn {
-  const [credentials, setCredentials] = useState<CredentialListItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const initialParamsKey = JSON.stringify({
+    page: initialParams?.page ?? 0,
+    pageSize: initialParams?.pageSize ?? 10,
+    filters: initialParams?.filters ?? [],
+  })
 
-  const fetchCredentials = useCallback(async (params?: UseCredentialsParams) => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const resource = usePaginatedResource<CredentialListItem, UseCredentialsParams>({
+    params: initialParams,
+    paramsKey: initialParamsKey,
+    fetcher: async (params) => {
       const query: QueryModel = {
         page: params?.page ?? 0,
         pageSize: params?.pageSize ?? 10,
@@ -36,26 +37,15 @@ export function useCredentials(initialParams?: UseCredentialsParams): UseCredent
         orders: undefined,
       }
       const data = await getCredentials(query)
-      setCredentials(data.credentials)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch credentials"))
-      setCredentials([])
-      setTotalCount(0)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchCredentials(initialParams)
-  }, []) 
+      return { items: data.credentials, totalCount: data.totalCount }
+    },
+  })
 
   return {
-    credentials,
-    totalCount,
-    isLoading,
-    error,
-    refetch: fetchCredentials,
+    credentials: resource.items,
+    totalCount: resource.totalCount,
+    isLoading: resource.isLoading,
+    error: resource.error,
+    refetch: resource.refetch,
   }
 }

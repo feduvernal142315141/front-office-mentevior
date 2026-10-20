@@ -125,6 +125,7 @@ const ACTIONS = [
   { key: PermissionAction.EDIT, label: "Edit" },
   { key: PermissionAction.DELETE, label: "Delete" },
   { key: PermissionAction.BLOCK, label: "Block" },
+  { key: PermissionAction.SIGN, label: "Sign" },
 ] as const
 
 /**
@@ -139,7 +140,9 @@ const EDIT_ONLY_MODULES = new Set<string>([
 ])
 
 function allowedActionsMask(module: string): number {
-  return EDIT_ONLY_MODULES.has(module) ? PermissionAction.EDIT : PermissionAction.ALL
+  if (EDIT_ONLY_MODULES.has(module)) return PermissionAction.EDIT
+  if (module === PermissionModule.MONTHLY_SUPERVISIONS) return PermissionAction.ALL_WITH_SIGN
+  return PermissionAction.ALL
 }
 
 function isActionAllowed(module: string, action: PermissionAction): boolean {
@@ -277,7 +280,7 @@ export function PermissionsSelector({
         PermissionModule.ASSESSMENT,
       ]
       clinicalModules.forEach(m => {
-        newObj[m] = PermissionAction.ALL
+        newObj[m] = allowedActionsMask(m)
       })
     } else if (preset === 'supervisor') {
       const supervisorModules = [
@@ -292,9 +295,8 @@ export function PermissionsSelector({
         PermissionModule.CASE_SUPERVISION,
       ]
       
-      const supervisorValue = PermissionAction.ALL
       supervisorModules.forEach(m => {
-        newObj[m] = supervisorValue
+        newObj[m] = allowedActionsMask(m)
       })
     }
     
@@ -325,7 +327,7 @@ export function PermissionsSelector({
       PermissionModule.ASSESSMENT,
     ]
     
-    const hasClinicalModules = clinicalCoreModules.every(m => permissionsObj[m] === PermissionAction.ALL)
+    const hasClinicalModules = clinicalCoreModules.every(m => permissionsObj[m] === allowedActionsMask(m))
     const hasNoClinicalMonthly = !permissionsObj[PermissionModule.CLINICAL_MONTHLY]
     const extraClinical = Object.entries(permissionsObj).filter(([key, value]) => (
       value > 0 &&
@@ -336,8 +338,6 @@ export function PermissionsSelector({
     if (hasClinicalModules && hasNoClinicalMonthly && extraClinical.length === 0) {
       return 'clinical'
     }
-    
-    const supervisorValue = PermissionAction.ALL
     
     const supervisorCoreModules = [
       PermissionModule.USERS_PROVIDERS,
@@ -350,7 +350,7 @@ export function PermissionsSelector({
       PermissionModule.ASSESSMENT,
       PermissionModule.CASE_SUPERVISION,
     ]
-    const hasSupervisorModules = supervisorCoreModules.every(m => permissionsObj[m] === supervisorValue)
+    const hasSupervisorModules = supervisorCoreModules.every(m => permissionsObj[m] === allowedActionsMask(m))
     const extraSupervisor = Object.entries(permissionsObj).filter(([key, value]) => (
       value > 0 &&
       !isHiddenPermissionModule(key) &&
@@ -373,7 +373,7 @@ export function PermissionsSelector({
 
     if (value === 0) return null
 
-    if (value === PermissionAction.ALL) {
+    if (value === allowedActionsMask(moduleKey)) {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -383,7 +383,7 @@ export function PermissionsSelector({
             </Badge>
           </TooltipTrigger>
           <TooltipContent side="left" className="bg-slate-900 text-white">
-            All permissions enabled (Read, Create, Edit, Delete, Block)
+            All permissions enabled (Read, Create, Edit, Delete, Block, Sign)
           </TooltipContent>
         </Tooltip>
       )
@@ -408,6 +408,7 @@ export function PermissionsSelector({
       if (a === PermissionAction.EDIT) return "Edit"
       if (a === PermissionAction.DELETE) return "Delete"
       if (a === PermissionAction.BLOCK) return "Block"
+      if (a === PermissionAction.SIGN) return "Sign"
       return ""
     }).filter(Boolean).join(", ")
     
@@ -481,7 +482,7 @@ export function PermissionsSelector({
             </div>
           </td>
           
-          <td colSpan={5} className="px-4 py-3 text-center">
+          <td colSpan={6} className="px-4 py-3 text-center">
           </td>
           
           <td className="px-6 py-3 text-right">
@@ -712,6 +713,9 @@ export function PermissionsSelector({
                 <th className="px-4 py-3 text-center text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
                   Block
                 </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
+                  Sign
+                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
                   Access Level
                 </th>
@@ -823,6 +827,9 @@ export function PermissionsSelector({
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
                       Block
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
+                      Sign
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-[#037ECC]/80 uppercase tracking-wider">
                       Access Level

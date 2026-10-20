@@ -41,10 +41,6 @@ export function useApplicantsTable() {
     setPage(0)
   }, [searchQuery, statusFilter])
 
-  useEffect(() => {
-    refetch(queryModel)
-  }, [searchQuery, statusFilter, page, pageSize])
-
   const handleSearchQueryChange = (value: string) => {
     setInputValue(value)
     setSearchQuery(value)

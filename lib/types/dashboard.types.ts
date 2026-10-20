@@ -103,6 +103,14 @@ export interface DashboardKpis {
   clinicalMonthlyThisMonth?: KpiValue
 }
 
+export interface MonthlySupervisionPendingSignature {
+  id: string
+  clientId?: string
+  clientName: string
+  requestedReportDate?: string
+  createAt?: string
+}
+
 export interface DashboardSummary {
   generatedAt: string
   actionCenter?: ActionCenterSummary
@@ -111,6 +119,7 @@ export interface DashboardSummary {
   authorizationUtilization?: { items: AuthorizationUtilizationItem[] }
   trend?: { points: TrendPoint[] }
   documentCompliance?: DocumentComplianceBreakdown
+  monthlySupervisionsPendingSignature?: MonthlySupervisionPendingSignature[]
 }
 
 /** Alcance del resumen: lo del usuario o lo de toda la compañía */

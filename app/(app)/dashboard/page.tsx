@@ -13,6 +13,7 @@ import { DocumentCompliance } from "./components/DocumentCompliance"
 import { ExpiringList } from "./components/ExpiringList"
 import { KpiRow } from "./components/KpiRow"
 import { LastUpdated } from "./components/LastUpdated"
+import { MonthlySupervisionPendingCard } from "./components/MonthlySupervisionPendingCard"
 import { ScopeToggle } from "./components/ScopeToggle"
 import { TrendChart } from "./components/TrendChart"
 import { type AttentionFilter, ALL_FILTER, matchesFilter } from "./components/attention-filter"
@@ -159,24 +160,30 @@ export default function DashboardPage() {
               ref={listRef}
               className={
                 layout.showAuthorizationUtilization
-                  ? "grid scroll-mt-6 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+                  ? "grid scroll-mt-6 grid-cols-1 gap-5 xl:grid-cols-4"
                   : "grid scroll-mt-6 grid-cols-1 gap-5"
               }
             >
-              <ExpiringList
-                items={filteredItems}
-                hasData={!!summary?.expiring}
-                truncatedCount={truncatedCount}
-                isLoading={isLoading}
-                filter={filter}
-                onClearFilter={() => setFilter(ALL_FILTER)}
-              />
+              <div className={layout.showAuthorizationUtilization ? "xl:col-span-2" : undefined}>
+                <ExpiringList
+                  items={filteredItems}
+                  hasData={!!summary?.expiring}
+                  truncatedCount={truncatedCount}
+                  isLoading={isLoading}
+                  filter={filter}
+                  onClearFilter={() => setFilter(ALL_FILTER)}
+                />
+              </div>
               {layout.showAuthorizationUtilization && (
                 <AuthorizationUtilization
                   data={summary?.authorizationUtilization}
                   isLoading={isLoading}
                 />
               )}
+              <MonthlySupervisionPendingCard
+                items={summary?.monthlySupervisionsPendingSignature}
+                isLoading={isLoading}
+              />
             </div>
 
             <div

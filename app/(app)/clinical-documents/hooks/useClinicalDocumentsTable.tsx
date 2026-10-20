@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { ClinicalDocumentListItem } from "@/lib/types/clinical-document.types"
@@ -51,10 +51,6 @@ export function useClinicalDocumentsTable() {
 
   const clinicalDocuments = data?.clinicalDocuments || []
   const totalCount = data?.totalCount || 0
-
-  useEffect(() => {
-    refetch()
-  }, [searchQuery, page, pageSize, refetch])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)

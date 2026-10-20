@@ -1,12 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { AddressListItem } from "@/lib/types/address.types"
 import { useAddresses } from "@/lib/modules/addresses/hooks/use-addresses"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/custom/Button"
 import { Edit2, MapPin, Trash2 } from "lucide-react"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
@@ -69,14 +67,6 @@ export function useAddressesTable() {
     pageSize,
     filters: filtersArray,
   })
-
-  useEffect(() => {
-    refetch({
-      page: page - 1,
-      pageSize,
-      filters: filtersArray,
-    })
-  }, [searchQuery, statusFilter, page, pageSize, filtersArray, refetch])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)

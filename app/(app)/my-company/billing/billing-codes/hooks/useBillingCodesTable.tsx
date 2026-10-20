@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
@@ -77,14 +77,6 @@ export function useBillingCodesTable() {
     pageSize,
     filters: filtersArray,
   })
-
-  useEffect(() => {
-    refetch({
-      page: page - 1,
-      pageSize,
-      filters: filtersArray,
-    })
-  }, [searchQuery, statusFilter, typeFilter, page, pageSize, filtersArray, refetch])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)

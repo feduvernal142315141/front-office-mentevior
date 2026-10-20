@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import { getQueryString } from "@/lib/utils/format"
 import type { QueryModel } from "@/lib/models/queryModel"
@@ -313,6 +313,14 @@ export async function updateCaseSupervisionLog(
 
   if (response?.status !== 200 && response?.status !== 204) {
     throw new Error(getApiErrorMessage(response?.data, "Failed to update case supervision log"))
+  }
+}
+
+export async function deleteCaseSupervisionLog(id: string): Promise<void> {
+  const response = await serviceDelete<undefined, boolean>(`${BASE_URL}/${id}`)
+
+  if (response?.status !== 200 && response?.status !== 204) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete case supervision log"))
   }
 }
 

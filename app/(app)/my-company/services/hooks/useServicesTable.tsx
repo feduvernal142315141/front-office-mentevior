@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { useCompanyServices } from "@/lib/modules/services/hooks/use-company-services"
 import { useToggleCompanyServiceStatus } from "@/lib/modules/services/hooks/use-toggle-company-service-status"
@@ -25,10 +25,6 @@ export function useServicesTable() {
 
   const { services, isLoading, error, refetch } = useCompanyServices()
   const { toggleStatus, isLoading: isToggling } = useToggleCompanyServiceStatus()
-
-  useEffect(() => {
-    void refetch()
-  }, [refetch])
 
   const filteredData = useMemo(() => {
     return services.filter((service) => {

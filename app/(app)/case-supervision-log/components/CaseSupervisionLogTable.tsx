@@ -6,11 +6,13 @@ import { Button } from "@/components/custom/Button"
 import { Card } from "@/components/custom/Card"
 import { CustomTable } from "@/components/custom/CustomTable"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
 import { getCaseSupervisionLogPdfUrl } from "@/lib/modules/case-supervision-log/services/case-supervision-log.service"
 import { useCaseSupervisionLogTable } from "../hooks/useCaseSupervisionLogTable"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
+import { formatReportMonthLong } from "@/lib/utils/report-month"
 
 export function CaseSupervisionLogTable() {
   const {
@@ -26,6 +28,10 @@ export function CaseSupervisionLogTable() {
     pagination,
     previewId,
     setPreviewId,
+    pendingDelete,
+    setPendingDelete,
+    confirmDelete,
+    isDeleting,
     canCreate,
     goToCreate,
     goToDetail,
@@ -129,6 +135,19 @@ export function CaseSupervisionLogTable() {
         entityId={auditModal.selectedItem?.id}
         entityName={auditModal.selectedItem?.clientName}
         title="Audit Logs - Case Supervision Log"
+      />
+      <DeleteConfirmModal
+        isOpen={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        isDeleting={isDeleting}
+        title="Delete Case Supervision Log"
+        message="This will remove the report and its supervision entries. This action cannot be undone."
+        itemName={
+          pendingDelete
+            ? `${pendingDelete.clientName} — ${formatReportMonthLong(pendingDelete.monthYear)}`
+            : undefined
+        }
       />
     </div>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Edit2, Sliders } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
@@ -8,7 +8,7 @@ import { AuditActionButton } from "@/components/custom/AuditActionButton"
 import type { ClientListItem } from "@/lib/types/client.types"
 import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { usePermission } from "@/lib/hooks/use-permission"
-import { PermissionModule, PermissionAction } from "@/lib/utils/permissions-new"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -61,7 +61,7 @@ export function useClientsTable(): UseClientsTableReturn {
   const { edit: canEditClient } = usePermission()
 
   const [inputValue, setInputValue] = useState("")
-  const searchQuery = inputValue
+  const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -103,17 +103,15 @@ export function useClientsTable(): UseClientsTableReturn {
     filters: filtersArray,
   })
 
-  useEffect(() => {
-    refetch({ page: page - 1, pageSize, filters: filtersArray })
-  }, [searchQuery, statusFilter, page, pageSize, filtersArray])
-
   const handleSearchChange = (value: string) => {
     setInputValue(value)
+    setSearchQuery(value)
     setPage(1)
   }
 
   const clearFilters = () => {
     setInputValue("")
+    setSearchQuery("")
     setStatusFilter("active")
     setPage(1)
   }

@@ -2,15 +2,33 @@
 import apiInstance from "@/lib/services/apiConfig";
 import {ResponseEntity, ServiceResponse} from "@/lib/models/response";
 
+// React Strict Mode puede ejecutar dos veces un efecto de montaje en desarrollo.
+// Reutilizar el GET mientras está en vuelo evita solicitudes idénticas concurrentes.
+const inFlightGetRequests = new Map<string, ServiceResponse<unknown>>();
+
 export const serviceGet = async <T = any>(url: string): ServiceResponse<T> => {
-    return apiInstance
+    const existingRequest = inFlightGetRequests.get(url);
+    if (existingRequest) {
+        return existingRequest as ServiceResponse<T>;
+    }
+
+    const request = apiInstance
         .get<ResponseEntity<T>>(url)
         .then((response) => {
             return response
         })
         .catch((err) => {
             return err.response
-        })
+        }) as ServiceResponse<T>;
+
+    inFlightGetRequests.set(url, request as ServiceResponse<unknown>);
+    void request.finally(() => {
+        if (inFlightGetRequests.get(url) === request) {
+            inFlightGetRequests.delete(url);
+        }
+    });
+
+    return request;
 }
 
 export const serviceDelete = async <T = any, R = any>(url: string, data?: T): ServiceResponse<R> => {

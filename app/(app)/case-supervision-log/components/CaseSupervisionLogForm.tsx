@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AlertTriangle, CalendarClock, ClipboardList, Info, Loader2, Lock } from "lucide-react"
 import { toast } from "sonner"
-import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { MonthPicker } from "@/components/custom/MonthPicker"
@@ -33,7 +32,7 @@ import { ManualLogEntrySection } from "./ManualLogEntrySection"
  *
  * La revisión no es decorativa. **El reporte no se borra, y después de creado
  * sólo se pueden editar las entradas manuales** (ni agregar ni quitar). De ahí
- * salen las dos guardas: el aviso de duplicado y la confirmación explícita.
+ * salen las dos guardas: la validación del backend y la confirmación explícita.
  */
 export function CaseSupervisionLogForm() {
   const router = useRouter()
@@ -50,7 +49,7 @@ export function CaseSupervisionLogForm() {
   const { preparation, isLoading: isLoadingPreparation, error: preparationError } =
     useCaseSupervisionAppointments({ clientId, providerId, reportMonth })
 
-  const { create, findExisting, isCreating, isCheckingDuplicate } = useCreateCaseSupervisionLog()
+  const { create, isCreating } = useCreateCaseSupervisionLog()
 
   const clientOptions = useMemo(
     () => clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
@@ -82,7 +81,7 @@ export function CaseSupervisionLogForm() {
     [manualEntries],
   )
   const isTrioComplete = !!clientId && !!providerId && isReportMonth(reportMonth)
-  const isBusy = isLoadingPreparation || isCreating || isCheckingDuplicate
+  const isBusy = isLoadingPreparation || isCreating
   const canSubmit = isTrioComplete && !!preparation && !isBusy
 
   const clientName = clientOptions.find((o) => o.value === clientId)?.label ?? ""
@@ -101,9 +100,12 @@ export function CaseSupervisionLogForm() {
       // todo desde la base, así que lo persistido es la única verdad.
       router.push(`/case-supervision-log/${id}`)
     } catch (err) {
-      toast.error("Couldn't create the report", {
-        description: err instanceof Error ? err.message : "Unexpected error",
-      })
+      const message = err instanceof Error ? err.message : "Unexpected error"
+      // The request runs from the confirmation modal. Delay the toast until the
+      // modal finishes closing so a 422 from the backend is visible to the user.
+      setTimeout(() => {
+        toast.error("Couldn't create the report", { description: message })
+      }, 0)
     }
   }, [create, clientId, providerId, reportMonth, filledManualEntries, router])
 
@@ -111,19 +113,6 @@ export function CaseSupervisionLogForm() {
     async (event: React.FormEvent) => {
       event.preventDefault()
       if (!canSubmit || !preparation) return
-
-      const existing = await findExisting({ clientId, providerId, reportMonth })
-
-      if (existing) {
-        alert.confirm({
-          title: "A report already exists for this period",
-          description: `${clientName} · ${providerName} · ${formatReportMonthLong(reportMonth)} already has a Case Supervision Log. Creating another one will leave two reports for the same period, and they cannot be deleted. Do you want to open the existing one instead?`,
-          confirmText: "Open existing",
-          cancelText: "Go back",
-          onConfirm: () => router.push(`/case-supervision-log/${existing.id}`),
-        })
-        return
-      }
 
       const { percent, isMet } = getSupervisionCompliance(
         preparation.supervisionHours,
@@ -142,14 +131,14 @@ export function CaseSupervisionLogForm() {
 
       alert.confirm({
         title: "Create this report?",
-        description: `${clientName} · ${providerName} · ${formatReportMonthLong(reportMonth)}. ${complianceLine}${manualEntriesLine} Once created, the report cannot be deleted and only its manual log entries can be edited.`,
+        description: `${clientName} · ${providerName} · ${formatReportMonthLong(reportMonth)}. ${complianceLine}${manualEntriesLine} Once created, only its manual log entries can be edited.`,
         confirmText: "Create report",
         cancelText: "Review again",
         onConfirm: persist,
       })
     },
     [
-      alert, canSubmit, clientId, clientName, filledManualEntries, findExisting, persist, preparation,
+      alert, canSubmit, clientId, clientName, filledManualEntries, persist, preparation,
       providerId, providerName, reportMonth, router,
     ],
   )

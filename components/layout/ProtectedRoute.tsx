@@ -7,6 +7,7 @@ import {
   hasModulePermission,
   permissionsToObject,
   PermissionAction,
+  PermissionModule,
 } from "@/lib/utils/permissions-new"
 import {
   PARENT_TO_CHILDREN_MAP,
@@ -77,6 +78,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     const requiredAction = resolveRouteRequiredAction(pathname)
     if (requiredAction) {
+      if (
+        module === PermissionModule.MONTHLY_SUPERVISIONS &&
+        requiredAction === PermissionAction.EDIT
+      ) {
+        // The backend authorizes this detail endpoint with VIEW_OR_SIGN and
+        // remains the source of truth. The dashboard can surface a report to
+        // a supervisee who only has SIGN, so the client route must not reject
+        // it before the request reaches the protected API.
+        return true
+      }
       return hasModulePermission(permissions, module, requiredAction)
     }
 

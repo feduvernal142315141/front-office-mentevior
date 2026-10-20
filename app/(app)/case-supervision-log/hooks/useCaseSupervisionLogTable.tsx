@@ -2,12 +2,14 @@
 
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarRange, Eye, FileDown } from "lucide-react"
+import { CalendarRange, Eye, FileDown, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { CaseSupervisionLogListItem } from "@/lib/types/case-supervision-log.types"
 import { useCaseSupervisionLogs } from "@/lib/modules/case-supervision-log/hooks/use-case-supervision-logs"
+import { deleteCaseSupervisionLog } from "@/lib/modules/case-supervision-log/services/case-supervision-log.service"
 import {
   DEFAULT_ORDERS,
   clientFilter,
@@ -25,7 +27,7 @@ import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-st
 
 export function useCaseSupervisionLogTable() {
   const router = useRouter()
-  const { canCreate } = useModulePermissions(PermissionModule.CASE_SUPERVISION)
+  const { canCreate, canDelete } = useModulePermissions(PermissionModule.CASE_SUPERVISION)
   const auditModal = useAuditModalState<CaseSupervisionLogListItem>()
   const openAuditModal = auditModal.openFor
 
@@ -38,6 +40,8 @@ export function useCaseSupervisionLogTable() {
   const [filterProvider, setFilterProvider] = useState("all")
 
   const [previewId, setPreviewId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<CaseSupervisionLogListItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { users: allUsers } = useUsers({ pageSize: 100 })
@@ -66,12 +70,31 @@ export function useCaseSupervisionLogTable() {
     return built.length > 0 ? built : undefined
   }, [filterMonthFrom, filterMonthTo, filterClient, filterProvider])
 
-  const { items, totalCount, isLoading, error } = useCaseSupervisionLogs({
+  const { items, totalCount, isLoading, error, refetch } = useCaseSupervisionLogs({
     filters,
     orders: DEFAULT_ORDERS,
     page: page - 1,
     pageSize,
   })
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete) return
+
+    setIsDeleting(true)
+    try {
+      await deleteCaseSupervisionLog(pendingDelete.id)
+      toast.success("Case Supervision Log deleted")
+      setPendingDelete(null)
+      if (items.length === 1 && page > 1) setPage((current) => current - 1)
+      else await refetch()
+    } catch (err) {
+      toast.error("Couldn't delete", {
+        description: err instanceof Error ? err.message : "Unexpected error",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [pendingDelete, items.length, page, refetch])
 
   const hasActiveFilters = !!(
     filterMonthFrom ||
@@ -159,11 +182,23 @@ export function useCaseSupervisionLogTable() {
                 openAuditModal(item)
               }}
             />
+            {canDelete && (
+              <IconButton
+                tone="red"
+                title="Delete"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setPendingDelete(item)
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
+            )}
           </div>
         ),
       },
     ],
-    [router, openAuditModal],
+    [canDelete, router, openAuditModal],
   )
 
   return {
@@ -200,6 +235,10 @@ export function useCaseSupervisionLogTable() {
     },
     previewId,
     setPreviewId,
+    pendingDelete,
+    setPendingDelete,
+    confirmDelete,
+    isDeleting,
     canCreate,
     goToCreate: () => router.push("/case-supervision-log/create"),
     goToDetail: (item: CaseSupervisionLogListItem) =>
@@ -211,6 +250,7 @@ export function useCaseSupervisionLogTable() {
 const TONE_STYLES = {
   slate: "from-slate-50 to-slate-100/80 border-slate-200/60 shadow-slate-900/5 hover:from-slate-100 hover:to-slate-200/90 hover:border-slate-300/80 text-slate-600 focus:ring-slate-500/30",
   blue: "from-blue-50 to-blue-100/80 border-blue-200/60 shadow-blue-900/5 hover:from-blue-100 hover:to-blue-200/90 hover:border-blue-300/80 text-blue-600 focus:ring-blue-500/30",
+  red: "from-red-50 to-red-100/80 border-red-200/60 shadow-red-900/5 hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80 text-red-600 focus:ring-red-500/30",
 } as const
 
 function IconButton({

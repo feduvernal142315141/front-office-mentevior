@@ -14,6 +14,7 @@ import { FilterOperator } from "@/lib/models/filterOperator"
 import { parseLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { AuditActionButton } from "@/components/custom/AuditActionButton"
 import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
@@ -38,7 +39,8 @@ export function useSessionNotesTable() {
   const [filterDate, setFilterDate] = useState("")
   const [filterClient, setFilterClient] = useState("all")
   const [filterProvider, setFilterProvider] = useState("all")
-  const [filterBillingCode, setFilterBillingCode] = useState("")
+  const [billingCodeInput, setBillingCodeInput] = useState("")
+  const [filterBillingCode, setFilterBillingCode] = useDebouncedState("", 500)
 
   // Options for selects
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
@@ -108,12 +110,16 @@ export function useSessionNotesTable() {
     pageSize,
   })
 
-  const hasActiveFilters = !!(filterDate || filterClient !== "all" || filterProvider !== "all" || filterBillingCode.trim())
+  const hasActiveFilters = !!(filterDate || filterClient !== "all" || filterProvider !== "all" || billingCodeInput.trim())
 
   const handleDateChange = (v: string) => { setFilterDate(v); setPage(1) }
   const handleClientChange = (v: string) => { setFilterClient(v); setPage(1) }
   const handleProviderChange = (v: string) => { setFilterProvider(v); setPage(1) }
-  const handleBillingCodeChange = (v: string) => { setFilterBillingCode(v); setPage(1) }
+  const handleBillingCodeChange = (v: string) => {
+    setBillingCodeInput(v)
+    setFilterBillingCode(v)
+    setPage(1)
+  }
 
 
   const handlePageSizeChange = (newSize: number) => {
@@ -125,6 +131,7 @@ export function useSessionNotesTable() {
     setFilterDate("")
     setFilterClient("all")
     setFilterProvider("all")
+    setBillingCodeInput("")
     setFilterBillingCode("")
     setPage(1)
   }, [])
@@ -274,7 +281,7 @@ export function useSessionNotesTable() {
       filterDate,
       filterClient,
       filterProvider,
-      filterBillingCode,
+      filterBillingCode: billingCodeInput,
       onDateChange: handleDateChange,
       onClientChange: handleClientChange,
       onProviderChange: handleProviderChange,

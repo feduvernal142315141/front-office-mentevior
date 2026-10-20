@@ -14,7 +14,12 @@ interface KpiRowProps {
 }
 
 /** W2 — Fila de KPIs. Números de cabecera, no gráficas. */
-export function KpiRow({ kpis, isLoading, compact = false, hrefs }: KpiRowProps) {
+export function KpiRow({
+  kpis,
+  isLoading,
+  compact = false,
+  hrefs,
+}: KpiRowProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -33,7 +38,7 @@ export function KpiRow({ kpis, isLoading, compact = false, hrefs }: KpiRowProps)
   const notesPending = kpis?.notesPendingSignature
 
   return (
-    <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${compact ? "lg:grid-cols-2" : "lg:grid-cols-4"}`}>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatTile
         label="Sessions this week"
         kpi={kpis?.sessionsThisWeek}

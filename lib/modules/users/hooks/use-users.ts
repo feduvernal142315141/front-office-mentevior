@@ -1,8 +1,8 @@
 
-import { useState, useEffect, useCallback } from "react"
 import { MemberUserListItem} from "@/lib/types/user.types"
 import {getUsers} from "@/lib/modules/users/services/users.service";
 import {QueryModel} from "@/lib/models/queryModel";
+import { usePaginatedResource } from "@/lib/hooks/use-paginated-resource"
 
 interface UseUsersParams {
   page?: number
@@ -19,15 +19,16 @@ interface UseUsersReturn {
 }
 
 export function useUsers(initialParams?: UseUsersParams): UseUsersReturn {
-  const [users, setUsers] = useState<MemberUserListItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const initialParamsKey = JSON.stringify({
+    page: initialParams?.page ?? 0,
+    pageSize: initialParams?.pageSize ?? 10,
+    filters: initialParams?.filters ?? [],
+  })
 
-  const fetchUsers = useCallback(async (params?: UseUsersParams) => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const resource = usePaginatedResource<MemberUserListItem, UseUsersParams>({
+    params: initialParams,
+    paramsKey: initialParamsKey,
+    fetcher: async (params) => {
       const query: QueryModel = {
         page: params?.page ?? 0,
         pageSize: params?.pageSize ?? 10,
@@ -35,26 +36,15 @@ export function useUsers(initialParams?: UseUsersParams): UseUsersReturn {
         orders: undefined,
       }
       const data = await getUsers(query)
-      setUsers(data.users)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch users"))
-      setUsers([])
-      setTotalCount(0)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchUsers(initialParams)
-  }, []) // No dependencies - solo fetch inicial
+      return { items: data.users, totalCount: data.totalCount }
+    },
+  })
 
   return {
-    users,
-    isLoading,
-    error,
-    totalCount,
-    refetch: fetchUsers,
+    users: resource.items,
+    isLoading: resource.isLoading,
+    error: resource.error,
+    totalCount: resource.totalCount,
+    refetch: resource.refetch,
   }
 }

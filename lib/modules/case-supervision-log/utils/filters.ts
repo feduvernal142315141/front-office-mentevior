@@ -41,17 +41,6 @@ export function providerFilter(providerId: string): FilterRule {
   }
 }
 
-/** Un mes exacto */
-export function monthEqualsFilter(reportMonth: ReportMonth): FilterRule {
-  return {
-    field: "monthYear",
-    operator: FilterOperator.eq,
-    value: toMonthYearParam(reportMonth),
-    type: "string",
-    logic: "AND",
-  }
-}
-
 /** Desde este mes, inclusive */
 export function monthFromFilter(reportMonth: ReportMonth): FilterRule {
   return {

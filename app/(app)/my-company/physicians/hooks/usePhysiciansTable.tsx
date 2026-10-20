@@ -6,7 +6,6 @@ import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { Physician } from "@/lib/types/physician.types"
 import { usePhysicians } from "@/lib/modules/physicians/hooks/use-physicians"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/custom/Button"
 import { Edit2, Stethoscope, Trash2 } from "lucide-react"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { buildFilters } from "@/lib/utils/query-filters"
@@ -54,10 +53,6 @@ export function usePhysiciansTable() {
   useEffect(() => {
     setPage(1)
   }, [searchQuery, statusFilter])
-
-  useEffect(() => {
-    refetch(queryModel)
-  }, [searchQuery, statusFilter, page, pageSize])
 
   const handleSearchQueryChange = (value: string) => {
     setInputValue(value)

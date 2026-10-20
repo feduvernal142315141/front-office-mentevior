@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import type { HRDocumentListItem } from "@/lib/types/hr-document.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getHRDocuments } from "../services/hr-documents.service"
+import { usePaginatedResource } from "@/lib/hooks/use-paginated-resource"
 
 interface UseHRDocumentsParams {
   page?: number
@@ -22,41 +22,31 @@ interface UseHRDocumentsReturn {
 }
 
 export function useHRDocuments(initialParams?: UseHRDocumentsParams): UseHRDocumentsReturn {
-  const [hrDocuments, setHRDocuments] = useState<HRDocumentListItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const initialParamsKey = JSON.stringify({
+    page: initialParams?.page ?? 0,
+    pageSize: initialParams?.pageSize ?? 10,
+    filters: initialParams?.filters ?? [],
+  })
 
-  const fetchHRDocuments = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const resource = usePaginatedResource<HRDocumentListItem, UseHRDocumentsParams>({
+    params: initialParams,
+    paramsKey: initialParamsKey,
+    fetcher: async (params) => {
       const query: QueryModel = {
-        page: initialParams?.page ?? 0,
-        pageSize: initialParams?.pageSize ?? 10,
-        filters: initialParams?.filters && initialParams.filters.length ? initialParams.filters : undefined,
+        page: params?.page ?? 0,
+        pageSize: params?.pageSize ?? 10,
+        filters: params?.filters && params.filters.length ? params.filters : undefined,
         orders: undefined,
       }
       const data = await getHRDocuments(query)
-      setHRDocuments(data.hrDocuments)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch HR documents"))
-      setHRDocuments([])
-      setTotalCount(0)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [initialParams?.page, initialParams?.pageSize, initialParams?.filters])
-
-  useEffect(() => {
-    fetchHRDocuments()
-  }, [fetchHRDocuments])
+      return { items: data.hrDocuments, totalCount: data.totalCount }
+    },
+  })
 
   return {
-    data: { hrDocuments, totalCount },
-    isLoading,
-    error,
-    refetch: fetchHRDocuments,
+    data: { hrDocuments: resource.items, totalCount: resource.totalCount },
+    isLoading: resource.isLoading,
+    error: resource.error,
+    refetch: resource.refetch,
   }
 }

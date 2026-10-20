@@ -7,7 +7,7 @@ import { CalendarRange, Edit2, FileDown, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { usePermission } from "@/lib/hooks/use-permission"
-import { PermissionModule } from "@/lib/utils/permissions-new"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 import type { MonthlySupervisionListItem } from "@/lib/types/monthly-supervision.types"
 import { useMonthlySupervisions } from "@/lib/modules/monthly-supervision/hooks/use-monthly-supervisions"
 import { deleteMonthlySupervision } from "@/lib/modules/monthly-supervision/services/monthly-supervision.service"
@@ -51,6 +51,8 @@ export function useMonthlySupervisionTable() {
   // real lo aplica el backend (exige MONTHLY_SUPERVISIONS_VIEW y permiso DELETE).
   const canCreate = permission.create(PermissionModule.MONTHLY_SUPERVISIONS)
   const canEdit = permission.edit(PermissionModule.MONTHLY_SUPERVISIONS)
+  const canSign = permission.can(PermissionModule.MONTHLY_SUPERVISIONS, PermissionAction.SIGN)
+  const canOpenEdit = canEdit || canSign
   const canDelete = permission.remove(PermissionModule.MONTHLY_SUPERVISIONS)
 
   const [page, setPage] = useState(1)
@@ -240,7 +242,7 @@ export function useMonthlySupervisionTable() {
             <FileDown className="h-4 w-4 text-slate-600 transition-colors group-hover/pdf:text-slate-800" />
           </button>
 
-          {canEdit && (
+          {canOpenEdit && (
             <button
               type="button"
               onClick={(event) => {
@@ -295,7 +297,7 @@ export function useMonthlySupervisionTable() {
         </div>
       ),
     },
-  ], [canEdit, canDelete, router, openAuditModal])
+  ], [canOpenEdit, canDelete, router, openAuditModal])
 
   return {
     data: items,

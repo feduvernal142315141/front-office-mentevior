@@ -6,10 +6,10 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
 import type { Applicant } from "@/lib/types/applicant.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getApplicants } from "../services/applicants.service"
+import { usePaginatedResource } from "@/lib/hooks/use-paginated-resource"
 
 interface UseApplicantsReturn {
   applicants: Applicant[]
@@ -20,37 +20,22 @@ interface UseApplicantsReturn {
 }
 
 export function useApplicants(initialQuery?: QueryModel): UseApplicantsReturn {
-  const [applicants, setApplicants] = useState<Applicant[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const initialQueryKey = JSON.stringify(initialQuery ?? {})
 
-  const fetchApplicants = async (query?: QueryModel) => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const data = await getApplicants(query || initialQuery || {})
-      setApplicants(data.applicants)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      const errorObj = err instanceof Error ? err : new Error("Failed to fetch applicants")
-      setError(errorObj)
-      console.error("Error fetching applicants:", errorObj)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchApplicants(initialQuery)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const resource = usePaginatedResource<Applicant, QueryModel>({
+    params: initialQuery,
+    paramsKey: initialQueryKey,
+    fetcher: async (query) => {
+      const data = await getApplicants(query || {})
+      return { items: data.applicants, totalCount: data.totalCount }
+    },
+  })
 
   return {
-    applicants,
-    totalCount,
-    isLoading,
-    error,
-    refetch: fetchApplicants,
+    applicants: resource.items,
+    totalCount: resource.totalCount,
+    isLoading: resource.isLoading,
+    error: resource.error,
+    refetch: resource.refetch,
   }
 }

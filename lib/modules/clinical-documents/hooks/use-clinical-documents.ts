@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
 import type { ClinicalDocumentListItem } from "@/lib/types/clinical-document.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getClinicalDocuments } from "../services/clinical-documents.service"
+import { usePaginatedResource } from "@/lib/hooks/use-paginated-resource"
 
 interface UseClinicalDocumentsParams {
   page?: number
@@ -22,46 +22,31 @@ interface UseClinicalDocumentsReturn {
 }
 
 export function useClinicalDocuments(initialParams?: UseClinicalDocumentsParams): UseClinicalDocumentsReturn {
-  const [clinicalDocuments, setClinicalDocuments] = useState<ClinicalDocumentListItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const initialParamsKey = JSON.stringify({
+    page: initialParams?.page ?? 0,
+    pageSize: initialParams?.pageSize ?? 10,
+    filters: initialParams?.filters ?? [],
+  })
 
-  const requestIdRef = useRef(0)
-
-  const fetchClinicalDocuments = useCallback(async () => {
-    const requestId = ++requestIdRef.current
-    try {
-      setIsLoading(true)
-      setError(null)
+  const resource = usePaginatedResource<ClinicalDocumentListItem, UseClinicalDocumentsParams>({
+    params: initialParams,
+    paramsKey: initialParamsKey,
+    fetcher: async (params) => {
       const query: QueryModel = {
-        page: initialParams?.page ?? 0,
-        pageSize: initialParams?.pageSize ?? 10,
-        filters: initialParams?.filters && initialParams.filters.length ? initialParams.filters : undefined,
+        page: params?.page ?? 0,
+        pageSize: params?.pageSize ?? 10,
+        filters: params?.filters && params.filters.length ? params.filters : undefined,
         orders: undefined,
       }
       const data = await getClinicalDocuments(query)
-      if (requestId !== requestIdRef.current) return
-      setClinicalDocuments(data.clinicalDocuments)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      if (requestId !== requestIdRef.current) return
-      setError(err instanceof Error ? err : new Error("Failed to fetch Clinical documents"))
-      setClinicalDocuments([])
-      setTotalCount(0)
-    } finally {
-      if (requestId === requestIdRef.current) setIsLoading(false)
-    }
-  }, [initialParams?.page, initialParams?.pageSize, initialParams?.filters])
-
-  useEffect(() => {
-    fetchClinicalDocuments()
-  }, [fetchClinicalDocuments])
+      return { items: data.clinicalDocuments, totalCount: data.totalCount }
+    },
+  })
 
   return {
-    data: { clinicalDocuments, totalCount },
-    isLoading,
-    error,
-    refetch: fetchClinicalDocuments,
+    data: { clinicalDocuments: resource.items, totalCount: resource.totalCount },
+    isLoading: resource.isLoading,
+    error: resource.error,
+    refetch: resource.refetch,
   }
 }

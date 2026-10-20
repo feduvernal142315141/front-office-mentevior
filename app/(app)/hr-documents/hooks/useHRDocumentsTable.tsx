@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { HRDocumentListItem } from "@/lib/types/hr-document.types"
@@ -51,10 +51,6 @@ export function useHRDocumentsTable() {
 
   const hrDocuments = data?.hrDocuments || []
   const totalCount = data?.totalCount || 0
-
-  useEffect(() => {
-    refetch()
-  }, [searchQuery, page, pageSize, refetch])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)

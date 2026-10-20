@@ -135,7 +135,7 @@ export interface SaveMonthlySupervisionDto {
   totalHoursWorked: number
   supervisedHours: number
   supervisorSign: string
-  superviseeSign: string
+  superviseeSign: string | null
   documentOptionCatalogIds: string[]
   appliedOptionCatalogIds: string[]
   appointments: SaveMonthlySupervisionAppointment[]

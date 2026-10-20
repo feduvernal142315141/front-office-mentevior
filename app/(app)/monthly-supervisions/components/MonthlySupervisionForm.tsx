@@ -15,6 +15,9 @@ import {
   User,
 } from "lucide-react"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { usePermission } from "@/lib/hooks/use-permission"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
@@ -41,8 +44,12 @@ interface MonthlySupervisionFormProps {
   monthlySupervisionId?: string
 }
 
+const ADMINISTRATION_MEMBER_USER_TYPE_ID = "2f7af3a7-7080-40cb-9792-4676f1ebb01a"
+
 export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervisionFormProps) {
   const router = useRouter()
+  const { user } = useAuth()
+  const { can } = usePermission()
   const isEditing = !!monthlySupervisionId
 
   const [clientId, setClientId] = useState("")
@@ -72,6 +79,30 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
   })
 
   const { save, isSaving } = useSaveMonthlySupervision({ monthlySupervisionId })
+
+  const hasMonthlySupervisionSignPermission = can(
+    PermissionModule.MONTHLY_SUPERVISIONS,
+    PermissionAction.SIGN,
+  )
+  const hasMonthlySupervisionEditPermission = can(
+    PermissionModule.MONTHLY_SUPERVISIONS,
+    PermissionAction.EDIT,
+  )
+  const isReadOnly = isEditing && !hasMonthlySupervisionEditPermission
+  const normalizedRole = user?.role?.trim().toLowerCase()
+  const isPrivilegedSigner =
+    normalizedRole === "superadmin" ||
+    normalizedRole === "admin" ||
+    normalizedRole === "administrator" ||
+    user?.memberUserTypes.includes(ADMINISTRATION_MEMBER_USER_TYPE_ID) === true
+  // La firma del supervisor requiere EDIT; SIGN sólo habilita la firma propia
+  // del supervisee (o la de un usuario administrativo).
+  const canEditSupervisorSignature =
+    hasMonthlySupervisionEditPermission &&
+    (!!user?.id && !!providerId && (user.id !== providerId || isPrivilegedSigner))
+  const canEditSuperviseeSignature =
+    hasMonthlySupervisionSignPermission &&
+    (!!user?.id && !!providerId && (user.id === providerId || isPrivilegedSigner))
 
   const clientOptions = useMemo(
     () => clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
@@ -160,6 +191,13 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
     }
 
   const persist = useCallback(async (): Promise<string | null> => {
+    if (isReadOnly) {
+      toast.error("This report is read-only", {
+        description: "You need Edit permission to update Monthly Supervision fields.",
+      })
+      return null
+    }
+
     // Cinturón: el botón ya está deshabilitado, pero un Enter dentro del form
     // dispara submit igual, y acá se estaría guardando encima de datos que no
     // se pudieron precargar.
@@ -198,9 +236,9 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
     }
     setInvalidAppointmentIds([])
 
-    if (!supervisorSign || !superviseeSign) {
+    if (!supervisorSign) {
       setSignatureError(true)
-      toast.error("Both signatures are required")
+      toast.error("The supervisor signature is required")
       document.querySelector("[data-section='signatures']")?.scrollIntoView({ behavior: "smooth", block: "center" })
       return null
     }
@@ -227,7 +265,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       })),
     })
   }, [
-    isBlocked, clientId, providerId, reportMonth, appointments, supervisorSign, superviseeSign,
+    isReadOnly, isBlocked, clientId, providerId, reportMonth, appointments, supervisorSign, superviseeSign,
     otherAppliedOption, documentOptionIds, appliedOptionIds, context, save,
   ])
 
@@ -241,17 +279,17 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
 
   // Generar el PDF exige que el registro exista, así que previsualizar guarda antes
   const handlePreview = useCallback(async () => {
-    if (isBlocked && monthlySupervisionId) {
+    if ((isBlocked || isReadOnly) && monthlySupervisionId) {
       setPreviewId(monthlySupervisionId)
       return
     }
     const id = await persist()
     if (id) setPreviewId(id)
-  }, [isBlocked, monthlySupervisionId, persist])
+  }, [isBlocked, isReadOnly, monthlySupervisionId, persist])
 
   const hasSelection = !!clientId && !!providerId && !!reportMonth
   const isBusy = isSaving || contextLoading
-  const canSave = hasSelection && appointments.length > 0 && !isBusy && !isBlocked
+  const canSave = hasSelection && appointments.length > 0 && !isBusy && !isBlocked && !isReadOnly
 
   if (isEditing && contextLoading && !context) {
     return (
@@ -300,11 +338,11 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
           type="button"
           variant="secondary"
           onClick={handlePreview}
-          disabled={isBlocked ? !monthlySupervisionId : !canSave}
+          disabled={isBlocked || isReadOnly ? !monthlySupervisionId : !canSave}
           className="flex items-center gap-2"
         >
           <FileDown className="h-4 w-4" />
-          {isBlocked ? "Preview PDF" : "Save & Preview PDF"}
+          {isBlocked || isReadOnly ? "Preview PDF" : "Save & Preview PDF"}
         </Button>
       </div>
 
@@ -397,7 +435,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
             <SupervisionAppointmentsTable
               appointments={appointments}
               onChange={handleAppointmentChange}
-              disabled={isBusy || isBlocked}
+              disabled={isBusy || isBlocked || isReadOnly}
               invalidIds={invalidAppointmentIds}
             />
           )}
@@ -416,7 +454,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
               options={catalogs.documentOptions}
               selectedIds={documentOptionIds}
               onToggle={toggleId(setDocumentOptionIds)}
-              disabled={isBusy || isBlocked}
+              disabled={isBusy || isBlocked || isReadOnly}
             />
           </Section>
 
@@ -429,7 +467,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
               options={catalogs.appliedOptions}
               selectedIds={appliedOptionIds}
               onToggle={toggleId(setAppliedOptionIds)}
-              disabled={isBusy || isBlocked}
+              disabled={isBusy || isBlocked || isReadOnly}
               otherValue={otherAppliedOption}
               onOtherChange={setOtherAppliedOption}
             />
@@ -441,14 +479,18 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       <div data-section="signatures">
         <Section icon={<PenTool className="h-4 w-4" />} title="Signatures">
           <SupervisionSignatures
+            supervisorId={user?.id ?? ""}
             supervisorName={context?.supervisor.name ?? ""}
             supervisorCredentials={context?.supervisor.credentials}
+            superviseeId={providerId}
             superviseeName={context?.supervisee.name ?? ""}
             supervisorSign={supervisorSign}
             superviseeSign={superviseeSign}
             onSupervisorSignChange={(value) => { setSupervisorSign(value); setSignatureError(false) }}
             onSuperviseeSignChange={(value) => { setSuperviseeSign(value); setSignatureError(false) }}
-            disabled={isBusy || isBlocked}
+            canEditSupervisorSignature={canEditSupervisorSignature}
+            canEditSuperviseeSignature={canEditSuperviseeSignature}
+              disabled={isBusy || isBlocked || isReadOnly}
             hasError={signatureError}
           />
         </Section>

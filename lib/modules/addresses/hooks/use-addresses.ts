@@ -6,10 +6,10 @@
 
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import type { AddressListItem } from "@/lib/types/address.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getAddresses } from "../services/addresses.service"
+import { usePaginatedResource } from "@/lib/hooks/use-paginated-resource"
 
 interface UseAddressesParams {
   page?: number
@@ -26,15 +26,16 @@ interface UseAddressesReturn {
 }
 
 export function useAddresses(initialParams?: UseAddressesParams): UseAddressesReturn {
-  const [addresses, setAddresses] = useState<AddressListItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const initialParamsKey = JSON.stringify({
+    page: initialParams?.page ?? 0,
+    pageSize: initialParams?.pageSize ?? 10,
+    filters: initialParams?.filters ?? [],
+  })
 
-  const fetchAddresses = useCallback(async (params?: UseAddressesParams) => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const resource = usePaginatedResource<AddressListItem, UseAddressesParams>({
+    params: initialParams,
+    paramsKey: initialParamsKey,
+    fetcher: async (params) => {
       const query: QueryModel = {
         page: params?.page ?? 0,
         pageSize: params?.pageSize ?? 10,
@@ -42,26 +43,15 @@ export function useAddresses(initialParams?: UseAddressesParams): UseAddressesRe
         orders: undefined,
       }
       const data = await getAddresses(query)
-      setAddresses(data.addresses)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch addresses"))
-      setAddresses([])
-      setTotalCount(0)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchAddresses(initialParams)
-  }, []) // Solo fetch inicial
+      return { items: data.addresses, totalCount: data.totalCount }
+    },
+  })
 
   return {
-    addresses,
-    totalCount,
-    isLoading,
-    error,
-    refetch: fetchAddresses,
+    addresses: resource.items,
+    totalCount: resource.totalCount,
+    isLoading: resource.isLoading,
+    error: resource.error,
+    refetch: resource.refetch,
   }
 }

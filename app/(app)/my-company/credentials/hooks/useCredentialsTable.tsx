@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { CredentialListItem } from "@/lib/types/credential.types"
@@ -45,14 +45,6 @@ export function useCredentialsTable() {
     pageSize,
     filters: filtersArray,
   })
-
-  useEffect(() => {
-    refetch({
-      page: page - 1,
-      pageSize,
-      filters: filtersArray,
-    })
-  }, [searchQuery, page, pageSize, filtersArray, refetch])
 
   const handleSearchChange = (value: string) => {
     setInputValue(value)

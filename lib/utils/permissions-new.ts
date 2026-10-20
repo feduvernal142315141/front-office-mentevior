@@ -5,7 +5,9 @@ export enum PermissionAction {
   DELETE = 4,
   BLOCK = 8,
   READ = 16,
+  SIGN = 32,
   ALL = 31,
+  ALL_WITH_SIGN = 63,
 }
 
 import {
@@ -167,6 +169,7 @@ export function getModuleActions(permissions: string[], module: PermissionModule
   if (value & PermissionAction.EDIT) actions.push(PermissionAction.EDIT)
   if (value & PermissionAction.DELETE) actions.push(PermissionAction.DELETE)
   if (value & PermissionAction.BLOCK) actions.push(PermissionAction.BLOCK)
+  if (value & PermissionAction.SIGN) actions.push(PermissionAction.SIGN)
   
   return actions
 }

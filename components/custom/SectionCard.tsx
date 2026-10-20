@@ -35,9 +35,9 @@ export function SectionCard({
             {icon}
           </div>
         )}
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
           <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-          {subtitle && <span className="truncate text-xs text-slate-400">{subtitle}</span>}
+          {subtitle && <span className="shrink-0 text-xs text-slate-400">{subtitle}</span>}
         </div>
         {action && <div className="ml-auto">{action}</div>}
       </div>

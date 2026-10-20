@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import type { BillingCodeListItem } from "@/lib/types/billing-code.types"
 import type { QueryModel } from "@/lib/models/queryModel"
 import { getBillingCodes } from "../services/billing-codes.service"
+import { usePaginatedResource } from "@/lib/hooks/use-paginated-resource"
 
 interface UseBillingCodesParams {
   page?: number
@@ -20,15 +20,16 @@ interface UseBillingCodesReturn {
 }
 
 export function useBillingCodes(initialParams?: UseBillingCodesParams): UseBillingCodesReturn {
-  const [billingCodes, setBillingCodes] = useState<BillingCodeListItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const initialParamsKey = JSON.stringify({
+    page: initialParams?.page ?? 0,
+    pageSize: initialParams?.pageSize ?? 10,
+    filters: initialParams?.filters ?? [],
+  })
 
-  const fetchBillingCodes = useCallback(async (params?: UseBillingCodesParams) => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const resource = usePaginatedResource<BillingCodeListItem, UseBillingCodesParams>({
+    params: initialParams,
+    paramsKey: initialParamsKey,
+    fetcher: async (params) => {
       const query: QueryModel = {
         page: params?.page ?? 0,
         pageSize: params?.pageSize ?? 10,
@@ -36,26 +37,15 @@ export function useBillingCodes(initialParams?: UseBillingCodesParams): UseBilli
         orders: undefined,
       }
       const data = await getBillingCodes(query)
-      setBillingCodes(data.billingCodes)
-      setTotalCount(data.totalCount)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch billing codes"))
-      setBillingCodes([])
-      setTotalCount(0)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchBillingCodes(initialParams)
-  }, []) 
+      return { items: data.billingCodes, totalCount: data.totalCount }
+    },
+  })
 
   return {
-    billingCodes,
-    totalCount,
-    isLoading,
-    error,
-    refetch: fetchBillingCodes,
+    billingCodes: resource.items,
+    totalCount: resource.totalCount,
+    isLoading: resource.isLoading,
+    error: resource.error,
+    refetch: resource.refetch,
   }
 }

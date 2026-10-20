@@ -4,6 +4,7 @@ import type {
   ExpiringItem,
   ExpiringKind,
   KpiValue,
+  MonthlySupervisionPendingSignature,
   Severity,
   TrendPoint,
 } from "@/lib/types/dashboard.types"
@@ -186,6 +187,24 @@ function normalizeTrendPoint(raw: unknown): TrendPoint | undefined {
   }
 }
 
+function normalizeMonthlySupervisionPendingSignature(
+  raw: unknown,
+): MonthlySupervisionPendingSignature | undefined {
+  if (!isObject(raw)) return undefined
+
+  const id = toText(raw.id)
+  const clientName = toText(raw.clientName)
+  if (!id || !clientName) return undefined
+
+  return {
+    id,
+    clientId: toText(raw.clientId),
+    clientName,
+    requestedReportDate: toText(raw.requestedReportDate),
+    createAt: toText(raw.createAt),
+  }
+}
+
 // ============================================
 // Entrada
 // ============================================
@@ -291,6 +310,14 @@ export function normalizeDashboardSummary(payload: unknown): DashboardSummary {
       nearExpiration: toInt(root.documentCompliance.nearExpiration),
       expired: toInt(root.documentCompliance.expired),
     }
+  }
+
+  if (Array.isArray(root.monthlySupervisionsPendingSignature)) {
+    const items = root.monthlySupervisionsPendingSignature
+      .map(normalizeMonthlySupervisionPendingSignature)
+      .filter((item): item is MonthlySupervisionPendingSignature => item !== undefined)
+
+    summary.monthlySupervisionsPendingSignature = items
   }
 
   return summary
