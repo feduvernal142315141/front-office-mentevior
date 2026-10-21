@@ -7,8 +7,8 @@ import { Edit2, FileDown, Calendar, Clock } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import type { AppointmentNoteSummary } from "@/lib/types/appointment-note.types"
 import { useAppointmentNotes } from "@/lib/modules/appointment-notes/hooks/use-appointment-notes"
+import { useAppointmentNoteProviders } from "@/lib/modules/appointment-notes/hooks/use-appointment-note-providers"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
-import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { parseLocalDate } from "@/lib/date"
@@ -36,7 +36,8 @@ export function useSessionNotesTable() {
   const [pageSize, setPageSize] = useState(10)
 
   // Filters
-  const [filterDate, setFilterDate] = useState("")
+  const [filterDateFrom, setFilterDateFrom] = useState("")
+  const [filterDateTo, setFilterDateTo] = useState("")
   const [filterClient, setFilterClient] = useState("all")
   const [filterProvider, setFilterProvider] = useState("all")
   const [billingCodeInput, setBillingCodeInput] = useState("")
@@ -44,7 +45,7 @@ export function useSessionNotesTable() {
 
   // Options for selects
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
-  const { users: allUsers } = useUsers({ pageSize: 100 })
+  const { providers: authorizedProviders, isLoading: providersLoading } = useAppointmentNoteProviders()
 
   const clientOptions = useMemo(() => {
     const opts = clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName }))
@@ -52,9 +53,11 @@ export function useSessionNotesTable() {
   }, [clients])
 
   const providerOptions = useMemo(() => {
-    const opts = allUsers.filter((u) => u.active && !u.terminated).map((u) => ({ value: u.id, label: u.fullName }))
+    const opts = authorizedProviders.map((provider) => ({ value: provider.id, label: provider.fullName }))
     return [{ value: "all", label: "All Providers" }, ...opts]
-  }, [allUsers])
+  }, [authorizedProviders])
+
+  const showProviderFilter = !providersLoading && authorizedProviders.length > 0
 
   // PDF Preview
   const [previewAppointmentId, setPreviewAppointmentId] = useState<string | null>(null)
@@ -62,11 +65,22 @@ export function useSessionNotesTable() {
   const filters = useMemo(() => {
     const rules: FilterRule[] = []
 
-    if (filterDate) {
+    if (filterDateFrom) {
       rules.push({
         field: "appointment.date",
-        operator: FilterOperator.relatedEqual,
-        value: `Date:${filterDate}`,
+        operator: FilterOperator.greaterEqual,
+        value: filterDateFrom,
+        type: "date",
+        logic: "AND",
+      })
+    }
+
+    if (filterDateTo) {
+      rules.push({
+        field: "appointment.date",
+        operator: FilterOperator.lessEqual,
+        value: filterDateTo,
+        type: "date",
         logic: "AND",
       })
     }
@@ -102,7 +116,7 @@ export function useSessionNotesTable() {
 
     const built = buildFilters(rules)
     return built.length > 0 ? built : undefined
-  }, [filterDate, filterClient, filterProvider, filterBillingCode])
+  }, [filterDateFrom, filterDateTo, filterClient, filterProvider, filterBillingCode])
 
   const { notes, pagination, isLoading, error } = useAppointmentNotes({
     filters,
@@ -110,9 +124,13 @@ export function useSessionNotesTable() {
     pageSize,
   })
 
-  const hasActiveFilters = !!(filterDate || filterClient !== "all" || filterProvider !== "all" || billingCodeInput.trim())
+  const hasActiveFilters = !!(filterDateFrom || filterDateTo || filterClient !== "all" || filterProvider !== "all" || billingCodeInput.trim())
 
-  const handleDateChange = (v: string) => { setFilterDate(v); setPage(1) }
+  const handleDateChange = (from: string, to: string) => {
+    setFilterDateFrom(from)
+    setFilterDateTo(to)
+    setPage(1)
+  }
   const handleClientChange = (v: string) => { setFilterClient(v); setPage(1) }
   const handleProviderChange = (v: string) => { setFilterProvider(v); setPage(1) }
   const handleBillingCodeChange = (v: string) => {
@@ -128,7 +146,8 @@ export function useSessionNotesTable() {
   }
 
   const clearFilters = useCallback(() => {
-    setFilterDate("")
+    setFilterDateFrom("")
+    setFilterDateTo("")
     setFilterClient("all")
     setFilterProvider("all")
     setBillingCodeInput("")
@@ -278,7 +297,8 @@ export function useSessionNotesTable() {
     isLoading,
     error,
     filters: {
-      filterDate,
+      filterDateFrom,
+      filterDateTo,
       filterClient,
       filterProvider,
       filterBillingCode: billingCodeInput,
@@ -289,6 +309,7 @@ export function useSessionNotesTable() {
     },
     clientOptions,
     providerOptions,
+    showProviderFilter,
     hasActiveFilters,
     pagination: {
       page,

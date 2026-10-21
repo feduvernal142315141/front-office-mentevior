@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useSessionNotesTable } from "../hooks/useSessionNotesTable"
 import { CustomTable } from "@/components/custom/CustomTable"
@@ -9,7 +8,7 @@ import { Card } from "@/components/custom/Card"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
-import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { PremiumDateRangePicker } from "@/components/custom/PremiumDateRangePicker"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { getAppointmentNotePdfPreviewUrl } from "@/lib/modules/appointment-notes/services/appointment-note.service"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
@@ -25,6 +24,7 @@ export function SessionNotesTable() {
     pagination,
     clientOptions,
     providerOptions,
+    showProviderFilter,
     clearFilters,
     previewAppointmentId,
     setPreviewAppointmentId,
@@ -66,9 +66,10 @@ export function SessionNotesTable() {
     <div className="space-y-4">
       <Card variant="elevated" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <PremiumDatePicker
-            label="Date"
-            value={filters.filterDate}
+          <PremiumDateRangePicker
+            label="Date range"
+            startValue={filters.filterDateFrom}
+            endValue={filters.filterDateTo}
             onChange={filters.onDateChange}
           />
           <FloatingSelect
@@ -78,13 +79,15 @@ export function SessionNotesTable() {
             options={clientOptions}
             searchable
           />
-          <FloatingSelect
-            label="Provider"
-            value={filters.filterProvider}
-            onChange={filters.onProviderChange}
-            options={providerOptions}
-            searchable
-          />
+          {showProviderFilter && (
+            <FloatingSelect
+              label="Provider"
+              value={filters.filterProvider}
+              onChange={filters.onProviderChange}
+              options={providerOptions}
+              searchable
+            />
+          )}
           <FloatingInput
             label="Billing Code"
             value={filters.filterBillingCode}

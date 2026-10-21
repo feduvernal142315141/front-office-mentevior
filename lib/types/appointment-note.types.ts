@@ -61,6 +61,12 @@ export interface AppointmentNoteSummary {
   type?: NoteType
 }
 
+export interface AppointmentNoteProviderFilterOption {
+  id: string
+  fullName: string
+  email?: string
+}
+
 /** A category grouping items from the service plan */
 export interface AppointmentNoteCategory {
   id: string

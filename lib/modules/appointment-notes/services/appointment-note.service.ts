@@ -4,6 +4,7 @@ import type {
   AppointmentNote,
   AppointmentNoteParticipantCatalogType,
   AppointmentNoteSummary,
+  AppointmentNoteProviderFilterOption,
   AppointmentNoteTeachingMethod,
   NoteStatus,
   UpdateAppointmentNotePayload,
@@ -335,6 +336,27 @@ export async function getAppointmentNotes(params?: {
     })),
     pagination,
   }
+}
+
+/** Fetches only Providers authorized for the Session Notes filter. */
+export async function getAppointmentNoteProviders(params?: {
+  page?: number
+  pageSize?: number
+  filters?: string[]
+}): Promise<PaginatedResponse<AppointmentNoteProviderFilterOption>> {
+  const qs = new URLSearchParams()
+  if (params?.filters?.length) {
+    for (const filter of params.filters) qs.append("filters", filter)
+  }
+  if (params?.page !== undefined) qs.set("page", String(params.page))
+  if (params?.pageSize !== undefined) qs.set("pageSize", String(params.pageSize))
+  const response = await serviceGet<PaginatedResponse<AppointmentNoteProviderFilterOption>>(
+    `/appointment/note/providers${qs.toString() ? `?${qs.toString()}` : ""}`,
+  )
+  if (response.status !== 200 || !response.data) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to fetch Session Note providers"))
+  }
+  return response.data
 }
 
 /**
