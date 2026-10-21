@@ -63,13 +63,12 @@ export interface CaseSupervisionAppointment {
 // ============================================
 
 /**
- * El backend deriva `serviceType` del billing code: 97153 es directo, cualquier
- * otro es indirecto. Se replica acá para mostrarlo antes de guardar y para
+ * El backend deriva `serviceType` según la existencia del billing code: si existe
+ * es directo; si no existe es indirecto. Se replica acá para mostrarlo antes de guardar y para
  * mandarlo en el `PUT`, que sí lo acepta.
  */
 export function getServiceTypeForBillingCode(code: string | undefined): string {
-  if (!code) return ""
-  return /\b97153\b/.test(code) ? "DIRECT" : "INDIRECT"
+  return code?.trim() ? "DIRECT" : "INDIRECT"
 }
 
 export interface ActivityCategoryCatalogItem {
@@ -186,6 +185,9 @@ export interface CaseSupervisionLogDetail {
   clientName: string
   providerId: string
   providerName: string
+  providerCredential: string
+  providerNpi: string
+  providerMpi: string
   /** ISO `yyyy-MM-dd` — el día concreto con el que se creó el reporte */
   date: string
   /** Normalizado a `yyyyMM` */

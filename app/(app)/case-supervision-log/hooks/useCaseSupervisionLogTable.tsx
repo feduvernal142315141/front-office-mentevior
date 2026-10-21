@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarRange, Eye, FileDown, Trash2 } from "lucide-react"
+import { CalendarRange, FileDown, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
@@ -167,21 +167,14 @@ export function useCaseSupervisionLogTable() {
 
             <IconButton
               tone="blue"
-              title="View report"
+              title="Edit report"
               onClick={(event) => {
                 event.stopPropagation()
                 router.push(`/case-supervision-log/${item.id}`)
               }}
             >
-              <Eye className="h-4 w-4" />
+              <Pencil className="h-4 w-4" />
             </IconButton>
-            <AuditActionButton
-              label={`View audit for ${item.clientName || "case supervision log"}`}
-              onClick={(event) => {
-                event.stopPropagation()
-                openAuditModal(item)
-              }}
-            />
             {canDelete && (
               <IconButton
                 tone="red"
@@ -194,6 +187,13 @@ export function useCaseSupervisionLogTable() {
                 <Trash2 className="h-4 w-4" />
               </IconButton>
             )}
+            <AuditActionButton
+              label={`View audit for ${item.clientName || "case supervision log"}`}
+              onClick={(event) => {
+                event.stopPropagation()
+                openAuditModal(item)
+              }}
+            />
           </div>
         ),
       },

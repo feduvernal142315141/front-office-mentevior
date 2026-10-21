@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
@@ -54,9 +54,8 @@ function formatReportDate(value: string): string {
 /**
  * Detalle de un Case Supervision Log.
  *
- * El encabezado y las sesiones son **sólo lectura**: el backend los calculó al
- * crear y el `PUT` no los toca. Lo único editable son las entradas manuales que
- * ya existen; no se pueden agregar ni quitar.
+ * El encabezado y las sesiones son **sólo lectura**. Lo único editable son las
+ * entradas manuales, que pueden agregarse, editarse o eliminarse.
  */
 export default function CaseSupervisionLogDetailPage({ params }: CaseSupervisionLogDetailPageProps) {
   const { id } = use(params)
@@ -65,21 +64,25 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
   const { canEdit } = useModulePermissions(PermissionModule.CASE_SUPERVISION)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [manualEntries, setManualEntries] = useState<ManualEntryFormValue[]>([])
 
-  const savedEntries = useMemo(
-    () => report?.withoutAppointments.map(manualEntryToFormValue) ?? [],
-    [report],
-  )
+  const savedEntries = report?.withoutAppointments ?? []
+
+  useEffect(() => {
+    setManualEntries(report?.withoutAppointments.map(manualEntryToFormValue) ?? [])
+  }, [report])
 
   /**
-   * El `PUT` recibe la lista de entradas existentes: se manda la editada junto
-   * con las demás tal como están. Si falla, el modal queda abierto.
+   * El `PUT` recibe el estado final de las entradas manuales. Si falla, el modal
+   * queda abierto.
    */
   const handleSaveEntry = async (entry: ManualEntryFormValue) => {
     if (!report) return
 
-    // El `PUT` manda todas las entradas y el backend exige fecha y horas en cada una
-    const incompleteIndex = savedEntries.findIndex(
+    const nextEntries = manualEntries.some((e) => e.key === entry.key)
+      ? manualEntries.map((e) => (e.key === entry.key ? entry : e))
+      : [...manualEntries, entry]
+    const incompleteIndex = nextEntries.findIndex(
       (e) => e.key !== entry.key && Object.keys(validateManualEntry(e)).length > 0,
     )
     if (incompleteIndex !== -1) {
@@ -92,18 +95,34 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
     setIsSaving(true)
     try {
       await updateCaseSupervisionLog(report.id, {
-        withoutAppointments: savedEntries
-          .map((e) => (e.key === entry.key ? entry : e))
-          .map(toManualEntryInput),
+        withoutAppointments: nextEntries.map(toManualEntryInput),
       })
-      toast.success("Manual log entry updated")
-      // Se relee: el backend regenera los textos snapshot de lo que cambió
+      toast.success(entry.id ? "Manual log entry updated" : "Manual log entry added")
       await refetch()
     } catch (err) {
       toast.error("Couldn't update the entry", {
         description: err instanceof Error ? err.message : "Unexpected error",
       })
       throw err
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleRemoveEntry = async (key: string) => {
+    if (!report) return
+    const nextEntries = manualEntries.filter((entry) => entry.key !== key)
+    setIsSaving(true)
+    try {
+      await updateCaseSupervisionLog(report.id, {
+        withoutAppointments: nextEntries.map(toManualEntryInput),
+      })
+      toast.success("Manual log entry removed")
+      await refetch()
+    } catch (err) {
+      toast.error("Couldn't remove the entry", {
+        description: err instanceof Error ? err.message : "Unexpected error",
+      })
     } finally {
       setIsSaving(false)
     }
@@ -189,7 +208,12 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
 
               <InfoCard icon={<Building2 className="h-4 w-4 text-[#037ECC]" />} label="Supervisor">
                 <Field label="Name" value={report.providerName || "—"} />
-                <Field label="Report date" value={formatReportDate(report.date)} />
+                <Field label="Credential" value={report.providerCredential || "—"} />
+                <div className="col-span-2 grid grid-cols-3 gap-x-6">
+                  <Field label="NPI" value={report.providerNpi || "—"} />
+                  <Field label="MPI" value={report.providerMpi || "—"} />
+                  <Field label="Report date" value={formatReportDate(report.date)} />
+                </div>
               </InfoCard>
             </div>
 
@@ -214,17 +238,17 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
               />
             </SectionCard>
 
-            {report.withoutAppointments.length > 0 && (
-              <ManualLogEntrySection
-                entries={savedEntries}
-                clientId={report.clientId}
-                reportMonth={report.monthYear}
-                savedEntries={report.withoutAppointments}
-                onSaveEntry={handleSaveEntry}
-                canEdit={canEdit}
-                isSaving={isSaving}
-              />
-            )}
+            <ManualLogEntrySection
+              entries={manualEntries}
+              clientId={report.clientId}
+              reportMonth={report.monthYear}
+              savedEntries={savedEntries}
+              onSaveEntry={handleSaveEntry}
+              canAdd={canEdit}
+              canEdit={canEdit}
+              onRemoveEntry={canEdit ? (key) => void handleRemoveEntry(key) : undefined}
+              isSaving={isSaving}
+            />
 
             <p className="flex items-center justify-center gap-1.5 text-xs text-slate-400">
               <Lock className="h-3.5 w-3.5" />

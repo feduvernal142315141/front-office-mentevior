@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, forwardRef } from "react"
 import { createPortal } from "react-dom"
-import { ChevronDown, Check, Search } from "lucide-react"
+import { ChevronDown, Check, Search, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Option {
@@ -20,6 +20,7 @@ interface FloatingSelectProps {
   disabled?: boolean
   searchable?: boolean
   required?: boolean
+  clearable?: boolean
   dropdownPosition?: "top" | "bottom"
 }
 
@@ -33,6 +34,7 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
   disabled = false,
   searchable = false,
   required = false,
+  clearable = false,
   dropdownPosition,
 }, ref) {
   const [isOpen, setIsOpen] = useState(false)
@@ -160,6 +162,13 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
     setIsOpen(!isOpen)
   }
 
+  const handleClear = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    onChange("")
+    setSearchQuery("")
+    onBlur?.()
+  }
+
   return (
     <div className="w-full relative" ref={containerRef}>
       <div className="relative w-full">
@@ -173,9 +182,9 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
             `
             w-full
             premium-input
-            h-[52px] 2xl:h-[56px]
+            h-13 2xl:h-14
             px-4 pr-12
-            rounded-[16px]
+            rounded-2xl
             text-[15px] 2xl:text-[16px]
 
             text-left
@@ -186,11 +195,23 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
             hasError && "premium-input-error",
             !hasValue && !disabled && "text-gray-400",
             hasValue && !disabled && "text-gray-900",
-            disabled && "!cursor-not-allowed"
+            disabled && "cursor-not-allowed!"
           )}
         >
           <span className="block max-w-full truncate whitespace-nowrap pr-1">{displayText}</span>
         </button>
+
+        {clearable && hasValue && !disabled && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-10 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            aria-label={`Clear ${label}`}
+            title={`Clear ${label}`}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
 
         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
           <ChevronDown
@@ -212,13 +233,13 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
             backdrop-blur-md
 
             text-sm
-            text-[var(--color-login-text-muted)]
+            text-(--color-login-text-muted)
           `,
 
             !hasValue && !isOpen && `
               top-[28] -translate-y-1/2
               text-sm
-              text-[var(--color-login-text-muted)]
+              text-(--color-login-text-muted)
             `,
 
             (hasValue || isOpen) && `
@@ -238,8 +259,8 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
           ref={dropdownRef}
           style={dropdownStyle}
           className={cn(
-            "z-[9999]",
-            "bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden",
+            "z-9999",
+            "bg-white border border-gray-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden",
             "animate-in fade-in-0 duration-150"
           )}
           data-portal-dropdown
@@ -261,7 +282,7 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
             </div>
           )}
 
-          <div className="max-h-[280px] overflow-y-auto py-2">
+          <div className="max-h-70 overflow-y-auto py-2">
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-3 text-sm text-gray-500 text-center">
                 No results found
@@ -299,7 +320,7 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
                   >
                     <span>{option.label}</span>
                     {isSelected && (
-                      <Check className="w-5 h-5 text-[#037ECC] flex-shrink-0" />
+                      <Check className="w-5 h-5 text-[#037ECC] shrink-0" />
                     )}
                   </button>
                 )

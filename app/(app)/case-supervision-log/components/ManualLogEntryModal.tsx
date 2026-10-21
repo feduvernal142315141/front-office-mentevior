@@ -120,7 +120,7 @@ export function ManualLogEntryModal({
           <p className="-mt-2 text-xs font-medium text-red-500">{errors.timeEnd ?? errors.timeStart}</p>
         )}
 
-        {/* Service Type no se pide: sale del billing code elegido (97153 directo, el resto indirecto) */}
+        {/* Service Type no se pide: sale de si se eligió un billing code */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <FloatingSelect
             label="Billing Code"
@@ -131,6 +131,7 @@ export function ManualLogEntryModal({
             options={options.billingCodeOptions}
             disabled={isSaving}
             searchable
+            clearable
           />
           <FloatingSelect
             label="Location"

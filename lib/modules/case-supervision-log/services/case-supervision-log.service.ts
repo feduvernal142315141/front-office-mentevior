@@ -270,6 +270,9 @@ export async function getCaseSupervisionLogById(
     clientName: toText(root.clientName),
     providerId: toText(root.providerId),
     providerName: toText(root.providerName),
+    providerCredential: toText(root.providerCredential),
+    providerNpi: toText(root.providerNpi),
+    providerMpi: toText(root.providerMpi),
     date,
     // El detalle trae `monthYear` en `MMyyyy`; si faltara se deriva de `date`,
     // que es de donde el backend lo calcula.
@@ -302,8 +305,9 @@ export async function createCaseSupervisionLog(
 // ============================================
 
 /**
- * Sólo modifica entradas manuales que ya existen (cada una viaja con su `id`).
- * No agrega ni borra entradas, y no toca el encabezado ni los appointments.
+ * Reemplaza el conjunto de entradas manuales: crea las que no tienen `id`,
+ * actualiza las existentes y elimina las que ya no se envían. No toca el
+ * encabezado ni los appointments.
  */
 export async function updateCaseSupervisionLog(
   id: string,
