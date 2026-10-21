@@ -21,7 +21,7 @@ import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/const
 import { ChartInterval, DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
 import type { DayEntry } from "./frequency-datasheet.types"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
-import { shouldPinTreatmentDay } from "./chart-gaps"
+import { resolveTreatmentLineX, shouldPinTreatmentDay } from "./chart-gaps"
 import { dateToPeriodLabel, type AggregatedDataPoint } from "./aggregate-chart-data"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
 import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
@@ -244,12 +244,18 @@ export function FrequencyChart({
 
   // The phase change is drawn BETWEEN the previous column and the start date's column, so the
   // first treatment datapoint (collected on the start date itself) never sits on top of the line.
-  const treatmentLineX = useMemo(() => {
-    if (!treatmentDateLabel) return null
-    const x = xByLabel.get(treatmentDateLabel)
-    if (x === undefined) return null
-    return x > xDomain[0] ? x - 0.5 : x
-  }, [treatmentDateLabel, xByLabel, xDomain])
+  const treatmentLineX = useMemo(
+    () =>
+      resolveTreatmentLineX({
+        points: data,
+        treatmentX: treatmentDateLabel ? xByLabel.get(treatmentDateLabel) : undefined,
+        treatmentStart: treatmentStartDate,
+        lastDrawnDay: days.length > 0 ? days[days.length - 1] : null,
+        xMin: xDomain[0],
+        hasTreatmentData: data.some((p) => !p.isBaseline && p.occurrences != null),
+      }),
+    [data, treatmentDateLabel, xByLabel, treatmentStartDate, days, xDomain],
+  )
 
   // ─── Environmental change dates ────────────────────────────────────────
 

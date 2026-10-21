@@ -57,7 +57,8 @@ export function ChartDateRangeToolbar({
   const isCustom = preset === "Custom"
 
   return (
-    <div className={cn("flex items-center justify-between", compact ? "flex-wrap gap-2" : "gap-3")}>
+    // data-html2canvas-ignore: la barra de rango del gráfico no sale en el PDF exportado
+    <div data-html2canvas-ignore className={cn("flex items-center justify-between", compact ? "flex-wrap gap-2" : "gap-3")}>
       {/* Left: Range presets + Interval toggle */}
       <div className={cn("flex items-center", compact ? "gap-1.5" : "gap-2.5")}>
         {/* Range presets */}

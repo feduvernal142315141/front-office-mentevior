@@ -265,6 +265,7 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, appo
       const url = await exportElementToPdf(exportRef.current, {
         fileName: `${categoryName} - ${itemName}.pdf`,
         orientation: "landscape",
+        singlePage: true,
       })
       setExportPdfUrl(url)
     } catch (err) {
@@ -422,11 +423,11 @@ function DataCollectionView({ clientId, clientServicePlanId, appointmentId, appo
                 </button>
                 <div className="flex items-center gap-2 shrink-0">
                   {categoryTypeName ? (
-                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700">
+                    <span data-html2canvas-ignore className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700">
                       {categoryTypeName}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-medium text-amber-600">
+                    <span data-html2canvas-ignore className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-medium text-amber-600">
                       No type configured
                     </span>
                   )}

@@ -23,7 +23,7 @@ import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { PercentageChart } from "./PercentageChart"
 import { calculatePercentage } from "./percentage-datasheet.types"
 import {
-  DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
+  DatasheetGridFrame, DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
 import { ActiveObjectiveBanner } from "./ActiveObjectiveBanner"
 
@@ -246,8 +246,7 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
       />
 
       {/* Grid */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[min(35vh,300px)]">
+      <DatasheetGridFrame maxHeightClass="max-h-[min(35vh,300px)]">
           <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
             {/* Column Headers */}
             <div className="grid border-b border-slate-100 sticky top-0 z-10 bg-white" style={{ gridTemplateColumns: gridCols }}>
@@ -369,8 +368,7 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
               })}
             </div>
           </div>
-        </div>
-      </div>
+      </DatasheetGridFrame>
 
       {/* Save Bars */}
       <AnimatePresence>
