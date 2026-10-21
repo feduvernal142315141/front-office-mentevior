@@ -4,12 +4,16 @@ import { useCallback, useEffect, useState } from "react"
 import type { SupervisionOptionCatalogItem } from "@/lib/types/monthly-supervision.types"
 import {
   getAppliedOptionCatalog,
+  getConductedOptionCatalog,
   getDocumentOptionCatalog,
+  getEvaluationOptionCatalog,
 } from "../services/monthly-supervision-catalogs.service"
 
 interface UseSupervisionOptionCatalogsReturn {
   documentOptions: SupervisionOptionCatalogItem[]
   appliedOptions: SupervisionOptionCatalogItem[]
+  conductedOptions: SupervisionOptionCatalogItem[]
+  evaluationOptions: SupervisionOptionCatalogItem[]
   isLoading: boolean
   /** Los endpoints respondieron pero sin opciones: el formulario tiene que avisar */
   isUnavailable: boolean
@@ -17,33 +21,40 @@ interface UseSupervisionOptionCatalogsReturn {
 }
 
 /**
- * Los dos catálogos de opciones, en una sola carga.
+ * Los catálogos de opciones, en una sola carga.
  *
  * Van juntos porque el formulario los necesita a la vez y no tiene sentido
  * renderizar media lista de checkboxes.
  *
- * ⚠️ Si el backend todavía no expone los endpoints (ver el contrato del
- * 2026-08-05), los servicios devuelven `[]` y `isUnavailable` queda en `true`:
- * el formulario muestra el aviso y no deja guardar un reporte sin opciones.
+ * Si un catálogo no está disponible, el formulario permite agregar sus
+ * elementos manualmente y conserva disponibles los demás catálogos.
  */
-export function useSupervisionOptionCatalogs(): UseSupervisionOptionCatalogsReturn {
+export function useSupervisionOptionCatalogs({
+  loadCustomOptions = true,
+}: { loadCustomOptions?: boolean } = {}): UseSupervisionOptionCatalogsReturn {
   const [documentOptions, setDocumentOptions] = useState<SupervisionOptionCatalogItem[]>([])
   const [appliedOptions, setAppliedOptions] = useState<SupervisionOptionCatalogItem[]>([])
+  const [conductedOptions, setConductedOptions] = useState<SupervisionOptionCatalogItem[]>([])
+  const [evaluationOptions, setEvaluationOptions] = useState<SupervisionOptionCatalogItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [documents, applied] = await Promise.all([
+      const [documents, applied, conducted, evaluation] = await Promise.all([
         getDocumentOptionCatalog(),
         getAppliedOptionCatalog(),
+        loadCustomOptions ? getConductedOptionCatalog() : Promise.resolve([]),
+        loadCustomOptions ? getEvaluationOptionCatalog() : Promise.resolve([]),
       ])
       setDocumentOptions(documents)
       setAppliedOptions(applied)
+      setConductedOptions(conducted)
+      setEvaluationOptions(evaluation)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [loadCustomOptions])
 
   useEffect(() => {
     void load()
@@ -52,6 +63,8 @@ export function useSupervisionOptionCatalogs(): UseSupervisionOptionCatalogsRetu
   return {
     documentOptions,
     appliedOptions,
+    conductedOptions,
+    evaluationOptions,
     isLoading,
     isUnavailable: !isLoading && documentOptions.length === 0 && appliedOptions.length === 0,
     refetch: load,

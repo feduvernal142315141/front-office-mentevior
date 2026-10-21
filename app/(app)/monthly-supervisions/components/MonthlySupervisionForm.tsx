@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
@@ -37,6 +37,8 @@ import type { SupervisionAppointment } from "@/lib/types/monthly-supervision.typ
 import { MonthPicker } from "@/components/custom/MonthPicker"
 import { SupervisionAppointmentsTable } from "./SupervisionAppointmentsTable"
 import { SupervisionOptionsChecklist } from "./SupervisionOptionsChecklist"
+import { SupervisionEditableOptionsTable } from "./SupervisionEditableOptionsTable"
+import { MonthlySupervisionRequirementsTable } from "./MonthlySupervisionRequirementsTable"
 import { SupervisionSignatures } from "./SupervisionSignatures"
 
 interface MonthlySupervisionFormProps {
@@ -62,6 +64,9 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
   const [appointments, setAppointments] = useState<SupervisionAppointment[]>([])
   const [supervisorSign, setSupervisorSign] = useState<string | null>(null)
   const [superviseeSign, setSuperviseeSign] = useState<string | null>(null)
+  const [supervisionConducted, setSupervisionConducted] = useState<string[]>([])
+  const [itemsEvaluated, setItemsEvaluated] = useState<string[]>([])
+  const optionSeedKeyRef = useRef("")
 
   const [invalidAppointmentIds, setInvalidAppointmentIds] = useState<string[]>([])
   const [signatureError, setSignatureError] = useState(false)
@@ -69,7 +74,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { users: allUsers } = useUsers({ pageSize: 100 })
-  const catalogs = useSupervisionOptionCatalogs()
+  const catalogs = useSupervisionOptionCatalogs({ loadCustomOptions: !isEditing })
 
   const { context, isLoading: contextLoading, error: contextError } = useMonthlySupervisionContext({
     monthlySupervisionId,
@@ -148,6 +153,26 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       if (context.requestedReportDate) setReportMonth(context.requestedReportDate)
     }
   }, [context, isEditing])
+
+  const optionSeedKey = monthlySupervisionId ? `existing:${monthlySupervisionId}` : "new"
+
+  useEffect(() => {
+    if (!optionSeedKey || optionSeedKeyRef.current === optionSeedKey) return
+    if (isEditing && !context) return
+
+    const storedConducted = splitEditableOptions(context?.supervisionConducted)
+    const storedEvaluated = splitEditableOptions(context?.itemsEvaluated)
+    const catalogsLoaded = catalogs.conductedOptions.length > 0 && catalogs.evaluationOptions.length > 0
+    if (!isEditing && (!storedConducted.length || !storedEvaluated.length) && !catalogsLoaded) return
+
+    optionSeedKeyRef.current = optionSeedKey
+    setSupervisionConducted(
+      storedConducted.length > 0 ? storedConducted : catalogs.conductedOptions.map((option) => option.name),
+    )
+    setItemsEvaluated(
+      storedEvaluated.length > 0 ? storedEvaluated : catalogs.evaluationOptions.map((option) => option.name),
+    )
+  }, [context, optionSeedKey, catalogs.conductedOptions, catalogs.evaluationOptions, isEditing])
 
   /**
    * 🔴 La guarda de R3.
@@ -264,6 +289,8 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       supervisedHours: context?.supervisedHours ?? 0,
       supervisorSign,
       superviseeSign,
+      supervisionConducted: serializeEditableOptions(supervisionConducted),
+      itemsEvaluated: serializeEditableOptions(itemsEvaluated),
       documentOptionCatalogIds: documentOptionIds,
       appliedOptionCatalogIds: appliedOptionIds,
       appointments: appointments.map((item) => ({
@@ -276,7 +303,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
   }, [
     isReadOnly, hasMonthlySupervisionSignPermission, monthlySupervisionId, superviseeSign, sign,
     isBlocked, clientId, providerId, reportMonth, appointments, supervisorSign,
-    otherAppliedOption, documentOptionIds, appliedOptionIds, context, save,
+    otherAppliedOption, supervisionConducted, itemsEvaluated, documentOptionIds, appliedOptionIds, context, save,
   ])
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
@@ -459,6 +486,14 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
         </Section>
       </div>
 
+      {context && hasSelection && (
+        <MonthlySupervisionRequirementsTable
+          totalHoursWorked={context.totalHoursWorked}
+          supervisedHours={context.supervisedHours}
+          appointments={context.appointments}
+        />
+      )}
+
       {/* ─── Opciones ─── */}
       {!catalogs.isUnavailable && (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
@@ -491,6 +526,23 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
           </Section>
         </div>
       )}
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <SupervisionEditableOptionsTable
+          title="Characteristics of Supervision Conducted"
+          description="Items observed or discussed during supervision"
+          options={supervisionConducted}
+          onChange={setSupervisionConducted}
+          disabled={isBusy || isBlocked || isReadOnly}
+        />
+        <SupervisionEditableOptionsTable
+          title="Other Items Evaluated"
+          description="Additional items evaluated during supervision"
+          options={itemsEvaluated}
+          onChange={setItemsEvaluated}
+          disabled={isBusy || isBlocked || isReadOnly}
+        />
+      </div>
 
       {/* ─── Firmas ─── */}
       <div data-section="signatures">
@@ -534,6 +586,17 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
 
 function formatHours(value: number): string {
   return value.toLocaleString("en-US", { maximumFractionDigits: 2 })
+}
+
+function splitEditableOptions(value?: string): string[] {
+  return (value ?? "")
+    .split(";")
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function serializeEditableOptions(options: string[]): string {
+  return options.map((item) => item.trim()).filter(Boolean).join(";")
 }
 
 function Section({

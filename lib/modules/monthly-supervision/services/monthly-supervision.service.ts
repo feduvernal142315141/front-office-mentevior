@@ -137,6 +137,8 @@ function normalizeContext(payload: unknown, isExistingReport: boolean): MonthlyS
     supervisedHours: toNumber(root.supervisedHours) ?? 0,
     supervisorSign: toText(root.supervisorSign) ?? null,
     superviseeSign: toText(root.superviseeSign) ?? null,
+    supervisionConducted: toText(root.supervisionConducted),
+    itemsEvaluated: toText(root.itemsEvaluated),
     requestedReportDate: parseReportMonth(toText(root.requestedReportDate)) ?? undefined,
     otherAppliedOption: toText(root.otherAppliedOption),
     documentOptionCatalogIds,

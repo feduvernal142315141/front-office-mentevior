@@ -4,14 +4,14 @@ import type { SupervisionOptionCatalogItem } from "@/lib/types/monthly-supervisi
 /**
  * Catálogos de opciones del Monthly Supervision.
  *
- * ⚠️ El contrato del 2026-08-05 dice que estos endpoints son "el contrato
- * requerido" y que el backend **todavía no los expone**. Por eso los dos
- * servicios devuelven `[]` ante cualquier fallo en vez de reventar: el
- * formulario avisa que las opciones no cargaron y el resto sigue usable.
+ * Cada endpoint devuelve `[]` ante cualquier fallo para que el formulario
+ * pueda mostrar el resto del reporte y permita agregar opciones manualmente.
  */
 
 const DOCUMENT_OPTIONS_URL = "/monthly-supervision-document-option/catalog"
 const APPLIED_OPTIONS_URL = "/monthly-supervision-applied-option/catalog"
+const CONDUCTED_OPTIONS_URL = "/monthly-supervision-conducted-option/catalog"
+const EVALUATION_OPTIONS_URL = "/monthly-supervision-evaluation-option/catalog"
 
 /** `pageSize=0` devuelve todo el catálogo, según el contrato */
 const QUERY = "?page=0&pageSize=0"
@@ -67,4 +67,12 @@ export function getDocumentOptionCatalog(): Promise<SupervisionOptionCatalogItem
 /** Actividades aplicadas — ids que viajan en `appliedOptionCatalogIds` */
 export function getAppliedOptionCatalog(): Promise<SupervisionOptionCatalogItem[]> {
   return fetchCatalog(APPLIED_OPTIONS_URL)
+}
+
+export function getConductedOptionCatalog(): Promise<SupervisionOptionCatalogItem[]> {
+  return fetchCatalog(CONDUCTED_OPTIONS_URL)
+}
+
+export function getEvaluationOptionCatalog(): Promise<SupervisionOptionCatalogItem[]> {
+  return fetchCatalog(EVALUATION_OPTIONS_URL)
 }

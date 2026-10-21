@@ -105,6 +105,8 @@ export interface MonthlySupervisionContext {
   /** Data URL (`data:image/png;base64,...`) o `null` */
   supervisorSign?: string | null
   superviseeSign?: string | null
+  supervisionConducted?: string
+  itemsEvaluated?: string
   requestedReportDate?: ReportMonth
   otherAppliedOption?: string
   /** `undefined` = el backend no mandó la clave · `[]` = vino vacía */
@@ -136,6 +138,8 @@ export interface SaveMonthlySupervisionDto {
   supervisedHours: number
   supervisorSign: string
   superviseeSign: string | null
+  supervisionConducted: string
+  itemsEvaluated: string
   documentOptionCatalogIds: string[]
   appliedOptionCatalogIds: string[]
   appointments: SaveMonthlySupervisionAppointment[]
