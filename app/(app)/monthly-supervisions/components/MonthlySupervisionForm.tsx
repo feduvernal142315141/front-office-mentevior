@@ -78,7 +78,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
     reportMonth,
   })
 
-  const { save, isSaving } = useSaveMonthlySupervision({ monthlySupervisionId })
+  const { save, sign, isSaving } = useSaveMonthlySupervision({ monthlySupervisionId })
 
   const hasMonthlySupervisionSignPermission = can(
     PermissionModule.MONTHLY_SUPERVISIONS,
@@ -192,10 +192,19 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
 
   const persist = useCallback(async (): Promise<string | null> => {
     if (isReadOnly) {
-      toast.error("This report is read-only", {
-        description: "You need Edit permission to update Monthly Supervision fields.",
-      })
-      return null
+      if (!hasMonthlySupervisionSignPermission || !monthlySupervisionId) {
+        toast.error("This report is read-only", {
+          description: "You need Edit permission to update Monthly Supervision fields.",
+        })
+        return null
+      }
+
+      if (!superviseeSign) {
+        toast.error("The supervisee signature is required")
+        return null
+      }
+
+      return sign(superviseeSign)
     }
 
     // Cinturón: el botón ya está deshabilitado, pero un Enter dentro del form
@@ -265,7 +274,8 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       })),
     })
   }, [
-    isReadOnly, isBlocked, clientId, providerId, reportMonth, appointments, supervisorSign, superviseeSign,
+    isReadOnly, hasMonthlySupervisionSignPermission, monthlySupervisionId, superviseeSign, sign,
+    isBlocked, clientId, providerId, reportMonth, appointments, supervisorSign,
     otherAppliedOption, documentOptionIds, appliedOptionIds, context, save,
   ])
 
@@ -289,7 +299,14 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
 
   const hasSelection = !!clientId && !!providerId && !!reportMonth
   const isBusy = isSaving || contextLoading
-  const canSave = hasSelection && appointments.length > 0 && !isBusy && !isBlocked && !isReadOnly
+  const canSignOnly =
+    isEditing &&
+    isReadOnly &&
+    hasMonthlySupervisionSignPermission &&
+    !!superviseeSign &&
+    !isBusy &&
+    !isBlocked
+  const canSave = canSignOnly || (hasSelection && appointments.length > 0 && !isBusy && !isBlocked && !isReadOnly)
 
   if (isEditing && contextLoading && !context) {
     return (
@@ -490,7 +507,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
             onSuperviseeSignChange={(value) => { setSuperviseeSign(value); setSignatureError(false) }}
             canEditSupervisorSignature={canEditSupervisorSignature}
             canEditSuperviseeSignature={canEditSuperviseeSignature}
-              disabled={isBusy || isBlocked || isReadOnly}
+            disabled={isBusy || isBlocked}
             hasError={signatureError}
           />
         </Section>
@@ -499,7 +516,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       <FormBottomBar
         isSubmitting={isSaving}
         onCancel={() => router.push("/monthly-supervisions")}
-        submitText={isEditing ? "Update Monthly Supervision" : "Create Monthly Supervision"}
+        submitText={canSignOnly ? "Sign Monthly Supervision" : isEditing ? "Update Monthly Supervision" : "Create Monthly Supervision"}
         disabled={!canSave}
       />
 

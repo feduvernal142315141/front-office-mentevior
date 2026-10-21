@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import type { SaveMonthlySupervisionDto } from "@/lib/types/monthly-supervision.types"
 import {
   createMonthlySupervision,
+  signMonthlySupervision,
   updateMonthlySupervision,
 } from "../services/monthly-supervision.service"
 
@@ -16,6 +17,7 @@ interface UseSaveMonthlySupervisionOptions {
 interface UseSaveMonthlySupervisionReturn {
   /** Crea la primera vez y actualiza a partir de ahí; devuelve el id o `null` */
   save: (data: SaveMonthlySupervisionDto) => Promise<string | null>
+  sign: (superviseeSign: string) => Promise<string | null>
   monthlySupervisionId: string | null
   isSaving: boolean
   error: string | null
@@ -62,5 +64,32 @@ export function useSaveMonthlySupervision(
     }
   }, [])
 
-  return { save, monthlySupervisionId, isSaving, error }
+  const sign = useCallback(async (superviseeSign: string): Promise<string | null> => {
+    const existingId = idRef.current
+    if (!existingId) {
+      const message = "A saved Monthly Supervision is required before signing"
+      setError(message)
+      toast.error("Error saving supervisee signature", { description: message })
+      return null
+    }
+
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      const id = await signMonthlySupervision(existingId, superviseeSign)
+      idRef.current = id
+      setMonthlySupervisionId(id)
+      return id
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save supervisee signature"
+      setError(message)
+      toast.error("Error saving supervisee signature", { description: message })
+      return null
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
+  return { save, sign, monthlySupervisionId, isSaving, error }
 }

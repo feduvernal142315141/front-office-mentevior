@@ -1,4 +1,4 @@
-import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePatch, servicePost, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import { getQueryString } from "@/lib/utils/format"
 import type { QueryModel } from "@/lib/models/queryModel"
@@ -212,6 +212,22 @@ export async function updateMonthlySupervision(
 
   if (response?.status !== 200 && response?.status !== 204) {
     throw new Error(getApiErrorMessage(response?.data, "Failed to update monthly supervision"))
+  }
+
+  return extractId(response.data, "update") || id
+}
+
+export async function signMonthlySupervision(
+  id: string,
+  superviseeSign: string,
+): Promise<string> {
+  const response = await servicePatch<{ superviseeSign: string }, string>(
+    `${BASE_URL}/${id}/supervisee-signature`,
+    { superviseeSign },
+  )
+
+  if (response?.status !== 200 && response?.status !== 204) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to save supervisee signature"))
   }
 
   return extractId(response.data, "update") || id
