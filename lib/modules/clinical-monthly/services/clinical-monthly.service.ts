@@ -79,7 +79,8 @@ export async function updateClinicalMonthly(
   id: string,
   data: SaveClinicalMonthlyDto,
 ): Promise<string> {
-  const response = await servicePut<SaveClinicalMonthlyDto, string>(`${BASE_URL}/${id}`, data)
+  const { creatorSign: _creatorSign, ...updateData } = data
+  const response = await servicePut<Omit<SaveClinicalMonthlyDto, "creatorSign">, string>(`${BASE_URL}/${id}`, updateData)
 
   if (response.status !== 200 && response.status !== 204) {
     throw new Error(response.data?.message || "Failed to update clinical monthly")

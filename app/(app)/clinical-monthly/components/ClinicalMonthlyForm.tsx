@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Building2, CalendarRange, ClipboardList, FileDown, Loader2, MessageSquareText, User } from "lucide-react"
+import { Building2, CalendarRange, ClipboardList, FileDown, Loader2, MessageSquareText, PenTool, User } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/custom/Button"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -19,7 +19,9 @@ import { getNarrativeLengthState, validateNarrativeLength } from "@/lib/utils/na
 import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
 import { formatReportMonthShort, parseReportMonth } from "@/lib/utils/report-month"
 import { usePermission } from "@/lib/hooks/use-permission"
+import { useAuth } from "@/lib/hooks/use-auth"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { ClinicalMonthlySignature } from "./ClinicalMonthlySignature"
 
 interface ClinicalMonthlyFormProps {
   /** Presente al editar un reporte existente */
@@ -35,6 +37,7 @@ interface ClinicalMonthlyFormProps {
 export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormProps) {
   const router = useRouter()
   const isEditing = !!clinicalMonthlyId
+  const { user } = useAuth()
   const { create, edit } = usePermission()
   const canPersist = isEditing ? edit(PermissionModule.CLINICAL_MONTHLY) : create(PermissionModule.CLINICAL_MONTHLY)
 
@@ -42,6 +45,8 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
   const [startMonthYear, setStartMonthYear] = useState("")
   const [endMonthYear, setEndMonthYear] = useState("")
   const [summary, setSummary] = useState("")
+  const [creatorSign, setCreatorSign] = useState<string | null>(null)
+  const [signatureError, setSignatureError] = useState(false)
   const [rangeError, setRangeError] = useState<string | null>(null)
   const [summaryError, setSummaryError] = useState<string | null>(null)
   const [previewId, setPreviewId] = useState<string | null>(null)
@@ -66,6 +71,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     setStartMonthYear(clinicalMonthly.startMonthYear)
     setEndMonthYear(clinicalMonthly.endMonthYear)
     setSummary(clinicalMonthly.summary ?? "")
+    setCreatorSign(typeof clinicalMonthly.creatorSign === "string" ? clinicalMonthly.creatorSign : null)
   }, [clinicalMonthly])
 
   // Con un solo cliente no tiene sentido hacer elegir: se autocompleta.
@@ -113,10 +119,24 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     }
     setSummaryError(null)
 
+    if (!isEditing && !creatorSign) {
+      setSignatureError(true)
+      toast.error("The creator signature is required")
+      document.querySelector('[data-section="creator-signature"]')?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return null
+    }
+    setSignatureError(false)
+
     // Sin `items`: el formulario ya no los captura. Se omite la clave en vez de
     // mandar `[]` para no disparar el borrado lógico del PUT sobre reportes viejos.
-    return save({ clientId, startMonthYear, endMonthYear, summary: trimmedSummary })
-  }, [clientId, endMonthYear, save, startMonthYear, summary])
+    return save({
+      clientId,
+      startMonthYear,
+      endMonthYear,
+      summary: trimmedSummary,
+      ...(isEditing ? {} : { creatorSign: creatorSign ?? "" }),
+    })
+  }, [clientId, creatorSign, endMonthYear, isEditing, save, startMonthYear, summary])
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
     event.preventDefault()
@@ -136,7 +156,8 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
   const hasRange = !!startMonthYear && !!endMonthYear
   // Guardar y previsualizar son la misma operación (el preview persiste), así que
   // ambos exigen lo mismo: cliente, período y summary.
-  const canSave = !!clientId && hasRange && getNarrativeLengthState(summary).isValid && !isBusy && canPersist
+  const canSave = !!clientId && hasRange && getNarrativeLengthState(summary).isValid
+    && (isEditing || !!creatorSign) && !isBusy && canPersist
 
   if (isEditing && detailLoading) {
     return (
@@ -252,6 +273,23 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             <p className="mt-1.5 text-xs font-medium text-red-500">{summaryError}</p>
           )}
         </div>
+      </Section>
+
+      <Section
+        icon={<PenTool className="h-4 w-4" />}
+        title="Signature"
+        subtitle={isEditing ? "Signature saved with this report" : "Sign the report as its creator"}
+      >
+        <ClinicalMonthlySignature
+          memberUserId={user?.id ?? null}
+          signature={creatorSign}
+          onChange={(value) => {
+            setCreatorSign(value)
+            if (value) setSignatureError(false)
+          }}
+          disabled={isEditing || isBusy || !user?.id}
+          hasError={signatureError}
+        />
       </Section>
 
       <FormBottomBar

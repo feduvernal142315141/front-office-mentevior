@@ -42,6 +42,8 @@ export interface ClinicalMonthlyListItem {
    */
   createAt?: string
   active: boolean
+  /** URL utilizable de la firma histórica del creador, si existe. */
+  creatorSign?: string | null
 
   /**
    * Pendiente de backend: el detalle sí lo resuelve, el listado todavía no.
@@ -68,6 +70,8 @@ export interface SaveClinicalMonthlyDto {
    * que nunca sale `""` ni sólo espacios.
    */
   summary: string
+  /** Firma registrada (URL) o nueva firma en Base64. Obligatoria al crear. */
+  creatorSign?: string
   // Sin `items`: `ClinicalMonthlyItemData` quedó retirado del backend.
   // Sin `providerId`: el provider del reporte es el usuario logueado que lo crea,
   // así que el backend lo resuelve del token y no se envía desde el front.
