@@ -103,3 +103,37 @@ export function shouldPinTreatmentDay(treatmentStart: Date | null, drawnDays: Da
   if (times.includes(time)) return false
   return time > Math.min(...times) && time < Math.max(...times)
 }
+
+/**
+ * X of the baseline → treatment phase line. It sits on the first STO's real date when that
+ * date is drawn after the last baseline point (between that column and the previous one).
+ * Otherwise — no STO yet, or an STO dated before or on the baselines, or outside the drawn
+ * span — the line goes between the last baseline point and the next column, so the phase
+ * change is always visible once the chart has data past the baseline. A treatment that
+ * starts after the drawn span — or no STO and no treatment data at all — hasn't begun yet,
+ * so no line is drawn.
+ */
+export function resolveTreatmentLineX(params: {
+  points: { x: number; baselineValue: number | null }[]
+  treatmentX: number | undefined
+  treatmentStart: Date | null
+  lastDrawnDay: Date | null
+  xMin: number
+  /** Some point after the baseline already holds a treatment value */
+  hasTreatmentData: boolean
+}): number | null {
+  const { points, treatmentX, treatmentStart, lastDrawnDay, xMin, hasTreatmentData } = params
+  if (points.length === 0) return null
+  if (!treatmentStart && !hasTreatmentData) return null
+  if (treatmentStart && lastDrawnDay && treatmentStart.getTime() > lastDrawnDay.getTime()) return null
+
+  const baselineXs = points.filter((p) => p.baselineValue != null).map((p) => p.x)
+  const lastBaselineX = baselineXs.length > 0 ? Math.max(...baselineXs) : undefined
+
+  if (treatmentX !== undefined && (lastBaselineX === undefined || treatmentX > lastBaselineX)) {
+    return treatmentX > xMin ? treatmentX - 0.5 : treatmentX
+  }
+  if (lastBaselineX === undefined) return null
+  const hasColumnAfter = points.some((p) => p.x > lastBaselineX)
+  return hasColumnAfter ? lastBaselineX + 0.5 : null
+}

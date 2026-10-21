@@ -1,10 +1,10 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   CalendarDays, ChevronLeft, ChevronRight, FileText,
   Plus, MapPin, Save, RotateCcw, Loader2, Check,
-  CalendarRange,
+  CalendarRange, ChevronDown, ChevronUp,
 } from "lucide-react"
 import { addDays, format, startOfWeek } from "date-fns"
 import { AnimatePresence, motion } from "framer-motion"
@@ -116,7 +116,8 @@ export function DatasheetHeader({
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-0.5 rounded-xl bg-slate-100/80 p-1">
+          {/* data-html2canvas-ignore: los controles de navegación no salen en el PDF exportado */}
+          <div data-html2canvas-ignore className="flex items-center gap-0.5 rounded-xl bg-slate-100/80 p-1">
             {MODE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
@@ -134,12 +135,12 @@ export function DatasheetHeader({
               </button>
             ))}
           </div>
-          <div className="h-6 w-px bg-slate-200" />
+          <div data-html2canvas-ignore className="h-6 w-px bg-slate-200" />
           <CalendarDays className="h-4.5 w-4.5 text-[#037ECC]" />
           <span className="text-base font-bold text-slate-800">{monthYearLabel}</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div data-html2canvas-ignore className="flex items-center gap-2">
           <button type="button" onClick={onPrev} disabled={!canGoPrev}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-[#037ECC]/30 hover:text-[#037ECC] hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:text-slate-500 disabled:hover:shadow-none">
             <ChevronLeft className="h-4 w-4" />
@@ -294,6 +295,48 @@ export function NoteButton({ value, onChange, dateLabel, disabled }: { value: st
         </div>
       </PopoverContent>
     </Popover>
+  )
+}
+
+// ─── Grid frame ─────────────────────────────────────────────────────────────
+
+/**
+ * Marco de la grilla del datasheet: por defecto tiene un alto máximo con scroll interno y,
+ * cuando el contenido no cabe, un botón abajo para expandirla completa con un click.
+ */
+export function DatasheetGridFrame({ maxHeightClass, children }: { maxHeightClass: string; children: React.ReactNode }) {
+  const [expanded, setExpanded] = useState(false)
+  const [overflows, setOverflows] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || expanded) return
+    const check = () => setOverflows(el.scrollHeight > el.clientHeight + 1)
+    check()
+    const observer = new ResizeObserver(check)
+    observer.observe(el)
+    if (el.firstElementChild) observer.observe(el.firstElementChild)
+    return () => observer.disconnect()
+  }, [expanded])
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div ref={scrollRef} className={cn("overflow-x-auto overflow-y-auto", !expanded && maxHeightClass)}>
+        {children}
+      </div>
+      {(overflows || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          data-html2canvas-ignore
+          className="flex w-full items-center justify-center gap-1.5 border-t border-slate-100 bg-slate-50/60 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-[#037ECC] transition-colors"
+        >
+          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          {expanded ? "Collapse table" : "Expand table"}
+        </button>
+      )}
+    </div>
   )
 }
 

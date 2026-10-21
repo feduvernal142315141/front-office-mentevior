@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
-  BarChart3, FileText, User, CalendarCheck2,
+  BarChart3, FileText, User, CalendarCheck2, ChevronLeft, ChevronRight,
 } from "lucide-react"
 import { addDays, format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -21,7 +21,7 @@ import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
 import { getDateKey, parseLocalDate, calculateDailyAggregate } from "./duration-datasheet.types"
 import { DurationChart } from "./DurationChart"
 import {
-  DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
+  DatasheetGridFrame, DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
 import { ActiveObjectiveBanner } from "./ActiveObjectiveBanner"
 
@@ -80,12 +80,34 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     return extended
   }, [ds.rangeDays, ds.rangeMode, gapDateKeys])
 
+  // Baseline days outside the current week range (prepended as collapsible columns)
+  const baselineDays = useMemo(() => {
+    const bls = activeItem.baseline
+    if (!bls || bls.length === 0) return []
+    const rangeStart = ds.dateRange.start
+    return bls
+      .filter((b) => b.date)
+      .map((b) => parseLocalDate(b.date))
+      .filter((d) => d < rangeStart)
+      .sort((a, b) => a.getTime() - b.getTime())
+  }, [activeItem.baseline, ds.dateRange.start])
+
+  const [baselineCollapsed, setBaselineCollapsed] = useState(false)
+  const displayDays = useMemo(
+    () => (baselineCollapsed ? visibleDays : [...baselineDays, ...visibleDays]),
+    [baselineCollapsed, baselineDays, visibleDays],
+  )
+  const hasBaselineDays = baselineDays.length > 0
+
+  // Fetch range: cover baselineDays + dateRange + extended visibleDays
   const fetchStart = useMemo(() => {
     const rangeStart = ds.dateRange.start
+    const firstBaseline = baselineDays[0]
     const firstVisible = visibleDays[0]
-    const earliest = firstVisible && firstVisible < rangeStart ? firstVisible : rangeStart
+    const candidates = [rangeStart, firstBaseline, firstVisible].filter(Boolean) as Date[]
+    const earliest = new Date(Math.min(...candidates.map((d) => d.getTime())))
     return format(earliest, "yyyy-MM-dd")
-  }, [ds.dateRange.start, visibleDays])
+  }, [ds.dateRange.start, baselineDays, visibleDays])
 
   const fetchEnd = useMemo(() => {
     const rangeEnd = ds.dateRange.end
@@ -198,7 +220,8 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     return map
   }, [dcValues.records])
 
-  const gridCols = `200px repeat(${visibleDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
+  const toggleColWidth = hasBaselineDays ? "36px " : ""
+  const gridCols = `200px ${toggleColWidth}repeat(${displayDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
 
   return (
     <div className="space-y-4">
@@ -210,15 +233,28 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
         onChangeMode={ds.changeMode} onGoToDate={ds.goToDate} onSetRange={ds.setRange}
       />
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[min(35vh,340px)]">
+      <DatasheetGridFrame maxHeightClass="max-h-[min(35vh,340px)]">
           <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
             {/* Column Headers */}
             <div className="grid border-b border-slate-100 sticky top-0 z-10 bg-white" style={{ gridTemplateColumns: gridCols }}>
               <div className="px-4 py-3 bg-slate-50/60 border-r border-slate-100">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Recording</span>
               </div>
-              {visibleDays.map((day) => {
+              {hasBaselineDays && (
+                <button
+                  type="button"
+                  onClick={() => setBaselineCollapsed((v) => !v)}
+                  className="flex items-center justify-center border-r border-slate-100 bg-red-50/40 hover:bg-red-50 transition-colors"
+                  title={baselineCollapsed ? `Show ${baselineDays.length} baseline days` : "Hide baselines"}
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    {baselineCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-red-400" /> : <ChevronLeft className="h-3.5 w-3.5 text-red-400" />}
+                    <span className="text-[9px] font-bold text-red-400 uppercase">BL</span>
+                    {baselineCollapsed && <span className="text-[9px] font-semibold text-red-300">{baselineDays.length}</span>}
+                  </div>
+                </button>
+              )}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
@@ -240,7 +276,8 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             {Array.from({ length: numberOfRecordings }, (_, idx) => (
               <div key={idx} className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
                 <RowLabel icon={<BarChart3 className="h-4 w-4 text-[#037ECC]" />} title={`Recording ${idx + 1}`} />
-                {visibleDays.map((day) => {
+                {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+                {displayDays.map((day) => {
                   const key = getDateKey(day)
                   const entry = ds.getEntry(key)
                   const today = ds.isToday(day)
@@ -273,7 +310,8 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             {/* Row: Daily Total/Average */}
             <div className="grid border-b border-slate-100 bg-slate-50/40" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<BarChart3 className="h-4 w-4 text-indigo-500" />} title={dailyLabel} badgeColor="blue" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
@@ -294,7 +332,8 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             {/* Row: Initials */}
             <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<User className="h-4 w-4 text-slate-400" />} title="Initials" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
@@ -311,7 +350,8 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             {/* Row: Environmental Changes */}
             <div className="grid" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<FileText className="h-4 w-4 text-teal-500" />} title="Environmental changes" badge="Affects Chart Phase Lines" badgeColor="teal" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
@@ -326,8 +366,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
               })}
             </div>
           </div>
-        </div>
-      </div>
+      </DatasheetGridFrame>
 
       {/* Save Bars */}
       <AnimatePresence>
