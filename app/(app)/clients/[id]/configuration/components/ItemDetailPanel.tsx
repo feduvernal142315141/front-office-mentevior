@@ -7,12 +7,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import {
   ArrowLeft,
   Loader2,
-  Minus,
   Plus,
   Save,
 } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
+import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper"
 import { HYPOTHESIZED_FUNCTION_OPTIONS } from "@/lib/constants/hypothesized-function"
 
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -496,7 +496,6 @@ export function ItemDetailPanel({
 
   // --- Watched values ---
   const watchedType = watch("type")
-  const watchedIntervalLength = watch("intervalLength")
   const watchedUnitOfTime = watch("unitOfTime")
 
   const resolvedType = useMemo(() => {
@@ -677,16 +676,6 @@ export function ItemDetailPanel({
       toast.error(alert.title, { description: alert.description })
     }
   )
-
-  const handleIntervalIncrement = () => {
-    const current = watchedIntervalLength ?? 30
-    setValue("intervalLength", current + 1)
-  }
-
-  const handleIntervalDecrement = () => {
-    const current = watchedIntervalLength ?? 30
-    if (current > 1) setValue("intervalLength", current - 1)
-  }
 
   // --- Loading state ---
   if (isLoading) {
@@ -960,44 +949,21 @@ export function ItemDetailPanel({
           {/* Interval (time-sampling) */}
           {typeRequiresInterval(resolvedType.group) && (
             <>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-600">
-                  Interval length
-                </label>
-                <div
-                  className={cn(
-                    "flex items-center rounded-[16px]",
-                    errors.intervalLength && "ring-2 ring-red-400/60"
+              <div className="space-y-1">
+                <Controller
+                  name="intervalLength"
+                  control={control}
+                  render={({ field }) => (
+                    <FloatingNumberStepper
+                      label="Interval length"
+                      value={field.value ?? 30}
+                      onChange={field.onChange}
+                      min={1}
+                      max={9999}
+                      hasError={!!errors.intervalLength}
+                    />
                   )}
-                >
-                  <button
-                    type="button"
-                    onClick={handleIntervalDecrement}
-                    className="flex items-center justify-center w-10 h-[52px] 2xl:h-[56px] border border-r-0 border-gray-200 rounded-l-[16px] text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <Controller
-                    name="intervalLength"
-                    control={control}
-                    render={({ field }) => (
-                      <input
-                        type="number"
-                        value={field.value ?? 30}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                        onBlur={field.onBlur}
-                        className="flex-1 h-[52px] 2xl:h-[56px] text-center text-[15px] border-y border-gray-200 focus:outline-none focus:ring-0 bg-white"
-                      />
-                    )}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleIntervalIncrement}
-                    className="flex items-center justify-center w-10 h-[52px] 2xl:h-[56px] border border-l-0 border-gray-200 rounded-r-[16px] text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
+                />
                 <FieldErrorText message={errors.intervalLength?.message} />
               </div>
               <div className="space-y-1">
