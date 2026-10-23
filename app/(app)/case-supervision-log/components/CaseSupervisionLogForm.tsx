@@ -14,6 +14,7 @@ import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { useCaseSupervisionAppointments } from "@/lib/modules/case-supervision-log/hooks/use-case-supervision-appointments"
 import { useCreateCaseSupervisionLog } from "@/lib/modules/case-supervision-log/hooks/use-create-case-supervision-log"
 import {
+  getManualEntryDuration,
   isManualEntryEmpty,
   toManualEntryInput,
   type ManualEntryFormValue,
@@ -80,6 +81,13 @@ export function CaseSupervisionLogForm() {
     () => manualEntries.filter((entry) => !isManualEntryEmpty(entry)),
     [manualEntries],
   )
+  const manualHours = useMemo(
+    () => filledManualEntries.reduce(
+      (sum, entry) => sum + getManualEntryDuration(entry.timeStart, entry.timeEnd),
+      0,
+    ),
+    [filledManualEntries],
+  )
   const isTrioComplete = !!clientId && !!providerId && isReportMonth(reportMonth)
   const isBusy = isLoadingPreparation || isCreating
   const canSubmit = isTrioComplete && !!preparation && !isBusy
@@ -115,8 +123,8 @@ export function CaseSupervisionLogForm() {
       if (!canSubmit || !preparation) return
 
       const { percent, isMet } = getSupervisionCompliance(
-        preparation.supervisionHours,
-        preparation.totalsHours,
+        preparation.supervisionHours + manualHours,
+        preparation.totalsHours + manualHours,
       )
 
       const complianceLine =
@@ -138,8 +146,8 @@ export function CaseSupervisionLogForm() {
       })
     },
     [
-      alert, canSubmit, clientId, clientName, filledManualEntries, persist, preparation,
-      providerId, providerName, reportMonth, router,
+      alert, canSubmit, clientId, clientName, filledManualEntries, manualHours, persist,
+      preparation, providerId, providerName, reportMonth, router,
     ],
   )
 
@@ -220,8 +228,8 @@ export function CaseSupervisionLogForm() {
         {isTrioComplete && !isLoadingPreparation && !preparationError && preparation && (
           <div className="space-y-5">
             <ComplianceSummary
-              totalsHours={preparation.totalsHours}
-              supervisionHours={preparation.supervisionHours}
+              totalsHours={preparation.totalsHours + manualHours}
+              supervisionHours={preparation.supervisionHours + manualHours}
             />
             <CaseSupervisionAppointmentsTable appointments={preparation.appointments} />
           </div>
