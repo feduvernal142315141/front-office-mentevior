@@ -1,4 +1,4 @@
-/** El backend acota el reporte a 12 meses */
+/** Conservado por compatibilidad con imports existentes. Clinical Monthly usa un solo mes. */
 export const MAX_MONTH_RANGE = 12
 
 const MONTH_YEAR_PATTERN = /^(0[1-9]|1[0-2])\/\d{4}$/
@@ -23,8 +23,8 @@ export function monthRangeLength(startMonthYear: string, endMonthYear: string): 
 }
 
 /**
- * Mismas reglas que valida el backend en POST y PUT. Se comprueban acá para no
- * gastar un round-trip y poder marcar el campo exacto en el formulario.
+ * Misma regla que valida el backend en POST y PUT: Clinical Monthly siempre
+ * representa un solo mes calendario. Se comprueba acá para evitar un round-trip.
  * Devuelve null si todo está bien.
  */
 export function validateMonthRange(startMonthYear: string, endMonthYear: string): string | null {
@@ -37,11 +37,8 @@ export function validateMonthRange(startMonthYear: string, endMonthYear: string)
 
   const length = monthRangeLength(startMonthYear, endMonthYear)
 
-  if (length === 0) {
-    return "End month must be the same as or later than the start month"
-  }
-  if (length > MAX_MONTH_RANGE) {
-    return `The range cannot exceed ${MAX_MONTH_RANGE} months`
+  if (length !== 1) {
+    return "Clinical Monthly must use a single calendar month"
   }
 
   return null

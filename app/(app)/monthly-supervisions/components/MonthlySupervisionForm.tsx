@@ -36,6 +36,8 @@ import {
 import type { SupervisionAppointment } from "@/lib/types/monthly-supervision.types"
 import { MonthPicker } from "@/components/custom/MonthPicker"
 import { SupervisionAppointmentsTable } from "./SupervisionAppointmentsTable"
+import { ManualSupervisionModal, type ManualSupervisionDraft } from "./ManualSupervisionModal"
+import { ManualSupervisionsTable } from "./ManualSupervisionsTable"
 import { SupervisionOptionsChecklist } from "./SupervisionOptionsChecklist"
 import { SupervisionEditableOptionsTable } from "./SupervisionEditableOptionsTable"
 import { MonthlySupervisionRequirementsTable } from "./MonthlySupervisionRequirementsTable"
@@ -62,6 +64,8 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
   const [appliedOptionIds, setAppliedOptionIds] = useState<string[]>([])
   const [otherAppliedOption, setOtherAppliedOption] = useState("")
   const [appointments, setAppointments] = useState<SupervisionAppointment[]>([])
+  const [manualModalOpen, setManualModalOpen] = useState(false)
+  const [manualDraft, setManualDraft] = useState<ManualSupervisionDraft | null>(null)
   const [supervisorSign, setSupervisorSign] = useState<string | null>(null)
   const [superviseeSign, setSuperviseeSign] = useState<string | null>(null)
   const [supervisionConducted, setSupervisionConducted] = useState<string[]>([])
@@ -199,15 +203,64 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
   const isBlocked = !!editGuard
 
   const handleAppointmentChange = useCallback(
-    (appointmentId: string, field: "mode" | "structure" | "evaluation", value: string) => {
+    (appointmentId: string, field: "mode" | "structure" | "evaluation" | "observedWithClient" | "date" | "timeStart" | "timeEnd" | "supervisionNotes", value: string) => {
+      const nextValue = field === "observedWithClient" ? value === "yes" : value
       setAppointments((current) =>
         current.map((item) =>
-          item.appointmentId === appointmentId ? { ...item, [field]: value } : item,
+          item.id === appointmentId ? { ...item, [field]: nextValue } : item,
         ),
       )
       setInvalidAppointmentIds((current) => current.filter((id) => id !== appointmentId))
     },
     [],
+  )
+
+  const addManualAppointment = useCallback(() => {
+    setManualDraft(null)
+    setManualModalOpen(true)
+  }, [])
+
+  const saveManualAppointment = useCallback((draft: ManualSupervisionDraft) => {
+    const id = draft.id ?? `manual-${Date.now()}`
+    const appointment: SupervisionAppointment = {
+      id,
+      appointmentId: undefined,
+      isManual: true,
+      date: draft.date,
+      timeStart: draft.timeStart,
+      timeEnd: draft.timeEnd,
+      duration: "",
+      summary: "",
+      mode: draft.mode,
+      structure: draft.structure,
+      evaluation: draft.evaluation,
+      observedWithClient: draft.observedWithClient,
+      supervisionNotes: draft.supervisionNotes,
+    }
+    setAppointments((current) => current.some((item) => item.id === id)
+      ? current.map((item) => item.id === id ? appointment : item)
+      : [...current, appointment])
+    setManualModalOpen(false)
+    setManualDraft(null)
+  }, [])
+
+  const editManualAppointment = useCallback((appointment: SupervisionAppointment) => {
+    setManualDraft(appointment)
+    setManualModalOpen(true)
+  }, [])
+
+  const deleteManualAppointment = useCallback((id: string) => {
+    setAppointments((current) => current.filter((item) => item.id !== id))
+    setInvalidAppointmentIds((current) => current.filter((item) => item !== id))
+  }, [])
+
+  const automaticAppointments = useMemo(
+    () => appointments.filter((appointment) => !appointment.isManual),
+    [appointments],
+  )
+  const manualAppointments = useMemo(
+    () => appointments.filter((appointment) => appointment.isManual),
+    [appointments],
   )
 
   const toggleId = (setter: React.Dispatch<React.SetStateAction<string[]>>) =>
@@ -257,8 +310,13 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
     // Los tres campos son obligatorios porque el PDF los imprime en la tabla:
     // una fila a medias sale con huecos en un documento clínico.
     const incomplete = appointments
-      .filter((item) => !item.mode || !item.structure || !item.evaluation)
-      .map((item) => item.appointmentId)
+      .filter((item) =>
+        !item.mode
+        || !item.structure
+        || !item.evaluation
+        || (item.isManual && (!item.date || !item.timeStart || !item.timeEnd || item.observedWithClient === undefined)),
+      )
+      .map((item) => item.id)
 
     if (incomplete.length > 0) {
       setInvalidAppointmentIds(incomplete)
@@ -294,10 +352,15 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       documentOptionCatalogIds: documentOptionIds,
       appliedOptionCatalogIds: appliedOptionIds,
       appointments: appointments.map((item) => ({
-        appointmentId: item.appointmentId,
+        appointmentId: item.isManual ? null : item.appointmentId ?? null,
         mode: item.mode ?? "",
         structure: item.structure ?? "",
         evaluation: item.evaluation ?? "",
+        date: item.isManual ? item.date || null : null,
+        timeStart: item.isManual ? item.timeStart ? `${item.timeStart}:00` : null : null,
+        timeEnd: item.isManual ? item.timeEnd ? `${item.timeEnd}:00` : null : null,
+        observedWithClient: item.observedWithClient === true,
+        supervisionNotes: item.isManual ? item.supervisionNotes?.trim() || null : null,
       })),
     })
   }, [
@@ -477,7 +540,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
             </p>
           ) : (
             <SupervisionAppointmentsTable
-              appointments={appointments}
+              appointments={automaticAppointments}
               onChange={handleAppointmentChange}
               disabled={isBusy || isBlocked || isReadOnly}
               invalidIds={invalidAppointmentIds}
@@ -485,6 +548,35 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
           )}
         </Section>
       </div>
+
+      <Section
+        icon={<ClipboardList className="h-4 w-4" />}
+        title="Manual Supervision"
+        subtitle={manualAppointments.length > 0 ? `${manualAppointments.length} added manually` : "Optional entries"}
+      >
+        {manualAppointments.length > 0 && (
+          <ManualSupervisionsTable
+            appointments={manualAppointments}
+            onEdit={editManualAppointment}
+            onDelete={deleteManualAppointment}
+            disabled={isBusy || isBlocked || isReadOnly}
+          />
+        )}
+        <div className={manualAppointments.length > 0 ? "mt-4 flex justify-end border-t border-slate-100 pt-4" : "flex justify-end"}>
+          <Button type="button" variant="secondary" onClick={addManualAppointment} disabled={!hasSelection || isBusy || isBlocked || isReadOnly}>
+            <span className="mr-2 text-lg leading-none">+</span>
+            Add supervision
+          </Button>
+        </div>
+      </Section>
+
+      <ManualSupervisionModal
+        open={manualModalOpen}
+        onOpenChange={setManualModalOpen}
+        draft={manualDraft}
+        onSave={saveManualAppointment}
+        disabled={!hasSelection || isBusy || isBlocked || isReadOnly}
+      />
 
       {context && hasSelection && (
         <MonthlySupervisionRequirementsTable

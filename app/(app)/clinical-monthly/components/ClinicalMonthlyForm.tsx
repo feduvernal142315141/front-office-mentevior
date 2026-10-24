@@ -13,11 +13,10 @@ import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-
 import { useClinicalMonthlyById } from "@/lib/modules/clinical-monthly/hooks/use-clinical-monthly-by-id"
 import { useSaveClinicalMonthly } from "@/lib/modules/clinical-monthly/hooks/use-save-clinical-monthly"
 import { getClinicalMonthlyPdfUrl } from "@/lib/modules/clinical-monthly/services/clinical-monthly.service"
-import { MAX_MONTH_RANGE, validateMonthRange } from "@/lib/modules/clinical-monthly/utils/month-range"
 import { CLINICAL_MONTHLY_SUMMARY_GUIDANCE } from "@/lib/constants/clinical-monthly-guidance"
 import { getNarrativeLengthState, validateNarrativeLength } from "@/lib/utils/narrative-length"
-import { MonthRangePicker } from "@/components/custom/MonthRangePicker"
-import { formatReportMonthShort, parseReportMonth } from "@/lib/utils/report-month"
+import { MonthPicker } from "@/components/custom/MonthPicker"
+import { currentReportMonth, formatReportMonthShort, parseReportMonth } from "@/lib/utils/report-month"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -42,17 +41,13 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
   const canPersist = isEditing ? edit(PermissionModule.CLINICAL_MONTHLY) : create(PermissionModule.CLINICAL_MONTHLY)
 
   const [clientId, setClientId] = useState("")
-  const [startMonthYear, setStartMonthYear] = useState("")
-  const [endMonthYear, setEndMonthYear] = useState("")
+  const [reportMonth, setReportMonth] = useState(() => (clinicalMonthlyId ? "" : currentReportMonth()))
   const [summary, setSummary] = useState("")
   const [creatorSign, setCreatorSign] = useState<string | null>(null)
   const [signatureError, setSignatureError] = useState(false)
-  const [rangeError, setRangeError] = useState<string | null>(null)
+  const [monthError, setMonthError] = useState<string | null>(null)
   const [summaryError, setSummaryError] = useState<string | null>(null)
   const [previewId, setPreviewId] = useState<string | null>(null)
-
-  // Se fija una vez: el año de referencia no debería cambiar mientras el form vive
-  const [currentYear] = useState(() => new Date().getFullYear())
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { clinicalMonthly, isLoading: detailLoading } = useClinicalMonthlyById(clinicalMonthlyId)
@@ -68,8 +63,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     if (!clinicalMonthly) return
 
     setClientId(clinicalMonthly.clientId)
-    setStartMonthYear(clinicalMonthly.startMonthYear)
-    setEndMonthYear(clinicalMonthly.endMonthYear)
+    setReportMonth(parseReportMonth(clinicalMonthly.startMonthYear) ?? "")
     setSummary(clinicalMonthly.summary ?? "")
     setCreatorSign(typeof clinicalMonthly.creatorSign === "string" ? clinicalMonthly.creatorSign : null)
   }, [clinicalMonthly])
@@ -81,30 +75,20 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     setClientId(clients[0].id)
   }, [clients, clientId, isEditing])
 
-  /**
-   * El picker habla `yyyyMM` —el formato interno del front— pero el contrato de
-   * Clinical Monthly es `MM/yyyy`, y así lo esperan `validateMonthRange`,
-   * `listMonthKeys` y el propio backend. La conversión vive sólo acá, en el
-   * borde del componente: el estado del formulario no cambia de formato.
-   */
-  const handleRangeChange = useCallback((start: string, end: string) => {
-    setStartMonthYear(start ? formatReportMonthShort(start) : "")
-    setEndMonthYear(end ? formatReportMonthShort(end) : "")
-    setRangeError(null)
-  }, [])
-
   const persist = useCallback(async (): Promise<string | null> => {
     if (!clientId) {
       toast.error("Select a client first")
       return null
     }
 
-    const error = validateMonthRange(startMonthYear, endMonthYear)
-    setRangeError(error)
-    if (error) {
-      toast.error("Check the report range", { description: error })
+    const monthYear = formatReportMonthShort(reportMonth)
+    if (!monthYear) {
+      const error = "Report month is required"
+      setMonthError(error)
+      toast.error("Select the report month", { description: error })
       return null
     }
+    setMonthError(null)
 
     // El Summary es el único contenido que escribe el usuario: sin él el reporte
     // no aporta nada sobre lo que ya genera el PDF. Se le exige la misma
@@ -131,12 +115,12 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     // mandar `[]` para no disparar el borrado lógico del PUT sobre reportes viejos.
     return save({
       clientId,
-      startMonthYear,
-      endMonthYear,
+      startMonthYear: monthYear,
+      endMonthYear: monthYear,
       summary: trimmedSummary,
       ...(isEditing ? {} : { creatorSign: creatorSign ?? "" }),
     })
-  }, [clientId, creatorSign, endMonthYear, isEditing, save, startMonthYear, summary])
+  }, [clientId, creatorSign, isEditing, reportMonth, save, summary])
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
     event.preventDefault()
@@ -153,10 +137,10 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
   }, [persist])
 
   const isBusy = isSaving || detailLoading
-  const hasRange = !!startMonthYear && !!endMonthYear
+  const hasMonth = !!reportMonth
   // Guardar y previsualizar son la misma operación (el preview persiste), así que
   // ambos exigen lo mismo: cliente, período y summary.
-  const canSave = !!clientId && hasRange && getNarrativeLengthState(summary).isValid
+  const canSave = !!clientId && hasMonth && getNarrativeLengthState(summary).isValid
     && (isEditing || !!creatorSign) && !isBusy && canPersist
 
   if (isEditing && detailLoading) {
@@ -203,7 +187,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
               <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{clinicalMonthly.providerName || "—"}</span></div>
-              <div><span className="text-slate-400">Period:</span> <span className="font-medium text-slate-800 tabular-nums">{clinicalMonthly.startMonthYear} – {clinicalMonthly.endMonthYear}</span></div>
+              <div><span className="text-slate-400">Report month:</span> <span className="font-medium text-slate-800 tabular-nums">{clinicalMonthly.startMonthYear}</span></div>
             </div>
           </div>
         </div>
@@ -222,25 +206,25 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             onChange={setClientId}
             options={clientOptions}
             disabled={clientsLoading || isEditing}
-            hasError={!clientId && !!rangeError}
+            hasError={!clientId && !!monthError}
             searchable
             required
           />
-          <MonthRangePicker
-            label="Reporting period"
-            startValue={parseReportMonth(startMonthYear) ?? ""}
-            endValue={parseReportMonth(endMonthYear) ?? ""}
-            onChange={handleRangeChange}
-            currentYear={currentYear}
-            maxMonths={MAX_MONTH_RANGE}
+          <MonthPicker
+            label="Report month"
+            value={reportMonth}
+            onChange={(value) => {
+              setReportMonth(value)
+              setMonthError(null)
+            }}
             required
-            hasError={!!rangeError}
+            hasError={!!monthError}
             disabled={isBusy}
           />
         </div>
 
-        {rangeError && (
-          <p className="mt-3 text-xs font-medium text-red-500">{rangeError}</p>
+        {monthError && (
+          <p className="mt-3 text-xs font-medium text-red-500">{monthError}</p>
         )}
         {isEditing && (
           <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">

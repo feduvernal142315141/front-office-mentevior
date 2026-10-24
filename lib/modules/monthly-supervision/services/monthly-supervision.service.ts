@@ -77,6 +77,11 @@ function toNumber(value: unknown): number | undefined {
   return undefined
 }
 
+function normalizeTime(value: unknown): string | undefined {
+  const text = toText(value)
+  return text ? text.slice(0, 5) : undefined
+}
+
 function toIdList(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined
   return value.map((entry) => toText(entry) ?? "").filter((entry) => entry.length > 0)
@@ -86,17 +91,27 @@ function normalizeAppointment(raw: unknown): SupervisionAppointment | undefined 
   if (!isObject(raw)) return undefined
 
   // El listado lo llama `id` y el POST `appointmentId`: se aceptan los dos.
-  const appointmentId = toText(raw.appointmentId) ?? toText(raw.id)
-  if (!appointmentId) return undefined
+  const responseId = toText(raw.id)
+  const hasAppointmentId = Object.prototype.hasOwnProperty.call(raw, "appointmentId")
+  const appointmentId = hasAppointmentId ? toText(raw.appointmentId) : responseId
+  const id = responseId ?? appointmentId
+  if (!id) return undefined
+  const summary = toText(raw.summary) ?? ""
 
   return {
+    id,
     appointmentId,
+    isManual: hasAppointmentId && !appointmentId,
     date: toText(raw.date) ?? "",
+    timeStart: normalizeTime(raw.timeStart),
+    timeEnd: normalizeTime(raw.timeEnd),
     duration: toText(raw.duration) ?? String(toNumber(raw.duration) ?? ""),
-    summary: toText(raw.summary) ?? "",
+    summary,
     mode: toText(raw.mode),
     structure: toText(raw.structure),
     evaluation: toText(raw.evaluation),
+    observedWithClient: raw.observedWithClient === true,
+    supervisionNotes: toText(raw.supervisionNotes) ?? (hasAppointmentId ? summary : undefined),
   }
 }
 

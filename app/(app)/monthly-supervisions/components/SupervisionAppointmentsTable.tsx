@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
 
 interface SupervisionAppointmentsTableProps {
   appointments: SupervisionAppointment[]
-  onChange: (appointmentId: string, field: "mode" | "structure" | "evaluation", value: string) => void
+  onChange: (appointmentId: string, field: "mode" | "structure" | "evaluation" | "observedWithClient", value: string) => void
   disabled?: boolean
   /** Ids con algún campo sin completar, para marcarlos al intentar guardar */
   invalidIds?: string[]
@@ -51,7 +51,7 @@ export function SupervisionAppointmentsTable({
 
   if (appointments.length === 0) {
     return (
-      <div className="py-10 text-center">
+      <div className="py-8 text-center">
         <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
           <CalendarX2 className="h-5 w-5" />
         </div>
@@ -64,14 +64,16 @@ export function SupervisionAppointmentsTable({
   }
 
   return (
-    <ul className="divide-y divide-slate-100">
-      {appointments.map((appointment) => {
-        const isExpanded = expandedId === appointment.appointmentId
-        const isInvalid = invalidIds.includes(appointment.appointmentId)
+    <>
+      <ul className="divide-y divide-slate-100">
+        {appointments.map((appointment) => {
+        const rowId = appointment.id
+        const isExpanded = expandedId === rowId
+        const isInvalid = invalidIds.includes(rowId)
 
         return (
           <li
-            key={appointment.appointmentId}
+            key={rowId}
             className={cn("py-4 first:pt-0 last:pb-0", isInvalid && "-mx-3 rounded-xl bg-red-50/40 px-3")}
           >
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -83,15 +85,15 @@ export function SupervisionAppointmentsTable({
                 </span>
               )}
               {isInvalid && (
-                <span className="text-xs font-medium text-red-500">Complete all three fields</span>
+                <span className="text-xs font-medium text-red-500">Complete all required fields</span>
               )}
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
               <FloatingSelect
                 label="Mode"
                 value={appointment.mode ?? ""}
-                onChange={(value) => onChange(appointment.appointmentId, "mode", value)}
+                onChange={(value) => onChange(rowId, "mode", value)}
                 options={toSelectOptions(SUPERVISION_MODES, appointment.mode)}
                 disabled={disabled}
                 hasError={isInvalid && !appointment.mode}
@@ -100,7 +102,7 @@ export function SupervisionAppointmentsTable({
               <FloatingSelect
                 label="Structure"
                 value={appointment.structure ?? ""}
-                onChange={(value) => onChange(appointment.appointmentId, "structure", value)}
+                onChange={(value) => onChange(rowId, "structure", value)}
                 options={toSelectOptions(SUPERVISION_STRUCTURES, appointment.structure)}
                 disabled={disabled}
                 hasError={isInvalid && !appointment.structure}
@@ -109,10 +111,18 @@ export function SupervisionAppointmentsTable({
               <FloatingSelect
                 label="Evaluation"
                 value={appointment.evaluation ?? ""}
-                onChange={(value) => onChange(appointment.appointmentId, "evaluation", value)}
+                onChange={(value) => onChange(rowId, "evaluation", value)}
                 options={toSelectOptions(SUPERVISION_EVALUATIONS, appointment.evaluation)}
                 disabled={disabled}
                 hasError={isInvalid && !appointment.evaluation}
+                required
+              />
+              <FloatingSelect
+                label="Observed with client"
+                value={appointment.observedWithClient === undefined ? "" : appointment.observedWithClient ? "yes" : "no"}
+                onChange={(value) => onChange(rowId, "observedWithClient", value)}
+                options={[{ value: "", label: "Select" }, { value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
+                disabled={disabled}
                 required
               />
             </div>
@@ -121,7 +131,7 @@ export function SupervisionAppointmentsTable({
               <div className="mt-3">
                 <button
                   type="button"
-                  onClick={() => setExpandedId(isExpanded ? null : appointment.appointmentId)}
+                  onClick={() => setExpandedId(isExpanded ? null : rowId)}
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium",
                     "text-[#037ECC] transition-colors hover:bg-[#037ECC]/5",
@@ -148,9 +158,10 @@ export function SupervisionAppointmentsTable({
                 )}
               </div>
             )}
+
           </li>
-        )
-      })}
-    </ul>
+        )})}
+      </ul>
+    </>
   )
 }

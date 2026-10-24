@@ -1,8 +1,8 @@
 /**
  * Clinical Monthly (SCRUM-163)
  *
- * Reporte mensual clínico que crea el analista para un cliente y un rango de
- * meses. Los RBT sólo lo visualizan.
+ * Reporte mensual clínico que crea el analista para un cliente y un único mes.
+ * Los RBT sólo lo visualizan.
  *
  * Contrato backend al 2026-08-04: `summary` ya se acepta, se persiste y se
  * devuelve en listado y detalle; `ClinicalMonthlyItemData` quedó retirado, así
@@ -57,9 +57,9 @@ export interface ClinicalMonthlyListItem {
 /** Mismo cuerpo para crear (`POST /preview`) y actualizar (`PUT /{id}`) */
 export interface SaveClinicalMonthlyDto {
   clientId: string
-  /** Mes/año inicial en formato `MM/yyyy` */
+  /** Mes/año del reporte en formato `MM/yyyy` (se envía también como endMonthYear) */
   startMonthYear: string
-  /** Mes/año final en formato `MM/yyyy` */
+  /** Debe ser el mismo mes que startMonthYear, por compatibilidad del contrato */
   endMonthYear: string
   /**
    * Comentario único del reporte: cambios de procedimiento y/o progreso de la

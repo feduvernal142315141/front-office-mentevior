@@ -46,7 +46,7 @@ export function useSaveClinicalMonthly(
 
     if (rangeError) {
       setError(rangeError)
-      toast.error("Check the report range", { description: rangeError })
+      toast.error("Check the report month", { description: rangeError })
       return null
     }
 

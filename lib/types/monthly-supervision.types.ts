@@ -55,9 +55,14 @@ export interface MonthlySupervisionListItem {
 // ============================================
 
 export interface SupervisionAppointment {
-  /** `Appointment.id` — el listado lo llama `id` y el POST `appointmentId` */
-  appointmentId: string
+  /** Id de la fila persistida o clave local para una sesión manual */
+  id: string
+  /** `Appointment.id`; es null/undefined para sesiones manuales */
+  appointmentId?: string
+  isManual?: boolean
   date: string
+  timeStart?: string
+  timeEnd?: string
   /** El contrato lo manda como string, sin unidad declarada */
   duration: string
   /**
@@ -68,6 +73,8 @@ export interface SupervisionAppointment {
   mode?: string
   structure?: string
   evaluation?: string
+  observedWithClient?: boolean
+  supervisionNotes?: string
 }
 
 /**
@@ -121,10 +128,15 @@ export interface MonthlySupervisionContext {
 // ============================================
 
 export interface SaveMonthlySupervisionAppointment {
-  appointmentId: string
+  appointmentId: string | null
+  date: string | null
+  timeStart: string | null
+  timeEnd: string | null
   mode: string
   structure: string
   evaluation: string
+  observedWithClient: boolean
+  supervisionNotes: string | null
 }
 
 export interface SaveMonthlySupervisionDto {
