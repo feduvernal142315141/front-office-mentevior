@@ -46,6 +46,7 @@ export function ServiceLogServicesTable({ services }: ServiceLogServicesTablePro
             <Th>Units</Th>
             <Th>Place of Service</Th>
             <Th>Client/Caregiver Name</Th>
+            <Th>Provider Signature</Th>
             <Th>Caregiver Signature</Th>
           </tr>
         </thead>
@@ -73,6 +74,17 @@ export function ServiceLogServicesTable({ services }: ServiceLogServicesTablePro
               <td className="px-3 py-3 text-sm text-slate-600">{service.units || "—"}</td>
               <td className="px-3 py-3 text-sm text-slate-600">{service.placeOfService || "—"}</td>
               <td className="px-3 py-3 text-sm text-slate-600">{service.caregiverName || "—"}</td>
+              <td className="px-3 py-3">
+                {service.providerSignatureImage ? (
+                  <img
+                    src={service.providerSignatureImage}
+                    alt={`Provider signature for ${service.date}`}
+                    className="max-h-[36px] max-w-[100px] object-contain contrast-150 brightness-50"
+                  />
+                ) : (
+                  <span className="text-xs italic text-slate-300">—</span>
+                )}
+              </td>
               <td className="px-3 py-3">
                 {service.caregiverSignatureImage ? (
                   <img

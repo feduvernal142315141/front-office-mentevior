@@ -160,12 +160,7 @@ export default function ServiceLogDetailPage({ params }: ServiceLogDetailPagePro
             {incompleteCount > 0 && (
               <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50/70 px-4 py-3">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
-                <p className="text-sm text-red-700">
-                  {incompleteCount === 1
-                    ? "1 service is missing the caregiver validation or the provider signature."
-                    : `${incompleteCount} services are missing the caregiver validation or the provider signature.`}{" "}
-                  Incomplete rows are highlighted below and in the PDF.
-                </p>
+                <p className="text-sm text-red-700">Only completed notes will be sent to billing.</p>
               </div>
             )}
 

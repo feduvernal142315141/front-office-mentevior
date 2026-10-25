@@ -80,6 +80,7 @@ function normalizeService(raw: unknown): ServiceLogServiceRow | undefined {
     placeOfService: toText(raw.placeOfService),
     caregiverName: toText(raw.caregiverName),
     caregiverSignatureImage: toSignatureSrc(raw.caregiverSignatureImage),
+    providerSignatureImage: toSignatureSrc(raw.providerSignatureImage),
     caregiverValidation: toText(raw.caregiverValidation),
     // Typo intencional del contrato (ver plans/service-log.md)
     imcomplete: raw.imcomplete === true,

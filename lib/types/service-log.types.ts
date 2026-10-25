@@ -20,6 +20,8 @@ export interface ServiceLogServiceRow {
   caregiverName: string
   /** data URI listo para `<img>`, o `null` si no hay firma dibujada */
   caregiverSignatureImage: string | null
+  /** data URI listo para `<img>`, o `null` si el provider no tiene firma */
+  providerSignatureImage: string | null
   /** `Confirmed electronically` / `No signature` cuando la compañía usa checkmark */
   caregiverValidation: string
   /**
