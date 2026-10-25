@@ -150,7 +150,11 @@ export default function ServiceLogDetailPage({ params }: ServiceLogDetailPagePro
               <Field label="PA #" value={serviceLog.priorAuthorizationNumber || "—"} />
               <Field label="PA start date" value={serviceLog.priorAuthorizationStartDate || "—"} />
               <Field label="PA end date" value={serviceLog.priorAuthorizationEndDate || "—"} />
-              <Field label="Approved units" value={serviceLog.approvedUnits || "—"} wide />
+              <Field
+                label="Approved units"
+                value={<ApprovedUnits value={serviceLog.approvedUnits} />}
+                wide
+              />
             </InfoCard>
 
             {incompleteCount > 0 && (
@@ -223,7 +227,33 @@ function InfoCard({
   )
 }
 
-function Field({ label, value, wide = false }: { label: string; value: string; wide?: boolean }) {
+function ApprovedUnits({ value }: { value: string }) {
+  const entries = value
+    .split(/\s*(?:,|\||\r?\n)\s*/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => (/\bunits\s*$/i.test(entry) ? entry : `${entry} units`))
+
+  if (entries.length === 0) return <>—</>
+
+  return (
+    <span className="inline-grid grid-flow-col grid-rows-3 gap-x-6 gap-y-1 align-top">
+      {entries.map((entry, index) => (
+        <span key={`${entry}-${index}`}>{entry}</span>
+      ))}
+    </span>
+  )
+}
+
+function Field({
+  label,
+  value,
+  wide = false,
+}: {
+  label: string
+  value: React.ReactNode
+  wide?: boolean
+}) {
   return (
     <div className={wide ? "sm:col-span-3" : undefined}>
       <span className="text-slate-400">{label}:</span>{" "}
