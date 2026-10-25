@@ -31,6 +31,17 @@ function toText(value: unknown): string {
   return value.trim()
 }
 
+function billableTotalHours(services: ServiceLogServiceRow[]): string {
+  const total = services
+    .filter((service) => !service.imcomplete)
+    .reduce((sum, service) => {
+      const hours = Number.parseFloat(service.hours)
+      return Number.isFinite(hours) ? sum + hours : sum
+    }, 0)
+
+  return Number.isInteger(total) ? String(total) : String(Number(total.toFixed(2)))
+}
+
 /**
  * `initDate`/`endDate` llegan como timestamp ISO UTC
  * (`2026-01-01T00:00:00.000+00:00`). El día real es el prefijo `yyyy-MM-dd`;
@@ -184,7 +195,10 @@ export async function getServiceLogById(id: string): Promise<ServiceLogDetail | 
     priorAuthorizationStartDate: toText(root.priorAuthorizationStartDate),
     priorAuthorizationEndDate: toText(root.priorAuthorizationEndDate),
     approvedUnits: toText(root.approvedUnits),
-    totalHours: toText(root.totalHours),
+    // Derive the displayed total from the same red-row rule as the PDF. This
+    // also keeps older frozen reports correct when their stored total included
+    // incomplete services.
+    totalHours: services.length > 0 ? billableTotalHours(services) : toText(root.totalHours),
     services,
   }
 }

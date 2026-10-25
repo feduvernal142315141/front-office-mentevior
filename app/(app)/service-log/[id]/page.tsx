@@ -136,7 +136,7 @@ export default function ServiceLogDetailPage({ params }: ServiceLogDetailPagePro
                 <Field label="Credentials" value={serviceLog.credentials || "—"} />
                 <Field label="NPI" value={serviceLog.npi || "—"} />
                 <Field label="MPI" value={serviceLog.mpi || "—"} />
-                <Field label="Total hours" value={serviceLog.totalHours || "—"} />
+                <Field label="Total billable hours" value={serviceLog.totalHours || "—"} />
               </InfoCard>
             </div>
 
