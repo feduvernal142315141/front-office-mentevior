@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import { getApiErrorMessage } from "@/lib/utils/api-error-message"
 import type {
   BatchClaim,
@@ -238,6 +238,17 @@ export async function updateBatchClaim(
 
   const data = response.data as unknown
   return typeof data === "string" ? data : batchClaimId
+}
+
+/** Soft-delete an unsubmitted batch claim and release its service logs. */
+export async function deleteBatchClaim(batchClaimId: string): Promise<boolean> {
+  const response = await serviceDelete<never, boolean>(
+    `/batch-claims/${encodeURIComponent(batchClaimId)}`,
+  )
+  if (response.status !== 200) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to delete batch claim"))
+  }
+  return response.data === true
 }
 
 /**

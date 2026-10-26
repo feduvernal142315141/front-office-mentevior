@@ -9,7 +9,7 @@ import { BatchClaimsTable } from "./components/BatchClaimsTable"
 
 export default function BilledClaimsPage() {
   const router = useRouter()
-  const { create: canCreate, edit: canEdit } = usePermission()
+  const { create: canCreate, edit: canEdit, remove: canDelete } = usePermission()
   const canCreateBatch = canCreate(PermissionModule.BILLED_CLAIMS)
   const canEditBatch = canEdit(PermissionModule.BILLED_CLAIMS)
 
@@ -39,7 +39,7 @@ export default function BilledClaimsPage() {
           )}
         </div>
 
-        <BatchClaimsTable canEdit={canEditBatch} />
+        <BatchClaimsTable canEdit={canEditBatch} canDelete={canDelete(PermissionModule.BILLED_CLAIMS)} />
       </div>
     </div>
   )
