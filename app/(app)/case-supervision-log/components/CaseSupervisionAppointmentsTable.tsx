@@ -12,6 +12,7 @@ import { TagList } from "./TagList"
 
 interface CaseSupervisionAppointmentsTableProps {
   appointments: CaseSupervisionAppointment[]
+  supervisorName?: string
   /** Texto del estado vacío; cambia entre preparar y ver un reporte guardado */
   emptyDescription?: string
 }
@@ -48,6 +49,7 @@ function formatTime(value: string): string {
  */
 export function CaseSupervisionAppointmentsTable({
   appointments,
+  supervisorName = "",
   emptyDescription = "There are no appointments for this client in the selected month.",
 }: CaseSupervisionAppointmentsTableProps) {
   const columns = useMemo<CustomTableColumn<CaseSupervisionAppointment>[]>(
@@ -59,21 +61,29 @@ export function CaseSupervisionAppointmentsTable({
         render: (row) => <span className="font-medium text-slate-900">{formatDate(row.date)}</span>,
       },
       {
-        key: "time",
-        header: "Time",
+        key: "timeStart",
+        header: "Time Started",
         className: "whitespace-nowrap",
-        render: (row) => (
-          <span className="tabular-nums">
-            {formatTime(row.timeStart)} – {formatTime(row.timeEnd)}
-          </span>
-        ),
+        render: (row) => <span className="tabular-nums">{formatTime(row.timeStart)}</span>,
       },
       {
-        key: "hours",
-        header: "Hours",
+        key: "timeEnd",
+        header: "Time Ended",
+        className: "whitespace-nowrap",
+        render: (row) => <span className="tabular-nums">{formatTime(row.timeEnd)}</span>,
+      },
+      {
+        key: "duration",
+        header: "Duration",
         align: "right",
         className: "whitespace-nowrap",
         render: (row) => <span className="font-semibold tabular-nums text-slate-900">{formatHours(row.duration)}</span>,
+      },
+      {
+        key: "summary",
+        header: "Summary",
+        className: "min-w-[180px]",
+        render: () => <span className="text-slate-400">—</span>,
       },
       {
         key: "billingCode",
@@ -88,18 +98,6 @@ export function CaseSupervisionAppointmentsTable({
         render: (row) => <ServiceTypeBadge value={row.serviceType} />,
       },
       {
-        key: "modality",
-        header: "Modality",
-        className: "whitespace-nowrap",
-        render: (row) => row.modalityName || <span className="text-slate-400">—</span>,
-      },
-      {
-        key: "location",
-        header: "Location",
-        className: "whitespace-nowrap",
-        render: (row) => row.location || <span className="text-slate-400">—</span>,
-      },
-      {
         key: "participants",
         header: "Participants",
         className: "whitespace-nowrap",
@@ -110,10 +108,10 @@ export function CaseSupervisionAppointmentsTable({
         ),
       },
       {
-        key: "characteristic",
-        header: "Characteristic",
-        className: "whitespace-nowrap",
-        // `characteristic` trae saltos de línea reales: sin `whitespace-pre-line`
+        key: "activityCategory",
+        header: "Activity Category",
+        className: "min-w-[180px]",
+        // El valor automático trae saltos de línea reales: sin `whitespace-pre-line`
         // el código y "RBT Supervision" quedan pegados en un solo renglón.
         render: (row) => (
           <p className="min-w-[240px] max-w-[360px] whitespace-pre-line leading-snug text-slate-600">
@@ -121,8 +119,20 @@ export function CaseSupervisionAppointmentsTable({
           </p>
         ),
       },
+      {
+        key: "modality",
+        header: "Case Supervision Modality",
+        className: "whitespace-nowrap",
+        render: (row) => row.modalityName || <span className="text-slate-400">—</span>,
+      },
+      {
+        key: "supervisor",
+        header: "Supervisor",
+        className: "whitespace-nowrap",
+        render: () => supervisorName || <span className="text-slate-400">—</span>,
+      },
     ],
-    [],
+    [supervisorName],
   )
 
   if (appointments.length === 0) {

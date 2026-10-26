@@ -12,6 +12,7 @@ import { TagList } from "./TagList"
 
 interface ManualLogEntriesTableProps {
   rows: ManualEntryRow[]
+  supervisorName?: string
   onEdit?: (key: string) => void
   onDelete?: (key: string) => void
   disabled?: boolean
@@ -26,15 +27,12 @@ function formatDate(value: string): string {
   }
 }
 
-function formatTimeRange(start: string, end: string): string {
-  const from = formatTimeTo12h(start.slice(0, 5))
-  const to = formatTimeTo12h(end.slice(0, 5))
-  if (!from && !to) return "—"
-  return `${from || "—"} – ${to || "—"}`
+function formatTime(value: string): string {
+  return formatTimeTo12h(value.slice(0, 5)) || "—"
 }
 
 /** Las entradas manuales, con el estilo de las tablas del proyecto. Sin billing code va N/A, igual que el PDF */
-export function ManualLogEntriesTable({ rows, onEdit, onDelete, disabled }: ManualLogEntriesTableProps) {
+export function ManualLogEntriesTable({ rows, supervisorName = "", onEdit, onDelete, disabled }: ManualLogEntriesTableProps) {
   const columns = useMemo<CustomTableColumn<ManualEntryRow>[]>(() => {
     const base: CustomTableColumn<ManualEntryRow>[] = [
       {
@@ -44,17 +42,36 @@ export function ManualLogEntriesTable({ rows, onEdit, onDelete, disabled }: Manu
         render: (row) => <span className="font-medium text-slate-900">{formatDate(row.date)}</span>,
       },
       {
-        key: "time",
-        header: "Time",
+        key: "timeStart",
+        header: "Time Started",
         className: "whitespace-nowrap",
-        render: (row) => <span className="tabular-nums">{formatTimeRange(row.timeStart, row.timeEnd)}</span>,
+        render: (row) => <span className="tabular-nums">{formatTime(row.timeStart)}</span>,
       },
       {
-        key: "hours",
-        header: "Hours",
+        key: "timeEnd",
+        header: "Time Ended",
+        className: "whitespace-nowrap",
+        render: (row) => <span className="tabular-nums">{formatTime(row.timeEnd)}</span>,
+      },
+      {
+        key: "duration",
+        header: "Duration",
         align: "right",
         className: "whitespace-nowrap",
         render: (row) => <span className="font-semibold tabular-nums text-slate-900">{formatHours(row.duration)}</span>,
+      },
+      {
+        key: "summary",
+        header: "Summary",
+        className: "min-w-[180px]",
+        render: (row) => (
+          <p
+            className="line-clamp-2 whitespace-pre-line text-slate-600"
+            title={row.description || undefined}
+          >
+            {row.description || "—"}
+          </p>
+        ),
       },
       {
         key: "billingCode",
@@ -69,41 +86,28 @@ export function ManualLogEntriesTable({ rows, onEdit, onDelete, disabled }: Manu
         render: (row) => <ServiceTypeBadge value={row.serviceType} />,
       },
       {
-        key: "activityCategories",
-        header: "Activity Category",
-        className: "whitespace-nowrap",
-        render: (row) => <TagList items={row.activityCategories} />,
-      },
-      {
         key: "participants",
         header: "Participants",
         className: "whitespace-nowrap",
         render: (row) => <TagList items={row.participants} />,
       },
       {
-        key: "location",
-        header: "Location",
+        key: "activityCategories",
+        header: "Activity Category",
         className: "whitespace-nowrap",
-        render: (row) => row.location || <span className="text-slate-400">—</span>,
+        render: (row) => <TagList items={row.activityCategories} />,
       },
       {
         key: "modality",
-        header: "Modality",
+        header: "Case Supervision Modality",
         className: "whitespace-nowrap",
         render: (row) => row.modality || <span className="text-slate-400">—</span>,
       },
       {
-        key: "description",
-        header: "Summary of Activity",
+        key: "supervisor",
+        header: "Supervisor",
         className: "whitespace-nowrap",
-        render: (row) => (
-          <p
-            className="line-clamp-2 min-w-[200px] max-w-[320px] whitespace-pre-line text-slate-600"
-            title={row.description || undefined}
-          >
-            {row.description || "—"}
-          </p>
-        ),
+        render: () => supervisorName || <span className="text-slate-400">—</span>,
       },
     ]
 
@@ -146,7 +150,7 @@ export function ManualLogEntriesTable({ rows, onEdit, onDelete, disabled }: Manu
         ),
       },
     ]
-  }, [onEdit, onDelete, disabled])
+  }, [onEdit, onDelete, disabled, supervisorName])
 
   return <CustomTable columns={columns} data={rows} getRowKey={(row) => row.key} />
 }

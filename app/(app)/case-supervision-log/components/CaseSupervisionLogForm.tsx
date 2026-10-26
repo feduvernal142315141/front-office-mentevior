@@ -231,7 +231,10 @@ export function CaseSupervisionLogForm() {
               totalsHours={preparation.totalsHours + manualHours}
               supervisionHours={preparation.supervisionHours + manualHours}
             />
-            <CaseSupervisionAppointmentsTable appointments={preparation.appointments} />
+            <CaseSupervisionAppointmentsTable
+              appointments={preparation.appointments}
+              supervisorName={providerName}
+            />
           </div>
         )}
       </SectionCard>
@@ -242,6 +245,7 @@ export function CaseSupervisionLogForm() {
           entries={manualEntries}
           clientId={clientId}
           reportMonth={reportMonth}
+          supervisorName={providerName}
           canAdd
           onSaveEntry={(entry) =>
             setManualEntries((prev) =>
