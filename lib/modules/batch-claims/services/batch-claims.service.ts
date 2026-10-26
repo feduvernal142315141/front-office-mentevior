@@ -176,6 +176,7 @@ export async function getEligibleServiceLogs(
     endDate: query.endDate,
   })
   if (query.clientId) qs.set("clientId", query.clientId)
+  if (query.currentBatchClaimId) qs.set("currentBatchClaimId", query.currentBatchClaimId)
 
   const response = await serviceGet<unknown>(`/batch-claims/service-logs?${qs.toString()}`)
 

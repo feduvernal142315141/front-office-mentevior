@@ -116,6 +116,7 @@ export interface EligibleServiceLogsQuery {
   initDate: string
   endDate: string
   clientId?: string
+  currentBatchClaimId?: string
 }
 
 /** Body for POST /batch-claims and PUT /batch-claims/{id} */

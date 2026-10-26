@@ -161,12 +161,12 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   const canSearch = !!payerPlanId && !!startDate && !!endDate && startDate <= endDate
   useEffect(() => {
     if (!canSearch) return
-    void search({ payerPlanId, initDate: startDate, endDate })
+    void search({ payerPlanId, initDate: startDate, endDate, currentBatchClaimId: batchClaimId })
   }, [canSearch, payerPlanId, startDate, endDate, search])
 
   const refreshServiceLogs = useCallback(async () => {
     if (!canSearch) return
-    await search({ payerPlanId, initDate: startDate, endDate })
+    await search({ payerPlanId, initDate: startDate, endDate, currentBatchClaimId: batchClaimId })
   }, [canSearch, payerPlanId, startDate, endDate, search])
 
   // ── Huérfanos: seleccionados que no están en el resultado vigente ──
