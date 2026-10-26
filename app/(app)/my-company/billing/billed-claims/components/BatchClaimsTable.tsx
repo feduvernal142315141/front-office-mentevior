@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Edit2, Eye, FileCheck, Trash2 } from "lucide
 import { toast } from "@/lib/compat/sonner"
 import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
+import { useAlert } from "@/lib/contexts/alert-context"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { useBatchClaims } from "@/lib/modules/batch-claims/hooks/use-batch-claims"
 import { getBatchDecision, getEffectiveBadge } from "@/lib/modules/batch-claims/claim-md-status"
@@ -25,6 +26,7 @@ interface BatchClaimsTableProps {
 
 export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) {
   const router = useRouter()
+  const alert = useAlert()
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [page, setPage] = useState(1)
@@ -38,7 +40,6 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
   )
 
   const handleDelete = async (batchId: string) => {
-    if (!window.confirm("Delete this Batch Claim? Its Service Logs will be released.")) return
     setDeletingId(batchId)
     try {
       await deleteBatchClaim(batchId)
@@ -218,7 +219,15 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
                   {canDelete && !getBatchDecision(batch.claimMdEffectiveStatus).isLocked && (
                     <button
                       type="button"
-                      onClick={() => void handleDelete(batch.id)}
+                      onClick={() => {
+                        alert.confirm({
+                          title: "Delete Batch Claim",
+                          description: "Its selected Service Logs will be released and available for another Batch Claim.",
+                          confirmText: "Delete",
+                          cancelText: "Cancel",
+                          onConfirm: () => handleDelete(batch.id),
+                        })
+                      }}
                       disabled={deletingId === batch.id}
                       className={cn(
                         "group/delete flex h-8 w-8 items-center justify-center rounded-xl",
