@@ -14,6 +14,8 @@ export interface BatchClaimSummary {
   payerName: string
   reference: string
   comments: string
+  servicePeriodStart: string
+  servicePeriodEnd: string
   createAt: string
   active: boolean
   /** Estado único de Claim.MD. La columna sólo aparece cuando el backend lo envía. */
@@ -63,6 +65,8 @@ export interface BatchClaim {
   comments: string
   createAt: string
   active: boolean
+  servicePeriodStart: string
+  servicePeriodEnd: string
   /** Selección vigente del batch; los appointments de abajo se derivan de estos */
   serviceLogIds: string[]
   appointments: BatchClaimClientGroup[]
@@ -117,6 +121,8 @@ export interface EligibleServiceLogsQuery {
 export interface BatchClaimPayload {
   payerPlanId: string
   comments: string
+  servicePeriodStart: string
+  servicePeriodEnd: string
   /** En PUT reemplaza completamente la selección anterior */
   serviceLogIds: string[]
 }

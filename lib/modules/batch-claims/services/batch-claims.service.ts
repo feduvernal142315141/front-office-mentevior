@@ -27,6 +27,8 @@ function parseSummary(e: Record<string, unknown>): BatchClaimSummary {
     payerName: String(e.payerName ?? ""),
     reference: String(e.reference ?? ""),
     comments: String(e.comments ?? ""),
+    servicePeriodStart: toDateOnly(e.servicePeriodStart),
+    servicePeriodEnd: toDateOnly(e.servicePeriodEnd),
     createAt: String(e.createAt ?? ""),
     active: e.active !== false,
     claimMdEffectiveStatus: readEffectiveStatus(e, {
@@ -121,6 +123,8 @@ export async function getBatchClaimById(batchClaimId: string): Promise<BatchClai
 
   return {
     ...parseSummary(data),
+    servicePeriodStart: toDateOnly(data.servicePeriodStart),
+    servicePeriodEnd: toDateOnly(data.servicePeriodEnd),
     serviceLogIds: Array.isArray(data.serviceLogIds) ? data.serviceLogIds.map(String) : [],
     appointments: Array.isArray(data.appointments)
       ? data.appointments.map((g: Record<string, unknown>) => parseClientGroup(g))

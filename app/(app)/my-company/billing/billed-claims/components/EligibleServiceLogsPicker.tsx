@@ -106,7 +106,11 @@ export function EligibleServiceLogsPicker({
       appointments += sl.appointments.length
       units += serviceLogUnits(sl)
     }
-    logs += orphanSelections.length
+    for (const orphan of orphanSelections) {
+      logs += 1
+      appointments += orphan.services.length
+      units += orphan.services.reduce((sum, service) => sum + service.unitCount, 0)
+    }
     return { logs, appointments, units }
   }, [serviceLogs, selectedIds, orphanSelections])
 
@@ -264,23 +268,68 @@ export function EligibleServiceLogsPicker({
             </p>
           </div>
           <div className="divide-y divide-slate-100">
-            {orphanSelections.map((orphan) => (
-              <label
-                key={orphan.serviceLogId}
-                className="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50"
-              >
-                <Checkbox
-                  checked
-                  onChange={() => onToggle(orphan.serviceLogId)}
-                  ariaLabel={`Remove service log from batch`}
-                />
-                <span className="w-56 shrink-0 text-sm font-medium tabular-nums text-slate-700">
-                  {orphan.initDate ? `${formatDate(orphan.initDate)} – ${formatDate(orphan.endDate)}` : "Service log"}
-                </span>
-                <span className="flex-1 truncate text-xs text-slate-600">{orphan.clientName || orphan.serviceLogId}</span>
-                <span className="truncate text-xs text-slate-500">{orphan.providerName}</span>
-              </label>
-            ))}
+            {orphanSelections.map((orphan) => {
+              const isExpanded = expandedIds.has(orphan.serviceLogId)
+              const hasServices = orphan.services.length > 0
+              return (
+                <div key={orphan.serviceLogId}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleExpanded(orphan.serviceLogId)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        toggleExpanded(orphan.serviceLogId)
+                      }
+                    }}
+                    className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-slate-50"
+                  >
+                    <Checkbox
+                      checked
+                      onChange={() => onToggle(orphan.serviceLogId)}
+                      ariaLabel={`Remove service log from batch`}
+                    />
+                    <span className="w-56 shrink-0 text-sm font-medium tabular-nums text-slate-700">
+                      {orphan.initDate ? `${formatDate(orphan.initDate)} – ${formatDate(orphan.endDate)}` : "Service log"}
+                    </span>
+                    <span className="flex-1 truncate text-xs text-slate-600">{orphan.clientName || orphan.serviceLogId}</span>
+                    <span className="truncate text-xs text-slate-500">{orphan.providerName}</span>
+                    <span className="shrink-0 text-xs text-slate-500 tabular-nums">
+                      {orphan.services.length} appt{orphan.services.length !== 1 ? "s" : ""}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200",
+                        isExpanded ? "rotate-0" : "-rotate-90",
+                      )}
+                    />
+                  </div>
+
+                  {isExpanded && (
+                    <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-2">
+                      <div className="divide-y divide-slate-100/80">
+                        {orphan.services.map((service) => (
+                          <div key={service.appointmentId} className="flex items-center gap-3 py-1.5 pl-7 text-xs">
+                            <span className="w-24 font-medium tabular-nums text-slate-600">{formatDate(service.date)}</span>
+                            <span className="w-24 tabular-nums text-slate-500">
+                              {formatTime(service.timeIn)} – {formatTime(service.timeOut)}
+                            </span>
+                            <span className="flex-1 truncate text-slate-600">{service.units || "—"}</span>
+                            <span className="font-semibold tabular-nums text-slate-600">{service.unitCount} units</span>
+                          </div>
+                        ))}
+                        {!hasServices && (
+                          <p className="py-2 pl-7 text-xs italic text-slate-400">
+                            No appointment details available
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

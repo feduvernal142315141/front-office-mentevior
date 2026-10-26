@@ -22,11 +22,28 @@ export interface SelectedServiceLogSnapshot {
   /** `yyyy-MM-dd`; vacíos si el fetch del detalle falló */
   initDate: string
   endDate: string
+  services: SelectedServiceLogService[]
+}
+
+export interface SelectedServiceLogService {
+  appointmentId: string
+  date: string
+  timeIn: string
+  timeOut: string
+  units: string
+  unitCount: number
 }
 
 interface UseBatchClaimFormProps {
   /** Presente solo en modo edición */
   batchClaimId?: string
+}
+
+function parseServiceUnits(value: string): number {
+  const match = value.match(/\(([^)]+)\)\s*$/)
+  if (!match) return 0
+  const units = Number(match[1])
+  return Number.isFinite(units) ? units : 0
 }
 
 export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {}) {
@@ -86,7 +103,8 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     setComments(batchClaim.comments)
     setSelectedIds(new Set(batchClaim.serviceLogIds))
 
-    // El backend no persiste el período del lote: se deriva de los appointments derivados
+    // Los batches nuevos conservan el período original. El fallback mantiene compatibilidad
+    // con batches históricos creados antes de persistir este dato.
     let minDate = ""
     let maxDate = ""
     for (const group of batchClaim.appointments) {
@@ -96,8 +114,8 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
         if (!maxDate || detail.date > maxDate) maxDate = detail.date
       }
     }
-    if (minDate) setStartDate(minDate)
-    if (maxDate) setEndDate(maxDate)
+    setStartDate(batchClaim.servicePeriodStart || minDate)
+    setEndDate(batchClaim.servicePeriodEnd || maxDate)
   }, [isEdit, batchClaim])
 
   // Un solo plan → se preselecciona; el usuario solo elige cuando hay varios
@@ -142,13 +160,21 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
               providerName: detail?.provider ?? "",
               initDate: detail?.initDate ?? "",
               endDate: detail?.endDate ?? "",
+              services: (detail?.services ?? []).map((service) => ({
+                appointmentId: service.appointmentId,
+                date: service.date,
+                timeIn: service.timeIn,
+                timeOut: service.timeOut,
+                units: service.units,
+                unitCount: parseServiceUnits(service.units),
+              })),
             },
           }))
         })
         .catch(() => {
           setOrphanSnapshots((prev) => ({
             ...prev,
-            [id]: { serviceLogId: id, clientName: "", providerName: "", initDate: "", endDate: "" },
+            [id]: { serviceLogId: id, clientName: "", providerName: "", initDate: "", endDate: "", services: [] },
           }))
         })
     }
@@ -164,6 +190,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
             providerName: "",
             initDate: "",
             endDate: "",
+            services: [],
           },
       ),
     [orphanIds, orphanSnapshots],
@@ -237,6 +264,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   const handleSubmit = useCallback(async (): Promise<string | null> => {
     const newErrors: Record<string, string> = {}
     if (!payerPlanId) newErrors.payerPlanId = "Select a payer plan"
+    if (!startDate || !endDate || startDate > endDate) newErrors.dateRange = "Select a valid service period"
     if (selectedIds.size === 0) newErrors.serviceLogs = "Select at least one service log"
 
     if (Object.keys(newErrors).length > 0) {
@@ -249,13 +277,15 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     const payload: BatchClaimPayload = {
       payerPlanId,
       comments: comments.trim(),
+      servicePeriodStart: startDate,
+      servicePeriodEnd: endDate,
       serviceLogIds: [...selectedIds],
     }
 
     return isEdit && batchClaimId
       ? mutation.update(batchClaimId, payload)
       : mutation.create(payload)
-  }, [payerPlanId, comments, selectedIds, isEdit, batchClaimId, mutation])
+  }, [payerPlanId, comments, startDate, endDate, selectedIds, isEdit, batchClaimId, mutation])
 
   return {
     isEdit,
