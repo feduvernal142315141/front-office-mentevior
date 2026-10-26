@@ -233,7 +233,6 @@ export function CaseSupervisionLogForm() {
             />
             <CaseSupervisionAppointmentsTable
               appointments={preparation.appointments}
-              supervisorName={providerName}
             />
           </div>
         )}
@@ -245,7 +244,6 @@ export function CaseSupervisionLogForm() {
           entries={manualEntries}
           clientId={clientId}
           reportMonth={reportMonth}
-          supervisorName={providerName}
           canAdd
           onSaveEntry={(entry) =>
             setManualEntries((prev) =>

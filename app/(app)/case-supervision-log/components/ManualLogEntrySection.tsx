@@ -18,7 +18,6 @@ interface ManualLogEntrySectionProps {
   clientId: string
   /** `yyyyMM` */
   reportMonth: string
-  supervisorName?: string
   /** Entradas ya guardadas: aportan los textos de lo que ya no está en los catálogos */
   savedEntries?: CaseSupervisionManualEntry[]
   /** Alta o edición confirmada en el modal. Si rechaza, el modal queda abierto */
@@ -41,7 +40,6 @@ export function ManualLogEntrySection({
   entries,
   clientId,
   reportMonth,
-  supervisorName,
   savedEntries,
   onSaveEntry,
   canAdd = false,
@@ -112,7 +110,6 @@ export function ManualLogEntrySection({
       ) : (
         <ManualLogEntriesTable
           rows={rows}
-          supervisorName={supervisorName}
           onEdit={canEdit ? openEdit : undefined}
           onDelete={onRemoveEntry}
           disabled={disabled}

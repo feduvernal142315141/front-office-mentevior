@@ -12,7 +12,6 @@ import { TagList } from "./TagList"
 
 interface CaseSupervisionAppointmentsTableProps {
   appointments: CaseSupervisionAppointment[]
-  supervisorName?: string
   /** Texto del estado vacío; cambia entre preparar y ver un reporte guardado */
   emptyDescription?: string
 }
@@ -49,7 +48,6 @@ function formatTime(value: string): string {
  */
 export function CaseSupervisionAppointmentsTable({
   appointments,
-  supervisorName = "",
   emptyDescription = "There are no appointments for this client in the selected month.",
 }: CaseSupervisionAppointmentsTableProps) {
   const columns = useMemo<CustomTableColumn<CaseSupervisionAppointment>[]>(
@@ -80,10 +78,10 @@ export function CaseSupervisionAppointmentsTable({
         render: (row) => <span className="font-semibold tabular-nums text-slate-900">{formatHours(row.duration)}</span>,
       },
       {
-        key: "summary",
-        header: "Summary",
-        className: "min-w-[180px]",
-        render: () => <span className="text-slate-400">—</span>,
+        key: "modality",
+        header: "Case Supervision Modality",
+        className: "whitespace-nowrap",
+        render: (row) => row.modalityName || <span className="text-slate-400">—</span>,
       },
       {
         key: "billingCode",
@@ -120,19 +118,13 @@ export function CaseSupervisionAppointmentsTable({
         ),
       },
       {
-        key: "modality",
-        header: "Case Supervision Modality",
-        className: "whitespace-nowrap",
-        render: (row) => row.modalityName || <span className="text-slate-400">—</span>,
-      },
-      {
-        key: "supervisor",
-        header: "Supervisor",
-        className: "whitespace-nowrap",
-        render: () => supervisorName || <span className="text-slate-400">—</span>,
+        key: "summary",
+        header: "Summary",
+        className: "min-w-[180px]",
+        render: () => <span className="text-slate-400">—</span>,
       },
     ],
-    [supervisorName],
+    [],
   )
 
   if (appointments.length === 0) {

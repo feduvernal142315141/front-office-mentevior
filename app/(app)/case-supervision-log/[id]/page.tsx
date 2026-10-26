@@ -234,7 +234,6 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
             >
               <CaseSupervisionAppointmentsTable
                 appointments={report.appointments}
-                supervisorName={report.providerName}
                 emptyDescription="This report was created without any sessions for the period."
               />
             </SectionCard>
@@ -243,7 +242,6 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
               entries={manualEntries}
               clientId={report.clientId}
               reportMonth={report.monthYear}
-              supervisorName={report.providerName}
               savedEntries={savedEntries}
               onSaveEntry={handleSaveEntry}
               canAdd={canEdit}

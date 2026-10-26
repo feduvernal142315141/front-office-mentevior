@@ -12,7 +12,6 @@ import { TagList } from "./TagList"
 
 interface ManualLogEntriesTableProps {
   rows: ManualEntryRow[]
-  supervisorName?: string
   onEdit?: (key: string) => void
   onDelete?: (key: string) => void
   disabled?: boolean
@@ -32,7 +31,7 @@ function formatTime(value: string): string {
 }
 
 /** Las entradas manuales, con el estilo de las tablas del proyecto. Sin billing code va N/A, igual que el PDF */
-export function ManualLogEntriesTable({ rows, supervisorName = "", onEdit, onDelete, disabled }: ManualLogEntriesTableProps) {
+export function ManualLogEntriesTable({ rows, onEdit, onDelete, disabled }: ManualLogEntriesTableProps) {
   const columns = useMemo<CustomTableColumn<ManualEntryRow>[]>(() => {
     const base: CustomTableColumn<ManualEntryRow>[] = [
       {
@@ -61,17 +60,10 @@ export function ManualLogEntriesTable({ rows, supervisorName = "", onEdit, onDel
         render: (row) => <span className="font-semibold tabular-nums text-slate-900">{formatHours(row.duration)}</span>,
       },
       {
-        key: "summary",
-        header: "Summary",
-        className: "min-w-[180px]",
-        render: (row) => (
-          <p
-            className="line-clamp-2 whitespace-pre-line text-slate-600"
-            title={row.description || undefined}
-          >
-            {row.description || "—"}
-          </p>
-        ),
+        key: "modality",
+        header: "Case Supervision Modality",
+        className: "whitespace-nowrap",
+        render: (row) => row.modality || <span className="text-slate-400">—</span>,
       },
       {
         key: "billingCode",
@@ -98,16 +90,17 @@ export function ManualLogEntriesTable({ rows, supervisorName = "", onEdit, onDel
         render: (row) => <TagList items={row.activityCategories} />,
       },
       {
-        key: "modality",
-        header: "Case Supervision Modality",
-        className: "whitespace-nowrap",
-        render: (row) => row.modality || <span className="text-slate-400">—</span>,
-      },
-      {
-        key: "supervisor",
-        header: "Supervisor",
-        className: "whitespace-nowrap",
-        render: () => supervisorName || <span className="text-slate-400">—</span>,
+        key: "summary",
+        header: "Summary",
+        className: "min-w-[180px]",
+        render: (row) => (
+          <p
+            className="line-clamp-2 whitespace-pre-line text-slate-600"
+            title={row.description || undefined}
+          >
+            {row.description || "—"}
+          </p>
+        ),
       },
     ]
 
@@ -150,7 +143,7 @@ export function ManualLogEntriesTable({ rows, supervisorName = "", onEdit, onDel
         ),
       },
     ]
-  }, [onEdit, onDelete, disabled, supervisorName])
+  }, [onEdit, onDelete, disabled])
 
   return <CustomTable columns={columns} data={rows} getRowKey={(row) => row.key} />
 }
