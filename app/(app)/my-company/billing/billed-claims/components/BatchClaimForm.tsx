@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, CalendarRange, ClipboardList } from "lucide-react"
+import { AlertTriangle, CalendarRange, ClipboardList, RefreshCw } from "lucide-react"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
@@ -61,6 +61,7 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
     isLoadingEligible,
     hasSearched,
     canSearch,
+    refreshServiceLogs,
     selectedIds,
     toggleServiceLog,
     setServiceLogsSelected,
@@ -146,16 +147,28 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
           subtitle="Service logs whose appointments have a locked and signed session note"
         >
           <div className="space-y-4">
-            <div className="max-w-[320px]" data-form-field="dateRange">
-              <PremiumDateRangePicker
-                label="Service Period"
-                startValue={startDate}
-                endValue={endDate}
-                onChange={handleRangeChange}
-                hasError={!!errors.dateRange}
-                required
-              />
-              <FieldError message={errors.dateRange} />
+            <div className="flex items-start gap-3" data-form-field="dateRange">
+              <div className="max-w-[320px] flex-1">
+                <PremiumDateRangePicker
+                  label="Service Period"
+                  startValue={startDate}
+                  endValue={endDate}
+                  onChange={handleRangeChange}
+                  hasError={!!errors.dateRange}
+                  required
+                />
+                <FieldError message={errors.dateRange} />
+              </div>
+              <button
+                type="button"
+                onClick={() => void refreshServiceLogs()}
+                disabled={!canSearch || isLoadingEligible}
+                title="Refresh service logs"
+                aria-label="Refresh service logs"
+                className="mt-1 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#037ECC] hover:text-[#037ECC] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoadingEligible ? "animate-spin" : ""}`} />
+              </button>
             </div>
 
             <div data-form-field="serviceLogs">

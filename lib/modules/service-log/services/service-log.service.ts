@@ -84,6 +84,7 @@ function normalizeService(raw: unknown): ServiceLogServiceRow | undefined {
     caregiverValidation: toText(raw.caregiverValidation),
     // Typo intencional del contrato (ver plans/service-log.md)
     imcomplete: raw.imcomplete === true,
+    locked: raw.locked === true,
   }
 }
 

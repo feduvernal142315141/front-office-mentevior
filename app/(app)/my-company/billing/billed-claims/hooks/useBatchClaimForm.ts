@@ -137,6 +137,11 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     void search({ payerPlanId, initDate: startDate, endDate })
   }, [canSearch, payerPlanId, startDate, endDate, search])
 
+  const refreshServiceLogs = useCallback(async () => {
+    if (!canSearch) return
+    await search({ payerPlanId, initDate: startDate, endDate })
+  }, [canSearch, payerPlanId, startDate, endDate, search])
+
   // ── Huérfanos: seleccionados que no están en el resultado vigente ──
   const eligibleIds = useMemo(() => new Set(serviceLogs.map((sl) => sl.id)), [serviceLogs])
 
@@ -160,14 +165,16 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
               providerName: detail?.provider ?? "",
               initDate: detail?.initDate ?? "",
               endDate: detail?.endDate ?? "",
-              services: (detail?.services ?? []).map((service) => ({
-                appointmentId: service.appointmentId,
-                date: service.date,
-                timeIn: service.timeIn,
-                timeOut: service.timeOut,
-                units: service.units,
-                unitCount: parseServiceUnits(service.units),
-              })),
+              services: (detail?.services ?? [])
+                .filter((service) => service.locked && !service.imcomplete)
+                .map((service) => ({
+                  appointmentId: service.appointmentId,
+                  date: service.date,
+                  timeIn: service.timeIn,
+                  timeOut: service.timeOut,
+                  units: service.units,
+                  unitCount: parseServiceUnits(service.units),
+                })),
             },
           }))
         })
@@ -311,6 +318,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     isLoadingEligible,
     hasSearched,
     canSearch,
+    refreshServiceLogs,
     selectedIds,
     toggleServiceLog,
     setServiceLogsSelected,

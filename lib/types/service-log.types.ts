@@ -24,6 +24,8 @@ export interface ServiceLogServiceRow {
   providerSignatureImage: string | null
   /** `Confirmed electronically` / `No signature` cuando la compañía usa checkmark */
   caregiverValidation: string
+  /** `true` when the appointment note is in LOCK status. */
+  locked: boolean
   /**
    * Typo intencional conservado del contrato backend. `true` cuando falta la
    * validación del caregiver o la firma del provider; la fila se pinta en rojo,
