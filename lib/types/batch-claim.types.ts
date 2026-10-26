@@ -46,6 +46,7 @@ export interface BatchClaimClientGroup {
    * `ClaimMdSubmission` y para el flujo de resolución de UNKNOWN.
    */
   batchClaimServiceLogId: string
+  serviceLogId: string
   clientId: string
   clientName: string
   payerName: string

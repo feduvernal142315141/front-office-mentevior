@@ -103,6 +103,33 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     setComments(batchClaim.comments)
     setSelectedIds(new Set(batchClaim.serviceLogIds))
 
+    // El detalle del BatchClaim ya contiene los appointments congelados que se
+    // enviarán. Se hidrata el picker desde esta misma respuesta para evitar una
+    // segunda petición por cada service log seleccionado.
+    const snapshotsFromBatch: Record<string, SelectedServiceLogSnapshot> = {}
+    for (const serviceLogId of batchClaim.serviceLogIds) {
+      const groups = batchClaim.appointments.filter((group) => group.serviceLogId === serviceLogId)
+      const details = groups.flatMap((group) => group.appointmentDetails)
+      if (details.length === 0) continue
+      const dates = details.map((detail) => detail.date).filter(Boolean).sort()
+      snapshotsFromBatch[serviceLogId] = {
+        serviceLogId,
+        clientName: groups[0]?.clientName ?? "",
+        providerName: "",
+        initDate: dates[0] ?? "",
+        endDate: dates[dates.length - 1] ?? "",
+        services: details.map((detail) => ({
+          appointmentId: detail.appointmentId,
+          date: detail.date,
+          timeIn: "",
+          timeOut: "",
+          units: detail.billingCode ? `${detail.billingCode} (${detail.units})` : String(detail.units),
+          unitCount: detail.units,
+        })),
+      }
+    }
+    setOrphanSnapshots((previous) => ({ ...previous, ...snapshotsFromBatch }))
+
     // Los batches nuevos conservan el período original. El fallback mantiene compatibilidad
     // con batches históricos creados antes de persistir este dato.
     let minDate = ""
@@ -166,7 +193,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
               initDate: detail?.initDate ?? "",
               endDate: detail?.endDate ?? "",
               services: (detail?.services ?? [])
-                .filter((service) => service.locked && !service.imcomplete)
+                .filter((service) => service.locked !== false && !service.imcomplete)
                 .map((service) => ({
                   appointmentId: service.appointmentId,
                   date: service.date,

@@ -58,6 +58,7 @@ function parseAppointmentDetail(d: Record<string, unknown>): BatchClaimAppointme
 function parseClientGroup(g: Record<string, unknown>): BatchClaimClientGroup {
   return {
     batchClaimServiceLogId: String(g.batchClaimServiceLogId ?? ""),
+    serviceLogId: String(g.serviceLogId ?? ""),
     clientId: String(g.clientId ?? ""),
     clientName: String(g.clientName ?? ""),
     payerName: String(g.payerName ?? ""),
