@@ -62,6 +62,15 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedAppointmentIds, setSelectedAppointmentIds] = useState<Set<string>>(new Set())
+  const existingAppointmentIdsByServiceLogId = useMemo(() => {
+    const result: Record<string, Set<string>> = {}
+    for (const group of batchClaim?.appointments ?? []) {
+      if (!result[group.serviceLogId]) result[group.serviceLogId] = new Set<string>()
+      for (const detail of group.appointmentDetails) result[group.serviceLogId].add(detail.appointmentId)
+    }
+    return result
+  }, [batchClaim])
   const { serviceLogs, isLoading: isLoadingEligible, hasSearched, search, reset } = useEligibleServiceLogs()
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -102,6 +111,9 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     setPayerPlanId(batchClaim.payerPlanId)
     setComments(batchClaim.comments)
     setSelectedIds(new Set(batchClaim.serviceLogIds))
+    setSelectedAppointmentIds(
+      new Set(batchClaim.appointments.flatMap((group) => group.appointmentDetails.map((detail) => detail.appointmentId))),
+    )
 
     // El detalle del BatchClaim ya contiene los appointments congelados que se
     // enviarán. Se hidrata el picker desde esta misma respuesta para evitar una
@@ -244,6 +256,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     setPayerPlanId("")
     // Los elegibles dependen del payer: cambiarlo invalida la selección actual
     setSelectedIds(new Set())
+    setSelectedAppointmentIds(new Set())
     reset()
     clearFieldError("payerPlanId")
   }, [reset, clearFieldError])
@@ -251,6 +264,7 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   const handlePlanChange = useCallback((id: string) => {
     setPayerPlanId(id)
     setSelectedIds(new Set())
+    setSelectedAppointmentIds(new Set())
     reset()
     clearFieldError("payerPlanId")
   }, [reset, clearFieldError])
@@ -264,22 +278,62 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
   }, [clearFieldError])
 
   const toggleServiceLog = useCallback((serviceLogId: string) => {
+    const serviceLog = serviceLogs.find((item) => item.id === serviceLogId)
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      if (next.has(serviceLogId)) next.delete(serviceLogId)
-      else next.add(serviceLogId)
+      if (next.has(serviceLogId)) {
+        next.delete(serviceLogId)
+        setSelectedAppointmentIds((appointmentIds) => {
+          const remaining = new Set(appointmentIds)
+          for (const appointment of serviceLog?.appointments ?? []) remaining.delete(appointment.appointmentId)
+          return remaining
+        })
+      } else {
+        next.add(serviceLogId)
+        setSelectedAppointmentIds((appointmentIds) => {
+          const nextAppointmentIds = new Set(appointmentIds)
+          for (const appointment of serviceLog?.appointments ?? []) nextAppointmentIds.add(appointment.appointmentId)
+          return nextAppointmentIds
+        })
+      }
       return next
     })
     clearFieldError("serviceLogs")
-  }, [clearFieldError])
+  }, [serviceLogs, clearFieldError])
 
   const setServiceLogsSelected = useCallback((serviceLogIds: string[], selected: boolean) => {
+    const appointments = serviceLogs
+      .filter((serviceLog) => serviceLogIds.includes(serviceLog.id))
+      .flatMap((serviceLog) => serviceLog.appointments)
     setSelectedIds((prev) => {
       const next = new Set(prev)
       for (const id of serviceLogIds) {
         if (selected) next.add(id)
         else next.delete(id)
       }
+      return next
+    })
+    setSelectedAppointmentIds((prev) => {
+      const next = new Set(prev)
+      for (const appointment of appointments) {
+        if (selected) next.add(appointment.appointmentId)
+        else next.delete(appointment.appointmentId)
+      }
+      return next
+    })
+    clearFieldError("serviceLogs")
+  }, [serviceLogs, clearFieldError])
+
+  const toggleAppointment = useCallback((serviceLogId: string, appointmentId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.add(serviceLogId)
+      return next
+    })
+    setSelectedAppointmentIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(appointmentId)) next.delete(appointmentId)
+      else next.add(appointmentId)
       return next
     })
     clearFieldError("serviceLogs")
@@ -314,12 +368,13 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
       servicePeriodStart: startDate,
       servicePeriodEnd: endDate,
       serviceLogIds: [...selectedIds],
+      appointmentIds: [...selectedAppointmentIds],
     }
 
     return isEdit && batchClaimId
       ? mutation.update(batchClaimId, payload)
       : mutation.create(payload)
-  }, [payerPlanId, comments, startDate, endDate, selectedIds, isEdit, batchClaimId, mutation])
+  }, [payerPlanId, comments, startDate, endDate, selectedIds, selectedAppointmentIds, isEdit, batchClaimId, mutation])
 
   return {
     isEdit,
@@ -347,8 +402,11 @@ export function useBatchClaimForm({ batchClaimId }: UseBatchClaimFormProps = {})
     canSearch,
     refreshServiceLogs,
     selectedIds,
+    selectedAppointmentIds,
+    existingAppointmentIdsByServiceLogId,
     toggleServiceLog,
     setServiceLogsSelected,
+    toggleAppointment,
     orphanSelections,
     billingCodeLabels,
     // Submit

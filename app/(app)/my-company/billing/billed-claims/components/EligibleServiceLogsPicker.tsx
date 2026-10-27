@@ -14,8 +14,12 @@ interface EligibleServiceLogsPickerProps {
   hasSearched: boolean
   canSearch: boolean
   selectedIds: Set<string>
+  selectedAppointmentIds: Set<string>
+  existingAppointmentIdsByServiceLogId: Record<string, Set<string>>
   onToggle: (serviceLogId: string) => void
   onSetGroupSelected: (serviceLogIds: string[], selected: boolean) => void
+  onToggleAppointment: (serviceLogId: string, appointmentId: string) => void
+  isEdit: boolean
   /** Seleccionados fuera del resultado vigente (solo en edición) */
   orphanSelections: SelectedServiceLogSnapshot[]
   billingCodeLabels: Record<string, string>
@@ -58,8 +62,12 @@ export function EligibleServiceLogsPicker({
   hasSearched,
   canSearch,
   selectedIds,
+  selectedAppointmentIds,
+  existingAppointmentIdsByServiceLogId,
   onToggle,
   onSetGroupSelected,
+  onToggleAppointment,
+  isEdit,
   orphanSelections,
   billingCodeLabels,
 }: EligibleServiceLogsPickerProps) {
@@ -103,8 +111,12 @@ export function EligibleServiceLogsPicker({
     for (const sl of serviceLogs) {
       if (!selectedIds.has(sl.id)) continue
       logs += 1
-      appointments += sl.appointments.length
-      units += serviceLogUnits(sl)
+      const existingIds = existingAppointmentIdsByServiceLogId[sl.id]
+      const includedAppointments = sl.appointments.filter((appointment) =>
+        selectedAppointmentIds.has(appointment.appointmentId) || (!isEdit && !existingIds),
+      )
+      appointments += includedAppointments.length
+      units += includedAppointments.reduce((sum, appointment) => sum + (appointment.units || appointment.cantUnit), 0)
     }
     for (const orphan of orphanSelections) {
       logs += 1
@@ -112,7 +124,7 @@ export function EligibleServiceLogsPicker({
       units += orphan.services.reduce((sum, service) => sum + service.unitCount, 0)
     }
     return { logs, appointments, units }
-  }, [serviceLogs, selectedIds, orphanSelections])
+  }, [serviceLogs, selectedIds, selectedAppointmentIds, existingAppointmentIdsByServiceLogId, isEdit, orphanSelections])
 
   if (!canSearch) {
     return (
@@ -224,12 +236,29 @@ export function EligibleServiceLogsPicker({
                           />
                         </div>
 
-                        {/* Appointments (read-only: la selección es por service log completo) */}
+                        {/* Existing appointments are retained; new ones require an explicit choice. */}
                         {isExpanded && (
                           <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-2">
                             <div className="divide-y divide-slate-100/80">
-                              {sl.appointments.map((appt) => (
-                                <div key={appt.appointmentId} className="flex items-center gap-3 py-1.5 pl-7 text-xs">
+                              {sl.appointments.map((appt) => {
+                                const existingIds = existingAppointmentIdsByServiceLogId[sl.id]
+                                const alreadyIncluded = existingIds?.has(appt.appointmentId) ?? false
+                                const checkedAppointment = selectedAppointmentIds.has(appt.appointmentId)
+                                  || (!isEdit && !existingIds && checked)
+                                return (
+                                <div key={appt.appointmentId} className={cn(
+                                  "flex items-center gap-3 py-1.5 pl-7 text-xs",
+                                  isEdit && !alreadyIncluded && "bg-amber-50/70",
+                                )}>
+                                  <input
+                                    type="checkbox"
+                                    checked={checkedAppointment}
+                                    disabled={alreadyIncluded}
+                                    onChange={() => onToggleAppointment(sl.id, appt.appointmentId)}
+                                    onClick={(event) => event.stopPropagation()}
+                                    aria-label={`${alreadyIncluded ? "Included" : "Add"} appointment ${formatDate(appt.date)}`}
+                                    className="h-4 w-4 cursor-pointer rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 disabled:cursor-default disabled:opacity-60"
+                                  />
                                   <span className="w-24 font-medium tabular-nums text-slate-600">{formatDate(appt.date)}</span>
                                   <span className="w-24 tabular-nums text-slate-500">
                                     {formatTime(appt.timeInit)} – {formatTime(appt.timeEnd)}
@@ -240,8 +269,15 @@ export function EligibleServiceLogsPicker({
                                   <span className="font-semibold tabular-nums text-slate-600">
                                     {appt.units || appt.cantUnit} units
                                   </span>
+                                  <span className={cn(
+                                    "w-20 text-right text-[10px] font-semibold uppercase tracking-wide",
+                                    alreadyIncluded ? "text-emerald-600" : "text-amber-700",
+                                  )}>
+                                    {alreadyIncluded ? "Included" : "New"}
+                                  </span>
                                 </div>
-                              ))}
+                                )
+                              })}
                               {sl.appointments.length === 0 && (
                                 <p className="py-2 pl-7 text-xs italic text-slate-400">No appointments</p>
                               )}

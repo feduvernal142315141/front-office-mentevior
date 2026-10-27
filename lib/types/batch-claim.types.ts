@@ -127,6 +127,8 @@ export interface BatchClaimPayload {
   servicePeriodEnd: string
   /** En PUT reemplaza completamente la selección anterior */
   serviceLogIds: string[]
+  /** Appointments nuevos seleccionados dentro de ServiceLogs existentes. */
+  appointmentIds?: string[]
 }
 
 /** Response of GET /batch-claims/{id}/837p */

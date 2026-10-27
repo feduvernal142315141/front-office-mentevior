@@ -63,8 +63,11 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
     canSearch,
     refreshServiceLogs,
     selectedIds,
+    selectedAppointmentIds,
+    existingAppointmentIdsByServiceLogId,
     toggleServiceLog,
     setServiceLogsSelected,
+    toggleAppointment,
     orphanSelections,
     billingCodeLabels,
     handleSubmit,
@@ -178,8 +181,12 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
                 hasSearched={hasSearched}
                 canSearch={canSearch}
                 selectedIds={selectedIds}
+                selectedAppointmentIds={selectedAppointmentIds}
+                existingAppointmentIdsByServiceLogId={existingAppointmentIdsByServiceLogId}
                 onToggle={toggleServiceLog}
                 onSetGroupSelected={setServiceLogsSelected}
+                onToggleAppointment={toggleAppointment}
+                isEdit={isEdit}
                 orphanSelections={orphanSelections}
                 billingCodeLabels={billingCodeLabels}
               />
