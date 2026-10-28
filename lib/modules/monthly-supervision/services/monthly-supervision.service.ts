@@ -144,7 +144,7 @@ function normalizeContext(payload: unknown, isExistingReport: boolean): MonthlyS
     clientName: toText(root.clientName) ?? "",
     providerId,
     supervisor: {
-      name: toText(supervisor.name) ?? "",
+      name: toText(supervisor.name) ?? toText(root.supervisorName) ?? "",
       credentials: toText(supervisor.credentials),
     },
     supervisee: { name: toText(supervisee.name) ?? "" },

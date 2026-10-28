@@ -25,10 +25,19 @@ function formatTimeRange(start?: string, end?: string) {
   return from || to ? `${from || "—"} – ${to || "—"}` : "—"
 }
 
+function formatDuration(start?: string, end?: string) {
+  if (!start || !end) return "—"
+  const [startHour, startMinute] = start.slice(0, 5).split(":").map(Number)
+  const [endHour, endMinute] = end.slice(0, 5).split(":").map(Number)
+  const minutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+  return minutes > 0 ? `${(minutes / 60).toLocaleString("en-US", { maximumFractionDigits: 2 })} h` : "—"
+}
+
 export function ManualSupervisionsTable({ appointments, onEdit, onDelete, disabled }: ManualSupervisionsTableProps) {
   const columns: CustomTableColumn<SupervisionAppointment>[] = [
     { key: "date", header: "Date", className: "whitespace-nowrap", render: (row) => <span className="font-medium text-slate-900">{formatDate(row.date)}</span> },
     { key: "time", header: "Time", className: "whitespace-nowrap", render: (row) => <span className="tabular-nums">{formatTimeRange(row.timeStart, row.timeEnd)}</span> },
+    { key: "duration", header: "Hours", className: "whitespace-nowrap", render: (row) => <span className="tabular-nums font-medium">{formatDuration(row.timeStart, row.timeEnd)}</span> },
     { key: "mode", header: "Mode", render: (row) => row.mode || "—" },
     { key: "structure", header: "Structure", render: (row) => row.structure || "—" },
     { key: "evaluation", header: "Evaluation", render: (row) => row.evaluation || "—" },

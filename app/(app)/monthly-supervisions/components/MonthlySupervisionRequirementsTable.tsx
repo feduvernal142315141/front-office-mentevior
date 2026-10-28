@@ -14,8 +14,11 @@ export function MonthlySupervisionRequirementsTable({
 }: MonthlySupervisionRequirementsTableProps) {
   const supervisedPercentage =
     totalHoursWorked > 0 ? (supervisedHours * 100) / totalHoursWorked : 0
-  const contacts = appointments.length
-  const observations = appointments.length
+  // Manual and automatic entries use the same requirement rules. A contact is
+  // face-to-face only when its selected mode says so, and a direct observation
+  // requires the explicit "Observed with client" answer.
+  const contacts = appointments.filter((appointment) => appointment.mode === "Face-to-Face").length
+  const observations = appointments.filter((appointment) => appointment.observedWithClient === true).length
 
   const requirements = [
     {

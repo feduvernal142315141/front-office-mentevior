@@ -50,6 +50,14 @@ interface MonthlySupervisionFormProps {
 
 const ADMINISTRATION_MEMBER_USER_TYPE_ID = "2f7af3a7-7080-40cb-9792-4676f1ebb01a"
 
+function hoursBetween(start?: string, end?: string): number {
+  if (!start || !end) return 0
+  const [startHour, startMinute] = start.slice(0, 5).split(":").map(Number)
+  const [endHour, endMinute] = end.slice(0, 5).split(":").map(Number)
+  const minutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+  return minutes > 0 ? minutes / 60 : 0
+}
+
 export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervisionFormProps) {
   const router = useRouter()
   const { user } = useAuth()
@@ -263,6 +271,21 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
     [appointments],
   )
 
+  const manualHours = useMemo(
+    () => manualAppointments.reduce((total, appointment) => total + hoursBetween(appointment.timeStart, appointment.timeEnd), 0),
+    [manualAppointments],
+  )
+  const persistedManualHours = useMemo(
+    () => (context?.appointments ?? [])
+      .filter((appointment) => appointment.isManual)
+      .reduce((total, appointment) => total + hoursBetween(appointment.timeStart, appointment.timeEnd), 0),
+    [context?.appointments],
+  )
+  const automaticTotalHours = Math.max(0, (context?.totalHoursWorked ?? 0) - persistedManualHours)
+  const automaticSupervisedHours = Math.max(0, (context?.supervisedHours ?? 0) - persistedManualHours)
+  const totalHoursWorked = automaticTotalHours + manualHours
+  const supervisedHours = automaticSupervisedHours + manualHours
+
   const toggleId = (setter: React.Dispatch<React.SetStateAction<string[]>>) =>
     (id: string, checked: boolean) => {
       setter((current) => (checked ? [...current, id] : current.filter((entry) => entry !== id)))
@@ -343,8 +366,11 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       otherAppliedOption: otherAppliedOption.trim(),
       // Las horas las calcula el backend; se reenvían tal cual llegaron para no
       // introducir una segunda fuente de verdad.
-      totalHoursWorked: context?.totalHoursWorked ?? 0,
-      supervisedHours: context?.supervisedHours ?? 0,
+      // El backend suma la duración de las entradas manuales. Enviamos solo
+      // la base automática para que una edición no vuelva a contar las
+      // entradas manuales que ya estaban guardadas.
+      totalHoursWorked: automaticTotalHours,
+      supervisedHours: automaticSupervisedHours,
       supervisorSign,
       superviseeSign,
       supervisionConducted: serializeEditableOptions(supervisionConducted),
@@ -366,7 +392,8 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
   }, [
     isReadOnly, hasMonthlySupervisionSignPermission, monthlySupervisionId, superviseeSign, sign,
     isBlocked, clientId, providerId, reportMonth, appointments, supervisorSign,
-    otherAppliedOption, supervisionConducted, itemsEvaluated, documentOptionIds, appliedOptionIds, context, save,
+    otherAppliedOption, supervisionConducted, itemsEvaluated, documentOptionIds, appliedOptionIds,
+    context, save, automaticTotalHours, automaticSupervisedHours,
   ])
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
@@ -516,7 +543,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
               { label: "Supervisee", value: context.supervisee.name || "—" },
               {
                 label: "Hours",
-                value: `${formatHours(context.supervisedHours)} supervised of ${formatHours(context.totalHoursWorked)} worked`,
+                value: `${formatHours(supervisedHours)} supervised of ${formatHours(totalHoursWorked)} worked`,
               },
             ]}
           />
@@ -552,7 +579,9 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       <Section
         icon={<ClipboardList className="h-4 w-4" />}
         title="Manual Supervision"
-        subtitle={manualAppointments.length > 0 ? `${manualAppointments.length} added manually` : "Optional entries"}
+        subtitle={manualAppointments.length > 0
+          ? `${manualAppointments.length} added manually · ${formatHours(manualHours)} hours`
+          : "Optional entries"}
       >
         {manualAppointments.length > 0 && (
           <ManualSupervisionsTable
@@ -580,9 +609,9 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
 
       {context && hasSelection && (
         <MonthlySupervisionRequirementsTable
-          totalHoursWorked={context.totalHoursWorked}
-          supervisedHours={context.supervisedHours}
-          appointments={context.appointments}
+          totalHoursWorked={totalHoursWorked}
+          supervisedHours={supervisedHours}
+          appointments={appointments}
         />
       )}
 
