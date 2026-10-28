@@ -54,9 +54,6 @@ export function OtpStep({
   const [resendAt, setResendAt] = useState(
     () => Date.now() + challenge.resendCooldownSeconds * 1000,
   )
-  // Un código rechazado deja los dígitos puestos: sin esto el auto-envío
-  // volvería a mandar el mismo código en cuanto el usuario tocara una tecla.
-  const lastSubmittedRef = useRef("")
   const wasSubmittingRef = useRef(false)
 
   useEffect(() => {
@@ -67,7 +64,6 @@ export function OtpStep({
   // Cada reenvío abre un reto nuevo: campo limpio y cooldown desde cero
   useEffect(() => {
     setCode("")
-    lastSubmittedRef.current = ""
     setResendAt(Date.now() + challenge.resendCooldownSeconds * 1000)
   }, [challenge.otpChallengeId, challenge.resendCooldownSeconds])
 
@@ -76,7 +72,6 @@ export function OtpStep({
   useEffect(() => {
     if (wasSubmittingRef.current && !isSubmitting && error) {
       setCode("")
-      lastSubmittedRef.current = ""
     }
     wasSubmittingRef.current = isSubmitting
   }, [isSubmitting, error])
@@ -93,11 +88,11 @@ export function OtpStep({
   // Cuando el código ya no sirve, el único camino es pedir otro
   const isCodeDead = isExpired || outOfAttempts
 
+  // Sin auto-envío al completar el código: el usuario confirma con el botón (o Enter)
+  // para tener tiempo de marcar "Remember this device" antes de entrar.
   const submit = useCallback(
     (value: string) => {
       if (value.length !== otpLength || isSubmitting || isCodeDead) return
-      if (lastSubmittedRef.current === value) return
-      lastSubmittedRef.current = value
       onSubmit(value)
     },
     [isCodeDead, isSubmitting, onSubmit, otpLength],
@@ -105,7 +100,6 @@ export function OtpStep({
 
   const handleResend = useCallback(() => {
     if (resendIn > 0 || isSubmitting) return
-    lastSubmittedRef.current = ""
     setCode("")
     onResend()
   }, [isSubmitting, onResend, resendIn])
@@ -146,7 +140,6 @@ export function OtpStep({
             maxLength={otpLength}
             value={code}
             onChange={setCode}
-            onComplete={submit}
             disabled={isSubmitting || isCodeDead}
             autoFocus
             containerClassName="gap-2"
