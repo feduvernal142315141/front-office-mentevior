@@ -19,7 +19,8 @@ interface UseGeneralInformationReturn {
 }
 
 export function useGeneralInformation(
-  memberUserId: string | null
+  memberUserId: string | null,
+  options: { selfService?: boolean } = {}
 ): UseGeneralInformationReturn {
   const [generalInformation, setGeneralInformation] =
     useState<GeneralInformation | null>(null)
@@ -34,7 +35,7 @@ export function useGeneralInformation(
         setGeneralInformation(null)
         return
       }
-      const data = await getGeneralInformation(memberUserId)
+      const data = await getGeneralInformation(memberUserId, options)
       setGeneralInformation(data)
     } catch (err) {
       const errorObj =
@@ -50,7 +51,7 @@ export function useGeneralInformation(
 
   useEffect(() => {
     fetchGeneralInformation()
-  }, [memberUserId])
+  }, [memberUserId, options.selfService])
 
   return {
     generalInformation,

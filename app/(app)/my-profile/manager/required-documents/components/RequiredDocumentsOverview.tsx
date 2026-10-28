@@ -100,6 +100,7 @@ function RequiredDocumentsSkeleton() {
 interface RequiredDocumentsOverviewProps {
   isActive: boolean
   memberUserId: string | null
+  selfService?: boolean
   /** Called each time alertCount changes so the parent tab can show the badge */
   onAlertCountChange?: (count: number) => void
 }
@@ -107,6 +108,7 @@ interface RequiredDocumentsOverviewProps {
 export function RequiredDocumentsOverview({
   isActive,
   memberUserId,
+  selfService = false,
   onAlertCountChange,
 }: RequiredDocumentsOverviewProps) {
   const [hasLoaded, setHasLoaded] = useState(false)
@@ -118,7 +120,8 @@ export function RequiredDocumentsOverview({
 
   const { rows, isLoading, isSaving, error, alertCount, save } = useUserHRDocuments(
     memberUserId,
-    isActive
+    isActive,
+    { selfService }
   )
 
   // Notify parent about alert count so it can show the badge on the tab
@@ -138,13 +141,13 @@ export function RequiredDocumentsOverview({
   const handleEdit = useCallback((row: UserHRDocumentRow) => {
     setEditingRow(row)
     setIsModalOpen(true)
-  }, [])
+  }, [selfService])
 
   const handleDownload = useCallback(async (row: UserHRDocumentRow) => {
     if (!row.userDocumentId) return
     try {
       setDownloadingDocumentId(row.userDocumentId)
-      const url = await getUserDocumentDownloadUrl(row.userDocumentId)
+      const url = await getUserDocumentDownloadUrl(row.userDocumentId, { selfService })
 
       let extension = ".pdf"
       const urlWithoutParams = url.split("?")[0]
@@ -167,13 +170,13 @@ export function RequiredDocumentsOverview({
     } finally {
       setDownloadingDocumentId(null)
     }
-  }, [])
+  }, [selfService])
 
   const handleViewDocument = useCallback(async (row: UserHRDocumentRow) => {
     if (!row.userDocumentId) return
     try {
       setLoadingDocumentId(row.userDocumentId)
-      const url = await getUserDocumentUrl(row.userDocumentId)
+      const url = await getUserDocumentUrl(row.userDocumentId, { selfService })
       setSelectedDocument({
         url,
         name: row.documentConfigName,
@@ -281,6 +284,7 @@ export function RequiredDocumentsOverview({
       {/* Upload / Edit modal */}
       <RequiredDocumentUploadModal
         open={isModalOpen}
+        selfService={selfService}
         onOpenChange={setIsModalOpen}
         row={editingRow}
         isSaving={isSaving}

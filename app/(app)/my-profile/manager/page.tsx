@@ -23,7 +23,7 @@ export default function ManagerPage() {
       id: "general",
       label: "General Information",
       icon: <Settings className="w-4 h-4" />,
-      content: <GeneralInformationForm memberUserId={user?.id ?? null} />,
+      content: <GeneralInformationForm memberUserId={user?.id ?? null} selfService />,
     },
     ...(requiredOptions.credentialsSignature
       ? [
@@ -35,6 +35,7 @@ export default function ManagerPage() {
               <CredentialsSignatureOverview
                 isActive={activeTab === "credentials"}
                 memberUserId={user?.id ?? null}
+                selfService
               />
             ),
           },
@@ -49,6 +50,7 @@ export default function ManagerPage() {
         <RequiredDocumentsOverview
           isActive={activeTab === "documents"}
           memberUserId={user?.id ?? null}
+          selfService
           onAlertCountChange={handleDocumentsAlertChange}
         />
       ),

@@ -5,11 +5,18 @@ interface BackendSignatureResponse {
   url: string
 }
 
+const SIGNATURE_SELF_ENDPOINT = "/my-profile/sign"
+
+interface SignatureRequestOptions {
+  selfService?: boolean
+}
+
 export async function getSignature(
-  memberUserId: string
+  memberUserId: string,
+  options: SignatureRequestOptions = {}
 ): Promise<UserSignature | null> {
   const response = await serviceGet<BackendSignatureResponse>(
-    `/member-users/sign/${memberUserId}`
+    options.selfService ? SIGNATURE_SELF_ENDPOINT : `/member-users/sign/${memberUserId}`
   )
 
   if (response.status === 404 || response.status === 204) {
@@ -30,11 +37,13 @@ export async function getSignature(
 }
 
 export async function saveSignature(
-  data: SaveUserSignatureDto
+  data: SaveUserSignatureDto,
+  options: SignatureRequestOptions = {}
 ): Promise<UserSignature | null> {
-  const response = await servicePut<SaveUserSignatureDto, BackendSignatureResponse>(
-    "/member-users/sign",
-    data
+  const { memberUserId: _memberUserId, ...selfServiceData } = data
+  const response = await servicePut<SaveUserSignatureDto | Omit<SaveUserSignatureDto, "memberUserId">, BackendSignatureResponse>(
+    options.selfService ? SIGNATURE_SELF_ENDPOINT : "/member-users/sign",
+    options.selfService ? selfServiceData : data
   )
 
   if (response.status !== 200 && response.status !== 201) {
@@ -49,9 +58,12 @@ export async function saveSignature(
   return { url }
 }
 
-export async function deleteSignature(memberUserId: string): Promise<boolean> {
+export async function deleteSignature(
+  memberUserId: string,
+  options: SignatureRequestOptions = {}
+): Promise<boolean> {
   const response = await serviceDelete<boolean>(
-    `/member-users/sign/${memberUserId}`
+    options.selfService ? SIGNATURE_SELF_ENDPOINT : `/member-users/sign/${memberUserId}`
   )
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {

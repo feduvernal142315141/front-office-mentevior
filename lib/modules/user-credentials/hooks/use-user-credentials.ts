@@ -53,7 +53,8 @@ interface UseUserCredentialsReturn {
 
 export function useUserCredentials(
   memberUserId: string | null,
-  enabled: boolean
+  enabled: boolean,
+  options: { selfService?: boolean } = {}
 ): UseUserCredentialsReturn {
   const [credentials, setCredentials] = useState<UserCredential[]>([])
   const [credentialTypes, setCredentialTypes] = useState<UserCredentialTypeOption[]>([])
@@ -71,7 +72,7 @@ export function useUserCredentials(
         setCredentials([])
         return
       }
-      const data = await getUserCredentials(memberUserId)
+      const data = await getUserCredentials(memberUserId, options)
 
       setCredentials(data)
     } catch (err) {
@@ -81,7 +82,7 @@ export function useUserCredentials(
     } finally {
       setIsLoading(false)
     }
-  }, [memberUserId, enabled])
+  }, [memberUserId, enabled, options.selfService])
 
   const fetchCredentialTypes = useCallback(async () => {
     try {
@@ -123,7 +124,7 @@ export function useUserCredentials(
         ...(memberUserId ? { memberUserId } : {}),
       }
       
-      const result = await updateUserCredential(payload)
+      const result = await updateUserCredential(payload, options)
 
       if (result) {       
         toast.success("Credential saved successfully.")
@@ -153,7 +154,8 @@ export function useUserCredentials(
       }
 
       const result = await updateUserCredential(
-        payload.id ? payload : { ...payload, id }
+        payload.id ? payload : { ...payload, id },
+        options
       )
 
       if (result) {

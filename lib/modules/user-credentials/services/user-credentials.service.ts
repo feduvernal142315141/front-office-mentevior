@@ -8,6 +8,12 @@ import type {
   UpdateUserCredentialDto,
 } from "@/lib/types/user-credentials.types"
 
+const CREDENTIAL_SELF_ENDPOINT = "/my-profile/credential"
+
+interface UserCredentialRequestOptions {
+  selfService?: boolean
+}
+
 /**
  * Helper seguro para parsear fechas del backend
  * Maneja varios formatos: ISO string, fecha ya formateada, etc.
@@ -77,10 +83,14 @@ export async function getUserCredentialTypes(): Promise<UserCredentialTypeOption
 }
 
 export async function getUserCredentials(
-  memberUserId: string
+  memberUserId: string,
+  options: UserCredentialRequestOptions = {}
 ): Promise<UserCredential[]> {
+  const endpoint = options.selfService
+    ? CREDENTIAL_SELF_ENDPOINT
+    : `/member-users/credential/${memberUserId}`
   const response = await serviceGet<BackendCredentialResponse | BackendCredentialItem>(
-    `/member-users/credential/${memberUserId}`
+    endpoint
   )
 
   if (response.status === 404 || response.status === 204) {
@@ -127,20 +137,22 @@ export async function getUserCredentials(
 }
 
 export async function updateUserCredential(
-  data: CreateUserCredentialDto | UpdateUserCredentialDto
+  data: CreateUserCredentialDto | UpdateUserCredentialDto,
+  options: UserCredentialRequestOptions = {}
 ): Promise<UserCredential> {
+  const { memberUserId: _memberUserId, ...credentialData } = data
   const backendPayload: Record<string, unknown> = {
-    ...("id" in data && data.id ? { id: data.id } : {}),
-    ...(data.credentialId ? { credentialId: data.credentialId } : {}),
-    ...(data.identificationNumber ? { identificationNumber: data.identificationNumber } : {}),
-    ...(data.effectiveDate ? { effectiveDate: data.effectiveDate } : {}),
-    ...(data.expirationDate ? { expirationDate: data.expirationDate } : {}),
-    ...(data.memberUserId ? { memberUserId: data.memberUserId } : {}),
-    ...(data.status ? { status: data.status.toLowerCase() } : {}),
+    ...( "id" in credentialData && credentialData.id ? { id: credentialData.id } : {}),
+    ...(credentialData.credentialId ? { credentialId: credentialData.credentialId } : {}),
+    ...(credentialData.identificationNumber ? { identificationNumber: credentialData.identificationNumber } : {}),
+    ...(credentialData.effectiveDate ? { effectiveDate: credentialData.effectiveDate } : {}),
+    ...(credentialData.expirationDate ? { expirationDate: credentialData.expirationDate } : {}),
+    ...(!options.selfService && data.memberUserId ? { memberUserId: data.memberUserId } : {}),
+    ...(credentialData.status ? { status: credentialData.status.toLowerCase() } : {}),
   }
 
   const response = await servicePut<typeof backendPayload, BackendCredentialItem>(
-    "/member-users/credential",
+    options.selfService ? CREDENTIAL_SELF_ENDPOINT : "/member-users/credential",
     backendPayload
   )
 

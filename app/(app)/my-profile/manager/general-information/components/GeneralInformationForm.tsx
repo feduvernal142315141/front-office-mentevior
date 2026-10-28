@@ -79,6 +79,7 @@ function mapToDto(data: GeneralInformationFormValues): UpdateGeneralInformationD
 
 interface GeneralInformationFormProps {
   memberUserId: string | null
+  selfService?: boolean
   showProfessionalInformation?: boolean
   onCancelRoute?: string
   onSuccessRoute?: string
@@ -86,6 +87,7 @@ interface GeneralInformationFormProps {
 
 export function GeneralInformationForm({
   memberUserId,
+  selfService = false,
   showProfessionalInformation,
   onCancelRoute = "/my-profile",
   onSuccessRoute = "/my-profile",
@@ -94,8 +96,9 @@ export function GeneralInformationForm({
   const { user: authUser, requiredOptions } = useAuth()
 
   const { user: fullCurrentUser } = useUserById(authUser?.id || null)
-  const { generalInformation, isLoading } = useGeneralInformation(memberUserId)
-  const { update, isLoading: isSubmitting } = useUpdateGeneralInformation()
+  const selfServiceOptions = { selfService }
+  const { generalInformation, isLoading } = useGeneralInformation(memberUserId, selfServiceOptions)
+  const { update, isLoading: isSubmitting } = useUpdateGeneralInformation(selfServiceOptions)
 
 
   const getRoleName = (role: any): string => {

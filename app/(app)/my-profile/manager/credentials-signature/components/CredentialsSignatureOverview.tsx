@@ -15,18 +15,19 @@ import { AlertsBanner } from "./AlertsBanner"
 import { CredentialsSection } from "./CredentialsSection"
 import { SignatureSection } from "./SignatureSection"
 import { SignatureEditorModal } from "./SignatureEditorModal"
-import { SignatureScrollIndicator } from "./SignatureScrollIndicator"
 import { ConfirmationModal } from "@/components/custom/ConfirmationModal"
 import { CredentialsSignatureSkeleton } from "./CredentialsSignatureSkeleton"
 
 interface CredentialsSignatureOverviewProps {
   isActive: boolean
   memberUserId: string | null
+  selfService?: boolean
 }
 
 export function CredentialsSignatureOverview({
   isActive,
   memberUserId,
+  selfService = false,
 }: CredentialsSignatureOverviewProps) {
   const [hasLoaded, setHasLoaded] = useState(false)
   const { user: fullUser } = useUserById(isActive ? memberUserId : null)
@@ -43,7 +44,7 @@ export function CredentialsSignatureOverview({
     isCreating,
     isUpdating,
     getComputedStatus,
-  } = useUserCredentials(memberUserId, isActive)
+  } = useUserCredentials(memberUserId, isActive, { selfService })
 
   const {
     signature,
@@ -52,7 +53,7 @@ export function CredentialsSignatureOverview({
     remove: removeSignature,
     isLoading: isLoadingSignature,
     isSaving: isSavingSignature,
-  } = useSignature(memberUserId, isActive)
+  } = useSignature(memberUserId, isActive, { selfService })
 
   const [editingCredential, setEditingCredential] = useState<UserCredential | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)

@@ -19,7 +19,9 @@ interface UseUpdateGeneralInformationReturn {
   reset: () => void
 }
 
-export function useUpdateGeneralInformation(): UseUpdateGeneralInformationReturn {
+export function useUpdateGeneralInformation(
+  options: { selfService?: boolean } = {}
+): UseUpdateGeneralInformationReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
@@ -30,7 +32,7 @@ export function useUpdateGeneralInformation(): UseUpdateGeneralInformationReturn
       setIsLoading(true)
       setError(null)
 
-      const result = await updateGeneralInformation(data)
+      const result = await updateGeneralInformation(data, options)
 
       toast.success("Information updated successfully", {
         description: "Your profile has been updated.",

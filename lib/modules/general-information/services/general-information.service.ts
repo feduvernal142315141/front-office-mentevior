@@ -4,11 +4,21 @@ import type {
   UpdateGeneralInformationDto,
 } from "@/lib/types/general-information.types"
 
+const GENERAL_INFORMATION_SELF_ENDPOINT = "/my-profile/general-information"
+
+interface GeneralInformationRequestOptions {
+  selfService?: boolean
+}
+
 export async function getGeneralInformation(
-  memberUserId: string
+  memberUserId: string,
+  options: GeneralInformationRequestOptions = {}
 ): Promise<GeneralInformation | null> {
+  const endpoint = options.selfService
+    ? GENERAL_INFORMATION_SELF_ENDPOINT
+    : `/member-users/general-information/${memberUserId}`
   const response = await serviceGet<GeneralInformation>(
-    `/member-users/general-information/${memberUserId}`
+    endpoint
   )
 
   if (response.status === 404) {
@@ -25,11 +35,21 @@ export async function getGeneralInformation(
 }
 
 export async function updateGeneralInformation(
-  data: UpdateGeneralInformationDto
+  data: UpdateGeneralInformationDto,
+  options: GeneralInformationRequestOptions = {}
 ): Promise<boolean> {
+  const endpoint = options.selfService
+    ? GENERAL_INFORMATION_SELF_ENDPOINT
+    : "/member-users/general-information"
+  const payload = options.selfService
+    ? (() => {
+        const { memberUserId: _memberUserId, ...selfServiceData } = data
+        return selfServiceData
+      })()
+    : data
   const response = await servicePut<UpdateGeneralInformationDto, boolean>(
-    "/member-users/general-information",
-    data
+    endpoint,
+    payload
   )
 
   if (response.status !== 200 && response.status !== 201) {

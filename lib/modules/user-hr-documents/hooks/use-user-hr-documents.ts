@@ -58,7 +58,8 @@ export interface UseUserHRDocumentsReturn {
 
 export function useUserHRDocuments(
   memberUserId: string | null,
-  enabled: boolean
+  enabled: boolean,
+  options: { selfService?: boolean } = {}
 ): UseUserHRDocumentsReturn {
   const [rows, setRows] = useState<UserHRDocumentRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -107,7 +108,7 @@ export function useUserHRDocuments(
       setIsLoading(true)
       setError(null)
 
-      const userDocs = await getUserHRDocuments(memberUserId)
+      const userDocs = await getUserHRDocuments(memberUserId, options)
 
       setRows(buildRows(userDocs))
     } catch (err) {
@@ -117,7 +118,7 @@ export function useUserHRDocuments(
     } finally {
       setIsLoading(false)
     }
-  }, [memberUserId, enabled, buildRows])
+  }, [memberUserId, enabled, buildRows, options.selfService])
 
   useEffect(() => {
     if (!enabled) {
@@ -139,10 +140,10 @@ export function useUserHRDocuments(
           if (!existingDoc?.userDocumentId) {
             throw new Error("User document ID is required for update")
           }
-          await updateUserHRDocument(existingDoc.userDocumentId, data)
+          await updateUserHRDocument(existingDoc.userDocumentId, data, options)
           toast.success("Document updated successfully.")
         } else {
-          await createUserHRDocument(data)
+          await createUserHRDocument(data, options)
           toast.success("Document created successfully.")
         }
         
@@ -156,7 +157,7 @@ export function useUserHRDocuments(
         setIsSaving(false)
       }
     },
-    [fetchAll, rows]
+    [fetchAll, options.selfService, rows]
   )
 
   const alertCount = rows.filter(

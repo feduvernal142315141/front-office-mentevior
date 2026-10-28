@@ -84,6 +84,7 @@ export interface RequiredDocumentUploadModalSavePayload {
 
 interface RequiredDocumentUploadModalProps {
   open: boolean
+  selfService?: boolean
   onOpenChange: (open: boolean) => void
   row: UserHRDocumentRow | null
   isSaving: boolean
@@ -125,7 +126,6 @@ interface FileZoneProps {
 function FileZone({
   documentName,
   existingFileUrl,
-  existingFileName,
   newFile,
   removeExistingFile,
   dragOver,
@@ -136,7 +136,6 @@ function FileZone({
   onDrop,
   onBrowseClick,
   onRemoveNew,
-  onRemoveExisting,
   onUploadAnother,
   onFileInputChange,
   onViewDocument,
@@ -272,6 +271,7 @@ function FileZone({
 
 export function RequiredDocumentUploadModal({
   open,
+  selfService = false,
   onOpenChange,
   row,
   isSaving,
@@ -320,7 +320,7 @@ export function RequiredDocumentUploadModal({
 
       if (row.userDocumentId) {
         setLoadingExistingFile(true)
-        getUserDocumentUrl(row.userDocumentId)
+        getUserDocumentUrl(row.userDocumentId, { selfService })
           .then((url) => setFetchedFileUrl(url))
           .catch((err) => {
             console.error("Error fetching document URL:", err)
@@ -329,7 +329,7 @@ export function RequiredDocumentUploadModal({
           .finally(() => setLoadingExistingFile(false))
       }
     }
-  }, [open, row])
+  }, [open, row, selfService])
 
   const handleFileChange = useCallback(async (file: File) => {
     setFileError(null)
@@ -385,7 +385,7 @@ export function RequiredDocumentUploadModal({
   const handleViewDocument = useCallback(async () => {
     if (!row?.userDocumentId) return
     try {
-      const url = await getUserDocumentUrl(row.userDocumentId)
+      const url = await getUserDocumentUrl(row.userDocumentId, { selfService })
       setViewerDocument({
         url,
         name: row.documentConfigName,
@@ -394,7 +394,7 @@ export function RequiredDocumentUploadModal({
       console.error("Error fetching document:", err)
       toast.error(err instanceof Error ? err.message : "Failed to load document")
     }
-  }, [row])
+  }, [row, selfService])
 
   const handleQuickOffset = useCallback(
     (label: string, applyFn: (d: Date) => Date) => {

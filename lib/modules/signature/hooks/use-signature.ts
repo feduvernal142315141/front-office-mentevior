@@ -26,7 +26,8 @@ interface UseSignatureReturn {
 
 export function useSignature(
   memberUserId: string | null,
-  enabled: boolean
+  enabled: boolean,
+  options: { selfService?: boolean } = {}
 ): UseSignatureReturn {
   const [signature, setSignature] = useState<UserSignature | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -42,7 +43,7 @@ export function useSignature(
         setSignature(null)
         return
       }
-      const data = await getSignature(memberUserId)
+      const data = await getSignature(memberUserId, options)
       setSignature(data)
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error("Failed to fetch signature")
@@ -50,7 +51,7 @@ export function useSignature(
     } finally {
       setIsLoading(false)
     }
-  }, [memberUserId, enabled])
+  }, [memberUserId, enabled, options.selfService])
 
   useEffect(() => {
     if (!enabled) {
@@ -73,7 +74,7 @@ export function useSignature(
         signature: imageBase64,
       }
 
-      const result = await saveSignature(dto)
+      const result = await saveSignature(dto, options)
       if (!result) {
         await fetchSignature()
         toast.success(signature ? "Signature updated successfully." : "Digital signature saved successfully.")
@@ -98,7 +99,7 @@ export function useSignature(
       if (!memberUserId) {
         return false
       }
-      await deleteSignature(memberUserId)
+      await deleteSignature(memberUserId, options)
       setSignature(null)
       toast.success("Signature removed successfully.")
       return true

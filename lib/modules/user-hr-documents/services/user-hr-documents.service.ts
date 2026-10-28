@@ -8,6 +8,13 @@ import type {
   DeleteUserHRDocumentDto,
 } from "@/lib/types/user-hr-document.types"
 
+const DOCUMENT_SELF_ENDPOINT = "/my-profile/document"
+const DOCUMENTS_SELF_ENDPOINT = "/my-profile/documents"
+
+interface UserHRDocumentRequestOptions {
+  selfService?: boolean
+}
+
 
 function normalizeStatus(status: any): "PENDING" | "DELIVERED" | "NEAR_EXPIRATION" | "EXPIRED" | undefined {
   if (!status) return undefined
@@ -53,10 +60,11 @@ function mapBackendDocument(doc: any): BackendUserHRDocument {
 
 
 export async function getUserHRDocuments(
-  memberUserId: string
+  memberUserId: string,
+  options: UserHRDocumentRequestOptions = {}
 ): Promise<BackendUserHRDocument[]> {
   const response = await serviceGet<{ documents: any[] }>(
-    `/member-users/documents/${memberUserId}`
+    options.selfService ? DOCUMENTS_SELF_ENDPOINT : `/member-users/documents/${memberUserId}`
   )
 
   if (!response || response.status !== 200 || !response.data) {
@@ -70,11 +78,12 @@ export async function getUserHRDocuments(
 
 
 export async function createUserHRDocument(
-  data: SaveUserHRDocumentDto
+  data: SaveUserHRDocumentDto,
+  options: UserHRDocumentRequestOptions = {}
 ): Promise<BackendUserHRDocument> {
 
-  const createDto: CreateUserHRDocumentDto = {
-    memberUserId: data.memberUserId,
+  const createDto: CreateUserHRDocumentDto | Omit<CreateUserHRDocumentDto, "memberUserId"> = {
+    ...(!options.selfService ? { memberUserId: data.memberUserId } : {}),
     documentConfigId: data.documentConfigId,
     issuedDate: data.issuedDate,
     expirationDate: data.expirationDate,
@@ -83,8 +92,8 @@ export async function createUserHRDocument(
     comment: data.comments, 
   }
 
-  const response = await servicePost<CreateUserHRDocumentDto, any>(
-    "/member-users/document",
+  const response = await servicePost<CreateUserHRDocumentDto | Omit<CreateUserHRDocumentDto, "memberUserId">, any>(
+    options.selfService ? DOCUMENT_SELF_ENDPOINT : "/member-users/document",
     createDto
   )
 
@@ -98,7 +107,8 @@ export async function createUserHRDocument(
 
 export async function updateUserHRDocument(
   userDocumentId: string,
-  data: SaveUserHRDocumentDto
+  data: SaveUserHRDocumentDto,
+  options: UserHRDocumentRequestOptions = {}
 ): Promise<BackendUserHRDocument> {
 
   const updateDto: UpdateUserHRDocumentDto = {
@@ -111,7 +121,7 @@ export async function updateUserHRDocument(
   }
 
   const response = await servicePut<UpdateUserHRDocumentDto, any>(
-    "/member-users/document",
+    options.selfService ? DOCUMENT_SELF_ENDPOINT : "/member-users/document",
     updateDto
   )
 
@@ -124,11 +134,13 @@ export async function updateUserHRDocument(
 
 
 export async function deleteUserHRDocument(
-  data: DeleteUserHRDocumentDto
+  data: DeleteUserHRDocumentDto,
+  options: UserHRDocumentRequestOptions = {}
 ): Promise<boolean> {
-  const response = await serviceDelete<DeleteUserHRDocumentDto, boolean>(
-    "/member-users/document",
-    data
+  const { memberUserId: _memberUserId, ...selfServiceData } = data
+  const response = await serviceDelete<DeleteUserHRDocumentDto | Omit<DeleteUserHRDocumentDto, "memberUserId">, boolean>(
+    options.selfService ? DOCUMENT_SELF_ENDPOINT : "/member-users/document",
+    options.selfService ? selfServiceData : data
   )
 
   if (response.status !== 200 && response.status !== 201 && response.status !== 204) {
@@ -139,8 +151,8 @@ export async function deleteUserHRDocument(
 }
 
 
-export async function getUserDocumentUrl(documentId: string): Promise<string> {
-  const response = await serviceGet<{ url: string }>(`/member-users/document/${documentId}`)
+export async function getUserDocumentUrl(documentId: string, options: UserHRDocumentRequestOptions = {}): Promise<string> {
+  const response = await serviceGet<{ url: string }>(options.selfService ? `${DOCUMENT_SELF_ENDPOINT}/${documentId}` : `/member-users/document/${documentId}`)
 
   if (response.status !== 200 || !response.data) {
     throw new Error(response.data?.message || "Failed to fetch document URL")
@@ -155,8 +167,8 @@ export async function getUserDocumentUrl(documentId: string): Promise<string> {
   return url
 }
 
-export async function getUserDocumentDownloadUrl(documentId: string): Promise<string> {
-  const response = await serviceGet<{ url: string; urlDownload?: string }>(`/member-users/document/${documentId}`)
+export async function getUserDocumentDownloadUrl(documentId: string, options: UserHRDocumentRequestOptions = {}): Promise<string> {
+  const response = await serviceGet<{ url: string; urlDownload?: string }>(options.selfService ? `${DOCUMENT_SELF_ENDPOINT}/${documentId}` : `/member-users/document/${documentId}`)
 
   if (response.status !== 200 || !response.data) {
     throw new Error(response.data?.message || "Failed to fetch document URL")
