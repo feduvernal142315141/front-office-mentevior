@@ -8,7 +8,6 @@ import type { CaseSupervisionAppointment } from "@/lib/types/case-supervision-lo
 import { parseLocalDate } from "@/lib/date"
 import { formatHours } from "./manual-entry-format"
 import { ServiceTypeBadge } from "./ManualLogEntriesTable"
-import { TagList } from "./TagList"
 
 interface CaseSupervisionAppointmentsTableProps {
   appointments: CaseSupervisionAppointment[]
@@ -79,9 +78,14 @@ export function CaseSupervisionAppointmentsTable({
       },
       {
         key: "modality",
-        header: "Case Supervision Modality",
-        className: "whitespace-nowrap",
-        render: (row) => row.modalityName || <span className="text-slate-400">—</span>,
+        header: "Modality",
+        align: "center",
+        className: "min-w-[180px] whitespace-normal",
+        render: (row) => (
+          <span className="block whitespace-normal text-center leading-snug">
+            {row.modalityName || <span className="text-slate-400">—</span>}
+          </span>
+        ),
       },
       {
         key: "billingCode",
@@ -98,11 +102,13 @@ export function CaseSupervisionAppointmentsTable({
       {
         key: "participants",
         header: "Participants",
-        className: "whitespace-nowrap",
+        className: "min-w-[180px] whitespace-normal",
         // El cliente participa siempre y no se persiste como participante (igual
         // que en la session note, donde va fijo): se antepone acá.
         render: (row) => (
-          <TagList items={["Client", ...row.participants.filter((p) => p.toLowerCase() !== "client")]} />
+          <span className="whitespace-normal leading-snug">
+            {["Client", ...row.participants.filter((p) => p.toLowerCase() !== "client")].join(", ")}
+          </span>
         ),
       },
       {

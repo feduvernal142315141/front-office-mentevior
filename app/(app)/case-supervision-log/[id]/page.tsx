@@ -3,7 +3,6 @@
 import { use, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { format } from "date-fns"
 import {
   ArrowLeft,
   Building2,
@@ -18,7 +17,6 @@ import {
 import { Button } from "@/components/custom/Button"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { SectionCard } from "@/components/custom/SectionCard"
-import { parseLocalDate } from "@/lib/date"
 import { useCaseSupervisionLogById } from "@/lib/modules/case-supervision-log/hooks/use-case-supervision-log-by-id"
 import {
   getCaseSupervisionLogPdfUrl,
@@ -39,16 +37,6 @@ import { ManualLogEntrySection } from "../components/ManualLogEntrySection"
 
 interface CaseSupervisionLogDetailPageProps {
   params: Promise<{ id: string }>
-}
-
-/** El backend manda `yyyy-MM-dd`; se parsea en local para no correr un día */
-function formatReportDate(value: string): string {
-  if (!value) return "—"
-  try {
-    return format(parseLocalDate(value), "MM/dd/yyyy")
-  } catch {
-    return value
-  }
 }
 
 /**
@@ -209,11 +197,6 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
               <InfoCard icon={<Building2 className="h-4 w-4 text-[#037ECC]" />} label="Supervisor">
                 <Field label="Name" value={report.providerName || "—"} />
                 <Field label="Credential" value={report.providerCredential || "—"} />
-                <div className="col-span-2 grid grid-cols-3 gap-x-6">
-                  <Field label="NPI" value={report.providerNpi || "—"} />
-                  <Field label="MPI" value={report.providerMpi || "—"} />
-                  <Field label="Report date" value={formatReportDate(report.date)} />
-                </div>
               </InfoCard>
             </div>
 

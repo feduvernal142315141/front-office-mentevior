@@ -61,9 +61,14 @@ export function ManualLogEntriesTable({ rows, onEdit, onDelete, disabled }: Manu
       },
       {
         key: "modality",
-        header: "Case Supervision Modality",
-        className: "whitespace-nowrap",
-        render: (row) => row.modality || <span className="text-slate-400">—</span>,
+        header: "Modality",
+        align: "center",
+        className: "min-w-[180px] whitespace-normal",
+        render: (row) => (
+          <span className="block whitespace-normal text-center leading-snug">
+            {row.modality || <span className="text-slate-400">—</span>}
+          </span>
+        ),
       },
       {
         key: "billingCode",
@@ -80,8 +85,12 @@ export function ManualLogEntriesTable({ rows, onEdit, onDelete, disabled }: Manu
       {
         key: "participants",
         header: "Participants",
-        className: "whitespace-nowrap",
-        render: (row) => <TagList items={row.participants} />,
+        className: "min-w-[180px] whitespace-normal",
+        render: (row) => (
+          <span className="whitespace-normal leading-snug">
+            {row.participants.length > 0 ? row.participants.join(", ") : "—"}
+          </span>
+        ),
       },
       {
         key: "activityCategories",
