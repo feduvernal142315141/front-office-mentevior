@@ -72,12 +72,14 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
     passwordRef.current = ""
     verifiedChallengeRef.current = ""
     csrfTokenRef.current = null
-    setRememberDevice(false)
   }, [])
 
   const backToCredentials = useCallback(
     (message?: string) => {
       forgetSecrets()
+      // El check se limpia sólo al volver atrás; al entrar con éxito se deja marcado
+      // mientras la página redirige, para que no parpadee desmarcado.
+      setRememberDevice(false)
       setStep("credentials")
       setCompanies([])
       setChallenge(null)
@@ -124,25 +126,25 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
 
   /** Traduce el resultado del store en el siguiente paso de la pantalla. */
   const applyAttempt = useCallback(
-    async (attempt: AuthAttempt): Promise<void> => {
+    async (attempt: AuthAttempt): Promise<boolean> => {
       switch (attempt.status) {
         case "otp_sent":
           setChallenge(attempt.challenge)
           setFailedOtpAttempts(0)
           setStep("otp")
           setError(null)
-          return
+          return false
 
         case "authenticated":
           forgetSecrets()
           // Recarga dura para que el layout del servidor vea la cookie recién puesta
           window.location.href = "/dashboard"
-          return
+          return true
 
         case "company_session": {
           const done = await completeCompanySession(attempt)
           if (!done) setError("We couldn't open your session. Please try again.")
-          return
+          return done
         }
 
         case "select_company":
@@ -150,11 +152,11 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
           setCompanies(attempt.companies)
           setStep("company")
           setError(null)
-          return
+          return false
 
         case "error":
           setError(attempt.message)
-          return
+          return false
       }
     },
     [completeCompanySession, forgetSecrets],
@@ -216,8 +218,9 @@ export function useLoginFlow({ company }: UseLoginFlowOptions) {
         setFailedOtpAttempts((count) => count + 1)
       }
 
-      await applyAttempt(attempt)
-      setIsSubmitting(false)
+      const redirecting = await applyAttempt(attempt)
+      // Si ya se está redirigiendo al dashboard, el botón se queda en "Verifying..."
+      if (!redirecting) setIsSubmitting(false)
     },
     [
       applyAttempt,
