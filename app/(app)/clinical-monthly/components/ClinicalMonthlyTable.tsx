@@ -30,6 +30,7 @@ export function ClinicalMonthlyTable() {
     canCreate,
     goToCreate,
     auditModal,
+    deleteModal,
   } = useClinicalMonthlyTable()
 
   const pdfUrl = useMemo(
@@ -48,6 +49,7 @@ export function ClinicalMonthlyTable() {
 
   return (
     <div className="space-y-4">
+      {deleteModal}
       {canCreate && (
         <div className="flex justify-end">
           <Button onClick={goToCreate} className="gap-2 flex items-center">

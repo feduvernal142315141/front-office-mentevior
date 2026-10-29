@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Calendar, Edit2, FileDown } from "lucide-react"
+import { Calendar, Edit2, FileDown, Trash2 } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -17,6 +17,9 @@ import { parseLocalDate } from "@/lib/date"
 import { cn } from "@/lib/utils"
 import { AuditActionButton } from "@/components/custom/AuditActionButton"
 import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { useDeleteClinicalMonthly } from "@/lib/modules/clinical-monthly/hooks/use-delete-clinical-monthly"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 
 /**
  * El Clinical Monthly no tiene provider propio: el provider es el usuario
@@ -55,6 +58,7 @@ function formatDate(value?: string): string {
 export function useClinicalMonthlyTable() {
   const router = useRouter()
   const permission = usePermission()
+  const { canDelete } = useModulePermissions(PermissionModule.CLINICAL_MONTHLY)
   const auditModal = useAuditModalState<ClinicalMonthlyListItem>()
   const openAuditModal = auditModal.openFor
 
@@ -74,6 +78,9 @@ export function useClinicalMonthlyTable() {
   const [filterStatus, setFilterStatus] = useState("all")
 
   const [previewId, setPreviewId] = useState<string | null>(null)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<ClinicalMonthlyListItem | null>(null)
+  const { mutate: deleteClinicalMonthly, isDeleting } = useDeleteClinicalMonthly()
 
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { users: allUsers } = useUsers({ pageSize: 100 })
@@ -148,7 +155,7 @@ export function useClinicalMonthlyTable() {
     return built.length > 0 ? built : undefined
   }, [filterDateFrom, filterDateTo, filterClient, filterProvider, filterStatus])
 
-  const { clinicalMonthlies, totalCount, isLoading, error } = useClinicalMonthlies({
+  const { clinicalMonthlies, totalCount, isLoading, error, refetch } = useClinicalMonthlies({
     filters,
     page: page - 1,
     pageSize,
@@ -180,6 +187,30 @@ export function useClinicalMonthlyTable() {
     setFilterProvider("all")
     setFilterStatus("all")
     setPage(1)
+  }, [])
+
+  const handleDeleteClick = useCallback((item: ClinicalMonthlyListItem) => {
+    setItemToDelete(item)
+    setDeleteModalOpen(true)
+  }, [])
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!itemToDelete) return
+
+    try {
+      await deleteClinicalMonthly(itemToDelete.id, async () => {
+        setDeleteModalOpen(false)
+        setItemToDelete(null)
+        await refetch()
+      })
+    } catch {
+      // The mutation hook already reports the backend error to the user.
+    }
+  }, [deleteClinicalMonthly, itemToDelete, refetch])
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteModalOpen(false)
+    setItemToDelete(null)
   }, [])
 
   // El listado no devuelve `providerName` todavía; la columna aparece sola en
@@ -294,6 +325,30 @@ export function useClinicalMonthlyTable() {
               <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
             </button>
           )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteClick(item)
+              }}
+              className={cn(
+                "group/delete relative h-9 w-9",
+                "flex items-center justify-center rounded-xl",
+                "bg-gradient-to-b from-red-50 to-red-100/80",
+                "border border-red-200/60 shadow-sm shadow-red-900/5",
+                "hover:from-red-100 hover:to-red-200/90",
+                "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2",
+              )}
+              title="Delete"
+              aria-label="Delete"
+            >
+              <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
+            </button>
+          )}
           <AuditActionButton
             label={`View audit for ${item.clientName || "clinical monthly"}`}
             onClick={(event) => {
@@ -304,7 +359,7 @@ export function useClinicalMonthlyTable() {
         </div>
       ),
     },
-  ], [showProviderColumn, canEdit, router, openAuditModal])
+  ], [showProviderColumn, canEdit, canDelete, router, openAuditModal, handleDeleteClick])
 
   return {
     data: clinicalMonthlies,
@@ -338,6 +393,17 @@ export function useClinicalMonthlyTable() {
     clearFilters,
     previewId,
     setPreviewId,
+    deleteModal: (
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Clinical Monthly"
+        message="Are you sure you want to delete this Clinical Monthly? This action cannot be undone."
+        itemName={itemToDelete?.clientName}
+        isDeleting={isDeleting}
+      />
+    ),
     canCreate,
     canEdit,
     goToCreate: () => router.push("/clinical-monthly/create"),

@@ -1,4 +1,4 @@
-import { serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePost, servicePut } from "@/lib/services/baseService"
 import type {
   ClinicalMonthlyDetail,
   ClinicalMonthlyListItem,
@@ -87,6 +87,16 @@ export async function updateClinicalMonthly(
   }
 
   return extractId(response.data, "update") || id
+}
+
+export async function deleteClinicalMonthly(id: string): Promise<boolean> {
+  const response = await serviceDelete<boolean>(`${BASE_URL}/${id}`)
+
+  if (response.status !== 200 && response.status !== 204) {
+    throw new Error(response.data?.message || "Failed to delete clinical monthly")
+  }
+
+  return true
 }
 
 /**

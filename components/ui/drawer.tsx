@@ -8,6 +8,7 @@ import { useOverlayLockRelease } from '@/lib/hooks/use-overlay-lock-release'
 function Drawer({
   open,
   onOpenChange,
+  dismissible = false,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
   // Sin esto, un drawer que se cierra puede dejar el `<body>` sin clicks.
@@ -18,6 +19,7 @@ function Drawer({
     <DrawerPrimitive.Root
       data-slot="drawer"
       open={open}
+      dismissible={dismissible}
       onOpenChange={handleOpenChange}
       {...props}
     />
