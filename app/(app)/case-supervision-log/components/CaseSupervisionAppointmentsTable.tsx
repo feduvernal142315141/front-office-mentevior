@@ -121,7 +121,7 @@ export function CaseSupervisionAppointmentsTable({
         key: "summary",
         header: "Summary",
         className: "min-w-[180px]",
-        render: () => <span className="text-slate-400">—</span>,
+        render: () => <span className="text-slate-400">N/A</span>,
       },
     ],
     [],
