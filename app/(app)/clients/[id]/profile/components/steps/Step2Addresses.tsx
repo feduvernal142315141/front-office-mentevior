@@ -164,6 +164,14 @@ function normalizeText(value?: string | null) {
   return (value ?? "").trim().toLowerCase()
 }
 
+function formatPlaceServiceLabel(name?: string, code?: string, fallback = "") {
+  const placeServiceName = name?.trim() ?? ""
+  const placeServiceCode = code?.trim() ?? ""
+
+  if (placeServiceName && placeServiceCode) return `${placeServiceName} (${placeServiceCode})`
+  return placeServiceName || placeServiceCode || fallback
+}
+
 export function Step2Addresses({
   clientId,
   isCreateMode = false,
@@ -685,13 +693,18 @@ export function Step2Addresses({
       header: "Place of Service",
       className: "min-w-[180px]",
       render: (address) => {
-        const resolvedPlaceServiceName =
-          address.placeServiceName
+        const placeService = placesOfService.find((place) => place.id === address.placeServiceId)
+        const resolvedPlaceServiceName = address.placeServiceName
           || address.placeService
-          || placesOfService.find((place) => place.id === address.placeServiceId)?.name
-          || (address.placeServiceId === OFFICE_PLACE_OF_SERVICE_ID ? "Office (11)" : "")
+          || placeService?.name
+        const resolvedPlaceServiceCode = address.placeServiceCode || placeService?.code
+        const placeServiceLabel = formatPlaceServiceLabel(
+          resolvedPlaceServiceName,
+          resolvedPlaceServiceCode,
+          address.placeServiceId === OFFICE_PLACE_OF_SERVICE_ID ? "Office (11)" : "",
+        )
 
-        if (resolvedPlaceServiceName) return resolvedPlaceServiceName
+        if (placeServiceLabel) return placeServiceLabel
 
         if (address.canEdit !== true) {
           return "Office (11)"
