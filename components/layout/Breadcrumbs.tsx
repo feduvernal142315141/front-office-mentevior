@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronRight, ArrowLeft } from "lucide-react"
 import { Fragment } from "react"
+import { useUnsavedChangesGuard } from "@/lib/contexts/unsaved-changes-context"
 
 function isUUID(segment: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -94,6 +95,7 @@ function getSegmentLabel(segment: string): string {
 export function Breadcrumbs() {
   const pathname = usePathname()
   const router = useRouter()
+  const { guard } = useUnsavedChangesGuard()
   const segments = pathname.split("/").filter(Boolean)
 
   // Replace UUID with "Details" for applicants
@@ -110,7 +112,6 @@ export function Breadcrumbs() {
 
   // Add "my-company" prefix for applicants and agreements if not present
   if (filteredSegments.includes("applicants") && !filteredSegments.includes("my-company")) {
-    const applicantsIndex = filteredSegments.indexOf("applicants")
     filteredSegments = ["my-company", ...filteredSegments]
   }
 
@@ -193,11 +194,7 @@ export function Breadcrumbs() {
     : null
 
   const handleBack = () => {
-    if (backHref) {
-      router.push(backHref)
-    } else {
-      router.back()
-    }
+    guard(() => (backHref ? router.push(backHref) : router.back()))
   }
 
   return (
@@ -222,7 +219,14 @@ export function Breadcrumbs() {
             {crumb.isLast ? (
               <span className="text-gray-900 font-medium">{crumb.label}</span>
             ) : (
-              <Link href={crumb.href} className="hover:text-gray-900 transition-colors">
+              <Link
+                href={crumb.href}
+                onClick={(event) => {
+                  event.preventDefault()
+                  guard(() => router.push(crumb.href))
+                }}
+                className="hover:text-gray-900 transition-colors"
+              >
                 {crumb.label}
               </Link>
             )}

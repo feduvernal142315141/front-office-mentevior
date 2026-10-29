@@ -9,6 +9,7 @@ import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { MonthPicker } from "@/components/custom/MonthPicker"
 import { SectionCard } from "@/components/custom/SectionCard"
 import { useAlert } from "@/lib/contexts/alert-context"
+import { useUnsavedChangesRegistration } from "@/lib/contexts/unsaved-changes-context"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { useCaseSupervisionAppointments } from "@/lib/modules/case-supervision-log/hooks/use-case-supervision-appointments"
@@ -43,6 +44,7 @@ export function CaseSupervisionLogForm() {
   const [providerId, setProviderId] = useState("")
   const [reportMonth, setReportMonth] = useState(currentReportMonth)
   const [manualEntries, setManualEntries] = useState<ManualEntryFormValue[]>([])
+  const [hasUserChanges, setHasUserChanges] = useState(false)
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { users: allUsers } = useUsers({ pageSize: 100 })
@@ -73,6 +75,7 @@ export function CaseSupervisionLogForm() {
 
   // Location sale de las direcciones del cliente: al cambiarlo, la elegida deja de valer
   const handleClientChange = useCallback((nextClientId: string) => {
+    setHasUserChanges(true)
     setClientId(nextClientId)
     setManualEntries((prev) => prev.map((entry) => ({ ...entry, clientAddressId: "" })))
   }, [])
@@ -91,6 +94,7 @@ export function CaseSupervisionLogForm() {
   const isTrioComplete = !!clientId && !!providerId && isReportMonth(reportMonth)
   const isBusy = isLoadingPreparation || isCreating
   const canSubmit = isTrioComplete && !!preparation && !isBusy
+  const hasUnsavedChanges = hasUserChanges && !isCreating
 
   const clientName = clientOptions.find((o) => o.value === clientId)?.label ?? ""
   const providerName = providerOptions.find((o) => o.value === providerId)?.label ?? ""
@@ -116,6 +120,21 @@ export function CaseSupervisionLogForm() {
       }, 0)
     }
   }, [create, clientId, providerId, reportMonth, filledManualEntries, router])
+
+  const saveBeforeNavigation = useCallback(async () => {
+    if (!canSubmit || !preparation) {
+      toast.error("Complete the report before leaving", {
+        description: "Select a client, supervisor and reporting month, then wait for the sessions to load.",
+      })
+      return
+    }
+    await persist()
+  }, [canSubmit, persist, preparation])
+
+  const { guard } = useUnsavedChangesRegistration({
+    isDirty: hasUnsavedChanges,
+    onSave: saveBeforeNavigation,
+  })
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -172,7 +191,10 @@ export function CaseSupervisionLogForm() {
           <FloatingSelect
             label="Supervisor"
             value={providerId}
-            onChange={setProviderId}
+            onChange={(value) => {
+              setHasUserChanges(true)
+              setProviderId(value)
+            }}
             options={providerOptions}
             disabled={isCreating}
             searchable
@@ -181,7 +203,10 @@ export function CaseSupervisionLogForm() {
           <MonthPicker
             label="Reporting month"
             value={reportMonth}
-            onChange={setReportMonth}
+            onChange={(value) => {
+              setHasUserChanges(true)
+              setReportMonth(value)
+            }}
             disabled={isCreating}
           />
         </div>
@@ -245,14 +270,18 @@ export function CaseSupervisionLogForm() {
           clientId={clientId}
           reportMonth={reportMonth}
           canAdd
-          onSaveEntry={(entry) =>
+          onSaveEntry={(entry) => {
+            setHasUserChanges(true)
             setManualEntries((prev) =>
               prev.some((e) => e.key === entry.key)
                 ? prev.map((e) => (e.key === entry.key ? entry : e))
                 : [...prev, entry],
             )
-          }
-          onRemoveEntry={(key) => setManualEntries((prev) => prev.filter((e) => e.key !== key))}
+          }}
+          onRemoveEntry={(key) => {
+            setHasUserChanges(true)
+            setManualEntries((prev) => prev.filter((e) => e.key !== key))
+          }}
           disabled={isCreating}
         />
       )}
@@ -271,7 +300,7 @@ export function CaseSupervisionLogForm() {
 
       <FormBottomBar
         isSubmitting={isCreating}
-        onCancel={() => router.push("/case-supervision-log")}
+        onCancel={() => guard(() => router.push("/case-supervision-log"))}
         submitText="Create Case Supervision Log"
         disabled={!canSubmit}
       />

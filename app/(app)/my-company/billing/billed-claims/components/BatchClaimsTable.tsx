@@ -7,13 +7,14 @@ import { ChevronLeft, ChevronRight, Edit2, Eye, FileCheck, Trash2 } from "lucide
 import { toast } from "@/lib/compat/sonner"
 import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
-import { useAlert } from "@/lib/contexts/alert-context"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { useBatchClaims } from "@/lib/modules/batch-claims/hooks/use-batch-claims"
 import { getBatchDecision, getEffectiveBadge } from "@/lib/modules/batch-claims/claim-md-status"
 import { cn } from "@/lib/utils"
 import { ClaimMdStatusBadge } from "./ClaimMdStatusBadge"
 import { deleteBatchClaim } from "@/lib/modules/batch-claims/services/batch-claims.service"
+import type { BatchClaimSummary } from "@/lib/types/batch-claim.types"
 
 const GRID_COLS = "grid-cols-[minmax(180px,1.4fr)_minmax(160px,1.2fr)_minmax(160px,1.2fr)_minmax(120px,1fr)_88px]"
 const GRID_COLS_WITH_CLAIM_MD =
@@ -26,12 +27,12 @@ interface BatchClaimsTableProps {
 
 export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) {
   const router = useRouter()
-  const alert = useAlert()
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [batchToDelete, setBatchToDelete] = useState<BatchClaimSummary | null>(null)
 
   const { batchClaims, totalCount, isLoading, error, refetch } = useBatchClaims(
     searchQuery as string,
@@ -44,6 +45,7 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
     try {
       await deleteBatchClaim(batchId)
       toast.success("Batch Claim deleted")
+      setBatchToDelete(null)
       await refetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete batch claim")
@@ -219,15 +221,7 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
                   {canDelete && !getBatchDecision(batch.claimMdEffectiveStatus).isLocked && (
                     <button
                       type="button"
-                      onClick={() => {
-                        alert.confirm({
-                          title: "Delete Batch Claim",
-                          description: "Its selected Service Logs will be released and available for another Batch Claim.",
-                          confirmText: "Delete",
-                          cancelText: "Cancel",
-                          onConfirm: () => handleDelete(batch.id),
-                        })
-                      }}
+                      onClick={() => setBatchToDelete(batch)}
                       disabled={deletingId === batch.id}
                       className={cn(
                         "group/delete flex h-8 w-8 items-center justify-center rounded-xl",
@@ -305,6 +299,20 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
           </div>
         </div>
       )}
+
+      <DeleteConfirmModal
+        isOpen={batchToDelete !== null}
+        onClose={() => {
+          if (!deletingId) setBatchToDelete(null)
+        }}
+        onConfirm={() => {
+          if (batchToDelete) void handleDelete(batchToDelete.id)
+        }}
+        title="Delete Batch Claim"
+        message="Are you sure you want to delete this Batch Claim? This action cannot be undone."
+        itemName={batchToDelete?.reference}
+        isDeleting={deletingId === batchToDelete?.id}
+      />
     </div>
   )
 }

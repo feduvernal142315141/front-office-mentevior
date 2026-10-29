@@ -16,17 +16,19 @@ import { useAuth } from "@/lib/hooks/use-auth"
 import { useLogout } from "@/lib/modules/auth/hooks/use-logout"
 import { Breadcrumbs } from "./Breadcrumbs"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
+import { useUnsavedChangesGuard } from "@/lib/contexts/unsaved-changes-context"
 
 export function Topbar() {
   const { user, hydrated } = useAuth()
   const { logout } = useLogout()
   const router = useRouter()
+  const { guard } = useUnsavedChangesGuard()
   
   const { user: fullUser } = useUserById(user?.id || null)
   
 
   const handleLogout = () => {
-    logout()
+    guard(logout)
   }
 
   return (
@@ -40,9 +42,9 @@ export function Topbar() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center gap-3 h-10 px-3 rounded-full hover:bg-accent/60 transition group max-w-[220px] overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+                  className="flex items-center gap-3 h-10 px-3 rounded-full hover:bg-accent/60 transition group max-w-55 overflow-hidden outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
                 >
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center ring-1 ring-blue-200 shadow-sm group-hover:shadow-md transition">
+                  <div className="h-9 w-9 rounded-full bg-linear-to-br from-blue-50 to-blue-100 flex items-center justify-center ring-1 ring-blue-200 shadow-sm group-hover:shadow-md transition">
                     <span className="text-sm font-semibold text-[#025f9a]">
                       {user.name?.charAt(0)}
                     </span>
@@ -62,12 +64,12 @@ export function Topbar() {
               >
                 <DropdownMenuLabel className="pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center font-semibold text-[#025f9a] shadow-sm">
+                    <div className="h-10 w-10 rounded-full bg-linear-to-br from-blue-100 to-blue-200 flex items-center justify-center font-semibold text-[#025f9a] shadow-sm">
                       {user.name?.charAt(0)}
                     </div>
                     <div className="leading-tight">
                       <p className="font-semibold text-sm">{user.name}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[160px]">
+                      <p className="text-xs text-muted-foreground truncate max-w-40">
                         {user.email}
                       </p>
         
@@ -85,7 +87,7 @@ export function Topbar() {
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
-                  onClick={() => router.push("/my-profile")}
+                  onClick={() => guard(() => router.push("/my-profile"))}
                   className="group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm cursor-pointer transition-all duration-200 bg-white hover:bg-slate-50"
                 >
                   <User className="h-4 w-4 text-muted-foreground transition-all duration-200 group-hover:text-foreground group-hover:translate-x-0.5" />
@@ -95,7 +97,7 @@ export function Topbar() {
                 <div className="h-1" />
 
                 <DropdownMenuItem
-                  onClick={() => router.push("/change-password")}
+                  onClick={() => guard(() => router.push("/change-password"))}
                   className="group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm cursor-pointer transition-all duration-200 bg-white hover:bg-slate-50"
                 >
                   <KeyRound className="h-4 w-4 text-muted-foreground transition-all duration-200 group-hover:text-foreground group-hover:translate-x-0.5" />

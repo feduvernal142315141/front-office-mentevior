@@ -6,6 +6,7 @@ import { Topbar } from "@/components/layout/Topbar"
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute"
 import { cn } from "@/lib/utils"
 import { useUi } from "@/lib/store/ui.store"
+import { UnsavedChangesProvider } from "@/lib/contexts/unsaved-changes-context"
 
 export default function ShellLayout({
   children,
@@ -15,9 +16,10 @@ export default function ShellLayout({
     const { sidebarCollapsed } = useUi()
 
   return (
-    <div className="h-screen bg-background overflow-hidden">
-      <SectionCompletionSync />
-      <Sidebar />
+    <UnsavedChangesProvider>
+      <div className="h-screen bg-background overflow-hidden">
+        <SectionCompletionSync />
+        <Sidebar />
 
       <div
         className={cn(
@@ -33,6 +35,7 @@ export default function ShellLayout({
           </ProtectedRoute>
         </main>
       </div>
-    </div>
+      </div>
+    </UnsavedChangesProvider>
   )
 }

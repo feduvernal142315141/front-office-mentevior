@@ -5,9 +5,11 @@ import { ArrowLeft, ClipboardCheck } from "lucide-react"
 import { CaseSupervisionLogForm } from "../components/CaseSupervisionLogForm"
 import { useRequirePermission } from "@/lib/hooks/use-require-permission"
 import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
+import { useUnsavedChangesGuard } from "@/lib/contexts/unsaved-changes-context"
 
 export default function CreateCaseSupervisionLogPage() {
   const router = useRouter()
+  const { guard } = useUnsavedChangesGuard()
   const canCreate = useRequirePermission(PermissionModule.CASE_SUPERVISION, PermissionAction.CREATE)
 
   if (!canCreate) {
@@ -20,7 +22,7 @@ export default function CreateCaseSupervisionLogPage() {
         <div className="mb-8 flex items-center gap-4">
           <button
             type="button"
-            onClick={() => router.push("/case-supervision-log")}
+            onClick={() => guard(() => router.push("/case-supervision-log"))}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:-translate-y-0.5 hover:border-[#037ECC]/40 hover:text-[#037ECC] hover:shadow-md"
             aria-label="Back to case supervision logs"
           >
