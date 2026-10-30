@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Calendar as CalendarIcon,
 } from "lucide-react"
 import { CalendarToolbar } from "./CalendarToolbar"
 import { MonthCalendar } from "./MonthCalendar"
@@ -35,12 +34,11 @@ import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appoi
 import { getAppointmentById } from "@/lib/modules/schedules/services/appointments.service"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { getCurrentTime } from "@/lib/utils/unit-calculation"
-import { toast } from "sonner"
 import { useAlert } from "@/lib/contexts/alert-context"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
 import { PermissionModule } from "@/lib/utils/permissions-new"
-import { isToday, formatWeekRange } from "@/lib/date"
+import { isToday } from "@/lib/date"
 import { FilterSelect } from "@/components/custom/FilterSelect"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { Card } from "@/components/custom/Card"
@@ -49,9 +47,6 @@ import { cn } from "@/lib/utils"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import type { Appointment, AppointmentStatus } from "@/lib/types/appointment.types"
 
-
-/** Fixed card height for the agency list view (no time-grid positioning) */
-const INLINE_CARD_HEIGHT = 90
 
 interface WeekCalendarProps {
   rbtId: string
@@ -215,6 +210,7 @@ export function WeekCalendar({
 
       // "Edit Session" for session/supervision sub-events (parent is 97153/97152)
       if (action === "edit_session_supervision" && appointment) {
+        if (appointment.cantEdit === false) return
         actions.closeContextMenu()
         actions.openSupervisionModal(appointment)
         return
@@ -313,7 +309,7 @@ export function WeekCalendar({
               key={index}
               onClick={() => actions.setSelectedDay(index)}
               className={cn(
-                "flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl transition-all",
+                "shrink-0 flex flex-col items-center px-3 py-2 rounded-xl transition-all",
                 selectedDay === index
                   ? "bg-[#037ECC] text-white shadow-lg shadow-[#037ECC]/30"
                   : "bg-white text-gray-600 hover:bg-gray-50",
@@ -368,7 +364,7 @@ export function WeekCalendar({
                   actions.setFilterStatus("all")
                   actions.setFilterProvider("all")
                 }}
-                className="whitespace-nowrap h-[52px] 2xl:h-[56px]"
+                className="whitespace-nowrap h-13 2xl:h-14"
               >
                 Clear filters
               </Button>
@@ -404,7 +400,7 @@ export function WeekCalendar({
               </div>
             </div>
           )}
-          <div className="p-4 min-w-[1100px]">
+          <div className="p-4 min-w-275">
             {/* Day headers */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {weekDays.map((day, index) => (
@@ -486,7 +482,7 @@ export function WeekCalendar({
           onDragStart={actions.handleDragStart}
           onDragEnd={actions.handleDragEnd}
         >
-          <div className={cn("p-4", isMobile ? "min-w-0" : "min-w-[1100px]")}>
+          <div className={cn("p-4", isMobile ? "min-w-0" : "min-w-275")}>
             {!isMobile && (
               <div className="grid grid-cols-[60px_repeat(7,1fr)] gap-1 mb-2">
                 <div />
@@ -558,7 +554,7 @@ export function WeekCalendar({
                           return (
                             <div
                               key={appointment.id}
-                              className="absolute left-0.5 right-0.5 overflow-visible hover:z-[60]"
+                              className="absolute left-0.5 right-0.5 overflow-visible hover:z-60"
                               style={{
                                 top: `${position.top}px`,
                                 height: `${Math.max(position.height - 2, 40)}px`,
@@ -772,6 +768,7 @@ export function WeekCalendar({
           billingCodeAction={contextMenuBillingCodeAction}
           isSupervision={contextMenu.isSupervision}
           parentBillingCodeAction={contextMenu.isSupervision ? contextMenuBillingCodeAction : undefined}
+          canEditAppointment={contextMenuAppointment?.cantEdit !== false}
           onAction={handleMenuAction}
           onClose={actions.closeContextMenu}
         />

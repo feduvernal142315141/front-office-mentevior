@@ -27,6 +27,7 @@ interface AppointmentContextMenuProps {
   billingCodeAction?: "add_supervision" | "add_new_session" | "none"
   isSupervision?: boolean
   parentBillingCodeAction?: "add_supervision" | "add_new_session" | "none"
+  canEditAppointment?: boolean
   onAction: (action: string, appointmentId: string) => void
   onClose: () => void
 }
@@ -63,20 +64,24 @@ function isItemAllowed(item: MenuItem, perms: ModulePermissions): boolean {
   }
 }
 
-function buildSupervisionSections(parentBillingCodeAction?: string): MenuSection[] {
+function buildSupervisionSections(
+  parentBillingCodeAction?: string,
+  canEditAppointment = true,
+): MenuSection[] {
   const isSessionSupervision = parentBillingCodeAction === "add_new_session"
   const deleteLabel = isSessionSupervision ? "Delete Session" : "Delete Supervision"
+  const editItem: MenuItem = {
+    action: isSessionSupervision ? "edit_session_supervision" : "supervision",
+    label: isSessionSupervision ? "Edit Session" : "Edit Supervision",
+    icon: Pencil,
+    requires: "edit",
+  }
 
   return [
     {
       label: "Actions",
       items: [
-        {
-          action: isSessionSupervision ? "edit_session_supervision" : "supervision",
-          label: isSessionSupervision ? "Edit Session" : "Edit Supervision",
-          icon: Pencil,
-          requires: "edit",
-        },
+        ...(canEditAppointment ? [editItem] : []),
         {
           action: "delete_sub_event",
           label: deleteLabel,
@@ -92,6 +97,7 @@ function buildSupervisionSections(parentBillingCodeAction?: string): MenuSection
 function buildSections(
   hasSupervision?: boolean,
   billingCodeAction?: "add_supervision" | "add_new_session" | "none",
+  canEditAppointment = true,
 ): MenuSection[] {
   const actionItems: MenuItem[] = []
 
@@ -137,12 +143,14 @@ function buildSections(
       icon: Copy,
       requires: "create",
     },
-    {
-      action: "edit",
-      label: "Edit Session",
-      icon: Pencil,
-      requires: "edit",
-    },
+    ...(canEditAppointment
+      ? [{
+          action: "edit",
+          label: "Edit Session",
+          icon: Pencil,
+          requires: "edit" as const,
+        }]
+      : []),
     {
       action: "audit",
       label: "Audit Logs",
@@ -182,6 +190,7 @@ export function AppointmentContextMenu({
   billingCodeAction,
   isSupervision,
   parentBillingCodeAction,
+  canEditAppointment = true,
   onAction,
   onClose,
 }: AppointmentContextMenuProps) {
@@ -190,9 +199,9 @@ export function AppointmentContextMenu({
   const SECTIONS = useMemo(
     () =>
       isSupervision
-        ? buildSupervisionSections(parentBillingCodeAction)
-        : buildSections(hasSupervision, billingCodeAction),
-    [isSupervision, parentBillingCodeAction, hasSupervision, billingCodeAction],
+        ? buildSupervisionSections(parentBillingCodeAction, canEditAppointment)
+        : buildSections(hasSupervision, billingCodeAction, canEditAppointment),
+    [isSupervision, parentBillingCodeAction, hasSupervision, billingCodeAction, canEditAppointment],
   )
 
   const menuRef = useRef<HTMLDivElement>(null)

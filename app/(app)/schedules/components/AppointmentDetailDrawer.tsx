@@ -14,7 +14,6 @@ import { Button } from "@/components/custom/Button"
 import {
   CalendarCheck,
   Clock,
-  MapPin,
   FileText,
   Receipt,
   Users,
@@ -138,6 +137,7 @@ export function AppointmentDetailDrawer({
   }
 
   const handleEdit = () => {
+    if (appointment.cantEdit === false) return
     onClose()
     onEdit(appointment)
   }
@@ -274,7 +274,8 @@ export function AppointmentDetailDrawer({
           )}
 
           {/* Edit button */}
-          {(canChangeStatus || appointment.status === "Completed") && (
+          {appointment.cantEdit !== false &&
+            (canChangeStatus || appointment.status === "Completed") && (
             <Button
               variant="secondary"
               onClick={handleEdit}
@@ -317,7 +318,7 @@ function DetailSection({
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-slate-500 min-w-[100px]">{label}</span>
+      <span className="text-sm text-slate-500 min-w-25">{label}</span>
       <span className="text-sm font-medium text-slate-800">{value}</span>
     </div>
   )

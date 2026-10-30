@@ -241,6 +241,7 @@ export function fromApiAppointment(api: ApiAppointmentItem): Appointment {
     timeEnd: api.timeEnd,
     blocked: Boolean(api.blocked),
     notCanEdit: Boolean(api.notCanEdit),
+    cantEdit: api.cantEdit !== false,
     noteStatus: (() => {
       const raw = String((api as unknown as Record<string, unknown>).noteStatus ?? "").toLowerCase()
       if (raw === "active" || raw === "close" || raw === "lock" || raw === "read") return raw

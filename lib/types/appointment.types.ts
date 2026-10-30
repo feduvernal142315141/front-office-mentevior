@@ -115,6 +115,7 @@ export interface ApiAppointmentItem {
   active?: boolean
   blocked?: boolean
   notCanEdit?: boolean
+  cantEdit?: boolean
   supervision?: AppointmentSupervisionApiPayload
 }
 
@@ -208,6 +209,7 @@ export interface Appointment {
   requiresCaregiverSignature?: boolean
   blocked?: boolean
   notCanEdit?: boolean
+  cantEdit?: boolean
   noteStatus?: import("./appointment-note.types").NoteStatus
 }
 

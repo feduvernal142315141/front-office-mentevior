@@ -30,7 +30,6 @@ import { buildFilters } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
 import { getWeekDays, getWeekStart, getMonthStart, getMonthDays, getNextMonth, getPrevMonth } from "@/lib/date"
 import { useAlert } from "@/lib/contexts/alert-context"
-import { matchesLocationFilter } from "@/lib/modules/schedules/utils/schedule-display"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export type CalendarScope = "provider" | "agency"
@@ -144,7 +143,6 @@ export function useWeekCalendar({
     setIsLoading,
     setError,
     setSelectedAppointment,
-    selectedAppointment,
     checkConflict,
     deleteAppointment,
   } = useAppointments()
@@ -387,6 +385,7 @@ export function useWeekCalendar({
   }, [])
 
   const openEditModal = useCallback((appointment: Appointment) => {
+    if (appointment.cantEdit === false) return
     setShowDetailDrawer(false)
     setShowModal(true)
     void loadAppointmentDetails(appointment)
@@ -471,6 +470,7 @@ export function useWeekCalendar({
         void loadAppointmentDetails(appointment)
         break
       case "edit":
+        if (appointment.cantEdit === false) break
         setShowModal(true)
         void loadAppointmentDetails(appointment)
         break
