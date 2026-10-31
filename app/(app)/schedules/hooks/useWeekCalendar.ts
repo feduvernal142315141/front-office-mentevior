@@ -198,10 +198,12 @@ export function useWeekCalendar({
   const appointmentFilters = useMemo(() => {
     const rules = []
 
-    // Provider filter
+    // In provider scope the backend resolves access by the clients related to
+    // the authenticated provider. Sending the provider id here would exclude
+    // appointments of those clients assigned to another provider.
     const effectiveProvider = scope === "agency"
       ? (filterProvider === "all" ? null : filterProvider)
-      : rbtId
+      : null
     if (effectiveProvider) {
       rules.push({
         field: "providerId",
