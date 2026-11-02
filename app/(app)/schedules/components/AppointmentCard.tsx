@@ -32,6 +32,7 @@ interface AppointmentCardProps {
   layout?: CardLayout
   eventColors?: Partial<Record<EventType, string>>
   cardHeight?: number
+  isOwnAppointment?: boolean
   onClick?: () => void
   onOpenMenu?: (x: number, y: number) => void
   onOpenSupervisionMenu?: (x: number, y: number) => void
@@ -44,6 +45,7 @@ export function AppointmentCard({
   layout = "grid",
   eventColors,
   cardHeight = 0,
+  isOwnAppointment = false,
   onClick,
   onOpenMenu,
   onOpenSupervisionMenu,
@@ -56,7 +58,6 @@ export function AppointmentCard({
   const locationLabel = appointment.addressLabel?.trim() || appointment.location
   const hoursAndUnits = formatAppointmentHoursAndUnits(appointment)
   const showPeople = true
-  const isOwnAppointment = viewMode === "client" && appointment.cantEdit === true
   const clientName = appointment.clientName?.trim() || ""
   const hasSupervision = !!appointment.supervision
 
@@ -135,7 +136,7 @@ export function AppointmentCard({
             </p>
             <span
               className={cn(
-                "text-[8px] px-1.5 py-px rounded-full border flex-shrink-0",
+                "text-[8px] px-1.5 py-px rounded-full border shrink-0",
                 "font-medium whitespace-nowrap leading-tight",
                 STATUS_STYLES[appointment.status],
               )}
@@ -186,7 +187,7 @@ export function AppointmentCard({
                 </button>
               )}
               <div className="flex items-center gap-1.5">
-                <div className={cn("h-2 w-2 rounded-full flex-shrink-0", subEventStyles.dot)} />
+                <div className={cn("h-2 w-2 rounded-full shrink-0", subEventStyles.dot)} />
                 <p className={cn("text-[10px] font-bold uppercase tracking-wide", subEventStyles.title)}>
                   {subEventLabel}
                 </p>
@@ -242,16 +243,16 @@ export function AppointmentCard({
       {...attributes}
       {...listeners}
       className={cn(
-        "group/card relative h-full w-full",
+        "group/card relative w-full",
         "bg-white rounded-lg",
         "border-l-[3px] border border-gray-100",
         "shadow-[0_1px_3px_rgba(0,0,0,0.08)]",
         "transition-all duration-200",
         "cursor-pointer overflow-visible",
-        "border-l-[var(--service-color)]",
+        "border-l-(--service-color)",
         "hover:shadow-[0_6px_20px_rgba(0,0,0,0.12)]",
         "hover:border-gray-200",
-        "hover:z-[60]",
+        "hover:z-60",
         isDragging && "opacity-50 shadow-2xl scale-105 z-50",
         isDragOverlay && "shadow-2xl scale-105",
         appointment.status === "Cancelled" && "opacity-60",
@@ -261,7 +262,7 @@ export function AppointmentCard({
       {menuButton}
 
       {/* Card body */}
-      <div className="h-full overflow-hidden px-2.5 pr-7 pt-5 pb-1.5 flex flex-col">
+      <div className="min-h-full overflow-visible px-2.5 pr-7 pt-5 pb-1.5 flex flex-col">
         <div>
           <div className="flex items-center gap-1 mb-0.5">
             <p className="text-[10px] font-medium text-gray-700 truncate">
@@ -269,7 +270,7 @@ export function AppointmentCard({
             </p>
             <span
               className={cn(
-                "text-[8px] px-1 py-px rounded-full border flex-shrink-0",
+                "text-[8px] px-1 py-px rounded-full border shrink-0",
                 "font-medium whitespace-nowrap leading-tight",
                 STATUS_STYLES[appointment.status],
               )}
@@ -312,7 +313,7 @@ export function AppointmentCard({
                 </button>
               )}
               <div className="flex items-center gap-1">
-                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", subEventStyles.dot)} />
+                <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", subEventStyles.dot)} />
                 <p className={cn("text-[9px] font-bold", subEventStyles.title)}>{subEventLabel}</p>
               </div>
               <p className={cn("text-[9px] truncate", subEventStyles.textMuted)}>

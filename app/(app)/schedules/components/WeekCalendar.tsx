@@ -453,6 +453,7 @@ export function WeekCalendar({
                           viewMode={calendarViewMode}
                           layout="list"
                           eventColors={eventColors}
+                          isOwnAppointment={calendarViewMode === "client" && appointment.rbtId === rbtId}
                           onClick={() => actions.openEditModal(appointment)}
                           onOpenMenu={(x, y) => actions.openMenuAt(x, y, appointment.id)}
                           onOpenSupervisionMenu={(x, y) => actions.openSupervisionMenuAt(x, y, appointment.id)}
@@ -567,6 +568,7 @@ export function WeekCalendar({
                                 viewMode={calendarViewMode}
                                 eventColors={eventColors}
                                 cardHeight={Math.max(position.height - 2, 40)}
+                                isOwnAppointment={calendarViewMode === "client" && appointment.rbtId === rbtId}
                                 onClick={() => actions.openEditModal(appointment)}
                                 onOpenMenu={(x, y) => actions.openMenuAt(x, y, appointment.id)}
                                 onOpenSupervisionMenu={(x, y) => actions.openSupervisionMenuAt(x, y, appointment.id)}
@@ -704,6 +706,7 @@ export function WeekCalendar({
                   appointment={activeAppointment}
                   viewMode={calendarViewMode}
                   eventColors={eventColors}
+                  isOwnAppointment={calendarViewMode === "client" && activeAppointment.rbtId === rbtId}
                   isDragOverlay
                 />
               </div>
