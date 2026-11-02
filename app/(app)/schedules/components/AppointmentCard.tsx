@@ -55,7 +55,8 @@ export function AppointmentCard({
   const billingCode = getAppointmentBillingCodeLabel(appointment)
   const locationLabel = appointment.addressLabel?.trim() || appointment.location
   const hoursAndUnits = formatAppointmentHoursAndUnits(appointment)
-  const showPeople = viewMode === "general"
+  const showPeople = true
+  const isOwnAppointment = viewMode === "client" && appointment.cantEdit === true
   const clientName = appointment.clientName?.trim() || ""
   const hasSupervision = !!appointment.supervision
 
@@ -141,6 +142,11 @@ export function AppointmentCard({
             >
               {appointment.status}
             </span>
+            {isOwnAppointment && (
+              <span className="text-[8px] px-1 py-px rounded-full border border-[#037ECC]/30 bg-[#037ECC]/10 text-[#037ECC] font-semibold whitespace-nowrap leading-tight">
+                Mine
+              </span>
+            )}
           </div>
 
           {/* Row 2: Event type */}
