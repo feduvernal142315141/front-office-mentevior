@@ -6,8 +6,6 @@ import {
   ASSESSMENT_PDF_FLAG_KEYS,
   ASSESSMENT_PDF_TEXT_KEYS,
   type AssessmentDraft,
-  type AssessmentClientDataChange,
-  type AssessmentServicePlanChange,
   type AssessmentPdfFlags,
   type AssessmentPdfTexts,
   type ClientCategoryItemSummary,
@@ -160,24 +158,6 @@ export async function getAssessmentDataByClient(
     contactIformation: str(p.contactIformation) || str(p.contactInformation),
   }))
 
-  const servicePlanChanges: AssessmentServicePlanChange[] = arr(raw.servicePlanChanges).map((change) => ({
-    changeType: str(change.changeType),
-    field: str(change.field),
-    categoryId: str(change.categoryId),
-    categoryName: str(change.categoryName),
-    itemId: str(change.itemId),
-    itemName: str(change.itemName),
-    historicalValue: str(change.historicalValue),
-    currentValue: str(change.currentValue),
-  }))
-
-  const clientDataChanges: AssessmentClientDataChange[] = arr(raw.clientDataChanges).map((change) => ({
-    entity: str(change.entity),
-    field: str(change.field),
-    historicalValue: str(change.historicalValue),
-    currentValue: str(change.currentValue),
-  }))
-
   const housingMembers = arr(raw.housingMembers)
   const assessmentConductedList = arr(raw.assessmentConductedList)
 
@@ -254,8 +234,6 @@ export async function getAssessmentDataByClient(
       consequence: str(a.consequence),
     })),
     providerFiles,
-    servicePlanChanges,
-    clientDataChanges,
     pdfTexts: normalizeDraftPdfTexts(raw),
     pdfFlags: normalizeDraftPdfFlags(raw),
   }
@@ -318,8 +296,6 @@ function emptyDraftForClient(clientId: string, categories: ClientCategoryWithIte
     proposedSchedule: [],
     abcData: [],
     providerFiles: [],
-    servicePlanChanges: [],
-    clientDataChanges: [],
     pdfTexts: { ...ASSESSMENT_PDF_DEFAULT_TEXTS },
     pdfFlags,
   }

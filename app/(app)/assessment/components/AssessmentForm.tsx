@@ -11,7 +11,6 @@ import {
   History,
   ClipboardList,
   Contact,
-  Eye,
   FileDown,
   GraduationCap,
   Home,
@@ -68,7 +67,6 @@ import { AbcDataSection } from "./sections/AbcDataSection"
 import { BillingCodesSection } from "./sections/BillingCodesSection"
 import { CategoryItemsSection } from "./sections/CategoryItemsSection"
 import { MedicationsSection } from "./sections/MedicationsSection"
-import { ObservationsSection } from "./sections/ObservationsSection"
 import { PdfNarrativesSections } from "./sections/PdfNarrativesSections"
 import { PdfSectionsVisibility } from "./sections/PdfSectionsVisibility"
 import { ProposedScheduleSection } from "./sections/ProposedScheduleSection"
@@ -337,43 +335,6 @@ export function AssessmentForm({
                 {" · "}prefilled from active service plan, providers and prior authorization.
               </p>
             )}
-            {draftReady && (clientDraft?.servicePlanChanges.length ?? 0) > 0 && (
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
-                <p className="font-semibold">Service plan changes since the last Assessment</p>
-                <ul className="mt-2 space-y-1">
-                  {clientDraft?.servicePlanChanges.map((change, index) => (
-                    <li key={`${change.changeType}-${change.categoryId}-${change.itemId}-${index}`}>
-                      <span className="font-medium">
-                        {change.changeType === "CATEGORY_ADDED" && "Added category"}
-                        {change.changeType === "CATEGORY_REMOVED" && "Removed category"}
-                        {change.changeType === "ITEM_ADDED" && "Added item"}
-                        {change.changeType === "ITEM_REMOVED" && "Removed item"}
-                        {change.changeType === "ITEM_UPDATED" && `Updated ${change.field}`}
-                      </span>
-                      {": "}{change.itemName || change.categoryName}
-                      {change.changeType === "ITEM_UPDATED" && (
-                        <span className="ml-1">
-                          ({change.historicalValue || "empty"} → {change.currentValue || "empty"})
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {draftReady && (clientDraft?.clientDataChanges.length ?? 0) > 0 && (
-              <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-950">
-                <p className="font-semibold">Client profile changes since the last Assessment</p>
-                <ul className="mt-2 space-y-1">
-                  {clientDraft?.clientDataChanges.map((change, index) => (
-                    <li key={`${change.entity}-${change.field}-${index}`}>
-                      <span className="font-medium">{change.entity} · {change.field}</span>
-                      {": "}{change.historicalValue || "empty"} → {change.currentValue || "empty"}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         </div>
       </Section>
@@ -507,7 +468,7 @@ export function AssessmentForm({
             existe, así que no se anuncia nada: pedido F9.2a, 2026-09-05. Cuando
             backend entregue B4 esto pasa a ser un campo editable. */}
         {isEditing && (
-          <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#037ECC]/20 bg-[#037ECC]/[0.04] px-4 py-3">
+          <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#037ECC]/20 bg-[#037ECC]/4 px-4 py-3">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#037ECC]" />
             <p className="text-sm text-slate-600">
               Primary diagnosis (snapshot):{" "}
@@ -595,8 +556,8 @@ export function AssessmentForm({
                 key={option.id}
                 className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-all ${
                   checked
-                    ? "border-[#037ECC] bg-[#037ECC]/[0.06]"
-                    : "border-slate-200 bg-white hover:border-[#037ECC]/30 hover:bg-[#037ECC]/[0.02]"
+                    ? "border-[#037ECC] bg-[#037ECC]/6"
+                    : "border-slate-200 bg-white hover:border-[#037ECC]/30 hover:bg-[#037ECC]/2"
                 }`}
               >
                 <Checkbox
@@ -924,7 +885,7 @@ function AssessmentStatusBanner({
   const Icon = BANNER_ICONS[statusInfo.status]
 
   return (
-    <div className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl border transition-all duration-300 ease-out bg-gradient-to-r ${colors.border} ${colors.bg} ${colors.shadow}`}>
+    <div className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl border transition-all duration-300 ease-out bg-linear-to-r ${colors.border} ${colors.bg} ${colors.shadow}`}>
       <div className={`flex items-center justify-center h-10 w-10 rounded-xl shrink-0 border ${colors.iconBg}`}>
         <Icon className={`h-4 w-4 ${colors.title}`} />
       </div>

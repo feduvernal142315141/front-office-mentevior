@@ -142,29 +142,10 @@ export interface AssessmentDraft {
   proposedSchedule: AssessmentProposedScheduleInput[]
   abcData: AssessmentAbcInput[]
   providerFiles: AssessmentProviderFileInput[]
-  servicePlanChanges: AssessmentServicePlanChange[]
-  clientDataChanges: AssessmentClientDataChange[]
   pdfTexts: AssessmentPdfTexts
   pdfFlags: AssessmentPdfFlags
 }
 
-export interface AssessmentServicePlanChange {
-  changeType: "CATEGORY_ADDED" | "CATEGORY_REMOVED" | "ITEM_ADDED" | "ITEM_REMOVED" | "ITEM_UPDATED" | string
-  field: string
-  categoryId: string
-  categoryName: string
-  itemId: string
-  itemName: string
-  historicalValue: string
-  currentValue: string
-}
-
-export interface AssessmentClientDataChange {
-  entity: string
-  field: string
-  historicalValue: string
-  currentValue: string
-}
 
 export interface AssessmentMedicationInput {
   name: string
