@@ -1,14 +1,17 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { ArrowLeft, ClipboardCheck } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AssessmentForm } from "../components/AssessmentForm"
 import { useRequirePermission } from "@/lib/hooks/use-require-permission"
 import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
+import type { AssessmentType } from "@/lib/types/assessment.types"
 
 export default function CreateAssessmentPage() {
   const router = useRouter()
+  const [assessmentType, setAssessmentType] = useState<AssessmentType>("INITIAL_ASSESSMENT")
   const canCreate = useRequirePermission(PermissionModule.ASSESSMENT, PermissionAction.CREATE)
 
   if (!canCreate) {
@@ -39,7 +42,10 @@ export default function CreateAssessmentPage() {
           </div>
         </div>
 
-        <AssessmentForm />
+        <AssessmentForm
+          assessmentType={assessmentType}
+          onAssessmentTypeChange={setAssessmentType}
+        />
       </div>
     </div>
   )

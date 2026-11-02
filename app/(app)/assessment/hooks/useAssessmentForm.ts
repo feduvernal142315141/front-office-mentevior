@@ -9,6 +9,7 @@ import {
   type AssessmentPdfTextKey,
   type AssessmentPdfTexts,
   type AssessmentPdfTextsPayload,
+  type AssessmentType,
 } from "@/lib/types/assessment.types"
 import type {
   AssessmentAbcInput,
@@ -383,9 +384,10 @@ function isInvalidNonNegative(value: string): boolean {
 interface UseAssessmentFormProps {
   /** Presente al editar un assessment existente */
   assessmentId?: string
+  assessmentType?: AssessmentType
 }
 
-export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
+export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSESSMENT" }: UseAssessmentFormProps) {
   const isEditing = !!assessmentId
 
   const { assessment, isLoading: detailLoading, error: detailError, refetch: refetchAssessment } =
@@ -406,9 +408,10 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
   const {
     draft: clientDraft,
+    loadedAssessmentType,
     categories,
     isLoading: categoriesLoading,
-  } = useAssessmentDataByClient(formData.clientId || null)
+  } = useAssessmentDataByClient(formData.clientId || null, assessmentType)
   // Método de colección por item: decide si se muestran los campos de intensidad
   const { methodByItemId: collectionMethodByItemId, isLoading: collectionMethodsLoading } =
     useClientItemCollectionMethods(formData.clientId || null, categories)
@@ -461,14 +464,22 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
     setFormData((prev) => (prev.clientId ? prev : { ...prev, clientId: clients[0].id }))
   }, [clients, isEditing])
 
+  useEffect(() => {
+    if (isEditing) return
+    hydratedDraftClientIdRef.current = null
+    setFormData((prev) => ({ ...EMPTY_FORM, clientId: prev.clientId }))
+  }, [assessmentType, isEditing])
+
   // Create: hidratar desde assessment-data al elegir cliente (alineado al auto-create 97151)
   useEffect(() => {
     if (isEditing || !clientDraft || !formData.clientId) return
+    if (loadedAssessmentType !== assessmentType) return
     if (clientDraft.clientId && clientDraft.clientId !== formData.clientId) return
-    if (hydratedDraftClientIdRef.current === formData.clientId) return
-    hydratedDraftClientIdRef.current = formData.clientId
+    const draftKey = `${assessmentType}:${formData.clientId}`
+    if (hydratedDraftClientIdRef.current === draftKey) return
+    hydratedDraftClientIdRef.current = draftKey
     setFormData((prev) => applyAssessmentDraft(prev, clientDraft))
-  }, [clientDraft, formData.clientId, isEditing])
+  }, [assessmentType, clientDraft, formData.clientId, isEditing, loadedAssessmentType])
 
   // Precarga al editar
   useEffect(() => {
@@ -904,6 +915,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
     return {
       clientId: formData.clientId,
+      assessmentType,
       schoolName: formData.schoolName.trim(),
       timeInit: formData.timeInit ? `${formData.timeInit}:00` : null,
       timeEnd: formData.timeEnd ? `${formData.timeEnd}:00` : null,
@@ -1029,6 +1041,7 @@ export function useAssessmentForm({ assessmentId }: UseAssessmentFormProps) {
 
   return {
     formData,
+    assessmentType,
     updateField,
     errors,
     isEditing,

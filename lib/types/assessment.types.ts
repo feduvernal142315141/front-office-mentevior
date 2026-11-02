@@ -20,6 +20,7 @@ export type { HypothesizedFunction }
 
 /** Effective assessment lifecycle status from GET list/detail */
 export type AssessmentStatus = "read" | "active" | "close" | "lock"
+export type AssessmentType = "INITIAL_ASSESSMENT" | "RE_ASSESSMENT"
 
 export type HousingType = "HOME" | "FOSTER_HOME" | "PPEC"
 /**
@@ -91,7 +92,7 @@ export interface ClientCategoryItemSummary {
 export interface AssessmentDraft {
   clientId: string
   clientName: string
-  assessmentType: string
+  assessmentType: AssessmentType | string
   schoolName: string
   timeInit: string
   timeEnd: string
@@ -141,8 +142,28 @@ export interface AssessmentDraft {
   proposedSchedule: AssessmentProposedScheduleInput[]
   abcData: AssessmentAbcInput[]
   providerFiles: AssessmentProviderFileInput[]
+  servicePlanChanges: AssessmentServicePlanChange[]
+  clientDataChanges: AssessmentClientDataChange[]
   pdfTexts: AssessmentPdfTexts
   pdfFlags: AssessmentPdfFlags
+}
+
+export interface AssessmentServicePlanChange {
+  changeType: "CATEGORY_ADDED" | "CATEGORY_REMOVED" | "ITEM_ADDED" | "ITEM_REMOVED" | "ITEM_UPDATED" | string
+  field: string
+  categoryId: string
+  categoryName: string
+  itemId: string
+  itemName: string
+  historicalValue: string
+  currentValue: string
+}
+
+export interface AssessmentClientDataChange {
+  entity: string
+  field: string
+  historicalValue: string
+  currentValue: string
 }
 
 export interface AssessmentMedicationInput {
@@ -328,6 +349,7 @@ export interface AssessmentBackgroundFields {
  */
 export interface SaveAssessmentDto extends AssessmentBackgroundFields, AssessmentPdfTextsPayload, AssessmentPdfFlags {
   clientId: string
+  assessmentType: AssessmentType
   schoolName: string
   /** HH:mm:ss, o null si no se capturó */
   timeInit: string | null

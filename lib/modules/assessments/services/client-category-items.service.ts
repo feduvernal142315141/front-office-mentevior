@@ -6,6 +6,8 @@ import {
   ASSESSMENT_PDF_FLAG_KEYS,
   ASSESSMENT_PDF_TEXT_KEYS,
   type AssessmentDraft,
+  type AssessmentClientDataChange,
+  type AssessmentServicePlanChange,
   type AssessmentPdfFlags,
   type AssessmentPdfTexts,
   type ClientCategoryItemSummary,
@@ -111,9 +113,13 @@ function normalizeDraftPdfFlags(raw: Record<string, unknown>): AssessmentPdfFlag
  * activo + providers + PA vigente). Sin Assessment persistido: IDs de snapshot
  * en null; IDs fuente en categories/providers/billing.
  */
-export async function getAssessmentDataByClient(clientId: string): Promise<AssessmentDraft> {
+export async function getAssessmentDataByClient(
+  clientId: string,
+  assessmentType: "INITIAL_ASSESSMENT" | "RE_ASSESSMENT" = "INITIAL_ASSESSMENT",
+): Promise<AssessmentDraft> {
+  const query = assessmentType === "RE_ASSESSMENT" ? "?assessmentType=RE_ASSESSMENT" : ""
   const response = await serviceGet<unknown>(
-    `/client-service-plan/client/${clientId}/assessment-data`,
+    `/client-service-plan/client/${clientId}/assessment-data${query}`,
   )
 
   if (response.status !== 200 || !response.data) {
@@ -152,6 +158,24 @@ export async function getAssessmentDataByClient(clientId: string): Promise<Asses
     type: str(p.type),
     name: str(p.name),
     contactIformation: str(p.contactIformation) || str(p.contactInformation),
+  }))
+
+  const servicePlanChanges: AssessmentServicePlanChange[] = arr(raw.servicePlanChanges).map((change) => ({
+    changeType: str(change.changeType),
+    field: str(change.field),
+    categoryId: str(change.categoryId),
+    categoryName: str(change.categoryName),
+    itemId: str(change.itemId),
+    itemName: str(change.itemName),
+    historicalValue: str(change.historicalValue),
+    currentValue: str(change.currentValue),
+  }))
+
+  const clientDataChanges: AssessmentClientDataChange[] = arr(raw.clientDataChanges).map((change) => ({
+    entity: str(change.entity),
+    field: str(change.field),
+    historicalValue: str(change.historicalValue),
+    currentValue: str(change.currentValue),
   }))
 
   const housingMembers = arr(raw.housingMembers)
@@ -230,6 +254,8 @@ export async function getAssessmentDataByClient(clientId: string): Promise<Asses
       consequence: str(a.consequence),
     })),
     providerFiles,
+    servicePlanChanges,
+    clientDataChanges,
     pdfTexts: normalizeDraftPdfTexts(raw),
     pdfFlags: normalizeDraftPdfFlags(raw),
   }
@@ -292,6 +318,8 @@ function emptyDraftForClient(clientId: string, categories: ClientCategoryWithIte
     proposedSchedule: [],
     abcData: [],
     providerFiles: [],
+    servicePlanChanges: [],
+    clientDataChanges: [],
     pdfTexts: { ...ASSESSMENT_PDF_DEFAULT_TEXTS },
     pdfFlags,
   }

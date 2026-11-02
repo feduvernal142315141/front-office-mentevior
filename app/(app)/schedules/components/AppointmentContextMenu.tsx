@@ -41,6 +41,7 @@ interface MenuItem {
   danger?: boolean
   hideForStatus?: AppointmentStatus[]
   requires?: PermissionLevel
+  requiresEditableAppointment?: boolean
 }
 
 interface MenuSection {
@@ -48,7 +49,12 @@ interface MenuSection {
   items: MenuItem[]
 }
 
-function isItemAllowed(item: MenuItem, perms: ModulePermissions): boolean {
+function isItemAllowed(
+  item: MenuItem,
+  perms: ModulePermissions,
+  canEditAppointment: boolean,
+): boolean {
+  if (item.requiresEditableAppointment && !canEditAppointment) return false
   if (!item.requires) return true
   switch (item.requires) {
     case "create":
@@ -88,6 +94,7 @@ function buildSupervisionSections(
           icon: Trash2,
           danger: true,
           requires: "delete",
+          requiresEditableAppointment: true,
         },
       ],
     },
@@ -136,12 +143,14 @@ function buildSections(
       icon: Trash2,
       danger: true,
       requires: "delete",
+      requiresEditableAppointment: true,
     },
     {
       action: "duplicate",
       label: "Duplicate Session",
       icon: Copy,
       requires: "create",
+      requiresEditableAppointment: true,
     },
     ...(canEditAppointment
       ? [{
@@ -174,8 +183,20 @@ function buildSections(
     {
       label: "Navigate",
       items: [
-        { action: "data_collection", label: "Data Collection", icon: BarChart3, requires: "view" },
-        { action: "session_note", label: "Session Note", icon: FileText, requires: "view" },
+        {
+          action: "data_collection",
+          label: "Data Collection",
+          icon: BarChart3,
+          requires: "view",
+          requiresEditableAppointment: true,
+        },
+        {
+          action: "session_note",
+          label: "Session Note",
+          icon: FileText,
+          requires: "view",
+          requiresEditableAppointment: true,
+        },
       ],
     },
   ]
@@ -247,7 +268,7 @@ export function AppointmentContextMenu({
       {SECTIONS.map((section, sIndex) => {
         const visibleItems = section.items.filter(
           (item) =>
-            isItemAllowed(item, perms) &&
+            isItemAllowed(item, perms, canEditAppointment) &&
             (!item.hideForStatus ||
               !appointmentStatus ||
               !item.hideForStatus.includes(appointmentStatus)),

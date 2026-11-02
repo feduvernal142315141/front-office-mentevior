@@ -74,6 +74,7 @@ import { PdfSectionsVisibility } from "./sections/PdfSectionsVisibility"
 import { ProposedScheduleSection } from "./sections/ProposedScheduleSection"
 import { ProviderFilesSection } from "./sections/ProviderFilesSection"
 import { SectionPdfToggle } from "./sections/SectionPdfToggle"
+import type { AssessmentType } from "@/lib/types/assessment.types"
 
 /** El contrato persiste el valor como String; el PDF muestra Yes/No */
 const PREVIOUS_ABA_THERAPY_OPTIONS = [
@@ -94,13 +95,19 @@ function boolToYesNo(value: boolean): string {
 interface AssessmentFormProps {
   /** Presente al editar un assessment existente */
   assessmentId?: string
+  assessmentType?: AssessmentType
+  onAssessmentTypeChange?: (value: AssessmentType) => void
 }
 
 /**
  * Sólo `clientId` es requerido (confirmado por backend 2026-08-17); el resto de
  * las validaciones son por fila y viven en `useAssessmentForm.validate`.
  */
-export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
+export function AssessmentForm({
+  assessmentId,
+  assessmentType = "INITIAL_ASSESSMENT",
+  onAssessmentTypeChange,
+}: AssessmentFormProps) {
   const router = useRouter()
   const alert = useAlert()
   const { user } = useAuth()
@@ -159,7 +166,7 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
     updatePdfFlag,
     handleSubmit,
     isSaving,
-  } = useAssessmentForm({ assessmentId })
+  } = useAssessmentForm({ assessmentId, assessmentType })
 
   const canPersist = isEditing ? edit(PermissionModule.ASSESSMENT) : create(PermissionModule.ASSESSMENT)
 
@@ -290,6 +297,20 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
       {/* ─── Client ─── */}
       <Section icon={<User className="h-4 w-4" />} title="Client" subtitle="Who this assessment is for">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {!isEditing && (
+            <div>
+              <FloatingSelect
+                label="Evaluation type"
+                value={assessmentType}
+                onChange={(value) => onAssessmentTypeChange?.(value as AssessmentType)}
+                options={[
+                  { value: "INITIAL_ASSESSMENT", label: "Assessment" },
+                  { value: "RE_ASSESSMENT", label: "Reassessment" },
+                ]}
+                disabled={fieldsDisabled}
+              />
+            </div>
+          )}
           <div data-field="clientId">
             <FloatingSelect
               label="Client"
@@ -315,6 +336,43 @@ export function AssessmentForm({ assessmentId }: AssessmentFormProps) {
                 Draft type: <span className="font-medium text-slate-700">{clientDraft.assessmentType}</span>
                 {" · "}prefilled from active service plan, providers and prior authorization.
               </p>
+            )}
+            {draftReady && (clientDraft?.servicePlanChanges.length ?? 0) > 0 && (
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+                <p className="font-semibold">Service plan changes since the last Assessment</p>
+                <ul className="mt-2 space-y-1">
+                  {clientDraft?.servicePlanChanges.map((change, index) => (
+                    <li key={`${change.changeType}-${change.categoryId}-${change.itemId}-${index}`}>
+                      <span className="font-medium">
+                        {change.changeType === "CATEGORY_ADDED" && "Added category"}
+                        {change.changeType === "CATEGORY_REMOVED" && "Removed category"}
+                        {change.changeType === "ITEM_ADDED" && "Added item"}
+                        {change.changeType === "ITEM_REMOVED" && "Removed item"}
+                        {change.changeType === "ITEM_UPDATED" && `Updated ${change.field}`}
+                      </span>
+                      {": "}{change.itemName || change.categoryName}
+                      {change.changeType === "ITEM_UPDATED" && (
+                        <span className="ml-1">
+                          ({change.historicalValue || "empty"} → {change.currentValue || "empty"})
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {draftReady && (clientDraft?.clientDataChanges.length ?? 0) > 0 && (
+              <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-950">
+                <p className="font-semibold">Client profile changes since the last Assessment</p>
+                <ul className="mt-2 space-y-1">
+                  {clientDraft?.clientDataChanges.map((change, index) => (
+                    <li key={`${change.entity}-${change.field}-${index}`}>
+                      <span className="font-medium">{change.entity} · {change.field}</span>
+                      {": "}{change.historicalValue || "empty"} → {change.currentValue || "empty"}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </div>

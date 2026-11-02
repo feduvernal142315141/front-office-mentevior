@@ -146,6 +146,22 @@ export function WeekCalendar({
         (apt) => apt.id === appointmentId,
       )
 
+      if (
+        appointment?.cantEdit === false &&
+        [
+          "delete",
+          "delete_sub_event",
+          "duplicate",
+          "data_collection",
+          "session_note",
+          "sup_data_collection",
+          "sup_session_note",
+        ].includes(action)
+      ) {
+        actions.closeContextMenu()
+        return
+      }
+
       if ((action === "session_note" || action === "sup_session_note") && appointment) {
         router.push(buildSessionNoteUrl(appointment))
         actions.closeContextMenu()
