@@ -10,13 +10,14 @@ import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/custom/Button"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
+import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { Calendar, Clock, MapPin, Briefcase } from "lucide-react"
 import type { Appointment, DuplicateAppointmentApiPayload } from "@/lib/types/appointment.types"
 import { getEventTypeLabel, toApiTime } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAlert } from "@/lib/contexts/alert-context"
-import { format, parseISO, setHours, setMinutes, differenceInMinutes, addMinutes } from "date-fns"
+import { format, parseISO, differenceInMinutes } from "date-fns"
 import { cn } from "@/lib/utils"
 
 
@@ -42,7 +43,8 @@ export function DuplicateAppointmentModal({
 
   const [newDate, setNewDate] = useState("")
   const [keepSameTime, setKeepSameTime] = useState(true)
-  const [newTime, setNewTime] = useState("")
+  const [newStartTime, setNewStartTime] = useState("")
+  const [newEndTime, setNewEndTime] = useState("")
   const [dateError, setDateError] = useState("")
 
   if (!appointment) return null
@@ -59,36 +61,33 @@ export function DuplicateAppointmentModal({
       return
     }
 
-    const timeToUse = keepSameTime ? format(originalStart, "HH:mm") : newTime
+    const startTime = keepSameTime ? format(originalStart, "HH:mm") : newStartTime
+    const endTime = keepSameTime
+      ? format(parseISO(appointment.endsAt), "HH:mm")
+      : newEndTime
 
-    if (!timeToUse) {
-      setDateError("Please enter a time for the session")
+    if (!startTime || !endTime) {
+      setDateError("Please select a start and end time for the session")
       return
     }
 
-    const [hours, minutes] = timeToUse.split(":").map(Number)
-    const duration = differenceInMinutes(
-      parseISO(appointment.endsAt),
-      originalStart
-    )
+    const startsAt = new Date(`${newDate}T${startTime}:00`).toISOString()
+    const endsAt = new Date(`${newDate}T${endTime}:00`).toISOString()
 
-    const startsAt = setMinutes(
-      setHours(parseISO(newDate), hours),
-      minutes
-    ).toISOString()
-    const endsAt = addMinutes(parseISO(startsAt), duration).toISOString()
+    if (differenceInMinutes(new Date(endsAt), new Date(startsAt)) <= 0) {
+      setDateError("End time must be after start time")
+      return
+    }
 
     if (checkConflict(rbtId, startsAt, endsAt)) {
       alert.error("Schedule Conflict", "There's already a session at this time")
       return
     }
 
-    const endTime = format(parseISO(endsAt), "HH:mm")
-
     const payload: DuplicateAppointmentApiPayload = {
       sourceAppointmentId: appointment.id,
       date: newDate,
-      timeInit: toApiTime(timeToUse),
+      timeInit: toApiTime(startTime),
       timeEnd: toApiTime(endTime),
     }
 
@@ -97,7 +96,8 @@ export function DuplicateAppointmentModal({
     if (createdId) {
       setNewDate("")
       setKeepSameTime(true)
-      setNewTime("")
+      setNewStartTime("")
+      setNewEndTime("")
       onDuplicated?.()
       onClose()
     }
@@ -196,20 +196,23 @@ export function DuplicateAppointmentModal({
             </div>
 
             {!keepSameTime && (
-              <div className="ml-7">
-                <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                  New Time
-                </label>
-                <input
-                  type="time"
-                  className={cn(
-                    "w-full h-11 px-4 rounded-xl",
-                    "border border-gray-200 bg-white",
-                    "text-sm text-gray-900",
-                    "focus:outline-none focus:ring-2 focus:ring-[#037ECC]/20 focus:border-[#037ECC]",
-                  )}
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
+              <div className="ml-7 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FloatingTimePicker
+                  label="Start Time"
+                  value={newStartTime}
+                  onChange={(value) => setNewStartTime(value)}
+                  hasError={!!dateError}
+                  required
+                  allowManualInput
+                />
+                <FloatingTimePicker
+                  label="End Time"
+                  value={newEndTime}
+                  onChange={(value) => setNewEndTime(value)}
+                  hasError={!!dateError}
+                  required
+                  allowManualInput
+                  defaultPeriod="PM"
                 />
               </div>
             )}
