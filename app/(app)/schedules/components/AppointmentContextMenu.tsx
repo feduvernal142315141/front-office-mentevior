@@ -41,7 +41,6 @@ interface MenuItem {
   danger?: boolean
   hideForStatus?: AppointmentStatus[]
   requires?: PermissionLevel
-  requiresEditableAppointment?: boolean
   disabledWhenAppointmentNotEditable?: boolean
 }
 
@@ -55,7 +54,6 @@ function isItemAllowed(
   perms: ModulePermissions,
   canEditAppointment: boolean,
 ): boolean {
-  if (item.requiresEditableAppointment && !canEditAppointment) return false
   if (!item.requires) return true
   switch (item.requires) {
     case "create":
@@ -82,20 +80,21 @@ function buildSupervisionSections(
     label: isSessionSupervision ? "Edit Session" : "Edit Supervision",
     icon: Pencil,
     requires: "edit",
+    disabledWhenAppointmentNotEditable: true,
   }
 
   return [
     {
       label: "Actions",
       items: [
-        ...(canEditAppointment ? [editItem] : []),
+        editItem,
         {
           action: "delete_sub_event",
           label: deleteLabel,
           icon: Trash2,
           danger: true,
           requires: "edit",
-          requiresEditableAppointment: true,
+          disabledWhenAppointmentNotEditable: true,
         },
       ],
     },
@@ -116,7 +115,7 @@ function buildSections(
         label: "Add New Session",
         icon: Users,
         requires: "create",
-          disabledWhenAppointmentNotEditable: true,
+        disabledWhenAppointmentNotEditable: true,
       })
     }
 
@@ -126,6 +125,7 @@ function buildSections(
         label: "Add Supervision",
         icon: Users,
         requires: "create",
+        disabledWhenAppointmentNotEditable: true,
       })
     }
   }
@@ -138,6 +138,7 @@ function buildSections(
       danger: true,
       hideForStatus: ["Completed", "Cancelled", "NoShow"],
       requires: "edit",
+      disabledWhenAppointmentNotEditable: true,
     },
     {
       action: "delete",
@@ -145,28 +146,28 @@ function buildSections(
       icon: Trash2,
       danger: true,
       requires: "edit",
-      requiresEditableAppointment: true,
+      disabledWhenAppointmentNotEditable: true,
     },
     {
       action: "duplicate",
       label: "Duplicate Session",
       icon: Copy,
       requires: "create",
-      requiresEditableAppointment: true,
+      disabledWhenAppointmentNotEditable: true,
     },
-    ...(canEditAppointment
-      ? [{
-          action: "edit",
-          label: "Edit Session",
-          icon: Pencil,
-          requires: "edit" as const,
-        }]
-      : []),
+    {
+      action: "edit",
+      label: "Edit Session",
+      icon: Pencil,
+      requires: "edit",
+      disabledWhenAppointmentNotEditable: true,
+    },
     {
       action: "audit",
       label: "Audit Logs",
       icon: ClipboardPenLine,
       requires: "view",
+      disabledWhenAppointmentNotEditable: true,
     },
     {
       action: "noshow",
@@ -174,6 +175,7 @@ function buildSections(
       icon: UserX,
       hideForStatus: ["Completed", "Cancelled", "NoShow"],
       requires: "edit",
+      disabledWhenAppointmentNotEditable: true,
     },
   )
 
@@ -190,14 +192,14 @@ function buildSections(
           label: "Data Collection",
           icon: BarChart3,
           requires: "view",
-          requiresEditableAppointment: true,
+          disabledWhenAppointmentNotEditable: true,
         },
         {
           action: "session_note",
           label: "Session Note",
           icon: FileText,
           requires: "view",
-          requiresEditableAppointment: true,
+          disabledWhenAppointmentNotEditable: true,
         },
       ],
     },
