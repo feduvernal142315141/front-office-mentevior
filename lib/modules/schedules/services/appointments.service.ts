@@ -6,13 +6,11 @@ import type {
   ApiAppointmentItem,
   Appointment,
   AppointmentApiPayload,
-  AppointmentListQuery,
+  DuplicateAppointmentApiPayload,
   AppointmentStatus,
 } from "@/lib/types/appointment.types"
 import type { Client } from "@/lib/types/client.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
-import type { QueryModel } from "@/lib/models/queryModel"
-import { getQueryString } from "@/lib/utils/format"
 import { fromApiAppointment } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 
 function formatClientName(client: Client): string {
@@ -194,6 +192,24 @@ export async function createAppointment(payload: AppointmentApiPayload): Promise
   }
 
   throw new Error("Invalid response from appointment create")
+}
+
+/** Duplicate an existing appointment via the dedicated duplicate command. */
+export async function duplicateAppointment(payload: DuplicateAppointmentApiPayload): Promise<string> {
+  const response = await servicePost<DuplicateAppointmentApiPayload, string>("/appointment/duplicate", payload)
+
+  if (response.status !== 200 && response.status !== 201) {
+    throw new Error(getApiErrorMessage(response?.data, "Failed to duplicate appointment"))
+  }
+
+  const data = response.data as unknown
+  if (typeof data === "string") return data
+  if (data && typeof data === "object" && "data" in (data as object)) {
+    const inner = (data as { data?: unknown }).data
+    if (typeof inner === "string") return inner
+  }
+
+  throw new Error("Invalid response from appointment duplicate")
 }
 
 /**

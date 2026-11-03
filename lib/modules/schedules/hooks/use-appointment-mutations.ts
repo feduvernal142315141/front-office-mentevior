@@ -2,15 +2,17 @@
 
 import { useState, useCallback } from "react"
 import { toast } from "@/lib/compat/sonner"
-import type { AppointmentApiPayload } from "@/lib/types/appointment.types"
+import type { AppointmentApiPayload, DuplicateAppointmentApiPayload } from "@/lib/types/appointment.types"
 import {
   createAppointment as createAppointmentService,
+  duplicateAppointment as duplicateAppointmentService,
   updateAppointmentApi,
   deleteAppointmentService,
 } from "../services/appointments.service"
 
 interface UseAppointmentMutationsReturn {
   create: (payload: AppointmentApiPayload) => Promise<string | null>
+  duplicate: (payload: DuplicateAppointmentApiPayload) => Promise<string | null>
   update: (payload: AppointmentApiPayload & { id: string }) => Promise<string | null>
   remove: (id: string) => Promise<boolean>
   isLoading: boolean
@@ -27,6 +29,21 @@ export function useAppointmentMutations(): UseAppointmentMutationsReturn {
       return id
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create appointment"
+      toast.error(message)
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const duplicate = useCallback(async (payload: DuplicateAppointmentApiPayload) => {
+    try {
+      setIsLoading(true)
+      const id = await duplicateAppointmentService(payload)
+      toast.success("Appointment duplicated successfully")
+      return id
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to duplicate appointment"
       toast.error(message)
       return null
     } finally {
@@ -66,5 +83,5 @@ export function useAppointmentMutations(): UseAppointmentMutationsReturn {
     }
   }, [])
 
-  return { create, update, remove, isLoading }
+  return { create, duplicate, update, remove, isLoading }
 }

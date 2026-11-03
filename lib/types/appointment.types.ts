@@ -159,6 +159,13 @@ export interface AppointmentApiPayload {
   supervision?: SupervisionRequestPayload
 }
 
+export interface DuplicateAppointmentApiPayload {
+  sourceAppointmentId: string
+  date: string
+  timeInit?: string
+  timeEnd?: string
+}
+
 /**
  * @deprecated Use place-of-service from client addresses instead
  */

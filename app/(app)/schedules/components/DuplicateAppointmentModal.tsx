@@ -11,8 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/custom/Button"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { Calendar, Clock, MapPin, Briefcase } from "lucide-react"
-import type { Appointment, AppointmentApiPayload } from "@/lib/types/appointment.types"
-import { getEventTypeLabel, toApiEventType, toApiTime } from "@/lib/modules/schedules/utils/appointment-api.mapper"
+import type { Appointment, DuplicateAppointmentApiPayload } from "@/lib/types/appointment.types"
+import { getEventTypeLabel, toApiTime } from "@/lib/modules/schedules/utils/appointment-api.mapper"
 import { useAppointmentMutations } from "@/lib/modules/schedules/hooks/use-appointment-mutations"
 import { useAppointments } from "@/lib/store/appointments.store"
 import { useAlert } from "@/lib/contexts/alert-context"
@@ -85,34 +85,14 @@ export function DuplicateAppointmentModal({
 
     const endTime = format(parseISO(endsAt), "HH:mm")
 
-    const payload: AppointmentApiPayload = {
-      clientId: appointment.clientId || "",
-      clientAddressId: appointment.placeOfServiceAddressId || appointment.clientAddressId || "",
-      cantUnit: appointment.cantUnit ?? appointment.units ?? 0,
-      units: appointment.units ?? appointment.cantUnit ?? 0,
+    const payload: DuplicateAppointmentApiPayload = {
+      sourceAppointmentId: appointment.id,
+      date: newDate,
       timeInit: toApiTime(timeToUse),
       timeEnd: toApiTime(endTime),
-      date: newDate,
-      billingCodeId: appointment.billingCodeId || "",
-      typeEvent: toApiEventType(appointment.eventType ?? "session_note"),
-      providerId: appointment.rbtId || rbtId,
-      priorAuthorizationId: appointment.priorAuthorizationId || "",
-      sourceAppointmentId: appointment.id,
     }
 
-    if (appointment.supervision) {
-      payload.supervision = {
-        timeInit: appointment.supervision.timeInit,
-        timeEnd: appointment.supervision.timeEnd,
-        date: newDate,
-        billingCodeId: appointment.supervision.billingCodeId,
-        supervisionBillingCodeId: appointment.supervision.supervisionBillingCodeId,
-        units: appointment.supervision.units,
-        providerId: appointment.supervision.providerId,
-      }
-    }
-
-    const createdId = await mutations.create(payload)
+    const createdId = await mutations.duplicate(payload)
 
     if (createdId) {
       setNewDate("")
