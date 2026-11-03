@@ -63,6 +63,7 @@ import {
   ServicePlanValueType,
   typeRequiresWeeklyDaily,
   typeRequiresUnitOfTime,
+  typeRequiresBaselineSessionDuration,
   typeRequiresInterval,
   typeRequiresDailyAndWeekly,
   typeHasCumulativeValueToggles,
@@ -326,6 +327,7 @@ export function ItemDetailPanel({
             date: fromISO(b.date),
             value: String(b.value),
             periodCatalogId: b.periodCatalogId,
+            sessionDuration: b.sessionDuration != null ? String(b.sessionDuration) : "",
             comments: b.environmentalChanges ?? b.comments ?? "",
             show: b.show,
           }))
@@ -504,6 +506,7 @@ export function ItemDetailPanel({
   }, [watchedType, typeItemsMap])
 
   const isMeasurementLogType = typeIsMeasurementLog(resolvedType.name)
+  const needsSessionDuration = typeRequiresBaselineSessionDuration(resolvedType.name)
 
   const { groups: unitMeasurementGroups, isLoading: isLoadingUnitMeasurement } =
     useUnitMeasurementCatalog(isMeasurementLogType)
@@ -571,11 +574,27 @@ export function ItemDetailPanel({
   }
 
   // --- Handlers ---
-  const handleBaselinesChange = (rows: BaselineRow[]) => setBaselines(rows)
+  const [baselinesError, setBaselinesError] = useState(false)
+  const handleBaselinesChange = (rows: BaselineRow[]) => {
+    setBaselines(rows)
+    if (baselinesError) setBaselinesError(false)
+  }
   const handleObjectivesChange = (rows: ObjectiveRow[]) => setObjectives(rows)
 
   // --- Save ---
   const handleSave = async (values: ClientDataCollectionFormValues) => {
+    // Rate/Duration: el backend exige la duración de la sesión (> 0) en cada baseline
+    const missingSessionDuration = needsSessionDuration && baselines.some(
+      (b) => b.date && b.periodCatalogId && !(Number(b.sessionDuration) > 0)
+    )
+    if (missingSessionDuration) {
+      setBaselinesError(true)
+      toast.error("Session duration is required", {
+        description: "Enter a session duration greater than 0 on every baseline.",
+      })
+      return
+    }
+
     setIsSaving(true)
     try {
       const levelsPayload = (values.levels ?? []).map((l) => ({
@@ -592,6 +611,7 @@ export function ItemDetailPanel({
           date: toISO(b.date),
           value: Number(b.value) || 0,
           periodCatalogId: b.periodCatalogId,
+          sessionDuration: needsSessionDuration && b.sessionDuration !== "" ? Number(b.sessionDuration) : undefined,
           environmentalChanges: b.comments,
           show: b.show,
         }))
@@ -1155,6 +1175,8 @@ export function ItemDetailPanel({
             onChange={handleBaselinesChange}
             mode="item"
             periodSelectOptions={periodSelectOptions}
+            requiresSessionDuration={needsSessionDuration}
+            showErrors={baselinesError}
             hideAddButton
             readOnly={!canEdit}
           />

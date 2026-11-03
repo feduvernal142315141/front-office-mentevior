@@ -99,6 +99,7 @@ interface ApiBaseline {
   date?: string
   value?: number | string
   periodCatalogId?: string
+  sessionDuration?: number | string | null
   comments?: string
   environmentalChanges?: string
   show?: boolean | number | string
@@ -117,6 +118,7 @@ function normalizeBaselines(raw: unknown): DataCollectionBaselineData[] {
         date,
         value: asOptionalNumber(b.value) ?? 0,
         periodCatalogId: asString(b.periodCatalogId),
+        sessionDuration: asOptionalNumber(b.sessionDuration),
         comments: asString(b.comments),
         environmentalChanges: asString(b.environmentalChanges),
         show: asBoolean(b.show, true),
@@ -703,6 +705,7 @@ function toApiBaselines(baselines: DataCollectionBaselineData[]): ApiBaseline[] 
     date: b.date,
     value: b.value,
     periodCatalogId: b.periodCatalogId,
+    ...(b.sessionDuration != null ? { sessionDuration: b.sessionDuration } : {}),
     environmentalChanges: b.environmentalChanges ?? b.comments ?? "",
     show: b.show,
   }))

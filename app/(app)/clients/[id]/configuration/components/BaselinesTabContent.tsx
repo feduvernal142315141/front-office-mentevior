@@ -22,6 +22,8 @@ export interface BaselineRow {
   date: string
   value: string
   periodCatalogId: string
+  /** Duración de la sesión (Rate/Duration), en la unidad del Period */
+  sessionDuration: string
   comments: string
   show: boolean
 }
@@ -32,6 +34,7 @@ export function createEmptyBaseline(): BaselineRow {
     date: "",
     value: "",
     periodCatalogId: "",
+    sessionDuration: "",
     comments: "",
     show: true,
   }
@@ -45,6 +48,8 @@ interface BaselinesTabContentProps {
   showErrors?: boolean
   hideAddButton?: boolean
   readOnly?: boolean
+  /** Rate/Duration: muestra el campo para cargar a mano la duración de la sesión */
+  requiresSessionDuration?: boolean
 }
 
 export function BaselinesTabContent({
@@ -55,10 +60,19 @@ export function BaselinesTabContent({
   showErrors = false,
   hideAddButton = false,
   readOnly = false,
+  requiresSessionDuration = false,
 }: BaselinesTabContentProps) {
   const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENTS)
   const actionsDisabled = readOnly || !canEdit
   const showAdd = !hideAddButton && canCreate && !actionsDisabled
+
+  const sessionDurationLabel = useCallback(
+    (periodCatalogId: string) => {
+      const period = periodSelectOptions.find((o) => o.value === periodCatalogId)?.label
+      return period ? `Session duration (${period.toLowerCase()})` : "Session duration"
+    },
+    [periodSelectOptions]
+  )
 
   const handleAdd = useCallback(() => {
     onChange([...baselines, createEmptyBaseline()])
@@ -149,7 +163,21 @@ export function BaselinesTabContent({
                     disabled={actionsDisabled}
                   />
                 </div>
-                <div className="hidden 2xl:block flex-1 min-w-0">
+                {requiresSessionDuration && (
+                  <div className="flex-1 min-w-0">
+                    <FloatingInput
+                      label={sessionDurationLabel(row.periodCatalogId)}
+                      value={row.sessionDuration}
+                      onChange={(v) => handleUpdate(row.localId, "sessionDuration", v.replace(/[^0-9.]/g, ""))}
+                      onBlur={() => {}}
+                      inputMode="decimal"
+                      hasError={showErrors && !(Number(row.sessionDuration) > 0)}
+                      required
+                      disabled={actionsDisabled}
+                    />
+                  </div>
+                )}
+                <div className={cn("flex-1 min-w-0", requiresSessionDuration ? "hidden" : "hidden 2xl:block")}>
                   <FloatingInput
                     label="Environmental Changes"
                     value={row.comments}
@@ -173,7 +201,7 @@ export function BaselinesTabContent({
                   </button>
                 )}
               </div>
-              <div className="2xl:hidden">
+              <div className={requiresSessionDuration ? undefined : "2xl:hidden"}>
                 <FloatingInput
                   label="Environmental Changes"
                   value={row.comments}

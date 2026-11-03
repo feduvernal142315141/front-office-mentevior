@@ -55,11 +55,17 @@ interface AiImprovableTextareaProps extends FloatingTextareaProps {
    */
   abcNotes: string
   onAbcNotesChange: (value: string) => void
+  /**
+   * Texto ya cargado en la nota (p. ej. Goals en 97156) que también alimenta la generación.
+   * ABC es opcional: alcanza con que haya ABC o este texto para poder generar.
+   */
+  contextNotes?: string
+  contextNotesLabel?: string
 }
 
 /**
- * FloatingTextarea + an ephemeral ABC field above it. Generate / Improve always
- * sends the ABC content as `text` (never the summary draft). The AI result is
+ * FloatingTextarea + an ephemeral ABC field above it. Generate / Improve sends the
+ * ABC content plus any `contextNotes` (e.g. Goals) as `text` (never the summary draft). The AI result is
  * written into the summary. ABC clears after a successful generate; Undo restores
  * both the previous summary and the ABC notes.
  */
@@ -69,6 +75,8 @@ export function AiImprovableTextarea({
   buildMetadata,
   abcNotes,
   onAbcNotesChange,
+  contextNotes = "",
+  contextNotesLabel = "Goals",
   value,
   onChange,
   disabled,
@@ -83,15 +91,20 @@ export function AiImprovableTextarea({
   const summaryText = value ?? ""
   const abc = abcNotes.trim()
   const hasAbc = abc.length > 0
+  const context = contextNotes.trim()
+  const hasContext = context.length > 0
+  const canGenerate = hasAbc || hasContext
   const hasSummary = summaryText.trim().length > 0
   const actionLabel = hasSummary ? "Improve with AI" : "Generate with AI"
 
   const handleImprove = async () => {
-    if (!hasAbc || isLoading) return
+    if (!canGenerate || isLoading) return
+    // Sin etiquetas: el backend lo manda como <draft_summary> y la IA podría copiarlas al resumen
+    const text = [context, abc].filter(Boolean).join("\n\n")
     const suggested = await improve({
       billingCode,
       summaryType,
-      text: abc,
+      text,
       metadata: JSON.stringify(buildMetadata()),
     })
     if (suggested == null) return
@@ -121,10 +134,27 @@ export function AiImprovableTextarea({
 
   return (
     <div className="space-y-4">
-      {/* ABC — ephemeral clinician notes; this is what goes in `text` to the AI */}
+      {/* ABC — ephemeral clinician notes (optional); sent in `text` to the AI */}
+      <FloatingTextarea
+        label="ABC"
+        value={abcNotes}
+        onChange={onAbcNotesChange}
+        onBlur={() => {}}
+        guidance={AI_ABC_GUIDANCE}
+        rows={4}
+        disabled={disabled}
+      />
+
+      {/* Summary / Narrative — persisted clinical text; the AI actions sit right above it */}
       <div className="space-y-2">
         {!disabled && (
           <div className="flex items-center justify-end gap-2">
+            {canUndo && (
+              <button type="button" onClick={handleUndo} className={GHOST_PILL}>
+                <Undo2 className="h-3.5 w-3.5" />
+                Undo
+              </button>
+            )}
             {hasAbc && (
               <button type="button" onClick={handleClearAbc} className={GHOST_PILL}>
                 <Eraser className="h-3.5 w-3.5" />
@@ -134,8 +164,8 @@ export function AiImprovableTextarea({
             <button
               type="button"
               onClick={handleImprove}
-              disabled={isLoading || !hasAbc}
-              title={hasAbc ? undefined : "Write ABC notes before generating"}
+              disabled={isLoading || !canGenerate}
+              title={canGenerate ? undefined : `Write ${contextNotesLabel} or ABC notes before generating`}
               className={AI_PILL}
             >
               {isLoading ? (
@@ -144,27 +174,6 @@ export function AiImprovableTextarea({
                 <Sparkles className="h-3.5 w-3.5" />
               )}
               {actionLabel}
-            </button>
-          </div>
-        )}
-        <FloatingTextarea
-          label="ABC"
-          value={abcNotes}
-          onChange={onAbcNotesChange}
-          onBlur={() => {}}
-          guidance={AI_ABC_GUIDANCE}
-          rows={4}
-          disabled={disabled}
-        />
-      </div>
-
-      {/* Summary / Narrative — persisted clinical text; never sent as AI `text` */}
-      <div className="space-y-2">
-        {!disabled && canUndo && (
-          <div className="flex items-center justify-end">
-            <button type="button" onClick={handleUndo} className={GHOST_PILL}>
-              <Undo2 className="h-3.5 w-3.5" />
-              Undo
             </button>
           </div>
         )}

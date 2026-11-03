@@ -60,3 +60,44 @@ export function unitOfTimeLabel(unit: ServicePlanUnitOfTime): string {
     default: return "min"
   }
 }
+
+const UNIT_IN_SECONDS: Record<ServicePlanUnitOfTime, number> = {
+  [ServicePlanUnitOfTime.SECONDS]: 1,
+  [ServicePlanUnitOfTime.MINUTES]: 60,
+  [ServicePlanUnitOfTime.HOURS]: 3600,
+  [ServicePlanUnitOfTime.DAYS]: 86400,
+}
+
+/** Period catalog name ("Hour", "Minutes"…) → unit of time. Null if it isn't a time unit. */
+export function periodNameToUnitOfTime(name?: string | null): ServicePlanUnitOfTime | null {
+  const n = (name ?? "").trim().toLowerCase()
+  if (n.startsWith("sec")) return ServicePlanUnitOfTime.SECONDS
+  if (n.startsWith("min")) return ServicePlanUnitOfTime.MINUTES
+  if (n.startsWith("hour") || n === "hr" || n === "hrs") return ServicePlanUnitOfTime.HOURS
+  if (n.startsWith("day")) return ServicePlanUnitOfTime.DAYS
+  return null
+}
+
+/**
+ * Manual session duration of each baseline (keyed by YYYY-MM-DD), converted from the
+ * baseline's Period to the item's unit of time. A Period that isn't a time unit is taken
+ * as already expressed in the item's unit. Baselines without a duration are left out.
+ */
+export function buildBaselineDurationMap(
+  baselines: { date: string; sessionDuration?: number | null; periodCatalogId: string }[] | undefined,
+  periodNameById: Map<string, string>,
+  unitOfTime: ServicePlanUnitOfTime,
+): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const b of baselines ?? []) {
+    if (!b.date || !b.sessionDuration || b.sessionDuration <= 0) continue
+    const from = periodNameToUnitOfTime(periodNameById.get(b.periodCatalogId))
+    const inUnit = from ? (b.sessionDuration * UNIT_IN_SECONDS[from]) / UNIT_IN_SECONDS[unitOfTime] : b.sessionDuration
+    map.set(getDateKeyLocal(b.date), inUnit)
+  }
+  return map
+}
+
+function getDateKeyLocal(date: string): string {
+  return date.slice(0, 10)
+}

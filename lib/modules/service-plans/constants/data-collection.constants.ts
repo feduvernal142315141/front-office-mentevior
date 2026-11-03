@@ -39,6 +39,14 @@ export function typeRequiresUnitOfTime(typeName: string): boolean {
   return typeName === "Rate"
 }
 
+/**
+ * Rate y Duration: el baseline es una colección independiente (no hay cita agendada al
+ * armar el service plan), así que el analista carga a mano la duración de esa sesión.
+ */
+export function typeRequiresBaselineSessionDuration(typeName: string): boolean {
+  return typeName === "Rate" || typeName === "Duration"
+}
+
 export function typeRequiresInterval(typeGroup: string): boolean {
   return typeGroup === "Time-sampling"
 }

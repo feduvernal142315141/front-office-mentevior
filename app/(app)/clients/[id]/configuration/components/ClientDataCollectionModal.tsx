@@ -73,6 +73,7 @@ import {
   ServicePlanValueType,
   typeRequiresWeeklyDaily,
   typeRequiresUnitOfTime,
+  typeRequiresBaselineSessionDuration,
   typeRequiresInterval,
   typeRequiresDailyAndWeekly,
   typeHasCumulativeValueToggles,
@@ -264,6 +265,7 @@ export function ClientDataCollectionModal({
             date: fromISO(b.date),
             value: String(b.value),
             periodCatalogId: b.periodCatalogId,
+            sessionDuration: b.sessionDuration != null ? String(b.sessionDuration) : "",
             comments: b.environmentalChanges ?? b.comments ?? "",
             show: b.show,
           }))
@@ -296,6 +298,7 @@ export function ClientDataCollectionModal({
               date: fromISO(b.date),
               value: String(b.value),
               periodCatalogId: b.periodCatalogId,
+              sessionDuration: b.sessionDuration != null ? String(b.sessionDuration) : "",
               comments: b.environmentalChanges ?? b.comments ?? "",
               show: b.show,
             }))
@@ -397,6 +400,7 @@ export function ClientDataCollectionModal({
   }, [watchedType, typeItemsMap])
 
   const isMeasurementLogType = typeIsMeasurementLog(resolvedType.name)
+  const needsSessionDuration = typeRequiresBaselineSessionDuration(resolvedType.name)
   const { groups: unitMeasurementGroups, isLoading: isLoadingUnitMeasurement } =
     useUnitMeasurementCatalog(isMeasurementLogType)
 
@@ -466,6 +470,19 @@ export function ClientDataCollectionModal({
     // Validate client-side before API call
     let hasErrors = false
 
+    // Rate/Duration: el backend exige la duración de la sesión (> 0) en cada baseline
+    const missingSessionDuration = needsSessionDuration && baselines.some(
+      (b) => b.date && b.periodCatalogId && !(Number(b.sessionDuration) > 0)
+    )
+    if (missingSessionDuration) {
+      setBaselinesError(true)
+      setActiveTab("baselines")
+      toast.error("Session duration is required", {
+        description: "Enter a session duration greater than 0 on every baseline.",
+      })
+      return
+    }
+
     if (hasErrors) {
       toast.error("Complete required fields", {
         description: "Please fill in all required fields before saving.",
@@ -489,6 +506,7 @@ export function ClientDataCollectionModal({
           date: toISO(b.date),
           value: Number(b.value) || 0,
           periodCatalogId: b.periodCatalogId,
+          sessionDuration: needsSessionDuration && b.sessionDuration !== "" ? Number(b.sessionDuration) : undefined,
           environmentalChanges: b.comments,
           show: b.show,
         }))
@@ -960,6 +978,7 @@ export function ClientDataCollectionModal({
                 onChange={handleBaselinesChange}
                 mode={mode}
                 periodSelectOptions={periodSelectOptions}
+                requiresSessionDuration={needsSessionDuration}
                 showErrors={baselinesError}
                 readOnly={!canEditDatasheets}
               />

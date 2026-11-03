@@ -42,6 +42,8 @@ export interface ClientServicePlanItemBaseline {
   date: string
   value: number
   periodCatalogId: string
+  /** Duración de la sesión del baseline, en la unidad del Period (solo Rate/Duration) */
+  sessionDuration?: number | null
   environmentalChanges?: string
   show: boolean
 }

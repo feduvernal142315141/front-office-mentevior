@@ -35,6 +35,8 @@ import {
 } from "./environmental-changes-display"
 
 interface RateChartProps {
+  /** Manual session duration of each baseline date (item unit); baseline points are value / duration */
+  baselineDurationByDate?: Map<string, number>
   weekDays: Date[]
   entries: Record<string, DayEntry>
   dcConfig: DataCollectionConfig | null
@@ -80,7 +82,7 @@ export function RateChart({
   weekDays, entries, dcConfig, chartDays, tickInterval = 0,
   itemBaselines, itemObjectives, gapDateKeys, collectedDateKeys,
   aggregatedData, interval = ChartInterval.DAILY,
-  appointmentsByDate, unitOfTime,
+  appointmentsByDate, unitOfTime, baselineDurationByDate,
   environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
 }: RateChartProps) {
   const days = chartDays ?? weekDays
@@ -165,7 +167,9 @@ export function RateChart({
     const baselineDateKeys = new Set(visibleBaselines.map((b) => getDateKey(parseLocalDate(b.date))))
     const baselineMap = new Map<string, { value: number; note: string }>()
     for (const b of visibleBaselines) {
-      baselineMap.set(getDateKey(parseLocalDate(b.date)), { value: b.value, note: b.comments ?? "" })
+      const dateKey = getDateKey(parseLocalDate(b.date))
+      const baselineDuration = baselineDurationByDate?.get(dateKey)
+      baselineMap.set(dateKey, { value: baselineDuration ? b.value / baselineDuration : b.value, note: b.comments ?? "" })
     }
 
     const gap = gapDateKeys ?? new Set<string>()
@@ -210,7 +214,7 @@ export function RateChart({
       }
 
       const liveBaselineValue = isBaselinePhase
-        ? (hasData ? entry.occurrences : (bl?.value ?? null))
+        ? (hasData ? entry.occurrences / (baselineDurationByDate?.get(key) ?? 1) : (bl?.value ?? null))
         : (isBaselineDay ? (bl?.value ?? null) : null)
 
       return {
@@ -227,7 +231,7 @@ export function RateChart({
         duration,
       }
     })
-  }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, appointmentsByDate, unitOfTime, treatmentStartDate])
+  }, [days, entries, baselines, isAggregated, aggregatedData, gapDateKeys, collectedDateKeys, appointmentsByDate, unitOfTime, treatmentStartDate, baselineDurationByDate])
 
   const hasBaselineData = data.some((p) => p.baselineValue != null)
 

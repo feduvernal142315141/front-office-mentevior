@@ -445,6 +445,8 @@ export function SessionNote97156Form({
               buildMetadata={buildSummaryMetadata}
               abcNotes={abcNotes}
               onAbcNotesChange={setAbcNotes}
+              contextNotes={formData.goals}
+              contextNotesLabel="Goals"
             />
             <FieldError message={errors.sessionSummary} />
           </div>

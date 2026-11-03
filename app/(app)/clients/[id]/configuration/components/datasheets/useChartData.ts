@@ -21,6 +21,8 @@ interface UseChartDataParams {
   interval: ChartInterval
   aggregationMethod: ServicePlanValueType
   baselines?: ClientServicePlanItemBaseline[]
+  /** Rate: session duration (item unit) of each baseline date — baseline points are plotted as value / duration */
+  baselineDurationByDate?: Map<string, number>
   objectives?: ClientServicePlanItemObjective[]
   gridEntries: WeekEntries
   /** Dates whose value comes from data collection — never aggregated as baseline. */
@@ -46,6 +48,7 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
     interval,
     aggregationMethod,
     baselines,
+    baselineDurationByDate,
     objectives,
     gridEntries,
     collectedDateKeys,
@@ -155,6 +158,8 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
         } else {
           value = baselineValueMap.get(dateKey) ?? dcValueMap.get(dateKey) ?? null
         }
+        const baselineDuration = baselineDurationByDate?.get(dateKey)
+        if (value !== null && baselineDuration) value = value / baselineDuration
       } else {
         // For treatment phase: use grid entry if edited, otherwise API DC value
         const gridEntry = gridEntries[dateKey]
@@ -169,7 +174,7 @@ export function useChartData(params: UseChartDataParams): UseChartDataResult {
 
       return { dateKey, value, isBaseline, note }
     })
-  }, [chartDays, baselineDateKeys, baselineValueMap, dcValueMap, gridEntries, collectedDateKeys, treatmentStartDate])
+  }, [chartDays, baselineDateKeys, baselineValueMap, baselineDurationByDate, dcValueMap, gridEntries, collectedDateKeys, treatmentStartDate])
 
   // Aggregate
   const aggregatedPoints = useMemo(

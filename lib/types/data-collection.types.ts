@@ -64,6 +64,8 @@ export interface DataCollectionBaselineData {
   date: string
   value: number
   periodCatalogId: string
+  /** Duración de la sesión del baseline, en la unidad del Period (solo Rate/Duration) */
+  sessionDuration?: number
   comments?: string
   environmentalChanges?: string
   show: boolean

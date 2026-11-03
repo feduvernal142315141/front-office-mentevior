@@ -21,7 +21,8 @@ import { useChartData } from "./useChartData"
 import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { RateChart } from "./RateChart"
-import { getSessionDurationInUnit, unitOfTimeLabel } from "./rate-datasheet.types"
+import { buildBaselineDurationMap, getSessionDurationInUnit, unitOfTimeLabel } from "./rate-datasheet.types"
+import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import {
   DatasheetGridFrame, DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
@@ -41,6 +42,13 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
   const ds = useFrequencyDatasheet(activeItem.baseline)
   const unitOfTime = (dcConfig?.unitOfTime as ServicePlanUnitOfTime) ?? ServicePlanUnitOfTime.MINUTES
   const unitLabel = unitOfTimeLabel(unitOfTime)
+
+  // Baselines are an independent collection (no appointment): their duration is loaded by hand
+  const { items: periodCatalog } = usePeriodCatalog()
+  const baselineDurationByDate = useMemo(
+    () => buildBaselineDurationMap(activeItem.baseline, new Map(periodCatalog.map((p) => [p.id, p.name])), unitOfTime),
+    [activeItem.baseline, periodCatalog, unitOfTime],
+  )
 
   // --- Compute visible days FIRST ---
   const gapDateKeys = useMemo(() => {
@@ -217,6 +225,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
     interval: chartRange.interval,
     aggregationMethod,
     baselines: activeItem.baseline,
+    baselineDurationByDate,
     objectives: activeItem.objetive,
     gridEntries: ds.entries,
     collectedDateKeys,
@@ -339,7 +348,9 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
                 const apt = clientAppointments.appointmentsByDate.get(key)
-                const duration = apt ? getSessionDurationInUnit(apt.startsAt, apt.endsAt, unitOfTime) : null
+                const duration = isBaseline
+                  ? (baselineDurationByDate.get(key) ?? null)
+                  : (apt ? getSessionDurationInUnit(apt.startsAt, apt.endsAt, unitOfTime) : null)
                 return (
                   <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
                     {duration !== null ? (
@@ -362,7 +373,9 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
                 const isBaseline = ds.isBaselineDate(key)
                 const entry = ds.getEntry(key)
                 const apt = clientAppointments.appointmentsByDate.get(key)
-                const duration = apt ? getSessionDurationInUnit(apt.startsAt, apt.endsAt, unitOfTime) : null
+                const duration = isBaseline
+                  ? (baselineDurationByDate.get(key) ?? null)
+                  : (apt ? getSessionDurationInUnit(apt.startsAt, apt.endsAt, unitOfTime) : null)
                 const rate = entry.occurrences > 0 && duration && duration > 0 ? entry.occurrences / duration : null
                 return (
                   <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
@@ -422,6 +435,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
           interval={chartRange.interval}
           appointmentsByDate={clientAppointments.appointmentsByDate}
           unitOfTime={unitOfTime}
+          baselineDurationByDate={baselineDurationByDate}
         />
       </div>
 
