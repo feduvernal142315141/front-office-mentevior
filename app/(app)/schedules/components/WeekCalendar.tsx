@@ -149,6 +149,11 @@ export function WeekCalendar({
       if (
         appointment?.cantEdit === false &&
         [
+          "supervision",
+          "edit_session_supervision",
+          "edit",
+          "cancel",
+          "noshow",
           "delete",
           "delete_sub_event",
           "duplicate",
