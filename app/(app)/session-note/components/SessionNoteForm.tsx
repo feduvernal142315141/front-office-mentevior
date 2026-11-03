@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import Link from "next/link"
 import {
   BookOpen, AlertTriangle, Stethoscope,
@@ -27,6 +27,7 @@ import type {
   ParticipantCatalogItem,
 } from "@/lib/types/appointment-note.types"
 import { cn } from "@/lib/utils"
+import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { formatHoursAndUnits, splitBillingCodesAndUnits } from "@/lib/utils/session-note-units"
@@ -131,6 +132,9 @@ export function SessionNoteForm({
   // van junto a las horas, no junto al código.
   const { label: billingCodeLabel, units: billingCodeUnits } = splitBillingCodesAndUnits(billingCodes)
 
+  const { items: periodCatalog } = usePeriodCatalog()
+  const periodNameById = useMemo(() => new Map(periodCatalog.map((p) => [p.id, p.name])), [periodCatalog])
+
   const buildSummaryMetadata = () => {
     const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
       ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
@@ -149,6 +153,7 @@ export function SessionNoteForm({
       consequenceNames: namesFromIds(formData.consequenceInterventionIds, consequenceItems),
       categories,
       categoryItems: formData.categoryItems,
+      periodNameById,
     })
   }
 

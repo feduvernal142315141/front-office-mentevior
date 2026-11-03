@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import Link from "next/link"
 import {
   AlertTriangle, BookOpen, Stethoscope, Users2, User, Building2, ClipboardList,
@@ -16,6 +16,7 @@ import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { cn } from "@/lib/utils"
+import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import { formatHoursAndUnits, splitBillingCodesAndUnits } from "@/lib/utils/session-note-units"
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
 import { CLIENT_PARTICIPANT_ID } from "../hooks/useSessionNoteForm"
@@ -126,6 +127,9 @@ export function SessionNote97156Form({
     name: c.relationship ? `${c.name} (${c.relationship})` : c.name,
   }))
 
+  const { items: periodCatalog } = usePeriodCatalog()
+  const periodNameById = useMemo(() => new Map(periodCatalog.map((p) => [p.id, p.name])), [periodCatalog])
+
   const buildSummaryMetadata = () => {
     const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
       ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
@@ -151,6 +155,7 @@ export function SessionNote97156Form({
       participantNames: namesFromIds(formData.participantIds, participantCatalog),
       categories,
       categoryItems: formData.categoryItems,
+      periodNameById,
     })
   }
 

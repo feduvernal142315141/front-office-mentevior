@@ -4,17 +4,60 @@ export interface CategoryItemFormDataMap {
   [itemId: string]: { value: number | null; environmentalChange: string }
 }
 
-/** The backend requires a numeric `value` per item, so items without one yet are left out. */
-function buildDataCollectionItems(categories: AppointmentNoteCategory[], categoryItems: CategoryItemFormDataMap) {
+export type PeriodNameById = ReadonlyMap<string, string>
+
+const toDay = (iso: string | null | undefined) => (iso ? iso.slice(0, 10) : null)
+
+/**
+ * The backend requires a numeric `value` per item, so items without one yet are left out.
+ * Besides the session value, each item carries its plan context: Type, baselines
+ * (with `sessionDuration` for Rate/Duration) and objectives.
+ */
+function buildDataCollectionItems(
+  categories: AppointmentNoteCategory[],
+  categoryItems: CategoryItemFormDataMap,
+  periodNameById: PeriodNameById = new Map(),
+) {
+  const periodName = (id: string | null | undefined) => (id ? periodNameById.get(id) ?? null : null)
+
   return categories.flatMap((cat) =>
     cat.items
       .map((item) => {
         const edited = categoryItems[item.id]
         const value = edited?.value ?? item.value
         const environmentalChange = (edited?.environmentalChange ?? item.environmentalChange ?? "").trim()
-        return { target: item.name, value, environmentalChange: environmentalChange || null }
+        return {
+          category: cat.name,
+          target: item.name,
+          type: item.type,
+          eventType: item.typeEventCatalogName,
+          value,
+          environmentalChange: environmentalChange || null,
+          baselines: (item.baseline ?? [])
+            .filter((b) => b.show)
+            .map((b) => ({
+              date: toDay(b.date),
+              value: b.value,
+              period: periodName(b.periodCatalogId),
+              sessionDuration: b.sessionDuration ?? null,
+              environmentalChanges: b.environmentalChanges?.trim() || null,
+            })),
+          objectives: (item.objetive ?? []).map((o) => ({
+            name: o.name,
+            status: o.status ?? null,
+            startDate: toDay(o.startDate),
+            estimatedEndDate: toDay(o.estimatedEndDate),
+            endDate: toDay(o.endDate),
+            criteria: {
+              operator: o.operatorSmartCriteria,
+              value: o.valueSmartCriteria,
+              period: periodName(o.periodSmartCriteriaCatalogId),
+            },
+            duration: { value: o.valueDuration, period: periodName(o.periodDurationCatalogId) },
+          })),
+        }
       })
-      .filter((item): item is { target: string; value: number; environmentalChange: string | null } => item.value != null),
+      .filter((item): item is typeof item & { value: number } => item.value != null),
   )
 }
 
@@ -30,6 +73,7 @@ export function buildSessionSummaryMetadata97153(params: {
   consequenceNames: string[]
   categories: AppointmentNoteCategory[]
   categoryItems: CategoryItemFormDataMap
+  periodNameById?: PeriodNameById
 }) {
   return {
     teachingMethod: params.teachingMethodName,
@@ -40,7 +84,7 @@ export function buildSessionSummaryMetadata97153(params: {
     participants: params.participantNames,
     antecedentInterventions: params.antecedentNames,
     consequenceInterventions: params.consequenceNames,
-    dataCollectionItems: buildDataCollectionItems(params.categories, params.categoryItems),
+    dataCollectionItems: buildDataCollectionItems(params.categories, params.categoryItems, params.periodNameById),
   }
 }
 
@@ -58,6 +102,7 @@ export function buildSessionSummaryMetadata97156(params: {
   participantNames: string[]
   categories: AppointmentNoteCategory[]
   categoryItems: CategoryItemFormDataMap
+  periodNameById?: PeriodNameById
 }) {
   return {
     teachingMethod: params.teachingMethodName,
@@ -70,7 +115,7 @@ export function buildSessionSummaryMetadata97156(params: {
     interventions: params.interventionNames,
     goals: params.goals,
     participants: params.participantNames,
-    dataCollectionItems: buildDataCollectionItems(params.categories, params.categoryItems),
+    dataCollectionItems: buildDataCollectionItems(params.categories, params.categoryItems, params.periodNameById),
   }
 }
 
