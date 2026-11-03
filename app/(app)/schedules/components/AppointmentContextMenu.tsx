@@ -42,6 +42,7 @@ interface MenuItem {
   hideForStatus?: AppointmentStatus[]
   requires?: PermissionLevel
   requiresEditableAppointment?: boolean
+  disabledWhenAppointmentNotEditable?: boolean
 }
 
 interface MenuSection {
@@ -93,7 +94,7 @@ function buildSupervisionSections(
           label: deleteLabel,
           icon: Trash2,
           danger: true,
-          requires: "delete",
+          requires: "edit",
           requiresEditableAppointment: true,
         },
       ],
@@ -115,6 +116,7 @@ function buildSections(
         label: "Add New Session",
         icon: Users,
         requires: "create",
+          disabledWhenAppointmentNotEditable: true,
       })
     }
 
@@ -142,7 +144,7 @@ function buildSections(
       label: "Delete Session",
       icon: Trash2,
       danger: true,
-      requires: "delete",
+      requires: "edit",
       requiresEditableAppointment: true,
     },
     {
@@ -287,24 +289,34 @@ export function AppointmentContextMenu({
             )}
             {visibleItems.map((item) => {
               const Icon = item.icon
+              const isDisabled = item.disabledWhenAppointmentNotEditable && !canEditAppointment
               return (
                 <button
                   key={item.action}
                   type="button"
+                  disabled={isDisabled}
                   className={cn(
                     "w-full flex items-center gap-2.5 px-2.5 py-[7px]",
                     "text-[13px] font-medium text-left rounded-lg",
                     "transition-colors duration-100",
-                    item.danger
+                    isDisabled
+                      ? "cursor-not-allowed text-gray-300"
+                      : item.danger
                       ? "text-red-600 hover:bg-red-50/80"
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
                   )}
-                  onClick={() => onAction(item.action, appointmentId)}
+                  onClick={() => {
+                    if (!isDisabled) onAction(item.action, appointmentId)
+                  }}
                 >
                   <Icon
                     className={cn(
                       "h-3.5 w-3.5 flex-shrink-0",
-                      item.danger ? "text-red-400" : "text-gray-400",
+                      isDisabled
+                        ? "text-gray-300"
+                        : item.danger
+                          ? "text-red-400"
+                          : "text-gray-400",
                     )}
                   />
                   {item.label}

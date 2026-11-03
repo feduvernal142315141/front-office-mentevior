@@ -97,6 +97,7 @@ export function DuplicateAppointmentModal({
       typeEvent: toApiEventType(appointment.eventType ?? "session_note"),
       providerId: appointment.rbtId || rbtId,
       priorAuthorizationId: appointment.priorAuthorizationId || "",
+      sourceAppointmentId: appointment.id,
     }
 
     if (appointment.supervision) {

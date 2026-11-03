@@ -155,6 +155,7 @@ export interface AppointmentApiPayload {
   providerId: string
   priorAuthorizationId: string
   parentAppointmentId?: string | null
+  sourceAppointmentId?: string | null
   supervision?: SupervisionRequestPayload
 }
 

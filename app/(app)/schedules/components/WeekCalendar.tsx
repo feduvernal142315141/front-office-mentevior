@@ -152,6 +152,7 @@ export function WeekCalendar({
           "delete",
           "delete_sub_event",
           "duplicate",
+          "add_new_session",
           "data_collection",
           "session_note",
           "sup_data_collection",
