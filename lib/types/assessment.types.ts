@@ -103,6 +103,7 @@ export interface AssessmentDraft {
   housingNumberBathrooms: number
   housingMemberRelationshipCatalogIds: string[]
   housingInformation: string
+  medicalHistoryReasonForReferral: string
   medicalHistoryOtherDiagnosis: string
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
@@ -220,6 +221,14 @@ export interface AssessmentProviderFileInput {
   name: string
   /** [sic] El backend define la propiedad con este typo; no corregir */
   contactIformation: string
+}
+
+export interface AssessmentPreferenceRow {
+  people: string
+  tangibles: string
+  activities: string
+  social: string
+  other: string
 }
 
 /**
@@ -342,6 +351,7 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields, Assessmen
   housingNumberBathrooms: number
   housingMemberRelationshipCatalogIds: string[]
   housingInformation: string
+  medicalHistoryReasonForReferral: string
   medicalHistoryOtherDiagnosis: string
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
@@ -380,6 +390,7 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields, Assessmen
   proposedSchedule: AssessmentProposedScheduleInput[]
   abcData: AssessmentAbcInput[]
   providerFiles: AssessmentProviderFileInput[]
+  preferenceAssessment: AssessmentPreferenceRow[]
 }
 
 /** Item de `GET /assessments` (`GetAssessmentResponseModel`) */
@@ -452,6 +463,7 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   housingNumberBathrooms: number
   housingMembers: AssessmentHousingMember[]
   housingInformation: string
+  medicalHistoryReasonForReferral: string
   medicalHistoryPrimaryDiagnosisId: string | null
   medicalHistoryPrimaryDiagnosisName: string | null
   medicalHistoryOtherDiagnosis: string
@@ -479,6 +491,7 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   proposedSchedule: AssessmentProposedScheduleEntry[]
   abcData: AssessmentAbcInput[]
   providerFiles: AssessmentProviderFileInput[]
+  preferenceAssessment: AssessmentPreferenceRow[]
   createAt: string
   /** Effective status: Read | Active | Close | Lock */
   status: AssessmentStatus

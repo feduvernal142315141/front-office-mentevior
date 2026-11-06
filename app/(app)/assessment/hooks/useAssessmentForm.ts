@@ -18,9 +18,9 @@ import type {
   AssessmentCategoryItemInput,
   AssessmentDraft,
   AssessmentMedicationInput,
-  AssessmentObservationInput,
   AssessmentProposedScheduleInput,
   AssessmentProviderFileInput,
+  AssessmentPreferenceRow,
   ClientCategoryWithItems,
   HousingType,
   HypothesizedFunction,
@@ -42,7 +42,6 @@ import { useClientItemCollectionMethods } from "@/lib/modules/assessments/hooks/
 import { useSaveAssessment } from "@/lib/modules/assessments/hooks/use-save-assessment"
 import {
   EMPTY_SCHEDULE_HOURS,
-  normalizeBillingCodeSettings,
   parseProposedSchedule,
   SCHEDULE_DAY_KEYS,
   serializeProposedSchedule,
@@ -95,6 +94,7 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   housingMemberRelationshipCatalogIds: string[]
   housingInformation: string
   // Medical history (el dx primario es snapshot del backend, no viaja)
+  medicalHistoryReasonForReferral: string
   medicalHistoryOtherDiagnosis: string
   medicalHistoryMorbidities: string
   medicalHistoryAllergies: string
@@ -124,6 +124,7 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   proposedSchedule: ScheduleRow[]
   abcData: AssessmentAbcInput[]
   providerFiles: AssessmentProviderFileInput[]
+  preferenceAssessment: AssessmentPreferenceRow[]
   // PDF
   pdfTexts: AssessmentPdfTexts
   pdfFlags: AssessmentPdfFlags
@@ -213,6 +214,7 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
     housingNumberBathrooms: draft.housingNumberBathrooms,
     housingMemberRelationshipCatalogIds: draft.housingMemberRelationshipCatalogIds,
     housingInformation: draft.housingInformation,
+    medicalHistoryReasonForReferral: draft.medicalHistoryReasonForReferral,
     medicalHistoryOtherDiagnosis: draft.medicalHistoryOtherDiagnosis,
     medicalHistoryMorbidities: draft.medicalHistoryMorbidities,
     medicalHistoryAllergies: draft.medicalHistoryAllergies,
@@ -252,6 +254,7 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
     proposedSchedule: scheduleRowsFromDraft(draft),
     abcData: draft.abcData,
     providerFiles: draft.providerFiles,
+    preferenceAssessment: [],
     pdfTexts: draft.pdfTexts,
     pdfFlags: draft.pdfFlags,
   }
@@ -261,6 +264,7 @@ const EMPTY_MEDICATION: AssessmentMedicationInput = { name: "", dosage: "", freq
 const EMPTY_BILLING_CODE: BillingCodeRow = { billingCodeId: "", unitsPeriod: "", unitsWeek: "", placesOfServiceIds: [] }
 const EMPTY_ABC: AssessmentAbcInput = { date: "", placesOfService: [], antecedent: "", behavior: "", consequence: "" }
 const EMPTY_PROVIDER_FILE: AssessmentProviderFileInput = { type: "", name: "", contactIformation: "" }
+const EMPTY_PREFERENCE_ASSESSMENT: AssessmentPreferenceRow = { people: "", tangibles: "", activities: "", social: "", other: "" }
 export const EMPTY_CATEGORY_ITEM: CategoryItemFormValue = {
   intensityKey: "",
   intensityDescription: "",
@@ -284,6 +288,7 @@ const EMPTY_FORM: AssessmentFormData = {
   housingNumberBathrooms: 0,
   housingMemberRelationshipCatalogIds: [],
   housingInformation: "",
+  medicalHistoryReasonForReferral: "",
   medicalHistoryOtherDiagnosis: "N/A",
   medicalHistoryMorbidities: "N/A",
   medicalHistoryAllergies: "N/A",
@@ -321,6 +326,7 @@ const EMPTY_FORM: AssessmentFormData = {
   proposedSchedule: [],
   abcData: [],
   providerFiles: [],
+  preferenceAssessment: [],
   pdfTexts: buildDefaultPdfTexts(),
   pdfFlags: buildDefaultPdfFlags(),
 }
@@ -440,7 +446,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   // estricto dejaría el select vacío
   const billingCodeOptions = useMemo(() => {
     const options = (companyBillingCodes ?? [])
-      .filter((b) => b.active !== false)
+      .filter((b) => b.active)
       .map((b) => ({ value: b.id, label: b.description ? `${b.code} — ${b.description}` : b.code }))
 
     const byId = new Map(options.map((o) => [o.value, o]))
@@ -453,7 +459,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   const credentialOptions = useMemo(
     () =>
       (companyCredentials ?? [])
-        .filter((c) => c.active !== false)
+        .filter((c) => c.active)
         .map((c) => ({ value: c.id, label: c.name })),
     [companyCredentials],
   )
@@ -513,6 +519,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
         .map((m) => m.relationshipCatalogId)
         .filter(Boolean),
       housingInformation: assessment.housingInformation ?? "",
+      medicalHistoryReasonForReferral: assessment.medicalHistoryReasonForReferral ?? "",
       medicalHistoryOtherDiagnosis: assessment.medicalHistoryOtherDiagnosis ?? "N/A",
       medicalHistoryMorbidities: assessment.medicalHistoryMorbidities ?? "N/A",
       medicalHistoryAllergies: assessment.medicalHistoryAllergies ?? "N/A",
@@ -560,6 +567,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       })),
       abcData: assessment.abcData ?? [],
       providerFiles: assessment.providerFiles ?? [],
+      preferenceAssessment: assessment.preferenceAssessment ?? [],
       // Una narrativa persistida vacía (registros previos a los defaults del
       // backend) se rellena con su texto estándar: nunca se muestra vacía
       pdfTexts: Object.fromEntries(
@@ -768,6 +776,24 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     [],
   )
 
+  const addPreferenceAssessmentRow = useCallback(() => {
+    setFormData((prev) => ({ ...prev, preferenceAssessment: [...prev.preferenceAssessment, { ...EMPTY_PREFERENCE_ASSESSMENT }] }))
+  }, [])
+
+  const removePreferenceAssessmentRow = useCallback((index: number) => {
+    setFormData((prev) => ({ ...prev, preferenceAssessment: prev.preferenceAssessment.filter((_, i) => i !== index) }))
+  }, [])
+
+  const updatePreferenceAssessmentRow = useCallback(
+    (index: number, field: keyof AssessmentPreferenceRow, value: string) => {
+      setFormData((prev) => ({
+        ...prev,
+        preferenceAssessment: prev.preferenceAssessment.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
+      }))
+    },
+    [],
+  )
+
   /**
    * Reglas de backend (2026-08-17): sólo `clientId` es requerido a nivel
    * registro; por fila, los ids/fechas y los no-negativos. Encima, regla de
@@ -794,6 +820,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     }
 
     if (sectionBlocksSave(flags, "showMedicalHistory")) {
+      if (!formData.medicalHistoryReasonForReferral.trim()) newErrors.medicalHistoryReasonForReferral = required
       if (!formData.medicalHistoryTypeOfBirth) newErrors.medicalHistoryTypeOfBirth = "Select the type of birth"
     }
 
@@ -926,6 +953,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       housingNumberBathrooms: formData.housingNumberBathrooms,
       housingMemberRelationshipCatalogIds: formData.housingMemberRelationshipCatalogIds,
       housingInformation: formData.housingInformation.trim(),
+      medicalHistoryReasonForReferral: formData.medicalHistoryReasonForReferral.trim(),
       medicalHistoryOtherDiagnosis: formData.medicalHistoryOtherDiagnosis.trim(),
       medicalHistoryMorbidities: formData.medicalHistoryMorbidities.trim(),
       medicalHistoryAllergies: formData.medicalHistoryAllergies.trim(),
@@ -996,6 +1024,8 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
           name: row.name.trim(),
           contactIformation: row.contactIformation.trim(),
         })),
+      preferenceAssessment: formData.preferenceAssessment
+        .map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, value.trim()]))) as AssessmentPreferenceRow[],
       // Un texto vacío viaja null: en create el backend aplica su texto
       // estándar; en update significa "no pintar esa subsección del PDF".
       ...(Object.fromEntries(
@@ -1087,6 +1117,9 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     addProviderFile,
     removeProviderFile,
     updateProviderFile,
+    addPreferenceAssessmentRow,
+    removePreferenceAssessmentRow,
+    updatePreferenceAssessmentRow,
     updatePdfText,
     updatePdfFlag,
     // Submit

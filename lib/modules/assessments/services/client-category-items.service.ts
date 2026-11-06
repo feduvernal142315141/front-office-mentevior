@@ -177,6 +177,7 @@ export async function getAssessmentDataByClient(
       .map((m) => str(m.relationshipCatalogId) || str(m.relationshipId) || str(m.id))
       .filter(Boolean),
     housingInformation: str(raw.housingInformation),
+    medicalHistoryReasonForReferral: str(raw.medicalHistoryReasonForReferral),
     medicalHistoryOtherDiagnosis: str(raw.medicalHistoryOtherDiagnosis) || "N/A",
     medicalHistoryMorbidities: str(raw.medicalHistoryMorbidities) || "N/A",
     medicalHistoryAllergies: str(raw.medicalHistoryAllergies) || "N/A",
@@ -258,6 +259,7 @@ function emptyDraftForClient(clientId: string, categories: ClientCategoryWithIte
     housingNumberBathrooms: 0,
     housingMemberRelationshipCatalogIds: [],
     housingInformation: "",
+    medicalHistoryReasonForReferral: "",
     medicalHistoryOtherDiagnosis: "N/A",
     medicalHistoryMorbidities: "N/A",
     medicalHistoryAllergies: "N/A",

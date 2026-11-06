@@ -16,9 +16,9 @@ import type {
   AssessmentHousingMember,
   AssessmentListItem,
   AssessmentMedicationInput,
-  AssessmentObservationInput,
   AssessmentProposedScheduleEntry,
   AssessmentProviderFileInput,
+  AssessmentPreferenceRow,
   SaveAssessmentDto,
 } from "@/lib/types/assessment.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
@@ -192,6 +192,18 @@ function arr(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value) ? (value as Record<string, unknown>[]) : []
 }
 
+function normalizePreferenceAssessment(value: unknown): AssessmentPreferenceRow[] {
+  return Array.isArray(value)
+    ? value.map((row) => ({
+        people: str((row as Record<string, unknown>).people),
+        tangibles: str((row as Record<string, unknown>).tangibles),
+        activities: str((row as Record<string, unknown>).activities),
+        social: str((row as Record<string, unknown>).social),
+        other: str((row as Record<string, unknown>).other),
+      }))
+    : []
+}
+
 /** "08:00:00" → "08:00" para los time pickers; cualquier otra cosa pasa tal cual */
 function normalizeTime(value: unknown): string {
   const raw = str(value)
@@ -316,6 +328,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     housingNumberBathrooms: num(raw.housingNumberBathrooms),
     housingMembers,
     housingInformation: str(raw.housingInformation),
+    medicalHistoryReasonForReferral: str(raw.medicalHistoryReasonForReferral),
     medicalHistoryPrimaryDiagnosisId: str(raw.medicalHistoryPrimaryDiagnosisId) || null,
     medicalHistoryPrimaryDiagnosisName: str(raw.medicalHistoryPrimaryDiagnosisName) || null,
     medicalHistoryOtherDiagnosis: str(raw.medicalHistoryOtherDiagnosis),
@@ -358,6 +371,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     proposedSchedule,
     abcData,
     providerFiles,
+    preferenceAssessment: normalizePreferenceAssessment(raw.preferenceAssessment),
     ...pdfTexts,
     ...pdfFlags,
     createAt: str(raw.createAt),

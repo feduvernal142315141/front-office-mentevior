@@ -71,6 +71,7 @@ import { PdfNarrativesSections } from "./sections/PdfNarrativesSections"
 import { PdfSectionsVisibility } from "./sections/PdfSectionsVisibility"
 import { ProposedScheduleSection } from "./sections/ProposedScheduleSection"
 import { ProviderFilesSection } from "./sections/ProviderFilesSection"
+import { PreferenceAssessmentSection } from "./sections/PreferenceAssessmentSection"
 import { SectionPdfToggle } from "./sections/SectionPdfToggle"
 import type { AssessmentType } from "@/lib/types/assessment.types"
 
@@ -162,6 +163,9 @@ export function AssessmentForm({
     updateProviderFile,
     updatePdfText,
     updatePdfFlag,
+    addPreferenceAssessmentRow,
+    removePreferenceAssessmentRow,
+    updatePreferenceAssessmentRow,
     handleSubmit,
     isSaving,
   } = useAssessmentForm({ assessmentId, assessmentType })
@@ -519,6 +523,18 @@ export function AssessmentForm({
             />
             <FieldError message={errors.medicalHistoryTypeOfBirth} />
           </div>
+          <div className="md:col-span-2" data-field="medicalHistoryReasonForReferral">
+            <FloatingTextarea
+              label="Reason for referral"
+              value={formData.medicalHistoryReasonForReferral}
+              onChange={(v) => updateField("medicalHistoryReasonForReferral", v)}
+              onBlur={() => {}}
+              rows={4}
+              required
+              hasError={!!errors.medicalHistoryReasonForReferral}
+            />
+            <FieldError message={errors.medicalHistoryReasonForReferral} />
+          </div>
         </div>
       </Section>
 
@@ -623,6 +639,16 @@ export function AssessmentForm({
           {errors.medicalNecessity && <p className="mt-1.5 text-xs font-medium text-red-500">{errors.medicalNecessity}</p>}
         </div>
       </CollapsableSection>
+
+      <Section icon={<ClipboardList className="h-4 w-4" />} title="Preference Assessment" subtitle="Optional records included in the PDF before the assessment categories">
+        <PreferenceAssessmentSection
+          rows={formData.preferenceAssessment}
+          disabled={fieldsDisabled}
+          onAdd={addPreferenceAssessmentRow}
+          onRemove={removePreferenceAssessmentRow}
+          onUpdate={updatePreferenceAssessmentRow}
+        />
+      </Section>
 
       {/* ─── Categories & Items ─── */}
       <Section
