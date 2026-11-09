@@ -128,8 +128,8 @@ export function BaselinesTabContent({
               key={row.localId}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 space-y-3 overflow-visible relative z-0 focus-within:z-50"
             >
-              <div className="flex items-end gap-3">
-                <div className="flex-1 min-w-0">
+              <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end">
+                <div className="col-span-2 flex-1 min-w-0 sm:col-span-1">
                   <PremiumDatePicker
                     label="Date"
                     value={row.date}
@@ -164,7 +164,7 @@ export function BaselinesTabContent({
                   />
                 </div>
                 {requiresSessionDuration && (
-                  <div className="flex-1 min-w-0">
+                  <div className="col-span-2 flex-1 min-w-0 sm:col-span-1">
                     <FloatingInput
                       label={sessionDurationLabel(row.periodCatalogId)}
                       value={row.sessionDuration}
@@ -191,7 +191,7 @@ export function BaselinesTabContent({
                     type="button"
                     onClick={() => void handleDelete(row)}
                     className={cn(
-                      "shrink-0 flex items-center justify-center h-9 w-9 rounded-lg mb-1",
+                      "shrink-0 flex items-center justify-center h-9 w-9 rounded-lg sm:mb-1 col-span-2 justify-self-end sm:col-span-1 sm:justify-self-auto",
                       "text-red-400 hover:text-red-600 hover:bg-red-50",
                       "transition-colors"
                     )}
