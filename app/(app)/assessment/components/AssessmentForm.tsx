@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   BookOpen,
@@ -56,6 +56,8 @@ import { useAuth } from "@/lib/hooks/use-auth"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { useAlert } from "@/lib/contexts/alert-context"
+import { useUnsavedChangesRegistration } from "@/lib/contexts/unsaved-changes-context"
+import { useDirtyBaseline } from "@/lib/hooks/use-dirty-baseline"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { cn } from "@/lib/utils"
 import { useAssessmentForm } from "../hooks/useAssessmentForm"
@@ -170,6 +172,27 @@ export function AssessmentForm({
     isSaving,
   } = useAssessmentForm({ assessmentId, assessmentType })
 
+  const formSnapshot = useMemo(() => JSON.stringify(formData), [formData])
+  const { isBaselineReady, hasChanges, rebaseline } = useDirtyBaseline({
+    ready:
+      !isSaving &&
+      !clientsLoading &&
+      !isLoadingCatalogs &&
+      !categoriesLoading &&
+      (isEditing ? !!assessment && !detailLoading : !!formData.clientId),
+    snapshot: formSnapshot,
+  })
+
+  const saveBeforeNavigation = useCallback(async () => {
+    const id = await handleSubmit()
+    if (id) rebaseline()
+  }, [handleSubmit, rebaseline])
+
+  const { guard } = useUnsavedChangesRegistration({
+    isDirty: isBaselineReady && hasChanges,
+    onSave: saveBeforeNavigation,
+  })
+
   const canPersist = isEditing ? edit(PermissionModule.ASSESSMENT) : create(PermissionModule.ASSESSMENT)
 
   const draftReady =
@@ -192,10 +215,11 @@ export function AssessmentForm({
       if (formDisabled) return
       const id = await handleSubmit()
       if (!id) return
+      rebaseline()
       toast.success(isEditing ? "Assessment updated" : "Assessment created")
       router.push("/assessment")
     },
-    [handleSubmit, isEditing, router, formDisabled],
+    [handleSubmit, isEditing, rebaseline, router, formDisabled],
   )
 
   const handlePreview = useCallback(async () => {
@@ -204,8 +228,11 @@ export function AssessmentForm({
       return
     }
     const id = await handleSubmit()
-    if (id) setPreviewId(id)
-  }, [handleSubmit, formDisabled, assessmentId])
+    if (id) {
+      rebaseline()
+      setPreviewId(id)
+    }
+  }, [handleSubmit, formDisabled, assessmentId, rebaseline])
 
   const handleStatusChange = useCallback(
     async (next: "lock" | "active") => {
@@ -872,7 +899,7 @@ export function AssessmentForm({
 
       <FormBottomBar
         isSubmitting={isSaving}
-        onCancel={() => router.push("/assessment")}
+        onCancel={() => guard(() => router.push("/assessment"))}
         submitText={isEditing ? "Update Assessment" : "Create Assessment"}
         disabled={isSaving || formDisabled || !statusInfo.canSave || !canPersist}
       />

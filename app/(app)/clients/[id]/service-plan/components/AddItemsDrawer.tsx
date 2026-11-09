@@ -7,7 +7,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/custom/Button"
 import { Checkbox } from "@/components/custom/Checkbox"
-import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
 import {
   assignItemsToClientServicePlanCategory,
   getClientServicePlanItemCatalog,
@@ -27,7 +27,6 @@ interface AddItemsDrawerProps {
   onAssignSuccess: () => Promise<void> | void
 }
 
-const CLIENT_PAGE_HINT = 50
 
 export function AddItemsDrawer({
   open,
@@ -60,8 +59,8 @@ export function AddItemsDrawer({
   const isSelectable = useCallback(
     (item: ClientItemCatalogItem) => {
       if (mappedItemIds.has(item.id)) return false
-      if (activeCategoryId && item.categoryId && item.categoryId !== activeCategoryId) return false
-      return true
+      return !(activeCategoryId && item.categoryId && item.categoryId !== activeCategoryId);
+
     },
     [activeCategoryId, mappedItemIds],
   )
@@ -179,15 +178,15 @@ export function AddItemsDrawer({
         <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-6 py-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">Add items</h2>
-            <DrawerClose asChild>
-              <button
-                className="rounded-lg p-2 transition-colors hover:bg-gray-100"
-                aria-label="Close"
-                disabled={isAssigning}
-              >
-                <X className="h-5 w-5 text-gray-600" />
-              </button>
-            </DrawerClose>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-lg p-2 transition-colors hover:bg-gray-100"
+              aria-label="Close"
+              disabled={isAssigning}
+            >
+              <X className="h-5 w-5 text-gray-600" />
+            </button>
           </div>
         </div>
 
@@ -302,7 +301,7 @@ export function AddItemsDrawer({
                 void handleAssignItems()
               }}
               disabled={selectedItemIds.size === 0 || isAssigning}
-              className="min-w-[200px]"
+              className="min-w-50"
             >
               {isAssigning ? (
                 <>

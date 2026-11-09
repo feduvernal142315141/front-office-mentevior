@@ -6,11 +6,13 @@ import { ArrowLeft, ClipboardCheck } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { AssessmentForm } from "../components/AssessmentForm"
 import { useRequirePermission } from "@/lib/hooks/use-require-permission"
+import { useUnsavedChangesGuard } from "@/lib/contexts/unsaved-changes-context"
 import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 import type { AssessmentType } from "@/lib/types/assessment.types"
 
 export default function CreateAssessmentPage() {
   const router = useRouter()
+  const { guard } = useUnsavedChangesGuard()
   const [assessmentType, setAssessmentType] = useState<AssessmentType>("INITIAL_ASSESSMENT")
   const canCreate = useRequirePermission(PermissionModule.ASSESSMENT, PermissionAction.CREATE)
 
@@ -25,7 +27,7 @@ export default function CreateAssessmentPage() {
           <Button
             variant="secondary"
             className="h-10 w-10 p-0"
-            onClick={() => router.push("/assessment")}
+            onClick={() => guard(() => router.push("/assessment"))}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>

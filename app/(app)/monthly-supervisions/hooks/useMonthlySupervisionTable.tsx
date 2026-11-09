@@ -199,10 +199,10 @@ export function useMonthlySupervisionTable() {
     },
     {
       key: "hours",
-      header: "Supervised / Total",
+      header: "Supervised/Worked",
       render: (item) => (
         <span className="text-sm tabular-nums text-slate-700">
-          {formatHours(item.supervisedHours)} / {formatHours(item.totalHoursWorked)}
+          {formatHours(item.supervisedHours)} supervised/ {formatHours(item.totalHoursWorked)} worked
         </span>
       ),
     },

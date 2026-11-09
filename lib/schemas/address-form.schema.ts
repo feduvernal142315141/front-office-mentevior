@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { getTodayLocalDate } from "@/lib/date"
 
 /**
  * Validation schema
@@ -7,7 +6,6 @@ import { getTodayLocalDate } from "@/lib/date"
 export const addressFormSchema = z.object({
   nickName: z
     .string()
-    .min(1, "Nickname is required")
     .max(100, "Nickname must be less than 100 characters"),
   
   placeServiceId: z

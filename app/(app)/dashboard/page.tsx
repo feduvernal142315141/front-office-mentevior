@@ -13,7 +13,6 @@ import { DocumentCompliance } from "./components/DocumentCompliance"
 import { ExpiringList } from "./components/ExpiringList"
 import { KpiRow } from "./components/KpiRow"
 import { LastUpdated } from "./components/LastUpdated"
-import { MonthlySupervisionPendingCard } from "./components/MonthlySupervisionPendingCard"
 import { ScopeToggle } from "./components/ScopeToggle"
 import { TrendChart } from "./components/TrendChart"
 import { type AttentionFilter, ALL_FILTER, matchesFilter } from "./components/attention-filter"
@@ -164,9 +163,10 @@ export default function DashboardPage() {
                   : "grid scroll-mt-6 grid-cols-1 gap-5"
               }
             >
-              <div className={layout.showAuthorizationUtilization ? "xl:col-span-2" : undefined}>
+              <div className={layout.showAuthorizationUtilization ? "xl:col-span-3" : undefined}>
                 <ExpiringList
                   items={filteredItems}
+                  monthlySupervisionItems={summary?.monthlySupervisionsPendingSignature}
                   hasData={!!summary?.expiring}
                   truncatedCount={truncatedCount}
                   isLoading={isLoading}
@@ -180,10 +180,6 @@ export default function DashboardPage() {
                   isLoading={isLoading}
                 />
               )}
-              <MonthlySupervisionPendingCard
-                items={summary?.monthlySupervisionsPendingSignature}
-                isLoading={isLoading}
-              />
             </div>
 
             <div

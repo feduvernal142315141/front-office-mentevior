@@ -120,6 +120,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
   const canEditSuperviseeSignature =
     hasMonthlySupervisionSignPermission &&
     (!!user?.id && !!providerId && (user.id === providerId || isPrivilegedSigner))
+  const hasPersistedSuperviseeSign = isEditing && !!context?.superviseeSign
 
   const clientOptions = useMemo(
     () => clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
@@ -420,10 +421,15 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
     isEditing &&
     isReadOnly &&
     hasMonthlySupervisionSignPermission &&
-    !!superviseeSign &&
+    !hasPersistedSuperviseeSign &&
     !isBusy &&
     !isBlocked
   const canSave = canSignOnly || (hasSelection && appointments.length > 0 && !isBusy && !isBlocked && !isReadOnly)
+  const submitText = isEditing
+    ? hasPersistedSuperviseeSign
+      ? "Update Monthly Supervision"
+      : "Sign Monthly Supervision"
+    : "Create Monthly Supervision"
 
   if (isEditing && contextLoading && !context) {
     return (
@@ -689,7 +695,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
       <FormBottomBar
         isSubmitting={isSaving}
         onCancel={() => router.push("/monthly-supervisions")}
-        submitText={canSignOnly ? "Sign Monthly Supervision" : isEditing ? "Update Monthly Supervision" : "Create Monthly Supervision"}
+        submitText={submitText}
         disabled={!canSave}
       />
 

@@ -1,9 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { BadgeCheck, CalendarClock, FileText, IdCard, PartyPopper, ShieldCheck, X } from "lucide-react"
-import type { ExpiringItem, ExpiringKind } from "@/lib/types/dashboard.types"
+import { BadgeCheck, CalendarClock, FileSignature, FileText, IdCard, Inbox, PartyPopper, ShieldCheck, X } from "lucide-react"
+import type { ExpiringItem, ExpiringKind, MonthlySupervisionPendingSignature } from "@/lib/types/dashboard.types"
 import { EXPIRING_KIND_LABEL, formatDaysRemaining, sortExpiringItems } from "@/lib/modules/dashboard/utils/severity"
+import { formatReportMonthLong, parseReportMonth } from "@/lib/utils/report-month"
 import type { AttentionFilter } from "./attention-filter"
 import { SectionCard } from "@/components/custom/SectionCard"
 import { Button } from "@/components/custom/Button"
@@ -25,6 +26,8 @@ const COLLAPSED_COUNT = 6
 interface ExpiringListProps {
   /** Ya filtrados por rol y por el filtro activo del hero */
   items: ExpiringItem[]
+  /** Supervisiones mensuales pendientes que también requieren atención */
+  monthlySupervisionItems?: MonthlySupervisionPendingSignature[]
   /** Si el backend todavía no entregó la sección */
   hasData: boolean
   /** Vencimientos que existen pero no llegaron: el backend manda el top 20 */
@@ -47,6 +50,7 @@ interface ExpiringListProps {
  */
 export function ExpiringList({
   items,
+  monthlySupervisionItems,
   hasData,
   truncatedCount = 0,
   isLoading,
@@ -62,6 +66,16 @@ export function ExpiringList({
   // usuario acaba de pedir ver sería trabajarle en contra.
   const visible = expanded || isFiltered ? sorted : sorted.slice(0, COLLAPSED_COUNT)
   const hiddenCount = sorted.length - visible.length
+  const pendingSupervisions = monthlySupervisionItems ?? []
+  const hasPendingSupervisions = pendingSupervisions.length > 0
+  const hasPendingSupervisionsData = monthlySupervisionItems !== undefined
+
+  const subtitle = [
+    sorted.length > 0 ? `${sorted.length} expiring soon` : null,
+    hasPendingSupervisions ? `${pendingSupervisions.length} pending signature` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   const filterLabel =
     filter.type === "critical"
@@ -74,7 +88,7 @@ export function ExpiringList({
     <SectionCard
       icon={<CalendarClock className="h-4 w-4" />}
       title="Needs your attention"
-      subtitle={sorted.length > 0 ? `${sorted.length} expiring soon` : undefined}
+      subtitle={subtitle || undefined}
       action={
         filterLabel ? (
           <button
@@ -98,7 +112,7 @@ export function ExpiringList({
 
         {!isLoading && !hasData && <WidgetPendingBackend label="Expirations" />}
 
-        {!isLoading && hasData && sorted.length === 0 && (
+        {!isLoading && hasData && sorted.length === 0 && !hasPendingSupervisions && (
           isFiltered ? (
             <div className="py-10 text-center">
               <p className="text-sm font-semibold text-slate-800">Nothing in this group</p>
@@ -178,7 +192,57 @@ export function ExpiringList({
             )}
           </>
         )}
+
+        {!isLoading && hasPendingSupervisionsData && hasPendingSupervisions && (
+          <div className={sorted.length > 0 ? "mt-4 border-t border-slate-100 pt-3" : ""}>
+            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Monthly supervisions to sign
+            </p>
+            <ul className="-mx-2 divide-y divide-slate-100">
+              {pendingSupervisions.map((item) => (
+                <li key={item.id}>
+                  <RowLink
+                    href={`/monthly-supervisions/${item.id}/edit`}
+                    className="flex items-center gap-3 rounded-lg border-l-2 border-amber-400 px-3 py-3 transition-colors hover:bg-slate-50"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white">
+                      <FileSignature className="h-4 w-4 text-slate-500" aria-hidden />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900">{item.clientName}</p>
+                      <p className="truncate text-xs text-slate-500">{formatPendingMonth(item.requestedReportDate)}</p>
+                    </div>
+                    <RowChevron />
+                  </RowLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {!isLoading && !hasPendingSupervisionsData && (
+          <div className={sorted.length > 0 ? "mt-4 border-t border-slate-100 pt-3" : ""}>
+            <WidgetPendingBackend label="Monthly Supervision signatures" />
+          </div>
+        )}
+
+        {!isLoading && hasPendingSupervisionsData && pendingSupervisions.length === 0 && sorted.length === 0 && (
+          <WidgetEmptyState
+            icon={<Inbox className="h-5 w-5" />}
+            title="Nothing needs your attention"
+            description="No expirations or monthly supervisions are waiting for you."
+            tone="positive"
+          />
+        )}
       </div>
     </SectionCard>
   )
+}
+
+function formatPendingMonth(value?: string): string {
+  const parsed = parseReportMonth(value)
+  if (parsed) return formatReportMonthLong(parsed)
+
+  const legacy = /^(0[1-9]|1[0-2])(\d{4})$/.exec(value?.trim() ?? "")
+  return legacy ? formatReportMonthLong(`${legacy[2]}${legacy[1]}`) : "Month unavailable"
 }
