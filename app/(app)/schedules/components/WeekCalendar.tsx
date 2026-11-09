@@ -488,7 +488,7 @@ export function WeekCalendar({
             </div>
           </div>
         </div>
-      ) : calendarView === "week" && !isMobile ? (
+      ) : calendarView === "week" ? (
       /* ─── Provider time-grid view: appointments positioned by time slot ─── */
       <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         {isLoadingAppointments && (
