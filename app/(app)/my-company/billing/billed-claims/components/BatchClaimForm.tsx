@@ -151,7 +151,7 @@ export function BatchClaimForm({ form, onSaved }: BatchClaimFormProps) {
         >
           <div className="space-y-4">
             <div className="flex items-start gap-3" data-form-field="dateRange">
-              <div className="max-w-[320px] flex-1">
+              <div className="max-w-none sm:max-w-[320px] flex-1">
                 <PremiumDateRangePicker
                   label="Service Period"
                   startValue={startDate}

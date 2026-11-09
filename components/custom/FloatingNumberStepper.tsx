@@ -108,7 +108,7 @@ export function FloatingNumberStepper({
               onBlur={handleBlur}
               onChange={handleInputChange}
               className={cn(
-                "min-w-0 w-full h-full bg-transparent text-center text-[15px] 2xl:text-[16px] font-semibold text-gray-900 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                "min-w-0 w-full h-full bg-transparent text-center text-base sm:text-[15px] 2xl:text-[16px] font-semibold text-gray-900 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
                 suffix && "pr-5"
               )}
             />

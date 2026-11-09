@@ -17,7 +17,7 @@ export default function SupervisionPage() {
   }
 
   return (
-    <div className="bg-gray-50/50 p-6 pb-28">
+    <div className="bg-gray-50/50 p-4 pb-28 sm:p-6 sm:pb-28">
       <div className="mx-auto max-w-5xl xl:max-w-6xl">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -25,7 +25,7 @@ export default function SupervisionPage() {
               <Eye className="h-8 w-8 text-[#037ECC]" />
             </div>
             <div>
-              <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
+              <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-2xl font-bold sm:text-3xl text-transparent">
                 Supervision
               </h1>
               <p className="mt-1 text-slate-600">Configure supervision event settings</p>

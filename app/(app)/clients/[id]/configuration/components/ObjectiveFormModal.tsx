@@ -211,7 +211,7 @@ export function ObjectiveFormModal({
       allowSelectOverflow
       contentClassName="sm:!overflow-visible"
     >
-      <div className="px-6 py-5 space-y-5">
+      <div className="px-4 sm:px-6 py-5 space-y-5">
         {/* Name */}
         <FloatingTextarea
           label="Name"
@@ -224,7 +224,7 @@ export function ObjectiveFormModal({
         />
 
         {/* Dates */}
-        <div className={form.endDate ? "grid grid-cols-3 gap-4" : "grid grid-cols-2 gap-4"}>
+        <div className={form.endDate ? "grid grid-cols-1 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-4"}>
           <PremiumDatePicker
             label="Start Date"
             value={form.startDate}
@@ -282,7 +282,7 @@ export function ObjectiveFormModal({
         {/* Duration */}
         <div>
           <label className="text-sm font-medium text-slate-600 mb-2 block">Duration</label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FloatingInput
               label="Value"
               value={form.valueDuration}
@@ -305,7 +305,7 @@ export function ObjectiveFormModal({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-gray-100">
         <div>
           {!isEdit && (
             <Button type="button" variant="secondary" onClick={handleClear} className="!text-red-600 !border-red-200 hover:!bg-red-50">

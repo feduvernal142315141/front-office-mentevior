@@ -36,14 +36,14 @@ export function WizardHeader({
   const status = statusConfig[profileStatus]
 
   return (
-    <div className="bg-white border-b border-slate-200/60 px-8 py-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="bg-white border-b border-slate-200/60 px-4 sm:px-8 py-4 sm:py-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-4 min-w-0">
           <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
             <UserSquare2 className="h-7 w-7 text-[#037ECC]" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl truncate font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
               {clientName}
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">

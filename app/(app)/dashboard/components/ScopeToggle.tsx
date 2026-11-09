@@ -58,7 +58,7 @@ export function ScopeToggle({ scope, onChange, disabled }: ScopeToggleProps) {
             aria-checked={active}
             onClick={() => onChange(option.value)}
             className={cn(
-              "relative z-10 inline-flex min-w-[104px] items-center justify-center gap-1.5 rounded-full",
+              "relative z-10 inline-flex min-w-[88px] sm:min-w-[104px] items-center justify-center gap-1.5 rounded-full",
               "px-3.5 py-1.5 text-xs font-semibold transition-colors duration-200",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/30 focus-visible:ring-offset-1",
               active ? "text-[#037ECC]" : "text-slate-500 hover:text-slate-700",

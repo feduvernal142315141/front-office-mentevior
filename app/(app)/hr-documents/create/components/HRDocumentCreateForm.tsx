@@ -55,7 +55,7 @@ export function HRDocumentCreateForm({ mode, catalogId, initialDocumentName }: H
   return (
     <form onSubmit={handleSubmit} className="pb-24">
       <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div className="space-y-2">
             <FloatingInput
               label="Document Name"

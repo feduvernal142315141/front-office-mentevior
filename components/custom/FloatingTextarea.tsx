@@ -112,7 +112,7 @@ export function FloatingTextarea({
             premium-input
             px-4 py-3
             rounded-[16px]
-            text-[15px] 2xl:text-[16px]
+            text-base sm:text-[15px] 2xl:text-[16px]
             resize-y
 
             placeholder:text-transparent

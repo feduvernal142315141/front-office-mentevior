@@ -61,7 +61,7 @@ export function LoginForm({ company }: LoginFormProps) {
   }
 
   return (
-    <div className="login-card-wrapper relative w-full max-w-[440px] 2xl:max-w-[500px] bg-white rounded-[28px] p-12 2xl:p-14 login-large-screen-spacing animate-in fade-in slide-in-from-bottom-8 duration-600 delay-400">
+    <div className="login-card-wrapper relative w-full max-w-[440px] 2xl:max-w-[500px] bg-white rounded-[28px] p-6 sm:p-12 2xl:p-14 login-large-screen-spacing animate-in fade-in slide-in-from-bottom-8 duration-600 delay-400">
       {step === "otp" && challenge ? (
         <OtpStep
           email={submittedEmail}

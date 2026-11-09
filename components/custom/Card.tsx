@@ -84,8 +84,8 @@ const paddingStyles: Record<CardPadding, string> = {
   none: "p-0",
   sm: "p-3",
   md: "p-4",
-  lg: "p-6",
-  xl: "p-8",
+  lg: "p-4 sm:p-6",
+  xl: "p-5 sm:p-8",
 }
 
 export function Card({

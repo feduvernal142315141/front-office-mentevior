@@ -716,7 +716,7 @@ export function ItemDetailPanel({
       className="rounded-2xl border border-slate-200 bg-white shadow-sm"
     >
       {/* ── Header ── */}
-      <div className="border-b border-slate-100 px-6 py-4 flex items-center justify-between gap-4">
+      <div className="border-b border-slate-100 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
         <button
           type="button"
           onClick={() => guardedNavigate(onBack)}
@@ -726,7 +726,7 @@ export function ItemDetailPanel({
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
           <span>{categoryName}</span>
           <span className="text-slate-400">/</span>
-          <span className="text-slate-700 truncate max-w-[280px]">{itemName}</span>
+          <span className="text-slate-700 truncate max-w-[60vw] sm:max-w-[280px]">{itemName}</span>
         </button>
         <Controller
           name="active"
@@ -1213,18 +1213,19 @@ export function ItemDetailPanel({
           ? "bg-amber-50/95 border-amber-200"
           : "bg-white/95 border-gray-200"
       )}>
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {hasUnsavedChanges && (
               <div className="flex items-center gap-2 text-amber-700">
                 <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                 <span className="text-sm font-medium">Unsaved changes</span>
               </div>
             )}
-            <div className={cn("flex items-center gap-3", !hasUnsavedChanges && "ml-auto")}>
+            <div className={cn("flex w-full sm:w-auto items-center gap-3", !hasUnsavedChanges && "ml-auto")}>
               <Button
                 type="button"
                 variant="secondary"
+                className="flex-1 sm:flex-none"
                 onClick={() => guardedNavigate(onBack)}
                 disabled={isSaving}
               >
@@ -1235,7 +1236,7 @@ export function ItemDetailPanel({
                 variant="primary"
                 loading={isSaving}
                 disabled={!canEdit || (!hasUnsavedChanges && !isSaving)}
-                className="gap-2"
+                className="gap-2 flex-1 sm:flex-none"
               >
                 <Save className="h-4 w-4" />
                 {isSaving ? "Saving..." : "Save"}

@@ -404,7 +404,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                 return (
                   <div key={key} className={cn("px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
                     {count > 0 ? (
-                      <div className="grid grid-cols-5 gap-1">
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-1">
                         {Array.from({ length: count }, (_, i) => (
                           <div key={i} className="h-7 rounded-md bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-400 flex items-center justify-center">X</div>
                         ))}

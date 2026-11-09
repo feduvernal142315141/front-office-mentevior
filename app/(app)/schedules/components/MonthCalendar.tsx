@@ -202,7 +202,7 @@ function MonthDayCell({ day, dateKey, count, inMonth, today, appointments, onCli
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "group relative flex flex-col items-start gap-1.5 px-3 py-3 min-h-[100px] text-left transition-colors hover:bg-slate-50/80",
+        "group relative flex flex-col items-start gap-1.5 px-1.5 sm:px-3 py-3 min-h-[100px] text-left transition-colors hover:bg-slate-50/80",
         !inMonth && "bg-slate-50/40",
       )}
     >

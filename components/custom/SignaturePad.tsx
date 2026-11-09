@@ -109,7 +109,7 @@ export function SignaturePad(props: UseSignaturePadOptions & { width?: number; h
       width: props.width ?? 820,
       height: props.height ?? 260,
       className: cn(
-        "rounded-lg border border-gray-200 bg-white touch-none select-none",
+        "max-w-full h-auto rounded-lg border border-gray-200 bg-white touch-none select-none",
         props.disabled ? "opacity-60 cursor-not-allowed" : "cursor-crosshair",
         props.className,
       ),

@@ -94,7 +94,7 @@ export function AppointmentPreviewPopover({
           <PreviewRow icon={MapPin} label="Location" value={locationLabel} />
         </div>
 
-        <div className="flex gap-2 bg-slate-50 px-4 py-3 border-t border-slate-100">
+        <div className="flex flex-wrap gap-2 bg-slate-50 px-4 py-3 border-t border-slate-100">
           <Button
             type="button"
             variant="secondary"

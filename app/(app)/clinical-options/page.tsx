@@ -105,14 +105,14 @@ export default function ClinicalOptionsPage() {
   )
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center gap-4">
           <div className="rounded-xl border border-[#037ECC]/20 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 p-3">
             <Stethoscope className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div>
-            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
+            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-2xl sm:text-3xl font-bold text-transparent">
               Clinical Options
             </h1>
             <p className="mt-1 text-slate-600">Everything you need for day-to-day clinical work</p>
@@ -129,7 +129,7 @@ export default function ClinicalOptionsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {modules.map((module) => {
               const IconComponent = module.icon
               return (

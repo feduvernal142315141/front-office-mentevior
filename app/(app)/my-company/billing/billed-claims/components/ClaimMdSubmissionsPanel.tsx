@@ -145,7 +145,7 @@ export function ClaimMdSubmissionsPanel({
 
       {!isLoading && !error && submissions.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left">
                 {canResubmit && (

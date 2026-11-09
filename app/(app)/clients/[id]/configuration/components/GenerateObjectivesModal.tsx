@@ -559,9 +559,9 @@ export function GenerateObjectivesModal({
       allowSelectOverflow
       contentClassName="sm:!overflow-visible"
     >
-      <div className="px-6 py-5 space-y-5 max-h-[calc(85vh-140px)] min-h-[520px] overflow-y-auto custom-scrollbar">
+      <div className="px-4 sm:px-6 py-5 space-y-5 max-h-[calc(85dvh-140px)] sm:min-h-[520px] overflow-y-auto custom-scrollbar">
         {/* Generation mode + quantity or percentage stepper */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FloatingSelect
             label="Generation type"
             value={form.generationMode}
@@ -599,7 +599,7 @@ export function GenerateObjectivesModal({
         )}
 
         {/* Start / End value */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <FloatingInput
               label="Start Value"
@@ -646,7 +646,7 @@ export function GenerateObjectivesModal({
         )}
 
         {/* Smart Criteria */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FloatingSelect
             label="Smart Criteria"
             value={form.operatorSmartCriteria}
@@ -679,7 +679,7 @@ export function GenerateObjectivesModal({
         {/* Duration */}
         <div>
           <label className="text-sm font-medium text-slate-600 mb-2 block">Duration</label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FloatingInput
               label="Value"
               value={form.valueDuration}

@@ -87,6 +87,7 @@ export function SearchInput({
           className={cn(
             `
               absolute right-3 top-1/2 -translate-y-1/2
+              before:absolute before:-inset-2 before:content-['']
               w-7 h-7
               flex items-center justify-center
               rounded-lg

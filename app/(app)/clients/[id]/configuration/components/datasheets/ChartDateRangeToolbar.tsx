@@ -58,9 +58,9 @@ export function ChartDateRangeToolbar({
 
   return (
     // data-html2canvas-ignore: la barra de rango del gráfico no sale en el PDF exportado
-    <div data-html2canvas-ignore className={cn("flex items-center justify-between", compact ? "flex-wrap gap-2" : "gap-3")}>
+    <div data-html2canvas-ignore className={cn("flex items-center justify-between", compact ? "flex-wrap gap-2" : "flex-wrap gap-3")}>
       {/* Left: Range presets + Interval toggle */}
-      <div className={cn("flex items-center", compact ? "gap-1.5" : "gap-2.5")}>
+      <div className={cn("flex flex-wrap items-center", compact ? "gap-1.5" : "gap-2.5")}>
         {/* Range presets */}
         <div className={cn("flex items-center gap-1 rounded-xl bg-slate-100/80 p-1", presetsDisabled && !isCustom && "opacity-40")}>
           {CHART_RANGE_PRESETS.map((p) => (
@@ -109,7 +109,7 @@ export function ChartDateRangeToolbar({
       </div>
 
       {/* Right: Date range display + navigation */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {isCustom && onCustomRangeChange ? (
           <CustomDateRangePicker
             start={customStart ?? null}
@@ -132,7 +132,7 @@ export function ChartDateRangeToolbar({
 
             <div className={cn(
               "flex items-center gap-2 rounded-lg border border-slate-200 bg-white justify-center",
-              compact ? "px-2 py-1" : "px-3 py-1.5 min-w-[200px]",
+              compact ? "px-2 py-1" : "px-3 py-1.5 min-w-0 sm:min-w-[200px]",
             )}>
               <CalendarDays className="h-3.5 w-3.5 text-[#037ECC] shrink-0" />
               <span className={cn("font-medium text-slate-700 whitespace-nowrap", compact ? "text-[11px]" : "text-sm")}>
@@ -215,7 +215,7 @@ function CustomDateRangePicker({
   )
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Popover open={startOpen} onOpenChange={setStartOpen}>
         <PopoverTrigger asChild>
           <button type="button" className={cn(btnCls, !start && "text-slate-400")}>

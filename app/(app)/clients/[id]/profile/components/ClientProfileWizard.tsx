@@ -537,7 +537,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
         profileStatus={profileStatus}
       />
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 flex-col lg:flex-row">
         <WizardStepper
           steps={steps}
           activeStepIndex={activeStepIndex}

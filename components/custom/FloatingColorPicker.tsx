@@ -94,7 +94,7 @@ export function FloatingColorPicker({
                 "flex items-center gap-3",
                 "w-full h-[52px] 2xl:h-[56px]",
                 "px-4 pr-12 rounded-[16px]",
-                "text-left text-[15px] 2xl:text-[16px]",
+                "text-left text-base sm:text-[15px] 2xl:text-[16px]",
                 "text-[var(--color-login-text-primary)]",
                 "bg-gradient-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
                 hasError

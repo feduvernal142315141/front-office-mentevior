@@ -131,7 +131,7 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
               </div>
             </div>
           </div>
-          <div className="px-6 py-5 flex items-center gap-8">
+          <div className="px-6 py-5 flex flex-wrap items-center gap-4 sm:gap-8">
             <Controller
               name="professionalInformation"
               control={form.control}

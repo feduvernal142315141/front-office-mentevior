@@ -29,7 +29,7 @@ export default function EditPhysicianPage({ params }: EditPhysicianPageProps) {
             <Stethoscope className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
               Edit Physician
             </h1>
             <p className="text-slate-600 mt-1">Update physician information</p>

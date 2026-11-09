@@ -410,7 +410,7 @@ export function AppointmentModal({
               pendingValidation ||
               !!validationError
             }
-            className="h-10 min-w-[180px]"
+            className="h-10 min-w-0 sm:min-w-[180px]"
             onClick={handleSubmit}
           >
             {isEditing ? "Update" : "Create"} Session

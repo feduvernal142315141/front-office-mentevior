@@ -258,7 +258,7 @@ export function SupervisionConfigModal({
           variant="primary"
           onClick={handleSave}
           loading={isSubmitting}
-          className="h-10 min-w-[160px]"
+          className="h-10 min-w-0 sm:min-w-[160px]"
         >
           {isEditing ? "Update" : "Add"} {isSessionSupervision ? "Session" : "Supervision"}
         </Button>

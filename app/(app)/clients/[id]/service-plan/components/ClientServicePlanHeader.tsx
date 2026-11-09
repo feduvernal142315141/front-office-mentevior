@@ -10,7 +10,7 @@ export function ClientServicePlanHeader() {
           <Sliders className="h-8 w-8 text-[#037ECC]" />
         </div>
         <div>
-          <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
+          <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-2xl sm:text-3xl font-bold text-transparent">
             Client Service Plan
           </h1>
           <p className="mt-1 text-slate-600">Configure the service plan for this client</p>

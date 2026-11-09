@@ -172,7 +172,7 @@ export function StepPriorAuthorizations({
 
   if (!resolvedClientId) {
     return (
-      <div className="w-full p-8">
+      <div className="w-full p-4 sm:p-8">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
           <p className="text-amber-700 font-medium">
             Please save the client first before managing prior authorizations.
