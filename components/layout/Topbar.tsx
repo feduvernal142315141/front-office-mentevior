@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { LogOut, KeyRound, User } from "lucide-react"
+import { LogOut, KeyRound, Menu, User } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useLogout } from "@/lib/modules/auth/hooks/use-logout"
 import { Breadcrumbs } from "./Breadcrumbs"
+import { useUi } from "@/lib/store/ui.store"
 import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { useUnsavedChangesGuard } from "@/lib/contexts/unsaved-changes-context"
 
@@ -23,6 +24,7 @@ export function Topbar() {
   const { logout } = useLogout()
   const router = useRouter()
   const { guard } = useUnsavedChangesGuard()
+  const setMobileSidebarOpen = useUi((state) => state.setMobileSidebarOpen)
   
   const { user: fullUser } = useUserById(user?.id || null)
   
@@ -33,10 +35,20 @@ export function Topbar() {
 
   return (
     <header className="navbar-glass top-0">
-      <div className="flex items-center justify-between px-6 gap-6 h-16 border-b border-gray-100">
-        <Breadcrumbs />
+      <div className="flex items-center justify-between px-3 sm:px-6 gap-2 sm:gap-6 h-16 border-b border-gray-100">
+        <button
+          type="button"
+          onClick={() => setMobileSidebarOpen(true)}
+          aria-label="Open menu"
+          className="lg:hidden shrink-0 h-10 w-10 rounded-lg flex items-center justify-center text-gray-700 hover:bg-gray-100"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <Breadcrumbs />
+        </div>
 
-        <div className="ml-auto">
+        <div className="ml-auto shrink-0">
           {hydrated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -27,8 +27,8 @@ export function WizardFooter({
 }: WizardFooterProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200/60 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] z-50">
-      <div className="max-w-[1800px] mx-auto px-8 py-5 flex items-center justify-end">
-        <div className="flex items-center gap-3">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-8 py-3 sm:py-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-end">
+        <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3">
           {primaryActionLabel ? (
             <>
               <Button
@@ -36,7 +36,7 @@ export function WizardFooter({
                 variant="secondary"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="h-12 px-8"
+                className="h-12 px-4 sm:px-8 flex-1 sm:flex-none"
               >
                 Close
               </Button>
@@ -46,7 +46,7 @@ export function WizardFooter({
                 onClick={onSave}
                 loading={isSubmitting}
                 disabled={isSubmitting}
-                className="h-12 px-8 min-w-[180px]"
+                className="h-12 px-4 sm:px-8 flex-1 sm:flex-none sm:min-w-[180px]"
               >
                 {primaryActionLabel}
               </Button>
@@ -58,7 +58,7 @@ export function WizardFooter({
                 variant="secondary"
                 onClick={onCancel}
                 disabled={isSubmitting}
-                className="h-12 px-8"
+                className="h-12 px-4 sm:px-8 flex-1 sm:flex-none"
               >
                 Cancel
               </Button>
@@ -69,7 +69,7 @@ export function WizardFooter({
                 onClick={onSaveAndContinue}
                 disabled={!canContinue || isSubmitting}
                 loading={isSubmitting}
-                className="h-12 px-8 min-w-[180px]"
+                className="h-12 px-4 sm:px-8 flex-1 sm:flex-none sm:min-w-[180px]"
               >
                 Save
               </Button>
@@ -80,7 +80,7 @@ export function WizardFooter({
               variant="secondary"
               onClick={onClose}
               disabled={isSubmitting}
-              className="h-12 px-8"
+              className="h-12 px-4 sm:px-8 flex-1 sm:flex-none"
             >
               Close
             </Button>

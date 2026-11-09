@@ -84,14 +84,16 @@ export function Sidebar() {
     const pathname = usePathname()
     const router = useRouter()
     const {guard} = useUnsavedChangesGuard()
-    const {sidebarCollapsed, toggleSidebar} = useUi()
+    const {sidebarCollapsed: storeCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen} = useUi()
     const {company, hydrated} = useAuth()
     const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
     const filteredNavItems = useFilteredNavItems()
 
     const {completionMap, isLoading: completionLoading, isSectionComplete, getMissingCount} = useSectionCompletion()
 
-    const isMobile = useMediaQuery("(max-width: 1024px)")
+    const isMobile = useMediaQuery("(max-width: 1023px)")
+    // En móvil el sidebar es un drawer: siempre expandido (con labels).
+    const sidebarCollapsed = isMobile ? false : storeCollapsed
 
     const companyName = company?.name
     const companyLogo = company?.logo
@@ -128,6 +130,7 @@ export function Sidebar() {
         if (pathname === href) return
         guard(() => {
             onNavigate?.()
+            setMobileSidebarOpen(false)
             router.push(href)
         })
     }
@@ -154,17 +157,29 @@ export function Sidebar() {
     }, [pathname, filteredNavItems])
 
     useEffect(() => {
-        if (isMobile && !sidebarCollapsed) {
+        setMobileSidebarOpen(false)
+    }, [pathname, setMobileSidebarOpen])
+
+    useEffect(() => {
+        if (isMobile && !storeCollapsed) {
             toggleSidebar()
         }
 
-        if (!isMobile && sidebarCollapsed) {
+        if (!isMobile && storeCollapsed) {
             toggleSidebar()
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isMobile])
 
     return (
+        <>
+        {mobileSidebarOpen && (
+            <div
+                className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+                onClick={() => setMobileSidebarOpen(false)}
+                aria-hidden="true"
+            />
+        )}
         <motion.aside
             initial={false}
             animate={{
@@ -172,14 +187,15 @@ export function Sidebar() {
                     : 300,
             }}
             transition={{duration: 0.3, ease: [0.4, 0, 0.2, 1]}}
-            className="
-        fixed left-0 top-0 z-40 h-screen
-        bg-white
+            className={cn(`
+        fixed left-0 top-0 z-40 h-dvh max-w-[85vw]
+        transition-transform duration-300
+        bg-white`, !mobileSidebarOpen && "max-lg:-translate-x-full", `
         border-r border-border/30
         backdrop-blur-xl
         flex flex-col
         shadow-[0_8px_30px_rgb(0,0,0,0.04)]
-      "
+      `)}
         >
             <div
                 className={`relative h-16 flex border-b border-border/20 ${sidebarCollapsed ? "items-center justify-center" : "px-6"}`}>
@@ -249,6 +265,7 @@ export function Sidebar() {
                 <button
                     onClick={toggleSidebar}
                     className="
+            max-lg:hidden
             absolute -right-3 top-1/2 -translate-y-1/2
             h-7 w-7 rounded-full
             flex items-center justify-center
@@ -549,5 +566,6 @@ export function Sidebar() {
                 </div>
             </nav>
         </motion.aside>
+        </>
     )
 }

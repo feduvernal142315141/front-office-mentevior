@@ -198,26 +198,26 @@ export function Breadcrumbs() {
   }
 
   return (
-    <nav className="flex items-center gap-3 ml-2">
+    <nav className="flex items-center gap-2 sm:gap-3 sm:ml-2 min-w-0">
       {showBackButton && (
         <>
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
+            className="flex shrink-0 items-center gap-2 px-3 py-2 sm:py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back</span>
           </button>
-          <div className="h-4 w-px bg-gray-300" />
+          <div className="h-4 w-px bg-gray-300 shrink-0" />
         </>
       )}
       
-      <div className="flex items-center gap-2 text-sm text-gray-500">
+      <div className="flex items-center gap-2 text-sm text-gray-500 min-w-0">
         {breadcrumbs.map((crumb, index) => (
           <Fragment key={crumb.href}>
-            {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-gray-400" />}
+            {index > 0 && <ChevronRight className="hidden sm:block h-3.5 w-3.5 text-gray-400 shrink-0" />}
             {crumb.isLast ? (
-              <span className="text-gray-900 font-medium">{crumb.label}</span>
+              <span className="text-gray-900 font-medium truncate">{crumb.label}</span>
             ) : (
               <Link
                 href={crumb.href}
@@ -225,7 +225,7 @@ export function Breadcrumbs() {
                   event.preventDefault()
                   guard(() => router.push(crumb.href))
                 }}
-                className="hover:text-gray-900 transition-colors"
+                className="hidden sm:inline hover:text-gray-900 transition-colors"
               >
                 {crumb.label}
               </Link>

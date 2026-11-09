@@ -209,7 +209,7 @@ export function ObjectiveFormModal({
       title={isEdit ? "Edit Objective" : "New Objective"}
       maxWidthClassName="sm:max-w-[720px]"
       allowSelectOverflow
-      contentClassName="!overflow-visible"
+      contentClassName="sm:!overflow-visible"
     >
       <div className="px-6 py-5 space-y-5">
         {/* Name */}

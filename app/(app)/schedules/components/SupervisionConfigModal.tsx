@@ -219,7 +219,7 @@ export function SupervisionConfigModal({
       }
       maxWidthClassName="sm:max-w-[560px]"
       allowSelectOverflow
-      contentClassName="!overflow-visible"
+      contentClassName="sm:!overflow-visible"
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
       <div className="px-7 py-6 space-y-4">

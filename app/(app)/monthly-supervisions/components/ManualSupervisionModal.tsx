@@ -85,7 +85,7 @@ export function ManualSupervisionModal({
       title={draft?.id ? "Edit Manual Supervision" : "Add Manual Supervision"}
       description="Complete the supervision details. The note is optional."
       maxWidthClassName="sm:max-w-[860px]"
-      contentClassName="!overflow-visible"
+      contentClassName="sm:!overflow-visible"
     >
       <div className="space-y-4 px-6 py-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

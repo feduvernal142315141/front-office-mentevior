@@ -557,7 +557,7 @@ export function GenerateObjectivesModal({
       }
       maxWidthClassName="sm:max-w-[720px]"
       allowSelectOverflow
-      contentClassName="!overflow-visible"
+      contentClassName="sm:!overflow-visible"
     >
       <div className="px-6 py-5 space-y-5 max-h-[calc(85vh-140px)] min-h-[520px] overflow-y-auto custom-scrollbar">
         {/* Generation mode + quantity or percentage stepper */}

@@ -79,7 +79,7 @@ export function ManualLogEntryModal({
       description="Date and times are required; everything else is optional."
       maxWidthClassName="sm:max-w-[860px]"
       allowSelectOverflow
-      contentClassName="!overflow-visible"
+      contentClassName="sm:!overflow-visible"
     >
       <div className="space-y-4 px-6 py-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
