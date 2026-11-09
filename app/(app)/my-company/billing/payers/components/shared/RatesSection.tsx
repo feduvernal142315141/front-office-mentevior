@@ -75,14 +75,14 @@ export function RatesSection({
         </div>
       ) : (
         <div className="rounded-xl border border-slate-200 overflow-hidden mb-4">
-          <div className="grid grid-cols-[2fr_1fr_90px] gap-4 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+          <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[2fr_1fr_90px] gap-4 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Billing Code
             </span>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
               Approved Rate
             </span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center hidden sm:block">
               Actions
             </span>
           </div>
@@ -97,7 +97,7 @@ export function RatesSection({
             <div
               key={entry._tempId}
               className={cn(
-                "grid grid-cols-[2fr_1fr_90px] gap-4 px-4 py-3 items-center",
+                "grid grid-cols-[1fr_auto] sm:grid-cols-[2fr_1fr_90px] gap-x-4 gap-y-2 sm:gap-4 px-4 py-3 items-center",
                 idx < entries.length - 1 && "border-b border-slate-100"
               )}
             >
@@ -115,7 +115,7 @@ export function RatesSection({
               <span className="text-sm tabular-nums text-slate-700 text-center">
                 {formatRateAmount(entry)}
               </span>
-              <div className="flex items-center justify-center gap-1.5">
+              <div className="col-span-2 sm:col-span-1 flex items-center justify-end sm:justify-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => onEdit(entry)}

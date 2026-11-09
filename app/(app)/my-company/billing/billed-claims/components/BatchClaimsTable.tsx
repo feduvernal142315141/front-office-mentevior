@@ -245,7 +245,7 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
 
       {/* Pagination */}
       {!isLoading && batchClaims.length > 0 && (
-        <div className="flex items-center justify-between text-sm text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
           <span>
             Showing {batchClaims.length} of {totalCount} batch claim{totalCount !== 1 ? "s" : ""}
           </span>

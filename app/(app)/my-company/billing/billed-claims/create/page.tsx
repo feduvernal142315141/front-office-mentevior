@@ -38,7 +38,7 @@ export default function CreateBatchClaimPage() {
             <FileCheck className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div>
-            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
+            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-2xl font-bold sm:text-3xl text-transparent">
               New Batch Claim
             </h1>
             <p className="mt-1 text-slate-600">Select a payer plan and the service logs to include in the batch</p>

@@ -76,7 +76,7 @@ export function SearchPayerCatalogStep({
       </div>
 
       {/* Search + Select All */}
-      <div className="px-6 pt-6 pb-4 border-b border-gray-200 space-y-4">
+      <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-200 space-y-4">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -128,12 +128,12 @@ export function SearchPayerCatalogStep({
             <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center h-48 px-6 text-center">
+          <div className="flex flex-col items-center justify-center h-48 px-4 sm:px-6 text-center">
             <p className="text-red-600 text-sm font-medium">Failed to load catalog</p>
             <p className="text-gray-500 text-sm mt-1">{error}</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 px-6 text-center">
+          <div className="flex flex-col items-center justify-center h-48 px-4 sm:px-6 text-center">
             <Search className="w-10 h-10 text-gray-300 mb-3" />
             <p className="text-gray-500 text-sm">
               {search.trim() ? "No results found. Try a different name." : "No items available."}
@@ -147,7 +147,7 @@ export function SearchPayerCatalogStep({
                 <div
                   key={item.id}
                   onClick={() => toggleSelection(item.id)}
-                  className={`flex items-center gap-4 px-6 py-4 cursor-pointer transition-colors ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                  className={`flex items-center gap-4 px-4 sm:px-6 py-4 cursor-pointer transition-colors ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"}`}
                 >
                   <div className="pt-0.5">
                     <Checkbox
@@ -179,7 +179,7 @@ export function SearchPayerCatalogStep({
             onClick={handleAddPayer}
             disabled={selectedCount === 0}
             loading={isBulkLoading}
-            className="min-w-[160px]"
+            className="min-w-0 sm:min-w-[160px]"
           >
             {buttonLabel}
           </Button>

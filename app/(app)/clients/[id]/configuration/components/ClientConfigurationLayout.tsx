@@ -89,12 +89,12 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
   return (
     <div className="h-full bg-gray-50/50 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200/60 px-6 py-5 shrink-0">
-        <div className="flex items-center gap-4">
+      <div className="bg-white border-b border-slate-200/60 px-4 sm:px-6 py-5 shrink-0">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
             <Sliders className="h-6 w-6 text-[#037ECC]" />
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 basis-48">
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent truncate">
                 {clientName}
@@ -125,7 +125,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
           <button
             type="button"
             onClick={() => guard(() => router.push(spId ? `/clients/${clientId}/charts?spId=${spId}` : `/clients/${clientId}/charts`))}
-            className="shrink-0 inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-all hover:-translate-y-0.5 hover:border-[#037ECC]/40 hover:text-[#037ECC] hover:shadow-md"
+            className="shrink-0 inline-flex w-full sm:w-auto justify-center h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-all hover:-translate-y-0.5 hover:border-[#037ECC]/40 hover:text-[#037ECC] hover:shadow-md"
           >
             <LineChart className="h-4 w-4" />
             View all charts
@@ -134,7 +134,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
         <ConfigurationSidebar
           sections={sections}
           activeSectionId={activeSectionId}
@@ -142,7 +142,7 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
         />
 
         <div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar pb-36">
-          <div className="py-6 px-6">
+          <div className="py-6 px-4 sm:px-6">
             {activeSectionId === "service-plan" && (
               <ServicePlanContent
                 clientId={clientId}
@@ -163,13 +163,13 @@ export function ClientConfigurationLayout({ clientId, clientServicePlanId, initi
 
       {/* Sticky footer */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-end">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex flex-wrap items-center justify-end">
             <Button
               type="button"
               variant="secondary"
               onClick={() => router.push("/clients")}
-              className="gap-2 flex items-center"
+              className="gap-2 flex items-center flex-1 sm:flex-none"
             >
               <ArrowLeft className="w-4 h-4" />
               Back

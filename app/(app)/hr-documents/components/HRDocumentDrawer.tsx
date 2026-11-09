@@ -62,9 +62,9 @@ export function HRDocumentDrawer({ isOpen, onClose, onSuccess }: HRDocumentDrawe
           <DrawerTitle>{getStepTitle()}</DrawerTitle>
         </VisuallyHidden>
 
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               {canGoBack && (
                 <button
                   onClick={goBack}
@@ -78,7 +78,7 @@ export function HRDocumentDrawer({ isOpen, onClose, onSuccess }: HRDocumentDrawe
                   <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </button>
               )}
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="min-w-0 truncate text-xl font-semibold text-gray-900">
                 {getStepTitle()}
               </h2>
             </div>

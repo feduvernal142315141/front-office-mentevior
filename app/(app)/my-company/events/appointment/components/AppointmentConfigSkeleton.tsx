@@ -4,7 +4,7 @@ import { Card } from "@/components/custom/Card"
 
 export function AppointmentConfigSkeleton() {
   return (
-    <div className="bg-gray-50/50 p-6 pb-28">
+    <div className="bg-gray-50/50 p-4 pb-28 sm:p-6 sm:pb-28">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex items-center gap-4">
           <div className="rounded-xl border border-[#037ECC]/20 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 p-3 animate-pulse w-[56px] h-[56px]" />

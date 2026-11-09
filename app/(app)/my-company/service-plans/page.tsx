@@ -38,15 +38,15 @@ export default function ServicePlansPage() {
   }
 
   return (
-    <div className="p-8 pb-28">
+    <div className="p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8 lg:pb-28">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
               <FileText className="h-8 w-8 text-[#037ECC]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
                 Service Plan
               </h1>
               <p className="text-slate-600 mt-1">Manage service plans and offerings</p>

@@ -49,7 +49,7 @@ export function CategoriesSidebar({
           No categories mapped for this service plan.
         </div>
       ) : (
-        <div className="p-3 space-y-2">
+        <div className="p-3 space-y-2 max-h-64 overflow-y-auto lg:max-h-none">
           {categories.map((category) => {
             const isActive = category.id === activeCategoryId
 

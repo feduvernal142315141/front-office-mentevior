@@ -65,8 +65,8 @@ export function CustomModal({
         }}
         onEscapeKeyDown={onEscapeKeyDown}
         className={cn(
-          "p-0 gap-0 rounded-2xl shadow-[0_30px_80px_rgba(2,12,27,0.28)] overflow-hidden bg-transparent",
-          constrainHeight && "max-h-[85vh] flex flex-col",
+          "p-0 gap-0 rounded-2xl shadow-[0_30px_80px_rgba(2,12,27,0.28)] overflow-hidden bg-transparent max-sm:max-h-[92dvh] max-sm:overflow-y-auto",
+          constrainHeight && "max-h-[85dvh] flex flex-col",
           maxWidthClassName,
           contentClassName
         )}
@@ -74,7 +74,7 @@ export function CustomModal({
         <div className={cn(
           "w-full rounded-2xl border border-slate-200/80 bg-white/98 backdrop-blur-xl",
           constrainHeight
-            ? "flex max-h-[85vh] flex-col overflow-hidden"
+            ? "flex max-h-[85dvh] flex-col overflow-hidden"
             : allowSelectOverflow
               ? "overflow-visible"
               : "overflow-hidden",
@@ -86,7 +86,7 @@ export function CustomModal({
             </DialogHeader>
           )}
           {!hideHeader && (
-            <DialogHeader className="shrink-0 px-6 py-5 border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50/70 to-white rounded-t-2xl">
+            <DialogHeader className="shrink-0 px-4 pr-14 sm:px-6 sm:pr-16 py-4 sm:py-5 border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50/70 to-white rounded-t-2xl">
               <DialogTitle className="text-xl font-semibold text-gray-900">
                 {titleAccessory ? (
                   <span className="flex items-center gap-3">

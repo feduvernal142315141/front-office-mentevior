@@ -117,7 +117,7 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-[1600px]">
         <div className="mb-8 flex flex-wrap items-center gap-4">
           <button
@@ -133,7 +133,7 @@ export default function CaseSupervisionLogDetailPage({ params }: CaseSupervision
             <ClipboardCheck className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div>
-            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
+            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-2xl sm:text-3xl font-bold text-transparent">
               Case Supervision Log
             </h1>
             <p className="mt-1 text-slate-600">
@@ -270,14 +270,14 @@ function InfoCard({
           {label}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">{children}</div>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">{children}</div>
     </div>
   )
 }
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="break-words">
       <span className="text-slate-400">{label}:</span>{" "}
       <span className="font-medium text-slate-800">{value}</span>
     </div>

@@ -223,7 +223,7 @@ export function CustomTable<T>({
         [&::-webkit-scrollbar-thumb]:rounded-full
         [&::-webkit-scrollbar-thumb]:hover:bg-slate-400
       ">
-        <table className="w-full border-collapse">
+        <table className="w-full min-w-[640px] border-collapse">
           <thead>
             <tr className="
               border-b border-slate-200/80
@@ -233,7 +233,7 @@ export function CustomTable<T>({
                 <th
                   key={column.key}
                   className={cn(
-                    "h-14 px-6",
+                    "h-14 px-3 sm:px-6",
                     "text-xs font-semibold tracking-[0.02em]",
                     "text-[#037ECC]",
                     "sticky top-0 z-10",
@@ -295,7 +295,7 @@ export function CustomTable<T>({
                     <td
                       key={`${getKey(row, rowIndex)}-${column.key}`}
                       className={cn(
-                        "px-6 py-4",
+                        "px-3 py-3 sm:px-6 sm:py-4",
                         "text-sm text-slate-700",
                         "align-middle",
                         "transition-colors duration-150",
@@ -315,7 +315,7 @@ export function CustomTable<T>({
 
       {pagination && (
         <div className="
-          flex items-center justify-between px-6 py-3
+          flex flex-col sm:flex-row items-center justify-center sm:justify-between px-3 sm:px-6 py-3
           border-t border-slate-200/60
           bg-gradient-to-b from-slate-50/30 to-white
           gap-4
@@ -334,7 +334,7 @@ export function CustomTable<T>({
                     type="button"
                     onClick={() => setPageSizeOpen((prev) => !prev)}
                     className="
-                      h-9 px-3 pr-8 rounded-lg text-xs font-semibold
+                      h-10 sm:h-9 px-3 pr-8 rounded-lg text-xs font-semibold
                       bg-white
                       border border-slate-200
                       text-slate-800
@@ -416,7 +416,7 @@ export function CustomTable<T>({
                   onClick={btn.action}
                   disabled={btn.disabled}
                   className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150",
+                    "w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg transition-all duration-150",
                     "bg-white",
                     "border border-slate-200",
                     "text-slate-600",

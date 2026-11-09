@@ -20,7 +20,7 @@ function CreateHRDocumentContent() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">          
 
@@ -29,7 +29,7 @@ function CreateHRDocumentContent() {
               <FolderOpen className="h-8 w-8 text-[#037ECC]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
                 {mode === "catalog" ? "Add HR Document from Catalog" : "Create HR Document"}
               </h1>
               <p className="text-slate-600 mt-1">
@@ -56,7 +56,7 @@ function CreateHRDocumentContent() {
 export default function CreateHRDocumentPage() {
   return (
     <Suspense fallback={
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />

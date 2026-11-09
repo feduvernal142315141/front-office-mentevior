@@ -70,14 +70,14 @@ export default function BillingPage() {
   })
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
             <CreditCard className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
               Billing
             </h1>
             <p className="text-slate-600 mt-1">Manage billing and payment processing</p>
@@ -109,7 +109,7 @@ export default function BillingPage() {
                       )}
                     </div>
                   )}
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-4 pr-24 sm:pr-0">
                     <div className="w-fit p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20 shrink-0">
                       <IconComponent className="h-6 w-6 text-[#037ECC]" />
                     </div>

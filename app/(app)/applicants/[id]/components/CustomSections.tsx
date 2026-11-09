@@ -160,27 +160,27 @@ export function AvailabilitySection({ applicant, flashSection }: CustomSectionsP
   return (
     <SectionCard id="availability" title="Availability" flashSection={flashSection}>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
+        <table className="w-full min-w-[640px] border-collapse">
           <thead>
             <tr className="border-b border-slate-200">
-              <th className="text-right p-3 text-sm font-semibold text-slate-700 w-[100px]">Times</th>
-              <th className="text-center p-3 text-sm font-semibold text-slate-700">Mon</th>
-              <th className="text-center p-3 text-sm font-semibold text-slate-700">Tue</th>
-              <th className="text-center p-3 text-sm font-semibold text-slate-700">Wed</th>
-              <th className="text-center p-3 text-sm font-semibold text-slate-700">Thu</th>
-              <th className="text-center p-3 text-sm font-semibold text-slate-700">Fri</th>
-              <th className="text-center p-3 text-sm font-semibold text-slate-700">Sat</th>
-              <th className="text-center p-3 text-sm font-semibold text-slate-700">Sun</th>
+              <th className="text-right p-2 sm:p-3 text-sm font-semibold text-slate-700 w-[100px] sticky left-0 bg-white">Times</th>
+              <th className="text-center p-2 sm:p-3 text-sm font-semibold text-slate-700">Mon</th>
+              <th className="text-center p-2 sm:p-3 text-sm font-semibold text-slate-700">Tue</th>
+              <th className="text-center p-2 sm:p-3 text-sm font-semibold text-slate-700">Wed</th>
+              <th className="text-center p-2 sm:p-3 text-sm font-semibold text-slate-700">Thu</th>
+              <th className="text-center p-2 sm:p-3 text-sm font-semibold text-slate-700">Fri</th>
+              <th className="text-center p-2 sm:p-3 text-sm font-semibold text-slate-700">Sat</th>
+              <th className="text-center p-2 sm:p-3 text-sm font-semibold text-slate-700">Sun</th>
             </tr>
           </thead>
           <tbody>
             {Object.entries(applicant.availability || {}).map(([timeSlot, days]) => (
               <tr key={timeSlot} className="border-b border-slate-100">
-                <td className="p-3 text-right text-sm text-slate-900 font-medium whitespace-nowrap w-[100px]">
+                <td className="p-2 sm:p-3 text-right text-sm text-slate-900 font-medium whitespace-nowrap w-[100px] sticky left-0 bg-white">
                   {formatTimeSlot(timeSlot)}
                 </td>
                 {["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => (
-                  <td key={day} className="p-3 text-center">
+                  <td key={day} className="p-2 sm:p-3 text-center">
                     {days[day as keyof typeof days] ? (
                       <div className="w-4 h-4 bg-green-500 rounded-full mx-auto"></div>
                     ) : (
@@ -289,18 +289,18 @@ export function DocumentsSection({ applicant, flashSection }: CustomSectionsProp
       <SectionCard id="documents" title="Documents required to be attached to this application" flashSection={flashSection}>
         <div className="space-y-4">
           {applicant.documents.resumeUrl && (
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-slate-600" />
-                <div>
+            <div className="flex items-center justify-between gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <FileText className="w-5 h-5 text-slate-600 shrink-0" />
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900">Resume</p>
-                  <p className="text-xs text-slate-500">{applicant.documents.resumeFileName || "resume.pdf"}</p>
+                  <p className="text-xs text-slate-500 truncate">{applicant.documents.resumeFileName || "resume.pdf"}</p>
                 </div>
               </div>
               <button
                 onClick={() => handleViewDocument(applicant.documents.resumeUrl!, applicant.documents.resumeFileName || "Resume")}
                 className="
-                  h-9 w-9
+                  shrink-0 h-9 w-9
                   flex items-center justify-center
                   rounded-xl
                   bg-gradient-to-b from-[#037ECC]/10 to-[#079CFB]/10
@@ -318,18 +318,18 @@ export function DocumentsSection({ applicant, flashSection }: CustomSectionsProp
             </div>
           )}
           {applicant.documents.professionalCredentialsUrl && (
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-slate-600" />
-                <div>
+            <div className="flex items-center justify-between gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <FileText className="w-5 h-5 text-slate-600 shrink-0" />
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900">Professional Credentials</p>
-                  <p className="text-xs text-slate-500">{applicant.documents.professionalCredentialsFileName || "credentials.pdf"}</p>
+                  <p className="text-xs text-slate-500 truncate">{applicant.documents.professionalCredentialsFileName || "credentials.pdf"}</p>
                 </div>
               </div>
               <button
                 onClick={() => handleViewDocument(applicant.documents.professionalCredentialsUrl!, applicant.documents.professionalCredentialsFileName || "Professional Credentials")}
                 className="
-                  h-9 w-9
+                  shrink-0 h-9 w-9
                   flex items-center justify-center
                   rounded-xl
                   bg-gradient-to-b from-[#037ECC]/10 to-[#079CFB]/10
@@ -347,18 +347,18 @@ export function DocumentsSection({ applicant, flashSection }: CustomSectionsProp
             </div>
           )}
           {applicant.documents.othersUrl && (
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-slate-600" />
-                <div>
+            <div className="flex items-center justify-between gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <FileText className="w-5 h-5 text-slate-600 shrink-0" />
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900">Others</p>
-                  <p className="text-xs text-slate-500">{applicant.documents.othersFileName || "document.pdf"}</p>
+                  <p className="text-xs text-slate-500 truncate">{applicant.documents.othersFileName || "document.pdf"}</p>
                 </div>
               </div>
               <button
                 onClick={() => handleViewDocument(applicant.documents.othersUrl!, applicant.documents.othersFileName || "Other Document")}
                 className="
-                  h-9 w-9
+                  shrink-0 h-9 w-9
                   flex items-center justify-center
                   rounded-xl
                   bg-gradient-to-b from-[#037ECC]/10 to-[#079CFB]/10

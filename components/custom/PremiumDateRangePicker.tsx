@@ -224,7 +224,7 @@ export function PremiumDateRangePicker({
 
       <PopoverContent
         align="start"
-        className="z-[100] w-[320px] rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
+        className="z-[100] w-[min(320px,calc(100vw-1.5rem))] rounded-2xl border border-slate-200 bg-white p-0 shadow-xl"
       >
         {/* Month / year navigation with dropdowns */}
         <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2.5">

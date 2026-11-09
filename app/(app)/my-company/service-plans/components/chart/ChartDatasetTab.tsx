@@ -55,7 +55,7 @@ export function ChartDatasetTab({
   }, [yAxisTitle, currentAxis, dataset, setValue])
 
   const base = `chart.datasetConfigs.${dataset}` as const
-  const headerCols = showStacked || showUnpin ? "grid-cols-4" : "grid-cols-3"
+  const headerCols = showStacked || showUnpin ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
 
   return (
     <div className="space-y-6">
@@ -146,7 +146,7 @@ export function ChartDatasetTab({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
         <div className="space-y-1">
           <Controller
             name={`${base}.pointStyle`}
@@ -214,7 +214,7 @@ export function ChartDatasetTab({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Controller
           name={`${base}.spanGaps`}
           control={control}

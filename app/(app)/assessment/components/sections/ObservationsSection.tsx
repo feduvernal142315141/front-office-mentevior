@@ -103,14 +103,14 @@ export function ObservationsSection({
 
           {/* ABC entries table */}
           <div className="mt-4 space-y-2">
-            <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+            <div className="hidden sm:grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 px-1">Antecedent</span>
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 px-1">Behavior</span>
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 px-1">Consequence</span>
               <span className="w-10" />
             </div>
             {observation.abcEntries.map((entry, rowIdx) => (
-              <div key={rowIdx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+              <div key={rowIdx} className="grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2">
                 <FloatingInput
                   label="Antecedent"
                   value={entry.antecedent}
@@ -136,7 +136,7 @@ export function ObservationsSection({
                   type="button"
                   onClick={() => removeAbcRow(index, observation.abcEntries, rowIdx)}
                   disabled={disabled}
-                  className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-200/60 bg-red-50 text-red-500 transition-colors hover:bg-red-100 disabled:opacity-50"
+                  className="col-span-2 sm:col-span-1 justify-self-end mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-200/60 bg-red-50 text-red-500 transition-colors hover:bg-red-100 disabled:opacity-50"
                   title="Remove row"
                 >
                   <Trash2 className="h-3.5 w-3.5" />

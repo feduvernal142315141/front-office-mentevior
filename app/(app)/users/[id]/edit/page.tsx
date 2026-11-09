@@ -33,7 +33,7 @@ export default function EditUserPage({ params }: EditUserPageProps) {
     <div className="min-h-screen bg-gray-50/50 p-6">
       <div className="max-w-5xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
             Edit User
           </h1>
           <p className="text-slate-600 mt-2">Update user information and permissions</p>

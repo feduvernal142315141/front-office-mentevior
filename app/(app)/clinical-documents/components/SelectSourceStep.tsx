@@ -25,7 +25,7 @@ export function SelectSourceStep({ onSelectSource, onClose }: SelectSourceStepPr
         <button
           onClick={() => onSelectSource("catalog")}
           className="
-            group relative w-full p-6 text-left
+            group relative w-full p-4 sm:p-6 text-left
             rounded-2xl border-2 border-blue-200
             bg-gradient-to-br from-blue-50 to-blue-100/50
             hover:from-blue-100 hover:to-blue-150
@@ -35,7 +35,7 @@ export function SelectSourceStep({ onSelectSource, onClose }: SelectSourceStepPr
             cursor-pointer
           "
         >
-          <div className="flex gap-4 h-50 lg:h-53 xl:h-38 2xl:h-40">
+          <div className="flex gap-4 sm:h-50 lg:h-53 xl:h-38 2xl:h-40">
             <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
               <BookOpen className="w-6 h-6" />
             </div>
@@ -80,7 +80,7 @@ export function SelectSourceStep({ onSelectSource, onClose }: SelectSourceStepPr
             router.push("/clinical-documents/create?mode=manual")
           }}
           className="
-            group relative w-full p-6 text-left
+            group relative w-full p-4 sm:p-6 text-left
             rounded-2xl border-2 border-gray-200 bg-white
             hover:border-gray-300
             hover:shadow-lg hover:shadow-gray-900/5
@@ -88,7 +88,7 @@ export function SelectSourceStep({ onSelectSource, onClose }: SelectSourceStepPr
             cursor-pointer
           "
         >
-          <div className="flex gap-4 h-50 lg:h-53 xl:h-38 2xl:h-40">
+          <div className="flex gap-4 sm:h-50 lg:h-53 xl:h-38 2xl:h-40">
             <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gray-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
               <Edit3 className="w-6 h-6" />
             </div>

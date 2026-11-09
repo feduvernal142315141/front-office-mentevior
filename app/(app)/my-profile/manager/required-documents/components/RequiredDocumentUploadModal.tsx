@@ -606,12 +606,12 @@ export function RequiredDocumentUploadModal({
           rows={3}
         />
 
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-3 pt-2 border-t border-slate-100">
           <Button
             variant="secondary"
             onClick={handleClose}
             disabled={isSaving}
-            className="gap-2 flex items-center"
+            className="gap-2 flex items-center w-full sm:w-auto"
           >
             <X className="w-4 h-4" />
             Cancel
@@ -621,7 +621,7 @@ export function RequiredDocumentUploadModal({
             onClick={handleSave}
             disabled={isSaving || Boolean(fileError) || isMissingRequiredFields}
             loading={isSaving}
-            className="gap-2 flex items-center min-w-[140px]"
+            className="gap-2 flex items-center w-full sm:w-auto min-w-0 sm:min-w-[140px]"
           >
             {!isSaving && <Save className="w-4 h-4" />}
             {isEditMode ? "Update" : "Upload"}

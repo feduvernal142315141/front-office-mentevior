@@ -188,8 +188,8 @@ export function CategoryItemsSection({
                     touched ? "border-[#037ECC]/30 bg-[#037ECC]/[0.03]" : "border-slate-200 bg-slate-50/40"
                   }`}
                 >
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-slate-800">{item.name}</span>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0 text-sm font-medium text-slate-800">{item.name}</span>
                     {touched && (
                       <button
                         type="button"

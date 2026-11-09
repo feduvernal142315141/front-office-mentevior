@@ -107,7 +107,7 @@ export function ServicesTable() {
             <Button
               variant="ghost"
               onClick={clearFilters}
-              className="whitespace-nowrap h-[52px] 2xl:h-[56px]"
+              className="w-full sm:w-auto whitespace-nowrap h-[52px] 2xl:h-[56px]"
             >
               Clear filters
             </Button>
@@ -275,7 +275,7 @@ export function ServicesTable() {
               })}
             </div>
 
-            <div className="flex items-center justify-between px-6 py-3 border-t border-slate-200/60 bg-gradient-to-b from-slate-50/30 to-white gap-4 flex-wrap">
+            <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-t border-slate-200/60 bg-gradient-to-b from-slate-50/30 to-white gap-4 flex-wrap">
               <div className="text-xs font-medium text-slate-500">
                 Showing {startRow}-{endRow} of {pagination.total}
               </div>

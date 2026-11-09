@@ -65,7 +65,7 @@ export function ProvidersOnFileTable({ table }: ProvidersOnFileTableProps) {
           </div>
 
           {searchQuery && (
-            <Button variant="ghost" onClick={onClearFilters} className="whitespace-nowrap h-[52px] 2xl:h-[56px]">
+            <Button variant="ghost" onClick={onClearFilters} className="w-full sm:w-auto whitespace-nowrap h-[52px] 2xl:h-[56px]">
               Clear filters
             </Button>
           )}

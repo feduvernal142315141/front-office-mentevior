@@ -29,7 +29,7 @@ export function SectionCard({
 }: SectionCardProps) {
   return (
     <div className={cn("rounded-2xl border border-slate-200 bg-white shadow-sm", className)}>
-      <div className="flex items-center gap-2.5 px-5 py-3 border-b border-slate-100">
+      <div className="flex items-center gap-2.5 px-4 sm:px-5 py-3 border-b border-slate-100">
         {icon && (
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#037ECC]/10 text-[#037ECC]">
             {icon}
@@ -41,7 +41,7 @@ export function SectionCard({
         </div>
         {action && <div className="ml-auto">{action}</div>}
       </div>
-      <div className={flush ? "" : "px-5 py-4"}>{children}</div>
+      <div className={flush ? "" : "px-4 sm:px-5 py-4"}>{children}</div>
     </div>
   )
 }

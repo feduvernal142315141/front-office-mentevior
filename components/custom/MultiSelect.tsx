@@ -317,7 +317,7 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
             "z-[9999] bg-white border border-gray-200 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in fade-in-0 zoom-in-95 duration-200",
             dropdownPosition === "top"
               ? "origin-bottom"
-              : "absolute left-0 right-0 top-full mt-2 origin-top overflow-hidden flex flex-col max-h-[360px]"
+              : "absolute left-0 right-0 top-full mt-2 origin-top overflow-hidden flex flex-col max-h-[min(360px,55dvh)]"
           )}
           style={dropdownPosition === "top" ? dropdownStyle : undefined}
         >
@@ -354,7 +354,7 @@ export const MultiSelect = forwardRef<HTMLButtonElement, MultiSelectProps>(funct
               </button>
             </div>
 
-            <div className={cn("overflow-y-auto py-2", dropdownPosition === "top" ? "flex-1 min-h-0" : "max-h-[280px]")}>
+            <div className={cn("overflow-y-auto py-2", dropdownPosition === "top" ? "flex-1 min-h-0" : "max-h-[min(280px,45dvh)]")}>
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 text-center">
                   No results found

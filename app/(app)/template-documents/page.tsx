@@ -53,14 +53,14 @@ export default function TemplateDocumentsPage() {
   }, [view])
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
             <FileText className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
               Template Documents
             </h1>
             <p className="text-slate-600 mt-1">Manage and customize document templates</p>
@@ -68,7 +68,7 @@ export default function TemplateDocumentsPage() {
         </div>
 
         {/* Sub-modules Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {subModules.map((module) => {
             const IconComponent = module.icon
             return (

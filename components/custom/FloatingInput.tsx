@@ -69,7 +69,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, Props>(function Floati
             h-[52px] 2xl:h-[56px]
             px-4 pr-12
             rounded-[16px]
-            text-[15px] 2xl:text-[16px]
+            text-base sm:text-[15px] 2xl:text-[16px]
 
             placeholder:text-transparent
           `,

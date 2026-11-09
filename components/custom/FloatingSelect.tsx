@@ -185,7 +185,7 @@ export const FloatingSelect = forwardRef<HTMLButtonElement, FloatingSelectProps>
             h-13 2xl:h-14
             px-4 pr-12
             rounded-2xl
-            text-[15px] 2xl:text-[16px]
+            text-base sm:text-[15px] 2xl:text-[16px]
 
             text-left
             cursor-pointer

@@ -18,8 +18,8 @@ export function ChartYAxesTab({ control }: ChartYAxesTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-4">
-        <div className="flex min-w-0 flex-[7] flex-col gap-6">
+      <div className="flex flex-col gap-4 lg:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 lg:flex-[7]">
           <div className="space-y-1">
             <Controller
               name="chart.yAxis.title"
@@ -55,7 +55,7 @@ export function ChartYAxesTab({ control }: ChartYAxesTabProps) {
           </div>
         </div>
 
-        <div className="flex flex-[3] items-center justify-end">
+        <div className="flex flex-1 items-center justify-end lg:flex-[3]">
           <Controller
             name="chart.yAxis.hideGrid"
             control={control}
@@ -71,7 +71,7 @@ export function ChartYAxesTab({ control }: ChartYAxesTabProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
         <div className="space-y-1">
           <Controller
             name="chart.yAxis.suggestedMin"

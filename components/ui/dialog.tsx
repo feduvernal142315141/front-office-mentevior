@@ -103,7 +103,7 @@ function DialogContent({
             data-slot="dialog-close"
             className={cn(
               "absolute top-5 right-5",
-              "w-9 h-9 rounded-xl",
+              "w-10 h-10 sm:w-9 sm:h-9 rounded-xl",
               "flex items-center justify-center",
               "bg-slate-50 hover:bg-slate-100",
               "border border-slate-200/60",

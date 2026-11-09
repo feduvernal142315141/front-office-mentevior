@@ -6,6 +6,7 @@ import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { parseLocalDate } from "@/lib/date"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 import { Button } from "@/components/custom/Button"
 import { Badge } from "@/components/ui/badge"
@@ -168,6 +169,7 @@ export function ObjectivesTabContent({
   const actionsDisabled = disableActions || !canEdit
 
   const [formOpen, setFormOpen] = useState(false)
+  const isMobile = useIsMobile()
   const [generateOpen, setGenerateOpen] = useState(false)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
 
@@ -325,13 +327,15 @@ export function ObjectivesTabContent({
 
   const gridTemplateColumns = useMemo(() => {
     const cols = ["minmax(0,1fr)"]
-    if (showStartDate) cols.push(DATE_COL_WIDTH)
-    if (showEstEndDate) cols.push(DATE_COL_WIDTH)
-    if (showEndDate) cols.push(DATE_COL_WIDTH)
+    if (!isMobile) {
+      if (showStartDate) cols.push(DATE_COL_WIDTH)
+      if (showEstEndDate) cols.push(DATE_COL_WIDTH)
+      if (showEndDate) cols.push(DATE_COL_WIDTH)
+    }
     cols.push(STATUS_COL_WIDTH)
     cols.push("36px")
     return cols.join(" ")
-  }, [showStartDate, showEstEndDate, showEndDate])
+  }, [showStartDate, showEstEndDate, showEndDate, isMobile])
 
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -365,28 +369,28 @@ export function ObjectivesTabContent({
     <>
       <div className="flex flex-col gap-3">
         {externalTitle && (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-base font-semibold text-slate-800">
               Objectives
               {objectives.length > 0 && (
                 <span className="ml-2 text-sm font-normal text-slate-500">({objectives.length})</span>
               )}
             </h3>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {canCreate && (
-                <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3" disabled={actionsDisabled || masteryLocked} title={masteryLockTitle}>
+                <Button type="button" onClick={handleAdd} className="gap-1.5 text-sm h-8 px-3 whitespace-nowrap" disabled={actionsDisabled || masteryLocked} title={masteryLockTitle}>
                   <Plus className="h-3.5 w-3.5" />
                   Mastery Criteria Objective
                 </Button>
               )}
               {objectives.length > 0 && canEdit && (
-                <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={actionsDisabled}>
+                <Button type="button" variant="secondary" onClick={() => setBulkEditOpen(true)} className="gap-1.5 text-sm h-8 px-3 whitespace-nowrap" disabled={actionsDisabled}>
                   <Pencil className="h-3.5 w-3.5" />
                   Edit All
                 </Button>
               )}
               {canCreate && (
-                <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3" disabled={actionsDisabled || stoLocked} title={stoLockTitle}>
+                <Button type="button" variant="secondary" onClick={() => setGenerateOpen(true)} className="gap-1.5 text-sm h-8 px-3 whitespace-nowrap" disabled={actionsDisabled || stoLocked} title={stoLockTitle}>
                   <Sparkles className="h-3.5 w-3.5" />
                   STO Objective Generate
                 </Button>
@@ -406,9 +410,9 @@ export function ObjectivesTabContent({
                 style={{ gridTemplateColumns }}
               >
                 <span className={HEADER_CLASS}>Name</span>
-                {showStartDate && <span className={HEADER_CLASS}>Start Date</span>}
-                {showEstEndDate && <span className={HEADER_CLASS}>Est. End Date</span>}
-                {showEndDate && <span className={HEADER_CLASS}>End Date</span>}
+                {!isMobile && showStartDate && <span className={HEADER_CLASS}>Start Date</span>}
+                {!isMobile && showEstEndDate && <span className={HEADER_CLASS}>Est. End Date</span>}
+                {!isMobile && showEndDate && <span className={HEADER_CLASS}>End Date</span>}
                 <span className={cn(HEADER_CLASS, "text-right")}>Status</span>
                 <span />
               </div>
@@ -437,18 +441,27 @@ export function ObjectivesTabContent({
                           <span className="font-semibold">Smart Criteria:</span> {smartSummary}
                         </p>
                       )}
+                      {isMobile && (showStartDate || showEstEndDate || showEndDate) && (
+                        <p className="text-[11px] text-slate-500 mt-1 tabular-nums">
+                          {[
+                            showStartDate && `Start ${formatDate(obj.startDate)}`,
+                            showEstEndDate && `Est. ${formatDate(obj.estimatedEndDate)}`,
+                            showEndDate && `End ${formatDate(obj.endDate)}`,
+                          ].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
                     </div>
-                    {showStartDate && (
+                    {!isMobile && showStartDate && (
                       <span className="text-xs text-slate-600 tabular-nums pt-0.5">
                         {formatDate(obj.startDate)}
                       </span>
                     )}
-                    {showEstEndDate && (
+                    {!isMobile && showEstEndDate && (
                       <span className="text-xs text-slate-600 tabular-nums pt-0.5">
                         {formatDate(obj.estimatedEndDate)}
                       </span>
                     )}
-                    {showEndDate && (
+                    {!isMobile && showEndDate && (
                       <span className="text-xs text-slate-600 tabular-nums pt-0.5">
                         {formatDate(obj.endDate)}
                       </span>

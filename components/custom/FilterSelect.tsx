@@ -56,7 +56,7 @@ export function FilterSelect({
       const rect = buttonRef.current.getBoundingClientRect()
       setPosition({
         top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
+        left: Math.min(rect.left, window.innerWidth - rect.width - 8) + window.scrollX,
         width: rect.width,
       })
     }
@@ -73,7 +73,7 @@ export function FilterSelect({
   return (
     <div
       ref={containerRef}
-      className={cn("relative", fullWidth ? "w-full" : "inline-block", className)}
+      className={cn("relative", fullWidth ? "w-full" : "inline-block w-full sm:w-auto", className)}
     >
       {/* Trigger Button */}
       <button
@@ -173,7 +173,7 @@ export function FilterSelect({
           )}
         >
           {/* Options List */}
-          <div className="py-1 max-h-[280px] overflow-y-auto">
+          <div className="py-1 max-h-[min(280px,50dvh)] overflow-y-auto">
             {options.map((option) => {
               const isSelected = option.value === value
 

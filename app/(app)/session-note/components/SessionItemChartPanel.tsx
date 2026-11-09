@@ -108,7 +108,7 @@ export function SessionItemChartPanel({
   if (isFullscreen) {
     return (
       <div className="fixed inset-0 z-[60] bg-white overflow-y-auto">
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 pt-8 pb-4">
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 sm:px-6 pt-4 sm:pt-8 pb-4">
           <div className="flex items-center justify-between max-w-[1400px] mx-auto">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#037ECC]/10">
@@ -130,7 +130,7 @@ export function SessionItemChartPanel({
           </div>
         </div>
 
-        <div className="px-6 pt-10 pb-12 max-w-[1400px] mx-auto space-y-4">
+        <div className="px-4 sm:px-6 pt-6 sm:pt-10 pb-12 max-w-[1400px] mx-auto space-y-4">
           {itemTabs}
           {renderChart(false)}
         </div>

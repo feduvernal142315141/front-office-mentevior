@@ -218,7 +218,7 @@ export function EligibleServiceLogsPicker({
                             onChange={() => onToggle(sl.id)}
                             ariaLabel={`Select service log ${formatDate(sl.initDate)} – ${formatDate(sl.endDate)}`}
                           />
-                          <span className="w-56 shrink-0 text-sm font-medium tabular-nums text-slate-700">
+                          <span className="w-auto sm:w-56 shrink-0 text-sm font-medium tabular-nums text-slate-700">
                             {formatDate(sl.initDate)} – {formatDate(sl.endDate)}
                           </span>
                           <span className="flex-1 truncate text-xs text-slate-600">{sl.providerName || "—"}</span>
@@ -247,7 +247,7 @@ export function EligibleServiceLogsPicker({
                                   || (!isEdit && !existingIds && checked)
                                 return (
                                 <div key={appt.appointmentId} className={cn(
-                                  "flex items-center gap-3 py-1.5 pl-7 text-xs",
+                                  "flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5 pl-7 text-xs",
                                   isEdit && !alreadyIncluded && "bg-amber-50/70",
                                 )}>
                                   <input
@@ -259,8 +259,8 @@ export function EligibleServiceLogsPicker({
                                     aria-label={`${alreadyIncluded ? "Included" : "Add"} appointment ${formatDate(appt.date)}`}
                                     className="h-4 w-4 cursor-pointer rounded border-slate-300 text-[#037ECC] focus:ring-[#037ECC]/20 disabled:cursor-default disabled:opacity-60"
                                   />
-                                  <span className="w-24 font-medium tabular-nums text-slate-600">{formatDate(appt.date)}</span>
-                                  <span className="w-24 tabular-nums text-slate-500">
+                                  <span className="w-auto sm:w-24 font-medium tabular-nums text-slate-600">{formatDate(appt.date)}</span>
+                                  <span className="w-auto sm:w-24 tabular-nums text-slate-500">
                                     {formatTime(appt.timeInit)} – {formatTime(appt.timeEnd)}
                                   </span>
                                   <span className="flex-1 truncate text-slate-600">
@@ -270,7 +270,7 @@ export function EligibleServiceLogsPicker({
                                     {appt.units || appt.cantUnit} units
                                   </span>
                                   <span className={cn(
-                                    "w-20 text-right text-[10px] font-semibold uppercase tracking-wide",
+                                    "w-auto sm:w-20 text-right text-[10px] font-semibold uppercase tracking-wide",
                                     alreadyIncluded ? "text-emerald-600" : "text-amber-700",
                                   )}>
                                     {alreadyIncluded ? "Included" : "New"}
@@ -326,7 +326,7 @@ export function EligibleServiceLogsPicker({
                       onChange={() => onToggle(orphan.serviceLogId)}
                       ariaLabel={`Remove service log from batch`}
                     />
-                    <span className="w-56 shrink-0 text-sm font-medium tabular-nums text-slate-700">
+                    <span className="w-auto sm:w-56 shrink-0 text-sm font-medium tabular-nums text-slate-700">
                       {orphan.initDate ? `${formatDate(orphan.initDate)} – ${formatDate(orphan.endDate)}` : "Service log"}
                     </span>
                     <span className="flex-1 truncate text-xs text-slate-600">{orphan.clientName || orphan.serviceLogId}</span>
@@ -346,9 +346,9 @@ export function EligibleServiceLogsPicker({
                     <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-2">
                       <div className="divide-y divide-slate-100/80">
                         {orphan.services.map((service) => (
-                          <div key={service.appointmentId} className="flex items-center gap-3 py-1.5 pl-7 text-xs">
-                            <span className="w-24 font-medium tabular-nums text-slate-600">{formatDate(service.date)}</span>
-                            <span className="w-24 tabular-nums text-slate-500">
+                          <div key={service.appointmentId} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5 pl-7 text-xs">
+                            <span className="w-auto sm:w-24 font-medium tabular-nums text-slate-600">{formatDate(service.date)}</span>
+                            <span className="w-auto sm:w-24 tabular-nums text-slate-500">
                               {formatTime(service.timeIn)} – {formatTime(service.timeOut)}
                             </span>
                             <span className="flex-1 truncate text-slate-600">{service.units || "—"}</span>

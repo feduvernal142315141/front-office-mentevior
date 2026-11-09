@@ -1,6 +1,6 @@
 export function PersonalInformationSkeleton() {
   return (
-    <div className="p-8 space-y-8 animate-pulse">
+    <div className="p-4 sm:p-8 space-y-8 animate-pulse">
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gray-200 rounded-lg" />

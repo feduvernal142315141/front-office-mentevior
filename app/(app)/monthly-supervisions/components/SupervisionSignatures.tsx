@@ -202,8 +202,8 @@ function SignatureRow({
   isLast?: boolean
 }) {
   return (
-    <div className={cn("grid grid-cols-2", !isLast && "border-b border-[#037ECC]/10")}>
-      <div className="border-r border-[#037ECC]/10 px-6 py-5">
+    <div className={cn("grid grid-cols-1 sm:grid-cols-2", !isLast && "border-b border-[#037ECC]/10")}>
+      <div className="border-b border-[#037ECC]/10 px-4 py-5 sm:border-b-0 sm:border-r sm:px-6">
         <span className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">
           {role}
         </span>
@@ -211,7 +211,7 @@ function SignatureRow({
         {credentials && <p className="mt-0.5 text-xs text-slate-500">{credentials}</p>}
       </div>
 
-      <div className="px-6 py-5">
+      <div className="px-4 py-5 sm:px-6">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">
             Signature
@@ -221,7 +221,7 @@ function SignatureRow({
               type="button"
               onClick={onEdit}
               className={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white",
+                "inline-flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg border border-slate-200 bg-white",
                 "text-slate-500 transition-all duration-150 hover:border-[#037ECC]/40 hover:text-[#037ECC]",
               )}
               title="Edit signature"

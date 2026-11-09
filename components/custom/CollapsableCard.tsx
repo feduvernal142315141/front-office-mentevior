@@ -50,12 +50,12 @@ export function CollapsableCard({
         onClick={handleToggle}
         disabled={disabled}
         className={cn(
-          "w-full px-6 py-4 flex items-center justify-between transition-colors duration-200",
+          "w-full px-4 sm:px-6 py-4 flex items-center justify-between transition-colors duration-200",
           !disabled && "hover:bg-gray-50/50 cursor-pointer",
           disabled && "cursor-not-allowed"
         )}
       >
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           {icon && (
             <div
               className={cn(
@@ -130,7 +130,7 @@ export function CollapsableCard({
           isOpen ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"
         )}
       >
-        <div className="px-6 pb-6 pt-2">
+        <div className="px-4 sm:px-6 pb-6 pt-2">
           <div className="border-t border-gray-200 pt-6">{children}</div>
         </div>
       </div>

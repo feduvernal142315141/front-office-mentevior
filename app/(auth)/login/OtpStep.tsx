@@ -142,15 +142,15 @@ export function OtpStep({
             onChange={setCode}
             disabled={isSubmitting || isCodeDead}
             autoFocus
-            containerClassName="gap-2"
+            containerClassName="gap-1.5 sm:gap-2"
           >
-            <InputOTPGroup className="gap-2">
+            <InputOTPGroup className="gap-1.5 sm:gap-2">
               {Array.from({ length: otpLength }, (_, index) => (
                 <InputOTPSlot
                   key={index}
                   index={index}
                   className={`
-                    h-[56px] w-[48px] rounded-[14px] border
+                    h-12 w-10 sm:h-[56px] sm:w-[48px] rounded-[14px] border
                     text-[20px] font-semibold text-gray-900
                     transition-all duration-200
                     first:rounded-l-[14px] last:rounded-r-[14px]
@@ -227,7 +227,7 @@ export function OtpStep({
           )}
         </Button>
 
-        <div className="flex items-center justify-between text-[13px]">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
           <button
             type="button"
             onClick={onBack}

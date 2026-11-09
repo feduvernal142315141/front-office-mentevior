@@ -65,16 +65,17 @@ export function FormBottomBar({
   return (
     <div className={cn(
       "fixed bottom-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
-      sidebarCollapsed ? "left-20" : "left-[300px]"
+      "left-0",
+      sidebarCollapsed ? "lg:left-20" : "lg:left-[300px]"
     )}>
-      <div className="max-w-5xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-end gap-3">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-end gap-2 sm:gap-3">
           <Button
             type="button"
             variant="secondary"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="gap-2 flex items-center"
+            className="gap-2 flex items-center flex-1 sm:flex-none"
           >
             {cancelIcon || <X className="w-4 h-4" />}
             {cancelText}
@@ -84,7 +85,7 @@ export function FormBottomBar({
             variant="primary"
             disabled={isSubmitting || disabled}
             loading={isSubmitting}
-            className="gap-2 flex items-center min-w-[160px]"
+            className="gap-2 flex items-center flex-1 sm:flex-none sm:min-w-[160px]"
           >
             {!isSubmitting && (submitIcon || <Save className="w-4 h-4" />)}
             {submitText}
