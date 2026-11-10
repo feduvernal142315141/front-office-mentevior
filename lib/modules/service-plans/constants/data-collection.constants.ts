@@ -52,14 +52,26 @@ function typeIsLatency(typeName: string): boolean {
   return typeName === "Latency" || typeName === "Response latency"
 }
 
-/** Rate, Duration y Latency: el baseline usa la Unit of time del item en lugar del Period. */
-export function typeUsesItemUnitInBaseline(typeName: string): boolean {
-  return typeName === "Rate" || typeName === "Duration" || typeIsLatency(typeName)
+function typeIsInterresponseTime(typeName: string): boolean {
+  return typeName === "Interresponse time" || typeName === "Interresponse Time"
 }
 
-/** Duration y Latency no muestran ni exigen "Suggested number of recordings" (se conserva el valor por defecto). */
+/** Rate, Duration, Latency e Interresponse time: el baseline usa la Unit of time del item en lugar del Period. */
+export function typeUsesItemUnitInBaseline(typeName: string): boolean {
+  return (
+    typeName === "Rate" ||
+    typeName === "Duration" ||
+    typeIsLatency(typeName) ||
+    typeIsInterresponseTime(typeName)
+  )
+}
+
+/**
+ * Duration, Latency e Interresponse time no muestran ni exigen "Suggested number of recordings"
+ * (se conserva el valor por defecto).
+ */
 export function typeShowsSuggestedRecordings(typeName: string): boolean {
-  return typeName !== "Duration" && !typeIsLatency(typeName)
+  return typeName !== "Duration" && !typeIsLatency(typeName) && !typeIsInterresponseTime(typeName)
 }
 
 export function typeRequiresInterval(typeGroup: string): boolean {
