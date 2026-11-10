@@ -41,6 +41,11 @@ interface PercentageChartProps {
    * Sin config, el comportamiento histórico: línea de fase + listado.
    */
   environmentalChanges?: EnvironmentalChangesDisplay
+  /**
+   * Time-sampling: el baseline se guarda como cantidad de intervalos con "+" (no como %).
+   * Con el total de intervalos se convierte a porcentaje; sin él el valor ya es un %.
+   */
+  baselineIntervalCount?: number
 }
 
 interface ChartDataPoint {
@@ -55,7 +60,7 @@ interface ChartDataPoint {
 }
 
 export function PercentageChart({
-  weekDays, entries, dcConfig, chartDays, tickInterval = 0, gapDateKeys,
+  weekDays, entries, dcConfig, chartDays, tickInterval = 0, gapDateKeys, baselineIntervalCount,
   environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
 }: PercentageChartProps) {
   const allDays = chartDays ?? weekDays
@@ -89,8 +94,12 @@ export function PercentageChart({
   const baselineValue = useMemo(() => {
     const shown = baselines.filter((b) => b.show && b.value > 0)
     if (shown.length === 0) return null
-    return shown.reduce((sum, b) => sum + b.value, 0) / shown.length
-  }, [baselines])
+    const average = shown.reduce((sum, b) => sum + b.value, 0) / shown.length
+    const percentage = baselineIntervalCount && baselineIntervalCount > 0
+      ? Math.min(100, (average / baselineIntervalCount) * 100)
+      : average
+    return Math.round(percentage * 10) / 10
+  }, [baselines, baselineIntervalCount])
 
   const activeObjective = useMemo(
     () => resolveActiveObjective(objectives),

@@ -408,6 +408,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
           chartDays={chartRange.chartDays}
           tickInterval={chartRange.tickInterval}
           gapDateKeys={chartHiddenDayKeys}
+          baselineIntervalCount={numberOfIntervals}
         />
       </div>
 
