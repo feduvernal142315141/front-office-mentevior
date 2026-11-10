@@ -14,6 +14,7 @@ interface SupervisionSignaturesProps {
   supervisorCredentials?: string
   superviseeId: string
   superviseeName: string
+  superviseeCredentials?: string
   /** Data URL o `null` */
   supervisorSign: string | null
   superviseeSign: string | null
@@ -39,6 +40,7 @@ export function SupervisionSignatures({
   supervisorCredentials,
   superviseeId,
   superviseeName,
+  superviseeCredentials,
   supervisorSign,
   superviseeSign,
   onSupervisorSignChange,
@@ -119,6 +121,7 @@ export function SupervisionSignatures({
         <SignatureRow
           role="Supervisee"
           name={superviseeName}
+          credentials={superviseeCredentials}
           signature={superviseeSign}
           onEdit={() => handleEdit("supervisee")}
           disabled={

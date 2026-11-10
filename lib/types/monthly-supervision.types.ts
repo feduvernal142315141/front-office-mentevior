@@ -106,7 +106,7 @@ export interface MonthlySupervisionContext {
   clientName: string
   providerId?: string
   supervisor: { name: string; credentials?: string }
-  supervisee: { name: string }
+  supervisee: { name: string; credentials?: string }
   totalHoursWorked: number
   supervisedHours: number
   /** Data URL (`data:image/png;base64,...`) o `null` */

@@ -11,6 +11,7 @@ export interface UserCredential {
   id: string
   credentialTypeId: string
   credentialTypeName: string
+  shortName?: string
   identificationNumber: string
   effectiveDate: string
   expirationDate: string

@@ -147,7 +147,10 @@ function normalizeContext(payload: unknown, isExistingReport: boolean): MonthlyS
       name: toText(supervisor.name) ?? toText(root.supervisorName) ?? "",
       credentials: toText(supervisor.credentials),
     },
-    supervisee: { name: toText(supervisee.name) ?? "" },
+    supervisee: {
+      name: toText(supervisee.name) ?? "",
+      credentials: toText(supervisee.credentials) ?? toText(root.superviseeCredentials),
+    },
     totalHoursWorked: toNumber(root.totalHoursWorked) ?? 0,
     supervisedHours: toNumber(root.supervisedHours) ?? 0,
     supervisorSign: toText(root.supervisorSign) ?? null,

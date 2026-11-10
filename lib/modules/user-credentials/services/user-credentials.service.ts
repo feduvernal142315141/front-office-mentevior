@@ -45,6 +45,9 @@ interface BackendCredentialItem {
   credentialId: string
   identificationNumber: string
   credentialName: string
+  shortName?: string
+  credentialShortName?: string
+  short_name?: string
   effectiveDate: string
   expirationDate: string
   status: "active" | "expired"
@@ -127,6 +130,7 @@ export async function getUserCredentials(
     id: item.id,
     credentialTypeId: item.credentialId,
     credentialTypeName: item.credentialName,
+    shortName: item.shortName ?? item.credentialShortName ?? item.short_name,
     identificationNumber: item.identificationNumber,
     effectiveDate: parseDateFromBackend(item.effectiveDate),
     expirationDate: parseDateFromBackend(item.expirationDate),

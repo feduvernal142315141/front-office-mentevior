@@ -3,28 +3,104 @@
 import { Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { cn } from "@/lib/utils"
+import { useEffect, useRef, useState } from "react"
 
 interface SupervisionEditableOptionsTableProps {
   title: string
   description: string
   options: string[]
+  /** Names of the catalog items that ADD must restore before creating blanks. */
+  defaultOptions?: string[]
   onChange: (options: string[]) => void
   disabled?: boolean
+}
+
+interface EditableOptionRow {
+  id: string
+  value: string
+  defaultIndex?: number
+}
+
+function createRows(options: string[], defaultOptions: string[]): EditableOptionRow[] {
+  const usedDefaultIndexes = new Set<number>()
+
+  return options.map((value, index) => {
+    const defaultIndex = defaultOptions.findIndex(
+      (defaultOption, candidateIndex) =>
+        !usedDefaultIndexes.has(candidateIndex) && defaultOption === value,
+    )
+
+    if (defaultIndex >= 0) usedDefaultIndexes.add(defaultIndex)
+
+    return {
+      id: `option-${index}`,
+      value,
+      ...(defaultIndex >= 0 ? { defaultIndex } : {}),
+    }
+  })
+}
+
+function sameValues(rows: EditableOptionRow[], options: string[]): boolean {
+  return rows.length === options.length && rows.every((row, index) => row.value === options[index])
 }
 
 export function SupervisionEditableOptionsTable({
   title,
   description,
   options,
+  defaultOptions = [],
   onChange,
   disabled,
 }: SupervisionEditableOptionsTableProps) {
+  const [rows, setRows] = useState<EditableOptionRow[]>(() => createRows(options, defaultOptions))
+  const nextIdRef = useRef(options.length)
+
+  // The parent owns the serialized values. Rebuild the local identity map only
+  // when it changed outside this component (for example when a report loads).
+  useEffect(() => {
+    if (sameValues(rows, options)) return
+    setRows(createRows(options, defaultOptions))
+    nextIdRef.current = options.length
+  }, [defaultOptions, options, rows])
+
+  const emitRows = (nextRows: EditableOptionRow[]) => {
+    setRows(nextRows)
+    onChange(nextRows.map((row) => row.value))
+  }
+
   const updateOption = (index: number, value: string) => {
-    onChange(options.map((option, currentIndex) => currentIndex === index ? value : option))
+    emitRows(rows.map((row, currentIndex) => currentIndex === index ? { ...row, value } : row))
   }
 
   const removeOption = (index: number) => {
-    onChange(options.filter((_, currentIndex) => currentIndex !== index))
+    emitRows(rows.filter((_, currentIndex) => currentIndex !== index))
+  }
+
+  const addOption = () => {
+    const presentDefaults = new Set(
+      rows.flatMap((row) => row.defaultIndex === undefined ? [] : [row.defaultIndex]),
+    )
+    const missingDefaultIndex = defaultOptions.findIndex((_, index) => !presentDefaults.has(index))
+
+    if (missingDefaultIndex < 0) {
+      emitRows([
+        ...rows,
+        { id: `option-${nextIdRef.current++}`, value: "" },
+      ])
+      return
+    }
+
+    const restoredRow: EditableOptionRow = {
+      id: `default-option-${missingDefaultIndex}`,
+      value: defaultOptions[missingDefaultIndex],
+      defaultIndex: missingDefaultIndex,
+    }
+    const insertAt = rows.findIndex(
+      (row) => row.defaultIndex !== undefined && row.defaultIndex > missingDefaultIndex,
+    )
+    const nextRows = [...rows]
+    nextRows.splice(insertAt < 0 ? rows.length : insertAt, 0, restoredRow)
+    emitRows(nextRows)
   }
 
   return (
@@ -38,7 +114,7 @@ export function SupervisionEditableOptionsTable({
           type="button"
           variant="secondary"
           className="h-9 px-3 text-xs"
-          onClick={() => onChange([...options, ""])}
+          onClick={addOption}
           disabled={disabled}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -50,13 +126,13 @@ export function SupervisionEditableOptionsTable({
         {options.length === 0 ? (
           <p className="px-5 py-6 text-center text-sm text-slate-400">No items configured.</p>
         ) : (
-          options.map((option, index) => (
+          rows.map((row, index) => (
             // El índice es estable mientras se edita el texto. Incluir `option`
             // en la key desmonta el input en cada tecla y elimina el foco.
-            <div key={index} className="flex items-center gap-3 px-5 py-3">
+            <div key={row.id} className="flex items-center gap-3 px-5 py-3">
               <span className="w-6 shrink-0 text-xs font-medium text-slate-400">{index + 1}</span>
               <input
-                value={option}
+                value={row.value}
                 onChange={(event) => updateOption(index, event.target.value)}
                 disabled={disabled}
                 placeholder="Enter an item"

@@ -24,7 +24,9 @@ import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import { useUsers } from "@/lib/modules/users/hooks/use-users"
+import { useCredentialsCatalog } from "@/lib/modules/credentials/hooks/use-credentials-catalog"
 import { useMonthlySupervisionContext } from "@/lib/modules/monthly-supervision/hooks/use-monthly-supervision-context"
+import { useUserCredentials } from "@/lib/modules/user-credentials/hooks/use-user-credentials"
 import { useSupervisionOptionCatalogs } from "@/lib/modules/monthly-supervision/hooks/use-supervision-option-catalogs"
 import { useSaveMonthlySupervision } from "@/lib/modules/monthly-supervision/hooks/use-save-monthly-supervision"
 import { getMonthlySupervisionPdfUrl } from "@/lib/modules/monthly-supervision/services/monthly-supervision.service"
@@ -34,6 +36,8 @@ import {
   toApiReportDate,
 } from "@/lib/modules/monthly-supervision/utils/report-month"
 import type { SupervisionAppointment } from "@/lib/types/monthly-supervision.types"
+import type { UserCredential } from "@/lib/types/user-credentials.types"
+import type { CredentialCatalogItem } from "@/lib/types/credential.types"
 import { MonthPicker } from "@/components/custom/MonthPicker"
 import { SupervisionAppointmentsTable } from "./SupervisionAppointmentsTable"
 import { ManualSupervisionModal, type ManualSupervisionDraft } from "./ManualSupervisionModal"
@@ -58,10 +62,63 @@ function hoursBetween(start?: string, end?: string): number {
   return minutes > 0 ? minutes / 60 : 0
 }
 
+function formatUserCredentials(
+  credentials: UserCredential[],
+  catalogCredentials: CredentialCatalogItem[],
+): string | undefined {
+  const activeCredentials = credentials.filter((credential) => credential.status === "Active")
+  const credentialsToShow = activeCredentials.length > 0 ? activeCredentials : credentials
+  const formatted = credentialsToShow
+    .map((credential) => {
+      const catalogCredential = catalogCredentials.find((item) =>
+        item.id === credential.credentialTypeId ||
+        item.name.trim().toLowerCase() === credential.credentialTypeName.trim().toLowerCase(),
+      )
+      return [
+        credential.shortName ??
+          catalogCredential?.shortName ??
+          toCredentialShortName(credential.credentialTypeName),
+        credential.identificationNumber,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    })
+    .filter(Boolean)
+    .join(", ")
+
+  return formatted || undefined
+}
+
+function toCredentialShortName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  return words.length > 1 ? words.map((word) => word[0]).join("").toUpperCase() : name
+}
+
+function replaceCredentialNamesWithShortNames(
+  credentialsText: string | undefined,
+  catalogCredentials: CredentialCatalogItem[],
+): string | undefined {
+  if (!credentialsText) return undefined
+
+  const shortened = catalogCredentials.reduce((text, credential) => {
+    if (!credential.name || !credential.shortName) return text
+    return text.replace(new RegExp(credential.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), credential.shortName)
+  }, credentialsText)
+
+  if (shortened !== credentialsText) return shortened
+
+  // The API can return only "Long Credential Name + identifier". Preserve the
+  // identifier and abbreviate the credential name when no catalog match exists.
+  return shortened.replace(/^(.+?)\s+(\S*\d[\S-]*)$/, (_, name: string, identifier: string) =>
+    `${toCredentialShortName(name)} ${identifier}`,
+  )
+}
+
 export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervisionFormProps) {
   const router = useRouter()
   const { user } = useAuth()
   const { can } = usePermission()
+  const { allCatalogCredentials } = useCredentialsCatalog()
   const isEditing = !!monthlySupervisionId
 
   const [clientId, setClientId] = useState("")
@@ -86,7 +143,9 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { users: allUsers } = useUsers({ pageSize: 100 })
-  const catalogs = useSupervisionOptionCatalogs({ loadCustomOptions: !isEditing })
+  // The evaluation catalog is also required when editing: ADD must be able to
+  // restore a deleted default item instead of falling back to a blank row.
+  const catalogs = useSupervisionOptionCatalogs({ loadCustomOptions: true })
 
   const { context, isLoading: contextLoading, error: contextError } = useMonthlySupervisionContext({
     monthlySupervisionId,
@@ -94,6 +153,10 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
     providerId,
     reportMonth,
   })
+
+  const { credentials: loggedUserCredentials } = useUserCredentials(user?.id ?? null, !!user?.id)
+  const credentialUserId = context?.providerId ?? providerId
+  const { credentials: superviseeCredentials } = useUserCredentials(credentialUserId || null, !!credentialUserId)
 
   const { save, sign, isSaving } = useSaveMonthlySupervision({ monthlySupervisionId })
 
@@ -121,6 +184,12 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
     hasMonthlySupervisionSignPermission &&
     (!!user?.id && !!providerId && (user.id === providerId || isPrivilegedSigner))
   const hasPersistedSuperviseeSign = isEditing && !!context?.superviseeSign
+  const supervisorCredentialText =
+    formatUserCredentials(loggedUserCredentials, allCatalogCredentials) ??
+    replaceCredentialNamesWithShortNames(context?.supervisor.credentials, allCatalogCredentials)
+  const superviseeCredentialText =
+    formatUserCredentials(superviseeCredentials, allCatalogCredentials) ??
+    replaceCredentialNamesWithShortNames(context?.supervisee.credentials, allCatalogCredentials)
 
   const clientOptions = useMemo(
     () => clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
@@ -543,10 +612,15 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
               {
                 label: "Supervisor",
                 value: context.supervisor.name
-                  ? `${context.supervisor.name}${context.supervisor.credentials ? ` · ${context.supervisor.credentials}` : ""}`
+                  ? `${context.supervisor.name}${supervisorCredentialText ? ` · ${supervisorCredentialText}` : ""}`
                   : "—",
               },
-              { label: "Supervisee", value: context.supervisee.name || "—" },
+              {
+                label: "Supervisee",
+                value: context.supervisee.name
+                  ? `${context.supervisee.name}${superviseeCredentialText ? ` · ${superviseeCredentialText}` : ""}`
+                  : "—",
+              },
               {
                 label: "Hours",
                 value: `${formatHours(supervisedHours)} supervised of ${formatHours(totalHoursWorked)} worked`,
@@ -659,6 +733,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
           title="Characteristics of Supervision Conducted"
           description="Items observed or discussed during supervision"
           options={supervisionConducted}
+          defaultOptions={catalogs.conductedOptions.map((option) => option.name)}
           onChange={setSupervisionConducted}
           disabled={isBusy || isBlocked || isReadOnly}
         />
@@ -666,6 +741,7 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
           title="Other Items Evaluated"
           description="Additional items evaluated during supervision"
           options={itemsEvaluated}
+          defaultOptions={catalogs.evaluationOptions.map((option) => option.name)}
           onChange={setItemsEvaluated}
           disabled={isBusy || isBlocked || isReadOnly}
         />
@@ -677,9 +753,10 @@ export function MonthlySupervisionForm({ monthlySupervisionId }: MonthlySupervis
           <SupervisionSignatures
             supervisorId={user?.id ?? ""}
             supervisorName={context?.supervisor.name ?? ""}
-            supervisorCredentials={context?.supervisor.credentials}
+            supervisorCredentials={supervisorCredentialText}
             superviseeId={providerId}
             superviseeName={context?.supervisee.name ?? ""}
+            superviseeCredentials={superviseeCredentialText}
             supervisorSign={supervisorSign}
             superviseeSign={superviseeSign}
             onSupervisorSignChange={(value) => { setSupervisorSign(value); setSignatureError(false) }}
