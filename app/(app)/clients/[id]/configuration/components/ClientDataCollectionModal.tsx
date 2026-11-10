@@ -417,9 +417,13 @@ export function ClientDataCollectionModal({
     }
     if (!typeRequiresInterval(resolvedType.group)) {
       setValue("intervalLength", undefined)
+    } else if (getValues("intervalLength") === undefined) {
+      setValue("intervalLength", 30)
     }
     if (!typeRequiresInterval(resolvedType.group) && !typeRequiresDailyAndWeekly(resolvedType.name)) {
       setValue("suggestedNumberOfRecordings", undefined)
+    } else if (getValues("suggestedNumberOfRecordings") === undefined) {
+      setValue("suggestedNumberOfRecordings", 10)
     }
     if (!typeRequiresUnitOfTime(resolvedType.name) && !typeRequiresDailyAndWeekly(resolvedType.name) && !typeRequiresInterval(resolvedType.group)) {
       setValue("unitOfTime", undefined)
@@ -427,7 +431,7 @@ export function ClientDataCollectionModal({
     if (!typeHasCumulativeValueToggles(resolvedType.group)) {
       setValue("cumulative", undefined)
     }
-  }, [resolvedType, setValue])
+  }, [resolvedType, setValue, getValues])
 
   // --- Delete level ---
   const handleDeleteLevel = async (level: DataCollectionLevel) => {

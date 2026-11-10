@@ -543,9 +543,13 @@ export function ItemDetailPanel({
     }
     if (!typeRequiresInterval(resolvedType.group)) {
       setValue("intervalLength", undefined, opts)
+    } else if (currentValues.intervalLength === undefined) {
+      setValue("intervalLength", 30, opts)
     }
     if (!typeRequiresInterval(resolvedType.group) && !typeRequiresDailyAndWeekly(resolvedType.name)) {
       setValue("suggestedNumberOfRecordings", undefined, opts)
+    } else if (currentValues.suggestedNumberOfRecordings === undefined) {
+      setValue("suggestedNumberOfRecordings", 10, opts)
     }
     if (
       !typeRequiresUnitOfTime(resolvedType.name) &&
