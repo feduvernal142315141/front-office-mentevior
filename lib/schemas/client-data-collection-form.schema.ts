@@ -5,6 +5,7 @@ import {
   typeRequiresInterval,
   typeRequiresUnitOfTime,
   typeRequiresWeeklyDaily,
+  typeShowsSuggestedRecordings,
   typeIsMeasurementLog,
 } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import {
@@ -142,7 +143,7 @@ export function createClientDataCollectionFormSchema(
             path: ["unitOfTime"],
           })
         }
-        if (data.suggestedNumberOfRecordings === undefined) {
+        if (typeShowsSuggestedRecordings(name) && data.suggestedNumberOfRecordings === undefined) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: "Suggested number of recordings is required",

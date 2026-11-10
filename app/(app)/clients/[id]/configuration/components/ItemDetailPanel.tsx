@@ -65,6 +65,8 @@ import {
   typeRequiresWeeklyDaily,
   typeRequiresUnitOfTime,
   typeRequiresBaselineSessionDuration,
+  typeShowsSuggestedRecordings,
+  typeUsesItemUnitInBaseline,
   typeRequiresInterval,
   typeRequiresDailyAndWeekly,
   typeHasCumulativeValueToggles,
@@ -509,9 +511,9 @@ export function ItemDetailPanel({
   const isMeasurementLogType = typeIsMeasurementLog(resolvedType.name)
   const needsSessionDuration = typeRequiresBaselineSessionDuration(resolvedType.name)
 
-  // Rate: el baseline usa la Unit of time del item; solo aplica si el catálogo de Period tiene esa unidad
+  // Rate y Duration: el baseline usa la Unit of time del item; solo aplica si el catálogo de Period tiene esa unidad
   const rateUnit = useMemo(() => {
-    if (resolvedType.name !== "Rate" || !watchedUnitOfTime) return undefined
+    if (!typeUsesItemUnitInBaseline(resolvedType.name) || !watchedUnitOfTime) return undefined
     const match = periodCatalog.find((p) => periodNameToUnitOfTime(p.name) === watchedUnitOfTime)
     const label = SERVICE_PLAN_UNIT_OF_TIME_OPTIONS.find((o) => o.value === watchedUnitOfTime)?.label
     return match && label ? { id: match.id, label } : undefined
@@ -925,6 +927,7 @@ export function ItemDetailPanel({
                 />
                 <FieldErrorText message={errors.unitOfTime?.message} />
               </div>
+              {typeShowsSuggestedRecordings(resolvedType.name) && (
               <div className="space-y-1">
                 <Controller
                   name="suggestedNumberOfRecordings"
@@ -943,6 +946,7 @@ export function ItemDetailPanel({
                 />
                 <FieldErrorText message={errors.suggestedNumberOfRecordings?.message} />
               </div>
+              )}
               <div className="space-y-1">
                 <Controller
                   name="dailyValue"

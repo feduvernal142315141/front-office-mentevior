@@ -40,11 +40,22 @@ export function typeRequiresUnitOfTime(typeName: string): boolean {
 }
 
 /**
- * Rate y Duration: el baseline es una colección independiente (no hay cita agendada al
+ * Rate: el baseline es una colección independiente (no hay cita agendada al
  * armar el service plan), así que el analista carga a mano la duración de esa sesión.
+ * Duration no la pide: su valor ya está expresado en la unidad de tiempo.
  */
 export function typeRequiresBaselineSessionDuration(typeName: string): boolean {
+  return typeName === "Rate"
+}
+
+/** Rate y Duration: el baseline usa la Unit of time del item en lugar del Period. */
+export function typeUsesItemUnitInBaseline(typeName: string): boolean {
   return typeName === "Rate" || typeName === "Duration"
+}
+
+/** Duration no muestra ni exige "Suggested number of recordings" (se conserva el valor por defecto). */
+export function typeShowsSuggestedRecordings(typeName: string): boolean {
+  return typeName !== "Duration"
 }
 
 export function typeRequiresInterval(typeGroup: string): boolean {
