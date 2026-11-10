@@ -1,9 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-  BarChart3, FileText, User, CalendarCheck2,
-} from "lucide-react"
+import { BarChart3, FileText, User, CalendarCheck2, ChevronLeft, ChevronRight } from "lucide-react"
 import { addDays, format } from "date-fns"
 import { cn } from "@/lib/utils"
 import type { ClientServicePlanCategoryMappedItem } from "@/lib/types/client-service-plan.types"
@@ -89,12 +87,33 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     return extended
   }, [ds.rangeDays, ds.rangeMode, gapDateKeys])
 
+  // Baseline days before the visible range stay pinned as collapsible columns
+  const baselineDays = useMemo(() => {
+    const bls = activeItem.baseline
+    if (!bls || bls.length === 0) return []
+    const rangeStart = ds.dateRange.start
+    return bls
+      .filter((b) => b.date)
+      .map((b) => parseLocalDate(b.date))
+      .filter((d) => d < rangeStart)
+      .sort((a, b) => a.getTime() - b.getTime())
+  }, [activeItem.baseline, ds.dateRange.start])
+
+  const [baselineCollapsed, setBaselineCollapsed] = useState(false)
+  const displayDays = useMemo(
+    () => (baselineCollapsed ? visibleDays : [...baselineDays, ...visibleDays]),
+    [baselineCollapsed, baselineDays, visibleDays],
+  )
+  const hasBaselineDays = baselineDays.length > 0
+
   const fetchStart = useMemo(() => {
     const rangeStart = ds.dateRange.start
+    const firstBaseline = baselineDays[0]
     const firstVisible = visibleDays[0]
-    const earliest = firstVisible && firstVisible < rangeStart ? firstVisible : rangeStart
+    const candidates = [rangeStart, firstBaseline, firstVisible].filter(Boolean) as Date[]
+    const earliest = new Date(Math.min(...candidates.map((d) => d.getTime())))
     return format(earliest, "yyyy-MM-dd")
-  }, [ds.dateRange.start, visibleDays])
+  }, [ds.dateRange.start, baselineDays, visibleDays])
 
   const fetchEnd = useMemo(() => {
     const rangeEnd = ds.dateRange.end
@@ -224,15 +243,18 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     gridEntries: chartCompatibleEntries,
   })
 
-  // Baseline en %: cada día se divide entre SU cantidad de intervalos
-  const baselinePercent = useMemo(() => {
-    const shown = (activeItem.baseline ?? []).filter((b) => b.show && b.value > 0 && b.date)
-    if (shown.length === 0) return null
-    const total = shown.reduce((sum, b) => {
+  // Baseline en %: cada día se divide entre SU cantidad de intervalos y se dibuja en su fecha
+  const baselinePoints = useMemo(() => {
+    const points: { dateKey: string; percentage: number }[] = []
+    for (const b of activeItem.baseline ?? []) {
+      if (!b.show || !b.date) continue
       const dayCount = b.suggestedNumberOfRecordings && b.suggestedNumberOfRecordings > 0 ? b.suggestedNumberOfRecordings : numberOfIntervals
-      return sum + Math.min(100, (b.value / dayCount) * 100)
-    }, 0)
-    return Math.round((total / shown.length) * 10) / 10
+      points.push({
+        dateKey: getDateKey(parseLocalDate(b.date)),
+        percentage: Math.round(Math.min(100, (b.value / dayCount) * 100) * 10) / 10,
+      })
+    }
+    return points
   }, [activeItem.baseline, numberOfIntervals])
 
   const dcStatusByDate = useMemo(() => {
@@ -243,7 +265,8 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     return map
   }, [dcValues.records])
 
-  const gridCols = `200px repeat(${visibleDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
+  const toggleColWidth = hasBaselineDays ? "36px " : ""
+  const gridCols = `200px ${toggleColWidth}repeat(${displayDays.length}, minmax(${ds.rangeMode === "month" ? "80" : "120"}px, 1fr))`
 
   return (
     <div className="space-y-4">
@@ -262,7 +285,21 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
               <div className="px-4 py-3 bg-slate-50/60 border-r border-slate-100">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Interval</span>
               </div>
-              {visibleDays.map((day) => {
+              {hasBaselineDays && (
+                <button
+                  type="button"
+                  onClick={() => setBaselineCollapsed((v) => !v)}
+                  className="flex items-center justify-center border-r border-slate-100 bg-red-50/40 hover:bg-red-50 transition-colors"
+                  title={baselineCollapsed ? `Show ${baselineDays.length} baseline days` : "Hide baselines"}
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    {baselineCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-red-400" /> : <ChevronLeft className="h-3.5 w-3.5 text-red-400" />}
+                    <span className="text-[9px] font-bold text-red-400 uppercase">BL</span>
+                    {baselineCollapsed && <span className="text-[9px] font-semibold text-red-300">{baselineDays.length}</span>}
+                  </div>
+                </button>
+              )}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
@@ -294,7 +331,8 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             {Array.from({ length: ds.maxIntervals }, (_, idx) => (
               <div key={idx} className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
                 <RowLabel icon={<BarChart3 className="h-4 w-4 text-[#037ECC]" />} title={`Interval ${idx + 1}`} />
-                {visibleDays.map((day) => {
+                {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+                {displayDays.map((day) => {
                   const key = getDateKey(day)
                   const entry = ds.getEntry(key)
                   const today = ds.isToday(day)
@@ -336,7 +374,8 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             {/* Row: Daily Average (%) */}
             <div className="grid border-b border-slate-100 bg-slate-50/40" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<BarChart3 className="h-4 w-4 text-indigo-500" />} title="Daily average" badge="%" badgeColor="blue" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
@@ -357,7 +396,8 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             {/* Row: Initials */}
             <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<User className="h-4 w-4 text-slate-400" />} title="Initials" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
@@ -380,7 +420,8 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             {/* Row: Environmental Changes */}
             <div className="grid" style={{ gridTemplateColumns: gridCols }}>
               <RowLabel icon={<FileText className="h-4 w-4 text-teal-500" />} title="Environmental changes" badge="Affects Chart Phase Lines" badgeColor="teal" />
-              {visibleDays.map((day) => {
+              {hasBaselineDays && <div className="border-r border-slate-100 bg-red-50/20" />}
+              {displayDays.map((day) => {
                 const key = getDateKey(day)
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
@@ -421,7 +462,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
           chartDays={chartRange.chartDays}
           tickInterval={chartRange.tickInterval}
           gapDateKeys={chartHiddenDayKeys}
-          baselinePercentOverride={baselinePercent}
+          baselinePoints={baselinePoints}
         />
       </div>
 
