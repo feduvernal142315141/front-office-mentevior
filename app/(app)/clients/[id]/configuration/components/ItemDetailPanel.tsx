@@ -40,6 +40,7 @@ import {
   type BaselineRow,
 } from "./BaselinesTabContent"
 import { ObjectivesTabContent, inferObjetiveType } from "./ObjectivesTabContent"
+import { periodNameToUnitOfTime } from "./datasheets/rate-datasheet.types"
 import type { ObjectiveRow } from "./ObjectiveFormModal"
 
 import {
@@ -508,6 +509,14 @@ export function ItemDetailPanel({
   const isMeasurementLogType = typeIsMeasurementLog(resolvedType.name)
   const needsSessionDuration = typeRequiresBaselineSessionDuration(resolvedType.name)
 
+  // Rate: el baseline usa la Unit of time del item; solo aplica si el catálogo de Period tiene esa unidad
+  const rateUnit = useMemo(() => {
+    if (resolvedType.name !== "Rate" || !watchedUnitOfTime) return undefined
+    const match = periodCatalog.find((p) => periodNameToUnitOfTime(p.name) === watchedUnitOfTime)
+    const label = SERVICE_PLAN_UNIT_OF_TIME_OPTIONS.find((o) => o.value === watchedUnitOfTime)?.label
+    return match && label ? { id: match.id, label } : undefined
+  }, [resolvedType.name, watchedUnitOfTime, periodCatalog])
+
   const { groups: unitMeasurementGroups, isLoading: isLoadingUnitMeasurement } =
     useUnitMeasurementCatalog(isMeasurementLogType)
 
@@ -589,7 +598,7 @@ export function ItemDetailPanel({
   const handleSave = async (values: ClientDataCollectionFormValues) => {
     // Rate/Duration: el backend exige la duración de la sesión (> 0) en cada baseline
     const missingSessionDuration = needsSessionDuration && baselines.some(
-      (b) => b.date && b.periodCatalogId && !(Number(b.sessionDuration) > 0)
+      (b) => b.date && (b.periodCatalogId || rateUnit?.id) && !(Number(b.sessionDuration) > 0)
     )
     if (missingSessionDuration) {
       setBaselinesError(true)
@@ -609,6 +618,7 @@ export function ItemDetailPanel({
       }))
 
       const baselinesPayload = baselines
+        .map((b) => ({ ...b, periodCatalogId: b.periodCatalogId || rateUnit?.id || "" }))
         .filter((b) => b.date && b.periodCatalogId)
         .map((b) => ({
           recordId: b.recordId,
@@ -1163,7 +1173,7 @@ export function ItemDetailPanel({
             <Button
               type="button"
               onClick={() => {
-                const lastPeriod = baselines.length > 0 ? baselines[baselines.length - 1].periodCatalogId : ""
+                const lastPeriod = rateUnit?.id ?? (baselines.length > 0 ? baselines[baselines.length - 1].periodCatalogId : "")
                 handleBaselinesChange([...baselines, { ...createEmptyBaseline(), periodCatalogId: lastPeriod }])
               }}
               className="gap-1.5 text-sm h-8 px-3"
@@ -1180,6 +1190,7 @@ export function ItemDetailPanel({
             mode="item"
             periodSelectOptions={periodSelectOptions}
             requiresSessionDuration={needsSessionDuration}
+            rateUnit={rateUnit}
             showErrors={baselinesError}
             hideAddButton
             readOnly={!canEdit}

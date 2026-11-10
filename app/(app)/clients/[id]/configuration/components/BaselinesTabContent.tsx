@@ -50,6 +50,11 @@ interface BaselinesTabContentProps {
   readOnly?: boolean
   /** Rate/Duration: muestra el campo para cargar a mano la duración de la sesión */
   requiresSessionDuration?: boolean
+  /**
+   * Rate: el Period se reemplaza por la "Unit of time" del item (solo lectura). Las filas
+   * que ya guardaron otra unidad conservan su Period para no reinterpretar su duración.
+   */
+  rateUnit?: { id: string; label: string }
 }
 
 export function BaselinesTabContent({
@@ -61,6 +66,7 @@ export function BaselinesTabContent({
   hideAddButton = false,
   readOnly = false,
   requiresSessionDuration = false,
+  rateUnit,
 }: BaselinesTabContentProps) {
   const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENTS)
   const actionsDisabled = readOnly || !canEdit
@@ -68,15 +74,15 @@ export function BaselinesTabContent({
 
   const sessionDurationLabel = useCallback(
     (periodCatalogId: string) => {
-      const period = periodSelectOptions.find((o) => o.value === periodCatalogId)?.label
+      const period = periodSelectOptions.find((o) => o.value === (periodCatalogId || rateUnit?.id))?.label
       return period ? `Session duration (${period.toLowerCase()})` : "Session duration"
     },
-    [periodSelectOptions]
+    [periodSelectOptions, rateUnit]
   )
 
   const handleAdd = useCallback(() => {
-    onChange([...baselines, createEmptyBaseline()])
-  }, [baselines, onChange])
+    onChange([...baselines, { ...createEmptyBaseline(), periodCatalogId: rateUnit?.id ?? "" }])
+  }, [baselines, onChange, rateUnit])
 
   const handleUpdate = useCallback(
     (localId: string, field: keyof BaselineRow, value: string | boolean) => {
@@ -152,16 +158,26 @@ export function BaselinesTabContent({
                   />
                 </div>
                 <div className="flex-1 min-w-0 relative">
-                  <FloatingSelect
-                    label="Period"
-                    value={row.periodCatalogId}
-                    onChange={(v) => handleUpdate(row.localId, "periodCatalogId", v)}
-                    options={periodSelectOptions}
-                    dropdownPosition="bottom"
-                    hasError={showErrors && !row.periodCatalogId}
-                    required
-                    disabled={actionsDisabled}
-                  />
+                  {rateUnit && (!row.periodCatalogId || row.periodCatalogId === rateUnit.id) ? (
+                    <FloatingInput
+                      label="Unit of time"
+                      value={rateUnit.label}
+                      onChange={() => {}}
+                      onBlur={() => {}}
+                      disabled
+                    />
+                  ) : (
+                    <FloatingSelect
+                      label="Period"
+                      value={row.periodCatalogId}
+                      onChange={(v) => handleUpdate(row.localId, "periodCatalogId", v)}
+                      options={periodSelectOptions}
+                      dropdownPosition="bottom"
+                      hasError={showErrors && !row.periodCatalogId}
+                      required
+                      disabled={actionsDisabled}
+                    />
+                  )}
                 </div>
                 {requiresSessionDuration && (
                   <div className="col-span-2 flex-1 min-w-0 sm:col-span-1">
