@@ -25,9 +25,36 @@ export function ConfigurationSidebar({
   const [collapsed, setCollapsed] = useState(false)
 
   return (
+    <>
+    <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-slate-200/60 bg-white px-4 py-2 sm:px-6 lg:hidden">
+      {sections.map((section) => {
+        const isActive = section.id === activeSectionId
+        const isDisabled = section.disabled
+
+        return (
+          <button
+            key={section.id}
+            type="button"
+            onClick={() => !isDisabled && onSectionClick(section.id)}
+            disabled={isDisabled}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
+              "[&>span>svg]:h-4 [&>span>svg]:w-4",
+              isActive
+                ? "border-[#037ECC]/30 bg-[#037ECC]/10 text-[#037ECC]"
+                : "border-slate-200 bg-white text-slate-600",
+              isDisabled && "cursor-not-allowed opacity-50",
+            )}
+          >
+            <span className="flex items-center">{section.icon}</span>
+            {section.title}
+          </button>
+        )
+      })}
+    </div>
     <div
       className={cn(
-        "shrink-0 bg-white border-r border-slate-200/60 py-4 pb-36 custom-scrollbar overflow-y-auto transition-all duration-300",
+        "hidden lg:block shrink-0 bg-white border-r border-slate-200/60 py-4 pb-36 custom-scrollbar overflow-y-auto transition-all duration-300",
         collapsed ? "w-[68px] px-3" : "w-72 pl-8 pr-5",
       )}
     >
@@ -118,5 +145,6 @@ export function ConfigurationSidebar({
         })}
       </div>
     </div>
+    </>
   )
 }

@@ -65,7 +65,7 @@ export function PhysiciansTable() {
             <Button 
               variant="ghost"
               onClick={onClearFilters}
-              className="whitespace-nowrap h-[52px] 2xl:h-[56px]"
+              className="w-full sm:w-auto whitespace-nowrap h-[52px] 2xl:h-[56px]"
             >
               Clear filters
             </Button>

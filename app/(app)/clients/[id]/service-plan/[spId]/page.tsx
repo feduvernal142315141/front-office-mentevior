@@ -84,7 +84,7 @@ export default function ClientServicePlanPage() {
   }, [itemsState, reloadCategories])
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
         <ClientServicePlanHeader />
 

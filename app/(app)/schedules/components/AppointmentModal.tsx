@@ -122,7 +122,7 @@ export function AppointmentModal({
       description={isNewSessionMode ? `New session for ${parentAppointment?.clientName ?? "client"}` : "Complete the details to schedule this session"}
       maxWidthClassName="sm:max-w-[760px]"
       allowSelectOverflow
-      contentClassName="!overflow-visible"
+      contentClassName="sm:!overflow-visible"
     >
       {/* Body */}
       <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5">
@@ -410,7 +410,7 @@ export function AppointmentModal({
               pendingValidation ||
               !!validationError
             }
-            className="h-10 min-w-[180px]"
+            className="h-10 min-w-0 sm:min-w-[180px]"
             onClick={handleSubmit}
           >
             {isEditing ? "Update" : "Create"} Session

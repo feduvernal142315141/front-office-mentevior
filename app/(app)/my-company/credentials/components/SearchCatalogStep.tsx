@@ -268,7 +268,7 @@ export function SearchCatalogStep({ onSelectCredential, onClose, onSuccess }: Se
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="text-sm text-gray-600">
             {selectedCount > 0 && (
               <span className="font-medium text-gray-900">
@@ -280,7 +280,7 @@ export function SearchCatalogStep({ onSelectCredential, onClose, onSuccess }: Se
           <Button
             onClick={handleSubmit}
             disabled={selectedCount === 0 || isSubmitting}
-            className="min-w-[220px] flex items-center justify-center transition-all"
+            className="w-full sm:w-auto min-w-0 sm:min-w-[220px] flex items-center justify-center transition-all"
           >
             {isSubmitting ? (
               <>

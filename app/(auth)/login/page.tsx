@@ -2,6 +2,8 @@
 
 import { Loader2 } from "lucide-react"
 
+import Image from "next/image"
+
 import { CompanyAccessNotice } from "@/components/auth/CompanyAccessNotice"
 import { useCompanyConfig } from "@/lib/modules/auth/hooks/use-company-config"
 import type { CompanyInfo } from "@/lib/types/auth.types"
@@ -58,11 +60,19 @@ export default function LoginPage() {
 
       <div className="
         w-full lg:w-[40%] 2xl:w-[45%]
-        flex items-center justify-center
+        flex flex-col items-center justify-center
         p-6 lg:p-12 2xl:p-20
         relative z-10
         bg-white/70 backdrop-blur-xl
       ">
+        <div className="lg:hidden relative w-16 h-16 mb-6">
+          <Image
+            src={company?.logo || NEUTRAL_BRAND.logo}
+            alt={`${company?.name ?? NEUTRAL_BRAND.name} logo`}
+            fill
+            className="object-contain"
+          />
+        </div>
         <LoginForm company={company} />
       </div>
     </div>

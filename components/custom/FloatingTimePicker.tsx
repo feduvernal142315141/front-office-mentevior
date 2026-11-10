@@ -388,7 +388,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
               placeholder={isFocused ? "hh:mm" : ""}
               disabled={disabled}
               maxLength={5}
-              className="flex-1 min-w-0 bg-transparent text-[15px] 2xl:text-[16px] font-medium tabular-nums tracking-wide text-[var(--color-login-text-primary)] outline-none placeholder:text-slate-300 placeholder:font-normal"
+              className="flex-1 min-w-0 bg-transparent text-base sm:text-[15px] 2xl:text-[16px] font-medium tabular-nums tracking-wide text-[var(--color-login-text-primary)] outline-none placeholder:text-slate-300 placeholder:font-normal"
             />
 
             {/* AM / PM toggle */}
@@ -471,7 +471,7 @@ export const FloatingTimePicker = forwardRef<HTMLElement, FloatingTimePickerProp
                 "px-4 pr-12",
                 "rounded-[16px]",
                 "text-left",
-                "text-[15px] 2xl:text-[16px]",
+                "text-base sm:text-[15px] 2xl:text-[16px]",
                 "text-[var(--color-login-text-primary)]",
                 "bg-gradient-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
                 hasError

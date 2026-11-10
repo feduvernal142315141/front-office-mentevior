@@ -131,7 +131,7 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
               </div>
             </div>
           </div>
-          <div className="px-6 py-5 flex items-center gap-8">
+          <div className="px-6 py-5 flex flex-wrap items-center gap-4 sm:gap-8">
             <Controller
               name="professionalInformation"
               control={form.control}
@@ -164,15 +164,15 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
         {/* Permissions */}
         <PermissionsSelector name="permissions" />
 
-        <div className="h-20" />
+        <div className="h-28 sm:h-20" />
 
         {/* Fixed Footer */}
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-2px_16px_rgba(15,23,42,0.08)]">
-          <div className="max-w-6xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-end gap-4">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-4">
               {/* Validation message */}
               {!hasPermissions && (
-                <p className="text-xs text-amber-600 font-medium flex items-center gap-1.5">
+                <p className="text-xs text-amber-600 font-medium flex items-center justify-center sm:justify-end gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                   Select at least one permission to {isEditing ? "update" : "create"} the role
                 </p>
@@ -185,7 +185,7 @@ export function RoleForm({ roleId = null }: RoleFormProps) {
               )}
 
               {/* Action buttons */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 [&>button]:flex-1 sm:[&>button]:flex-none">
                 <Button
                   type="button"
                   variant="secondary"

@@ -20,7 +20,7 @@ export default function EditClinicalDocumentPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -32,7 +32,7 @@ export default function EditClinicalDocumentPage() {
 
   if (error || !document) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-3xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6">
             <p className="text-red-600 font-medium">Error loading document</p>
@@ -46,7 +46,7 @@ export default function EditClinicalDocumentPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">          
 
@@ -55,7 +55,7 @@ export default function EditClinicalDocumentPage() {
               <Stethoscope className="h-8 w-8 text-[#037ECC]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
                 Edit Clinical Document
               </h1>
               <p className="text-slate-600 mt-1">{document.name}</p>

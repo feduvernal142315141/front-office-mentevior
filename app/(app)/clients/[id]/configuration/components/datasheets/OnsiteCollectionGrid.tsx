@@ -538,7 +538,7 @@ function PercentageCard({
       </div>
 
       {/* Trial toggles */}
-      <div className="grid grid-cols-5 gap-1.5 px-5 py-5">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 px-5 py-5">
         {state.trials.map((result, idx) => (
           <button
             key={idx}

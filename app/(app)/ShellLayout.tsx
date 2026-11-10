@@ -17,14 +17,15 @@ export default function ShellLayout({
 
   return (
     <UnsavedChangesProvider>
-      <div className="h-screen bg-background overflow-hidden">
+      <div className="h-dvh bg-background overflow-hidden">
         <SectionCompletionSync />
         <Sidebar />
 
       <div
         className={cn(
           "flex flex-col h-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
-          sidebarCollapsed ? "ml-20" : "ml-[280px]"
+          "ml-0",
+          sidebarCollapsed ? "lg:ml-20" : "lg:ml-[300px]"
         )}
       >
         <Topbar />

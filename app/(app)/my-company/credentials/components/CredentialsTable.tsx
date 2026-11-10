@@ -65,7 +65,7 @@ export const CredentialsTable = forwardRef<CredentialsTableRef>((props, ref) => 
             <Button 
               variant="ghost"
               onClick={clearFilters}
-              className="whitespace-nowrap h-[52px] 2xl:h-[56px]"
+              className="w-full sm:w-auto whitespace-nowrap h-[52px] 2xl:h-[56px]"
             >
               Clear filters
             </Button>

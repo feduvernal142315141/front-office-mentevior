@@ -322,7 +322,7 @@ export function BatchClaimDetailView({
 
               {/* Services table */}
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 text-left">
                       {["Date", "Place of Service", "Billing Code", "Diagnosis", "Units", "Rate", "Amount"].map((h) => (

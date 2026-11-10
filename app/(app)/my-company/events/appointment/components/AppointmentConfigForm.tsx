@@ -288,7 +288,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
       {/* ── Configuration ──────────────────────────────────────────────────── */}
       <Card variant="elevated" padding="lg">
         <div>
-          <div className="w-full flex items-center justify-between mb-4">
+          <div className="w-full flex flex-wrap items-center justify-between gap-2 mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 rounded-lg">
                 <Settings className="w-5 h-5 text-blue-700" />
@@ -557,7 +557,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                   <span className="text-sm font-medium text-gray-700">Rules & Restrictions</span>
                 </div>
                 {/* 2 columnas al 50% — orden alfabético continuo izq→der */}
-                <div className="flex flex-col md:flex-row gap-x-24">
+                <div className="flex flex-col md:flex-row gap-x-0 md:gap-x-24">
                   {[SWITCH_ITEMS.slice(0, Math.ceil(SWITCH_ITEMS.length / 2)), SWITCH_ITEMS.slice(Math.ceil(SWITCH_ITEMS.length / 2))].map((col, colIdx) => (
                     <div key={colIdx} className="flex-1">
                       {col.map((item) => (
@@ -565,7 +565,7 @@ export function AppointmentConfigForm({ config }: AppointmentConfigFormProps) {
                           key={item.field}
                           className="flex items-start justify-between gap-4 px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50/60 transition-colors cursor-pointer"
                         >
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium text-slate-900">{item.label}</span>
                             {item.description && (
                               <p className="text-xs text-gray-500 mt-1">{item.description}</p>

@@ -123,7 +123,7 @@ export function LevelsLibraryModal({
             <p className="text-center text-sm text-slate-500">No levels available in catalog.</p>
           </div>
         ) : (
-          <div className="flex min-h-[340px] max-h-[440px]">
+          <div className="flex flex-col sm:flex-row min-h-[340px] max-h-[440px]">
             <GroupsPanel
               groups={groups}
               activeGroupId={activeGroupId}
@@ -192,7 +192,7 @@ function GroupsPanel({
   onToggleGroup,
 }: GroupsPanelProps) {
   return (
-    <div className="w-[210px] border-r border-slate-100 overflow-y-auto bg-slate-50/50">
+    <div className="w-full sm:w-[210px] border-b sm:border-b-0 sm:border-r border-slate-100 max-h-40 sm:max-h-none overflow-y-auto bg-slate-50/50">
       <div className="py-2">
         {groups.map((group) => {
           const isActive = group.id === activeGroupId

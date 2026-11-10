@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
   if (companyError || !companyConfig) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center p-8">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center p-4 sm:p-8">
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
 
           <div
             className="
-              relative rounded-[28px] p-10
+              relative rounded-[28px] p-6 sm:p-10
               bg-white
               border border-gray-200
               shadow-[0_20px_40px_-12px_rgba(2,6,23,0.15)]

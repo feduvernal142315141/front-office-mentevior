@@ -266,7 +266,7 @@ export function ServicePlanConfigForm({
   const configurationContent = (
     <div>
       {!hideHeader && (
-        <div className="w-full flex items-center justify-between mb-4">
+        <div className="w-full flex flex-wrap items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-lg">
               <Settings className="w-5 h-5 text-blue-700" />

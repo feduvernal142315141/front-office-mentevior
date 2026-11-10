@@ -17,8 +17,8 @@ export function ChartXAxisTab({ control }: ChartXAxisTabProps) {
   const xAxisErrors = (errors.chart as { xAxis?: Record<string, { message?: string }> } | undefined)?.xAxis
 
   return (
-    <div className="flex gap-4">
-      <div className="flex min-w-0 flex-[7] flex-col gap-6">
+    <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-6 lg:flex-[7]">
         <div className="space-y-1">
           <Controller
             name="chart.xAxis.title"
@@ -54,7 +54,7 @@ export function ChartXAxisTab({ control }: ChartXAxisTabProps) {
         </div>
       </div>
 
-      <div className="flex flex-[3] items-center justify-end">
+      <div className="flex flex-1 items-center justify-end lg:flex-[3]">
         <Controller
           name="chart.xAxis.hideGrid"
           control={control}

@@ -79,7 +79,7 @@ export function ManualLogEntryModal({
       description="Date and times are required; everything else is optional."
       maxWidthClassName="sm:max-w-[860px]"
       allowSelectOverflow
-      contentClassName="!overflow-visible"
+      contentClassName="sm:!overflow-visible"
     >
       <div className="space-y-4 px-6 py-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -181,7 +181,7 @@ export function ManualLogEntryModal({
         />
       </div>
 
-      <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+      <div className="flex flex-col-reverse gap-3 border-t border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
         <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSaving}>
           Cancel
         </Button>

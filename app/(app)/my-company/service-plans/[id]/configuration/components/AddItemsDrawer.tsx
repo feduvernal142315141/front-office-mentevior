@@ -299,7 +299,7 @@ export function AddItemsDrawer({
                 void handleAssignItems()
               }}
               disabled={selectedItemIds.size === 0 || isAssigning}
-              className="min-w-[200px]"
+              className="min-w-0 sm:min-w-[200px]"
             >
               {isAssigning ? (
                 <>

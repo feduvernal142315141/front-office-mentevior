@@ -90,9 +90,9 @@ export default function SignaturesCaregiverPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Signatures Caregiver</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Signatures Caregiver</h1>
           <p className="mt-2 text-gray-600">
             Configure how caregivers confirm their participation in Progress Notes
           </p>
@@ -106,10 +106,10 @@ export default function SignaturesCaregiverPage() {
   }
 
   return (
-    <div className="p-8 min-h-screen bg-gray-50">
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Signatures Caregiver</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Signatures Caregiver</h1>
           <p className="mt-2 text-gray-600">
             Configure how caregivers confirm their participation in Progress Notes
           </p>
@@ -121,7 +121,7 @@ export default function SignaturesCaregiverPage() {
           onClick={() => handleSelectType(SignatureType.CHECKMARK)}
           disabled={isSaving || !canEdit}
           className={`
-            relative p-8 rounded-2xl border-2 transition-all duration-200 bg-white
+            relative p-4 sm:p-8 rounded-2xl border-2 transition-all duration-200 bg-white
             ${
               selectedType === SignatureType.CHECKMARK
                 ? "border-blue-500 bg-blue-50 shadow-lg shadow-blue-100"
@@ -173,7 +173,7 @@ export default function SignaturesCaregiverPage() {
           onClick={() => handleSelectType(SignatureType.SIGNATURE)}
           disabled={isSaving || !canEdit}
           className={`
-            relative p-8 rounded-2xl border-2 transition-all duration-200 bg-white
+            relative p-4 sm:p-8 rounded-2xl border-2 transition-all duration-200 bg-white
             ${
               selectedType === SignatureType.SIGNATURE
                 ? "border-blue-500 bg-blue-50 shadow-lg shadow-blue-100"

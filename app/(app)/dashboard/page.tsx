@@ -79,14 +79,14 @@ export default function DashboardPage() {
   const isBusy = isLoading || isRefreshing
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-[1400px]">
         <div className="mb-8 flex flex-wrap items-center gap-4">
           <div className="rounded-xl border border-[#037ECC]/20 bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 p-3">
             <Gauge className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div>
-            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-3xl font-bold text-transparent">
+            <h1 className="bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-2xl sm:text-3xl font-bold text-transparent">
               Dashboard
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -95,7 +95,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-3 sm:ml-auto sm:w-auto">
             {IS_DASHBOARD_MOCKED && (
               <span
                 className="hidden items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 sm:inline-flex"

@@ -94,7 +94,7 @@ export default function ChangePassword() {
         style={{ animationDuration: "5s", animationDelay: "1s" }}
       />
 
-      <div className="flex-1 flex justify-center p-8 lg:p-12 relative">
+      <div className="flex-1 flex justify-center p-4 sm:p-8 lg:p-12 relative">
         <div className="
           w-full max-w-md
           animate-in fade-in slide-in-from-bottom-4 duration-700
@@ -104,7 +104,7 @@ export default function ChangePassword() {
 
           <PageHeader />
 
-          <div className="login-card-wrapper rounded-[28px] p-10">
+          <div className="login-card-wrapper rounded-[28px] p-6 sm:p-10">
             <div className="
               pointer-events-none
               absolute inset-0 rounded-[28px]

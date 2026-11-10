@@ -548,7 +548,7 @@ export function RequiredDocumentUploadModal({
       maxWidthClassName="sm:max-w-[760px]"
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
-      <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+      <div className="p-6 space-y-5 max-h-[80dvh] overflow-y-auto">
 
         <FileZone
           documentName={row.documentConfigName}
@@ -642,7 +642,7 @@ export function RequiredDocumentUploadModal({
             onClick={handleSave}
             disabled={isSaving || Boolean(fileError) || isMissingRequiredFields}
             loading={isSaving}
-            className="gap-2 flex items-center min-w-[140px]"
+            className="gap-2 flex items-center min-w-0 sm:min-w-[140px]"
           >
             {!isSaving && <Save className="w-4 h-4" />}
             {isEditMode ? "Update" : "Upload"}

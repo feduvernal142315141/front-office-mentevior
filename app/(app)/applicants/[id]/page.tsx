@@ -38,7 +38,7 @@ export default function ApplicantDetailsPage() {
 
   if (error) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6">
             <p className="text-red-600 font-medium">Error loading applicant</p>
@@ -51,7 +51,7 @@ export default function ApplicantDetailsPage() {
 
   if (!applicant) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
             <p className="text-yellow-600 font-medium">Applicant not found</p>

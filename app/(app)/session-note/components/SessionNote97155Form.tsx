@@ -160,7 +160,7 @@ export function SessionNote97155Form({
                 <User className="h-4 w-4 text-[#037ECC]" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Recipient</span>
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm break-words">
                 <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{recipient.name}</span></div>
                 <div><span className="text-slate-400">Date of Birth:</span> <span className="font-medium text-slate-800">{recipient.dateOfBirth}</span></div>
                 <div><span className="text-slate-400">Insurance:</span> <span className="font-medium text-slate-800">{recipient.insuranceNumber}</span></div>
@@ -174,7 +174,7 @@ export function SessionNote97155Form({
                 <Building2 className="h-4 w-4 text-[#037ECC]" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Provider</span>
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm break-words">
                 <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{provider.name}</span></div>
                 <div><span className="text-slate-400">Credential:</span> <span className="font-medium text-slate-800">{provider.credential}</span></div>
                 <div><span className="text-slate-400">NPI:</span> <span className="font-medium text-slate-800">{provider.npi}</span></div>
@@ -614,13 +614,13 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
 
         <div className="rounded-2xl border border-[#037ECC]/20 bg-white overflow-hidden">
           {/* Row 1 — Provider */}
-          <div className="grid grid-cols-2 border-b border-[#037ECC]/10">
-            <div className="px-6 py-5 border-r border-[#037ECC]/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 border-b border-[#037ECC]/10">
+            <div className="px-4 sm:px-6 py-5 border-b sm:border-b-0 sm:border-r border-[#037ECC]/10">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Provider Name / Credential</span>
               <p className="text-sm font-semibold text-slate-800">{provider?.name ?? "—"}</p>
               {provider?.credential && <p className="text-xs text-slate-500 mt-0.5">{provider.credential}</p>}
             </div>
-            <div className="px-6 py-5">
+            <div className="px-4 sm:px-6 py-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">Signature</span>
                 {!notCanEdit && (
@@ -641,8 +641,8 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
           </div>
 
           {/* Row 2 — Caregiver */}
-          <div className="grid grid-cols-2 border-b border-[#037ECC]/10">
-            <div className="px-6 py-5 border-r border-[#037ECC]/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 border-b border-[#037ECC]/10">
+            <div className="px-4 sm:px-6 py-5 border-b sm:border-b-0 sm:border-r border-[#037ECC]/10">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Caregiver</span>
               <div className="mb-3" data-field="clientCaregiverId">
                 {caregiversEmpty ? (
@@ -682,7 +682,7 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
                 <p className="text-sm text-slate-600 mt-1">Caregiver Signature</p>
               )}
             </div>
-            <div className="px-6 py-5">
+            <div className="px-4 sm:px-6 py-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">{useCheckmarkSignature ? "Confirmation" : "Signature"}</span>
                 {!useCheckmarkSignature && !notCanEdit && (

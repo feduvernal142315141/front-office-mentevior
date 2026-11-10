@@ -175,7 +175,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
               <User className="h-4 w-4 text-[#037ECC]" />
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Recipient</span>
             </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
               <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{clinicalMonthly.recipientName || clinicalMonthly.clientName}</span></div>
               <div><span className="text-slate-400">Payer:</span> <span className="font-medium text-slate-800">{clinicalMonthly.payer || "—"}</span></div>
             </div>
@@ -185,7 +185,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
               <Building2 className="h-4 w-4 text-[#037ECC]" />
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Provider</span>
             </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
               <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{clinicalMonthly.providerName || "—"}</span></div>
               <div><span className="text-slate-400">Report month:</span> <span className="font-medium text-slate-800 tabular-nums">{clinicalMonthly.startMonthYear}</span></div>
             </div>

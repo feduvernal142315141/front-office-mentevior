@@ -39,7 +39,7 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName = "documen
           className={cn(
             "fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
             "z-[9999]",
-            "max-w-[75vw] w-full h-[85vh]",
+            "max-w-[95vw] sm:max-w-[75vw] w-full h-[90dvh] sm:h-[85vh]",
             "bg-surface-primary border border-border-hairline rounded-xl shadow-2xl",
             "overflow-hidden flex flex-col",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",

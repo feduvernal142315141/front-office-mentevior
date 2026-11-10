@@ -275,7 +275,7 @@ export function WeekCalendar({
   )
   
   return (
-    <div className="space-y-4 min-h-screen">
+    <div className="space-y-4 min-h-screen pb-24 sm:pb-0">
       {isMobile ? (
         <div className="flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-gray-100 shadow-sm">
           <button
@@ -488,7 +488,7 @@ export function WeekCalendar({
             </div>
           </div>
         </div>
-      ) : calendarView === "week" && !isMobile ? (
+      ) : calendarView === "week" ? (
       /* ─── Provider time-grid view: appointments positioned by time slot ─── */
       <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         {isLoadingAppointments && (

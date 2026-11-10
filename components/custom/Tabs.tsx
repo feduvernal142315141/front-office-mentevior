@@ -101,7 +101,7 @@ export function Tabs({
             ref={scrollContainerRef}
             className={cn(
               "flex items-center gap-4 select-none overflow-x-auto scrollbar-hide scroll-smooth",
-              showLeftArrow || showRightArrow ? "px-16" : "px-6"
+              showLeftArrow || showRightArrow ? "px-10 sm:px-16" : "px-6"
             )}
             role="tablist"
             aria-orientation="horizontal"
@@ -122,7 +122,7 @@ export function Tabs({
                   aria-controls={`panel-${item.id}`}
                   onClick={() => handleTabChange(item.id)}
                   className={cn(
-                    "relative h-16 px-3 text-[15px] font-semibold tracking-wide transition-all duration-300 cursor-pointer whitespace-nowrap flex items-center gap-2 flex-shrink-0",
+                    "relative h-16 px-3 text-[15px] font-semibold tracking-wide transition-all duration-300 cursor-pointer whitespace-nowrap flex items-center gap-2 flex-shrink-0 shrink-0",
                     item.hasError
                       ? "text-red-500"
                       : isActive
@@ -179,7 +179,7 @@ export function Tabs({
                 onClick={() => scroll('left')}
                 disabled={!showLeftArrow}
                 className={cn(
-                  "h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 shadow-md transition-all",
+                  "h-10 w-10 sm:h-8 sm:w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 shadow-md transition-all",
                   showLeftArrow 
                     ? "hover:bg-slate-50 hover:border-slate-300 cursor-pointer" 
                     : "opacity-40 cursor-not-allowed"
@@ -196,7 +196,7 @@ export function Tabs({
                 onClick={() => scroll('right')}
                 disabled={!showRightArrow}
                 className={cn(
-                  "h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 shadow-md transition-all",
+                  "h-10 w-10 sm:h-8 sm:w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 shadow-md transition-all",
                   showRightArrow 
                     ? "hover:bg-slate-50 hover:border-slate-300 cursor-pointer" 
                     : "opacity-40 cursor-not-allowed"

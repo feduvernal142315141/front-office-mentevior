@@ -136,7 +136,7 @@ export function ClaimMdSubmissionDetailModal({
           <div className="space-y-6">
             <ClaimMdStatusBadge badge={getEffectiveBadge(detail.effectiveStatus)} />
 
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-3">
               <Field label="Claim.MD claim id" value={detail.claimMdClaimId ?? ""} />
               <Field label="Claim.MD file id" value={detail.claimMdFileId ?? ""} />
               <Field label="Patient control no." value={detail.patientControlNumber ?? ""} />
@@ -186,7 +186,7 @@ export function ClaimMdSubmissionDetailModal({
                 <p className="mt-2 text-sm text-slate-500">This submission has no service lines.</p>
               ) : (
                 <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[640px] text-sm">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50/70 text-left">
                         {["#", "Date", "Code", "Mod.", "POS", "Units", "Charge"].map((header) => (

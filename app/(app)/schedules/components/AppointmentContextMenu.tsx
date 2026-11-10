@@ -249,7 +249,7 @@ export function AppointmentContextMenu({
   }, [onClose])
 
   const adjustedPosition = {
-    left: Math.min(x, window.innerWidth - 220),
+    left: Math.max(8, Math.min(x, window.innerWidth - 216)),
     top: Math.min(y, window.innerHeight - 320),
   }
 
@@ -258,7 +258,7 @@ export function AppointmentContextMenu({
       ref={menuRef}
       className={cn(
         "fixed z-[100]",
-        "w-[210px] p-1",
+        "w-[210px] max-w-[calc(100vw-1rem)] p-1",
         "bg-white/95 backdrop-blur-xl rounded-xl",
         "border border-gray-200/70",
         "shadow-[0_8px_30px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)]",

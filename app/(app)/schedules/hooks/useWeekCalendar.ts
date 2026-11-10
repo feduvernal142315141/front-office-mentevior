@@ -151,7 +151,7 @@ export function useWeekCalendar({
   const [calendarView, setCalendarView] = useState<CalendarView>("week")
   const [weekStart, setWeekStart] = useState(getWeekStart())
   const [monthStart, setMonthStart] = useState(getMonthStart())
-  const [selectedDay, setSelectedDay] = useState(0)
+  const [selectedDay, setSelectedDay] = useState(() => new Date().getDay())
   const [activeId, setActiveId] = useState<string | null>(null)
   
 
@@ -332,6 +332,7 @@ export function useWeekCalendar({
   const goToToday = useCallback(() => {
     setWeekStart(getWeekStart())
     setMonthStart(getMonthStart())
+    setSelectedDay(new Date().getDay())
   }, [])
 
   const goToDate = useCallback((date: Date) => {

@@ -219,7 +219,7 @@ export function SupervisionConfigModal({
       }
       maxWidthClassName="sm:max-w-[560px]"
       allowSelectOverflow
-      contentClassName="!overflow-visible"
+      contentClassName="sm:!overflow-visible"
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
       <div className="px-7 py-6 space-y-4">
@@ -258,7 +258,7 @@ export function SupervisionConfigModal({
           variant="primary"
           onClick={handleSave}
           loading={isSubmitting}
-          className="h-10 min-w-[160px]"
+          className="h-10 min-w-0 sm:min-w-[160px]"
         >
           {isEditing ? "Update" : "Add"} {isSessionSupervision ? "Session" : "Supervision"}
         </Button>

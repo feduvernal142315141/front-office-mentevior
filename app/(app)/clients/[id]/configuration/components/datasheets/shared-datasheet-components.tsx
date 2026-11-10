@@ -433,7 +433,7 @@ export function EnvironmentalChangesLegend({
         <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Environmental Changes</h4>
         <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-teal-50 border border-teal-200/60 text-[10px] font-bold text-teal-600 tabular-nums">{changes.length}</span>
       </div>
-      <div className={cn("grid gap-x-6 gap-y-2", compact ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
+      <div className={cn("grid gap-x-6 gap-y-2", compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
         {changes.map(({ dateKey, note }, index) => {
           const [y, m, d] = dateKey.split("-")
           const dateObj = new Date(Number(y), Number(m) - 1, Number(d))

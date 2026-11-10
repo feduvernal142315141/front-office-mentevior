@@ -36,7 +36,7 @@ export default function ClientChartsPage({ params }: ClientChartsPageProps) {
   const clientName = [client?.firstName, client?.lastName].filter(Boolean).join(" ")
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6 pb-24">
+    <div className="min-h-screen bg-gray-50/50 p-4 sm:p-6 pb-24">
       <div className="mx-auto max-w-[1600px]">
         <div className="mb-8 flex flex-wrap items-center gap-4">
           <button

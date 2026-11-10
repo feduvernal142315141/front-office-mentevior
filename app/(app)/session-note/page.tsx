@@ -33,14 +33,14 @@ export default function SessionNotePage() {
   // ─── List view (no appointmentId) ───
   if (!appointmentId) {
     return (
-      <div className="px-6 py-6">
+      <div className="px-4 sm:px-6 py-6">
         <div className="max-w-[1400px] mx-auto">
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex flex-wrap items-center gap-4 mb-8">
             <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
               <NotebookPen className="h-8 w-8 text-[#037ECC]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
                 Session Notes
               </h1>
               <p className="text-slate-600 mt-1">View and manage all session notes</p>
@@ -452,10 +452,10 @@ function FormViewShell({ billingCode, isLoadingNote, noteError, statusInfo, isCh
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   return (
-    <div className="px-6 py-6">
+    <div className="px-4 sm:px-6 py-6">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex flex-wrap items-center gap-4 mb-8">
           <Button
             variant="secondary"
             className="h-10 w-10 p-0"
@@ -468,7 +468,7 @@ function FormViewShell({ billingCode, isLoadingNote, noteError, statusInfo, isCh
           </div>
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
                 Session Note
               </h1>
               <p className="text-slate-600 mt-1">Document the session details and interventions</p>

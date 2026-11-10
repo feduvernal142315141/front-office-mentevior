@@ -417,9 +417,13 @@ export function ClientDataCollectionModal({
     }
     if (!typeRequiresInterval(resolvedType.group)) {
       setValue("intervalLength", undefined)
+    } else if (getValues("intervalLength") === undefined) {
+      setValue("intervalLength", 30)
     }
     if (!typeRequiresInterval(resolvedType.group) && !typeRequiresDailyAndWeekly(resolvedType.name)) {
       setValue("suggestedNumberOfRecordings", undefined)
+    } else if (getValues("suggestedNumberOfRecordings") === undefined) {
+      setValue("suggestedNumberOfRecordings", 10)
     }
     if (!typeRequiresUnitOfTime(resolvedType.name) && !typeRequiresDailyAndWeekly(resolvedType.name) && !typeRequiresInterval(resolvedType.group)) {
       setValue("unitOfTime", undefined)
@@ -427,7 +431,7 @@ export function ClientDataCollectionModal({
     if (!typeHasCumulativeValueToggles(resolvedType.group)) {
       setValue("cumulative", undefined)
     }
-  }, [resolvedType, setValue])
+  }, [resolvedType, setValue, getValues])
 
   // --- Delete level ---
   const handleDeleteLevel = async (level: DataCollectionLevel) => {
@@ -861,7 +865,7 @@ export function ClientDataCollectionModal({
       {/* Interval (time-sampling) */}
       {typeRequiresInterval(resolvedType.group) && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Controller
                 name="intervalLength"
@@ -1127,7 +1131,7 @@ export function ClientDataCollectionModal({
           />
 
           {/* Footer */}
-          <div className="flex shrink-0 items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-white rounded-b-2xl">
+          <div className="flex shrink-0 items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-gray-100 bg-white rounded-b-2xl">
             <Button type="button" variant="secondary" onClick={handleClose} disabled={isSaving}>
               Cancel
             </Button>
