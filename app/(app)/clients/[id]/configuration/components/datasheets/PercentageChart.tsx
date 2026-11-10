@@ -42,10 +42,10 @@ interface PercentageChartProps {
    */
   environmentalChanges?: EnvironmentalChangesDisplay
   /**
-   * Time-sampling: el baseline se guarda como cantidad de intervalos con "+" (no como %).
-   * Con el total de intervalos se convierte a porcentaje; sin él el valor ya es un %.
+   * Time-sampling: el baseline se guarda como cantidad de intervalos con "+" (no como %),
+   * así que la pantalla de Interval calcula el % por día y lo pasa aquí.
    */
-  baselineIntervalCount?: number
+  baselinePercentOverride?: number | null
 }
 
 interface ChartDataPoint {
@@ -60,7 +60,7 @@ interface ChartDataPoint {
 }
 
 export function PercentageChart({
-  weekDays, entries, dcConfig, chartDays, tickInterval = 0, gapDateKeys, baselineIntervalCount,
+  weekDays, entries, dcConfig, chartDays, tickInterval = 0, gapDateKeys, baselinePercentOverride,
   environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
 }: PercentageChartProps) {
   const allDays = chartDays ?? weekDays
@@ -92,14 +92,12 @@ export function PercentageChart({
   }, [days, entries, labelFormat])
 
   const baselineValue = useMemo(() => {
+    if (baselinePercentOverride !== undefined) return baselinePercentOverride
     const shown = baselines.filter((b) => b.show && b.value > 0)
     if (shown.length === 0) return null
     const average = shown.reduce((sum, b) => sum + b.value, 0) / shown.length
-    const percentage = baselineIntervalCount && baselineIntervalCount > 0
-      ? Math.min(100, (average / baselineIntervalCount) * 100)
-      : average
-    return Math.round(percentage * 10) / 10
-  }, [baselines, baselineIntervalCount])
+    return Math.round(average * 10) / 10
+  }, [baselines, baselinePercentOverride])
 
   const activeObjective = useMemo(
     () => resolveActiveObjective(objectives),

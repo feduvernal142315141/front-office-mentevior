@@ -44,6 +44,10 @@ export interface ClientServicePlanItemBaseline {
   periodCatalogId: string
   /** Duración de la sesión del baseline, en la unidad del Period (solo Rate/Duration) */
   sessionDuration?: number | null
+  /** Time-sampling (PIR/WIR/MTS): configuración propia de ese día de baseline */
+  intervalLength?: number | null
+  unitOfTime?: string | null
+  suggestedNumberOfRecordings?: number | null
   environmentalChanges?: string
   show: boolean
 }

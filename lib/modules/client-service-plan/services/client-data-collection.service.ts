@@ -100,6 +100,9 @@ interface ApiBaseline {
   value?: number | string
   periodCatalogId?: string
   sessionDuration?: number | string | null
+  intervalLength?: number | string | null
+  unitOfTime?: string | null
+  suggestedNumberOfRecordings?: number | string | null
   comments?: string
   environmentalChanges?: string
   show?: boolean | number | string
@@ -119,6 +122,9 @@ function normalizeBaselines(raw: unknown): DataCollectionBaselineData[] {
         value: asOptionalNumber(b.value) ?? 0,
         periodCatalogId: asString(b.periodCatalogId),
         sessionDuration: asOptionalNumber(b.sessionDuration),
+        intervalLength: asOptionalNumber(b.intervalLength),
+        unitOfTime: asOptionalString(b.unitOfTime),
+        suggestedNumberOfRecordings: asOptionalNumber(b.suggestedNumberOfRecordings),
         comments: asString(b.comments),
         environmentalChanges: asString(b.environmentalChanges),
         show: asBoolean(b.show, true),
@@ -706,6 +712,9 @@ function toApiBaselines(baselines: DataCollectionBaselineData[]): ApiBaseline[] 
     value: b.value,
     periodCatalogId: b.periodCatalogId,
     ...(b.sessionDuration != null ? { sessionDuration: b.sessionDuration } : {}),
+    ...(b.intervalLength != null ? { intervalLength: b.intervalLength } : {}),
+    ...(b.unitOfTime ? { unitOfTime: b.unitOfTime } : {}),
+    ...(b.suggestedNumberOfRecordings != null ? { suggestedNumberOfRecordings: b.suggestedNumberOfRecordings } : {}),
     environmentalChanges: b.environmentalChanges ?? b.comments ?? "",
     show: b.show,
   }))

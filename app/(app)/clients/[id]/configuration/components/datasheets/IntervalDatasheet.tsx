@@ -224,6 +224,17 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     gridEntries: chartCompatibleEntries,
   })
 
+  // Baseline en %: cada día se divide entre SU cantidad de intervalos
+  const baselinePercent = useMemo(() => {
+    const shown = (activeItem.baseline ?? []).filter((b) => b.show && b.value > 0 && b.date)
+    if (shown.length === 0) return null
+    const total = shown.reduce((sum, b) => {
+      const dayCount = b.suggestedNumberOfRecordings && b.suggestedNumberOfRecordings > 0 ? b.suggestedNumberOfRecordings : numberOfIntervals
+      return sum + Math.min(100, (b.value / dayCount) * 100)
+    }, 0)
+    return Math.round((total / shown.length) * 10) / 10
+  }, [activeItem.baseline, numberOfIntervals])
+
   const dcStatusByDate = useMemo(() => {
     const map = new Map<string, string>()
     for (const rec of dcValues.records) {
@@ -280,7 +291,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
             </div>
 
             {/* Interval Rows */}
-            {Array.from({ length: numberOfIntervals }, (_, idx) => (
+            {Array.from({ length: ds.maxIntervals }, (_, idx) => (
               <div key={idx} className="grid border-b border-slate-100" style={{ gridTemplateColumns: gridCols }}>
                 <RowLabel icon={<BarChart3 className="h-4 w-4 text-[#037ECC]" />} title={`Interval ${idx + 1}`} />
                 {visibleDays.map((day) => {
@@ -291,17 +302,19 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                   const appointment = clientAppointments.appointmentsByDate.get(key)
                   const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
                   const value = entry.intervals[idx] ?? null
+                  // Un día con menos intervalos que el máximo no usa las filas sobrantes
+                  const outOfRange = idx >= entry.numberOfIntervals
                   return (
                     <div key={key} className={cn(
                       "flex items-center justify-center px-2 py-2",
                       isBaseline && "bg-red-50/60",
                       today && !isBaseline && "bg-[#037ECC]/[0.03]",
-                      !isEditable && "opacity-30",
+                      (!isEditable || outOfRange) && "opacity-30",
                       isEditable && !isBaseline && "bg-emerald-100/60",
                     )}>
                       <button
                         type="button"
-                        disabled={!isEditable}
+                        disabled={!isEditable || outOfRange}
                         onClick={() => ds.toggleInterval(key, idx)}
                         className={cn(
                           "flex h-8 w-10 items-center justify-center rounded-lg border text-sm font-bold transition-all",
@@ -408,7 +421,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
           chartDays={chartRange.chartDays}
           tickInterval={chartRange.tickInterval}
           gapDateKeys={chartHiddenDayKeys}
-          baselineIntervalCount={numberOfIntervals}
+          baselinePercentOverride={baselinePercent}
         />
       </div>
 

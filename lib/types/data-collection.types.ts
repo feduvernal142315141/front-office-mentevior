@@ -66,6 +66,10 @@ export interface DataCollectionBaselineData {
   periodCatalogId: string
   /** Duración de la sesión del baseline, en la unidad del Period (solo Rate/Duration) */
   sessionDuration?: number
+  /** Time-sampling (PIR/WIR/MTS): configuración propia de ese día de baseline */
+  intervalLength?: number
+  unitOfTime?: string
+  suggestedNumberOfRecordings?: number
   comments?: string
   environmentalChanges?: string
   show: boolean
