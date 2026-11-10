@@ -48,14 +48,18 @@ export function typeRequiresBaselineSessionDuration(typeName: string): boolean {
   return typeName === "Rate"
 }
 
-/** Rate y Duration: el baseline usa la Unit of time del item en lugar del Period. */
-export function typeUsesItemUnitInBaseline(typeName: string): boolean {
-  return typeName === "Rate" || typeName === "Duration"
+function typeIsLatency(typeName: string): boolean {
+  return typeName === "Latency" || typeName === "Response latency"
 }
 
-/** Duration no muestra ni exige "Suggested number of recordings" (se conserva el valor por defecto). */
+/** Rate, Duration y Latency: el baseline usa la Unit of time del item en lugar del Period. */
+export function typeUsesItemUnitInBaseline(typeName: string): boolean {
+  return typeName === "Rate" || typeName === "Duration" || typeIsLatency(typeName)
+}
+
+/** Duration y Latency no muestran ni exigen "Suggested number of recordings" (se conserva el valor por defecto). */
 export function typeShowsSuggestedRecordings(typeName: string): boolean {
-  return typeName !== "Duration"
+  return typeName !== "Duration" && !typeIsLatency(typeName)
 }
 
 export function typeRequiresInterval(typeGroup: string): boolean {
