@@ -220,16 +220,15 @@ export function AssessmentForm({
     !!formData.clientId &&
     (!clientDraft.clientId || clientDraft.clientId === formData.clientId)
 
-  const linkedToAppointment = assessment?.linkedToAppointment ?? true
   const statusInfo = deriveAssessmentStatusInfo(
     assessment?.status ?? "active",
     canAdminAction,
     assessment?.notCanEdit ?? false,
-    linkedToAppointment,
+    assessment?.linkedToAppointment,
   )
   const formDisabled = isEditing && !statusInfo.isFormEditable
   const showStatusBanner = isEditing &&
-    (statusInfo.status !== "read" || !linkedToAppointment || formDisabled)
+    (statusInfo.status === "close" || statusInfo.status === "lock")
   const fieldsDisabled = isSaving || formDisabled || isReplacing
 
   const handleAssessmentTypeChange = (type: AssessmentType) => {
