@@ -17,6 +17,7 @@ import type {
 } from "@/lib/types/assessment.types"
 import {
   EMPTY_CATEGORY_ITEM,
+  parseManagementStrategies,
   type CategoryItemFormValue,
 } from "../../hooks/useAssessmentForm"
 
@@ -38,6 +39,7 @@ interface CategoryItemsSectionProps {
   intensities?: IntensityCatalogItem[]
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
+  errors: Record<string, string>
   /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
   hasError?: boolean
   disabled?: boolean
@@ -68,6 +70,7 @@ export function CategoryItemsSection({
   intensities = [],
   isLoading,
   values,
+  errors,
   hasError,
   disabled,
   onUpdate,
@@ -92,7 +95,9 @@ export function CategoryItemsSection({
   const consequenceStrategyOptions = useMemo(
     () => {
       const group = ASSESSMENT_PDF_STRATEGY_GROUPS.find((g) => g.flagKey === "showConsequenceBasedStrategies")
-      return (group?.fields ?? []).map((f) => ({ value: f.label, label: f.label }))
+      const options = (group?.fields ?? []).map((field) => ({ value: field.label, label: field.label }))
+      options.push({ value: "Other", label: "Other" })
+      return options
     },
     [],
   )
@@ -172,6 +177,8 @@ export function CategoryItemsSection({
               const collectionMethod = collectionMethodByItemId[item.id]
               const showIntensity = !collectionMethod || typeIsFrequency(collectionMethod)
               const isMaladaptive = /maladaptive/i.test(category.name)
+              const managementStrategies = parseManagementStrategies(value.managementStrategies)
+              const otherStrategyError = errors[`category-item-${item.id}`]
               // Precarga del Service Plan: se muestra hasta que el usuario elija otras
               const hypothesizedFunction = hypothesizedFunctionByItemId[item.id] ?? []
 
@@ -278,7 +285,7 @@ export function CategoryItemsSection({
                         )}
                         <MultiSelect
                           label="Consequence-Based Strategies"
-                          value={value.managementStrategies ? value.managementStrategies.split(", ").filter(Boolean) : []}
+                          value={managementStrategies}
                           onChange={(v) => onUpdate(item.id, "managementStrategies", v.join(", "))}
                           options={consequenceStrategyOptions}
                           disabled={disabled}
@@ -287,6 +294,22 @@ export function CategoryItemsSection({
                           placeholder="Select strategies"
                           maxVisibleTags={1}
                         />
+                        {managementStrategies.includes("Other") && (
+                          <div>
+                            <FloatingInput
+                              label="Other consequence-based strategy"
+                              value={value.otherManagementStrategies}
+                              onChange={(v) => onUpdate(item.id, "otherManagementStrategies", v)}
+                              onBlur={() => {}}
+                              disabled={disabled}
+                              hasError={!!otherStrategyError}
+                              required
+                            />
+                            {otherStrategyError && (
+                              <p className="mt-1.5 text-xs font-medium text-red-500">{otherStrategyError}</p>
+                            )}
+                          </div>
+                        )}
                       </>
                     ) : null}
                   </div>

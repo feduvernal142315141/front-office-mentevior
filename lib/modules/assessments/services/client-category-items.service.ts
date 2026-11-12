@@ -60,6 +60,7 @@ function normalizeDraftItem(raw: unknown): ClientCategoryItemSummary {
     placesOfService: Array.isArray(entry.placesOfService) ? entry.placesOfService.map((v: unknown) => String(v ?? "")).filter(Boolean) : [],
     preventiveStrategies: str(entry.preventiveStrategies),
     managementStrategies: str(entry.managementStrategies),
+    otherManagementStrategies: str(entry.otherManagementStrategies),
   }
 }
 

@@ -82,6 +82,7 @@ export interface ClientCategoryItemSummary {
   placesOfService: string[]
   preventiveStrategies: string
   managementStrategies: string
+  otherManagementStrategies: string
 }
 
 /**
@@ -190,6 +191,7 @@ export interface AssessmentCategoryItemInput {
   otherPreventiveStrategies: string
   /** Consequence interventions del item */
   managementStrategies: string
+  otherManagementStrategies: string
 }
 
 export interface AssessmentBillingCodeInput {
@@ -441,6 +443,7 @@ export interface AssessmentCategoryItemEntry {
   preventiveStrategies: string
   otherPreventiveStrategies: string | null
   managementStrategies: string
+  otherManagementStrategies: string | null
 }
 
 /** Fila de `billingCodes` en el detalle, con el código resuelto */

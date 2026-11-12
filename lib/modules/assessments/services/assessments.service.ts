@@ -311,6 +311,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     preventiveStrategies: str(i.preventiveStrategies),
     otherPreventiveStrategies: str(i.otherPreventiveStrategies) || null,
     managementStrategies: str(i.managementStrategies),
+    otherManagementStrategies: str(i.otherManagementStrategies) || null,
   }))
 
   const categories = arr(raw.categories).map((category) => ({
@@ -330,6 +331,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
         placesOfService: parseStringArray(item.placesOfService),
         preventiveStrategies: str(item.preventiveStrategies),
         managementStrategies: str(item.managementStrategies),
+        otherManagementStrategies: str(item.otherManagementStrategies),
       })),
   }))
 

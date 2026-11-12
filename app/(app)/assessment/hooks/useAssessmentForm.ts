@@ -65,6 +65,7 @@ export interface CategoryItemFormValue {
   preventiveStrategies: string
   otherPreventiveStrategies: string
   managementStrategies: string
+  otherManagementStrategies: string
 }
 
 /** Fila de billing code; unidades como texto de input */
@@ -168,6 +169,7 @@ function categoryItemsFromDraft(
         preventiveStrategies: item.preventiveStrategies,
         otherPreventiveStrategies: "",
         managementStrategies: item.managementStrategies,
+        otherManagementStrategies: item.otherManagementStrategies,
       }
       if (
         !!value.intensityKey ||
@@ -275,6 +277,7 @@ export const EMPTY_CATEGORY_ITEM: CategoryItemFormValue = {
   preventiveStrategies: "",
   otherPreventiveStrategies: "",
   managementStrategies: "",
+  otherManagementStrategies: "",
 }
 
 /** Los textos clínicos parten en "N/A" (convención del ejemplo del contrato; nada es requerido) */
@@ -347,6 +350,11 @@ function sectionBlocksSave(flags: AssessmentPdfFlags, key: AssessmentPdfFlagKey)
 
 function isMedicationEmpty(m: AssessmentMedicationInput): boolean {
   return !m.name.trim() && !m.dosage.trim() && !m.frequency.trim() && !m.prescriber.trim()
+}
+
+export function parseManagementStrategies(value: string): string[] {
+  return value.split(",").map((option) => option.trim()).filter(Boolean)
+    .map((option) => option.toLowerCase() === "other" ? "Other" : option)
 }
 
 
@@ -425,6 +433,7 @@ function formDataFromAssessment(assessment: AssessmentDetail): AssessmentFormDat
       preventiveStrategies: entry.preventiveStrategies ?? "",
       otherPreventiveStrategies: entry.otherPreventiveStrategies ?? "",
       managementStrategies: entry.managementStrategies ?? "",
+      otherManagementStrategies: entry.otherManagementStrategies ?? "",
     }
   }
 
@@ -926,6 +935,12 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       newErrors.categoriesItems = "Evaluate at least one item, or turn the section off"
     }
 
+    for (const [itemId, item] of Object.entries(formData.categoryItems)) {
+      if (parseManagementStrategies(item.managementStrategies).includes("Other") && !item.otherManagementStrategies.trim()) {
+        newErrors[`category-item-${itemId}`] = "Enter the other consequence-based strategy."
+      }
+    }
+
     if (sectionBlocksSave(flags, "showRecommendedServices") && !formData.billingCodes.some((row) => !isBillingCodeEmpty(row))) {
       newErrors.billingCodesSection = "Add at least one billing code, or turn the section off"
     }
@@ -993,6 +1008,9 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
           ? value.otherPreventiveStrategies.trim()
           : "",
         managementStrategies: value.managementStrategies.trim(),
+        otherManagementStrategies: parseManagementStrategies(value.managementStrategies).includes("Other")
+          ? value.otherManagementStrategies.trim()
+          : "",
       }))
 
     const billingCodes: AssessmentBillingCodeInput[] = formData.billingCodes

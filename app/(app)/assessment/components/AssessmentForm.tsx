@@ -220,13 +220,16 @@ export function AssessmentForm({
     !!formData.clientId &&
     (!clientDraft.clientId || clientDraft.clientId === formData.clientId)
 
+  const linkedToAppointment = assessment?.linkedToAppointment ?? true
   const statusInfo = deriveAssessmentStatusInfo(
     assessment?.status ?? "active",
     canAdminAction,
     assessment?.notCanEdit ?? false,
-    assessment?.linkedToAppointment,
+    linkedToAppointment,
   )
   const formDisabled = isEditing && !statusInfo.isFormEditable
+  const showStatusBanner = isEditing &&
+    (statusInfo.status !== "read" || !linkedToAppointment || formDisabled)
   const fieldsDisabled = isSaving || formDisabled || isReplacing
 
   const handleAssessmentTypeChange = (type: AssessmentType) => {
@@ -381,7 +384,7 @@ export function AssessmentForm({
         </Button>
       </div>
 
-      {isEditing && (
+      {showStatusBanner && (
         <AssessmentStatusBanner
           statusInfo={statusInfo}
           isChangingStatus={isChangingStatus}
@@ -758,6 +761,7 @@ export function AssessmentForm({
           intensities={intensities}
           isLoading={categoriesLoading}
           values={formData.categoryItems}
+          errors={errors}
           disabled={isSaving}
           onUpdate={updateCategoryItem}
           onClear={clearCategoryItem}
