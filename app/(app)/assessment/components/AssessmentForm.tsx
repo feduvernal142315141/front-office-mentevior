@@ -968,10 +968,10 @@ export function AssessmentForm({
           if (!isReplacing) setShowTypeConfirmation(open)
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto border-slate-200 bg-white p-4 text-slate-900 sm:p-6 md:max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Change evaluation type to Re-Assessment?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-slate-600">
               Do you want to keep the information in this assessment or replace it with the data from the latest assessment for this client?
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -979,11 +979,14 @@ export function AssessmentForm({
             <p className="text-sm text-slate-600">Replacing the information will clear the current caregiver signature when you save.</p>
           )}
           {replacementError && <p role="alert" className="text-sm text-red-600">{replacementError}</p>}
-          <AlertDialogFooter className="flex-wrap">
-            <AlertDialogCancel disabled={isReplacing}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-col md:flex-row">
+            <AlertDialogCancel asChild>
+              <Button type="button" variant="ghost" disabled={isReplacing}>Cancel</Button>
+            </AlertDialogCancel>
             <Button
               type="button"
               variant="secondary"
+              className="h-auto min-h-11 py-2"
               disabled={isReplacing}
               onClick={() => {
                 setEditedAssessmentType("RE_ASSESSMENT")
@@ -992,7 +995,7 @@ export function AssessmentForm({
             >
               Keep Current Information
             </Button>
-            <Button type="button" onClick={handleReplace} disabled={isReplacing}>
+            <Button type="button" className="h-auto min-h-11 py-2" onClick={handleReplace} disabled={isReplacing}>
               {isReplacing ? "Loading Assessment..." : "Replace with Latest Assessment"}
             </Button>
           </AlertDialogFooter>
