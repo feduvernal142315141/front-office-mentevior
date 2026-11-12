@@ -75,6 +75,7 @@ export interface ClientCategoryItemSummary {
   intensityDescription: string
   /** Descripción del item (topography/description del SP) */
   description: string
+  collectionMethod?: string
   /** Procedures del item (null para Maladaptive) */
   procedures: string | null
   /** UUIDs del catálogo de Place of Service */
@@ -217,6 +218,8 @@ export interface AssessmentAbcInput {
 }
 
 export interface AssessmentProviderFileInput {
+  providerOnFileId?: string
+  providerSource?: string
   type: string
   name: string
   /** [sic] El backend define la propiedad con este typo; no corregir */
@@ -340,6 +343,8 @@ export interface AssessmentBackgroundFields {
 export interface SaveAssessmentDto extends AssessmentBackgroundFields, AssessmentPdfTextsPayload, AssessmentPdfFlags {
   clientId: string
   assessmentType: AssessmentType
+  replacementAssessmentId?: string
+  replacementAssessmentUpdatedAt?: string | number | null
   schoolName: string
   /** HH:mm:ss, o null si no se capturó */
   timeInit: string | null
@@ -398,6 +403,8 @@ export interface AssessmentListItem {
   id: string
   clientId: string
   clientName: string
+  assessmentType: AssessmentType
+  linkedToAppointment: boolean
   schoolName: string
   gradeCatalogId: string
   gradeName: string
@@ -449,6 +456,7 @@ export interface AssessmentProposedScheduleEntry extends AssessmentProposedSched
 /** `GET /assessments/{id}`, normalizado en `normalizeAssessmentDetail` */
 export interface AssessmentDetail extends AssessmentBackgroundFields, AssessmentPdfTexts, AssessmentPdfFlags {
   id: string
+  assessmentType: AssessmentType
   clientId: string
   clientName: string
   schoolName: string
@@ -487,6 +495,9 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   currentMedications: AssessmentMedicationInput[]
   assessmentConductedList: AssessmentConductedEntry[]
   categoriesItems: AssessmentCategoryItemEntry[]
+  categories: ClientCategoryWithItems[]
+  updateAt: string | number | null
+  hasCaregiverSignature: boolean
   billingCodes: AssessmentBillingCodeEntry[]
   proposedSchedule: AssessmentProposedScheduleEntry[]
   abcData: AssessmentAbcInput[]
@@ -500,6 +511,7 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
    * appointment marks notCanEdit for Read/Active. Never null from API.
    */
   notCanEdit: boolean
+  linkedToAppointment?: boolean
   /** Legacy boolean; prefer `status` / `notCanEdit` for UI */
   active: boolean
 }

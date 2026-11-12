@@ -3,13 +3,15 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Edit2, FileDown } from "lucide-react"
+import { Edit2, FileDown, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { AssessmentListItem } from "@/lib/types/assessment.types"
 import { HOUSING_TYPE_LABELS } from "@/lib/constants/assessment.constants"
 import { useAssessments } from "@/lib/modules/assessments/hooks/use-assessments"
+import { deleteAssessment } from "@/lib/modules/assessments/services/assessments.service"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import { buildFilters, type FilterRule } from "@/lib/utils/query-filters"
 import { FilterOperator } from "@/lib/models/filterOperator"
@@ -17,6 +19,10 @@ import { cn } from "@/lib/utils"
 import { ASSESSMENT_STATUS_BADGE } from "./useAssessmentStatus"
 import { AuditActionButton } from "@/components/custom/AuditActionButton"
 import { useAuditModalState } from "@/lib/modules/audit/hooks/use-audit-modal-state"
+
+function assessmentLabel(item: AssessmentListItem) {
+  return item.assessmentType === "RE_ASSESSMENT" ? "Reassessment" : "Assessment"
+}
 
 export function useAssessmentsTable() {
   const router = useRouter()
@@ -26,6 +32,7 @@ export function useAssessmentsTable() {
 
   const canCreate = permission.create(PermissionModule.ASSESSMENT)
   const canEdit = permission.edit(PermissionModule.ASSESSMENT)
+  const canDelete = permission.remove(PermissionModule.ASSESSMENT)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -38,6 +45,8 @@ export function useAssessmentsTable() {
   const [filterClient, setFilterClient] = useState("all")
 
   const [previewId, setPreviewId] = useState<string | null>(null)
+  const [itemToDelete, setItemToDelete] = useState<AssessmentListItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const { clients } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
 
@@ -106,6 +115,28 @@ export function useAssessmentsTable() {
     setFilterClient("all")
     setPage(1)
   }, [])
+
+  const handleDelete = async () => {
+    if (!itemToDelete || !canDelete || isDeleting) return
+
+    setIsDeleting(true)
+    try {
+      await deleteAssessment(itemToDelete.id)
+      setItemToDelete(null)
+      toast.success(`${assessmentLabel(itemToDelete)} deleted successfully`)
+
+      const lastPage = Math.max(1, Math.ceil((totalCount - 1) / pageSize))
+      if (page > lastPage) {
+        setPage(lastPage)
+      } else {
+        await refetch()
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete assessment")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const columns: CustomTableColumn<AssessmentListItem>[] = useMemo(() => [
     {
@@ -230,6 +261,30 @@ export function useAssessmentsTable() {
               <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
             </button>
           )}
+          {canDelete && !item.linkedToAppointment && item.status !== "lock" && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                setItemToDelete(item)
+              }}
+              className={cn(
+                "group/delete relative h-9 w-9",
+                "flex items-center justify-center rounded-xl",
+                "bg-gradient-to-b from-red-50 to-red-100/80",
+                "border border-red-200/60 shadow-sm shadow-red-900/5",
+                "hover:from-red-100 hover:to-red-200/90",
+                "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2",
+              )}
+              title={`Delete ${assessmentLabel(item)}`}
+              aria-label={`Delete ${assessmentLabel(item)}`}
+            >
+              <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
+            </button>
+          )}
           <AuditActionButton
             label={`View audit for ${item.clientName || "assessment"}`}
             onClick={(event) => {
@@ -240,7 +295,7 @@ export function useAssessmentsTable() {
         </div>
       ),
     },
-  ], [canEdit, router, openAuditModal])
+  ], [canEdit, canDelete, router, openAuditModal])
 
   return {
     data: assessments,
@@ -273,5 +328,15 @@ export function useAssessmentsTable() {
     canEdit,
     goToCreate: () => router.push("/assessment/create"),
     auditModal,
+    deleteModal: {
+      open: itemToDelete !== null,
+      label: itemToDelete ? assessmentLabel(itemToDelete) : "Assessment",
+      clientName: itemToDelete?.clientName,
+      isDeleting,
+      onConfirm: handleDelete,
+      onClose: () => {
+        if (!isDeleting) setItemToDelete(null)
+      },
+    },
   }
 }

@@ -20,7 +20,10 @@ export function deriveAssessmentStatusInfo(
   status: AssessmentStatus,
   canAdminAction: boolean,
   notCanEdit: boolean,
+  linkedToAppointment = true,
 ): AssessmentStatusInfo {
+  const canManageLinkedStatus = canAdminAction && linkedToAppointment
+
   switch (status) {
     case "read":
       return {
@@ -31,10 +34,12 @@ export function deriveAssessmentStatusInfo(
         canLock: false,
         canActivate: false,
         bannerVariant: "info",
-        bannerMessage: "Service plan appointment in progress",
+        bannerMessage: linkedToAppointment ? "Service plan appointment in progress" : "Assessment",
         bannerDescription: notCanEdit
           ? "Editing is currently disabled for this assessment"
-          : "You can edit this assessment while the linked appointment is open",
+          : linkedToAppointment
+            ? "You can edit this assessment while the linked appointment is open"
+            : "You can edit and save this assessment",
       }
     case "active":
       return {
@@ -54,13 +59,15 @@ export function deriveAssessmentStatusInfo(
         label: "Closed",
         isFormEditable: false,
         canSave: false,
-        canLock: canAdminAction,
-        canActivate: canAdminAction,
+        canLock: canManageLinkedStatus,
+        canActivate: canManageLinkedStatus,
         bannerVariant: "warning",
         bannerMessage: "This assessment is closed",
-        bannerDescription: canAdminAction
+        bannerDescription: canManageLinkedStatus
           ? "You can lock it for billing or re-activate it for editing"
-          : "The editing window has expired. Contact an administrator to re-open",
+          : linkedToAppointment
+            ? "The editing window has expired. Contact an administrator to re-open"
+            : "The editing window has expired.",
       }
         case "lock":
       return {

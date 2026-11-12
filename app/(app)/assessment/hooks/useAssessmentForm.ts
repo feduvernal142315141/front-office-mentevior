@@ -16,6 +16,7 @@ import type {
   AssessmentBackgroundFields,
   AssessmentBillingCodeInput,
   AssessmentCategoryItemInput,
+  AssessmentDetail,
   AssessmentDraft,
   AssessmentMedicationInput,
   AssessmentProposedScheduleInput,
@@ -40,6 +41,7 @@ import { useAssessmentCatalogs } from "@/lib/modules/assessments/hooks/use-asses
 import { useAssessmentDataByClient } from "@/lib/modules/assessments/hooks/use-client-category-items"
 import { useClientItemCollectionMethods } from "@/lib/modules/assessments/hooks/use-client-item-collection-methods"
 import { useSaveAssessment } from "@/lib/modules/assessments/hooks/use-save-assessment"
+import { getLatestAssessmentForReplacement } from "@/lib/modules/assessments/services/assessments.service"
 import {
   EMPTY_SCHEDULE_HOURS,
   parseProposedSchedule,
@@ -387,6 +389,124 @@ function isInvalidNonNegative(value: string): boolean {
   return !Number.isFinite(parsed) || parsed < 0
 }
 
+function mergeAssessmentCategories(
+  configured: ClientCategoryWithItems[],
+  snapshot: ClientCategoryWithItems[],
+): ClientCategoryWithItems[] {
+  if (snapshot.length === 0) return configured
+
+  const snapshotById = new Map(snapshot.map((category) => [category.id, category]))
+  const snapshotItemIds = new Set(snapshot.flatMap((category) => category.items.map((item) => item.id)))
+  const configuredById = new Map(configured.map((category) => [category.id, category]))
+  return [
+    ...snapshot.map((category) => ({
+      ...category,
+      items: [
+        ...category.items,
+        ...(configuredById.get(category.id)?.items ?? []).filter((item) => !snapshotItemIds.has(item.id)),
+      ],
+    })),
+    ...configured.filter((category) => !snapshotById.has(category.id)).map((category) => ({
+      ...category,
+      items: category.items.filter((item) => !snapshotItemIds.has(item.id)),
+    })),
+  ]
+}
+
+function formDataFromAssessment(assessment: AssessmentDetail): AssessmentFormData {
+  const categoryItems: Record<string, CategoryItemFormValue> = {}
+  for (const entry of assessment.categoriesItems ?? []) {
+    if (!entry.clientServicePlanCategoryItemId) continue
+    categoryItems[entry.clientServicePlanCategoryItemId] = {
+      intensityKey: entry.intensityKey ?? "",
+      intensityDescription: entry.intensityDescription ?? "",
+      hypothesizedFunction: entry.hypothesizedFunction,
+      placesOfServiceIds: entry.placesOfService ?? [],
+      preventiveStrategies: entry.preventiveStrategies ?? "",
+      otherPreventiveStrategies: entry.otherPreventiveStrategies ?? "",
+      managementStrategies: entry.managementStrategies ?? "",
+    }
+  }
+
+  return {
+    clientId: assessment.clientId ?? "",
+    schoolName: assessment.schoolName ?? "",
+    timeInit: assessment.timeInit ?? "",
+    timeEnd: assessment.timeEnd ?? "",
+    gradeCatalogId: assessment.gradeCatalogId ?? "",
+    schoolAddress: assessment.schoolAddress ?? "",
+    housingType: assessment.housingType ?? "",
+    housingNumberRooms: assessment.housingNumberRooms ?? 0,
+    housingNumberBathrooms: assessment.housingNumberBathrooms ?? 0,
+    housingMemberRelationshipCatalogIds: (assessment.housingMembers ?? [])
+      .map((m) => m.relationshipCatalogId)
+      .filter(Boolean),
+    housingInformation: assessment.housingInformation ?? "",
+    medicalHistoryReasonForReferral: assessment.medicalHistoryReasonForReferral ?? "",
+    medicalHistoryOtherDiagnosis: assessment.medicalHistoryOtherDiagnosis ?? "N/A",
+    medicalHistoryMorbidities: assessment.medicalHistoryMorbidities ?? "N/A",
+    medicalHistoryAllergies: assessment.medicalHistoryAllergies ?? "N/A",
+    medicalHistoryTypeOfBirth: assessment.medicalHistoryTypeOfBirth ?? "",
+    previousAbaTherapy: assessment.previousAbaTherapy ?? "",
+    previousAgencyName: assessment.previousAgencyName ?? "",
+    otherServicesSpeechTherapy: assessment.otherServicesSpeechTherapy,
+    otherServicesSpeechTherapyFacilityName: assessment.otherServicesSpeechTherapyFacilityName ?? "",
+    otherServicesOccupationalTherapy: assessment.otherServicesOccupationalTherapy,
+    otherServicesOccupationalTherapyFacilityName: assessment.otherServicesOccupationalTherapyFacilityName ?? "",
+    otherServicesPhysicalTherapy: assessment.otherServicesPhysicalTherapy,
+    otherServicesPhysicalTherapyFacilityName: assessment.otherServicesPhysicalTherapyFacilityName ?? "",
+    otherServicesFeedingTherapy: assessment.otherServicesFeedingTherapy,
+    otherServicesFeedingTherapyFacilityName: assessment.otherServicesFeedingTherapyFacilityName ?? "",
+    otherServicesOther: assessment.otherServicesOther ?? "",
+    otherServicesFacilityName: assessment.otherServicesFacilityName ?? "",
+    backgroundSummary: assessment.backgroundSummary ?? "",
+    backgroundStrengths: assessment.backgroundStrengths ?? "",
+    backgroundWeaknesses: assessment.backgroundWeaknesses ?? "",
+    backgroundInterest: assessment.backgroundInterest ?? "",
+    backgroundCommunicationSkills: assessment.backgroundCommunicationSkills ?? "",
+    backgroundAcademicSkills: assessment.backgroundAcademicSkills ?? "",
+    backgroundSelfCareSkills: assessment.backgroundSelfCareSkills ?? "",
+    backgroundSocialSkills: assessment.backgroundSocialSkills ?? "",
+    backgroundSafetySkills: assessment.backgroundSafetySkills ?? "",
+    backgroundSelfAdvocacy: assessment.backgroundSelfAdvocacy ?? "",
+    backgroundSelfPreservationSkills: assessment.backgroundSelfPreservationSkills ?? "",
+    backgroundMotorSkills: assessment.backgroundMotorSkills ?? "",
+    currentMedicationsDenied: assessment.currentMedicationsDenied,
+    currentMedicationsNote: assessment.currentMedicationsNote,
+    currentMedications: assessment.currentMedications ?? [],
+    assessmentConductedCatalogIds: (assessment.assessmentConductedList ?? [])
+      .map((c) => c.assessmentConductedCatalogId)
+      .filter(Boolean),
+    categoryItems,
+    billingCodes: (assessment.billingCodes ?? []).map((b) => ({
+      billingCodeId: b.billingCodeId,
+      unitsPeriod: b.unitsPeriod ? String(b.unitsPeriod) : "",
+      unitsWeek: b.unitsWeek ? String(b.unitsWeek) : "",
+      placesOfServiceIds: b.placesOfService ?? [],
+    })),
+    proposedSchedule: (assessment.proposedSchedule ?? []).map((s) => ({
+      credentialId: s.credentialId,
+      hours: parseProposedSchedule(s.schedule),
+    })),
+    abcData: assessment.abcData ?? [],
+    providerFiles: assessment.providerFiles ?? [],
+    preferenceAssessment: assessment.preferenceAssessment ?? [],
+    // Una narrativa persistida vacía (registros previos a los defaults del
+    // backend) se rellena con su texto estándar: nunca se muestra vacía
+    pdfTexts: Object.fromEntries(
+      ASSESSMENT_PDF_TEXT_KEYS.map((key) => [key, assessment[key] || ASSESSMENT_PDF_DEFAULT_TEXTS[key]]),
+    ) as AssessmentPdfTexts,
+    // Las obligatorias se normalizan a `true` aunque el registro viejo las
+    // tenga apagadas: ya no hay switch para volver a encenderlas.
+    pdfFlags: Object.fromEntries(
+      ASSESSMENT_PDF_FLAG_KEYS.map((key) => [
+        key,
+        ASSESSMENT_PDF_MANDATORY_FLAGS.has(key) || (assessment[key] ?? false),
+      ]),
+    ) as AssessmentPdfFlags,
+  }
+}
+
 interface UseAssessmentFormProps {
   /** Presente al editar un assessment existente */
   assessmentId?: string
@@ -408,6 +528,13 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   const { credentials: companyCredentials, isLoading: credentialsLoading } = useCredentials({ page: 0, pageSize: 200 })
 
   const [formData, setFormData] = useState<AssessmentFormData>(EMPTY_FORM)
+  const [editedAssessmentType, setEditedAssessmentType] = useState<AssessmentType | null>(null)
+  const [replacementSource, setReplacementSource] = useState<AssessmentDetail | null>(null)
+  const pendingReplacementId = useRef<string | null>(null)
+  const selectedAssessmentType = isEditing
+    ? editedAssessmentType ?? assessment?.assessmentType ?? "INITIAL_ASSESSMENT"
+    : assessmentType
+  const displayedAssessment = replacementSource ?? assessment
   const [errors, setErrors] = useState<Record<string, string>>({})
   /** Evita re-aplicar el borrador si el usuario ya lo recibió para ese cliente. */
   const hydratedDraftClientIdRef = useRef<string | null>(null)
@@ -415,12 +542,26 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   const {
     draft: clientDraft,
     loadedAssessmentType,
-    categories,
+    categories: configuredCategories,
     isLoading: categoriesLoading,
   } = useAssessmentDataByClient(formData.clientId || null, assessmentType)
+  const categories = useMemo(() => {
+    if (replacementSource) return replacementSource.categories
+    return mergeAssessmentCategories(configuredCategories, assessment?.categories ?? [])
+  }, [configuredCategories, assessment?.categories, replacementSource])
+
   // Método de colección por item: decide si se muestran los campos de intensidad
-  const { methodByItemId: collectionMethodByItemId, isLoading: collectionMethodsLoading } =
-    useClientItemCollectionMethods(formData.clientId || null, categories)
+  const { methodByItemId: configuredMethods, isLoading: collectionMethodsLoading } =
+    useClientItemCollectionMethods(formData.clientId || null, configuredCategories)
+  const collectionMethodByItemId = useMemo(() => {
+    const methods = { ...configuredMethods }
+    for (const category of categories) {
+      for (const item of category.items) {
+        if (item.collectionMethod) methods[item.id] = item.collectionMethod
+      }
+    }
+    return methods
+  }, [categories, configuredMethods])
 
   /**
    * Valor inicial de la función hipotetizada por item, tal como lo configura el
@@ -453,16 +594,22 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     for (const [id, code] of Object.entries(clientDraft?.billingCodeLabels ?? {})) {
       if (!byId.has(id)) byId.set(id, { value: id, label: code })
     }
+    for (const { billingCodeId, billingCode } of displayedAssessment?.billingCodes ?? []) {
+      if (!byId.has(billingCodeId)) byId.set(billingCodeId, { value: billingCodeId, label: billingCode || billingCodeId })
+    }
     return Array.from(byId.values())
-  }, [companyBillingCodes, clientDraft?.billingCodeLabels])
+  }, [companyBillingCodes, clientDraft?.billingCodeLabels, displayedAssessment?.billingCodes])
 
-  const credentialOptions = useMemo(
-    () =>
-      (companyCredentials ?? [])
-        .filter((c) => c.active)
-        .map((c) => ({ value: c.id, label: c.name })),
-    [companyCredentials],
-  )
+  const credentialOptions = useMemo(() => {
+    const options = (companyCredentials ?? [])
+      .filter((c) => c.active)
+      .map((c) => ({ value: c.id, label: c.name }))
+    const byId = new Map(options.map((option) => [option.value, option]))
+    for (const { credentialId, credential } of displayedAssessment?.proposedSchedule ?? []) {
+      if (!byId.has(credentialId)) byId.set(credentialId, { value: credentialId, label: credential || credentialId })
+    }
+    return Array.from(byId.values())
+  }, [companyCredentials, displayedAssessment?.proposedSchedule])
 
   // Con un solo cliente no tiene sentido hacer elegir (mismo criterio que Clinical Monthly)
   useEffect(() => {
@@ -487,102 +634,26 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     setFormData((prev) => applyAssessmentDraft(prev, clientDraft))
   }, [assessmentType, clientDraft, formData.clientId, isEditing, loadedAssessmentType])
 
-  // Precarga al editar
   useEffect(() => {
     if (!assessment) return
-
-    const categoryItems: Record<string, CategoryItemFormValue> = {}
-    for (const entry of assessment.categoriesItems ?? []) {
-      if (!entry.clientServicePlanCategoryItemId) continue
-      categoryItems[entry.clientServicePlanCategoryItemId] = {
-        intensityKey: entry.intensityKey ?? "",
-        intensityDescription: entry.intensityDescription ?? "",
-        hypothesizedFunction: entry.hypothesizedFunction,
-        placesOfServiceIds: entry.placesOfService ?? [],
-        preventiveStrategies: entry.preventiveStrategies ?? "",
-        otherPreventiveStrategies: (entry as any).otherPreventiveStrategies ?? "",
-        managementStrategies: entry.managementStrategies ?? "",
-      }
-    }
-
-    setFormData({
-      clientId: assessment.clientId ?? "",
-      schoolName: assessment.schoolName ?? "",
-      timeInit: assessment.timeInit ?? "",
-      timeEnd: assessment.timeEnd ?? "",
-      gradeCatalogId: assessment.gradeCatalogId ?? "",
-      schoolAddress: assessment.schoolAddress ?? "",
-      housingType: assessment.housingType ?? "",
-      housingNumberRooms: assessment.housingNumberRooms ?? 0,
-      housingNumberBathrooms: assessment.housingNumberBathrooms ?? 0,
-      housingMemberRelationshipCatalogIds: (assessment.housingMembers ?? [])
-        .map((m) => m.relationshipCatalogId)
-        .filter(Boolean),
-      housingInformation: assessment.housingInformation ?? "",
-      medicalHistoryReasonForReferral: assessment.medicalHistoryReasonForReferral ?? "",
-      medicalHistoryOtherDiagnosis: assessment.medicalHistoryOtherDiagnosis ?? "N/A",
-      medicalHistoryMorbidities: assessment.medicalHistoryMorbidities ?? "N/A",
-      medicalHistoryAllergies: assessment.medicalHistoryAllergies ?? "N/A",
-      medicalHistoryTypeOfBirth: assessment.medicalHistoryTypeOfBirth ?? "",
-      previousAbaTherapy: assessment.previousAbaTherapy ?? "",
-      previousAgencyName: assessment.previousAgencyName ?? "",
-      otherServicesSpeechTherapy: assessment.otherServicesSpeechTherapy,
-      otherServicesSpeechTherapyFacilityName: assessment.otherServicesSpeechTherapyFacilityName ?? "",
-      otherServicesOccupationalTherapy: assessment.otherServicesOccupationalTherapy,
-      otherServicesOccupationalTherapyFacilityName: assessment.otherServicesOccupationalTherapyFacilityName ?? "",
-      otherServicesPhysicalTherapy: assessment.otherServicesPhysicalTherapy,
-      otherServicesPhysicalTherapyFacilityName: assessment.otherServicesPhysicalTherapyFacilityName ?? "",
-      otherServicesFeedingTherapy: assessment.otherServicesFeedingTherapy,
-      otherServicesFeedingTherapyFacilityName: assessment.otherServicesFeedingTherapyFacilityName ?? "",
-      otherServicesOther: assessment.otherServicesOther ?? "",
-      otherServicesFacilityName: assessment.otherServicesFacilityName ?? "",
-      backgroundSummary: assessment.backgroundSummary ?? "",
-      backgroundStrengths: assessment.backgroundStrengths ?? "",
-      backgroundWeaknesses: assessment.backgroundWeaknesses ?? "",
-      backgroundInterest: assessment.backgroundInterest ?? "",
-      backgroundCommunicationSkills: assessment.backgroundCommunicationSkills ?? "",
-      backgroundAcademicSkills: assessment.backgroundAcademicSkills ?? "",
-      backgroundSelfCareSkills: assessment.backgroundSelfCareSkills ?? "",
-      backgroundSocialSkills: assessment.backgroundSocialSkills ?? "",
-      backgroundSafetySkills: assessment.backgroundSafetySkills ?? "",
-      backgroundSelfAdvocacy: assessment.backgroundSelfAdvocacy ?? "",
-      backgroundSelfPreservationSkills: assessment.backgroundSelfPreservationSkills ?? "",
-      backgroundMotorSkills: assessment.backgroundMotorSkills ?? "",
-      currentMedicationsDenied: assessment.currentMedicationsDenied,
-      currentMedicationsNote: assessment.currentMedicationsNote,
-      currentMedications: assessment.currentMedications ?? [],
-      assessmentConductedCatalogIds: (assessment.assessmentConductedList ?? [])
-        .map((c) => c.assessmentConductedCatalogId)
-        .filter(Boolean),
-      categoryItems,
-      billingCodes: (assessment.billingCodes ?? []).map((b) => ({
-        billingCodeId: b.billingCodeId,
-        unitsPeriod: b.unitsPeriod ? String(b.unitsPeriod) : "",
-        unitsWeek: b.unitsWeek ? String(b.unitsWeek) : "",
-        placesOfServiceIds: b.placesOfService ?? [],
-      })),
-      proposedSchedule: (assessment.proposedSchedule ?? []).map((s) => ({
-        credentialId: s.credentialId,
-        hours: parseProposedSchedule(s.schedule),
-      })),
-      abcData: assessment.abcData ?? [],
-      providerFiles: assessment.providerFiles ?? [],
-      preferenceAssessment: assessment.preferenceAssessment ?? [],
-      // Una narrativa persistida vacía (registros previos a los defaults del
-      // backend) se rellena con su texto estándar: nunca se muestra vacía
-      pdfTexts: Object.fromEntries(
-        ASSESSMENT_PDF_TEXT_KEYS.map((key) => [key, assessment[key] || ASSESSMENT_PDF_DEFAULT_TEXTS[key]]),
-      ) as AssessmentPdfTexts,
-      // Las obligatorias se normalizan a `true` aunque el registro viejo las
-      // tenga apagadas: ya no hay switch para volver a encenderlas.
-      pdfFlags: Object.fromEntries(
-        ASSESSMENT_PDF_FLAG_KEYS.map((key) => [
-          key,
-          ASSESSMENT_PDF_MANDATORY_FLAGS.has(key) || (assessment[key] ?? false),
-        ]),
-      ) as AssessmentPdfFlags,
-    })
+    pendingReplacementId.current = null
+    setEditedAssessmentType(null)
+    setReplacementSource(null)
+    setFormData(formDataFromAssessment(assessment))
   }, [assessment])
+
+  const replaceWithLatestAssessment = useCallback(async () => {
+    if (!assessmentId || !formData.clientId) return false
+    const source = await getLatestAssessmentForReplacement(formData.clientId, assessmentId)
+    if (!source) return false
+
+    pendingReplacementId.current = source.id
+    setReplacementSource(source)
+    setFormData(formDataFromAssessment(source))
+    setEditedAssessmentType("RE_ASSESSMENT")
+    setErrors({})
+    return true
+  }, [assessmentId, formData.clientId])
 
   const updateField = useCallback(
     <K extends keyof AssessmentFormData>(field: K, value: AssessmentFormData[K]) => {
@@ -942,7 +1013,11 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
 
     return {
       clientId: formData.clientId,
-      assessmentType,
+      assessmentType: selectedAssessmentType,
+      ...(pendingReplacementId.current ? {
+        replacementAssessmentId: pendingReplacementId.current,
+        replacementAssessmentUpdatedAt: replacementSource?.updateAt,
+      } : {}),
       schoolName: formData.schoolName.trim(),
       timeInit: formData.timeInit ? `${formData.timeInit}:00` : null,
       timeEnd: formData.timeEnd ? `${formData.timeEnd}:00` : null,
@@ -1023,6 +1098,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
           type: row.type.trim(),
           name: row.name.trim(),
           contactIformation: row.contactIformation.trim(),
+          ...(isEditing ? { providerOnFileId: row.providerOnFileId, providerSource: row.providerSource } : {}),
         })),
       preferenceAssessment: formData.preferenceAssessment
         .map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, value.trim()]))) as AssessmentPreferenceRow[],
@@ -1033,7 +1109,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       ) as AssessmentPdfTextsPayload),
       ...formData.pdfFlags,
     }
-  }, [formData, hypothesizedFunctionByItemId])
+  }, [formData, hypothesizedFunctionByItemId, isEditing, replacementSource?.updateAt, selectedAssessmentType])
 
   const scrollToFirstError = useCallback((newErrors: Record<string, string>) => {
     setTimeout(() => {
@@ -1066,12 +1142,17 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     }
     setErrors({})
 
-    return save(buildPayload())
+    const id = await save(buildPayload())
+    if (id) pendingReplacementId.current = null
+    return id
   }, [validate, buildPayload, save, scrollToFirstError, isEditing, assessment?.notCanEdit])
 
   return {
     formData,
-    assessmentType,
+    assessmentType: selectedAssessmentType,
+    setEditedAssessmentType,
+    replaceWithLatestAssessment,
+    replacementSource,
     updateField,
     errors,
     isEditing,

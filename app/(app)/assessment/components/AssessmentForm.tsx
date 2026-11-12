@@ -28,6 +28,15 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/custom/Button"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Checkbox } from "@/components/custom/Checkbox"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { FloatingInput } from "@/components/custom/FloatingInput"
@@ -119,9 +128,16 @@ export function AssessmentForm({
 
   const [previewId, setPreviewId] = useState<string | null>(null)
   const [isChangingStatus, setIsChangingStatus] = useState(false)
+  const [showTypeConfirmation, setShowTypeConfirmation] = useState(false)
+  const [isReplacing, setIsReplacing] = useState(false)
+  const [replacementError, setReplacementError] = useState<string | null>(null)
 
   const {
     formData,
+    assessmentType: selectedAssessmentType,
+    setEditedAssessmentType,
+    replaceWithLatestAssessment,
+    replacementSource,
     updateField,
     errors,
     isEditing,
@@ -172,7 +188,10 @@ export function AssessmentForm({
     isSaving,
   } = useAssessmentForm({ assessmentId, assessmentType })
 
-  const formSnapshot = useMemo(() => JSON.stringify(formData), [formData])
+  const formSnapshot = useMemo(
+    () => JSON.stringify([formData, isEditing ? selectedAssessmentType : null, replacementSource?.id]),
+    [formData, isEditing, selectedAssessmentType, replacementSource?.id],
+  )
   const { isBaselineReady, hasChanges, rebaseline } = useDirtyBaseline({
     ready:
       !isSaving &&
@@ -205,21 +224,53 @@ export function AssessmentForm({
     assessment?.status ?? "active",
     canAdminAction,
     assessment?.notCanEdit ?? false,
+    assessment?.linkedToAppointment,
   )
   const formDisabled = isEditing && !statusInfo.isFormEditable
-  const fieldsDisabled = isSaving || formDisabled
+  const fieldsDisabled = isSaving || formDisabled || isReplacing
+
+  const handleAssessmentTypeChange = (type: AssessmentType) => {
+    if (type === selectedAssessmentType) return
+    if (!isEditing) {
+      onAssessmentTypeChange?.(type)
+      return
+    }
+    if (type === "RE_ASSESSMENT") {
+      setReplacementError(null)
+      setShowTypeConfirmation(true)
+      return
+    }
+    setEditedAssessmentType(type)
+  }
+
+  const handleReplace = async () => {
+    if (isReplacing) return
+    setIsReplacing(true)
+    setReplacementError(null)
+    try {
+      if (await replaceWithLatestAssessment()) {
+        setShowTypeConfirmation(false)
+      } else {
+        setReplacementError("No previous assessment is available for this client. You can keep the current information.")
+      }
+    } catch {
+      setReplacementError("We couldn't load the latest assessment. Try again or keep the current information.")
+    } finally {
+      setIsReplacing(false)
+    }
+  }
 
   const onSubmit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault()
-      if (formDisabled) return
+      if (formDisabled || showTypeConfirmation) return
       const id = await handleSubmit()
       if (!id) return
       rebaseline()
       toast.success(isEditing ? "Assessment updated" : "Assessment created")
       router.push("/assessment")
     },
-    [handleSubmit, isEditing, rebaseline, router, formDisabled],
+    [handleSubmit, isEditing, rebaseline, router, formDisabled, showTypeConfirmation],
   )
 
   const handlePreview = useCallback(async () => {
@@ -296,7 +347,23 @@ export function AssessmentForm({
     )
   }
 
-  const gradeOptions = (grades ?? []).map((g) => ({ value: g.id, label: g.name }))
+  const displayedAssessment = replacementSource ?? assessment
+  const gradeOptions = grades.map((grade) => ({ value: grade.id, label: grade.name }))
+  if (displayedAssessment?.gradeCatalogId && !gradeOptions.some(({ value }) => value === displayedAssessment.gradeCatalogId)) {
+    gradeOptions.push({ value: displayedAssessment.gradeCatalogId, label: displayedAssessment.gradeName || displayedAssessment.gradeCatalogId })
+  }
+  const relationshipChoices = [
+    ...relationships,
+    ...(displayedAssessment?.housingMembers ?? [])
+      .filter(({ relationshipCatalogId }) => relationshipCatalogId && !relationships.some(({ id }) => id === relationshipCatalogId))
+      .map(({ relationshipCatalogId, relationshipName }) => ({ id: relationshipCatalogId, name: relationshipName || relationshipCatalogId })),
+  ]
+  const conductedChoices = [
+    ...conductedOptions,
+    ...(displayedAssessment?.assessmentConductedList ?? [])
+      .filter(({ assessmentConductedCatalogId }) => assessmentConductedCatalogId && !conductedOptions.some(({ id }) => id === assessmentConductedCatalogId))
+      .map(({ assessmentConductedCatalogId, name }) => ({ id: assessmentConductedCatalogId, name: name || assessmentConductedCatalogId })),
+  ]
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5 pb-32">
@@ -306,7 +373,7 @@ export function AssessmentForm({
           type="button"
           variant="secondary"
           onClick={handlePreview}
-          disabled={isSaving}
+          disabled={isSaving || showTypeConfirmation}
           className="gap-2 flex items-center"
         >
           <FileDown className="h-4 w-4" />
@@ -326,20 +393,18 @@ export function AssessmentForm({
       {/* ─── Client ─── */}
       <Section icon={<User className="h-4 w-4" />} title="Client" subtitle="Who this assessment is for">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {!isEditing && (
-            <div>
-              <FloatingSelect
-                label="Evaluation type"
-                value={assessmentType}
-                onChange={(value) => onAssessmentTypeChange?.(value as AssessmentType)}
-                options={[
-                  { value: "INITIAL_ASSESSMENT", label: "Assessment" },
-                  { value: "RE_ASSESSMENT", label: "Reassessment" },
-                ]}
-                disabled={fieldsDisabled}
-              />
-            </div>
-          )}
+          <div>
+            <FloatingSelect
+              label="Evaluation type"
+              value={selectedAssessmentType}
+              onChange={(value) => handleAssessmentTypeChange(value as AssessmentType)}
+              options={[
+                { value: "INITIAL_ASSESSMENT", label: "Assessment" },
+                { value: "RE_ASSESSMENT", label: "Re-Assessment" },
+              ]}
+              disabled={fieldsDisabled || !canPersist}
+            />
+          </div>
           <div data-field="clientId">
             <FloatingSelect
               label="Client"
@@ -404,7 +469,7 @@ export function AssessmentForm({
         <div className="mt-4">
           <MultiSelectWithSearch
             label="Household members"
-            items={relationships}
+            items={relationshipChoices}
             selectedIds={formData.housingMemberRelationshipCatalogIds}
             onChange={(ids) => updateField("housingMemberRelationshipCatalogIds", ids)}
             isLoading={isLoadingCatalogs}
@@ -504,7 +569,7 @@ export function AssessmentForm({
             <p className="text-sm text-slate-600">
               Primary diagnosis (snapshot):{" "}
               <span className="font-medium text-slate-800">
-                {assessment?.medicalHistoryPrimaryDiagnosisName || "—"}
+                {displayedAssessment?.medicalHistoryPrimaryDiagnosisName || "—"}
               </span>
             </p>
           </div>
@@ -592,7 +657,7 @@ export function AssessmentForm({
         contentHidden={!formData.pdfFlags.showAssessmentConducted} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAssessmentConducted} onChange={(v) => updatePdfFlag("showAssessmentConducted", v)} disabled={isSaving} />}
       >
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2" data-field="assessmentConductedCatalogIds">
-          {(conductedOptions ?? []).map((option) => {
+          {conductedChoices.map((option) => {
             const checked = formData.assessmentConductedCatalogIds.includes(option.id)
             return (
               <label
@@ -620,7 +685,7 @@ export function AssessmentForm({
               </label>
             )
           })}
-          {(conductedOptions ?? []).length === 0 && !isLoadingCatalogs && (
+          {conductedChoices.length === 0 && !isLoadingCatalogs && (
             <p className="text-sm text-slate-500 md:col-span-2">No assessment options available</p>
           )}
         </div>
@@ -681,7 +746,7 @@ export function AssessmentForm({
       <Section
         icon={<Target className="h-4 w-4" />}
         title="Categories & Items"
-        subtitle="Evaluate each item of the client's active service plan"
+        subtitle={replacementSource ? "Review the category items from the latest assessment" : "Evaluate each item of the client's service plan"}
       >
         <div data-field="categoriesItems">
         <CategoryItemsSection
@@ -897,11 +962,48 @@ export function AssessmentForm({
       <PdfSectionsVisibility flags={formData.pdfFlags} disabled={fieldsDisabled} onUpdate={updatePdfFlag} />
       </div>
 
+      <AlertDialog
+        open={showTypeConfirmation}
+        onOpenChange={(open) => {
+          if (!isReplacing) setShowTypeConfirmation(open)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change evaluation type to Re-Assessment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to keep the information in this assessment or replace it with the data from the latest assessment for this client?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {assessment?.hasCaregiverSignature && (
+            <p className="text-sm text-slate-600">Replacing the information will clear the current caregiver signature when you save.</p>
+          )}
+          {replacementError && <p role="alert" className="text-sm text-red-600">{replacementError}</p>}
+          <AlertDialogFooter className="flex-wrap">
+            <AlertDialogCancel disabled={isReplacing}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isReplacing}
+              onClick={() => {
+                setEditedAssessmentType("RE_ASSESSMENT")
+                setShowTypeConfirmation(false)
+              }}
+            >
+              Keep Current Information
+            </Button>
+            <Button type="button" onClick={handleReplace} disabled={isReplacing}>
+              {isReplacing ? "Loading Assessment..." : "Replace with Latest Assessment"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <FormBottomBar
         isSubmitting={isSaving}
         onCancel={() => guard(() => router.push("/assessment"))}
         submitText={isEditing ? "Update Assessment" : "Create Assessment"}
-        disabled={isSaving || formDisabled || !statusInfo.canSave || !canPersist}
+        disabled={fieldsDisabled || showTypeConfirmation || !statusInfo.canSave || !canPersist}
       />
 
       {previewId && (

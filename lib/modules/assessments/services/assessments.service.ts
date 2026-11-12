@@ -1,4 +1,4 @@
-import { serviceGet, servicePatch, servicePost, servicePut } from "@/lib/services/baseService"
+import { serviceDelete, serviceGet, servicePatch, servicePost, servicePut } from "@/lib/services/baseService"
 import { parseHypothesizedFunctions } from "@/lib/constants/hypothesized-function"
 import {
   ASSESSMENT_PDF_FLAG_KEYS,
@@ -6,6 +6,7 @@ import {
   type AssessmentPdfFlags,
   type AssessmentPdfTexts,
   type AssessmentStatus,
+  type AssessmentType,
 } from "@/lib/types/assessment.types"
 import type {
   AssessmentAbcInput,
@@ -24,6 +25,8 @@ import type {
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import { getQueryString } from "@/lib/utils/format"
 import type { QueryModel } from "@/lib/models/queryModel"
+import { FilterOperator } from "@/lib/models/filterOperator"
+import { buildFilters } from "@/lib/utils/query-filters"
 
 function parseStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -89,6 +92,27 @@ export async function getAssessmentById(id: string): Promise<AssessmentDetail | 
   return normalizeAssessmentDetail(response.data as unknown as Record<string, unknown>)
 }
 
+export async function getLatestAssessmentForReplacement(
+  clientId: string,
+  currentAssessmentId: string,
+): Promise<AssessmentDetail | null> {
+  const { assessments } = await getAssessments({
+    page: 0,
+    pageSize: 1,
+    orders: ["createAt__DESC", "id__DESC"],
+    filters: buildFilters([
+      { field: "clientId", operator: FilterOperator.eq, type: "uuid", value: clientId },
+      { field: "id", operator: FilterOperator.neq, type: "uuid", value: currentAssessmentId },
+      { field: "active", operator: FilterOperator.eq, type: "boolean", value: true },
+    ]),
+  })
+  const latest = assessments[0]
+  if (!latest || latest.id === currentAssessmentId || latest.clientId !== clientId) return null
+
+  const source = await getAssessmentById(latest.id)
+  return source?.clientId === clientId && source.active ? source : null
+}
+
 export async function createAssessment(data: SaveAssessmentDto): Promise<string> {
   const response = await servicePost<SaveAssessmentDto, string>(BASE_URL, data)
 
@@ -108,6 +132,14 @@ export async function updateAssessment(id: string, data: SaveAssessmentDto): Pro
   }
 
   return extractId(response.data, "update") || id
+}
+
+export async function deleteAssessment(id: string): Promise<void> {
+  const response = await serviceDelete<never, boolean>(`${BASE_URL}/${encodeURIComponent(id)}`)
+
+  if (response?.status !== 200 || response.data !== true) {
+    throw new Error(response?.data?.message || "Failed to delete assessment")
+  }
 }
 
 /**
@@ -224,12 +256,20 @@ export function parseAssessmentStatus(raw: unknown): AssessmentStatus {
   return "active"
 }
 
+function parseAssessmentType(value: unknown): AssessmentType {
+  return ["Re-Assessment", "RE_ASSESSMENT"].includes(str(value))
+    ? "RE_ASSESSMENT"
+    : "INITIAL_ASSESSMENT"
+}
+
 function normalizeAssessmentListItem(raw: Record<string, unknown>): AssessmentListItem {
   const housingType = enumOrEmpty(raw.housingType, ["HOME", "FOSTER_HOME", "PPEC"] as const)
   return {
     id: str(raw.id),
     clientId: str(raw.clientId),
     clientName: str(raw.clientName),
+    assessmentType: parseAssessmentType(raw.assessmentType),
+    linkedToAppointment: raw.linkedToAppointment === true,
     schoolName: str(raw.schoolName),
     gradeCatalogId: str(raw.gradeCatalogId),
     gradeName: str(raw.gradeName),
@@ -273,6 +313,26 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     managementStrategies: str(i.managementStrategies),
   }))
 
+  const categories = arr(raw.categories).map((category) => ({
+    id: str(category.clientServicePlanCategoryId) || str(category.id),
+    name: str(category.name),
+    items: arr(category.items)
+      .filter((item) => Boolean(item.clientServicePlanCategoryItemId))
+      .map((item) => ({
+        id: str(item.clientServicePlanCategoryItemId),
+        name: str(item.clientServicePlanCategoryItemName),
+        hypothesizedFunctions: parseHypothesizedFunctions(item.hypothesizedFunction),
+        intensityKey: str(item.intensityKey) || null,
+        intensityDescription: str(item.intensityDescription),
+        description: str(item.description),
+        collectionMethod: str(item.collectionMethod),
+        procedures: str(item.procedures) || null,
+        placesOfService: parseStringArray(item.placesOfService),
+        preventiveStrategies: str(item.preventiveStrategies),
+        managementStrategies: str(item.managementStrategies),
+      })),
+  }))
+
   const billingCodes: AssessmentBillingCodeEntry[] = arr(raw.billingCodes).map((b) => ({
     billingCodeId: str(b.billingCodeId),
     billingCode: str(b.billingCode),
@@ -296,6 +356,8 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
   }))
 
   const providerFiles: AssessmentProviderFileInput[] = arr(raw.providerFiles).map((p) => ({
+    providerOnFileId: str(p.providerOnFileId) || undefined,
+    providerSource: str(p.providerSource) || undefined,
     type: str(p.type),
     name: str(p.name),
     // [sic] typo del contrato; se acepta la variante corregida por si backend la arregla
@@ -317,6 +379,9 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     id: str(raw.id),
     clientId: str(raw.clientId),
     clientName: str(raw.clientName),
+    assessmentType: parseAssessmentType(raw.assessmentType),
+    updateAt: typeof raw.updateAt === "number" ? raw.updateAt : str(raw.updateAt) || null,
+    hasCaregiverSignature: Boolean(raw.caregiverSignatureImage) || raw.caregiverSignatureChecked === true,
     schoolName: str(raw.schoolName),
     timeInit: normalizeTime(raw.timeInit),
     timeEnd: normalizeTime(raw.timeEnd),
@@ -367,6 +432,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     currentMedications,
     assessmentConductedList,
     categoriesItems,
+    categories,
     billingCodes,
     proposedSchedule,
     abcData,
@@ -377,6 +443,7 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     createAt: str(raw.createAt),
     status: parseAssessmentStatus(raw.status),
     notCanEdit: Boolean(raw.notCanEdit),
+    linkedToAppointment: typeof raw.linkedToAppointment === "boolean" ? raw.linkedToAppointment : undefined,
     active: raw.active === undefined ? true : Boolean(raw.active),
   }
 }

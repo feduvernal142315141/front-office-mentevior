@@ -11,6 +11,7 @@ import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { getAssessmentPdfUrl } from "@/lib/modules/assessments/services/assessments.service"
 import { AuditLogsModal } from "@/components/custom/AuditLogsModal"
+import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
 
 export function AssessmentsTable() {
   const {
@@ -28,6 +29,7 @@ export function AssessmentsTable() {
     canCreate,
     goToCreate,
     auditModal,
+    deleteModal,
   } = useAssessmentsTable()
 
   const pdfUrl = useMemo(() => (previewId ? getAssessmentPdfUrl(previewId) : null), [previewId])
@@ -126,6 +128,15 @@ export function AssessmentsTable() {
           fileName="Behavior Analysis Assessment and Support Plan.pdf"
         />
       )}
+      <DeleteConfirmModal
+        isOpen={deleteModal.open}
+        onClose={deleteModal.onClose}
+        onConfirm={deleteModal.onConfirm}
+        title={`Delete ${deleteModal.label}`}
+        message={`Are you sure you want to delete this ${deleteModal.label.toLowerCase()}? This action cannot be undone.`}
+        itemName={deleteModal.clientName}
+        isDeleting={deleteModal.isDeleting}
+      />
       <AuditLogsModal
         open={auditModal.open}
         onOpenChange={auditModal.onOpenChange}
