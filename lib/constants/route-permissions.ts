@@ -128,6 +128,9 @@ const SORTED_ROUTES = Object.keys(ROUTE_TO_PERMISSION_MAP).sort((a, b) => b.leng
 /** Resuelve el módulo de permiso para un pathname (match más específico primero). */
 export function resolveRouteModule(pathname: string): string | null {
   const normalized = pathname.split("?")[0]
+  if (/^\/clients\/[^/]+\/(configuration|service-plan)(\/|$)/.test(normalized)) {
+    return PermissionModule.CLIENT_SERVICE_PLAN
+  }
   for (const route of SORTED_ROUTES) {
     if (normalized === route || normalized.startsWith(`${route}/`)) {
       return ROUTE_TO_PERMISSION_MAP[route]

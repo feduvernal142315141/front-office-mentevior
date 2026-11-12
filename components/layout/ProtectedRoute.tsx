@@ -91,6 +91,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       return hasModulePermission(permissions, module, requiredAction)
     }
 
+    if (module === PermissionModule.CLIENT_SERVICE_PLAN) {
+      return hasModulePermission(permissions, module, PermissionAction.READ)
+    }
+
     if ((permissionsObj[module] || 0) > 0) return true
 
     return hasChildRoutePermission(baseRoute, permissionsObj)

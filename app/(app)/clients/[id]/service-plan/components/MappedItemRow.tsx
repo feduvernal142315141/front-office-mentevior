@@ -35,7 +35,7 @@ export function MappedItemRow({
   teachingProcedureNames = [],
   typeName,
 }: MappedItemRowProps) {
-  const { canDelete } = useModulePermissions(PermissionModule.CLIENTS)
+  const { canDelete } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const baselines = useMemo(() => {

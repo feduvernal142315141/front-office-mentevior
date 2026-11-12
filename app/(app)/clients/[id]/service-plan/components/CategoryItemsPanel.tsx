@@ -48,7 +48,7 @@ export function CategoryItemsPanel({
   onConfigureDataCollection,
   onOpenAddItemsDrawer,
 }: CategoryItemsPanelProps) {
-  const { canCreate } = useModulePermissions(PermissionModule.CLIENTS)
+  const { canCreate } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const { items: teachingProcedures } = useTeachingProcedureCatalog()
   const { itemsMap: typeEventMap } = useTypeEventCatalog()
 

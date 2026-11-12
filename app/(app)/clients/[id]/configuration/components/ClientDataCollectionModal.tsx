@@ -27,7 +27,6 @@ import { Button } from "@/components/custom/Button"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 
-import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
 import {
   RecommendationsCollapsibleSection,
   type RecommendationErrors,
@@ -42,8 +41,6 @@ import { ObjectivesTabContent, inferObjetiveType } from "./ObjectivesTabContent"
 import type { ObjectiveRow } from "./ObjectiveFormModal"
 
 import {
-  deleteClientCategoryLevel,
-  deleteClientItemLevel,
   getClientCategoryDataCollection,
   getClientItemDataCollection,
   upsertClientCategoryDataCollection,
@@ -86,7 +83,6 @@ import {
 
 import type {
   DataCollectionConfig,
-  DataCollectionLevel,
   ItemDataCollectionConfig,
   DataCollectionType,
   ObjetiveType,
@@ -160,9 +156,7 @@ export function ClientDataCollectionModal({
   itemName,
   onSaved,
 }: ClientDataCollectionModalProps) {
-  const { canEdit: canEditDatasheets } = useModulePermissions(PermissionModule.DATASHEETS)
-  const { canEdit: canEditClients } = useModulePermissions(PermissionModule.CLIENTS)
-  const canEditDataCollection = canEditClients && canEditDatasheets
+  const { canEdit: canEditDataCollection } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const params = useParams()
   const clientId = typeof params?.id === "string" ? params.id : null
   const { client } = useClientById(clientId)

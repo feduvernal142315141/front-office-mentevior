@@ -74,7 +74,7 @@ export function ClientDataCollectionDrawer({
   itemName,
   onSaved,
 }: ClientDataCollectionDrawerProps) {
-  const { canEdit } = useModulePermissions(PermissionModule.CLIENTS)
+  const { canEdit } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [config, setConfig] = useState<DataCollectionConfig | null>(null)

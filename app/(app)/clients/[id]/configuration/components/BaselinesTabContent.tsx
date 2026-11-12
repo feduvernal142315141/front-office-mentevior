@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { CalendarDays, Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
 
@@ -93,7 +93,7 @@ export function BaselinesTabContent({
   rateUnit,
   timeSampling,
 }: BaselinesTabContentProps) {
-  const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENTS)
+  const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const actionsDisabled = readOnly || !canEdit
   const showAdd = !hideAddButton && canCreate && !actionsDisabled
 

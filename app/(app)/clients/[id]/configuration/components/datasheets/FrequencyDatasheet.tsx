@@ -25,6 +25,8 @@ import {
   DatasheetGridFrame, DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
 import { ActiveObjectiveBanner } from "./ActiveObjectiveBanner"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 interface FrequencyDatasheetProps {
   clientId: string
@@ -37,6 +39,7 @@ interface FrequencyDatasheetProps {
 }
 
 export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, appointmentDate, onItemsReload }: FrequencyDatasheetProps) {
+  const { canEdit } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const ds = useFrequencyDatasheet(activeItem.baseline)
 
   // --- Compute visible days FIRST (no dependency on fetched data) ---
@@ -273,7 +276,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
 
       {/* ─── Grid ─── */}
       <DatasheetGridFrame maxHeightClass="max-h-[min(35vh,300px)]">
-          <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
+          <div className={ds.rangeMode === "month" ? "min-w-350" : "min-w-270"}>
             {/* Column Headers — sticky on vertical scroll */}
             <div className="grid border-b border-slate-100 sticky top-0 z-10 bg-white" style={{ gridTemplateColumns: gridCols }}>
               <div className="px-4 py-3 bg-slate-50/60 border-r border-slate-100">
@@ -299,18 +302,17 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                 const key = getDateKey(day)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
-                const hasAppointment = clientAppointments.appointmentsByDate.has(key)
                 return (
                   <div key={key} className={cn(
                     "flex flex-col items-center justify-center py-3 gap-1",
                     isBaseline && "bg-red-50/60",
-                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                    today && !isBaseline && "bg-[#037ECC]/3",
                   )}>
                     <div className={cn(
                       "flex flex-col items-center justify-center rounded-full",
                       ds.rangeMode === "month" ? "w-10 h-10" : "w-14 h-14",
                       today
-                        ? "bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white shadow-md ring-2 ring-[#037ECC]/20 ring-offset-2"
+                        ? "bg-linear-to-br from-[#037ECC] to-[#079CFB] text-white shadow-md ring-2 ring-[#037ECC]/20 ring-offset-2"
                         : "bg-slate-100 text-slate-700"
                     )}>
                       <span className={cn("font-bold leading-none", ds.rangeMode === "month" ? "text-sm" : "text-lg")}>{format(day, "dd")}</span>
@@ -338,12 +340,12 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
                 const appointment = clientAppointments.appointmentsByDate.get(key)
-                const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
+                const isEditable = canEdit && (isBaseline || (appointment != null && !(appointment.blocked ?? false)))
                 return (
                   <div key={key} className={cn(
                     "flex items-center justify-center px-2 py-3",
                     isBaseline && "bg-red-50/60",
-                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                    today && !isBaseline && "bg-[#037ECC]/3",
                     !isEditable && "opacity-30",
                     isEditable && !isBaseline && "bg-emerald-100/60",
                   )}>
@@ -382,9 +384,9 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
                 const appointment = clientAppointments.appointmentsByDate.get(key)
-                const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
+                const isEditable = canEdit && (isBaseline || (appointment != null && !(appointment.blocked ?? false)))
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/3")}>
                     <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} disabled={!isEditable} />
                   </div>
                 )
@@ -402,7 +404,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
                 const isBaseline = ds.isBaselineDate(key)
                 const count = entry.occurrences || 0
                 return (
-                  <div key={key} className={cn("px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn("px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/3")}>
                     {count > 0 ? (
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-1">
                         {Array.from({ length: count }, (_, i) => (
@@ -450,7 +452,7 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
           <div className="h-9 w-px bg-slate-200" />
           <div className="flex flex-col">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Monthly Average</span>
-            <span className="text-xl font-bold tabular-nums leading-tight bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+            <span className="text-xl font-bold tabular-nums leading-tight bg-linear-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
               {ds.monthlyAverage === 0 ? "—" : ds.monthlyAverage.toFixed(1)}
             </span>
           </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Pencil, Plus, Sparkles, Target, Trash2 } from "lucide-react"
+import { Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -165,7 +165,7 @@ export function ObjectivesTabContent({
     const last = [...rows].sort((a, b) => (a.date || "").localeCompare(b.date || ""))[rows.length - 1]
     return { value: last.value, date: last.date, periodCatalogId: last.periodCatalogId }
   }, [baselines])
-  const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENTS)
+  const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const actionsDisabled = disableActions || !canEdit
 
   const [formOpen, setFormOpen] = useState(false)
@@ -433,11 +433,11 @@ export function ObjectivesTabContent({
                     style={{ gridTemplateColumns }}
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900 whitespace-normal break-words leading-snug">
+                      <p className="text-sm font-medium text-slate-900 whitespace-normal wrap-break-word leading-snug">
                         {decodeHtmlEntities(obj.name) || "Untitled"}
                       </p>
                       {smartSummary && (
-                        <p className="text-xs text-slate-500 whitespace-normal break-words mt-1 leading-snug">
+                        <p className="text-xs text-slate-500 whitespace-normal wrap-break-word mt-1 leading-snug">
                           <span className="font-semibold">Smart Criteria:</span> {smartSummary}
                         </p>
                       )}
@@ -497,7 +497,7 @@ export function ObjectivesTabContent({
 
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-xl bg-gradient-to-t from-white via-white/90 to-transparent"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-xl bg-linear-to-t from-white via-white/90 to-transparent"
             />
           </div>
         )}

@@ -61,7 +61,9 @@ export function useClientsTable(): UseClientsTableReturn {
   const { can, edit } = usePermission()
   const canEditClient = edit(PermissionModule.CLIENTS)
   const canOpenProfile = canEditClient || can(PermissionModule.CLIENTS, PermissionAction.READ)
-  const configurationActionLabel = canEditClient ? "Configure service plan" : "View service plan"
+  const canReadClientServicePlan = can(PermissionModule.CLIENT_SERVICE_PLAN, PermissionAction.READ)
+  const canEditClientServicePlan = edit(PermissionModule.CLIENT_SERVICE_PLAN)
+  const configurationActionLabel = canEditClientServicePlan ? "Configure service plan" : "View service plan"
   const ProfileIcon = canEditClient ? Edit2 : Eye
   const profileActionLabel = canEditClient ? "Edit client" : "View client"
 
@@ -226,7 +228,7 @@ export function useClientsTable(): UseClientsTableReturn {
       render: (client) => {
         return (
           <div className="flex justify-end gap-2">
-            {canOpenProfile && (
+            {canReadClientServicePlan && (
               <button
                 onClick={() => {
                   const base = `/clients/${client.id}/configuration`
@@ -284,7 +286,7 @@ export function useClientsTable(): UseClientsTableReturn {
         )
       },
     },
-  ], [router, canEditClient, canOpenProfile, configurationActionLabel, ProfileIcon, profileActionLabel])
+  ], [router, canEditClient, canOpenProfile, canReadClientServicePlan, configurationActionLabel, ProfileIcon, profileActionLabel])
 
   return {
     data: clients,

@@ -23,7 +23,7 @@ export function CategoriesSidebar({
   onConfigureDataCollection,
   onEditServicePlan,
 }: CategoriesSidebarProps) {
-  const { canEdit } = useModulePermissions(PermissionModule.CLIENTS)
+  const { canEdit } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
 
   return (
     <Card variant="elevated" padding="none" className="overflow-hidden">

@@ -23,6 +23,8 @@ import {
   DatasheetGridFrame, DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
 import { ActiveObjectiveBanner } from "./ActiveObjectiveBanner"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 interface IntervalDatasheetProps {
   clientId: string
@@ -35,6 +37,7 @@ interface IntervalDatasheetProps {
 }
 
 export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcConfig, appointmentId, appointmentDate, onItemsReload }: IntervalDatasheetProps) {
+  const { canEdit } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const numberOfIntervals = dcConfig?.suggestedNumberOfRecordings ?? 10
   const intervalLength = dcConfig?.intervalLength ?? 10
   const unitOfTime = dcConfig?.unitOfTime ?? "SECONDS"
@@ -279,7 +282,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
       />
 
       <DatasheetGridFrame maxHeightClass="max-h-[min(35vh,340px)]">
-          <div className={ds.rangeMode === "month" ? "min-w-[1400px]" : "min-w-[1080px]"}>
+          <div className={ds.rangeMode === "month" ? "min-w-350" : "min-w-270"}>
             {/* Column Headers */}
             <div className="grid border-b border-slate-100 sticky top-0 z-10 bg-white" style={{ gridTemplateColumns: gridCols }}>
               <div className="px-4 py-3 bg-slate-50/60 border-r border-slate-100">
@@ -307,12 +310,12 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                   <div key={key} className={cn(
                     "flex flex-col items-center justify-center py-3 gap-1",
                     isBaseline && "bg-red-50/60",
-                    today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                    today && !isBaseline && "bg-[#037ECC]/3",
                   )}>
                     <div className={cn(
                       "flex flex-col items-center justify-center rounded-full",
                       ds.rangeMode === "month" ? "w-10 h-10" : "w-14 h-14",
-                      today ? "bg-gradient-to-br from-[#037ECC] to-[#079CFB] text-white shadow-md ring-2 ring-[#037ECC]/20 ring-offset-2" : "bg-slate-100 text-slate-700"
+                      today ? "bg-linear-to-br from-[#037ECC] to-[#079CFB] text-white shadow-md ring-2 ring-[#037ECC]/20 ring-offset-2" : "bg-slate-100 text-slate-700"
                     )}>
                       <span className={cn("font-bold leading-none", ds.rangeMode === "month" ? "text-sm" : "text-lg")}>{format(day, "dd")}</span>
                       <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>{format(day, "MMM")}</span>
@@ -338,7 +341,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                   const today = ds.isToday(day)
                   const isBaseline = ds.isBaselineDate(key)
                   const appointment = clientAppointments.appointmentsByDate.get(key)
-                  const isEditable = isBaseline || (appointment != null && !(appointment.blocked ?? false))
+                  const isEditable = canEdit && (isBaseline || (appointment != null && !(appointment.blocked ?? false)))
                   const value = entry.intervals[idx] ?? null
                   // Un día con menos intervalos que el máximo no usa las filas sobrantes
                   const outOfRange = idx >= entry.numberOfIntervals
@@ -346,7 +349,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                     <div key={key} className={cn(
                       "flex items-center justify-center px-2 py-2",
                       isBaseline && "bg-red-50/60",
-                      today && !isBaseline && "bg-[#037ECC]/[0.03]",
+                      today && !isBaseline && "bg-[#037ECC]/3",
                       (!isEditable || outOfRange) && "opacity-30",
                       isEditable && !isBaseline && "bg-emerald-100/60",
                     )}>
@@ -382,7 +385,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                 const isBaseline = ds.isBaselineDate(key)
                 const pct = calculateIntervalPercentage(entry)
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/3")}>
                     {pct !== null ? (
                       <span className="text-sm font-bold text-indigo-600 tabular-nums">{pct}</span>
                     ) : (
@@ -403,11 +406,12 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/3")}>
                     <input
                       type="text"
                       value={entry.initials}
                       onChange={(e) => ds.setInitials(key, e.target.value)}
+                      disabled={!canEdit}
                       maxLength={3}
                       className="h-8 w-14 rounded-lg bg-white border border-slate-200 text-center text-xs font-semibold text-slate-700 uppercase outline-none focus:border-[#037ECC] focus:ring-2 focus:ring-[#037ECC]/15 transition-all"
                       placeholder="—"
@@ -427,9 +431,9 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
                 const noteAppt = clientAppointments.appointmentsByDate.get(key)
-                const isNoteEditable = isBaseline || (noteAppt != null && !(noteAppt.blocked ?? false))
+                const isNoteEditable = canEdit && (isBaseline || (noteAppt != null && !(noteAppt.blocked ?? false)))
                 return (
-                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/[0.03]")}>
+                  <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/3")}>
                     <NoteButton value={entry.environmentalNote} onChange={(v) => ds.setNote(key, v)} dateLabel={format(day, "MMM dd")} disabled={!isNoteEditable} />
                   </div>
                 )
@@ -471,7 +475,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Weekly Average</span>
-            <span className="text-xl font-bold tabular-nums leading-tight bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+            <span className="text-xl font-bold tabular-nums leading-tight bg-linear-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
               {ds.weeklyAveragePercentage === 0 ? "—" : `${ds.weeklyAveragePercentage}%`}
             </span>
           </div>

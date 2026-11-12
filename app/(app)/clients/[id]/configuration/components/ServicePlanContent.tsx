@@ -22,7 +22,7 @@ interface ServicePlanContentProps {
 }
 
 export function ServicePlanContent({ clientId, clientServicePlanId, onServicePlanAssigned, autoOpenItem, onAutoOpenItemConsumed, onItemDirtyChange }: ServicePlanContentProps) {
-  const { canCreate } = useModulePermissions(PermissionModule.CLIENTS)
+  const { canCreate } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const [spId, setSpId] = useState<string | null>(clientServicePlanId)
   const [showModal, setShowModal] = useState(false)
   const [isAutoAssigning, setIsAutoAssigning] = useState(false)

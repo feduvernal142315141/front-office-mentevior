@@ -228,7 +228,7 @@ export function ItemDetailPanel({
   onSaved,
   onDirtyChange,
 }: ItemDetailPanelProps) {
-  const { canCreate, canEdit } = useModulePermissions(PermissionModule.CLIENTS)
+  const { canCreate, canEdit } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
   const params = useParams()
   const clientId = typeof params?.id === "string" ? params.id : null
   const { client } = useClientById(clientId)
@@ -788,7 +788,7 @@ export function ItemDetailPanel({
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
           <span>{categoryName}</span>
           <span className="text-slate-400">/</span>
-          <span className="text-slate-700 truncate max-w-[60vw] sm:max-w-[280px]">{itemName}</span>
+          <span className="text-slate-700 truncate max-w-[60vw] sm:max-w-70">{itemName}</span>
         </button>
         <Controller
           name="active"
@@ -1277,7 +1277,7 @@ export function ItemDetailPanel({
       {/* ── Fixed footer (overlays the layout Back button, hidden when modal is open) ── */}
       {!isModalOpen && (
       <div className={cn(
-        "fixed bottom-0 left-0 right-0 z-[60] backdrop-blur-md border-t shadow-[0_-4px_16px_rgba(0,0,0,0.08)] transition-colors duration-300",
+        "fixed bottom-0 left-0 right-0 z-60 backdrop-blur-md border-t shadow-[0_-4px_16px_rgba(0,0,0,0.08)] transition-colors duration-300",
         hasUnsavedChanges
           ? "bg-amber-50/95 border-amber-200"
           : "bg-white/95 border-gray-200"
