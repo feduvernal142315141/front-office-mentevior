@@ -761,7 +761,6 @@ export function AssessmentForm({
           intensities={intensities}
           isLoading={categoriesLoading}
           values={formData.categoryItems}
-          errors={errors}
           disabled={isSaving}
           onUpdate={updateCategoryItem}
           onClear={clearCategoryItem}

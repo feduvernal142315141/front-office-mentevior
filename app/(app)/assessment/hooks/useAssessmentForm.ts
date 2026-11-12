@@ -935,12 +935,6 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       newErrors.categoriesItems = "Evaluate at least one item, or turn the section off"
     }
 
-    for (const [itemId, item] of Object.entries(formData.categoryItems)) {
-      if (parseManagementStrategies(item.managementStrategies).includes("Other") && !item.otherManagementStrategies.trim()) {
-        newErrors[`category-item-${itemId}`] = "Enter the other consequence-based strategy."
-      }
-    }
-
     if (sectionBlocksSave(flags, "showRecommendedServices") && !formData.billingCodes.some((row) => !isBillingCodeEmpty(row))) {
       newErrors.billingCodesSection = "Add at least one billing code, or turn the section off"
     }
