@@ -34,13 +34,13 @@ export default function SessionNotePage() {
   if (!appointmentId) {
     return (
       <div className="px-4 sm:px-6 py-6">
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-350 mx-auto">
           <div className="flex flex-wrap items-center gap-4 mb-8">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
+            <div className="p-3 rounded-xl bg-linear-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
               <NotebookPen className="h-8 w-8 text-[#037ECC]" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
                 Session Notes
               </h1>
               <p className="text-slate-600 mt-1">View and manage all session notes</p>
@@ -53,7 +53,7 @@ export default function SessionNotePage() {
   }
 
   // ─── Form view (with appointmentId) ───
-  return <SessionNoteFormView appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
+  return <SessionNoteFormView key={appointmentId} appointmentId={appointmentId} clientId={clientId} billingCode={billingCode} />
 }
 
 // Route to the correct form based on billing code
@@ -73,15 +73,12 @@ function SessionNoteFormView({ appointmentId, clientId, billingCode }: { appoint
 // ─── 97153 Form View (existing behavior) ───
 function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
   const router = useRouter()
-  const alert = useAlert()
   const { user } = useAuth()
   const { user: fullUser } = useUserById(user?.id || null)
   const { block: canBlock } = usePermission()
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
   const hasBlockPermission = canBlock(PermissionModule.SESSION_CONFIG)
   const canAdminAction = isAdmin && hasBlockPermission
-
-  const [isChangingStatus, setIsChangingStatus] = useState(false)
 
   const {
     formData,
@@ -125,6 +122,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
   } = useSessionNoteForm({ appointmentId, clientId })
 
   const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
+  const { isChangingStatus, onStatusChange, caregiverSignatureHighlightRequest } = useNoteStatusHandler(appointmentId, note, refetchNote)
 
   const handleSaveAndRedirect = useCallback(async () => {
     const result = await handleSubmit()
@@ -141,7 +139,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
       noteError={noteError}
       statusInfo={statusInfo}
       isChangingStatus={isChangingStatus}
-      onStatusChange={useNoteStatusHandler(appointmentId, note, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      onStatusChange={onStatusChange}
       appointmentId={appointmentId}
     >
       <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
@@ -169,6 +167,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
           onProviderSignatureChange={setProviderSignatureImage}
           useCheckmarkSignature={useCheckmarkSignature}
           caregiverSignatureChecked={caregiverSignatureChecked}
+          caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
@@ -188,15 +187,12 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
 // ─── 97155 Form View ───
 function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
   const router = useRouter()
-  const alert = useAlert()
   const { user } = useAuth()
   const { user: fullUser } = useUserById(user?.id || null)
   const { block: canBlock } = usePermission()
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
   const hasBlockPermission = canBlock(PermissionModule.SESSION_CONFIG)
   const canAdminAction = isAdmin && hasBlockPermission
-
-  const [isChangingStatus, setIsChangingStatus] = useState(false)
 
   const {
     formData,
@@ -235,6 +231,7 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
   } = useSessionNote97155Form({ appointmentId, clientId })
 
   const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
+  const { isChangingStatus, onStatusChange, caregiverSignatureHighlightRequest } = useNoteStatusHandler(appointmentId, note, refetchNote)
 
   const handleSaveAndRedirect = useCallback(async () => {
     const result = await handleSubmit()
@@ -251,7 +248,7 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
       noteError={noteError}
       statusInfo={statusInfo}
       isChangingStatus={isChangingStatus}
-      onStatusChange={useNoteStatusHandler(appointmentId, note, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      onStatusChange={onStatusChange}
       appointmentId={appointmentId}
     >
       <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
@@ -275,6 +272,7 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
           onProviderSignatureChange={setProviderSignatureImage}
           useCheckmarkSignature={useCheckmarkSignature}
           caregiverSignatureChecked={caregiverSignatureChecked}
+          caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
@@ -293,15 +291,12 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
 // ─── 97156 Form View ───
 function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { appointmentId: string; clientId: string | null; billingCode: string | null }) {
   const router = useRouter()
-  const alert = useAlert()
   const { user } = useAuth()
   const { user: fullUser } = useUserById(user?.id || null)
   const { block: canBlock } = usePermission()
   const isAdmin = /admin|superadmin/i.test(fullUser?.role?.name ?? "")
   const hasBlockPermission = canBlock(PermissionModule.SESSION_CONFIG)
   const canAdminAction = isAdmin && hasBlockPermission
-
-  const [isChangingStatus, setIsChangingStatus] = useState(false)
 
   const {
     formData,
@@ -343,6 +338,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
   } = useSessionNote97156Form({ appointmentId, clientId })
 
   const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
+  const { isChangingStatus, onStatusChange, caregiverSignatureHighlightRequest } = useNoteStatusHandler(appointmentId, note, refetchNote)
 
   const handleSaveAndRedirect = useCallback(async () => {
     const result = await handleSubmit()
@@ -359,7 +355,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
       noteError={noteError}
       statusInfo={statusInfo}
       isChangingStatus={isChangingStatus}
-      onStatusChange={useNoteStatusHandler(appointmentId, note, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      onStatusChange={onStatusChange}
       appointmentId={appointmentId}
     >
       <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
@@ -386,6 +382,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
           onProviderSignatureChange={setProviderSignatureImage}
           useCheckmarkSignature={useCheckmarkSignature}
           caregiverSignatureChecked={caregiverSignatureChecked}
+          caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
@@ -406,18 +403,20 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
 function useNoteStatusHandler(
   appointmentId: string,
   note: Pick<AppointmentNote, "caregiverSignatureImage" | "caregiverSignatureChecked"> | null,
-  isChangingStatus: boolean,
-  setIsChangingStatus: (v: boolean) => void,
   refetchNote: () => Promise<void>,
-  alert: ReturnType<typeof useAlert>,
 ) {
-  return useCallback(async (newStatus: "lock" | "active") => {
+  const alert = useAlert()
+  const [isChangingStatus, setIsChangingStatus] = useState(false)
+  const [caregiverSignatureHighlightRequest, setCaregiverSignatureHighlightRequest] = useState(0)
+
+  const onStatusChange = useCallback(async (newStatus: "lock" | "active") => {
     if (!appointmentId || isChangingStatus) return
     if (newStatus === "lock") {
       if (!note?.caregiverSignatureImage?.trim() && note?.caregiverSignatureChecked !== true) {
         alert.error(
           "Caregiver signature required",
           "Add and save the caregiver signature before locking this note for billing.",
+          () => setCaregiverSignatureHighlightRequest((request) => request + 1),
         )
         return
       }
@@ -446,6 +445,8 @@ function useNoteStatusHandler(
     } catch { toast.error("Failed to re-activate note") }
     finally { setIsChangingStatus(false) }
   }, [appointmentId, note, isChangingStatus, refetchNote, alert])
+
+  return { isChangingStatus, onStatusChange, caregiverSignatureHighlightRequest }
 }
 
 // ─── Shared layout shell for both form views ───
@@ -464,7 +465,7 @@ function FormViewShell({ billingCode, isLoadingNote, noteError, statusInfo, isCh
 
   return (
     <div className="px-4 sm:px-6 py-6">
-      <div className="max-w-[1400px] mx-auto">
+      <div className="max-w-350 mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-center gap-4 mb-8">
           <Button
@@ -474,12 +475,12 @@ function FormViewShell({ billingCode, isLoadingNote, noteError, statusInfo, isCh
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="p-3 rounded-xl bg-gradient-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
+          <div className="p-3 rounded-xl bg-linear-to-br from-[#037ECC]/10 to-[#079CFB]/10 border border-[#037ECC]/20">
             <NotebookPen className="h-8 w-8 text-[#037ECC]" />
           </div>
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
                 Session Note
               </h1>
               <p className="text-slate-600 mt-1">Document the session details and interventions</p>
@@ -569,7 +570,7 @@ function NoteStatusBanner({ statusInfo, isChangingStatus, onStatusChange }: {
   const Icon = BANNER_ICONS[statusInfo.status]
 
   return (
-    <div className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl border mb-6 transition-all duration-300 ease-out bg-gradient-to-r ${colors.border} ${colors.bg} ${colors.shadow}`}>
+    <div className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl border mb-6 transition-all duration-300 ease-out bg-linear-to-r ${colors.border} ${colors.bg} ${colors.shadow}`}>
       <div className={`flex items-center justify-center h-10 w-10 rounded-xl shrink-0 border ${colors.iconBg}`}>
         <Icon className={`h-4 w-4 ${colors.title}`} />
       </div>

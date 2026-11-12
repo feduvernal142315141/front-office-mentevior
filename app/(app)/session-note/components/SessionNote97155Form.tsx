@@ -25,6 +25,7 @@ import { formatHoursAndUnits, splitBillingCodesAndUnits } from "@/lib/utils/sess
 import { SignatureEditorModal } from "@/app/(app)/my-profile/manager/credentials-signature/components/SignatureEditorModal"
 import { CLIENT_PARTICIPANT_ID } from "../hooks/useSessionNoteForm"
 import { deriveNoteStatusInfo } from "../hooks/useNoteStatus"
+import { CaregiverSignatureRow } from "./CaregiverSignatureRow"
 import type { SessionNote97155FormData } from "@/lib/types/appointment-note-97155.types"
 import type { CatalogItem } from "@/lib/types/appointment-note-97155.types"
 import type { ParticipantCatalogItem, NoteStatus } from "@/lib/types/appointment-note.types"
@@ -51,6 +52,7 @@ interface SessionNote97155FormProps {
   onProviderSignatureChange?: (base64: string | null) => void
   useCheckmarkSignature?: boolean
   caregiverSignatureChecked?: boolean
+  caregiverSignatureHighlightRequest?: number
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
@@ -82,6 +84,7 @@ export function SessionNote97155Form({
   onProviderSignatureChange,
   useCheckmarkSignature,
   caregiverSignatureChecked,
+  caregiverSignatureHighlightRequest = 0,
   onCaregiverCheckedChange,
   onCaregiverSignatureChange,
   caregiverSignatureImage,
@@ -539,6 +542,7 @@ export function SessionNote97155Form({
         serviceDate={serviceDetails?.date}
         useCheckmarkSignature={useCheckmarkSignature}
         caregiverChecked={caregiverSignatureChecked}
+        caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
         onCaregiverCheckedChange={onCaregiverCheckedChange}
         onCaregiverSignatureChange={onCaregiverSignatureChange}
         caregiverSignatureImage={caregiverSignatureImage}
@@ -575,13 +579,14 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, caregiverOptions, clientCaregiverId, onClientCaregiverChange, clientCaregiverError, caregiversEmpty, caregiversProfileHref, notCanEdit }: {
+function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, caregiverSignatureHighlightRequest, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, caregiverOptions, clientCaregiverId, onClientCaregiverChange, clientCaregiverError, caregiversEmpty, caregiversProfileHref, notCanEdit }: {
   provider: { name: string; credential: string; npi: string; mpi: string; sign: string } | null
   providerSignatureUrl?: string | null
   onProviderSignatureChange?: (base64: string | null) => void
   serviceDate?: string | null
   useCheckmarkSignature?: boolean
   caregiverChecked?: boolean
+  caregiverSignatureHighlightRequest: number
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
@@ -641,7 +646,10 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
           </div>
 
           {/* Row 2 — Caregiver */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 border-b border-[#037ECC]/10">
+          <CaregiverSignatureRow
+            highlightRequest={caregiverSignatureHighlightRequest}
+            hasSignature={useCheckmarkSignature ? !!caregiverChecked : !!caregiverSignatureImage?.trim()}
+          >
             <div className="px-4 sm:px-6 py-5 border-b sm:border-b-0 sm:border-r border-[#037ECC]/10">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Caregiver</span>
               <div className="mb-3" data-field="clientCaregiverId">
@@ -706,7 +714,7 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
                 {!useCheckmarkSignature && <div className="absolute bottom-0 left-0 right-0 border-b border-[#037ECC]/20" />}
               </div>
             </div>
-          </div>
+          </CaregiverSignatureRow>
 
           {/* Row 3 — Date */}
           <div className="px-6 py-4">

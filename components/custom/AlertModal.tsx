@@ -66,6 +66,7 @@ export function AlertModal({ alert, onClose, onConfirm, onDiscard }: AlertModalP
   const primaryActionVariant = "primary"
   const isError = alert.type === "error"
   const isSuccess = alert.type === "success"
+  const isConfirmation = alert.type === "confirm"
 
   const initialScale = 0.97
   const animationDuration = isSuccess ? 0.16 : 0.2
@@ -150,8 +151,8 @@ export function AlertModal({ alert, onClose, onConfirm, onDiscard }: AlertModalP
                     )}
                   </div>
 
-                  <div className="flex w-full flex-wrap items-center justify-end gap-3">
-                    {alert.type === "confirm" ? (
+                  <div className={`flex w-full flex-wrap items-center gap-3 ${isConfirmation ? "justify-end" : "justify-center"}`}>
+                    {isConfirmation ? (
                       <>
                         <AlertDialogCancel asChild>
                           <Button variant="secondary" className="min-w-[110px]">
@@ -190,7 +191,14 @@ export function AlertModal({ alert, onClose, onConfirm, onDiscard }: AlertModalP
                         </AlertDialogAction>
                       </>
                     ) : (
-                      <Button variant={primaryActionVariant} onClick={onClose} className={primaryButtonClassName}>
+                      <Button
+                        variant={primaryActionVariant}
+                        onClick={() => {
+                          onClose()
+                          alert.onAcknowledge?.()
+                        }}
+                        className={primaryButtonClassName}
+                      >
                         OK
                       </Button>
                     )}

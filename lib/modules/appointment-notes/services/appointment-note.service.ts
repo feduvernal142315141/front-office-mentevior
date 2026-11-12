@@ -10,6 +10,7 @@ import type {
   UpdateAppointmentNotePayload,
 } from "@/lib/types/appointment-note.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
+import { shortenAppointmentNoteCredentials } from "../utils/appointment-note-credentials"
 
 function parseNoteStatus(data: Record<string, unknown>): NoteStatus {
   const raw = String(data.noteStatus ?? data.status ?? "").toLowerCase()
@@ -161,12 +162,18 @@ export async function getAppointmentNote(
   const data = (raw.entity ?? raw.data ?? raw) as Record<string, unknown>
   if (!data || !data.id) return null
 
+  const provider = parseProvider(data)
+  if (provider) {
+    const [credential] = await shortenAppointmentNoteCredentials(provider.credential)
+    provider.credential = credential
+  }
+
   return {
     id: String(data.id ?? ""),
     appointmentId: String(data.appointmentId ?? appointmentId),
     type: (String(data.type ?? "Session Note") as import("@/lib/types/appointment-note.types").NoteType),
     recipient: parseRecipient(data),
-    provider: parseProvider(data),
+    provider,
     serviceDetails: parseServiceDetails(data),
     billingCodes: typeof data.billingCodes === "string" ? data.billingCodes : null,
     modality: parseModality(data),

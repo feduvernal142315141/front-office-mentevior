@@ -7,6 +7,7 @@ import type {
   UpdateAppointmentNote97156Payload,
 } from "@/lib/types/appointment-note-97156.types"
 import type { AppointmentNoteParticipantCatalogType, NoteStatus } from "@/lib/types/appointment-note.types"
+import { shortenAppointmentNoteCredentials } from "../utils/appointment-note-credentials"
 
 function parseNoteStatus(data: Record<string, unknown>): NoteStatus {
   const raw = String(data.noteStatus ?? data.status ?? "").toLowerCase()
@@ -114,9 +115,10 @@ export async function getAppointmentNote97156(
   let provider: AppointmentNote97156["provider"] = null
   if (data.provider && typeof data.provider === "object") {
     const p = data.provider as Record<string, unknown>
+    const [credential] = await shortenAppointmentNoteCredentials(String(p.credential ?? ""))
     provider = {
       name: String(p.name ?? ""),
-      credential: String(p.credential ?? ""),
+      credential,
       npi: String(p.npi ?? ""),
       mpi: String(p.mpi ?? ""),
       sign: String(p.sign ?? ""),

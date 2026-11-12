@@ -13,11 +13,11 @@ import { SESSION_NOTE_GUIDANCE } from "@/lib/constants/session-note-guidance"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
-import { Button } from "@/components/custom/Button"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import type { RecommendationCatalogItem } from "@/lib/types/client-service-plan.types"
 import type { NoteStatus } from "@/lib/types/appointment-note.types"
 import { deriveNoteStatusInfo } from "../hooks/useNoteStatus"
+import { CaregiverSignatureRow } from "./CaregiverSignatureRow"
 import type {
   AppointmentNoteCategory,
   AppointmentNoteRecipient,
@@ -61,6 +61,7 @@ interface SessionNoteFormProps {
   onProviderSignatureChange?: (base64: string | null) => void
   useCheckmarkSignature?: boolean
   caregiverSignatureChecked?: boolean
+  caregiverSignatureHighlightRequest?: number
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
@@ -97,6 +98,7 @@ export function SessionNoteForm({
   onProviderSignatureChange,
   useCheckmarkSignature,
   caregiverSignatureChecked,
+  caregiverSignatureHighlightRequest = 0,
   onCaregiverCheckedChange,
   onCaregiverSignatureChange,
   caregiverSignatureImage,
@@ -168,7 +170,7 @@ export function SessionNoteForm({
                 <User className="h-4 w-4 text-[#037ECC]" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Recipient</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm break-words">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm wrap-break-word">
                 <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{recipient.name}</span></div>
                 <div><span className="text-slate-400">Date of Birth:</span> <span className="font-medium text-slate-800">{recipient.dateOfBirth}</span></div>
                 <div><span className="text-slate-400">Insurance:</span> <span className="font-medium text-slate-800">{recipient.insuranceNumber}</span></div>
@@ -182,7 +184,7 @@ export function SessionNoteForm({
                 <Building2 className="h-4 w-4 text-[#037ECC]" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Provider</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm break-words">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm wrap-break-word">
                 <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{provider.name}</span></div>
                 <div><span className="text-slate-400">Credential:</span> <span className="font-medium text-slate-800">{provider.credential}</span></div>
                 <div><span className="text-slate-400">NPI:</span> <span className="font-medium text-slate-800">{provider.npi}</span></div>
@@ -387,6 +389,7 @@ export function SessionNoteForm({
         serviceDate={serviceDetails?.date}
         useCheckmarkSignature={useCheckmarkSignature}
         caregiverChecked={caregiverSignatureChecked}
+        caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
         onCaregiverCheckedChange={onCaregiverCheckedChange}
         onCaregiverSignatureChange={onCaregiverSignatureChange}
         caregiverSignatureImage={caregiverSignatureImage}
@@ -441,7 +444,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
       <div className="flex items-center gap-2 px-4 py-2.5 bg-white border-b border-slate-100">
         <BarChart3 className="h-3.5 w-3.5 text-[#037ECC]" />
         <span className="text-xs font-semibold text-slate-800 flex-1">{category.name}</span>
-        <span className="inline-flex items-center justify-center rounded-full bg-[#037ECC]/10 text-[#037ECC] text-[10px] font-bold h-5 min-w-[20px] px-1.5">{category.items.length}</span>
+        <span className="inline-flex items-center justify-center rounded-full bg-[#037ECC]/10 text-[#037ECC] text-[10px] font-bold h-5 min-w-5 px-1.5">{category.items.length}</span>
       </div>
       <div className="divide-y divide-slate-100">
         {category.items.map((item) => {
@@ -455,7 +458,7 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
               key={item.id}
               className={cn(
                 "px-4 py-3 space-y-2 transition-colors cursor-pointer",
-                isActive && "bg-[#037ECC]/[0.03] border-l-2 border-l-[#037ECC]",
+                isActive && "bg-[#037ECC]/3 border-l-2 border-l-[#037ECC]",
               )}
               onClick={() => onItemFocus?.(item.id)}
             >
@@ -514,13 +517,14 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, caregiverOptions, clientCaregiverId, onClientCaregiverChange, clientCaregiverError, caregiversEmpty, caregiversProfileHref, notCanEdit }: {
+function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, caregiverSignatureHighlightRequest, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, caregiverOptions, clientCaregiverId, onClientCaregiverChange, clientCaregiverError, caregiversEmpty, caregiversProfileHref, notCanEdit }: {
   provider: AppointmentNoteProvider | null
   providerSignatureUrl?: string | null
   onProviderSignatureChange?: (base64: string | null) => void
   serviceDate?: string | null
   useCheckmarkSignature?: boolean
   caregiverChecked?: boolean
+  caregiverSignatureHighlightRequest: number
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
@@ -584,12 +588,12 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
                   </button>
                 )}
               </div>
-              <div className="relative min-h-[64px] flex items-end pb-3">
+              <div className="relative min-h-16 flex items-end pb-3">
                 {providerSignatureUrl ? (
                   <img
                     src={providerSignatureUrl}
                     alt="Provider signature"
-                    className="max-h-[52px] max-w-full object-contain contrast-150 brightness-50"
+                    className="max-h-13 max-w-full object-contain contrast-150 brightness-50"
                   />
                 ) : (
                   <button
@@ -607,7 +611,10 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
           </div>
 
           {/* Row 2 — Caregiver */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 border-b border-[#037ECC]/10">
+          <CaregiverSignatureRow
+            highlightRequest={caregiverSignatureHighlightRequest}
+            hasSignature={useCheckmarkSignature ? !!caregiverChecked : !!caregiverSignatureImage?.trim()}
+          >
             {/* Caregiver info */}
             <div className="px-4 sm:px-6 py-5 border-b sm:border-b-0 sm:border-r border-[#037ECC]/10">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Caregiver</span>
@@ -678,7 +685,7 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
                   </button>
                 )}
               </div>
-              <div className="relative min-h-[64px] flex items-end pb-3">
+              <div className="relative min-h-16 flex items-end pb-3">
                 {useCheckmarkSignature ? (
                   caregiverChecked ? (
                     <div className="flex items-center gap-2">
@@ -692,7 +699,7 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
                   <img
                     src={caregiverSignatureImage}
                     alt="Caregiver signature"
-                    className="max-h-[52px] max-w-full object-contain contrast-150 brightness-50"
+                    className="max-h-13 max-w-full object-contain contrast-150 brightness-50"
                   />
                 ) : (
                   <button
@@ -709,7 +716,7 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
                 )}
               </div>
             </div>
-          </div>
+          </CaregiverSignatureRow>
 
           {/* Row 3 — Date */}
           <div className="px-6 py-4">
