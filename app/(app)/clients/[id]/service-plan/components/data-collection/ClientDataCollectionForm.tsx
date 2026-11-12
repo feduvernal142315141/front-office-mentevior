@@ -102,6 +102,7 @@ interface ClientDataCollectionFormProps {
   /** Deja que el contenedor dispare el submit desde el diálogo de cambios sin guardar */
   formRef?: React.Ref<HTMLFormElement>
   isSaving: boolean
+  readOnly?: boolean
 }
 
 export function ClientDataCollectionForm({
@@ -119,6 +120,7 @@ export function ClientDataCollectionForm({
   onDirtyChange,
   formRef,
   isSaving,
+  readOnly = false,
 }: ClientDataCollectionFormProps) {
   const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } =
     useTypeEventCatalog()
@@ -216,6 +218,9 @@ export function ClientDataCollectionForm({
   const isDataCollectionOpen = openSection === "data"
   const isChartOpen = openSection === "chart"
   const isRecommendationsOpen = openSection === "recommendations"
+  const showDataCollection = readOnly || isDataCollectionOpen
+  const showChart = readOnly || isChartOpen
+  const showRecommendations = readOnly || isRecommendationsOpen
 
   const watchedType = watch("type")
   const watchedLevels = watch("levels")
@@ -225,9 +230,9 @@ export function ClientDataCollectionForm({
   useEffect(() => {
     onChartLayoutChange?.({
       datasetCount: watchedChartDatasets?.length ?? 0,
-      isOpen: isChartOpen,
+      isOpen: showChart,
     })
-  }, [watchedChartDatasets, isChartOpen, onChartLayoutChange])
+  }, [watchedChartDatasets, showChart, onChartLayoutChange])
 
   const resolvedType = useMemo(() => {
     const item = typeItemsMap.get(watchedType)
@@ -318,7 +323,8 @@ export function ClientDataCollectionForm({
 
   return (
     <form ref={formRef} onSubmit={onSubmit} className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+      <fieldset disabled={readOnly} className="contents">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
         {/* --- Header section --- */}
         {mode === "item" && (
           <div className="space-y-4">
@@ -412,7 +418,7 @@ export function ClientDataCollectionForm({
         {/* --- Data Collection (collapsible) --- */}
         <div ref={dataCollectionRef} className="scroll-mt-4">
           <Collapsible
-            open={isDataCollectionOpen}
+            open={showDataCollection}
             onOpenChange={(next) => setOpenSection(next ? "data" : null)}
             className={cn(
               "group rounded-xl border bg-white",
@@ -439,7 +445,7 @@ export function ClientDataCollectionForm({
               <ChevronDown
                 className={cn(
                   "h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200",
-                  isDataCollectionOpen && "rotate-180"
+                  showDataCollection && "rotate-180"
                 )}
               />
             </CollapsibleTrigger>
@@ -771,7 +777,7 @@ export function ClientDataCollectionForm({
           control={control as any}
           setValue={setValue as any}
           getValues={getValues as any}
-          open={isChartOpen}
+          open={showChart}
           onOpenChange={(next) => setOpenSection(next ? "chart" : null)}
           focusToken={chartFocusToken}
         />
@@ -780,19 +786,22 @@ export function ClientDataCollectionForm({
         <RecommendationsCollapsibleSection
           value={recommendations}
           onChange={setRecommendations}
-          open={isRecommendationsOpen}
+          open={showRecommendations}
           onOpenChange={(next) => setOpenSection(next ? "recommendations" : null)}
         />
-      </div>
+        </div>
+      </fieldset>
 
       {/* Bottom bar */}
       <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-white">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>
-        <Button type="submit" variant="primary" loading={isSaving}>
-          {isSaving ? "Saving..." : "Save"}
-        </Button>
+        {!readOnly && (
+          <Button type="submit" variant="primary" loading={isSaving}>
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
+        )}
       </div>
     </form>
   )

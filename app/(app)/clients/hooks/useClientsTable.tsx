@@ -61,6 +61,7 @@ export function useClientsTable(): UseClientsTableReturn {
   const { can, edit } = usePermission()
   const canEditClient = edit(PermissionModule.CLIENTS)
   const canOpenProfile = canEditClient || can(PermissionModule.CLIENTS, PermissionAction.READ)
+  const configurationActionLabel = canEditClient ? "Configure service plan" : "View service plan"
   const ProfileIcon = canEditClient ? Edit2 : Eye
   const profileActionLabel = canEditClient ? "Edit client" : "View client"
 
@@ -225,7 +226,7 @@ export function useClientsTable(): UseClientsTableReturn {
       render: (client) => {
         return (
           <div className="flex justify-end gap-2">
-            {canEditClient && (
+            {canOpenProfile && (
               <button
                 onClick={() => {
                   const base = `/clients/${client.id}/configuration`
@@ -245,8 +246,8 @@ export function useClientsTable(): UseClientsTableReturn {
                   "transition-all duration-200 ease-out",
                   "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
                 )}
-                title="Configuration"
-                aria-label="Configuration"
+                title={configurationActionLabel}
+                aria-label={configurationActionLabel}
               >
                 <Sliders className="w-4 h-4 text-blue-600 group-hover/config:text-blue-700 transition-colors duration-200" />
               </button>
@@ -283,7 +284,7 @@ export function useClientsTable(): UseClientsTableReturn {
         )
       },
     },
-  ], [router, canEditClient, canOpenProfile, ProfileIcon, profileActionLabel])
+  ], [router, canEditClient, canOpenProfile, configurationActionLabel, ProfileIcon, profileActionLabel])
 
   return {
     data: clients,

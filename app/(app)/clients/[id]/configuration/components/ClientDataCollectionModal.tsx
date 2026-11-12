@@ -6,14 +6,12 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Database,
-  BarChart3,
   Lightbulb,
   TrendingUp,
   Target,
   Loader2,
   } from "lucide-react"
 import { toast } from "@/lib/compat/sonner"
-import { cn } from "@/lib/utils"
 import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper"
 
 import { CustomModal } from "@/components/custom/CustomModal"
@@ -29,19 +27,15 @@ import { Button } from "@/components/custom/Button"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 
-import { LevelsTable } from "@/app/(app)/my-company/service-plans/components/data-collection/LevelsTable"
 import { ChartCollapsibleSection } from "@/app/(app)/my-company/service-plans/components/chart/ChartCollapsibleSection"
 import {
   RecommendationsCollapsibleSection,
-  validateRecommendations,
   type RecommendationErrors,
 } from "../../service-plan/components/data-collection/RecommendationsCollapsibleSection"
-import { useStrategyCatalog } from "@/lib/modules/client-service-plan/hooks/use-strategy-catalog"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import {
   BaselinesTabContent,
-  createEmptyBaseline,
   type BaselineRow,
 } from "./BaselinesTabContent"
 import { ObjectivesTabContent, inferObjetiveType } from "./ObjectivesTabContent"
@@ -77,7 +71,6 @@ import {
   typeRequiresInterval,
   typeRequiresDailyAndWeekly,
   typeHasCumulativeValueToggles,
-  typeHasLevels,
   typeIsMeasurementLog,
 } from "@/lib/modules/service-plans/constants/data-collection.constants"
 
@@ -168,6 +161,8 @@ export function ClientDataCollectionModal({
   onSaved,
 }: ClientDataCollectionModalProps) {
   const { canEdit: canEditDatasheets } = useModulePermissions(PermissionModule.DATASHEETS)
+  const { canEdit: canEditClients } = useModulePermissions(PermissionModule.CLIENTS)
+  const canEditDataCollection = canEditClients && canEditDatasheets
   const params = useParams()
   const clientId = typeof params?.id === "string" ? params.id : null
   const { client } = useClientById(clientId)
@@ -202,7 +197,6 @@ export function ClientDataCollectionModal({
   const { groups: typeGroups, itemsMap: typeItemsMap, isLoading: isLoadingCatalog } =
     useTypeEventCatalog()
   const { entries: datasetCatalogEntries } = useDatasetsCatalog(true)
-  const { items: strategyCatalogItems } = useStrategyCatalog()
 
   const datasetNameById = useMemo(
     () => Object.fromEntries(datasetCatalogEntries.map((e) => [e.id, e.name])),
@@ -433,22 +427,6 @@ export function ClientDataCollectionModal({
     }
   }, [resolvedType, setValue, getValues])
 
-  // --- Delete level ---
-  const handleDeleteLevel = async (level: DataCollectionLevel) => {
-    if (!level.recordId) return
-    try {
-      if (mode === "item") {
-        await deleteClientItemLevel(level.recordId)
-      } else {
-        await deleteClientCategoryLevel(level.recordId)
-      }
-      toast.success("Level removed")
-    } catch {
-      toast.error("Unable to delete level")
-      throw new Error("Failed to delete level")
-    }
-  }
-
   // Clear recommendation errors when user changes selections
   const handleRecommendationsChange = (rec: RecommendationsConfig) => {
     setRecommendations(rec)
@@ -584,6 +562,7 @@ export function ClientDataCollectionModal({
 
   const onSubmit = handleSubmit(
     async (data) => {
+      if (!canEditDataCollection) return
       await handleSave({
         ...data,
         chart: data.chart ? pruneChartDatasetConfigs(data.chart) : data.chart,
@@ -638,7 +617,7 @@ export function ClientDataCollectionModal({
 
   // --- Tab content: Data Collection ---
   const dataCollectionContent = (
-    <div className="space-y-5 pt-2">
+    <fieldset disabled={!canEditDataCollection} className="space-y-5 pt-2">
       {/* Type */}
       <div className="space-y-1">
         <Controller
@@ -924,19 +903,7 @@ export function ClientDataCollectionModal({
         </div>
       )}
 
-    </div>
-  )
-
-  // --- Tab content: Chart ---
-  const chartContent = (
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    <ChartCollapsibleSection
-      control={control as any}
-      setValue={setValue as any}
-      getValues={getValues as any}
-      open={true}
-      onOpenChange={() => {}}
-    />
+    </fieldset>
   )
 
   // --- Tabs ---
@@ -984,7 +951,7 @@ export function ClientDataCollectionModal({
                 periodSelectOptions={periodSelectOptions}
                 requiresSessionDuration={needsSessionDuration}
                 showErrors={baselinesError}
-                readOnly={!canEditDatasheets}
+                readOnly={!canEditDataCollection}
               />
             </div>
           ),
@@ -1012,6 +979,7 @@ export function ClientDataCollectionModal({
                 baselines={baselines}
                 objetiveType={objetiveType}
                 onObjetiveTypeChange={setObjetiveType}
+                disableActions={!canEditDataCollection}
               />
             </div>
           ),
@@ -1048,6 +1016,7 @@ export function ClientDataCollectionModal({
       categoryCatalogId,
       categoryName,
       mode,
+      canEditDataCollection,
     ]
   )
 
@@ -1094,6 +1063,7 @@ export function ClientDataCollectionModal({
                       onBlur={field.onBlur}
                       hasError={!!errors.topography}
                       rows={2}
+                      disabled={!canEditDataCollection}
                     />
                   )}
                 />
@@ -1109,6 +1079,7 @@ export function ClientDataCollectionModal({
                     checked={field.value ?? true}
                     onCheckedChange={field.onChange}
                     variant="success"
+                    disabled={!canEditDataCollection}
                   />
                 )}
               />
@@ -1135,10 +1106,10 @@ export function ClientDataCollectionModal({
             <Button type="button" variant="secondary" onClick={handleClose} disabled={isSaving}>
               Cancel
             </Button>
-            {canEditDatasheets && (
-            <Button type="submit" variant="primary" loading={isSaving}>
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
+            {canEditDataCollection && (
+              <Button type="submit" variant="primary" loading={isSaving}>
+                {isSaving ? "Saving..." : "Save"}
+              </Button>
             )}
           </div>
         </form>

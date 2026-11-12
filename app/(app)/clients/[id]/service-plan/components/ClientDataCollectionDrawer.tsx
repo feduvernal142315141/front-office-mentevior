@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 
 import { ClientDataCollectionForm } from "./data-collection/ClientDataCollectionForm"
 import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 
 import {
   deleteClientCategoryLevel,
@@ -72,6 +74,7 @@ export function ClientDataCollectionDrawer({
   itemName,
   onSaved,
 }: ClientDataCollectionDrawerProps) {
+  const { canEdit } = useModulePermissions(PermissionModule.CLIENTS)
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [config, setConfig] = useState<DataCollectionConfig | null>(null)
@@ -139,6 +142,7 @@ export function ClientDataCollectionDrawer({
   }, [open, loadConfig])
 
   const handleDeleteLevel = async (level: DataCollectionLevel) => {
+    if (!canEdit) return
     if (!level.recordId) return
     try {
       if (mode === "item") {
@@ -156,6 +160,7 @@ export function ClientDataCollectionDrawer({
   }
 
   const handleSave = async (values: ClientDataCollectionFormValues & { recommendations: RecommendationsConfig }) => {
+    if (!canEdit) return
     setIsSaving(true)
     try {
       const levelsPayload = (values.levels ?? []).map((l) => ({
@@ -271,6 +276,7 @@ export function ClientDataCollectionDrawer({
             formRef={formRef}
             onCancel={requestClose}
             isSaving={isSaving}
+            readOnly={!canEdit}
           />
         )}
       </DrawerContent>
