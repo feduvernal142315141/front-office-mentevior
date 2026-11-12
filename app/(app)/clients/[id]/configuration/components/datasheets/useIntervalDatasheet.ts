@@ -34,6 +34,26 @@ export function useIntervalDatasheet(
     )
   }, [baselines])
 
+  // Cada día de baseline calcula con su propia cantidad de intervalos; el resto usa la del Type
+  const baselineCountByDate = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const b of baselines ?? []) {
+      if (!b.date) continue
+      const own = b.suggestedNumberOfRecordings
+      if (own != null && own > 0) map.set(getDateKey(parseLocalDate(b.date)), own)
+    }
+    return map
+  }, [baselines])
+  const countFor = useCallback(
+    (dateKey: string) => baselineCountByDate.get(dateKey) ?? numberOfIntervals,
+    [baselineCountByDate, numberOfIntervals],
+  )
+  // Solo define cuántas filas se dibujan; no toca el cálculo de cada día
+  const maxIntervals = useMemo(
+    () => Math.max(numberOfIntervals, ...baselineCountByDate.values()),
+    [numberOfIntervals, baselineCountByDate],
+  )
+
   // Original baseline entries for dirty detection
   const [originalBaselineEntries, setOriginalBaselineEntries] = useState<IntervalWeekEntries>({})
 
@@ -41,7 +61,7 @@ export function useIntervalDatasheet(
   const seededBaselineRef = useRef<string | null>(null)
   useMemo(() => {
     if (!baselines || baselines.length === 0) return
-    const fp = baselines.map((b) => `${b.id}:${b.value}`).join(",")
+    const fp = baselines.map((b) => `${b.id}:${b.value}:${b.suggestedNumberOfRecordings ?? ""}`).join(",")
     if (seededBaselineRef.current === fp) return
     seededBaselineRef.current = fp
 
@@ -50,13 +70,14 @@ export function useIntervalDatasheet(
       for (const bl of baselines) {
         if (!bl.date) continue
         const key = getDateKey(parseLocalDate(bl.date))
-        const existing = next[key] ?? createEmptyIntervalDayEntry(numberOfIntervals)
+        const dayCount = countFor(key)
+        const existing = next[key] ?? createEmptyIntervalDayEntry(dayCount)
         // Baseline value = count of positive intervals
-        const positiveCount = Math.min(bl.value, numberOfIntervals)
-        const intervals: IntervalValue[] = Array.from({ length: numberOfIntervals }, (_, i) =>
+        const positiveCount = Math.min(bl.value, dayCount)
+        const intervals: IntervalValue[] = Array.from({ length: dayCount }, (_, i) =>
           i < positiveCount ? "+" : "-"
         )
-        next[key] = { ...existing, intervals, numberOfIntervals }
+        next[key] = { ...existing, intervals, numberOfIntervals: dayCount }
       }
       return next
     })
@@ -65,15 +86,16 @@ export function useIntervalDatasheet(
     for (const bl of baselines) {
       if (!bl.date) continue
       const key = getDateKey(parseLocalDate(bl.date))
-      const positiveCount = Math.min(bl.value, numberOfIntervals)
-      const intervals: IntervalValue[] = Array.from({ length: numberOfIntervals }, (_, i) =>
+      const dayCount = countFor(key)
+      const positiveCount = Math.min(bl.value, dayCount)
+      const intervals: IntervalValue[] = Array.from({ length: dayCount }, (_, i) =>
         i < positiveCount ? "+" : "-"
       )
-      baselineSnapshot[key] = createEmptyIntervalDayEntry(numberOfIntervals)
+      baselineSnapshot[key] = createEmptyIntervalDayEntry(dayCount)
       baselineSnapshot[key].intervals = intervals
     }
     setOriginalBaselineEntries(baselineSnapshot)
-  }, [baselines, numberOfIntervals])
+  }, [baselines, numberOfIntervals, countFor])
 
   // Min date (first baseline)
   const minDate = useMemo(() => {
@@ -141,8 +163,8 @@ export function useIntervalDatasheet(
 
   // Entry access
   const getEntry = useCallback((dateKey: string): IntervalDayEntry => {
-    return entries[dateKey] ?? createEmptyIntervalDayEntry(numberOfIntervals)
-  }, [entries, numberOfIntervals])
+    return entries[dateKey] ?? createEmptyIntervalDayEntry(countFor(dateKey))
+  }, [entries, countFor])
 
   const isToday = useCallback((day: Date) => isTodayFn(day), [])
   const isBaselineDate = useCallback((dateKey: string) => baselineDateKeys.has(dateKey), [baselineDateKeys])
@@ -150,12 +172,13 @@ export function useIntervalDatasheet(
   // Entry mutations
   const toggleInterval = useCallback((dateKey: string, index: number) => {
     setEntries((prev) => {
-      const entry = prev[dateKey] ?? createEmptyIntervalDayEntry(numberOfIntervals)
+      const entry = prev[dateKey] ?? createEmptyIntervalDayEntry(countFor(dateKey))
+      if (index >= entry.numberOfIntervals) return prev
       const intervals = [...entry.intervals]
       intervals[index] = cycleIntervalValue(intervals[index])
       return { ...prev, [dateKey]: { ...entry, intervals } }
     })
-  }, [numberOfIntervals])
+  }, [countFor])
 
   const setInitials = useCallback((dateKey: string, value: string) => {
     setEntries((prev) => {
@@ -373,6 +396,7 @@ export function useIntervalDatasheet(
     // Dirty tracking
     hasBaselineChanges, hasDcChanges,
     getChangedBaselines, getChangedDcDateKeys,
+    maxIntervals, baselineCountByDate,
     commitBaseline, commitDcValues,
     resetBaseline, resetDcValues,
     // Stats

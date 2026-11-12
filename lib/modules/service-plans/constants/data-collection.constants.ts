@@ -40,11 +40,38 @@ export function typeRequiresUnitOfTime(typeName: string): boolean {
 }
 
 /**
- * Rate y Duration: el baseline es una colección independiente (no hay cita agendada al
+ * Rate: el baseline es una colección independiente (no hay cita agendada al
  * armar el service plan), así que el analista carga a mano la duración de esa sesión.
+ * Duration no la pide: su valor ya está expresado en la unidad de tiempo.
  */
 export function typeRequiresBaselineSessionDuration(typeName: string): boolean {
-  return typeName === "Rate" || typeName === "Duration"
+  return typeName === "Rate"
+}
+
+function typeIsLatency(typeName: string): boolean {
+  return typeName === "Latency" || typeName === "Response latency"
+}
+
+function typeIsInterresponseTime(typeName: string): boolean {
+  return typeName === "Interresponse time" || typeName === "Interresponse Time"
+}
+
+/** Rate, Duration, Latency e Interresponse time: el baseline usa la Unit of time del item en lugar del Period. */
+export function typeUsesItemUnitInBaseline(typeName: string): boolean {
+  return (
+    typeName === "Rate" ||
+    typeName === "Duration" ||
+    typeIsLatency(typeName) ||
+    typeIsInterresponseTime(typeName)
+  )
+}
+
+/**
+ * Duration, Latency e Interresponse time no muestran ni exigen "Suggested number of recordings"
+ * (se conserva el valor por defecto).
+ */
+export function typeShowsSuggestedRecordings(typeName: string): boolean {
+  return typeName !== "Duration" && !typeIsLatency(typeName) && !typeIsInterresponseTime(typeName)
 }
 
 export function typeRequiresInterval(typeGroup: string): boolean {
