@@ -13,6 +13,7 @@ interface FloatingNumberStepperProps {
   hasError?: boolean
   required?: boolean
   suffix?: string
+  disabled?: boolean
 }
 
 export function FloatingNumberStepper({
@@ -24,6 +25,7 @@ export function FloatingNumberStepper({
   hasError,
   required,
   suffix,
+  disabled = false,
 }: FloatingNumberStepperProps) {
   const [displayValue, setDisplayValue] = useState(String(value))
   const [isFocused, setIsFocused] = useState(false)
@@ -89,12 +91,13 @@ export function FloatingNumberStepper({
         >
           <button
             type="button"
+            disabled={disabled}
             onClick={() => {
               const next = clamp(value - 1)
               onChange(next)
               setDisplayValue(String(next))
             }}
-            className="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl border border-gray-200/80 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+            className="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl border border-gray-200/80 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
@@ -103,6 +106,7 @@ export function FloatingNumberStepper({
             <input
               ref={inputRef}
               type="number"
+              disabled={disabled}
               value={displayValue}
               onFocus={handleFocus}
               onBlur={handleBlur}
@@ -119,12 +123,13 @@ export function FloatingNumberStepper({
 
           <button
             type="button"
+            disabled={disabled}
             onClick={() => {
               const next = clamp(value + 1)
               onChange(next)
               setDisplayValue(String(next))
             }}
-            className="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl border border-gray-200/80 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+            className="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl border border-gray-200/80 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>

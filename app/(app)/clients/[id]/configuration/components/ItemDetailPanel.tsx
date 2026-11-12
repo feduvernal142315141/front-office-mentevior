@@ -229,6 +229,7 @@ export function ItemDetailPanel({
   onDirtyChange,
 }: ItemDetailPanelProps) {
   const { canCreate, canEdit } = useModulePermissions(PermissionModule.CLIENT_SERVICE_PLAN)
+  const isReadOnly = !canEdit
   const params = useParams()
   const clientId = typeof params?.id === "string" ? params.id : null
   const { client } = useClientById(clientId)
@@ -617,6 +618,7 @@ export function ItemDetailPanel({
 
   // --- Save ---
   const handleSave = async (values: ClientDataCollectionFormValues) => {
+    if (isReadOnly) return
     // Rate/Duration: el backend exige la duración de la sesión (> 0) en cada baseline
     const missingSessionDuration = needsSessionDuration && baselines.some(
       (b) => b.date && (b.periodCatalogId || rateUnit?.id) && !(Number(b.sessionDuration) > 0)
@@ -800,6 +802,7 @@ export function ItemDetailPanel({
               checked={field.value ?? true}
               onCheckedChange={field.onChange}
               variant="success"
+              disabled={isReadOnly}
             />
           )}
         />
@@ -824,7 +827,7 @@ export function ItemDetailPanel({
                   hasError={!!errors.type}
                   searchable
                   required
-                  disabled={isLoadingCatalog}
+                  disabled={isReadOnly || isLoadingCatalog}
                 />
               )}
             />
@@ -846,6 +849,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                       hasError={!!errors.weeklyDailyValue}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -868,6 +872,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
                       hasError={!!errors.unitOfTime}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -885,6 +890,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                       hasError={!!errors.weeklyDailyValue}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -910,7 +916,7 @@ export function ItemDetailPanel({
                       hasError={!!errors.unitMeasurementCatalogId}
                       searchable
                       required
-                      disabled={isLoadingUnitMeasurement}
+                      disabled={isReadOnly || isLoadingUnitMeasurement}
                     />
                   )}
                 />
@@ -928,6 +934,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                       hasError={!!errors.dailyValue}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -945,6 +952,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                       hasError={!!errors.weeklyDailyValue}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -968,6 +976,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
                       hasError={!!errors.unitOfTime}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -987,6 +996,7 @@ export function ItemDetailPanel({
                       type="number"
                       inputMode="numeric"
                       hasError={!!errors.suggestedNumberOfRecordings}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -1005,6 +1015,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                       hasError={!!errors.dailyValue}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -1022,6 +1033,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_VALUE_TYPE_OPTIONS}
                       hasError={!!errors.weeklyDailyValue}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -1045,6 +1057,7 @@ export function ItemDetailPanel({
                       min={1}
                       max={9999}
                       hasError={!!errors.intervalLength}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -1062,6 +1075,7 @@ export function ItemDetailPanel({
                       onBlur={field.onBlur}
                       options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
                       hasError={!!errors.unitOfTime}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -1080,6 +1094,7 @@ export function ItemDetailPanel({
                       type="number"
                       inputMode="numeric"
                       hasError={!!errors.suggestedNumberOfRecordings}
+                      disabled={isReadOnly}
                     />
                   )}
                 />
@@ -1096,6 +1111,7 @@ export function ItemDetailPanel({
               options={HYPOTHESIZED_FUNCTION_OPTIONS}
               tone="neutral"
               placeholder="Select functions"
+              disabled={isReadOnly}
             />
           </div>
 
@@ -1106,7 +1122,7 @@ export function ItemDetailPanel({
               onChange={setTeachingProcedures}
               options={teachingProcedureOptions}
               searchable
-              disabled={isLoadingTeachingProcedures}
+              disabled={isReadOnly || isLoadingTeachingProcedures}
               tone="neutral"
               placeholder="Select teaching procedures"
               searchPlaceholder="Search teaching procedures..."
@@ -1139,6 +1155,7 @@ export function ItemDetailPanel({
                       }))
                     }
                     options={ENVIRONMENTAL_CHANGES_DISPLAY_OPTIONS}
+                    disabled={isReadOnly}
                   />
                 </div>
 
@@ -1151,7 +1168,7 @@ export function ItemDetailPanel({
                   label="Also list them under the chart, with their dates"
                   /* En "List below only" no hay nada dibujado arriba: apagar el
                      listado dejaría los cambios sin ninguna representación. */
-                  disabled={envChanges.displayMode === "LIST_ONLY"}
+                  disabled={isReadOnly || envChanges.displayMode === "LIST_ONLY"}
                 />
               </div>
 
@@ -1183,6 +1200,7 @@ export function ItemDetailPanel({
                   onBlur={field.onBlur}
                   hasError={!!errors.topography}
                   rows={8}
+                  disabled={isReadOnly}
                 />
               )}
             />
@@ -1203,6 +1221,7 @@ export function ItemDetailPanel({
                     onBlur={field.onBlur}
                     hasError={!!errors.procedures}
                     rows={8}
+                    disabled={isReadOnly}
                   />
                 )}
               />
@@ -1219,7 +1238,7 @@ export function ItemDetailPanel({
                 <span className="ml-2 text-sm font-normal text-slate-500">({baselines.length})</span>
               )}
             </h3>
-            {canCreate && (
+            {canCreate && canEdit && (
             <Button
               type="button"
               onClick={() => {
@@ -1267,7 +1286,7 @@ export function ItemDetailPanel({
           baselines={baselines}
           externalTitle
           hideButtons
-          disableActions={baselines.length === 0}
+          disableActions={isReadOnly || baselines.length === 0}
           onModalChange={setIsModalOpen}
           objetiveType={objetiveType}
           onObjetiveTypeChange={setObjetiveType}
