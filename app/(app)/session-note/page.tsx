@@ -13,6 +13,7 @@ import { useUserById } from "@/lib/modules/users/hooks/use-user-by-id"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { useAlert } from "@/lib/contexts/alert-context"
+import type { AppointmentNote } from "@/lib/types/appointment-note.types"
 import { deriveNoteStatusInfo } from "./hooks/useNoteStatus"
 import { SessionNoteForm } from "./components/SessionNoteForm"
 import { SessionNote97155Form } from "./components/SessionNote97155Form"
@@ -24,7 +25,6 @@ import { useSessionNote97156Form } from "./hooks/useSessionNote97156Form"
 
 export default function SessionNotePage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
 
   const appointmentId = searchParams.get("appointmentId")
   const clientId = searchParams.get("clientId")
@@ -118,6 +118,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
     setClientCaregiverId,
     resolvedClientId,
     caregiversLoading,
+    note,
     noteStatus,
     noteId,
     refetchNote,
@@ -140,7 +141,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
       noteError={noteError}
       statusInfo={statusInfo}
       isChangingStatus={isChangingStatus}
-      onStatusChange={useNoteStatusHandler(appointmentId, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      onStatusChange={useNoteStatusHandler(appointmentId, note, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
       appointmentId={appointmentId}
     >
       <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
@@ -228,6 +229,7 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
     setClientCaregiverId,
     resolvedClientId,
     caregiversLoading,
+    note,
     noteStatus,
     refetchNote,
   } = useSessionNote97155Form({ appointmentId, clientId })
@@ -249,7 +251,7 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
       noteError={noteError}
       statusInfo={statusInfo}
       isChangingStatus={isChangingStatus}
-      onStatusChange={useNoteStatusHandler(appointmentId, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      onStatusChange={useNoteStatusHandler(appointmentId, note, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
       appointmentId={appointmentId}
     >
       <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
@@ -335,6 +337,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
     setClientCaregiverId,
     resolvedClientId,
     caregiversLoading,
+    note,
     noteStatus,
     refetchNote,
   } = useSessionNote97156Form({ appointmentId, clientId })
@@ -356,7 +359,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
       noteError={noteError}
       statusInfo={statusInfo}
       isChangingStatus={isChangingStatus}
-      onStatusChange={useNoteStatusHandler(appointmentId, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
+      onStatusChange={useNoteStatusHandler(appointmentId, note, isChangingStatus, setIsChangingStatus, refetchNote, alert)}
       appointmentId={appointmentId}
     >
       <form onSubmit={(e) => { e.preventDefault(); handleSaveAndRedirect() }} noValidate>
@@ -402,6 +405,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
 // ─── Shared status change handler ───
 function useNoteStatusHandler(
   appointmentId: string,
+  note: Pick<AppointmentNote, "caregiverSignatureImage" | "caregiverSignatureChecked"> | null,
   isChangingStatus: boolean,
   setIsChangingStatus: (v: boolean) => void,
   refetchNote: () => Promise<void>,
@@ -410,6 +414,13 @@ function useNoteStatusHandler(
   return useCallback(async (newStatus: "lock" | "active") => {
     if (!appointmentId || isChangingStatus) return
     if (newStatus === "lock") {
+      if (!note?.caregiverSignatureImage?.trim() && note?.caregiverSignatureChecked !== true) {
+        alert.error(
+          "Caregiver signature required",
+          "Add and save the caregiver signature before locking this note for billing.",
+        )
+        return
+      }
       alert.confirm({
         title: "Lock Note for Billing",
         description: "This action is permanent. The note will be sent to billing and cannot be unlocked.",
@@ -434,7 +445,7 @@ function useNoteStatusHandler(
       else toast.error("Failed to re-activate note")
     } catch { toast.error("Failed to re-activate note") }
     finally { setIsChangingStatus(false) }
-  }, [appointmentId, isChangingStatus, refetchNote, alert])
+  }, [appointmentId, note, isChangingStatus, refetchNote, alert])
 }
 
 // ─── Shared layout shell for both form views ───

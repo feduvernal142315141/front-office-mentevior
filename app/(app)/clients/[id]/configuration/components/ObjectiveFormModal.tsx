@@ -89,6 +89,7 @@ interface ObjectiveFormModalProps {
   direction: ObjectiveDirection
   /** Builds the Mastery criteria name from the row values, so the Name field stays live-synced */
   buildAutoName?: (objective: ObjectiveRow) => string
+  readOnly?: boolean
 }
 
 export function ObjectiveFormModal({
@@ -101,6 +102,7 @@ export function ObjectiveFormModal({
   periodSelectOptions,
   direction,
   buildAutoName,
+  readOnly = false,
 }: ObjectiveFormModalProps) {
   const isEdit = !!objective?.recordId
 
@@ -126,6 +128,7 @@ export function ObjectiveFormModal({
 
   const update = useCallback(
     (field: keyof ObjectiveRow, value: string) => {
+      if (readOnly) return
       setForm((prev) => {
         const next = { ...prev, [field]: value }
         // Auto-fill duration period when smart criteria period is selected
@@ -145,10 +148,11 @@ export function ObjectiveFormModal({
         return next
       })
     },
-    [buildAutoName, autoNameSeed]
+    [buildAutoName, autoNameSeed, readOnly]
   )
 
   const handleSave = useCallback(() => {
+    if (readOnly) return
     const errors = validateObjectiveForm(form)
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
@@ -157,7 +161,7 @@ export function ObjectiveFormModal({
     setFieldErrors({})
     onSave(form)
     onClose()
-  }, [form, onSave, onClose])
+  }, [form, onSave, onClose, readOnly])
 
   // ── Cambios sin guardar ─────────────────────────────────────────────────
   const formSnapshot = useMemo(() => JSON.stringify(form), [form])
@@ -168,6 +172,7 @@ export function ObjectiveFormModal({
   const requestClose = useCallback(() => guard(onClose), [guard, onClose])
 
   const handleDelete = useCallback(async () => {
+    if (readOnly) return
     if (!objective) return
     if (objective.recordId) {
       setIsDeleting(true)
@@ -187,9 +192,10 @@ export function ObjectiveFormModal({
     }
     onDelete(objective)
     onClose()
-  }, [objective, mode, onDelete, onClose])
+  }, [objective, mode, onDelete, onClose, readOnly])
 
   const handleClear = useCallback(() => {
+    if (readOnly) return
     setForm((prev) => {
       const cleared = {
         ...createEmptyObjective(direction),
@@ -200,13 +206,13 @@ export function ObjectiveFormModal({
     })
     setAutoNameSeed("")
     setFieldErrors({})
-  }, [buildAutoName, direction])
+  }, [buildAutoName, direction, readOnly])
 
   return (
     <CustomModal
       open={open}
       onOpenChange={(next) => { if (!next) requestClose() }}
-      title={isEdit ? "Edit Objective" : "New Objective"}
+      title={readOnly ? "View Objective" : isEdit ? "Edit Objective" : "New Objective"}
       maxWidthClassName="sm:max-w-[720px]"
       allowSelectOverflow
       contentClassName="sm:!overflow-visible"
@@ -221,6 +227,7 @@ export function ObjectiveFormModal({
           rows={2}
           required
           hasError={!!fieldErrors.name}
+          disabled={readOnly}
         />
 
         {/* Dates */}
@@ -231,11 +238,13 @@ export function ObjectiveFormModal({
             onChange={(v) => update("startDate", v)}
             required
             hasError={!!fieldErrors.startDate}
+            disabled={readOnly}
           />
           <PremiumDatePicker
             label="Estimated End Date"
             value={form.estimatedEndDate}
             onChange={(v) => update("estimatedEndDate", v)}
+            disabled={readOnly}
           />
           {form.endDate && (
             <PremiumDatePicker
@@ -258,6 +267,7 @@ export function ObjectiveFormModal({
               options={OPERATOR_SMART_CRITERIA_OPTIONS}
               required
               hasError={!!fieldErrors.operatorSmartCriteria}
+              disabled={readOnly}
             />
             <FloatingInput
               label="Value"
@@ -267,6 +277,7 @@ export function ObjectiveFormModal({
               inputMode="numeric"
               required
               hasError={!!fieldErrors.valueSmartCriteria}
+              disabled={readOnly}
             />
             <FloatingSelect
               label="Period"
@@ -275,6 +286,7 @@ export function ObjectiveFormModal({
               options={periodSelectOptions}
               required
               hasError={!!fieldErrors.periodSmartCriteriaCatalogId}
+              disabled={readOnly}
             />
           </div>
         </div>
@@ -291,6 +303,7 @@ export function ObjectiveFormModal({
               inputMode="numeric"
               required
               hasError={!!fieldErrors.valueDuration}
+              disabled={readOnly}
             />
             <FloatingSelect
               label="Period"
@@ -299,6 +312,7 @@ export function ObjectiveFormModal({
               options={periodSelectOptions}
               required
               hasError={!!fieldErrors.periodDurationCatalogId}
+              disabled={readOnly}
             />
           </div>
         </div>
@@ -307,7 +321,7 @@ export function ObjectiveFormModal({
       {/* Footer */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-gray-100">
         <div>
-          {!isEdit && (
+          {!readOnly && !isEdit && (
             <Button type="button" variant="secondary" onClick={handleClear} className="!text-red-600 !border-red-200 hover:!bg-red-50">
               Clear
             </Button>
@@ -315,11 +329,13 @@ export function ObjectiveFormModal({
         </div>
         <div className="flex items-center gap-3">
           <Button type="button" variant="secondary" onClick={requestClose}>
-            Cancel
+            {readOnly ? "Close" : "Cancel"}
           </Button>
-          <Button type="button" onClick={handleSave}>
-            {isEdit ? "Update" : "Create"}
-          </Button>
+          {!readOnly && (
+            <Button type="button" onClick={handleSave}>
+              {isEdit ? "Update" : "Create"}
+            </Button>
+          )}
         </div>
       </div>
     </CustomModal>

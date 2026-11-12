@@ -536,6 +536,7 @@ export function ObjectivesTabContent({
         periodSelectOptions={periodSelectOptions}
         direction={direction}
         buildAutoName={buildLiveName}
+        readOnly={actionsDisabled}
       />
 
       <GenerateObjectivesModal
