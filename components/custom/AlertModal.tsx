@@ -191,14 +191,7 @@ export function AlertModal({ alert, onClose, onConfirm, onDiscard }: AlertModalP
                         </AlertDialogAction>
                       </>
                     ) : (
-                      <Button
-                        variant={primaryActionVariant}
-                        onClick={() => {
-                          onClose()
-                          alert.onAcknowledge?.()
-                        }}
-                        className={primaryButtonClassName}
-                      >
+                      <Button variant={primaryActionVariant} onClick={onClose} className={primaryButtonClassName}>
                         OK
                       </Button>
                     )}

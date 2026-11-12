@@ -122,7 +122,7 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
   } = useSessionNoteForm({ appointmentId, clientId })
 
   const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
-  const { isChangingStatus, onStatusChange, caregiverSignatureHighlightRequest } = useNoteStatusHandler(appointmentId, note, refetchNote)
+  const { isChangingStatus, onStatusChange } = useNoteStatusHandler(appointmentId, note, refetchNote)
 
   const handleSaveAndRedirect = useCallback(async () => {
     const result = await handleSubmit()
@@ -167,7 +167,6 @@ function SessionNote97153FormView({ appointmentId, clientId, billingCode }: { ap
           onProviderSignatureChange={setProviderSignatureImage}
           useCheckmarkSignature={useCheckmarkSignature}
           caregiverSignatureChecked={caregiverSignatureChecked}
-          caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
@@ -231,7 +230,7 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
   } = useSessionNote97155Form({ appointmentId, clientId })
 
   const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
-  const { isChangingStatus, onStatusChange, caregiverSignatureHighlightRequest } = useNoteStatusHandler(appointmentId, note, refetchNote)
+  const { isChangingStatus, onStatusChange } = useNoteStatusHandler(appointmentId, note, refetchNote)
 
   const handleSaveAndRedirect = useCallback(async () => {
     const result = await handleSubmit()
@@ -272,7 +271,6 @@ function SessionNote97155FormView({ appointmentId, clientId, billingCode }: { ap
           onProviderSignatureChange={setProviderSignatureImage}
           useCheckmarkSignature={useCheckmarkSignature}
           caregiverSignatureChecked={caregiverSignatureChecked}
-          caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
@@ -338,7 +336,7 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
   } = useSessionNote97156Form({ appointmentId, clientId })
 
   const statusInfo = deriveNoteStatusInfo(noteStatus, canAdminAction)
-  const { isChangingStatus, onStatusChange, caregiverSignatureHighlightRequest } = useNoteStatusHandler(appointmentId, note, refetchNote)
+  const { isChangingStatus, onStatusChange } = useNoteStatusHandler(appointmentId, note, refetchNote)
 
   const handleSaveAndRedirect = useCallback(async () => {
     const result = await handleSubmit()
@@ -382,7 +380,6 @@ function SessionNote97156FormView({ appointmentId, clientId, billingCode }: { ap
           onProviderSignatureChange={setProviderSignatureImage}
           useCheckmarkSignature={useCheckmarkSignature}
           caregiverSignatureChecked={caregiverSignatureChecked}
-          caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
           onCaregiverCheckedChange={setCaregiverChecked}
           onCaregiverSignatureChange={setCaregiverSignatureImage}
           caregiverSignatureImage={caregiverSignatureImage}
@@ -407,7 +404,6 @@ function useNoteStatusHandler(
 ) {
   const alert = useAlert()
   const [isChangingStatus, setIsChangingStatus] = useState(false)
-  const [caregiverSignatureHighlightRequest, setCaregiverSignatureHighlightRequest] = useState(0)
 
   const onStatusChange = useCallback(async (newStatus: "lock" | "active") => {
     if (!appointmentId || isChangingStatus) return
@@ -416,7 +412,6 @@ function useNoteStatusHandler(
         alert.error(
           "Caregiver signature required",
           "Add and save the caregiver signature before locking this note for billing.",
-          () => setCaregiverSignatureHighlightRequest((request) => request + 1),
         )
         return
       }
@@ -446,7 +441,7 @@ function useNoteStatusHandler(
     finally { setIsChangingStatus(false) }
   }, [appointmentId, note, isChangingStatus, refetchNote, alert])
 
-  return { isChangingStatus, onStatusChange, caregiverSignatureHighlightRequest }
+  return { isChangingStatus, onStatusChange }
 }
 
 // ─── Shared layout shell for both form views ───

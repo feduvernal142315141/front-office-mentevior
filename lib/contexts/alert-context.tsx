@@ -72,8 +72,8 @@ export function AlertProvider({ children }: { children: ReactNode }) {
   )
 
   const error = useCallback(
-    (title: string, description?: string, onAcknowledge?: () => void) => {
-      open({ type: "error", title, description, onAcknowledge, autoCloseDuration: 0 })
+    (title: string, description?: string) => {
+      open({ type: "error", title, description, autoCloseDuration: 0 })
     },
     [open]
   )

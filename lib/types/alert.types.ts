@@ -15,7 +15,6 @@ export interface AlertConfig {
   onConfirm?: () => void | Promise<void>
   onCancel?: () => void
   onDiscard?: () => void
-  onAcknowledge?: () => void
   autoCloseDuration?: number
 }
 
@@ -26,13 +25,13 @@ export interface AlertState extends AlertConfig {
 
 export interface AlertActions {
   success: (title: string, description?: string) => void
-  error: (title: string, description?: string, onAcknowledge?: () => void) => void
+  error: (title: string, description?: string) => void
   warning: (title: string, description?: string) => void
   info: (title: string, description?: string) => void
   confirm: (options: ConfirmOptions) => void
   close: () => void
   showSuccess: (title: string, description?: string) => void
-  showError: AlertActions["error"]
+  showError: (title: string, description?: string) => void
   showWarning: (title: string, description?: string) => void
   showInfo: (title: string, description?: string) => void
   showConfirm: (options: ConfirmOptions) => void

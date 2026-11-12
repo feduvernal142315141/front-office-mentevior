@@ -17,7 +17,6 @@ import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import type { RecommendationCatalogItem } from "@/lib/types/client-service-plan.types"
 import type { NoteStatus } from "@/lib/types/appointment-note.types"
 import { deriveNoteStatusInfo } from "../hooks/useNoteStatus"
-import { CaregiverSignatureRow } from "./CaregiverSignatureRow"
 import type {
   AppointmentNoteCategory,
   AppointmentNoteRecipient,
@@ -61,7 +60,6 @@ interface SessionNoteFormProps {
   onProviderSignatureChange?: (base64: string | null) => void
   useCheckmarkSignature?: boolean
   caregiverSignatureChecked?: boolean
-  caregiverSignatureHighlightRequest?: number
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
@@ -98,7 +96,6 @@ export function SessionNoteForm({
   onProviderSignatureChange,
   useCheckmarkSignature,
   caregiverSignatureChecked,
-  caregiverSignatureHighlightRequest = 0,
   onCaregiverCheckedChange,
   onCaregiverSignatureChange,
   caregiverSignatureImage,
@@ -389,7 +386,6 @@ export function SessionNoteForm({
         serviceDate={serviceDetails?.date}
         useCheckmarkSignature={useCheckmarkSignature}
         caregiverChecked={caregiverSignatureChecked}
-        caregiverSignatureHighlightRequest={caregiverSignatureHighlightRequest}
         onCaregiverCheckedChange={onCaregiverCheckedChange}
         onCaregiverSignatureChange={onCaregiverSignatureChange}
         caregiverSignatureImage={caregiverSignatureImage}
@@ -517,14 +513,13 @@ function CategoryCard({ category, categoryItems, onValueChange, onEnvChangeChang
   )
 }
 
-function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, caregiverSignatureHighlightRequest, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, caregiverOptions, clientCaregiverId, onClientCaregiverChange, clientCaregiverError, caregiversEmpty, caregiversProfileHref, notCanEdit }: {
+function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureChange, serviceDate, useCheckmarkSignature, caregiverChecked, onCaregiverCheckedChange, onCaregiverSignatureChange, caregiverSignatureImage, caregiverOptions, clientCaregiverId, onClientCaregiverChange, clientCaregiverError, caregiversEmpty, caregiversProfileHref, notCanEdit }: {
   provider: AppointmentNoteProvider | null
   providerSignatureUrl?: string | null
   onProviderSignatureChange?: (base64: string | null) => void
   serviceDate?: string | null
   useCheckmarkSignature?: boolean
   caregiverChecked?: boolean
-  caregiverSignatureHighlightRequest: number
   onCaregiverCheckedChange?: (checked: boolean) => void
   onCaregiverSignatureChange?: (base64: string | null) => void
   caregiverSignatureImage?: string | null
@@ -611,10 +606,7 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
           </div>
 
           {/* Row 2 — Caregiver */}
-          <CaregiverSignatureRow
-            highlightRequest={caregiverSignatureHighlightRequest}
-            hasSignature={useCheckmarkSignature ? !!caregiverChecked : !!caregiverSignatureImage?.trim()}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 border-b border-[#037ECC]/10">
             {/* Caregiver info */}
             <div className="px-4 sm:px-6 py-5 border-b sm:border-b-0 sm:border-r border-[#037ECC]/10">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70 mb-2">Caregiver</span>
@@ -716,7 +708,7 @@ function SignatureSection({ provider, providerSignatureUrl, onProviderSignatureC
                 )}
               </div>
             </div>
-          </CaregiverSignatureRow>
+          </div>
 
           {/* Row 3 — Date */}
           <div className="px-6 py-4">
