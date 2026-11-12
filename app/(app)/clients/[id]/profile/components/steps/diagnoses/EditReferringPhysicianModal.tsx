@@ -21,6 +21,7 @@ import { usePhysicianCatalogs } from "./usePhysicianCatalogs"
 
 interface EditReferringPhysicianModalProps {
   open: boolean
+  readOnly?: boolean
   physicianId: string | null
   onClose: () => void
   /** Datos ya resueltos a nombre legible, para refrescar la tarjeta del diagnóstico. */
@@ -29,6 +30,7 @@ interface EditReferringPhysicianModalProps {
 
 export function EditReferringPhysicianModal({
   open,
+  readOnly = false,
   physicianId,
   onClose,
   onSaved,
@@ -92,8 +94,8 @@ export function EditReferringPhysicianModal({
       onOpenChange={(next) => {
         if (!next) handleClose()
       }}
-      title="Edit referring physician"
-      description="Update physician details without leaving diagnosis"
+      title={readOnly ? "View referring physician" : "Edit referring physician"}
+      description={readOnly ? undefined : "Update physician details without leaving diagnosis"}
       maxWidthClassName="sm:max-w-[860px]"
       constrainHeight
     >
@@ -101,7 +103,7 @@ export function EditReferringPhysicianModal({
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            void handleSubmit()
+            if (!readOnly) void handleSubmit()
           }}
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
@@ -126,6 +128,7 @@ export function EditReferringPhysicianModal({
             )}
 
             <PhysicianFormFields
+              readOnly={readOnly}
               isEditing
               countries={catalogs.countries}
               states={catalogs.states}
@@ -140,15 +143,17 @@ export function EditReferringPhysicianModal({
 
           <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4">
             <Button type="button" variant="secondary" onClick={handleClose} disabled={isUpdating}>
-              Cancel
+              {readOnly ? "Close" : "Cancel"}
             </Button>
-            <Button
-              type="submit"
-              loading={isUpdating}
-              disabled={isUpdating || isLoadingPhysician || !physician}
-            >
-              Save physician
-            </Button>
+            {!readOnly && (
+              <Button
+                type="submit"
+                loading={isUpdating}
+                disabled={isUpdating || isLoadingPhysician || !physician}
+              >
+                Save physician
+              </Button>
+            )}
           </div>
         </form>
       </FormProvider>

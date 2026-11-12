@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Home, Building2, Edit2, Trash2 } from "lucide-react"
+import { Home, Building2, Edit2, Eye, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -175,6 +175,7 @@ function formatPlaceServiceLabel(name?: string, code?: string, fallback = "") {
 export function Step2Addresses({
   clientId,
   isCreateMode = false,
+  readOnly = false,
   onSaveSuccess,
   onValidationError,
   onProgressUpdate,
@@ -328,6 +329,7 @@ export function Step2Addresses({
   }
 
   const handleSourceTypeChange = async (sourceType: AddressSourceType) => {
+    if (readOnly) return
     form.setValue("sourceType", sourceType)
 
     if (sourceType === "agency" && agencyAddresses.length === 1 && resolvedClientId) {
@@ -513,7 +515,7 @@ export function Step2Addresses({
                     value: address.id,
                     label: `${address.nickName} - ${address.address}, ${address.city}`,
                   }))}
-                  disabled={isLoadingAgencyAddresses}
+                  disabled={readOnly || isLoadingAgencyAddresses}
                   hasError={!!fieldState.error}
                   required
                   searchable
@@ -545,7 +547,7 @@ export function Step2Addresses({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   options={placesOfService.map((place) => ({ value: place.id, label: place.name }))}
-                  disabled={isLoadingPlaces || isAgencyEditMode}
+                  disabled={readOnly || isLoadingPlaces || isAgencyEditMode}
                   hasError={!!fieldState.error}
                   required
                   searchable
@@ -569,7 +571,7 @@ export function Step2Addresses({
                   }}
                   onBlur={field.onBlur}
                   options={countries.map((country) => ({ value: country.id, label: country.name }))}
-                  disabled={isLoadingCountries || isAgencyEditMode}
+                  disabled={readOnly || isLoadingCountries || isAgencyEditMode}
                   hasError={!!fieldState.error}
                   required
                   searchable
@@ -590,7 +592,7 @@ export function Step2Addresses({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   options={states.map((state) => ({ value: state.id, label: state.name }))}
-                  disabled={!selectedCountryId || isLoadingStates || isAgencyEditMode}
+                  disabled={readOnly || !selectedCountryId || isLoadingStates || isAgencyEditMode}
                   hasError={!!fieldState.error}
                   required
                   searchable
@@ -612,7 +614,7 @@ export function Step2Addresses({
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
                   required
-                  disabled={isAgencyEditMode}
+                  disabled={readOnly || isAgencyEditMode}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -633,7 +635,7 @@ export function Step2Addresses({
                   required
                   inputMode="numeric"
                   maxLength={5}
-                  disabled={isAgencyEditMode}
+                  disabled={readOnly || isAgencyEditMode}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -652,7 +654,7 @@ export function Step2Addresses({
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
                   required
-                  disabled={isAgencyEditMode}
+                  disabled={readOnly || isAgencyEditMode}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -670,7 +672,7 @@ export function Step2Addresses({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   hasError={!!fieldState.error}
-                  disabled={isAgencyEditMode}
+                  disabled={readOnly || isAgencyEditMode}
                 />
                 {fieldState.error && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
               </div>
@@ -681,6 +683,7 @@ export function Step2Addresses({
     },
   ]
 
+  const DetailsIcon = readOnly ? Eye : Edit2
   const columns: CustomTableColumn<ClientAddress>[] = [
     {
       key: "nickName",
@@ -757,7 +760,7 @@ export function Step2Addresses({
             className={cn(
               "group/edit relative h-9 w-9",
               "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-blue-50 to-blue-100/80",
+              "bg-linear-to-b from-blue-50 to-blue-100/80",
               "border border-blue-200/60 shadow-sm shadow-blue-900/5",
               "hover:from-blue-100 hover:to-blue-200/90",
               "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
@@ -765,31 +768,33 @@ export function Step2Addresses({
               "transition-all duration-200 ease-out",
               "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
             )}
-            title="Edit address"
-            aria-label="Edit address"
+            title={readOnly ? "View address" : "Edit address"}
+            aria-label={readOnly ? "View address" : "Edit address"}
           >
-            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            <DetailsIcon className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => setDeletingAddress(address)}
-            className={cn(
-              "group/trash relative h-9 w-9",
-              "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-red-50 to-red-100/80",
-              "border border-red-200/60 shadow-sm",
-              "hover:from-red-100 hover:to-red-200/90",
-              "hover:border-red-300/80 hover:shadow-md",
-              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-              "transition-all duration-200 ease-out",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30 focus-visible:ring-offset-2"
-            )}
-            title="Delete address"
-            aria-label="Delete address"
-          >
-            <Trash2 className="w-4 h-4 text-red-500 group-hover/trash:text-red-700 transition-colors duration-200" />
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => setDeletingAddress(address)}
+              className={cn(
+                "group/trash relative h-9 w-9",
+                "flex items-center justify-center rounded-xl",
+                "bg-linear-to-b from-red-50 to-red-100/80",
+                "border border-red-200/60 shadow-sm",
+                "hover:from-red-100 hover:to-red-200/90",
+                "hover:border-red-300/80 hover:shadow-md",
+                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30 focus-visible:ring-offset-2"
+              )}
+              title="Delete address"
+              aria-label="Delete address"
+            >
+              <Trash2 className="w-4 h-4 text-red-500 group-hover/trash:text-red-700 transition-colors duration-200" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -799,7 +804,7 @@ export function Step2Addresses({
   const activeSourceSection = activeSourceType
     ? sourceSections.find((section) => section.id === activeSourceType)
     : undefined
-  const isManualFormActive = addressModalStage === "edit-form" && activeSourceType === "manual"
+
   const hasPrefilledAddressData = Boolean(
     form.getValues("nickName") ||
       form.getValues("selectedAgencyAddressId") ||
@@ -826,9 +831,11 @@ export function Step2Addresses({
           <p className="text-slate-600 mt-1">Manage service and residence addresses for this patient</p>
         </div>
 
-        <Button type="button" onClick={handleOpenModal}>
-          Add address
-        </Button>
+        {!readOnly && (
+          <Button type="button" onClick={handleOpenModal}>
+            Add address
+          </Button>
+        )}
       </div>
 
       {clientAddressesError && (
@@ -859,20 +866,24 @@ export function Step2Addresses({
           }
         }}
         title={
-          editingAddress
-            ? "Edit Address"
-            : addressModalStage === "select-source"
-            ? "New Address"
-            : activeSourceSection?.label ?? "New Address"
+          readOnly
+            ? "View Address"
+            : editingAddress
+              ? "Edit Address"
+              : addressModalStage === "select-source"
+                ? "New Address"
+                : activeSourceSection?.label ?? "New Address"
         }
         description={
-          isAgencyEditMode
-            ? "Agency addresses cannot be edited. You can only change the Primary status."
-            : editingAddress
-            ? "Update the address details"
-            : addressModalStage === "select-source"
-            ? "Choose where this address comes from"
-            : activeSourceSection?.helper
+          readOnly
+            ? undefined
+            : isAgencyEditMode
+              ? "Agency addresses cannot be edited. You can only change the Primary status."
+              : editingAddress
+                ? "Update the address details"
+                : addressModalStage === "select-source"
+                  ? "Choose where this address comes from"
+                  : activeSourceSection?.helper
         }
         maxWidthClassName="sm:max-w-[600px]"
         allowSelectOverflow
@@ -880,6 +891,7 @@ export function Step2Addresses({
         <form
           onSubmit={async (event) => {
             event.preventDefault()
+            if (readOnly) return
             if (isAgencyEditMode && editingAddress) {
               const isPrimary = form.getValues("isPrimary")
               const result = await updatePrimary({ id: editingAddress.id, isPrimary })
@@ -914,7 +926,7 @@ export function Step2Addresses({
                       "transition-all duration-200",
                       "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/30 focus-visible:ring-offset-2"
                     )}
-                    disabled={isCreating || isUpdating}
+                    disabled={readOnly || isCreating || isUpdating}
                   >
                     <span className={cn(
                       "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
@@ -945,7 +957,7 @@ export function Step2Addresses({
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                           hasError={!!fieldState.error}
-                          disabled={isAgencyEditMode}
+                          disabled={readOnly || isAgencyEditMode}
                         />
                         {fieldState.error && <p className="mt-1.5 text-xs text-red-500">{fieldState.error.message}</p>}
                       </div>
@@ -964,6 +976,7 @@ export function Step2Addresses({
                   control={form.control}
                   render={({ field }) => (
                     <PremiumSwitch
+                      disabled={readOnly}
                       checked={Boolean(field.value)}
                       onCheckedChange={field.onChange}
                       label={field.value ? "Primary address" : "Secondary address"}
@@ -985,7 +998,7 @@ export function Step2Addresses({
               type="button"
               variant="secondary"
               onClick={() => {
-                if (isAgencyEditMode) {
+                if (readOnly || isAgencyEditMode) {
                   handleCloseModal()
                   return
                 }
@@ -997,10 +1010,10 @@ export function Step2Addresses({
               }}
               disabled={isCreating || isUpdating}
             >
-              {isAgencyEditMode || addressModalStage !== "edit-form" ? "Cancel" : "Back"}
+              {readOnly ? "Close" : isAgencyEditMode || addressModalStage !== "edit-form" ? "Cancel" : "Back"}
             </Button>
 
-            {addressModalStage === "edit-form" && (
+            {!readOnly && addressModalStage === "edit-form" && (
               <Button
                 type="submit"
                 loading={isCreating || isUpdating}
@@ -1014,10 +1027,10 @@ export function Step2Addresses({
       </CustomModal>
 
       <DeleteConfirmModal
-        isOpen={!!deletingAddress}
+        isOpen={!readOnly && !!deletingAddress}
         onClose={() => setDeletingAddress(null)}
         onConfirm={async () => {
-          if (!deletingAddress) return
+          if (readOnly || !deletingAddress) return
           const progress = await remove(deletingAddress.id)
           if (progress !== null) {
             onProgressUpdate?.(progress)

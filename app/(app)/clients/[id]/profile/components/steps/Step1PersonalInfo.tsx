@@ -18,6 +18,7 @@ interface Step1PersonalInfoProps {
   client: Client | null
   clientId: string
   isCreateMode?: boolean
+  readOnly?: boolean
   onSaveSuccess: (data: unknown) => void
   onValidationError: (errors: Record<string, string>) => void
   registerSubmit: (submitFn: () => Promise<void>) => void
@@ -26,14 +27,14 @@ interface Step1PersonalInfoProps {
   onDirtyChange?: (isDirty: boolean) => void
 }
 
-export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess, onValidationError, registerSubmit, registerReset, registerValidation, onDirtyChange }: Step1PersonalInfoProps) {
+export function Step1PersonalInfo({ client, isCreateMode = false, readOnly = false, onSaveSuccess, onValidationError, registerSubmit, registerReset, registerValidation, onDirtyChange }: Step1PersonalInfoProps) {
   const [isEditingSSN, setIsEditingSSN] = useState(false)
   const { languages, isLoading: isLoadingLanguages } = useLanguagesCatalog()
   const { genders, isLoading: isLoadingGenders } = useGenderCatalog()
 
   const { form, handleSubmit, isValid } = useStep1Form({ client, isCreateMode, onSaveSuccess, onValidationError })
 
-  const languageOptions = languages.map((lang) => ({ 
+  const languageOptions = languages.map((lang) => ({
     value: lang.id, 
     label: lang.name 
   }))
@@ -44,8 +45,8 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
   }))
 
   useEffect(() => {
-    registerSubmit(handleSubmit)
-  }, [handleSubmit, registerSubmit])
+    if (!readOnly) registerSubmit(handleSubmit)
+  }, [handleSubmit, readOnly, registerSubmit])
 
   useEffect(() => {
     registerReset?.(() => {
@@ -81,6 +82,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
           render={({ field, fieldState }) => (
             <div>
               <FloatingInput
+                disabled={readOnly}
                 label="First Name"
                 value={field.value}
                 onChange={field.onChange}
@@ -105,6 +107,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
           render={({ field, fieldState }) => (
             <div>
               <FloatingInput
+                disabled={readOnly}
                 label="Last Name"
                 value={field.value}
                 onChange={field.onChange}
@@ -132,6 +135,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
             return (
               <div>
                 <FloatingInput
+                  disabled={readOnly}
                   label="Phone Number"
                   value={displayValue}
                   onChange={(value) => {
@@ -162,6 +166,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
           render={({ field, fieldState }) => (
             <div>
               <FloatingInput
+                disabled={readOnly}
                 label="Email"
                 value={field.value || ""}
                 onChange={field.onChange}
@@ -192,7 +197,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
                 onBlur={field.onBlur}
                 options={genderOptions}
                 hasError={!!fieldState.error}
-                disabled={isLoadingGenders}
+                disabled={readOnly || isLoadingGenders}
                 required
               />
               {fieldState.error && (
@@ -229,6 +234,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
                 onBlur={() => setIsEditingSSN(false)}
               >
                 <FloatingInput
+                  disabled={readOnly}
                   label="Social Security Number (SSN)"
                   name="ssn"
                   value={displayValue}
@@ -260,6 +266,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
           control={form.control}
           render={({ field, fieldState }) => (
             <PremiumDatePicker
+              disabled={readOnly}
               label="Date of Birth"
               value={field.value || ""}
               onChange={field.onChange}
@@ -276,17 +283,27 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
           control={form.control}
           render={({ field, fieldState }) => (
             <div>
-              <FloatingSelect
-                label="Languages"
-                value={field.value?.[0] || ""}
-                onChange={(value) => field.onChange(value ? [value] : [])}
-                onBlur={field.onBlur}
-                options={languageOptions}
-                hasError={!!fieldState.error}
-                disabled={isLoadingLanguages}
-                searchable
-                required
-              />
+              {readOnly ? (
+                <FloatingInput
+                  label="Languages"
+                  value={client?.languages?.map((language) => language.name).join(", ") ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  disabled
+                />
+              ) : (
+                <FloatingSelect
+                  label="Languages"
+                  value={field.value?.[0] || ""}
+                  onChange={(value) => field.onChange(value ? [value] : [])}
+                  onBlur={field.onBlur}
+                  options={languageOptions}
+                  hasError={!!fieldState.error}
+                  disabled={isLoadingLanguages}
+                  searchable
+                  required
+                />
+              )}
               {fieldState.error && (
                 <p className="text-sm text-red-600 mt-2">
                   {fieldState.error.message}
@@ -346,6 +363,7 @@ export function Step1PersonalInfo({ client, isCreateMode = false, onSaveSuccess,
           render={({ field }) => (
             <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50">
                 <PremiumSwitch
+                  disabled={readOnly}
                   checked={field.value ?? true}
                   onCheckedChange={field.onChange}
                   label="Active Client"

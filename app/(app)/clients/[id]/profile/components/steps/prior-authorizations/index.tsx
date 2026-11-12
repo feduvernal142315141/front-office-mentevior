@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, Edit2, FileCheck, Calendar, Shield, Hash, Trash2 } from "lucide-react"
+import { ChevronDown, Edit2, Eye, FileCheck, Calendar, Shield, Hash, Trash2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { LinkedEventsModal } from "./LinkedEventsModal"
@@ -40,6 +40,7 @@ function formatDate(dateStr: string | undefined | null): string {
 export function StepPriorAuthorizations({
   clientId,
   isCreateMode = false,
+  readOnly = false,
   onSaveSuccess,
   onProgressUpdate,
   registerSubmit,
@@ -191,7 +192,7 @@ export function StepPriorAuthorizations({
   }
 
   // ── View switching ──────────────────────────────────────────────
-  if (currentView.mode === "create") {
+  if (!readOnly && currentView.mode === "create") {
     return (
       <div className="w-full px-6 py-8 sm:px-8">
         <PriorAuthCreateView
@@ -219,6 +220,7 @@ export function StepPriorAuthorizations({
     return (
       <div className="w-full px-6 py-8 sm:px-8">
         <PriorAuthEditView
+          readOnly={readOnly}
           clientId={resolvedClientId}
           editingPA={currentView.pa}
           insurances={insurances}
@@ -240,6 +242,8 @@ export function StepPriorAuthorizations({
     )
   }
 
+  const DetailsIcon = readOnly ? Eye : Edit2
+
   // ── List view (default) ─────────────────────────────────────────
   return (
     <div className="w-full px-6 py-8 sm:px-8">
@@ -251,12 +255,14 @@ export function StepPriorAuthorizations({
             Insurance authorizations required to provide and bill services
           </p>
         </div>
-        <Button
-          type="button"
-          onClick={() => setCurrentView({ mode: "create" })}
-        >
-          New prior authorization
-        </Button>
+        {!readOnly && (
+          <Button
+            type="button"
+            onClick={() => setCurrentView({ mode: "create" })}
+          >
+            New prior authorization
+          </Button>
+        )}
       </div>
 
       {/* Error */}
@@ -375,24 +381,26 @@ export function StepPriorAuthorizations({
 
                   {/* Actions */}
                   <div className="flex items-center justify-end gap-3 ml-auto xl:ml-0 xl:w-[104px]">
-                    <button
-                      type="button"
-                      onClick={() => setDeletingPA(pa)}
-                      className={cn(
-                        "group/del h-8 w-8",
-                        "flex items-center justify-center rounded-xl",
-                        "bg-gradient-to-b from-red-50 to-red-100/80",
-                        "border border-red-200/60 shadow-sm",
-                        "hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80",
-                        "hover:-translate-y-0.5 active:translate-y-0",
-                        "transition-all duration-200 ease-out",
-                        "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
-                      )}
-                      title="Delete prior authorization"
-                      aria-label="Delete prior authorization"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-red-500 group-hover/del:text-red-700 transition-colors" />
-                    </button>
+                    {!readOnly && (
+                      <button
+                        type="button"
+                        onClick={() => setDeletingPA(pa)}
+                        className={cn(
+                          "group/del h-8 w-8",
+                          "flex items-center justify-center rounded-xl",
+                          "bg-gradient-to-b from-red-50 to-red-100/80",
+                          "border border-red-200/60 shadow-sm",
+                          "hover:from-red-100 hover:to-red-200/90 hover:border-red-300/80",
+                          "hover:-translate-y-0.5 active:translate-y-0",
+                          "transition-all duration-200 ease-out",
+                          "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+                        )}
+                        title="Delete prior authorization"
+                        aria-label="Delete prior authorization"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-500 group-hover/del:text-red-700 transition-colors" />
+                      </button>
+                    )}
 
                     <button
                       type="button"
@@ -407,10 +415,10 @@ export function StepPriorAuthorizations({
                         "transition-all duration-200 ease-out",
                         "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
                       )}
-                      title="Edit prior authorization"
-                      aria-label="Edit prior authorization"
+                      title={readOnly ? "View prior authorization" : "Edit prior authorization"}
+                      aria-label={readOnly ? "View prior authorization" : "Edit prior authorization"}
                     >
-                      <Edit2 className="w-3.5 h-3.5 text-blue-600 group-hover/edit:text-blue-700 transition-colors" />
+                      <DetailsIcon className="w-3.5 h-3.5 text-blue-600 group-hover/edit:text-blue-700 transition-colors" />
                     </button>
                   </div>
                 </div>
@@ -494,10 +502,10 @@ export function StepPriorAuthorizations({
 
       {/* Delete Confirm Modal */}
       <DeleteConfirmModal
-        isOpen={!!deletingPA}
+        isOpen={!readOnly && !!deletingPA}
         onClose={() => setDeletingPA(null)}
         onConfirm={async () => {
-          if (!deletingPA) return
+          if (readOnly || !deletingPA) return
           const progress = await cancel(deletingPA.id)
           if (progress !== null) {
             onProgressUpdate?.(progress)

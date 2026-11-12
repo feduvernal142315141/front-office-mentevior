@@ -6,6 +6,7 @@ import type { LocalBillingCodeEntry } from "@/lib/types/prior-authorization.type
 import { cn } from "@/lib/utils"
 
 interface BillingCodesSectionProps {
+  readOnly?: boolean
   entries: LocalBillingCodeEntry[]
   onAdd: () => void
   onEdit: (entry: LocalBillingCodeEntry) => void
@@ -14,6 +15,7 @@ interface BillingCodesSectionProps {
 }
 
 export function BillingCodesSection({
+  readOnly = false,
   entries,
   onAdd,
   onEdit,
@@ -55,7 +57,7 @@ export function BillingCodesSection({
               Remaining
             </span>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-              Actions
+              {!readOnly && "Actions"}
             </span>
           </div>
 
@@ -82,7 +84,7 @@ export function BillingCodesSection({
               <span className="text-sm tabular-nums text-slate-700 text-center">
                 {entry.remainingUnits.toLocaleString()}
               </span>
-              <div className="flex items-center justify-end gap-1.5">
+              <div className={readOnly ? "hidden" : "flex items-center justify-end gap-1.5"}>
                 <button
                   type="button"
                   onClick={() => onEdit(entry)}
@@ -116,13 +118,15 @@ export function BillingCodesSection({
       )}
 
       <div className="flex justify-center">
-        <Button
-          type="button"
-          onClick={onAdd}
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Billing Code
-        </Button>
+        {!readOnly && (
+          <Button
+            type="button"
+            onClick={onAdd}
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            Add Billing Code
+          </Button>
+        )}
       </div>
     </div>
   )

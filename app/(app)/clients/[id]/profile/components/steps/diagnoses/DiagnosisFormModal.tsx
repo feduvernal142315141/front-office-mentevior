@@ -50,6 +50,7 @@ type NestedModal = "none" | "physician" | "editPhysician" | "provider"
 
 interface DiagnosisFormModalProps {
   open: boolean
+  readOnly?: boolean
   /** `null` = alta. Con valor, edición. */
   diagnosis: Diagnosis | null
   clientId: string
@@ -66,6 +67,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export function DiagnosisFormModal({
   open,
+  readOnly = false,
   diagnosis,
   clientId,
   hasPrimaryDiagnosis,
@@ -95,7 +97,7 @@ export function DiagnosisFormModal({
   const hasOverlayAbove = nestedModal !== "none" || isConfirmingClose || !!viewerDocument
 
   const { providers, isLoading: isLoadingProviders, refetch: refetchProviders } = useProvidersOnFile({
-    enabled: open,
+    enabled: open && !readOnly,
   })
   const { physicianSpecialties } = usePhysicianSpecialties({ enabled: open })
 
@@ -164,12 +166,13 @@ export function DiagnosisFormModal({
 
   const providerItems = useMemo(() => {
     const specialtyById = new Map(physicianSpecialties.map((sp) => [sp.id, sp.name]))
-    return providers.map((provider) => {
+    const availableProviders = readOnly ? diagnosis?.providerOnFiles ?? [] : providers
+    return availableProviders.map((provider) => {
       const name = [provider.firstName, provider.lastName].filter(Boolean).join(" ")
       const specialty = provider.specialyName || specialtyById.get(provider.specialyId)
       return { id: provider.id, name: [name, provider.agencyName, specialty].filter(Boolean).join(" — ") }
     })
-  }, [providers, physicianSpecialties])
+  }, [diagnosis?.providerOnFiles, providers, physicianSpecialties, readOnly])
 
   const hasStoredAttachment = Boolean(
     !attachmentCleared && (diagnosis?.attachment || diagnosis?.attachmentDownload)
@@ -321,8 +324,8 @@ export function DiagnosisFormModal({
           if (!next && hasOverlayAbove) return
           if (!next) requestClose()
         }}
-        title={isEditing ? "Edit diagnosis" : "New diagnosis"}
-        description={isEditing ? "Update diagnosis details" : "Add diagnosis details"}
+        title={readOnly ? "View diagnosis" : isEditing ? "Edit diagnosis" : "New diagnosis"}
+        description={readOnly ? undefined : isEditing ? "Update diagnosis details" : "Add diagnosis details"}
         maxWidthClassName="sm:max-w-[760px]"
         constrainHeight
         onInteractOutside={(event) => {
@@ -335,7 +338,7 @@ export function DiagnosisFormModal({
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            void handleSubmit()
+            if (!readOnly) void handleSubmit()
           }}
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
@@ -359,6 +362,7 @@ export function DiagnosisFormModal({
                           )}
                         />
                         <DiagnosisCodeCombobox
+                          disabled={readOnly}
                           key={diagnosis?.id ?? "new"}
                           value={field.value}
                           onChange={(code) => {
@@ -393,7 +397,7 @@ export function DiagnosisFormModal({
                   name="name"
                   control={form.control}
                   render={({ field }) => (
-                    <div className="flex min-h-[52px] flex-col justify-center rounded-[16px] border border-slate-200 bg-slate-50/70 px-4 py-2">
+                    <div className="flex min-h-13 flex-col justify-center rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2">
                       <span className="text-xs font-medium text-slate-500">Name</span>
                       <span
                         className={cn(
@@ -418,6 +422,7 @@ export function DiagnosisFormModal({
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <PremiumDatePicker
+                      disabled={readOnly}
                       label="Referral Date"
                       value={field.value}
                       onChange={field.onChange}
@@ -435,6 +440,7 @@ export function DiagnosisFormModal({
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <PremiumDatePicker
+                      disabled={readOnly}
                       label="Treatment Start Date"
                       value={field.value}
                       onChange={field.onChange}
@@ -452,6 +458,7 @@ export function DiagnosisFormModal({
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <PremiumDatePicker
+                      disabled={readOnly}
                       label="Treatment End Date"
                       value={field.value ?? ""}
                       onChange={field.onChange}
@@ -504,23 +511,25 @@ export function DiagnosisFormModal({
                   </div>
 
                   <div className="flex flex-col items-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setNestedModal("physician")}
-                      className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
-                    >
-                      {selectedPhysician ? (
-                        <>
-                          <RefreshCw className="h-4 w-4" />
-                          Change
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-4 w-4" />
-                          Add Referring Physician
-                        </>
-                      )}
-                    </button>
+                    {!readOnly && (
+                      <button
+                        type="button"
+                        onClick={() => setNestedModal("physician")}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
+                      >
+                        {selectedPhysician ? (
+                          <>
+                            <RefreshCw className="h-4 w-4" />
+                            Change
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4" />
+                            Add Referring Physician
+                          </>
+                        )}
+                      </button>
+                    )}
 
                     {selectedPhysician && (
                       <button
@@ -529,7 +538,7 @@ export function DiagnosisFormModal({
                         className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
                       >
                         <Edit2 className="h-4 w-4" />
-                        Edit
+                        {readOnly ? "View" : "Edit"}
                       </button>
                     )}
                   </div>
@@ -547,17 +556,20 @@ export function DiagnosisFormModal({
                         : `${providerIds.length} provider${providerIds.length === 1 ? "" : "s"} selected`}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setNestedModal("provider")}
-                    className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
-                  >
-                    <Plus className="h-4 w-4" />
-                    New provider
-                  </button>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => setNestedModal("provider")}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-[#037ECC] hover:text-[#025fa0]"
+                    >
+                      <Plus className="h-4 w-4" />
+                      New provider
+                    </button>
+                  )}
                 </div>
                 <div className="mt-3">
                   <MultiSelectWithSearch
+                    disabled={readOnly}
                     items={providerItems}
                     selectedIds={providerIds}
                     onChange={setProviderIds}
@@ -572,6 +584,7 @@ export function DiagnosisFormModal({
             <section className="space-y-3">
               <SectionTitle>Documentation</SectionTitle>
               <AttachmentSection
+                readOnly={readOnly}
                 file={attachmentFile}
                 fileName={attachmentFileName}
                 hasStoredAttachment={hasStoredAttachment}
@@ -599,6 +612,7 @@ export function DiagnosisFormModal({
                   render={({ field }) => (
                     <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                       <PremiumSwitch
+                        disabled={readOnly}
                         checked={field.value}
                         onCheckedChange={field.onChange}
                         label="Diagnosis is active"
@@ -627,14 +641,14 @@ export function DiagnosisFormModal({
                           { value: false, label: "Secondary" },
                         ].map((option) => {
                           const isSelected = field.value === option.value
-                          const isDisabled = isPrimaryLocked && option.value === true
+                          const isDisabled = isPrimaryLocked && option.value
                           return (
                             <button
                               key={option.label}
                               type="button"
                               role="radio"
                               aria-checked={isSelected}
-                              disabled={isDisabled}
+                              disabled={readOnly || isDisabled}
                               onClick={() => field.onChange(option.value)}
                               className={cn(
                                 "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
@@ -664,17 +678,19 @@ export function DiagnosisFormModal({
           {/* Footer fijo: con el modal acotado en altura deja de quedar fuera de pantalla. */}
           <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4">
             <Button type="button" variant="secondary" onClick={requestClose} disabled={isSaving}>
-              Cancel
+              {readOnly ? "Close" : "Cancel"}
             </Button>
-            <Button type="submit" loading={isSaving} disabled={isSaving}>
-              {isEditing ? "Update diagnosis" : "Save diagnosis"}
-            </Button>
+            {!readOnly && (
+              <Button type="submit" loading={isSaving} disabled={isSaving}>
+                {isEditing ? "Update diagnosis" : "Save diagnosis"}
+              </Button>
+            )}
           </div>
         </form>
       </CustomModal>
 
       <ReferringPhysicianModal
-        open={nestedModal === "physician"}
+        open={!readOnly && nestedModal === "physician"}
         onClose={() => setNestedModal("none")}
         clientId={clientId}
         currentPhysicianId={selectedPhysician?.physicianId}
@@ -686,6 +702,7 @@ export function DiagnosisFormModal({
 
       <EditReferringPhysicianModal
         open={nestedModal === "editPhysician"}
+        readOnly={readOnly}
         physicianId={selectedPhysician?.physicianId ?? null}
         onClose={() => setNestedModal("none")}
         onSaved={(updated) =>
@@ -694,7 +711,7 @@ export function DiagnosisFormModal({
       />
 
       <ProviderOnFileModal
-        open={nestedModal === "provider"}
+        open={!readOnly && nestedModal === "provider"}
         onClose={() => setNestedModal("none")}
         onCreated={(providerId) => {
           void refetchProviders()

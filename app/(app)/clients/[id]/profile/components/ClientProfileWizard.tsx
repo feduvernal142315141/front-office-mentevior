@@ -17,6 +17,8 @@ import { WizardStepper } from "@/components/custom/WizardStepper"
 import { WizardHeader } from "@/components/custom/WizardHeader"
 import { WizardFooter } from "@/components/custom/WizardFooter"
 import { ConfirmationModal } from "@/components/custom/ConfirmationModal"
+import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { PermissionModule } from "@/lib/utils/permissions-new"
 import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import { useCaregiversByClient } from "@/lib/modules/caregivers/hooks/use-caregivers-by-client"
 import { useClientInsurancesByClient } from "@/lib/modules/client-insurances/hooks/use-client-insurances-by-client"
@@ -26,7 +28,7 @@ import { useProvidersByClient } from "@/lib/modules/providers/hooks/use-provider
 import { useClientAddresses } from "@/lib/modules/client-addresses/hooks/use-client-addresses"
 import { useClientDocuments } from "@/lib/modules/client-documents/hooks/use-client-documents"
 import { usePriorAuthorizationsByClient } from "@/lib/modules/prior-authorizations/hooks/use-prior-authorizations-by-client"
-import type { StepComponentProps, StepConfig, StepStatus } from "@/lib/types/wizard.types"
+import type { StepConfig, StepStatus } from "@/lib/types/wizard.types"
 import { Step1PersonalInfo } from "./steps/Step1PersonalInfo"
 import { Step2Addresses } from "./steps/Step2Addresses"
 import { Step3Caregivers } from "./steps/Step3Caregivers"
@@ -35,7 +37,6 @@ import { Step6Diagnoses } from "./steps/Step6Diagnoses"
 import { StepInsurances } from "./steps/StepInsurances"
 import { Step10RequiredDocuments } from "./steps/Step10RequiredDocuments"
 import { Step9Providers } from "./steps/Step9Providers"
-import { StepPlaceholder } from "./steps/StepPlaceholder"
 import { StepPriorAuthorizations } from "./steps/prior-authorizations"
 
 interface ClientProfileWizardProps {
@@ -59,6 +60,8 @@ type SubmitIntent = "close" | "continue" | "navigate" | null
 export function ClientProfileWizard({ clientId, isCreateMode = false, initialStepId }: ClientProfileWizardProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const { canEdit } = useModulePermissions(PermissionModule.CLIENTS)
+  const readOnly = !isCreateMode && !canEdit
   const [activeStepIndex, setActiveStepIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isStepValid, setIsStepValid] = useState(false)
@@ -95,8 +98,8 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
   const [primaryActionLabel, setPrimaryActionLabel] = useState<string | undefined>(undefined)
 
   const handlePrimaryAction = useCallback(() => {
-    primarySubmitRef.current?.()
-  }, [])
+    if (!readOnly) primarySubmitRef.current?.()
+  }, [readOnly])
   const pendingNavigationRef = useRef<(() => void) | null>(null)
   const pendingNavigationAfterSaveRef = useRef<(() => void) | null>(null)
   const isSubmittingRef = useRef(false)
@@ -329,13 +332,13 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
   }, [completionPercentage])
 
   const guardNavigation = useCallback((action: () => void) => {
-    if (isStepDirty) {
+    if (!readOnly && isStepDirty) {
       pendingNavigationRef.current = action
       setShowUnsavedModal(true)
     } else {
       action()
     }
-  }, [isStepDirty])
+  }, [isStepDirty, readOnly])
 
   const handleUnsavedDiscard = useCallback(() => {
     const navigate = pendingNavigationRef.current
@@ -351,7 +354,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
   }, [handleUnsavedDiscard])
 
   const handleUnsavedSave = useCallback(async () => {
-    if (isSubmittingRef.current) {
+    if (readOnly || isSubmittingRef.current) {
       setShowUnsavedModal(false)
       return
     }
@@ -374,7 +377,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
     submitIntentRef.current = "navigate"
     setIsSubmitting(true)
     await stepSubmitRef.current()
-  }, [primaryActionLabel])
+  }, [primaryActionLabel, readOnly])
 
   const handleStepClick = useCallback((index: number) => {
     const targetStep = steps[index]
@@ -395,7 +398,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
   }, [navigateToClientsTable])
 
   const handleSave = useCallback(async () => {
-    if (!stepSubmitRef.current || isSubmittingRef.current || (isInCreateMode && hasCreatedClientRef.current)) {
+    if (readOnly || !stepSubmitRef.current || isSubmittingRef.current || (isInCreateMode && hasCreatedClientRef.current)) {
       return
     }
 
@@ -403,10 +406,10 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
     submitIntentRef.current = "close"
     setIsSubmitting(true)
     await stepSubmitRef.current()
-  }, [isInCreateMode])
+  }, [isInCreateMode, readOnly])
 
   const handleSaveAndContinue = useCallback(async () => {
-    if (!stepSubmitRef.current || isSubmittingRef.current || (isInCreateMode && hasCreatedClientRef.current)) {
+    if (readOnly || !stepSubmitRef.current || isSubmittingRef.current || (isInCreateMode && hasCreatedClientRef.current)) {
       return
     }
 
@@ -414,7 +417,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
     submitIntentRef.current = "continue"
     setIsSubmitting(true)
     await stepSubmitRef.current()
-  }, [isInCreateMode])
+  }, [isInCreateMode, readOnly])
 
   const handleSaveSuccess = useCallback((data: any) => {
     const currentStepId = steps[activeStepIndex].id
@@ -545,11 +548,12 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
         />
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-36">
-          <div className="mx-auto py-8 w-full max-w-6xl 2xl:max-w-[1440px] min-[1800px]:max-w-[1680px] min-[2200px]:max-w-[1960px]">
+          <div className="mx-auto py-8 w-full max-w-6xl 2xl:max-w-360 min-[1800px]:max-w-420 min-[2200px]:max-w-490">
             <ActiveStepComponent
               clientId={createdClientId ?? clientId}
               client={client}
               isCreateMode={isInCreateMode}
+              readOnly={readOnly}
               onSaveSuccess={stableOnSaveSuccess}
               onValidationError={stableOnValidationError}
               onProgressUpdate={setServerProgress}
@@ -576,8 +580,8 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
         isLastStep={activeStepIndex === steps.length - 1}
         isSubmitting={isSubmitting}
         canContinue={canContinue}
-        isPersonalInfoStep={activeStepIndex === 0}
-        primaryActionLabel={primaryActionLabel}
+        isPersonalInfoStep={!readOnly && activeStepIndex === 0}
+        primaryActionLabel={readOnly ? undefined : primaryActionLabel}
         onCancel={handleCancel}
         onSave={primaryActionLabel ? handlePrimaryAction : handleSave}
         onSaveAndContinue={handleSaveAndContinue}
@@ -585,7 +589,7 @@ export function ClientProfileWizard({ clientId, isCreateMode = false, initialSte
       />
 
       <ConfirmationModal
-        open={showUnsavedModal}
+        open={!readOnly && showUnsavedModal}
         onOpenChange={(open) => {
           setShowUnsavedModal(open)
         }}

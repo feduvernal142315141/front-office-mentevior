@@ -86,6 +86,7 @@ function RequiredDocumentsSkeleton() {
 }
 
 interface RequiredDocumentsOverviewProps {
+  readOnly?: boolean
   isActive: boolean
   clientId: string | null
   onAlertCountChange?: (count: number) => void
@@ -94,6 +95,7 @@ interface RequiredDocumentsOverviewProps {
 }
 
 export function RequiredDocumentsOverview({
+  readOnly = false,
   isActive,
   clientId,
   onAlertCountChange,
@@ -212,7 +214,7 @@ export function RequiredDocumentsOverview({
       fileBase64: string | null
       fileName: string | null
     }) => {
-      if (!editingRow || !clientId) return
+      if (readOnly || !editingRow || !clientId) return
       
       const dto: SaveClientDocumentDto = {
         clientId,
@@ -234,10 +236,11 @@ export function RequiredDocumentsOverview({
 
       setIsModalOpen(false)
     },
-    [editingRow, clientId, save, onProgressUpdate]
+    [editingRow, clientId, readOnly, save, onProgressUpdate]
   )
 
   const { columns } = useRequiredDocumentsTable({
+    readOnly,
     onEdit: handleEdit,
     onDownload: handleDownload,
     onView: handleViewDocument,
@@ -287,6 +290,7 @@ export function RequiredDocumentsOverview({
       </div>
 
       <RequiredDocumentUploadModal
+        readOnly={readOnly}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         row={editingRow}

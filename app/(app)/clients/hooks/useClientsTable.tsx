@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Edit2, Sliders } from "lucide-react"
+import { Edit2, Eye, Sliders } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { AuditActionButton } from "@/components/custom/AuditActionButton"
 import type { ClientListItem } from "@/lib/types/client.types"
 import { useClients } from "@/lib/modules/clients/hooks/use-clients"
 import { usePermission } from "@/lib/hooks/use-permission"
-import { PermissionModule } from "@/lib/utils/permissions-new"
+import { PermissionAction, PermissionModule } from "@/lib/utils/permissions-new"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -58,7 +58,11 @@ interface UseClientsTableReturn {
 
 export function useClientsTable(): UseClientsTableReturn {
   const router = useRouter()
-  const { edit: canEditClient } = usePermission()
+  const { can, edit } = usePermission()
+  const canEditClient = edit(PermissionModule.CLIENTS)
+  const canOpenProfile = canEditClient || can(PermissionModule.CLIENTS, PermissionAction.READ)
+  const ProfileIcon = canEditClient ? Edit2 : Eye
+  const profileActionLabel = canEditClient ? "Edit client" : "View client"
 
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
@@ -219,10 +223,9 @@ export function useClientsTable(): UseClientsTableReturn {
       header: "Actions",
       align: "right",
       render: (client) => {
-        const hasEditPermission = canEditClient(PermissionModule.CLIENTS)
         return (
           <div className="flex justify-end gap-2">
-            {hasEditPermission && (
+            {canEditClient && (
               <button
                 onClick={() => {
                   const base = `/clients/${client.id}/configuration`
@@ -234,7 +237,7 @@ export function useClientsTable(): UseClientsTableReturn {
                 className={cn(
                   "group/config relative h-9 w-9",
                   "flex items-center justify-center rounded-xl",
-                  "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                  "bg-linear-to-b from-blue-50 to-blue-100/80",
                   "border border-blue-200/60 shadow-sm shadow-blue-900/5",
                   "hover:from-blue-100 hover:to-blue-200/90",
                   "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
@@ -248,13 +251,13 @@ export function useClientsTable(): UseClientsTableReturn {
                 <Sliders className="w-4 h-4 text-blue-600 group-hover/config:text-blue-700 transition-colors duration-200" />
               </button>
             )}
-            {hasEditPermission && (
+            {canOpenProfile && (
               <button
                 onClick={() => router.push(`/clients/${client.id}/profile`)}
                 className={cn(
                   "group/edit relative h-9 w-9",
                   "flex items-center justify-center rounded-xl",
-                  "bg-gradient-to-b from-blue-50 to-blue-100/80",
+                  "bg-linear-to-b from-blue-50 to-blue-100/80",
                   "border border-blue-200/60 shadow-sm shadow-blue-900/5",
                   "hover:from-blue-100 hover:to-blue-200/90",
                   "hover:border-blue-300/80 hover:shadow-md hover:shadow-blue-900/10",
@@ -262,10 +265,10 @@ export function useClientsTable(): UseClientsTableReturn {
                   "transition-all duration-200 ease-out",
                   "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
                 )}
-                title="Edit client"
-                aria-label="Edit client"
+                title={profileActionLabel}
+                aria-label={profileActionLabel}
               >
-                <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+                <ProfileIcon className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
               </button>
             )}
             <AuditActionButton
@@ -280,7 +283,7 @@ export function useClientsTable(): UseClientsTableReturn {
         )
       },
     },
-  ], [router, canEditClient])
+  ], [router, canEditClient, canOpenProfile, ProfileIcon, profileActionLabel])
 
   return {
     data: clients,

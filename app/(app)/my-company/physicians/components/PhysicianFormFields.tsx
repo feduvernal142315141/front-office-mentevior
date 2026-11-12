@@ -9,6 +9,7 @@ import type { PhysicianType, PhysicianSpecialty } from "@/lib/types/physician.ty
 
 interface PhysicianFormFieldsProps {
   isEditing: boolean
+  readOnly?: boolean
   countries: { id: string; name: string }[]
   states: { id: string; name: string }[]
   physicianTypes: PhysicianType[]
@@ -29,6 +30,7 @@ const formatPhoneNumber = (value: string): string => {
 
 export function PhysicianFormFields({
   isEditing,
+  readOnly = false,
   countries = [],
   states = [],
   physicianTypes = [],
@@ -60,6 +62,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="First name"
                     value={field.value}
                     onChange={handleChange}
@@ -94,6 +97,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="Last name"
                     value={field.value}
                     onChange={handleChange}
@@ -132,7 +136,7 @@ export function PhysicianFormFields({
                     options={specialtyOptions}
                     hasError={!!fieldState.error}
                     required={true}
-                    disabled={isLoadingPhysicianSpecialties}
+                    disabled={readOnly || isLoadingPhysicianSpecialties}
                     searchable={true}
                   />
                   {fieldState.error && (
@@ -164,7 +168,7 @@ export function PhysicianFormFields({
                     onBlur={field.onBlur}
                     options={typeOptions}
                     hasError={!!fieldState.error}
-                    disabled={isLoadingPhysicianTypes}
+                    disabled={readOnly || isLoadingPhysicianTypes}
                     required={true}
                   />
                   {fieldState.error && (
@@ -195,6 +199,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="National Provider ID (NPI)"
                     value={field.value}
                     onChange={handleChange}
@@ -229,6 +234,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="Medicaid/Medicare Provider ID (MPI)"
                     value={field.value}
                     onChange={handleChange}
@@ -264,6 +270,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="Phone"
                     value={field.value}
                     onChange={handleChange}
@@ -299,6 +306,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="Fax"
                     value={field.value || ""}
                     onChange={handleChange}
@@ -323,6 +331,7 @@ export function PhysicianFormFields({
             render={({ field, fieldState }) => (
               <div>
                 <FloatingInput
+                  disabled={readOnly}
                   label="Email"
                   type="email"
                   value={field.value}
@@ -350,6 +359,7 @@ export function PhysicianFormFields({
                   Active
                 </Label>
                 <Switch
+                  disabled={readOnly}
                   id="active"
                   checked={field.value}
                   onCheckedChange={field.onChange}
@@ -372,6 +382,7 @@ export function PhysicianFormFields({
             render={({ field, fieldState }) => (
               <div className="md:col-span-2">
                 <FloatingInput
+                  disabled={readOnly}
                   label="Company Name"
                   value={field.value || ""}
                   onChange={field.onChange}
@@ -395,6 +406,7 @@ export function PhysicianFormFields({
             render={({ field, fieldState }) => (
               <div className="md:col-span-2">
                 <FloatingInput
+                  disabled={readOnly}
                   label="Address"
                   value={field.value || ""}
                   onChange={field.onChange}
@@ -427,6 +439,7 @@ export function PhysicianFormFields({
               return (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="City"
                     value={field.value || ""}
                     onChange={handleChange}
@@ -457,7 +470,7 @@ export function PhysicianFormFields({
                   onBlur={field.onBlur}
                   options={states.length > 0 ? states.map(s => ({ value: s.id, label: s.name })) : []}
                   hasError={!!fieldState.error}
-                  disabled={isLoadingStates || states.length === 0}
+                  disabled={readOnly || isLoadingStates || states.length === 0}
                   searchable={true}
                 />
                 {fieldState.error && (
@@ -476,6 +489,7 @@ export function PhysicianFormFields({
             render={({ field, fieldState }) => (
               <div>
                 <FloatingInput
+                  disabled={readOnly}
                   label="ZIP Code"
                   value={field.value || ""}
                   onChange={(value) => {
@@ -509,7 +523,7 @@ export function PhysicianFormFields({
                   value="United States"
                   onChange={() => {}}
                   onBlur={field.onBlur}
-                  disabled={true}
+                  disabled
                   placeholder="United States"
                   hasError={!!fieldState.error}
                 />

@@ -50,6 +50,7 @@ export interface PriorAuthBaseFormRefs {
 }
 
 interface PriorAuthBaseFormProps {
+  readOnly?: boolean
   form: UseFormReturn<PriorAuthFormValues>
   insurances: ClientInsurance[]
   clientId: string
@@ -80,6 +81,7 @@ function truncateFileName(name: string | null | undefined, max = 52): string {
 }
 
 export function PriorAuthBaseForm({
+  readOnly = false,
   form,
   insurances,
   clientId,
@@ -230,6 +232,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <FloatingInput
+                disabled={readOnly}
                 ref={fieldRefs?.authNumber}
                 label="Authorization Number"
                 value={field.value ?? ""}
@@ -252,6 +255,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
+                disabled={readOnly}
                 ref={fieldRefs?.insuranceId}
                 label="Insurance / Payer"
                 value={field.value}
@@ -291,7 +295,7 @@ export function PriorAuthBaseForm({
                 options={diagnosisOptions}
                 hasError={!!fieldState.error}
                 searchable={diagnosisOptions.length > 5}
-                disabled={isLoadingDiagnoses}
+                disabled={readOnly || isLoadingDiagnoses}
               />
               {fieldState.error && (
                 <p className="mt-1.5 text-sm text-red-600">{fieldState.error.message}</p>
@@ -313,6 +317,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
+                disabled={readOnly}
                 ref={fieldRefs?.startDate}
                 label="Start Date"
                 value={field.value ?? ""}
@@ -343,6 +348,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
+                disabled={readOnly}
                 ref={fieldRefs?.endDate}
                 label="End Date"
                 value={field.value ?? ""}
@@ -391,7 +397,7 @@ export function PriorAuthBaseForm({
                 key={label}
                 type="button"
                 onClick={() => handleQuickPeriod(label, months)}
-                disabled={!startDate}
+                disabled={readOnly || !startDate}
                 className={cn(
                   "relative flex h-20 w-20 flex-col items-center justify-center rounded-full p-0",
                   "border text-center transition-all duration-150",
@@ -441,6 +447,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <FloatingSelect
+                disabled={readOnly}
                 ref={fieldRefs?.durationInterval}
                 label="Interval"
                 value={field.value}
@@ -467,6 +474,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
+                disabled={readOnly}
                 label="Request Date"
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -485,6 +493,7 @@ export function PriorAuthBaseForm({
           render={({ field, fieldState }) => (
             <div>
               <PremiumDatePicker
+                disabled={readOnly}
                 label="Response Date"
                 value={field.value ?? ""}
                 onChange={field.onChange}
@@ -507,6 +516,7 @@ export function PriorAuthBaseForm({
               Comments
             </label>
             <textarea
+              disabled={readOnly}
               value={field.value ?? ""}
               onChange={(e) => field.onChange(e.target.value)}
               onBlur={field.onBlur}
@@ -558,18 +568,20 @@ export function PriorAuthBaseForm({
             <p className="flex-1 text-sm font-medium text-slate-800 truncate" title={attachmentName}>
               {attachmentName}
             </p>
-            <button
-              type="button"
-              onClick={handleRemoveAttachment}
-              className={cn(
-                "h-7 w-7 flex items-center justify-center rounded-lg flex-shrink-0",
-                "text-slate-400 hover:text-red-500 hover:bg-red-50",
-                "transition-colors duration-150"
-              )}
-              title="Remove attachment"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={handleRemoveAttachment}
+                className={cn(
+                  "h-7 w-7 flex items-center justify-center rounded-lg flex-shrink-0",
+                  "text-slate-400 hover:text-red-500 hover:bg-red-50",
+                  "transition-colors duration-150"
+                )}
+                title="Remove attachment"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ) : existingAttachmentUrl ? (
           /* Archivo existente en S3 */
@@ -618,19 +630,23 @@ export function PriorAuthBaseForm({
             >
               <Download className="w-[18px] h-[18px]" />
             </button>
-            <button
-              type="button"
-              onClick={handleRemoveAttachment}
-              className={cn(
-                "h-7 w-7 flex items-center justify-center rounded-lg flex-shrink-0",
-                "text-slate-400 hover:text-red-500 hover:bg-red-50",
-                "transition-colors duration-150"
-              )}
-              title="Remove attachment"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={handleRemoveAttachment}
+                className={cn(
+                  "h-7 w-7 flex items-center justify-center rounded-lg flex-shrink-0",
+                  "text-slate-400 hover:text-red-500 hover:bg-red-50",
+                  "transition-colors duration-150"
+                )}
+                title="Remove attachment"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
+        ) : readOnly ? (
+          <p className="text-sm text-slate-500">No attachment</p>
         ) : (
           /* Sin archivo — zona de upload */
           <div
@@ -657,6 +673,7 @@ export function PriorAuthBaseForm({
         <input
           ref={inputRef}
           type="file"
+          disabled={readOnly}
           className="hidden"
           onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
         />

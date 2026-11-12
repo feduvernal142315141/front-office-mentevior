@@ -108,6 +108,7 @@ export interface RequiredDocumentUploadModalSavePayload {
 }
 
 interface RequiredDocumentUploadModalProps {
+  readOnly?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   row: ClientDocumentRow | null
@@ -139,6 +140,7 @@ function readFileAsBase64(file: File): Promise<string> {
 // ---------------------------------------------------------------------------
 
 interface FileZoneProps {
+  readOnly?: boolean
   documentName: string
   existingFileUrl: string | null
   existingFileName: string | null
@@ -160,6 +162,7 @@ interface FileZoneProps {
 }
 
 function FileZone({
+  readOnly = false,
   documentName,
   existingFileUrl,
   existingFileName,
@@ -196,7 +199,7 @@ function FileZone({
       {/* Existing file row */}
       {hasExisting && !newFile && (
         <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white">
-          <div className="w-11 h-11 rounded-lg bg-[#037ECC]/10 flex items-center justify-center flex-shrink-0">
+          <div className="w-11 h-11 rounded-lg bg-[#037ECC]/10 flex items-center justify-center shrink-0">
             <FileText className="w-5 h-5 text-[#037ECC]" />
           </div>
           <div className="flex-1 min-w-0">
@@ -204,7 +207,7 @@ function FileZone({
               {documentName}
             </p>
             <p className="text-xs text-slate-500 mt-0.5">
-              Ready to save
+              {readOnly ? existingFileName : "Ready to save"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -221,31 +224,33 @@ function FileZone({
               )}
               title="View document"
             >
-              <Eye className="w-[18px] h-[18px]" />
+              <Eye className="w-4.5 h-4.5" />
             </button>
-            <button
-              type="button"
-              onClick={onUploadAnother}
-              className={cn(
-                "w-9 h-9 rounded-lg",
-                "flex items-center justify-center",
-                "bg-slate-50 hover:bg-slate-100",
-                "border border-slate-200",
-                "text-slate-600 hover:text-slate-900",
-                "transition-all duration-200"
-              )}
-              title="Change document"
-            >
-              <Upload className="w-[18px] h-[18px]" />
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={onUploadAnother}
+                className={cn(
+                  "w-9 h-9 rounded-lg",
+                  "flex items-center justify-center",
+                  "bg-slate-50 hover:bg-slate-100",
+                  "border border-slate-200",
+                  "text-slate-600 hover:text-slate-900",
+                  "transition-all duration-200"
+                )}
+                title="Change document"
+              >
+                <Upload className="w-4.5 h-4.5" />
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* New file selected preview */}
-      {newFile && (
+      {!readOnly && newFile && (
         <div className="flex items-center gap-4 p-4 rounded-xl border border-blue-200 bg-blue-50">
-          <div className="w-11 h-11 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <div className="w-11 h-11 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
             <File className="w-5 h-5 text-blue-600" />
           </div>
           <div className="flex-1 min-w-0">
@@ -267,13 +272,13 @@ function FileZone({
             )}
             title="Remove selected file"
           >
-            <X className="w-[18px] h-[18px]" />
+            <X className="w-4.5 h-4.5" />
           </button>
         </div>
       )}
 
       {/* Drop zone — shown when no existing file OR when upload another was clicked */}
-      {!hasExisting && !newFile && (
+      {!readOnly && !hasExisting && !newFile && (
         <div
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
@@ -318,6 +323,7 @@ function FileZone({
       <input
         ref={fileInputRef}
         type="file"
+        disabled={readOnly}
         className="hidden"
         accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx"
         onChange={onFileInputChange}
@@ -325,7 +331,7 @@ function FileZone({
 
       {fileError && (
         <div className="flex items-center gap-2 text-sm text-red-600">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 shrink-0" />
           {fileError}
         </div>
       )}
@@ -338,6 +344,7 @@ function FileZone({
 // ---------------------------------------------------------------------------
 
 export function RequiredDocumentUploadModal({
+  readOnly = false,
   open,
   onOpenChange,
   row,
@@ -362,7 +369,6 @@ export function RequiredDocumentUploadModal({
 
   const isEditMode = Boolean(row?.clientDocumentId)
   const expirationPolicy = row ? getDocumentExpirationPolicy(row.documentConfigName) : null
-  const isCatalogPolicyMappedDocument = expirationPolicy !== null
   const isPolicyManagedExpiration = expirationPolicy?.kind === "duration"
   const isNoExpirationDocument = expirationPolicy?.kind === "none"
   const expirationPolicyTerm = getExpirationPolicyTerm(expirationPolicy)
@@ -376,7 +382,7 @@ export function RequiredDocumentUploadModal({
       const issuedDate = row.issuedDate ?? ""
       const policy = getDocumentExpirationPolicy(row.documentConfigName)
       const expirationDate =
-        policy?.kind === "duration"
+        !readOnly && policy?.kind === "duration"
           ? computeExpirationDate(issuedDate, policy)
           : (row.expirationDate ?? "")
       
@@ -403,7 +409,7 @@ export function RequiredDocumentUploadModal({
           .finally(() => setLoadingExistingFile(false))
       }
     }
-  }, [open, row])
+  }, [open, row, readOnly])
 
   // ---------------------------------------------------------------------------
   // File handling
@@ -475,7 +481,7 @@ export function RequiredDocumentUploadModal({
   }, [row])
 
   const handleSave = useCallback(async () => {
-    if (!row) return
+    if (readOnly || !row) return
     const policy = getDocumentExpirationPolicy(row.documentConfigName)
     const requiresExpirationDate =
       policy?.kind === "duration" || (!policy && row.allowExpirationDate)
@@ -500,7 +506,7 @@ export function RequiredDocumentUploadModal({
       fileBase64: form.newFileBase64,
       fileName: form.newFile?.name ?? null,
     })
-  }, [row, form, onSave])
+  }, [row, form, onSave, readOnly])
 
   const handleClose = useCallback(() => {
     if (!isSaving) onOpenChange(false)
@@ -523,7 +529,7 @@ export function RequiredDocumentUploadModal({
       <CustomModal
         open={open}
         onOpenChange={handleClose}
-        title={isEditMode ? "Edit Document" : "Upload Document"}
+        title={readOnly ? "View document details" : isEditMode ? "Edit Document" : "Upload Document"}
         description={`Required document: ${row.documentConfigName}`}
         maxWidthClassName="sm:max-w-[760px]"
       >
@@ -543,7 +549,7 @@ export function RequiredDocumentUploadModal({
     <CustomModal
       open={open}
       onOpenChange={handleClose}
-      title={isEditMode ? "Edit Document" : "Upload Document"}
+      title={readOnly ? "View document details" : isEditMode ? "Edit Document" : "Upload Document"}
       description={`Required document: ${row.documentConfigName}`}
       maxWidthClassName="sm:max-w-[760px]"
       onOpenAutoFocus={(e) => e.preventDefault()}
@@ -551,6 +557,7 @@ export function RequiredDocumentUploadModal({
       <div className="p-6 space-y-5 max-h-[80dvh] overflow-y-auto">
 
         <FileZone
+          readOnly={readOnly}
           documentName={row.documentConfigName}
           existingFileUrl={existingFileUrl}
           existingFileName={existingFileName}
@@ -559,7 +566,7 @@ export function RequiredDocumentUploadModal({
           dragOver={dragOver}
           fileError={fileError}
           fileInputRef={fileInputRef}
-          initialFocus={!existingFileUrl && !form.newFile}
+          initialFocus={!readOnly && !existingFileUrl && !form.newFile}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
@@ -574,6 +581,7 @@ export function RequiredDocumentUploadModal({
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <PremiumDatePicker
+              disabled={readOnly}
               label="Issued Date"
               value={form.issuedDate}
               onChange={(val) => {
@@ -588,8 +596,9 @@ export function RequiredDocumentUploadModal({
             />
             <div className={cn(isPolicyManagedExpiration && "pointer-events-none opacity-70") }>
               <PremiumDatePicker
+                disabled={readOnly}
                 label="Expiration Date"
-                value={isPolicyManagedExpiration ? computedExpirationDate : form.expirationDate}
+                value={!readOnly && isPolicyManagedExpiration ? computedExpirationDate : form.expirationDate}
                 onChange={(val) => {
                   if (isPolicyManagedExpiration) return
                   setForm((prev) => ({ ...prev, expirationDate: val }))
@@ -604,7 +613,7 @@ export function RequiredDocumentUploadModal({
             </div>
           </div>
 
-          {isPolicyManagedExpiration && (
+          {!readOnly && isPolicyManagedExpiration && (
             <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
               <p className="text-sm font-medium text-sky-800">
                 {isNoExpirationDocument
@@ -618,6 +627,7 @@ export function RequiredDocumentUploadModal({
         </div>
 
         <FloatingTextarea
+          disabled={readOnly}
           label="Comments"
           value={form.comments}
           onChange={(val) => setForm((prev) => ({ ...prev, comments: val }))}
@@ -635,18 +645,20 @@ export function RequiredDocumentUploadModal({
             className="gap-2 flex items-center"
           >
             <X className="w-4 h-4" />
-            Cancel
+            {readOnly ? "Close" : "Cancel"}
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={isSaving || Boolean(fileError) || isMissingRequiredFields}
-            loading={isSaving}
-            className="gap-2 flex items-center min-w-0 sm:min-w-[140px]"
-          >
-            {!isSaving && <Save className="w-4 h-4" />}
-            {isEditMode ? "Update" : "Upload"}
-          </Button>
+          {!readOnly && (
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={isSaving || Boolean(fileError) || isMissingRequiredFields}
+              loading={isSaving}
+              className="gap-2 flex items-center min-w-0 sm:min-w-35"
+            >
+              {!isSaving && <Save className="w-4 h-4" />}
+              {isEditMode ? "Update" : "Upload"}
+            </Button>
+          )}
         </div>
       </div>
       {viewerDocument && (

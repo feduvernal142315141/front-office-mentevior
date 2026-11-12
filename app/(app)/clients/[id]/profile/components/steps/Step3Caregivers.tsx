@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Edit2, Trash2, Users } from "lucide-react"
+import { Edit2, Eye, Trash2, Users } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -23,7 +23,7 @@ import { formatPhoneDisplay, formatPhoneInput } from "@/lib/utils/phone-format"
 import { cn } from "@/lib/utils"
 import type { StepComponentProps } from "@/lib/types/wizard.types"
 
-export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess, onValidationError, onProgressUpdate, registerSubmit, registerValidation, onStepStatusChange }: StepComponentProps) {
+export function Step3Caregivers({ clientId, isCreateMode = false, readOnly = false, onSaveSuccess, onValidationError, onProgressUpdate, registerSubmit, registerValidation, onStepStatusChange }: StepComponentProps) {
   const [isCaregiverModalOpen, setIsCaregiverModalOpen] = useState(false)
   const [editingCaregiver, setEditingCaregiver] = useState<Caregiver | null>(null)
   const [deletingCaregiver, setDeletingCaregiver] = useState<Caregiver | null>(null)
@@ -108,6 +108,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
     isPrimary: caregiver.isPrimary ?? true,
   })
 
+  const DetailsIcon = readOnly ? Eye : Edit2
   const columns: CustomTableColumn<Caregiver>[] = [
     {
       key: "fullName",
@@ -219,32 +220,34 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               "transition-all duration-200 ease-out",
               "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
             )}
-            title="Edit caregiver"
-            aria-label="Edit caregiver"
+            title={readOnly ? "View caregiver" : "Edit caregiver"}
+            aria-label={readOnly ? "View caregiver" : "Edit caregiver"}
           >
-            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            <DetailsIcon className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
-          <button
-            onClick={() => {
-              setDeletingCaregiver(caregiver)
-              setIsDeleteModalOpen(true)
-            }}
-            className={cn(
-              "group/delete relative h-9 w-9",
-              "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-red-50 to-red-100/80",
-              "border border-red-200/60 shadow-sm shadow-red-900/5",
-              "hover:from-red-100 hover:to-red-200/90",
-              "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
-              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-              "transition-all duration-200 ease-out",
-              "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
-            )}
-            title="Remove caregiver"
-            aria-label="Remove caregiver"
-          >
-            <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => {
+                setDeletingCaregiver(caregiver)
+                setIsDeleteModalOpen(true)
+              }}
+              className={cn(
+                "group/delete relative h-9 w-9",
+                "flex items-center justify-center rounded-xl",
+                "bg-gradient-to-b from-red-50 to-red-100/80",
+                "border border-red-200/60 shadow-sm shadow-red-900/5",
+                "hover:from-red-100 hover:to-red-200/90",
+                "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+              )}
+              title="Remove caregiver"
+              aria-label="Remove caregiver"
+            >
+              <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -328,7 +331,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
   })
 
   const handleConfirmRemove = async () => {
-    if (!deletingCaregiver) return
+    if (readOnly || !deletingCaregiver) return
     const progress = await remove(deletingCaregiver.id)
     if (progress === null) return
     onProgressUpdate?.(progress)
@@ -357,19 +360,21 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
           <p className="text-slate-600 mt-1">Legal parents and caregivers for this patient</p>
         </div>
 
-        <Button
-          type="button"
-          onClick={() => {
-            setEditingCaregiver(null)
-            form.reset({
-              ...caregiverFormDefaults,
-              isPrimary: !hasPrimaryCaregiver,
-            })
-            setIsCaregiverModalOpen(true)
-          }}
-        >
-          New caregiver
-        </Button>
+        {!readOnly && (
+          <Button
+            type="button"
+            onClick={() => {
+              setEditingCaregiver(null)
+              form.reset({
+                ...caregiverFormDefaults,
+                isPrimary: !hasPrimaryCaregiver,
+              })
+              setIsCaregiverModalOpen(true)
+            }}
+          >
+            New caregiver
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -427,8 +432,8 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
             form.reset(caregiverFormDefaults)
           }
         }}
-        title={editingCaregiver ? "Edit caregiver" : "New caregiver"}
-        description={editingCaregiver ? "Update legal parent or caregiver information" : "Add legal parent or caregiver information"}
+        title={readOnly ? "View caregiver" : editingCaregiver ? "Edit caregiver" : "New caregiver"}
+        description={readOnly ? undefined : editingCaregiver ? "Update legal parent or caregiver information" : "Add legal parent or caregiver information"}
         maxWidthClassName="sm:max-w-[760px]"
         allowSelectOverflow
         contentClassName="overflow-visible"
@@ -436,6 +441,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
         <form
           onSubmit={(event) => {
             event.preventDefault()
+            if (readOnly) return
             void handleSaveCaregiver()
           }}
           noValidate
@@ -448,6 +454,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               render={({ field, fieldState }) => (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="First Name"
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -466,6 +473,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               render={({ field, fieldState }) => (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="Last Name"
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -490,7 +498,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                     onBlur={field.onBlur}
                     options={relationshipOptions}
                     hasError={!!fieldState.error}
-                    disabled={isLoadingRelationships}
+                    disabled={readOnly || isLoadingRelationships}
                     searchable
                     required
                   />
@@ -509,6 +517,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                 return (
                   <div>
                     <FloatingInput
+                      disabled={readOnly}
                       label="Phone"
                       value={displayValue}
                       onChange={(value) => {
@@ -535,6 +544,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               render={({ field, fieldState }) => (
                 <div className="md:col-span-2">
                   <FloatingInput
+                    disabled={readOnly}
                     label="Email"
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -557,6 +567,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               render={({ field }) => (
                 <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
                   <PremiumSwitch
+                    disabled={readOnly}
                     checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
                     label={field.value ? "Active" : "Inactive"}
@@ -580,7 +591,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
                       ? "A primary caregiver already exists"
                       : "Set caregiver role priority"
                     }
-                    disabled={isCreatePrimaryLocked}
+                    disabled={readOnly || isCreatePrimaryLocked}
                     variant="default"
                   />
                 </div>
@@ -595,6 +606,7 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               render={({ field }) => (
                 <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
                   <PremiumSwitch
+                    disabled={readOnly}
                     checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
                     label="Emergency contact"
@@ -617,17 +629,19 @@ export function Step3Caregivers({ clientId, isCreateMode = false, onSaveSuccess,
               }}
               disabled={isCreating || isUpdating}
             >
-              Cancel
+              {readOnly ? "Close" : "Cancel"}
             </Button>
-            <Button type="submit" loading={isCreating || isUpdating} disabled={isCreating || isUpdating}>
-              {editingCaregiver ? "Update caregiver" : "Save caregiver"}
-            </Button>
+            {!readOnly && (
+              <Button type="submit" loading={isCreating || isUpdating} disabled={isCreating || isUpdating}>
+                {editingCaregiver ? "Update caregiver" : "Save caregiver"}
+              </Button>
+            )}
           </div>
         </form>
       </CustomModal>
 
       <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
+        isOpen={!readOnly && isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false)
           setDeletingCaregiver(null)

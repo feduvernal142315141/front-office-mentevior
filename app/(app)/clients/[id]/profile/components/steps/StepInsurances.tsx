@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Edit2, Shield, Trash2 } from "lucide-react"
+import { Edit2, Eye, Shield, Trash2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
@@ -41,6 +41,7 @@ function formatDate(dateStr: string | undefined): string {
 export function StepInsurances({
   clientId,
   isCreateMode = false,
+  readOnly = false,
   onSaveSuccess,
   onValidationError,
   onProgressUpdate,
@@ -89,8 +90,13 @@ export function StepInsurances({
   })
 
   const payerOptions = useMemo(
-    () => payers.map((payer) => ({ value: payer.id, label: payer.name })),
-    [payers]
+    () => {
+      if (readOnly && editingInsurance?.payerName) {
+        return [{ value: editingInsurance.payerId, label: editingInsurance.payerName }]
+      }
+      return payers.map((payer) => ({ value: payer.id, label: payer.name }))
+    },
+    [editingInsurance, payers, readOnly]
   )
 
   const payerMap = useMemo(
@@ -142,6 +148,7 @@ export function StepInsurances({
     comments: insurance.comments ?? "",
   })
 
+  const DetailsIcon = readOnly ? Eye : Edit2
   const columns: CustomTableColumn<ClientInsurance>[] = [
     {
       key: "payerName",
@@ -248,32 +255,34 @@ export function StepInsurances({
               "transition-all duration-200 ease-out",
               "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
             )}
-            title="Edit insurance"
-            aria-label="Edit insurance"
+            title={readOnly ? "View insurance" : "Edit insurance"}
+            aria-label={readOnly ? "View insurance" : "Edit insurance"}
           >
-            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            <DetailsIcon className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
-          <button
-            onClick={() => {
-              setDeletingInsurance(insurance)
-              setIsDeleteModalOpen(true)
-            }}
-            className={cn(
-              "group/delete relative h-9 w-9",
-              "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-red-50 to-red-100/80",
-              "border border-red-200/60 shadow-sm shadow-red-900/5",
-              "hover:from-red-100 hover:to-red-200/90",
-              "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
-              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-              "transition-all duration-200 ease-out",
-              "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
-            )}
-            title="Remove insurance"
-            aria-label="Remove insurance"
-          >
-            <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => {
+                setDeletingInsurance(insurance)
+                setIsDeleteModalOpen(true)
+              }}
+              className={cn(
+                "group/delete relative h-9 w-9",
+                "flex items-center justify-center rounded-xl",
+                "bg-gradient-to-b from-red-50 to-red-100/80",
+                "border border-red-200/60 shadow-sm shadow-red-900/5",
+                "hover:from-red-100 hover:to-red-200/90",
+                "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+              )}
+              title="Remove insurance"
+              aria-label="Remove insurance"
+            >
+              <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -343,7 +352,7 @@ export function StepInsurances({
   )
 
   const handleConfirmDelete = async () => {
-    if (!deletingInsurance) return
+    if (readOnly || !deletingInsurance) return
     const progress = await remove(deletingInsurance.id)
     if (progress === null) return
     onProgressUpdate?.(progress)
@@ -372,20 +381,22 @@ export function StepInsurances({
           <p className="text-slate-600 mt-1">Insurance policies associated with this client</p>
         </div>
 
-        <Button
-          type="button"
-          onClick={() => {
-            setEditingInsurance(null)
-            form.reset({
-              ...clientInsuranceFormDefaults,
-              isActive: insurances.length === 0,
-              isPrimary: insurances.length === 0,
-            })
-            setIsModalOpen(true)
-          }}
-        >
-          New insurance
-        </Button>
+        {!readOnly && (
+          <Button
+            type="button"
+            onClick={() => {
+              setEditingInsurance(null)
+              form.reset({
+                ...clientInsuranceFormDefaults,
+                isActive: insurances.length === 0,
+                isPrimary: insurances.length === 0,
+              })
+              setIsModalOpen(true)
+            }}
+          >
+            New insurance
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -437,17 +448,20 @@ export function StepInsurances({
             form.reset(clientInsuranceFormDefaults)
           }
         }}
-        title={editingInsurance ? "Edit insurance" : "New insurance"}
+        title={readOnly ? "View insurance" : editingInsurance ? "Edit insurance" : "New insurance"}
         description={
-          editingInsurance
-            ? "Update insurance policy information"
-            : "Add a new insurance policy for this client"
+          readOnly
+            ? undefined
+            : editingInsurance
+              ? "Update insurance policy information"
+              : "Add a new insurance policy for this client"
         }
         maxWidthClassName="sm:max-w-[760px]"
       >
         <form
           onSubmit={(event) => {
             event.preventDefault()
+            if (readOnly) return
             void handleSave()
           }}
           noValidate
@@ -466,7 +480,7 @@ export function StepInsurances({
                     onBlur={field.onBlur}
                     options={payerOptions}
                     hasError={!!fieldState.error}
-                    disabled={isLoadingPayers}
+                    disabled={readOnly || isLoadingPayers}
                     required
                   />
                   {fieldState.error && (
@@ -482,6 +496,7 @@ export function StepInsurances({
               render={({ field, fieldState }) => (
                 <div>
                   <FloatingSelect
+                    disabled={readOnly}
                     label="Insurance type"
                     value={field.value || ""}
                     onChange={field.onChange}
@@ -505,6 +520,7 @@ export function StepInsurances({
               render={({ field, fieldState }) => (
                 <div className="md:col-span-2">
                   <FloatingInput
+                    disabled={readOnly}
                     label="Member / Policy number"
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -526,6 +542,7 @@ export function StepInsurances({
               render={({ field, fieldState }) => (
                 <div>
                   <FloatingSelect
+                    disabled={readOnly}
                     label="Relationship"
                     value={field.value || ""}
                     onChange={field.onChange}
@@ -549,6 +566,7 @@ export function StepInsurances({
               render={({ field, fieldState }) => (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="Group number"
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -568,6 +586,7 @@ export function StepInsurances({
               render={({ field, fieldState }) => (
                 <div>
                   <PremiumDatePicker
+                    disabled={readOnly}
                     label="Effective date"
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -587,6 +606,7 @@ export function StepInsurances({
               render={({ field, fieldState }) => (
                 <div>
                   <PremiumDatePicker
+                    disabled={readOnly}
                     label="Termination date"
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -607,6 +627,7 @@ export function StepInsurances({
               render={({ field }) => (
                 <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
                   <PremiumSwitch
+                    disabled={readOnly}
                     checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
                     label={field.value ? "Active" : "Inactive"}
@@ -623,6 +644,7 @@ export function StepInsurances({
               render={({ field }) => (
                 <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
                   <PremiumSwitch
+                    disabled={readOnly}
                     checked={Boolean(field.value)}
                     onCheckedChange={field.onChange}
                     label={field.value ? "Primary" : "Secondary"}
@@ -644,6 +666,7 @@ export function StepInsurances({
                     Comments
                   </label>
                   <textarea
+                    disabled={readOnly}
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
@@ -689,22 +712,24 @@ export function StepInsurances({
                 }}
                 disabled={isCreating || isUpdating}
               >
-                Cancel
+                {readOnly ? "Close" : "Cancel"}
               </Button>
-              <Button
-                type="submit"
-                loading={isCreating || isUpdating}
-                disabled={isCreating || isUpdating}
-              >
-                {editingInsurance ? "Update" : "Create"}
-              </Button>
+              {!readOnly && (
+                <Button
+                  type="submit"
+                  loading={isCreating || isUpdating}
+                  disabled={isCreating || isUpdating}
+                >
+                  {editingInsurance ? "Update" : "Create"}
+                </Button>
+              )}
             </div>
           </div>
         </form>
       </CustomModal>
 
       <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
+        isOpen={!readOnly && isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false)
           setDeletingInsurance(null)

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 export function Step9Providers({
   clientId,
   isCreateMode = false,
+  readOnly = false,
   onSaveSuccess,
   onProgressUpdate,
   registerSubmit,
@@ -185,7 +186,7 @@ export function Step9Providers({
   }
 
   const handleAssignSelected = async () => {
-    if (!resolvedClientId || !selectedCount) return
+    if (readOnly || !resolvedClientId || !selectedCount) return
 
     const selectedIds = Array.from(selectedUserIds)
     const providerAssignments = selectedIds.map((id) => ({
@@ -217,7 +218,7 @@ export function Step9Providers({
   }
 
   const handleConfirmRemove = async () => {
-    if (!deletingProvider) return
+    if (readOnly || !deletingProvider) return
 
     const progress = await remove(deletingProvider.id)
     if (progress === null) return
@@ -229,6 +230,7 @@ export function Step9Providers({
   }
 
   const handleTogglePrimary = async (providerId: string, isPrimary: boolean) => {
+    if (readOnly) return
     const ok = await updateProvider({ id: providerId, isPrimary })
     if (!ok) return
     await refetch()
@@ -292,7 +294,7 @@ export function Step9Providers({
           <Switch
             checked={provider.isPrimary}
             onCheckedChange={(checked) => void handleTogglePrimary(provider.id, checked)}
-            disabled={isUpdating}
+            disabled={readOnly || isUpdating}
             className="data-[state=checked]:bg-[#037ECC] scale-90"
           />
         </div>
@@ -351,9 +353,11 @@ export function Step9Providers({
           <p className="text-slate-600 mt-1">Specialists and users assigned to this client</p>
         </div>
 
-        <Button type="button" onClick={handleOpenModal}>
-          Add provider
-        </Button>
+        {!readOnly && (
+          <Button type="button" onClick={handleOpenModal}>
+            Add provider
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -363,7 +367,7 @@ export function Step9Providers({
       )}
 
       <CustomTable
-        columns={providerColumns}
+        columns={readOnly ? providerColumns.filter((column) => column.key !== "actions") : providerColumns}
         data={paginatedProviders}
         isLoading={isLoading}
         hideEmptyIcon
@@ -396,7 +400,7 @@ export function Step9Providers({
       />
 
       <CustomModal
-        open={isAssignModalOpen}
+        open={!readOnly && isAssignModalOpen}
         onOpenChange={(open) => {
           if (!open) handleCloseModal()
         }}
@@ -591,7 +595,7 @@ export function Step9Providers({
       </CustomModal>
 
       <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
+        isOpen={!readOnly && isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false)
           setDeletingProvider(null)

@@ -12,6 +12,7 @@ export function Step10RequiredDocuments({
   clientId,
   client,
   isCreateMode,
+  readOnly = false,
   onSaveSuccess,
   registerSubmit,
   registerValidation,
@@ -44,11 +45,12 @@ export function Step10RequiredDocuments({
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Required Documents</h2>
         <p className="text-slate-600 mt-1">
-          Manage and upload required documents for this client
+          {readOnly ? "Required documents for this client" : "Manage and upload required documents for this client"}
         </p>
       </div>
 
       <RequiredDocumentsOverview
+        readOnly={readOnly}
         isActive={true}
         clientId={clientId}
         onPendingCountChange={onDocumentsAlertChange}

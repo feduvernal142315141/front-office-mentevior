@@ -30,6 +30,7 @@ import { getPriorAuthorizationById } from "@/lib/modules/prior-authorizations/se
 import { getBillingCodes } from "@/lib/modules/billing-codes/services/billing-codes.service"
 
 interface PriorAuthEditViewProps {
+  readOnly?: boolean
   clientId: string
   editingPA: PriorAuthorization
   insurances: ClientInsurance[]
@@ -42,6 +43,7 @@ interface PriorAuthEditViewProps {
 }
 
 export function PriorAuthEditView({
+  readOnly = false,
   clientId,
   editingPA,
   insurances,
@@ -79,6 +81,7 @@ export function PriorAuthEditView({
   ])
 
   useEffect(() => {
+    if (readOnly) return
     onPrimaryActionLabelChange?.("Update Authorization")
     onRegisterSubmit?.(() => submitHandlerRef.current({ preventDefault: () => {} } as React.FormEvent))
     return () => {
@@ -86,12 +89,12 @@ export function PriorAuthEditView({
       onPrimaryActionLabelChange?.(undefined)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [readOnly])
 
   const { isDirty } = form.formState
   useEffect(() => {
-    onDirtyChange?.(isDirty)
-  }, [isDirty, onDirtyChange])
+    onDirtyChange?.(!readOnly && isDirty)
+  }, [isDirty, onDirtyChange, readOnly])
 
   // PA data loaded from backend (fresh fetch for attachment URLs etc.)
   const [pa, setPa] = useState<PriorAuthorization | null>(null)
@@ -284,6 +287,10 @@ export function PriorAuthEditView({
   // the billing codes section only happens inside the onValid callback, i.e.
   // after all form fields pass — preserving the top-to-bottom focus order.
   const handleSubmitForm = (e: React.FormEvent) => {
+    if (readOnly) {
+      e.preventDefault()
+      return
+    }
     if (billingCodes.length === 0) setBillingCodesError(true)
     else setBillingCodesError(false)
     handleSave(e)
@@ -354,17 +361,17 @@ export function PriorAuthEditView({
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-[52px] animate-pulse rounded-[16px] bg-gray-100" />
+                <div key={i} className="h-13 animate-pulse rounded-2xl bg-gray-100" />
               ))}
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="h-[52px] animate-pulse rounded-[16px] bg-gray-100" />
+                <div key={i} className="h-13 animate-pulse rounded-2xl bg-gray-100" />
               ))}
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="h-[52px] animate-pulse rounded-[16px] bg-gray-100" />
+                <div key={i} className="h-13 animate-pulse rounded-2xl bg-gray-100" />
               ))}
             </div>
             <div className="border-t border-slate-200" />
@@ -388,7 +395,7 @@ export function PriorAuthEditView({
         </button>
         <div>
           <h2 className="text-2xl font-bold text-slate-800">
-            Edit Prior Authorization
+            {readOnly ? "View Prior Authorization" : "Edit Prior Authorization"}
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">{pa?.authNumber ?? editingPA.authNumber}</p>
         </div>
@@ -398,6 +405,7 @@ export function PriorAuthEditView({
         <Card variant="elevated" padding="lg">
           <div className="space-y-8">
             <PriorAuthBaseForm
+              readOnly={readOnly}
               form={form}
               insurances={insurances}
               clientId={clientId}
@@ -418,6 +426,7 @@ export function PriorAuthEditView({
                 Authorization Billing Codes <span className="text-[#037ECC]">*</span>
               </h3>
               <BillingCodesSection
+                readOnly={readOnly}
                 entries={billingCodes}
                 onAdd={handleAddBillingCode}
                 onEdit={handleEditBillingCode}
@@ -434,7 +443,7 @@ export function PriorAuthEditView({
       </form>
 
       <BillingCodeModal
-        open={isBCModalOpen}
+        open={!readOnly && isBCModalOpen}
         onClose={() => {
           setIsBCModalOpen(false)
           setEditingBC(null)
@@ -447,11 +456,11 @@ export function PriorAuthEditView({
       />
 
       <DeleteConfirmModal
-        isOpen={!!deletingBC}
+        isOpen={!readOnly && !!deletingBC}
         onClose={() => setDeletingBC(null)}
         onConfirm={async () => {
           const target = deletingBC
-          if (!target?.id) return
+          if (readOnly || !target?.id) return
 
           const deleted = await remove(target.id)
           if (!deleted) return

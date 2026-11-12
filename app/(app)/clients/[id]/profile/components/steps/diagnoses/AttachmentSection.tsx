@@ -12,6 +12,7 @@ import {
 } from "./diagnosis-helpers"
 
 interface AttachmentSectionProps {
+  readOnly?: boolean
   /** Archivo recién elegido, todavía sin guardar. */
   file: File | null
   /** Nombre mostrado: el del archivo nuevo o el del adjunto ya guardado. */
@@ -28,6 +29,7 @@ interface AttachmentSectionProps {
 }
 
 export function AttachmentSection({
+  readOnly = false,
   file,
   fileName,
   hasStoredAttachment,
@@ -87,28 +89,32 @@ export function AttachmentSection({
                 {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "Saved attachment"}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700"
-                title="Replace attachment"
-                aria-label="Replace attachment"
-              >
-                <Upload className="h-[18px] w-[18px]" />
-              </button>
-              {/* Antes sólo aparecía para archivos nuevos: no había manera de borrar un adjunto ya guardado. */}
-              <button
-                type="button"
-                onClick={onRemove}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200/60 bg-red-50 text-red-500 transition-all duration-200 hover:bg-red-100 hover:text-red-700"
-                title={file ? "Discard selected file" : "Remove attachment"}
-                aria-label={file ? "Discard selected file" : "Remove attachment"}
-              >
-                <Trash2 className="h-[18px] w-[18px]" />
-              </button>
-            </div>
+            {!readOnly && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700"
+                  title="Replace attachment"
+                  aria-label="Replace attachment"
+                >
+                  <Upload className="h-[18px] w-[18px]" />
+                </button>
+                {/* Antes sólo aparecía para archivos nuevos: no había manera de borrar un adjunto ya guardado. */}
+                <button
+                  type="button"
+                  onClick={onRemove}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200/60 bg-red-50 text-red-500 transition-all duration-200 hover:bg-red-100 hover:text-red-700"
+                  title={file ? "Discard selected file" : "Remove attachment"}
+                  aria-label={file ? "Discard selected file" : "Remove attachment"}
+                >
+                  <Trash2 className="h-[18px] w-[18px]" />
+                </button>
+              </div>
+            )}
           </div>
+        ) : readOnly ? (
+          <p className="text-sm text-slate-500">No attachment</p>
         ) : (
           <label
             className={cn(
@@ -143,6 +149,7 @@ export function AttachmentSection({
         <input
           ref={inputRef}
           type="file"
+          disabled={readOnly}
           accept={ACCEPTED_ATTACHMENT_TYPES}
           className="hidden"
           onChange={(event) => {

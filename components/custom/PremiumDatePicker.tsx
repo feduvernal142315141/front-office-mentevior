@@ -111,6 +111,7 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
   }, [monthOpen, displayMonth, scrollToSelected])
 
   const handleSelect = (date: Date | undefined) => {
+    if (disabled) return
     if (date) {
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -124,7 +125,10 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
 
   return (
     <div className="w-full">
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover
+        open={!disabled && isOpen}
+        onOpenChange={(open) => setIsOpen(!disabled && open)}
+      >
         <PopoverTrigger asChild>
           <div className="relative">
             <button
@@ -139,13 +143,13 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
               className={cn(
                 "flex items-center",
                 "w-full",
-                "h-[52px] 2xl:h-[56px]",
+                "h-13 2xl:h-14",
                 "px-4 pr-12",
-                "rounded-[16px]",
+                "rounded-2xl",
                 "text-left",
                 "text-[15px] 2xl:text-[16px]",
-                "text-[var(--color-login-text-primary)]",
-                "bg-gradient-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
+                "text-(--color-login-text-primary)",
+                "bg-linear-to-b from-[hsl(240_20%_99%)] to-[hsl(240_18%_96%)]",
                 hasError 
                   ? "border-2 border-red-500/70"
                   : "border border-[hsl(240_20%_88%/0.6)]",
@@ -154,9 +158,9 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
                 "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_2px_6px_rgba(15,23,42,0.06)]",
                 "focus:outline-none",
                 "focus:border-[hsl(var(--primary))]",
-                "focus:bg-gradient-to-b focus:from-white focus:to-[hsl(240_20%_99%)]",
+                "focus:bg-linear-to-b focus:from-white focus:to-[hsl(240_20%_99%)]",
                 "focus:shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_0_0_4px_hsl(var(--primary)/0.12),0_6px_14px_hsl(var(--primary)/0.18)]",
-                "focus:-translate-y-[1px]",
+                "focus:-translate-y-px",
                 "transition-all duration-200 ease-out",
                 disabled && "opacity-60 cursor-not-allowed"
               )}
@@ -174,13 +178,13 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
                   : "top-1/2 -translate-y-1/2 text-sm",
                 isFocused || isOpen
                   ? "text-[#2563EB]"
-                  : "text-[var(--color-login-text-muted)]"
+                  : "text-(--color-login-text-muted)"
               )}
             >
               {label} {required && <span className="text-[#037ECC]">*</span>}
             </label>
             
-            {hasValue && onClear ? (
+            {!disabled && hasValue && onClear ? (
               <button
                 type="button"
                 onClick={(e) => {
@@ -207,11 +211,11 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
         </PopoverTrigger>
         
         <PopoverContent 
-          className="p-0 w-[calc(100vw-24px)] sm:w-[370px] sm:max-w-[370px] bg-white/95 backdrop-blur-xl border border-slate-200 shadow-[0_14px_36px_rgba(15,23,42,0.12)] rounded-[16px]" 
+          className="p-0 w-[calc(100vw-24px)] sm:w-92.5 sm:max-w-92.5 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-[0_14px_36px_rgba(15,23,42,0.12)] rounded-2xl"
           align="end"
           sideOffset={8}
         >
-          <div className="p-5 bg-gradient-to-br from-white to-gray-50/60 rounded-[16px]">
+          <div className="p-5 bg-linear-to-br from-white to-gray-50/60 rounded-2xl">
             <div className="flex items-center justify-between gap-2 px-1 pb-3">
               <button
                 type="button"
@@ -238,7 +242,7 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
                   {monthOpen && (
                     <div
                       ref={monthListRef}
-                      className="absolute left-0 mt-2 z-[60] min-w-[120px] max-h-[200px] overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg"
+                      className="absolute left-0 mt-2 z-60 min-w-30 max-h-50 overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg"
                     >
                       {Array.from({ length: 12 }).map((_, index) => {
                         const isSelected = index === displayMonth.getMonth()
@@ -281,7 +285,7 @@ export const PremiumDatePicker = forwardRef<HTMLButtonElement, PremiumDatePicker
                   {yearOpen && (
                     <div
                       ref={yearListRef}
-                      className="absolute right-0 mt-2 z-[60] min-w-[90px] max-h-[200px] overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg"
+                      className="absolute right-0 mt-2 z-60 min-w-22.5 max-h-50 overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white shadow-lg"
                     >
                       {Array.from({ length: toYear - fromYear + 1 }).map((_, idx) => {
                         const year = fromYear + idx

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
-import { Activity, Edit2, Trash2 } from "lucide-react"
+import { Activity, Edit2, Eye, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/custom/Button"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -21,6 +21,7 @@ import { DiagnosisFormModal } from "./diagnoses/DiagnosisFormModal"
 export function Step6Diagnoses({
   clientId,
   isCreateMode = false,
+  readOnly = false,
   onSaveSuccess,
   onValidationError: _onValidationError,
   onProgressUpdate,
@@ -102,15 +103,16 @@ export function Step6Diagnoses({
   )
 
   const handleConfirmRemove = useCallback(async () => {
-    if (!deletingDiagnosis) return
+    if (readOnly || !deletingDiagnosis) return
     const progress = await remove(deletingDiagnosis.id)
     if (progress === null) return
     onProgressUpdate?.(progress)
     setIsDeleteModalOpen(false)
     setDeletingDiagnosis(null)
     await refetch()
-  }, [deletingDiagnosis, onProgressUpdate, refetch, remove])
+  }, [deletingDiagnosis, onProgressUpdate, readOnly, refetch, remove])
 
+  const DetailsIcon = readOnly ? Eye : Edit2
   const columns: CustomTableColumn<Diagnosis>[] = useMemo(
     () => [
       { key: "code", header: "Code" },
@@ -180,42 +182,44 @@ export function Step6Diagnoses({
                 "transition-all duration-200 ease-out",
                 "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
               )}
-              title="Edit diagnosis"
-              aria-label="Edit diagnosis"
+              title={readOnly ? "View diagnosis" : "Edit diagnosis"}
+              aria-label={readOnly ? "View diagnosis" : "Edit diagnosis"}
               disabled={loadingDiagnosisId === diagnosis.id}
             >
               {loadingDiagnosisId === diagnosis.id ? (
                 <Activity className="h-4 w-4 animate-spin text-blue-600" />
               ) : (
-                <Edit2 className="h-4 w-4 text-blue-600 transition-colors duration-200 group-hover/edit:text-blue-700" />
+                <DetailsIcon className="h-4 w-4 text-blue-600 transition-colors duration-200 group-hover/edit:text-blue-700" />
               )}
             </button>
-            <button
-              onClick={() => {
-                setDeletingDiagnosis(diagnosis)
-                setIsDeleteModalOpen(true)
-              }}
-              className={cn(
-                "group/delete relative h-9 w-9",
-                "flex items-center justify-center rounded-xl",
-                "bg-gradient-to-b from-red-50 to-red-100/80",
-                "border border-red-200/60 shadow-sm shadow-red-900/5",
-                "hover:from-red-100 hover:to-red-200/90",
-                "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
-                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-                "transition-all duration-200 ease-out",
-                "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
-              )}
-              title="Remove diagnosis"
-              aria-label="Remove diagnosis"
-            >
-              <Trash2 className="h-4 w-4 text-red-600 transition-colors duration-200 group-hover/delete:text-red-700" />
-            </button>
+            {!readOnly && (
+              <button
+                onClick={() => {
+                  setDeletingDiagnosis(diagnosis)
+                  setIsDeleteModalOpen(true)
+                }}
+                className={cn(
+                  "group/delete relative h-9 w-9",
+                  "flex items-center justify-center rounded-xl",
+                  "bg-gradient-to-b from-red-50 to-red-100/80",
+                  "border border-red-200/60 shadow-sm shadow-red-900/5",
+                  "hover:from-red-100 hover:to-red-200/90",
+                  "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+                  "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                  "transition-all duration-200 ease-out",
+                  "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+                )}
+                title="Remove diagnosis"
+                aria-label="Remove diagnosis"
+              >
+                <Trash2 className="h-4 w-4 text-red-600 transition-colors duration-200 group-hover/delete:text-red-700" />
+              </button>
+            )}
           </div>
         ),
       },
     ],
-    [loadingDiagnosisId, openEditModal]
+    [DetailsIcon, loadingDiagnosisId, openEditModal, readOnly]
   )
 
   if (!resolvedClientId) {
@@ -238,9 +242,11 @@ export function Step6Diagnoses({
           <p className="mt-1 text-slate-600">Client diagnoses and treatment dates</p>
         </div>
 
-        <Button type="button" onClick={openCreateModal}>
-          New diagnosis
-        </Button>
+        {!readOnly && (
+          <Button type="button" onClick={openCreateModal}>
+            New diagnosis
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -285,6 +291,7 @@ export function Step6Diagnoses({
 
       <DiagnosisFormModal
         open={isFormModalOpen}
+        readOnly={readOnly}
         diagnosis={editingDiagnosis}
         clientId={resolvedClientId}
         hasPrimaryDiagnosis={hasPrimaryDiagnosis}
@@ -296,7 +303,7 @@ export function Step6Diagnoses({
       />
 
       <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
+        isOpen={!readOnly && isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false)
           setDeletingDiagnosis(null)

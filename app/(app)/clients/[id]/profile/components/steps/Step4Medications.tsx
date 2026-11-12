@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Edit2, Trash2 } from "lucide-react"
+import { Edit2, Eye, Trash2 } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { CustomModal } from "@/components/custom/CustomModal"
 import { CustomTable, type CustomTableColumn } from "@/components/custom/CustomTable"
@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils"
 export function Step4Medications({
   clientId,
   isCreateMode = false,
+  readOnly = false,
   onSaveSuccess,
   onValidationError,
   onProgressUpdate,
@@ -76,6 +77,7 @@ export function Step4Medications({
     defaultValues: medicationFormDefaults,
   })
 
+  const DetailsIcon = readOnly ? Eye : Edit2
   const columns: CustomTableColumn<Medication>[] = [
     {
       key: "name",
@@ -126,32 +128,34 @@ export function Step4Medications({
               "transition-all duration-200 ease-out",
               "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2"
             )}
-            title="Edit medication"
-            aria-label="Edit medication"
+            title={readOnly ? "View medication" : "Edit medication"}
+            aria-label={readOnly ? "View medication" : "Edit medication"}
           >
-            <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+            <DetailsIcon className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
           </button>
-          <button
-            onClick={() => {
-              setDeletingMedication(medication)
-              setIsDeleteModalOpen(true)
-            }}
-            className={cn(
-              "group/delete relative h-9 w-9",
-              "flex items-center justify-center rounded-xl",
-              "bg-gradient-to-b from-red-50 to-red-100/80",
-              "border border-red-200/60 shadow-sm shadow-red-900/5",
-              "hover:from-red-100 hover:to-red-200/90",
-              "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
-              "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
-              "transition-all duration-200 ease-out",
-              "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
-            )}
-            title="Remove medication"
-            aria-label="Remove medication"
-          >
-            <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => {
+                setDeletingMedication(medication)
+                setIsDeleteModalOpen(true)
+              }}
+              className={cn(
+                "group/delete relative h-9 w-9",
+                "flex items-center justify-center rounded-xl",
+                "bg-gradient-to-b from-red-50 to-red-100/80",
+                "border border-red-200/60 shadow-sm shadow-red-900/5",
+                "hover:from-red-100 hover:to-red-200/90",
+                "hover:border-red-300/80 hover:shadow-md hover:shadow-red-900/10",
+                "hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2"
+              )}
+              title="Remove medication"
+              aria-label="Remove medication"
+            >
+              <Trash2 className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors duration-200" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -228,7 +232,7 @@ export function Step4Medications({
   })
 
   const handleConfirmRemove = async () => {
-    if (!deletingMedication) return
+    if (readOnly || !deletingMedication) return
     const progress = await remove(deletingMedication.id)
     if (progress === null) return
     onProgressUpdate?.(progress)
@@ -257,16 +261,18 @@ export function Step4Medications({
           <p className="text-slate-600 mt-1">Current medications prescribed for this patient</p>
         </div>
 
-        <Button
-          type="button"
-          onClick={() => {
-            setEditingMedication(null)
-            form.reset(medicationFormDefaults)
-            setIsMedicationModalOpen(true)
-          }}
-        >
-          New medication
-        </Button>
+        {!readOnly && (
+          <Button
+            type="button"
+            onClick={() => {
+              setEditingMedication(null)
+              form.reset(medicationFormDefaults)
+              setIsMedicationModalOpen(true)
+            }}
+          >
+            New medication
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -311,13 +317,14 @@ export function Step4Medications({
             form.reset(medicationFormDefaults)
           }
         }}
-        title={editingMedication ? "Edit medication" : "New medication"}
-        description={editingMedication ? "Update medication details" : "Add medication details"}
+        title={readOnly ? "View medication" : editingMedication ? "Edit medication" : "New medication"}
+        description={readOnly ? undefined : editingMedication ? "Update medication details" : "Add medication details"}
         maxWidthClassName="sm:max-w-[760px]"
       >
         <form
           onSubmit={(event) => {
             event.preventDefault()
+            if (readOnly) return
             void handleSaveMedication()
           }}
           className="px-6 py-6"
@@ -329,6 +336,7 @@ export function Step4Medications({
               render={({ field, fieldState }) => (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="Name"
                     value={field.value}
                     onChange={field.onChange}
@@ -347,6 +355,7 @@ export function Step4Medications({
               render={({ field, fieldState }) => (
                 <div>
                   <FloatingInput
+                    disabled={readOnly}
                     label="Dosage"
                     value={field.value || ""}
                     onChange={field.onChange}
@@ -363,6 +372,7 @@ export function Step4Medications({
               control={form.control}
               render={({ field, fieldState }) => (
                 <PremiumDatePicker
+                  disabled={readOnly}
                   label="Prescription Date"
                   value={field.value || ""}
                   onChange={field.onChange}
@@ -378,6 +388,7 @@ export function Step4Medications({
               control={form.control}
               render={({ field, fieldState }) => (
                 <PremiumDatePicker
+                  disabled={readOnly}
                   label="Treatment Start Date"
                   value={field.value || ""}
                   onChange={field.onChange}
@@ -394,6 +405,7 @@ export function Step4Medications({
               render={({ field, fieldState }) => (
                 <div className="md:col-span-2">
                   <FloatingTextarea
+                    disabled={readOnly}
                     label="Prescriber"
                     value={field.value || ""}
                     onChange={field.onChange}
@@ -418,17 +430,19 @@ export function Step4Medications({
               }}
               disabled={isCreating || isUpdating}
             >
-              Cancel
+              {readOnly ? "Close" : "Cancel"}
             </Button>
-            <Button type="submit" loading={isCreating || isUpdating} disabled={isCreating || isUpdating}>
-              {editingMedication ? "Update medication" : "Save medication"}
-            </Button>
+            {!readOnly && (
+              <Button type="submit" loading={isCreating || isUpdating} disabled={isCreating || isUpdating}>
+                {editingMedication ? "Update medication" : "Save medication"}
+              </Button>
+            )}
           </div>
         </form>
       </CustomModal>
 
       <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
+        isOpen={!readOnly && isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false)
           setDeletingMedication(null)

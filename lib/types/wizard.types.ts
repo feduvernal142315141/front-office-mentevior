@@ -14,6 +14,7 @@ export interface StepComponentProps {
   clientId: string
   client: any
   isCreateMode?: boolean
+  readOnly?: boolean
   onSaveSuccess: (data: unknown) => void
   onValidationError: (errors: Record<string, string>) => void
   onProgressUpdate?: (progress: number) => void
