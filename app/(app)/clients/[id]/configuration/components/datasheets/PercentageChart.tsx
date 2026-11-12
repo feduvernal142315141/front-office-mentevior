@@ -16,6 +16,7 @@ import { format } from "date-fns"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/constants/chart.constants"
 import { DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
+import { parseLocalDate } from "./datasheet-utils"
 import { type PercentageDayEntry, getDateKey, calculatePercentage, countYes } from "./percentage-datasheet.types"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
 import { DEFAULT_ENVIRONMENTAL_CHANGES } from "@/lib/constants/environmental-changes"
@@ -41,6 +42,12 @@ interface PercentageChartProps {
    * Sin config, el comportamiento histórico: línea de fase + listado.
    */
   environmentalChanges?: EnvironmentalChangesDisplay
+  /**
+   * Time-sampling: el baseline se guarda como cantidad de intervalos con "+" (no como %),
+   * así que la pantalla de Interval calcula el % de cada día de baseline y lo pasa aquí.
+   * Con esto el baseline se dibuja como puntos en sus fechas (no como línea horizontal).
+   */
+  baselinePoints?: { dateKey: string; percentage: number }[]
 }
 
 interface ChartDataPoint {
@@ -48,6 +55,7 @@ interface ChartDataPoint {
   dateLabel: string
   fullDate: string
   percentage: number | null
+  baselinePercentage?: number | null
   yesCount: number
   totalTrials: number
   hasNote: boolean
@@ -55,7 +63,7 @@ interface ChartDataPoint {
 }
 
 export function PercentageChart({
-  weekDays, entries, dcConfig, chartDays, tickInterval = 0, gapDateKeys,
+  weekDays, entries, dcConfig, chartDays, tickInterval = 0, gapDateKeys, baselinePoints,
   environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
 }: PercentageChartProps) {
   const allDays = chartDays ?? weekDays
@@ -68,29 +76,50 @@ export function PercentageChart({
   const baselines = dcConfig?.baselines ?? []
   const objectives = dcConfig?.objectives ?? []
 
+  const baselinePointByKey = useMemo(
+    () => new Map((baselinePoints ?? []).map((b) => [b.dateKey, b.percentage])),
+    [baselinePoints],
+  )
+
+  // Los días de baseline siempre están en la gráfica, aunque caigan fuera del rango elegido
+  const chartDaysWithBaseline = useMemo(() => {
+    if (baselinePointByKey.size === 0) return days
+    const present = new Set(days.map((d) => getDateKey(d)))
+    const extra = [...baselinePointByKey.keys()]
+      .filter((key) => !present.has(key))
+      .map((key) => parseLocalDate(key))
+    return [...days, ...extra].sort((a, b) => a.getTime() - b.getTime())
+  }, [days, baselinePointByKey])
+
   const data = useMemo<ChartDataPoint[]>(() => {
-    return days.map((day) => {
+    return chartDaysWithBaseline.map((day) => {
       const key = getDateKey(day)
       const entry = entries[key]
-      const pct = entry ? calculatePercentage(entry) : null
+      const baselinePct = baselinePointByKey.get(key)
+      const isBaselineDay = baselinePct !== undefined
+      // Un día de baseline se dibuja solo como baseline, no como tratamiento
+      const pct = entry && !isBaselineDay ? calculatePercentage(entry) : null
       return {
         dateKey: key,
         dateLabel: format(day, labelFormat),
         fullDate: format(day, "EEEE, MMM dd yyyy"),
         percentage: pct,
+        baselinePercentage: baselinePct ?? null,
         yesCount: entry ? countYes(entry) : 0,
         totalTrials: entry?.numberOfTrials ?? 0,
         hasNote: (entry?.environmentalNote ?? "").trim().length > 0,
         note: entry?.environmentalNote ?? "",
       }
     })
-  }, [days, entries, labelFormat])
+  }, [chartDaysWithBaseline, entries, labelFormat, baselinePointByKey])
 
   const baselineValue = useMemo(() => {
+    if (baselinePoints) return baselinePoints.length > 0 ? 0 : null
     const shown = baselines.filter((b) => b.show && b.value > 0)
     if (shown.length === 0) return null
-    return shown.reduce((sum, b) => sum + b.value, 0) / shown.length
-  }, [baselines])
+    const average = shown.reduce((sum, b) => sum + b.value, 0) / shown.length
+    return Math.round(average * 10) / 10
+  }, [baselines, baselinePoints])
 
   const activeObjective = useMemo(
     () => resolveActiveObjective(objectives),
@@ -158,7 +187,7 @@ export function PercentageChart({
           {baselineValue !== null && (
             <div className="flex items-center gap-1.5">
               <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: baselineColor }} />
-              <span className="text-xs text-slate-500">Baseline: <span className="font-semibold" style={{ color: baselineColor }}>{baselineValue}%</span></span>
+              <span className="text-xs text-slate-500">Baseline{baselinePoints ? "" : <>: <span className="font-semibold" style={{ color: baselineColor }}>{baselineValue}%</span></>}</span>
             </div>
           )}
           <div className="flex items-center gap-1.5">
@@ -207,6 +236,9 @@ export function PercentageChart({
               return (
                 <div className="rounded-xl bg-slate-900 text-white px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)] text-xs space-y-1 max-w-[220px]">
                   <p className="font-semibold">{point?.fullDate ?? label}</p>
+                  {point?.baselinePercentage != null && (
+                    <p>Baseline: <span className="font-bold" style={{ color: "#FCA5A5" }}>{point.baselinePercentage}%</span></p>
+                  )}
                   {point?.percentage != null && (
                     <p>Percentage: <span className="font-bold">{point.percentage}%</span></p>
                   )}
@@ -225,8 +257,20 @@ export function PercentageChart({
             cursor={{ stroke: "#037ECC", strokeWidth: 1, strokeDasharray: "4 4" }}
           />
 
-          {baselineValue !== null && (
+          {!baselinePoints && baselineValue !== null && (
             <ReferenceLine y={baselineValue} stroke={baselineColor} strokeWidth={1.5} strokeDasharray="6 4" />
+          )}
+          {baselinePoints && baselinePoints.length > 0 && (
+            <Line
+              type="monotone"
+              dataKey="baselinePercentage"
+              stroke={baselineColor}
+              strokeWidth={2}
+              strokeDasharray="6 3"
+              dot={{ r: 4, fill: "white", stroke: baselineColor, strokeWidth: 2 }}
+              activeDot={{ r: 6, fill: baselineColor, stroke: "white", strokeWidth: 2 }}
+              connectNulls={false}
+            />
           )}
 
 

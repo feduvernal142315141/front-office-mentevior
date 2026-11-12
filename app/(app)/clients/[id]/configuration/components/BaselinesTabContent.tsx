@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/custom/Button"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper"
+import { SERVICE_PLAN_UNIT_OF_TIME_OPTIONS } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -24,8 +26,24 @@ export interface BaselineRow {
   periodCatalogId: string
   /** Duración de la sesión (Rate/Duration), en la unidad del Period */
   sessionDuration: string
+  /** Time-sampling (PIR/WIR/MTS): configuración propia de ese día */
+  intervalLength?: string
+  unitOfTime?: string
+  suggestedNumberOfRecordings?: string
   comments: string
   show: boolean
+}
+
+export function timeSamplingDefaults(d: {
+  intervalLength: number
+  unitOfTime: string
+  suggestedNumberOfRecordings: number
+}): Pick<BaselineRow, "intervalLength" | "unitOfTime" | "suggestedNumberOfRecordings"> {
+  return {
+    intervalLength: String(d.intervalLength),
+    unitOfTime: d.unitOfTime,
+    suggestedNumberOfRecordings: String(d.suggestedNumberOfRecordings),
+  }
 }
 
 export function createEmptyBaseline(): BaselineRow {
@@ -50,6 +68,17 @@ interface BaselinesTabContentProps {
   readOnly?: boolean
   /** Rate/Duration: muestra el campo para cargar a mano la duración de la sesión */
   requiresSessionDuration?: boolean
+  /**
+   * Rate: el Period se reemplaza por la "Unit of time" del item (solo lectura). Las filas
+   * que ya guardaron otra unidad conservan su Period para no reinterpretar su duración.
+   */
+  rateUnit?: { id: string; label: string }
+  /**
+   * Time-sampling: cada día de baseline lleva su propio Interval length, Unit of time y
+   * Suggested number of recordings (en lugar de Value y Period). Estos son los valores por
+   * defecto de las filas nuevas (los del Type).
+   */
+  timeSampling?: { intervalLength: number; unitOfTime: string; suggestedNumberOfRecordings: number }
 }
 
 export function BaselinesTabContent({
@@ -61,6 +90,8 @@ export function BaselinesTabContent({
   hideAddButton = false,
   readOnly = false,
   requiresSessionDuration = false,
+  rateUnit,
+  timeSampling,
 }: BaselinesTabContentProps) {
   const { canCreate, canEdit, canDelete } = useModulePermissions(PermissionModule.CLIENTS)
   const actionsDisabled = readOnly || !canEdit
@@ -68,15 +99,22 @@ export function BaselinesTabContent({
 
   const sessionDurationLabel = useCallback(
     (periodCatalogId: string) => {
-      const period = periodSelectOptions.find((o) => o.value === periodCatalogId)?.label
+      const period = periodSelectOptions.find((o) => o.value === (periodCatalogId || rateUnit?.id))?.label
       return period ? `Session duration (${period.toLowerCase()})` : "Session duration"
     },
-    [periodSelectOptions]
+    [periodSelectOptions, rateUnit]
   )
 
   const handleAdd = useCallback(() => {
-    onChange([...baselines, createEmptyBaseline()])
-  }, [baselines, onChange])
+    onChange([
+      ...baselines,
+      {
+        ...createEmptyBaseline(),
+        periodCatalogId: rateUnit?.id ?? "",
+        ...(timeSampling ? timeSamplingDefaults(timeSampling) : {}),
+      },
+    ])
+  }, [baselines, onChange, rateUnit, timeSampling])
 
   const handleUpdate = useCallback(
     (localId: string, field: keyof BaselineRow, value: string | boolean) => {
@@ -139,6 +177,43 @@ export function BaselinesTabContent({
                     disabled={actionsDisabled}
                   />
                 </div>
+                {timeSampling ? (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <FloatingNumberStepper
+                        label="Interval length"
+                        value={Number(row.intervalLength) || timeSampling.intervalLength}
+                        onChange={(v) => handleUpdate(row.localId, "intervalLength", String(v))}
+                        min={1}
+                        max={9999}
+                        hasError={showErrors && !(Number(row.intervalLength) > 0)}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <FloatingSelect
+                        label="Unit of time"
+                        value={row.unitOfTime || timeSampling.unitOfTime}
+                        onChange={(v) => handleUpdate(row.localId, "unitOfTime", v)}
+                        options={SERVICE_PLAN_UNIT_OF_TIME_OPTIONS}
+                        dropdownPosition="bottom"
+                        disabled={actionsDisabled}
+                      />
+                    </div>
+                    <div className="col-span-2 flex-1 min-w-0 sm:col-span-1">
+                      <FloatingInput
+                        label="Suggested number of recordings"
+                        value={row.suggestedNumberOfRecordings ?? String(timeSampling.suggestedNumberOfRecordings)}
+                        onChange={(v) => handleUpdate(row.localId, "suggestedNumberOfRecordings", v.replace(/[^0-9]/g, ""))}
+                        onBlur={() => {}}
+                        inputMode="numeric"
+                        hasError={showErrors && row.suggestedNumberOfRecordings !== undefined && !(Number(row.suggestedNumberOfRecordings) > 0)}
+                        required
+                        disabled={actionsDisabled}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
                 <div className="flex-1 min-w-0">
                   <FloatingInput
                     label="Value"
@@ -152,17 +227,29 @@ export function BaselinesTabContent({
                   />
                 </div>
                 <div className="flex-1 min-w-0 relative">
-                  <FloatingSelect
-                    label="Period"
-                    value={row.periodCatalogId}
-                    onChange={(v) => handleUpdate(row.localId, "periodCatalogId", v)}
-                    options={periodSelectOptions}
-                    dropdownPosition="bottom"
-                    hasError={showErrors && !row.periodCatalogId}
-                    required
-                    disabled={actionsDisabled}
-                  />
+                  {rateUnit && (!row.periodCatalogId || row.periodCatalogId === rateUnit.id) ? (
+                    <FloatingInput
+                      label="Unit of time"
+                      value={rateUnit.label}
+                      onChange={() => {}}
+                      onBlur={() => {}}
+                      disabled
+                    />
+                  ) : (
+                    <FloatingSelect
+                      label="Period"
+                      value={row.periodCatalogId}
+                      onChange={(v) => handleUpdate(row.localId, "periodCatalogId", v)}
+                      options={periodSelectOptions}
+                      dropdownPosition="bottom"
+                      hasError={showErrors && !row.periodCatalogId}
+                      required
+                      disabled={actionsDisabled}
+                    />
+                  )}
                 </div>
+                  </>
+                )}
                 {requiresSessionDuration && (
                   <div className="col-span-2 flex-1 min-w-0 sm:col-span-1">
                     <FloatingInput

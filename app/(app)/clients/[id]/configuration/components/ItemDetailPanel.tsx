@@ -37,9 +37,11 @@ import { useClientById } from "@/lib/modules/clients/hooks/use-client-by-id"
 import {
   BaselinesTabContent,
   createEmptyBaseline,
+  timeSamplingDefaults,
   type BaselineRow,
 } from "./BaselinesTabContent"
 import { ObjectivesTabContent, inferObjetiveType } from "./ObjectivesTabContent"
+import { periodNameToUnitOfTime } from "./datasheets/rate-datasheet.types"
 import type { ObjectiveRow } from "./ObjectiveFormModal"
 
 import {
@@ -64,6 +66,8 @@ import {
   typeRequiresWeeklyDaily,
   typeRequiresUnitOfTime,
   typeRequiresBaselineSessionDuration,
+  typeShowsSuggestedRecordings,
+  typeUsesItemUnitInBaseline,
   typeRequiresInterval,
   typeRequiresDailyAndWeekly,
   typeHasCumulativeValueToggles,
@@ -328,6 +332,9 @@ export function ItemDetailPanel({
             value: String(b.value),
             periodCatalogId: b.periodCatalogId,
             sessionDuration: b.sessionDuration != null ? String(b.sessionDuration) : "",
+            intervalLength: b.intervalLength != null ? String(b.intervalLength) : undefined,
+            unitOfTime: b.unitOfTime ?? undefined,
+            suggestedNumberOfRecordings: b.suggestedNumberOfRecordings != null ? String(b.suggestedNumberOfRecordings) : undefined,
             comments: b.environmentalChanges ?? b.comments ?? "",
             show: b.show,
           }))
@@ -508,6 +515,29 @@ export function ItemDetailPanel({
   const isMeasurementLogType = typeIsMeasurementLog(resolvedType.name)
   const needsSessionDuration = typeRequiresBaselineSessionDuration(resolvedType.name)
 
+  // Time-sampling: cada día de baseline lleva su propia configuración (por defecto la del Type)
+  const watchedIntervalLength = watch("intervalLength")
+  const watchedSuggestedRecordings = watch("suggestedNumberOfRecordings")
+  const timeSampling = useMemo(
+    () =>
+      typeRequiresInterval(resolvedType.group)
+        ? {
+            intervalLength: watchedIntervalLength ?? 30,
+            unitOfTime: watchedUnitOfTime ?? ServicePlanUnitOfTime.SECONDS,
+            suggestedNumberOfRecordings: watchedSuggestedRecordings ?? 10,
+          }
+        : undefined,
+    [resolvedType.group, watchedIntervalLength, watchedUnitOfTime, watchedSuggestedRecordings],
+  )
+
+  // Rate y Duration: el baseline usa la Unit of time del item; solo aplica si el catálogo de Period tiene esa unidad
+  const rateUnit = useMemo(() => {
+    if (!typeUsesItemUnitInBaseline(resolvedType.name) || !watchedUnitOfTime) return undefined
+    const match = periodCatalog.find((p) => periodNameToUnitOfTime(p.name) === watchedUnitOfTime)
+    const label = SERVICE_PLAN_UNIT_OF_TIME_OPTIONS.find((o) => o.value === watchedUnitOfTime)?.label
+    return match && label ? { id: match.id, label } : undefined
+  }, [resolvedType.name, watchedUnitOfTime, periodCatalog])
+
   const { groups: unitMeasurementGroups, isLoading: isLoadingUnitMeasurement } =
     useUnitMeasurementCatalog(isMeasurementLogType)
 
@@ -589,8 +619,21 @@ export function ItemDetailPanel({
   const handleSave = async (values: ClientDataCollectionFormValues) => {
     // Rate/Duration: el backend exige la duración de la sesión (> 0) en cada baseline
     const missingSessionDuration = needsSessionDuration && baselines.some(
-      (b) => b.date && b.periodCatalogId && !(Number(b.sessionDuration) > 0)
+      (b) => b.date && (b.periodCatalogId || rateUnit?.id) && !(Number(b.sessionDuration) > 0)
     )
+    const invalidTimeSampling = !!timeSampling && baselines.some(
+      (b) =>
+        b.date &&
+        !(
+          Number(b.intervalLength || timeSampling.intervalLength) > 0 &&
+          (b.suggestedNumberOfRecordings === undefined ? timeSampling.suggestedNumberOfRecordings : Number(b.suggestedNumberOfRecordings)) > 0
+        )
+    )
+    if (invalidTimeSampling) {
+      setBaselinesError(true)
+      toast.error("Interval length and Suggested number of recordings are required in each baseline")
+      return
+    }
     if (missingSessionDuration) {
       setBaselinesError(true)
       toast.error("Session duration is required", {
@@ -609,6 +652,11 @@ export function ItemDetailPanel({
       }))
 
       const baselinesPayload = baselines
+        .map((b) => ({
+          ...b,
+          // Time-sampling no muestra Period: el contrato todavía lo pide, se manda uno cualquiera del catálogo
+          periodCatalogId: b.periodCatalogId || rateUnit?.id || (timeSampling ? periodCatalog[0]?.id ?? "" : ""),
+        }))
         .filter((b) => b.date && b.periodCatalogId)
         .map((b) => ({
           recordId: b.recordId,
@@ -616,6 +664,16 @@ export function ItemDetailPanel({
           value: Number(b.value) || 0,
           periodCatalogId: b.periodCatalogId,
           sessionDuration: needsSessionDuration && b.sessionDuration !== "" ? Number(b.sessionDuration) : undefined,
+          ...(timeSampling
+            ? {
+                intervalLength: Number(b.intervalLength || timeSampling.intervalLength),
+                unitOfTime: b.unitOfTime || timeSampling.unitOfTime,
+                suggestedNumberOfRecordings:
+                  b.suggestedNumberOfRecordings === undefined
+                    ? timeSampling.suggestedNumberOfRecordings
+                    : Number(b.suggestedNumberOfRecordings),
+              }
+            : {}),
           environmentalChanges: b.comments,
           show: b.show,
         }))
@@ -915,6 +973,7 @@ export function ItemDetailPanel({
                 />
                 <FieldErrorText message={errors.unitOfTime?.message} />
               </div>
+              {typeShowsSuggestedRecordings(resolvedType.name) && (
               <div className="space-y-1">
                 <Controller
                   name="suggestedNumberOfRecordings"
@@ -933,6 +992,7 @@ export function ItemDetailPanel({
                 />
                 <FieldErrorText message={errors.suggestedNumberOfRecordings?.message} />
               </div>
+              )}
               <div className="space-y-1">
                 <Controller
                   name="dailyValue"
@@ -1163,8 +1223,11 @@ export function ItemDetailPanel({
             <Button
               type="button"
               onClick={() => {
-                const lastPeriod = baselines.length > 0 ? baselines[baselines.length - 1].periodCatalogId : ""
-                handleBaselinesChange([...baselines, { ...createEmptyBaseline(), periodCatalogId: lastPeriod }])
+                const lastPeriod = rateUnit?.id ?? (baselines.length > 0 ? baselines[baselines.length - 1].periodCatalogId : "")
+                handleBaselinesChange([
+                  ...baselines,
+                  { ...createEmptyBaseline(), periodCatalogId: lastPeriod, ...(timeSampling ? timeSamplingDefaults(timeSampling) : {}) },
+                ])
               }}
               className="gap-1.5 text-sm h-8 px-3"
               disabled={!watchedType}
@@ -1180,6 +1243,8 @@ export function ItemDetailPanel({
             mode="item"
             periodSelectOptions={periodSelectOptions}
             requiresSessionDuration={needsSessionDuration}
+            rateUnit={rateUnit}
+            timeSampling={timeSampling}
             showErrors={baselinesError}
             hideAddButton
             readOnly={!canEdit}
