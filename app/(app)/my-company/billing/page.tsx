@@ -57,7 +57,7 @@ export default function BillingPage() {
     },
     {
       title: "Denied Batch Claim",
-      description: "Review batch claims denied by the payer",
+      description: "Review denied and rejected batch claims",
       href: "/my-company/billing/denied-batch-claims",
       icon: FileX,
       module: PermissionModule.BILLED_CLAIMS,

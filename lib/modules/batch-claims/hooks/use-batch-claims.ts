@@ -18,7 +18,7 @@ export function useBatchClaims(
   search: string,
   page: number,
   pageSize: number,
-  claimMdEffectiveStatus?: ClaimMdEffectiveStatus,
+  claimMdEffectiveStatuses?: readonly ClaimMdEffectiveStatus[],
 ): UseBatchClaimsReturn {
   const [batchClaims, setBatchClaims] = useState<BatchClaimSummary[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -41,7 +41,7 @@ export function useBatchClaims(
           filters,
           page,
           pageSize,
-          claimMdEffectiveStatus,
+          claimMdEffectiveStatuses,
         })
         if (isActive) {
           setBatchClaims(entities)
@@ -61,7 +61,7 @@ export function useBatchClaims(
     return () => {
       isActive = false
     }
-  }, [search, page, pageSize, claimMdEffectiveStatus, refreshIndex])
+  }, [search, page, pageSize, claimMdEffectiveStatuses, refreshIndex])
 
   const refetch = useCallback(async () => {
     setRefreshIndex((i) => i + 1)

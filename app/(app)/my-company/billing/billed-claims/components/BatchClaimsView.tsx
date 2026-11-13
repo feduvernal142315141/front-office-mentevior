@@ -29,7 +29,7 @@ export function BatchClaimsView({ deniedOnly = false }: { deniedOnly?: boolean }
             </h1>
             <p className="text-slate-600 mt-1">
               {deniedOnly
-                ? "Review batch claims denied by the payer"
+                ? "Review denied and rejected batch claims"
                 : "Group billable appointments into batches and generate claims"}
             </p>
           </div>

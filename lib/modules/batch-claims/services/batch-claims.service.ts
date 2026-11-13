@@ -80,7 +80,7 @@ export async function getBatchClaims(params?: {
   orders?: string[]
   page?: number
   pageSize?: number
-  claimMdEffectiveStatus?: ClaimMdEffectiveStatus
+  claimMdEffectiveStatuses?: readonly ClaimMdEffectiveStatus[]
 }): Promise<PaginatedResponse<BatchClaimSummary>> {
   const qs = new URLSearchParams()
   if (params?.filters?.length) {
@@ -91,8 +91,9 @@ export async function getBatchClaims(params?: {
   }
   if (params?.page !== undefined) qs.set("page", String(params.page))
   if (params?.pageSize !== undefined) qs.set("pageSize", String(params.pageSize))
-  if (params?.claimMdEffectiveStatus) {
-    qs.set("claimMdEffectiveStatus", params.claimMdEffectiveStatus)
+  const statuses = params?.claimMdEffectiveStatuses
+  if (statuses?.length) {
+    qs.set("claimMdEffectiveStatus", statuses.join(","))
   }
   const query = qs.toString()
 
@@ -110,8 +111,10 @@ export async function getBatchClaims(params?: {
 
   const batchClaims = entities.map(parseSummary)
   if (
-    params?.claimMdEffectiveStatus &&
-    batchClaims.some((batch) => batch.claimMdEffectiveStatus !== params.claimMdEffectiveStatus)
+    statuses?.length &&
+    batchClaims.some(({ claimMdEffectiveStatus }) =>
+      !claimMdEffectiveStatus || !statuses.includes(claimMdEffectiveStatus),
+    )
   ) {
     throw new Error("The server returned batch claims outside the requested status.")
   }

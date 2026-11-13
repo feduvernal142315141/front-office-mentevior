@@ -19,6 +19,7 @@ import type { BatchClaimSummary } from "@/lib/types/batch-claim.types"
 const GRID_COLS = "grid-cols-[minmax(180px,1.4fr)_minmax(160px,1.2fr)_minmax(160px,1.2fr)_minmax(120px,1fr)_88px]"
 const GRID_COLS_WITH_CLAIM_MD =
   "grid-cols-[minmax(170px,1.3fr)_minmax(150px,1.1fr)_minmax(150px,1.1fr)_minmax(120px,1fr)_130px_88px]"
+const DENIED_BATCH_STATUSES = ["DENIED", "REJECTED"] as const
 
 interface BatchClaimsTableProps {
   deniedOnly: boolean
@@ -39,7 +40,7 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
     searchQuery as string,
     page - 1,
     pageSize,
-    deniedOnly ? "DENIED" : undefined,
+    deniedOnly ? DENIED_BATCH_STATUSES : undefined,
   )
 
   const handleDelete = async (batchId: string) => {
@@ -133,7 +134,7 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
                 <p className="mt-1 text-sm text-gray-500">Try adjusting your search or clear the field</p>
               </>
             ) : deniedOnly ? (
-              <p className="text-sm font-medium text-slate-700">No denied batch claims</p>
+              <p className="text-sm font-medium text-slate-700">No denied or rejected batch claims</p>
             ) : (
               <>
                 <p className="text-sm font-medium text-slate-700">No batch claims yet</p>
