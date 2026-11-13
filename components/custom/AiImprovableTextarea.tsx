@@ -61,14 +61,16 @@ interface AiImprovableTextareaProps extends FloatingTextareaProps {
    * ABC es opcional: alcanza con que haya ABC o este texto para poder generar.
    */
   contextNotes?: string
+  /** Section selections used when no observations or other source text were entered. */
+  fallbackNotes?: string
   contextNotesLabel?: string
 }
 
 /**
  * FloatingTextarea + an ephemeral ABC field above it. Generate / Improve sends the
- * ABC content plus any `contextNotes` (e.g. Goals) as `text` (never the summary draft). The AI result is
- * written into the summary. ABC clears after a successful generate; Undo restores
- * both the previous summary and the ABC notes.
+ * ABC content and any `contextNotes` (e.g. Goals) as `text`, using
+ * `fallbackNotes` when both are empty. The AI result replaces the summary and
+ * clears ABC. Undo restores both.
  */
 export function AiImprovableTextarea({
   fieldName,
@@ -78,6 +80,7 @@ export function AiImprovableTextarea({
   abcNotes,
   onAbcNotesChange,
   contextNotes = "",
+  fallbackNotes = "",
   contextNotesLabel,
   value,
   onChange,
@@ -93,19 +96,16 @@ export function AiImprovableTextarea({
   const summaryText = value ?? ""
   const abc = abcNotes.trim()
   const hasAbc = abc.length > 0
-  const context = contextNotes.trim()
-  const hasContext = context.length > 0
-  const canGenerate = hasAbc || hasContext
+  const text = [contextNotes.trim(), abc].filter(Boolean).join("\n\n") || fallbackNotes.trim()
+  const canGenerate = text.length > 0
   const hasSummary = summaryText.trim().length > 0
   const actionLabel = hasSummary ? "Improve with AI" : "Generate with AI"
   const generationHint = contextNotesLabel
-    ? `Write ${contextNotesLabel} or ABC notes to use AI.`
+    ? `Add ${contextNotesLabel} or ABC notes to use AI.`
     : "Write ABC notes to use AI."
 
   const handleImprove = async () => {
     if (!canGenerate || isLoading) return
-    // Sin etiquetas: el backend lo manda como <draft_summary> y la IA podría copiarlas al resumen
-    const text = [context, abc].filter(Boolean).join("\n\n")
     const suggested = await improve({
       billingCode,
       summaryType,

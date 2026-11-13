@@ -130,9 +130,16 @@ export function SessionNote97156Form({
   const { items: periodCatalog } = usePeriodCatalog()
   const periodNameById = useMemo(() => new Map(periodCatalog.map((p) => [p.id, p.name])), [periodCatalog])
 
+  const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
+    ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
+
+  const teachingMethodNames = [
+    ...formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label),
+    formData.hasOther ? formData.otherTeachingMethodValue.trim() : "",
+  ].filter(Boolean)
+  const interventionNames = namesFromIds(formData.interventionIds, interventionCatalog)
+
   const buildSummaryMetadata = () => {
-    const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
-      ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
     // El ejemplo del backend manda la relación ("Parent"), no el nombre del cuidador — evita PII innecesaria.
     const caregiverNames = formData.caregiverIds
       .map((id) => caregiverOptions.find((c) => c.id === id))
@@ -140,17 +147,14 @@ export function SessionNote97156Form({
       .map((c) => c.relationship || c.name)
 
     return buildSessionSummaryMetadata97156({
-      teachingMethodName: [
-        ...formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label),
-        formData.hasOther ? formData.otherTeachingMethodValue.trim() : "",
-      ].filter(Boolean).join(", "),
+      teachingMethodName: teachingMethodNames.join(", "),
       modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
       reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
       medicalConcerns: formData.medicalConcerns,
       crisisInvolved: formData.crisisInvolved,
       caregiverNames,
       clientPresent: formData.clientPresent,
-      interventionNames: namesFromIds(formData.interventionIds, interventionCatalog),
+      interventionNames,
       goals: formData.goals,
       participantNames: namesFromIds(formData.participantIds, participantCatalog),
       categories,
@@ -452,7 +456,8 @@ export function SessionNote97156Form({
               abcNotes={abcNotes}
               onAbcNotesChange={setAbcNotes}
               contextNotes={formData.goals}
-              contextNotesLabel="Goals"
+              fallbackNotes={[...teachingMethodNames, ...interventionNames].join("\n")}
+              contextNotesLabel="Goals, a teaching method, or an intervention"
             />
             <FieldError message={errors.sessionSummary} />
           </div>

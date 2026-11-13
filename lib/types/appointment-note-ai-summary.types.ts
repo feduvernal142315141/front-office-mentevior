@@ -15,8 +15,8 @@ export interface ImproveAppointmentNoteSummaryPayload {
   billingCode: string
   summaryType?: AppointmentNoteSummaryType
   /**
-   * Raw clinician notes from the ephemeral ABC field. The summary/narrative is
-   * never sent here — only the AI result is written back into that field.
+   * ABC observations and any other source text from the form, such as goals
+   * or selected activities. The AI result is written into the summary/narrative.
    */
   text: string
   /** JSON-serialized metadata object (the API expects a JSON string, not an object) */

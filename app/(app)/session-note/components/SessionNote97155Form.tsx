@@ -116,6 +116,11 @@ export function SessionNote97155Form({
   const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
     ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
 
+  const faceToFaceProtocolName = protocolObservationItems.find((i) => i.id === formData.faceToFaceProtocolId)?.name ?? ""
+  const protocolAdjustmentNames = namesFromIds(formData.protocolAdjustmentIds, protocolAdjustmentItems)
+  const qhpImplementationName = qhpImplementationItems.find((i) => i.id === formData.qhpImplementationId)?.name ?? ""
+  const activeDirectionActivityNames = namesFromIds(formData.activeDirectionIds, activeDirectionItems)
+
   const generalMetadata = () => ({
     modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
     reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
@@ -127,26 +132,26 @@ export function SessionNote97155Form({
   const buildFaceToFaceSummaryMetadata = () =>
     buildFaceToFaceMetadata({
       ...generalMetadata(),
-      faceToFaceProtocolName: protocolObservationItems.find((i) => i.id === formData.faceToFaceProtocolId)?.name ?? "",
+      faceToFaceProtocolName,
     })
 
   const buildAdjustmentsSummaryMetadata = () =>
     buildProtocolAdjustmentsMetadata({
       ...generalMetadata(),
-      protocolAdjustmentNames: namesFromIds(formData.protocolAdjustmentIds, protocolAdjustmentItems),
+      protocolAdjustmentNames,
     })
 
   const buildQhpSummaryMetadata = () =>
     buildQhpImplementationMetadata({
       ...generalMetadata(),
-      qhpImplementationName: qhpImplementationItems.find((i) => i.id === formData.qhpImplementationId)?.name ?? "",
+      qhpImplementationName,
     })
 
   const buildActiveDirectionSummaryMetadata = () =>
     buildActiveDirectionMetadata({
       ...generalMetadata(),
       technicianNameAndCredentials: formData.technicianNameAndCredentials,
-      activeDirectionActivityNames: namesFromIds(formData.activeDirectionIds, activeDirectionItems),
+      activeDirectionActivityNames,
     })
 
   return (
@@ -333,6 +338,8 @@ export function SessionNote97155Form({
                   buildMetadata={buildFaceToFaceSummaryMetadata}
                   abcNotes={abcBySection.faceToFace}
                   onAbcNotesChange={(v) => setAbc("faceToFace", v)}
+                  fallbackNotes={faceToFaceProtocolName}
+                  contextNotesLabel="an observation outcome"
                 />
                 <FieldError message={errors.faceToFaceProtocolNarrative} />
               </div>
@@ -384,6 +391,8 @@ export function SessionNote97155Form({
                   buildMetadata={buildAdjustmentsSummaryMetadata}
                   abcNotes={abcBySection.adjustments}
                   onAbcNotesChange={(v) => setAbc("adjustments", v)}
+                  fallbackNotes={protocolAdjustmentNames.join("\n")}
+                  contextNotesLabel="a protocol adjustment"
                 />
                 <FieldError message={errors.adjustmentsNarrative} />
               </div>
@@ -463,6 +472,8 @@ export function SessionNote97155Form({
                   buildMetadata={buildQhpSummaryMetadata}
                   abcNotes={abcBySection.qhp}
                   onAbcNotesChange={(v) => setAbc("qhp", v)}
+                  fallbackNotes={qhpImplementationName}
+                  contextNotesLabel="a QHP implementation option"
                 />
                 <FieldError message={errors.qhpNarrative} />
               </div>
@@ -527,6 +538,8 @@ export function SessionNote97155Form({
                   buildMetadata={buildActiveDirectionSummaryMetadata}
                   abcNotes={abcBySection.activeDirection}
                   onAbcNotesChange={(v) => setAbc("activeDirection", v)}
+                  fallbackNotes={activeDirectionActivityNames.join("\n")}
+                  contextNotesLabel="a direction activity"
                 />
                 <FieldError message={errors.activeDirectionNarrative} />
               </div>

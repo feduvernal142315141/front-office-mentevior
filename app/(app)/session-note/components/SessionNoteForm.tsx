@@ -134,27 +134,30 @@ export function SessionNoteForm({
   const { items: periodCatalog } = usePeriodCatalog()
   const periodNameById = useMemo(() => new Map(periodCatalog.map((p) => [p.id, p.name])), [periodCatalog])
 
-  const buildSummaryMetadata = () => {
-    const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
-      ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
+  const namesFromIds = (ids: string[], items: { id: string; name: string }[]) =>
+    ids.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n)
 
-    return buildSessionSummaryMetadata97153({
-      teachingMethodName: [
-        ...formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label),
-        formData.hasOther ? formData.otherTeachingMethodValue.trim() : "",
-      ].filter(Boolean).join(", "),
+  const teachingMethodNames = [
+    ...formData.teachingMethodIds.map((id) => teachingMethodOptions.find((o) => o.value === id)?.label),
+    formData.hasOther ? formData.otherTeachingMethodValue.trim() : "",
+  ].filter(Boolean)
+  const antecedentNames = namesFromIds(formData.antecedentInterventionIds, antecedentItems)
+  const consequenceNames = namesFromIds(formData.consequenceInterventionIds, consequenceItems)
+
+  const buildSummaryMetadata = () =>
+    buildSessionSummaryMetadata97153({
+      teachingMethodName: teachingMethodNames.join(", "),
       modalityName: modalityOptions.find((o) => o.value === formData.modalityId)?.label ?? "",
       reasonCaregiverNotPresent: formData.reasonCaregiverNotPresent,
       medicalConcerns: formData.medicalConcerns,
       crisisInvolved: formData.crisisInvolved,
       participantNames: namesFromIds(formData.participantIds, participantCatalog),
-      antecedentNames: namesFromIds(formData.antecedentInterventionIds, antecedentItems),
-      consequenceNames: namesFromIds(formData.consequenceInterventionIds, consequenceItems),
+      antecedentNames,
+      consequenceNames,
       categories,
       categoryItems: formData.categoryItems,
       periodNameById,
     })
-  }
 
   return (
     <div className="space-y-5 pb-32">
@@ -374,6 +377,8 @@ export function SessionNoteForm({
             buildMetadata={buildSummaryMetadata}
             abcNotes={abcNotes}
             onAbcNotesChange={setAbcNotes}
+            fallbackNotes={[...teachingMethodNames, ...antecedentNames, ...consequenceNames].join("\n")}
+            contextNotesLabel="a teaching method or an intervention"
           />
           <FieldError message={errors.sessionSummary} />
         </div>
