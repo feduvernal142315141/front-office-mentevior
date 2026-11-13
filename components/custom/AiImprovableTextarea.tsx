@@ -45,6 +45,7 @@ const AI_PILL = cn(
 )
 
 interface AiImprovableTextareaProps extends FloatingTextareaProps {
+  fieldName: string
   billingCode: string
   summaryType?: AppointmentNoteSummaryType
   /** Resolved fresh on every click so it always reflects the current form state */
@@ -70,13 +71,14 @@ interface AiImprovableTextareaProps extends FloatingTextareaProps {
  * both the previous summary and the ABC notes.
  */
 export function AiImprovableTextarea({
+  fieldName,
   billingCode,
   summaryType,
   buildMetadata,
   abcNotes,
   onAbcNotesChange,
   contextNotes = "",
-  contextNotesLabel = "Goals",
+  contextNotesLabel,
   value,
   onChange,
   disabled,
@@ -96,6 +98,9 @@ export function AiImprovableTextarea({
   const canGenerate = hasAbc || hasContext
   const hasSummary = summaryText.trim().length > 0
   const actionLabel = hasSummary ? "Improve with AI" : "Generate with AI"
+  const generationHint = contextNotesLabel
+    ? `Write ${contextNotesLabel} or ABC notes to use AI.`
+    : "Write ABC notes to use AI."
 
   const handleImprove = async () => {
     if (!canGenerate || isLoading) return
@@ -136,7 +141,7 @@ export function AiImprovableTextarea({
     <div className="space-y-4">
       {/* ABC — ephemeral clinician notes (optional); sent in `text` to the AI */}
       <FloatingTextarea
-        label="ABC"
+        label="ABC (optional)"
         value={abcNotes}
         onChange={onAbcNotesChange}
         onBlur={() => {}}
@@ -165,7 +170,7 @@ export function AiImprovableTextarea({
               type="button"
               onClick={handleImprove}
               disabled={isLoading || !canGenerate}
-              title={canGenerate ? undefined : `Write ${contextNotesLabel} or ABC notes before generating`}
+              title={canGenerate ? undefined : generationHint}
               className={AI_PILL}
             >
               {isLoading ? (
@@ -177,13 +182,15 @@ export function AiImprovableTextarea({
             </button>
           </div>
         )}
-        <FloatingTextarea
-          label={label}
-          value={summaryText}
-          onChange={handleSummaryChange}
-          disabled={disabled}
-          {...rest}
-        />
+        <div data-field={fieldName}>
+          <FloatingTextarea
+            label={label}
+            value={summaryText}
+            onChange={handleSummaryChange}
+            disabled={disabled}
+            {...rest}
+          />
+        </div>
       </div>
     </div>
   )

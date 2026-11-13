@@ -315,8 +315,9 @@ export function SessionNote97155Form({
                 </RadioGroup>
                 <FieldError message={errors.faceToFaceProtocolId} />
               </div>
-              <div className="pl-4" data-field="faceToFaceProtocolNarrative">
+              <div className="pl-4">
                 <AiImprovableTextarea
+                  fieldName="faceToFaceProtocolNarrative"
                   label="Narrative"
                   value={formData.faceToFaceProtocolNarrative}
                   onChange={(v) => updateField("faceToFaceProtocolNarrative", v)}
@@ -365,8 +366,9 @@ export function SessionNote97155Form({
                 />
                 <FieldError message={errors.protocolAdjustmentIds} />
               </div>
-              <div className="pl-4" data-field="adjustmentsNarrative">
+              <div className="pl-4">
                 <AiImprovableTextarea
+                  fieldName="adjustmentsNarrative"
                   label="Narrative"
                   value={formData.adjustmentsNarrative}
                   onChange={(v) => updateField("adjustmentsNarrative", v)}
@@ -443,8 +445,9 @@ export function SessionNote97155Form({
                 </RadioGroup>
                 <FieldError message={errors.qhpImplementationId} />
               </div>
-              <div className="pl-4" data-field="qhpNarrative">
+              <div className="pl-4">
                 <AiImprovableTextarea
+                  fieldName="qhpNarrative"
                   label="Narrative"
                   value={formData.qhpNarrative}
                   onChange={(v) => updateField("qhpNarrative", v)}
@@ -506,8 +509,9 @@ export function SessionNote97155Form({
                 />
                 <FieldError message={errors.activeDirectionIds} />
               </div>
-              <div className="pl-4" data-field="activeDirectionNarrative">
+              <div className="pl-4">
                 <AiImprovableTextarea
+                  fieldName="activeDirectionNarrative"
                   label="Narrative"
                   value={formData.activeDirectionNarrative}
                   onChange={(v) => updateField("activeDirectionNarrative", v)}

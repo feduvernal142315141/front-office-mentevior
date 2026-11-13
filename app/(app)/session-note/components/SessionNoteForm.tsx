@@ -357,8 +357,9 @@ export function SessionNoteForm({
 
       {/* ─── Row 4: Session Summary (full width) ─── */}
       <Section icon={<BookOpen className="h-4 w-4" />} title="Session Summary">
-        <div data-field="sessionSummary">
+        <div>
           <AiImprovableTextarea
+            fieldName="sessionSummary"
             label="Session Summary"
             value={formData.sessionSummary}
             onChange={(v) => updateField("sessionSummary", v)}

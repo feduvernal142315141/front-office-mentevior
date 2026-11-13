@@ -434,8 +434,9 @@ export function SessionNote97156Form({
             />
             <FieldError message={errors.goals} />
           </div>
-          <div data-field="sessionSummary">
+          <div>
             <AiImprovableTextarea
+              fieldName="sessionSummary"
               label="Summary"
               value={formData.sessionSummary}
               onChange={(v) => updateField("sessionSummary", v)}
