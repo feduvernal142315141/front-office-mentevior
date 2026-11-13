@@ -21,11 +21,12 @@ const GRID_COLS_WITH_CLAIM_MD =
   "grid-cols-[minmax(170px,1.3fr)_minmax(150px,1.1fr)_minmax(150px,1.1fr)_minmax(120px,1fr)_130px_88px]"
 
 interface BatchClaimsTableProps {
+  deniedOnly: boolean
   canEdit: boolean
   canDelete: boolean
 }
 
-export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) {
+export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaimsTableProps) {
   const router = useRouter()
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useDebouncedState("", 500)
@@ -38,6 +39,7 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
     searchQuery as string,
     page - 1,
     pageSize,
+    deniedOnly ? "DENIED" : undefined,
   )
 
   const handleDelete = async (batchId: string) => {
@@ -130,6 +132,8 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
                 <p className="text-base font-semibold text-gray-800">No batch claims match your search</p>
                 <p className="mt-1 text-sm text-gray-500">Try adjusting your search or clear the field</p>
               </>
+            ) : deniedOnly ? (
+              <p className="text-sm font-medium text-slate-700">No denied batch claims</p>
             ) : (
               <>
                 <p className="text-sm font-medium text-slate-700">No batch claims yet</p>
@@ -188,7 +192,11 @@ export function BatchClaimsTable({ canEdit, canDelete }: BatchClaimsTableProps) 
                 <div className="flex w-[88px] items-center justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => router.push(`/my-company/billing/billed-claims/${batch.id}`)}
+                    onClick={() =>
+                      router.push(
+                        `/my-company/billing/billed-claims/${batch.id}${deniedOnly ? "?from=denied-batch-claims" : ""}`,
+                      )
+                    }
                     className={cn(
                       "group/view flex h-8 w-8 items-center justify-center rounded-xl",
                       "border border-slate-200/80 bg-gradient-to-b from-slate-50 to-slate-100/80 shadow-sm",

@@ -36,6 +36,7 @@ export const ROUTE_TO_PERMISSION_MAP: Record<string, string> = {
   "/my-company/billing/payers": PermissionModule.PAYERS,
   "/my-company/billing/services-pending": PermissionModule.SERVICES_PENDING_BILLING,
   "/my-company/billing/billed-claims": PermissionModule.BILLED_CLAIMS,
+  "/my-company/billing/denied-batch-claims": PermissionModule.BILLED_CLAIMS,
 
   "/clinical-documents": PermissionModule.CLINICAL_DOCUMENTS,
   "/hr-documents": PermissionModule.HR_DOCUMENTS,
@@ -105,6 +106,7 @@ export const PARENT_TO_CHILDREN_MAP: Record<string, string[]> = {
     "/my-company/billing/billing-codes",
     "/my-company/billing/services-pending",
     "/my-company/billing/billed-claims",
+    "/my-company/billing/denied-batch-claims",
     "/my-company/billing/payers",
   ],
   "/data-collection": [

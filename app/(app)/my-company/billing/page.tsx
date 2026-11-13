@@ -1,6 +1,6 @@
 "use client"
 
-import { CreditCard, Clock, FileCheck, Code, Building2, CheckCircle2, AlertCircle } from "lucide-react"
+import { CreditCard, Clock, FileCheck, FileX, Code, Building2, CheckCircle2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -53,6 +53,13 @@ export default function BillingPage() {
       description: "View and manage submitted billing claims",
       href: "/my-company/billing/billed-claims",
       icon: FileCheck,
+      module: PermissionModule.BILLED_CLAIMS,
+    },
+    {
+      title: "Denied Batch Claim",
+      description: "Review batch claims denied by the payer",
+      href: "/my-company/billing/denied-batch-claims",
+      icon: FileX,
       module: PermissionModule.BILLED_CLAIMS,
     },
   ]

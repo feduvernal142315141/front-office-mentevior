@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import type { BatchClaimSummary } from "@/lib/types/batch-claim.types"
+import type { ClaimMdEffectiveStatus } from "@/lib/types/claim-md.types"
 import { buildFilters } from "@/lib/utils/query-filters"
 import { getBatchClaims } from "../services/batch-claims.service"
 
@@ -17,6 +18,7 @@ export function useBatchClaims(
   search: string,
   page: number,
   pageSize: number,
+  claimMdEffectiveStatus?: ClaimMdEffectiveStatus,
 ): UseBatchClaimsReturn {
   const [batchClaims, setBatchClaims] = useState<BatchClaimSummary[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -35,7 +37,12 @@ export function useBatchClaims(
         const filters = trimmed
           ? buildFilters([], { fields: ["reference"], search: trimmed })
           : undefined
-        const { entities, pagination } = await getBatchClaims({ filters, page, pageSize })
+        const { entities, pagination } = await getBatchClaims({
+          filters,
+          page,
+          pageSize,
+          claimMdEffectiveStatus,
+        })
         if (isActive) {
           setBatchClaims(entities)
           setTotalCount(pagination.total)
@@ -54,7 +61,7 @@ export function useBatchClaims(
     return () => {
       isActive = false
     }
-  }, [search, page, pageSize, refreshIndex])
+  }, [search, page, pageSize, claimMdEffectiveStatus, refreshIndex])
 
   const refetch = useCallback(async () => {
     setRefreshIndex((i) => i + 1)

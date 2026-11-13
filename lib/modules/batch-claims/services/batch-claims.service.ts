@@ -11,6 +11,7 @@ import type {
   EligibleServiceLogAppointment,
   EligibleServiceLogsQuery,
 } from "@/lib/types/batch-claim.types"
+import type { ClaimMdEffectiveStatus } from "@/lib/types/claim-md.types"
 import type { PaginatedResponse } from "@/lib/types/response.types"
 import { readEffectiveStatus } from "./claim-md.service"
 
@@ -79,6 +80,7 @@ export async function getBatchClaims(params?: {
   orders?: string[]
   page?: number
   pageSize?: number
+  claimMdEffectiveStatus?: ClaimMdEffectiveStatus
 }): Promise<PaginatedResponse<BatchClaimSummary>> {
   const qs = new URLSearchParams()
   if (params?.filters?.length) {
@@ -89,6 +91,9 @@ export async function getBatchClaims(params?: {
   }
   if (params?.page !== undefined) qs.set("page", String(params.page))
   if (params?.pageSize !== undefined) qs.set("pageSize", String(params.pageSize))
+  if (params?.claimMdEffectiveStatus) {
+    qs.set("claimMdEffectiveStatus", params.claimMdEffectiveStatus)
+  }
   const query = qs.toString()
 
   const response = await serviceGet<PaginatedResponse<BatchClaimSummary>>(
@@ -103,7 +108,15 @@ export async function getBatchClaims(params?: {
   const entities = (Array.isArray(raw.entities) ? raw.entities : []) as Record<string, unknown>[]
   const pagination = (raw.pagination ?? { page: 0, pageSize: 10, total: 0 }) as PaginatedResponse<BatchClaimSummary>["pagination"]
 
-  return { entities: entities.map(parseSummary), pagination }
+  const batchClaims = entities.map(parseSummary)
+  if (
+    params?.claimMdEffectiveStatus &&
+    batchClaims.some((batch) => batch.claimMdEffectiveStatus !== params.claimMdEffectiveStatus)
+  ) {
+    throw new Error("The server returned batch claims outside the requested status.")
+  }
+
+  return { entities: batchClaims, pagination }
 }
 
 /**

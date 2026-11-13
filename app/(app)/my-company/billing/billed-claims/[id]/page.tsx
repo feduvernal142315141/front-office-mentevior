@@ -1,7 +1,7 @@
 "use client"
 
 import { use } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Edit2, FileCheck, Lock } from "lucide-react"
 import { Button } from "@/components/custom/Button"
 import { useBatchClaimById } from "@/lib/modules/batch-claims/hooks/use-batch-claim-by-id"
@@ -13,6 +13,7 @@ import { BatchClaimDetailView } from "../components/BatchClaimDetailView"
 export default function BatchClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const fromDeniedBatchClaims = useSearchParams().get("from") === "denied-batch-claims"
   const { edit: canEditModule } = usePermission()
   const { batchClaim, isLoading, error, refetch, isPolling, pollTimedOut } = useBatchClaimById(id, {
     poll: true,
@@ -28,7 +29,13 @@ export default function BatchClaimDetailPage({ params }: { params: Promise<{ id:
           <Button
             variant="secondary"
             className="h-10 w-10 p-0"
-            onClick={() => router.push("/my-company/billing/billed-claims")}
+            onClick={() =>
+              router.push(
+                fromDeniedBatchClaims
+                  ? "/my-company/billing/denied-batch-claims"
+                  : "/my-company/billing/billed-claims",
+              )
+            }
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
