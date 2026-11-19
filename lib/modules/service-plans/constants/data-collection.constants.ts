@@ -49,21 +49,18 @@ export function typeRequiresBaselineSessionDuration(typeName: string): boolean {
 }
 
 function typeIsLatency(typeName: string): boolean {
-  return typeName === "Latency" || typeName === "Response latency"
+  const n = normalizeTypeName(typeName)
+  return n === "latency" || n === "response latency"
 }
 
 function typeIsInterresponseTime(typeName: string): boolean {
-  return typeName === "Interresponse time" || typeName === "Interresponse Time"
+  return normalizeTypeName(typeName) === "interresponse time"
 }
 
 /** Rate, Duration, Latency e Interresponse time: el baseline usa la Unit of time del item en lugar del Period. */
 export function typeUsesItemUnitInBaseline(typeName: string): boolean {
-  return (
-    typeName === "Rate" ||
-    typeName === "Duration" ||
-    typeIsLatency(typeName) ||
-    typeIsInterresponseTime(typeName)
-  )
+  const n = normalizeTypeName(typeName)
+  return n === "rate" || n === "duration" || typeIsLatency(typeName) || typeIsInterresponseTime(typeName)
 }
 
 /**
@@ -71,7 +68,7 @@ export function typeUsesItemUnitInBaseline(typeName: string): boolean {
  * (se conserva el valor por defecto).
  */
 export function typeShowsSuggestedRecordings(typeName: string): boolean {
-  return typeName !== "Duration" && !typeIsLatency(typeName) && !typeIsInterresponseTime(typeName)
+  return normalizeTypeName(typeName) !== "duration" && !typeIsLatency(typeName) && !typeIsInterresponseTime(typeName)
 }
 
 export function typeRequiresInterval(typeGroup: string): boolean {
@@ -83,13 +80,7 @@ export function typeRequiresInterval(typeGroup: string): boolean {
  * Includes Duration, Response latency and Interresponse time.
  */
 export function typeRequiresDailyAndWeekly(typeName: string): boolean {
-  return (
-    typeName === "Duration" ||
-    typeName === "Response latency" ||
-    typeName === "Latency" ||
-    typeName === "Interresponse time" ||
-    typeName === "Interresponse Time"
-  )
+  return normalizeTypeName(typeName) === "duration" || typeIsLatency(typeName) || typeIsInterresponseTime(typeName)
 }
 
 export function typeHasCumulativeValueToggles(typeGroup: string): boolean {

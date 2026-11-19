@@ -67,6 +67,7 @@ import {
   typeRequiresBaselineSessionDuration,
   typeRequiresInterval,
   typeRequiresDailyAndWeekly,
+  typeShowsSuggestedRecordings,
   typeHasCumulativeValueToggles,
   typeIsMeasurementLog,
 } from "@/lib/modules/service-plans/constants/data-collection.constants"
@@ -777,6 +778,7 @@ export function ClientDataCollectionModal({
               />
               <FieldErrorText message={errors.unitOfTime?.message} />
             </div>
+            {typeShowsSuggestedRecordings(resolvedType.name) && (
             <div className="space-y-1">
               <Controller
                 name="suggestedNumberOfRecordings"
@@ -795,6 +797,7 @@ export function ClientDataCollectionModal({
               />
               <FieldErrorText message={errors.suggestedNumberOfRecordings?.message} />
             </div>
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">

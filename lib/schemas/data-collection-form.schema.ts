@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import {
   typeRequiresDailyAndWeekly,
+  typeShowsSuggestedRecordings,
   typeRequiresInterval,
   typeRequiresUnitOfTime,
   typeRequiresWeeklyDaily,
@@ -120,7 +121,7 @@ export function createDataCollectionFormSchema(
             path: ["unitOfTime"],
           })
         }
-        if (data.suggestedNumberOfRecordings === undefined) {
+        if (typeShowsSuggestedRecordings(name) && data.suggestedNumberOfRecordings === undefined) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: "Suggested number of recordings is required",

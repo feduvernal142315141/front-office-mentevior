@@ -44,6 +44,7 @@ import {
   typeRequiresUnitOfTime,
   typeRequiresInterval,
   typeRequiresDailyAndWeekly,
+  typeShowsSuggestedRecordings,
   typeHasCumulativeValueToggles,
   typeHasLevels,
   typeIsMeasurementLog,
@@ -619,6 +620,7 @@ export function ClientDataCollectionForm({
                         />
                         <FieldErrorText message={errors.unitOfTime?.message} />
                       </div>
+                      {typeShowsSuggestedRecordings(resolvedType.name) && (
                       <div className="space-y-1">
                         <Controller
                           name="suggestedNumberOfRecordings"
@@ -639,6 +641,7 @@ export function ClientDataCollectionForm({
                         />
                         <FieldErrorText message={errors.suggestedNumberOfRecordings?.message} />
                       </div>
+                      )}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
