@@ -42,7 +42,10 @@ export function usePayerPlanOptions(selectedPayerId: string): UsePayerPlanOption
   }, [])
 
   useEffect(() => {
-    if (!selectedPayerId || selectedPayerId in plansByPayer) return
+    if (!selectedPayerId || selectedPayerId in plansByPayer) {
+      setIsLoadingPlans(false)
+      return
+    }
     let active = true
     setIsLoadingPlans(true)
     void (async () => {

@@ -9,7 +9,6 @@ import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import type { AssessmentListItem } from "@/lib/types/assessment.types"
-import { HOUSING_TYPE_LABELS } from "@/lib/constants/assessment.constants"
 import { useAssessments } from "@/lib/modules/assessments/hooks/use-assessments"
 import { deleteAssessment } from "@/lib/modules/assessments/services/assessments.service"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
@@ -147,36 +146,21 @@ export function useAssessmentsTable() {
       ),
     },
     {
-      key: "schoolName",
-      header: "School",
+      key: "providerName",
+      header: "Provider",
       render: (item) => (
-        <span className="block max-w-[220px] truncate text-sm text-slate-700" title={item.schoolName}>
-          {item.schoolName || "—"}
+        <span className="block max-w-[220px] truncate text-sm text-slate-700" title={item.providerName}>
+          {item.providerName || "—"}
         </span>
       ),
     },
     {
-      key: "gradeName",
-      header: "Grade",
-      className: "whitespace-nowrap",
-      render: (item) => <span className="text-sm text-slate-700">{item.gradeName || "—"}</span>,
-    },
-    {
-      key: "housingType",
-      header: "Housing",
+      key: "assessmentType",
+      header: "Document Type",
       className: "whitespace-nowrap",
       render: (item) => (
         <span className="text-sm text-slate-700">
-          {item.housingType ? HOUSING_TYPE_LABELS[item.housingType] : "—"}
-        </span>
-      ),
-    },
-    {
-      key: "medicalHistoryPrimaryDiagnosisName",
-      header: "Primary Diagnosis",
-      render: (item) => (
-        <span className="block max-w-[240px] truncate text-sm text-slate-700" title={item.medicalHistoryPrimaryDiagnosisName ?? undefined}>
-          {item.medicalHistoryPrimaryDiagnosisName || "—"}
+          {item.assessmentType === "RE_ASSESSMENT" ? "Re-Assessment" : "Assessment"}
         </span>
       ),
     },
@@ -187,6 +171,15 @@ export function useAssessmentsTable() {
       render: (item) => (
         <span className="text-sm text-slate-600 tabular-nums">
           {item.createAt ? format(new Date(item.createAt), "MM/dd/yyyy") : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "medicalHistoryPrimaryDiagnosisName",
+      header: "Primary Diagnosis",
+      render: (item) => (
+        <span className="block max-w-[240px] truncate text-sm text-slate-700" title={item.medicalHistoryPrimaryDiagnosisName ?? undefined}>
+          {item.medicalHistoryPrimaryDiagnosisName || "—"}
         </span>
       ),
     },

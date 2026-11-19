@@ -11,6 +11,7 @@ import type { AssessmentAbcInput } from "@/lib/types/assessment.types"
 
 interface AbcDataSectionProps {
   rows: AssessmentAbcInput[]
+  errors: Record<string, string>
   hasError?: boolean
   disabled?: boolean
   onAdd: () => void
@@ -18,7 +19,7 @@ interface AbcDataSectionProps {
   onUpdate: (index: number, field: keyof AssessmentAbcInput, value: string | string[]) => void
 }
 
-export function AbcDataSection({ rows, hasError, disabled, onAdd, onRemove, onUpdate }: AbcDataSectionProps) {
+export function AbcDataSection({ rows, errors, hasError, disabled, onAdd, onRemove, onUpdate }: AbcDataSectionProps) {
   const { placesOfService } = usePlacesOfService()
   const posOptions = useMemo(
     () => placesOfService.map((p) => ({ value: p.id, label: p.code ? `${p.name} (${p.code})` : p.name })),
@@ -37,13 +38,18 @@ export function AbcDataSection({ rows, hasError, disabled, onAdd, onRemove, onUp
       {rows.map((row, index) => (
         <div key={index} className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-[200px_1fr_auto]">
-            <PremiumDatePicker
-              label="Date"
-              value={row.date}
-              onChange={(v) => onUpdate(index, "date", v)}
-              onClear={() => onUpdate(index, "date", "")}
-              required
-            />
+            <div data-field={`abc-date-${index}`}>
+              <PremiumDatePicker
+                label="Date"
+                value={row.date}
+                onChange={(v) => onUpdate(index, "date", v)}
+                onClear={() => onUpdate(index, "date", "")}
+                hasError={!!errors[`abc-date-${index}`]}
+                disabled={disabled}
+                required
+              />
+              {errors[`abc-date-${index}`] && <p className="mt-1.5 text-xs font-medium text-red-500">{errors[`abc-date-${index}`]}</p>}
+            </div>
             <MultiSelect
               label="POS"
               value={row.placesOfService}

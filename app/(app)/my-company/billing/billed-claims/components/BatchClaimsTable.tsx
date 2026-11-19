@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { ChevronLeft, ChevronRight, Edit2, Eye, FileCheck, Trash2 } from "lucide-react"
@@ -8,13 +8,18 @@ import { toast } from "@/lib/compat/sonner"
 import { SearchInput } from "@/components/custom/SearchInput"
 import { Card } from "@/components/custom/Card"
 import { DeleteConfirmModal } from "@/components/custom/DeleteConfirmModal"
+import { FloatingSelect } from "@/components/custom/FloatingSelect"
+import { PremiumDateRangePicker } from "@/components/custom/PremiumDateRangePicker"
+import { Button } from "@/components/custom/Button"
 import { useDebouncedState } from "@/lib/hooks/use-debounced-state"
 import { useBatchClaims } from "@/lib/modules/batch-claims/hooks/use-batch-claims"
+import { usePayerPlanOptions } from "@/lib/modules/batch-claims/hooks/use-payer-plan-options"
 import { getBatchDecision, getEffectiveBadge } from "@/lib/modules/batch-claims/claim-md-status"
 import { cn } from "@/lib/utils"
 import { ClaimMdStatusBadge } from "./ClaimMdStatusBadge"
 import { deleteBatchClaim } from "@/lib/modules/batch-claims/services/batch-claims.service"
 import type { BatchClaimSummary } from "@/lib/types/batch-claim.types"
+import { CLAIM_MD_EFFECTIVE_STATUSES, type ClaimMdEffectiveStatus } from "@/lib/types/claim-md.types"
 
 const GRID_COLS = "grid-cols-[minmax(180px,1.4fr)_minmax(160px,1.2fr)_minmax(160px,1.2fr)_minmax(120px,1fr)_88px]"
 const GRID_COLS_WITH_CLAIM_MD =
@@ -35,12 +40,28 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
   const [pageSize, setPageSize] = useState(10)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [batchToDelete, setBatchToDelete] = useState<BatchClaimSummary | null>(null)
+  const [payerId, setPayerId] = useState("")
+  const [payerPlanId, setPayerPlanId] = useState("")
+  const [createdFrom, setCreatedFrom] = useState("")
+  const [createdTo, setCreatedTo] = useState("")
+  const [status, setStatus] = useState<ClaimMdEffectiveStatus | "">("")
+  const { payerOptions, planOptions, isLoadingPayers, isLoadingPlans } = usePayerPlanOptions(payerId)
+  const requestedStatuses = useMemo(
+    () => status ? [status] : deniedOnly ? DENIED_BATCH_STATUSES : undefined,
+    [status, deniedOnly],
+  )
+  const statusOptions = (deniedOnly ? DENIED_BATCH_STATUSES : CLAIM_MD_EFFECTIVE_STATUSES).map((value) => ({
+    value,
+    label: getBatchDecision(value).label,
+  }))
+  const hasFilters = Boolean(inputValue.trim() || payerId || payerPlanId || createdFrom || createdTo || status)
 
   const { batchClaims, totalCount, isLoading, error, refetch } = useBatchClaims(
     searchQuery as string,
     page - 1,
     pageSize,
-    deniedOnly ? DENIED_BATCH_STATUSES : undefined,
+    requestedStatuses,
+    { payerId, payerPlanId, createdFrom, createdTo },
   )
 
   const handleDelete = async (batchId: string) => {
@@ -66,6 +87,11 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
   const clearFilters = () => {
     setInputValue("")
     setSearchQuery("")
+    setPayerId("")
+    setPayerPlanId("")
+    setCreatedFrom("")
+    setCreatedTo("")
+    setStatus("")
     setPage(1)
   }
 
@@ -84,18 +110,9 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
   const showClaimMd = batchClaims.some((batch) => batch.claimMdEffectiveStatus != null)
   const gridCols = showClaimMd ? GRID_COLS_WITH_CLAIM_MD : GRID_COLS
 
-  if (error) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-        <p className="font-medium text-red-600">Error loading batch claims</p>
-        <p className="mt-1 text-sm text-red-500">{error}</p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
-      {/* Search */}
+      {/* Filters shared by the general and denied lists */}
       <Card variant="elevated" padding="md">
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="flex-1">
@@ -103,11 +120,72 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
               value={inputValue}
               onChange={handleSearchChange}
               placeholder="Search by reference..."
-              onClear={clearFilters}
             />
           </div>
         </div>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <FloatingSelect
+            label={isLoadingPayers ? "Loading payers..." : "Payer"}
+            value={payerId}
+            onChange={(value) => {
+              setPayerId(value)
+              setPayerPlanId("")
+              setPage(1)
+            }}
+            options={payerOptions}
+            disabled={isLoadingPayers}
+            searchable
+            clearable
+          />
+          <FloatingSelect
+            label={!payerId ? "Select a payer first" : isLoadingPlans ? "Loading plans..." : "Plan"}
+            value={payerPlanId}
+            onChange={(value) => {
+              setPayerPlanId(value)
+              setPage(1)
+            }}
+            options={planOptions}
+            disabled={!payerId || isLoadingPlans}
+            searchable
+            clearable
+          />
+          <PremiumDateRangePicker
+            label="Created date"
+            startValue={createdFrom}
+            endValue={createdTo}
+            onChange={(from, to) => {
+              setCreatedFrom(from)
+              setCreatedTo(to)
+              setPage(1)
+            }}
+          />
+          <FloatingSelect
+            label="Status"
+            value={status}
+            onChange={(value) => {
+              setStatus(value as ClaimMdEffectiveStatus | "")
+              setPage(1)
+            }}
+            options={[
+              { value: "", label: deniedOnly ? "Denied and rejected" : "All statuses" },
+              ...statusOptions,
+            ]}
+            clearable
+          />
+        </div>
+        {hasFilters && (
+          <div className="mt-3 flex justify-end">
+            <Button type="button" variant="ghost" onClick={clearFilters}>Clear filters</Button>
+          </div>
+        )}
       </Card>
+
+      {error && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-6">
+          <p className="font-medium text-red-600">Error loading batch claims</p>
+          <p className="mt-1 text-sm text-red-500">{error}</p>
+        </div>
+      )}
 
       {/* Loading skeleton */}
       {isLoading && (
@@ -119,7 +197,7 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
       )}
 
       {/* Empty state */}
-      {!isLoading && batchClaims.length === 0 && (
+      {!isLoading && !error && batchClaims.length === 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col items-center justify-center gap-3 py-16">
             <div className="relative mb-1">
@@ -128,10 +206,10 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
                 <FileCheck className="h-10 w-10 text-[#037ECC]/60" />
               </div>
             </div>
-            {searchQuery ? (
+            {hasFilters || searchQuery ? (
               <>
-                <p className="text-base font-semibold text-gray-800">No batch claims match your search</p>
-                <p className="mt-1 text-sm text-gray-500">Try adjusting your search or clear the field</p>
+                <p className="text-base font-semibold text-gray-800">No batch claims match your filters</p>
+                <p className="mt-1 text-sm text-gray-500">Try adjusting your search or clear the filters</p>
               </>
             ) : deniedOnly ? (
               <p className="text-sm font-medium text-slate-700">No denied or rejected batch claims</p>
@@ -157,7 +235,7 @@ export function BatchClaimsTable({ deniedOnly, canEdit, canDelete }: BatchClaims
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Plan</span>
             <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Created</span>
             {showClaimMd && (
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Claim.MD</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Status</span>
             )}
             <span className="text-center text-xs font-semibold uppercase tracking-wider text-[#037ECC]/60">Actions</span>
           </div>

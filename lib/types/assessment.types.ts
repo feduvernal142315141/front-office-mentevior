@@ -405,6 +405,8 @@ export interface AssessmentListItem {
   id: string
   clientId: string
   clientName: string
+  /** Available when the list endpoint includes the assessment provider. */
+  providerName?: string
   assessmentType: AssessmentType
   linkedToAppointment: boolean
   schoolName: string

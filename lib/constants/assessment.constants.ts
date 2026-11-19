@@ -120,9 +120,8 @@ export const ASSESSMENT_PDF_STRATEGY_GROUPS: {
  * switch y su flag viaja en `true` (pedido F9, 2026-09-05 + narrativas/estrategias
  * del punto 3 del Word).
  *
- * Ojo: "siempre sale en el PDF" **no** es lo mismo que "no se puede guardar sin
- * esto" — la obligatoriedad para guardar se resuelve aparte en
- * `useAssessmentForm` (decisión D4, `plans/iteracion-2026-09-05-definiciones.md`).
+ * Los campos requeridos de estas secciones se validan en `useAssessmentForm`
+ * antes de crear o actualizar el assessment.
  */
 export const ASSESSMENT_PDF_MANDATORY_FLAGS: ReadonlySet<AssessmentPdfFlagKey> = new Set([
   // Bloques estructurales (F9)

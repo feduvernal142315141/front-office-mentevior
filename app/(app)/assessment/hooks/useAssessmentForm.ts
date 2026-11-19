@@ -336,16 +336,9 @@ const EMPTY_FORM: AssessmentFormData = {
   pdfFlags: buildDefaultPdfFlags(),
 }
 
-/**
- * Hasta 2026-09-05 el switch de PDF era también la condición de obligatoriedad:
- * sección encendida = campos requeridos. Al volverse obligatorias seis secciones
- * (F9) eso habría hecho imposible guardar un assessment a medio llenar, así que
- * las dos cosas quedan separadas — se imprimen siempre, pero no bloquean el
- * guardado (decisión D4). El resto de las secciones sigue igual que antes.
- */
+/** Las secciones obligatorias y las opcionales incluidas deben estar completas. */
 function sectionBlocksSave(flags: AssessmentPdfFlags, key: AssessmentPdfFlagKey): boolean {
-  if (ASSESSMENT_PDF_MANDATORY_FLAGS.has(key)) return false
-  return flags[key]
+  return ASSESSMENT_PDF_MANDATORY_FLAGS.has(key) || flags[key]
 }
 
 function isMedicationEmpty(m: AssessmentMedicationInput): boolean {
@@ -524,6 +517,8 @@ interface UseAssessmentFormProps {
 
 export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSESSMENT" }: UseAssessmentFormProps) {
   const isEditing = !!assessmentId
+  const formRef = useRef<HTMLFormElement>(null)
+  const [validationAttempted, setValidationAttempted] = useState(false)
 
   const { assessment, isLoading: detailLoading, error: detailError, refetch: refetchAssessment } =
     useAssessmentById(assessmentId)
@@ -874,12 +869,14 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     [],
   )
 
+  const hasCategoryItems = categories.some((category) => category.items.length > 0)
+
   /**
    * Reglas de backend (2026-08-17): sólo `clientId` es requerido a nivel
    * registro; por fila, los ids/fechas y los no-negativos. Encima, regla de
    * producto (2026-08-19): una sección marcada "Include in PDF" no puede ir
    * vacía — sus campos son requeridos y sus colecciones exigen al menos una
-   * fila. Con el switch apagado nada de esa sección se valida.
+   * fila. Las secciones obligatorias se validan siempre.
    */
   const validate = useCallback((): Record<string, string> => {
     const newErrors: Record<string, string> = {}
@@ -925,30 +922,31 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     }
 
     if (sectionBlocksSave(flags, "showAssessmentConducted") && formData.assessmentConductedCatalogIds.length === 0) {
-      newErrors.assessmentConductedCatalogIds = "Select at least one assessment, or turn the section off"
+      newErrors.assessmentConductedCatalogIds = "Select at least one assessment"
     }
 
     if (
       sectionBlocksSave(flags, "showAssessmentCategories") &&
+      hasCategoryItems &&
       !Object.values(formData.categoryItems).some((v) => isCategoryItemTouched(v))
     ) {
-      newErrors.categoriesItems = "Evaluate at least one item, or turn the section off"
+      newErrors.categoriesItems = "Evaluate at least one item"
     }
 
     if (sectionBlocksSave(flags, "showRecommendedServices") && !formData.billingCodes.some((row) => !isBillingCodeEmpty(row))) {
-      newErrors.billingCodesSection = "Add at least one billing code, or turn the section off"
+      newErrors.billingCodesSection = "Add at least one billing code"
     }
 
     if (sectionBlocksSave(flags, "showProposedSchedule") && !formData.proposedSchedule.some((row) => !isScheduleEmpty(row))) {
-      newErrors.proposedScheduleSection = "Add at least one schedule, or turn the section off"
+      newErrors.proposedScheduleSection = "Add at least one schedule"
     }
 
     if (sectionBlocksSave(flags, "showAbcDataRecording") && !formData.abcData.some((row) => !isAbcEmpty(row))) {
-      newErrors.abcData = "Add at least one ABC row, or turn the section off"
+      newErrors.abcData = "Add at least one ABC row"
     }
 
     if (sectionBlocksSave(flags, "showProvidersOnFile") && !formData.providerFiles.some((row) => !isProviderFileEmpty(row))) {
-      newErrors.providerFiles = "Add at least one provider, or turn the section off"
+      newErrors.providerFiles = "Add at least one provider"
     }
 
     // Narrativas: parten con el texto estándar precargado, así que encendidas
@@ -960,9 +958,19 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     }
     for (const group of ASSESSMENT_PDF_STRATEGY_GROUPS) {
       if (sectionBlocksSave(flags, group.flagKey) && group.fields.every(({ key }) => !formData.pdfTexts[key].trim())) {
-        newErrors[group.flagKey] = "Fill at least one strategy, or turn the section off"
+        newErrors[group.flagKey] = "Fill at least one strategy"
       }
     }
+
+    if (sectionBlocksSave(flags, "showMedicalNecessityStatement") && !formData.pdfTexts.medicalNecessity.trim()) {
+      newErrors.medicalNecessity = required
+    }
+
+    formData.abcData.forEach((row, index) => {
+      if (!isAbcEmpty(row) && !row.date) {
+        newErrors[`abc-date-${index}`] = "Select a date"
+      }
+    })
 
     formData.billingCodes.forEach((row, index) => {
       if (isBillingCodeEmpty(row)) return
@@ -981,7 +989,12 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     })
 
     return newErrors
-  }, [formData])
+  }, [formData, hasCategoryItems])
+
+  // Después del primer intento, retirar el rojo sólo cuando el dato sea válido.
+  useEffect(() => {
+    if (validationAttempted) setErrors(validate())
+  }, [validationAttempted, validate])
 
   const buildPayload = useCallback((): SaveAssessmentDto => {
     const categoriesItems: AssessmentCategoryItemInput[] = Object.entries(formData.categoryItems)
@@ -1125,9 +1138,19 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
 
   const scrollToFirstError = useCallback((newErrors: Record<string, string>) => {
     setTimeout(() => {
-      const firstKey = Object.keys(newErrors)[0]
-      const el = document.querySelector<HTMLElement>(`[data-field="${firstKey}"]`)
+      // El orden visual puede diferir del orden de las reglas de validación.
+      const el = Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-field]") ?? [])
+        .find((field) => !!newErrors[field.dataset.field ?? ""])
       if (!el) return
+      const enabledControl = ':not(:disabled):not([type="hidden"]):not([tabindex="-1"])'
+      const focusable = el.querySelector<HTMLElement>(
+        `.premium-input-error${enabledControl}, [aria-invalid="true"]${enabledControl}`,
+      ) ?? el.querySelector<HTMLElement>(
+        `input${enabledControl}, textarea${enabledControl}, select${enabledControl}, button${enabledControl}`,
+      )
+      if (!focusable) el.tabIndex = -1
+      const focusTarget = focusable ?? el
+      focusTarget.focus({ preventScroll: true })
       const scrollContainer = document.getElementById("main-scroll")
       if (scrollContainer) {
         const elRect = el.getBoundingClientRect()
@@ -1137,8 +1160,6 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       } else {
         el.scrollIntoView({ behavior: "smooth", block: "center" })
       }
-      const focusable = el.querySelector<HTMLElement>("input, textarea, select, button") ?? el
-      if (focusable instanceof HTMLElement) setTimeout(() => focusable.focus(), 400)
     }, 50)
   }, [])
 
@@ -1146,6 +1167,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   const handleSubmit = useCallback(async (): Promise<string | null> => {
     if (isEditing && assessment?.notCanEdit) return null
 
+    setValidationAttempted(true)
     const newErrors = validate()
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -1160,6 +1182,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   }, [validate, buildPayload, save, scrollToFirstError, isEditing, assessment?.notCanEdit])
 
   return {
+    formRef,
     formData,
     assessmentType: selectedAssessmentType,
     setEditedAssessmentType,

@@ -268,6 +268,7 @@ function normalizeAssessmentListItem(raw: Record<string, unknown>): AssessmentLi
     id: str(raw.id),
     clientId: str(raw.clientId),
     clientName: str(raw.clientName),
+    providerName: str(raw.providerName),
     assessmentType: parseAssessmentType(raw.assessmentType),
     linkedToAppointment: raw.linkedToAppointment === true,
     schoolName: str(raw.schoolName),

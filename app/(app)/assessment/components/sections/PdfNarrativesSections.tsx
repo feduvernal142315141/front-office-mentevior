@@ -42,12 +42,10 @@ export function PdfNarrativesSections({
           defaultOpen={true}
           forceOpen={errors[group.flagKey] ? true : undefined}
         >
-          <div data-field={group.flagKey}>
+          <div data-field={group.flagKey} className="space-y-4">
             {errors[group.flagKey] && (
               <p className="mb-3 text-xs font-medium text-red-500">{errors[group.flagKey]}</p>
             )}
-          </div>
-          <div className="space-y-4">
             {group.fields.map(({ key, label }) => (
               <FloatingTextarea
                 key={key}
@@ -57,6 +55,7 @@ export function PdfNarrativesSections({
                 onBlur={() => {}}
                 rows={8}
                 disabled={disabled}
+                hasError={!!errors[group.flagKey]}
               />
             ))}
           </div>
@@ -81,6 +80,7 @@ export function PdfNarrativesSections({
               rows={10}
               disabled={disabled}
               hasError={!!errors[key]}
+              required
             />
             {errors[key] && <p className="mt-1.5 text-xs font-medium text-red-500">{errors[key]}</p>}
           </div>

@@ -1,8 +1,10 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
+  ArrowUpRight,
   BookOpen,
   BookOpenText,
   CalendarClock,
@@ -109,10 +111,7 @@ interface AssessmentFormProps {
   onAssessmentTypeChange?: (value: AssessmentType) => void
 }
 
-/**
- * Sólo `clientId` es requerido (confirmado por backend 2026-08-17); el resto de
- * las validaciones son por fila y viven en `useAssessmentForm.validate`.
- */
+/** Valida los campos y secciones obligatorios antes de crear o actualizar. */
 export function AssessmentForm({
   assessmentId,
   assessmentType = "INITIAL_ASSESSMENT",
@@ -133,6 +132,7 @@ export function AssessmentForm({
   const [replacementError, setReplacementError] = useState<string | null>(null)
 
   const {
+    formRef,
     formData,
     assessmentType: selectedAssessmentType,
     setEditedAssessmentType,
@@ -368,7 +368,7 @@ export function AssessmentForm({
   ]
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5 pb-32">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-5 pb-32 [&_.premium-input-error:focus]:border-red-500">
       {/* ─── Preview ─── */}
       <div className="flex justify-end">
         <Button
@@ -419,6 +419,25 @@ export function AssessmentForm({
               required
             />
             <FieldError message={errors.clientId} />
+            {formData.clientId && (
+              <Link
+                href={`/clients/${encodeURIComponent(formData.clientId)}/profile`}
+                onNavigate={(event) => {
+                  event.preventDefault()
+                  if (isSaving || isReplacing) return
+                  guard(() => router.push(`/clients/${encodeURIComponent(formData.clientId)}/profile`))
+                }}
+                aria-disabled={isSaving || isReplacing || undefined}
+                tabIndex={isSaving || isReplacing ? -1 : undefined}
+                className={cn(
+                  "pointer-events-auto mt-2 inline-flex items-center gap-1 text-sm font-medium text-[#037ECC] underline underline-offset-4 hover:text-[#0266a6] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#037ECC]/40",
+                  (isSaving || isReplacing) && "pointer-events-none opacity-50",
+                )}
+              >
+                View client data
+                <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+              </Link>
+            )}
             {isEditing && (
               <p className="mt-2 text-xs text-slate-400">
                 The client cannot be changed on an existing assessment.
@@ -452,6 +471,7 @@ export function AssessmentForm({
               onChange={(v) => updateField("housingType", v as typeof formData.housingType)}
               options={HOUSING_TYPE_OPTIONS}
               hasError={!!errors.housingType}
+              required
             />
             <FieldError message={errors.housingType} />
           </div>
@@ -486,6 +506,7 @@ export function AssessmentForm({
             guidance={ASSESSMENT_BACKGROUND_SUMMARY_GUIDANCE}
             rows={8}
             hasError={!!errors.housingInformation}
+            required
           />
           <FieldError message={errors.housingInformation} />
         </div>
@@ -525,7 +546,9 @@ export function AssessmentForm({
               onChange={(v) => updateField("timeEnd", v)}
               allowManualInput
               defaultPeriod="PM"
+              hasError={!!errors.timeEnd}
             />
+            <FieldError message={errors.timeEnd} />
           </div>
           <div className="lg:col-span-3" data-field="schoolAddress">
             <FloatingInput
@@ -553,6 +576,7 @@ export function AssessmentForm({
                 guidance={ASSESSMENT_BACKGROUND_GUIDANCE[key]}
                 rows={4}
                 hasError={!!errors[key]}
+                required
               />
               <FieldError message={errors[key]} />
             </div>
@@ -614,6 +638,7 @@ export function AssessmentForm({
               onChange={(v) => updateField("medicalHistoryTypeOfBirth", v as typeof formData.medicalHistoryTypeOfBirth)}
               options={TYPE_OF_BIRTH_OPTIONS}
               hasError={!!errors.medicalHistoryTypeOfBirth}
+              required
             />
             <FieldError message={errors.medicalHistoryTypeOfBirth} />
           </div>
@@ -634,7 +659,7 @@ export function AssessmentForm({
 
       {/* ─── Current Medications ─── */}
       <Section icon={<Pill className="h-4 w-4" />} title="Current Medications">
-        <div data-field="currentMedications">
+        <div data-field="currentMedications" className={cn(errors.currentMedications && "rounded-xl border border-red-300 bg-red-50/40 p-3")}>
         <MedicationsSection
           medications={formData.currentMedications}
           hasError={!!errors.currentMedications}
@@ -658,7 +683,7 @@ export function AssessmentForm({
         subtitle="Instruments and procedures used during this assessment"
         contentHidden={!formData.pdfFlags.showAssessmentConducted} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAssessmentConducted} onChange={(v) => updatePdfFlag("showAssessmentConducted", v)} disabled={isSaving} />}
       >
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2" data-field="assessmentConductedCatalogIds">
+        <div className={cn("grid grid-cols-1 gap-2 md:grid-cols-2", errors.assessmentConductedCatalogIds && "rounded-xl border border-red-300 bg-red-50/40 p-3")} data-field="assessmentConductedCatalogIds">
           {conductedChoices.map((option) => {
             const checked = formData.assessmentConductedCatalogIds.includes(option.id)
             return (
@@ -672,6 +697,7 @@ export function AssessmentForm({
               >
                 <Checkbox
                   checked={checked}
+                  aria-invalid={!!errors.assessmentConductedCatalogIds || undefined}
                   onCheckedChange={(isChecked) =>
                     updateField(
                       "assessmentConductedCatalogIds",
@@ -699,11 +725,12 @@ export function AssessmentForm({
         icon={<ListTree className="h-4 w-4" />}
         title="ABC Data"
         subtitle="Antecedent, behavior and consequence observations"
-        contentHidden={!formData.pdfFlags.showAbcDataRecording} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAbcDataRecording} onChange={(v) => updatePdfFlag("showAbcDataRecording", v)} disabled={isSaving} />}
+        contentHidden={!formData.pdfFlags.showAbcDataRecording && !Object.keys(errors).some((key) => key === "abcData" || key.startsWith("abc-date-"))} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showAbcDataRecording} onChange={(v) => updatePdfFlag("showAbcDataRecording", v)} disabled={isSaving} />}
       >
-        <div data-field="abcData">
+        <div data-field="abcData" className={cn(errors.abcData && "rounded-xl border border-red-300 bg-red-50/40 p-3")}>
         <AbcDataSection
           rows={formData.abcData}
+          errors={errors}
           hasError={!!errors.abcData}
           disabled={isSaving}
           onAdd={addAbcRow}
@@ -719,6 +746,7 @@ export function AssessmentForm({
         icon={<FileText className="h-4 w-4" />}
         title="Medical Necessity Statement"
         defaultOpen={true}
+        forceOpen={errors.medicalNecessity ? true : undefined}
       >
         <div data-field="medicalNecessity">
           <FloatingTextarea
@@ -729,6 +757,7 @@ export function AssessmentForm({
             rows={10}
             disabled={fieldsDisabled}
             hasError={!!errors.medicalNecessity}
+            required
           />
           {errors.medicalNecessity && <p className="mt-1.5 text-xs font-medium text-red-500">{errors.medicalNecessity}</p>}
         </div>
@@ -750,7 +779,7 @@ export function AssessmentForm({
         title="Categories & Items"
         subtitle={replacementSource ? "Review the category items from the latest assessment" : "Evaluate each item of the client's service plan"}
       >
-        <div data-field="categoriesItems">
+        <div data-field="categoriesItems" className={cn(errors.categoriesItems && "rounded-xl border border-red-300 bg-red-50/40 p-3")}>
         <CategoryItemsSection
           clientSelected={!!formData.clientId}
           hasError={!!errors.categoriesItems}
@@ -773,9 +802,9 @@ export function AssessmentForm({
         icon={<CalendarClock className="h-4 w-4" />}
         title="Proposed Schedule"
         subtitle="Weekly hours proposed per credential"
-        contentHidden={!formData.pdfFlags.showProposedSchedule} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showProposedSchedule} onChange={(v) => updatePdfFlag("showProposedSchedule", v)} disabled={isSaving} />}
+        contentHidden={!formData.pdfFlags.showProposedSchedule && !Object.keys(errors).some((key) => key === "proposedScheduleSection" || key.startsWith("schedule-"))} headerAction={<SectionPdfToggle checked={formData.pdfFlags.showProposedSchedule} onChange={(v) => updatePdfFlag("showProposedSchedule", v)} disabled={isSaving} />}
       >
-        <div data-field="proposedScheduleSection">
+        <div data-field="proposedScheduleSection" className={cn(errors.proposedScheduleSection && "rounded-xl border border-red-300 bg-red-50/40 p-3")}>
         <ProposedScheduleSection
           rows={formData.proposedSchedule}
           hasError={!!errors.proposedScheduleSection}
@@ -798,7 +827,7 @@ export function AssessmentForm({
         title="Other Providers"
         subtitle="Other providers involved with the client"
       >
-        <div data-field="providerFiles">
+        <div data-field="providerFiles" className={cn(errors.providerFiles && "rounded-xl border border-red-300 bg-red-50/40 p-3")}>
         <ProviderFilesSection
           rows={formData.providerFiles}
           hasError={!!errors.providerFiles}
@@ -944,7 +973,7 @@ export function AssessmentForm({
             : "Proposed billing codes and units for this assessment"
         }
       >
-        <div data-field="billingCodesSection">
+        <div data-field="billingCodesSection" className={cn(errors.billingCodesSection && "rounded-xl border border-red-300 bg-red-50/40 p-3")}>
         <BillingCodesSection
           rows={formData.billingCodes}
           hasError={!!errors.billingCodesSection}

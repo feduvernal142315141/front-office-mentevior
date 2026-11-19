@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import type { BatchClaimSummary } from "@/lib/types/batch-claim.types"
 import type { ClaimMdEffectiveStatus } from "@/lib/types/claim-md.types"
-import { buildFilters } from "@/lib/utils/query-filters"
+import { buildBatchClaimsFilters, type BatchClaimsFilters } from "../filters"
 import { getBatchClaims } from "../services/batch-claims.service"
 
 interface UseBatchClaimsReturn {
@@ -19,7 +19,9 @@ export function useBatchClaims(
   page: number,
   pageSize: number,
   claimMdEffectiveStatuses?: readonly ClaimMdEffectiveStatus[],
+  filters: BatchClaimsFilters = {},
 ): UseBatchClaimsReturn {
+  const { payerId, payerPlanId, createdFrom, createdTo } = filters
   const [batchClaims, setBatchClaims] = useState<BatchClaimSummary[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -33,12 +35,8 @@ export function useBatchClaims(
       setIsLoading(true)
       setError(null)
       try {
-        const trimmed = search.trim()
-        const filters = trimmed
-          ? buildFilters([], { fields: ["reference"], search: trimmed })
-          : undefined
         const { entities, pagination } = await getBatchClaims({
-          filters,
+          filters: buildBatchClaimsFilters(search, { payerId, payerPlanId, createdFrom, createdTo }),
           page,
           pageSize,
           claimMdEffectiveStatuses,
@@ -61,7 +59,7 @@ export function useBatchClaims(
     return () => {
       isActive = false
     }
-  }, [search, page, pageSize, claimMdEffectiveStatuses, refreshIndex])
+  }, [search, page, pageSize, claimMdEffectiveStatuses, payerId, payerPlanId, createdFrom, createdTo, refreshIndex])
 
   const refetch = useCallback(async () => {
     setRefreshIndex((i) => i + 1)

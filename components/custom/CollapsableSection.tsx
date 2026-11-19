@@ -39,7 +39,7 @@ export function CollapsableSection({
   }, [forceOpen])
 
   const handleToggle = () => {
-    if (disabled) return
+    if (disabled || forceOpen === true) return
     const newState = !isOpen
     setIsOpen(newState)
     onToggle?.(newState)
