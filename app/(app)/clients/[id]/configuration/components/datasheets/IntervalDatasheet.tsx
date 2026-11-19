@@ -45,6 +45,20 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
 
   const ds = useIntervalDatasheet(numberOfIntervals, activeItem.baseline)
 
+  // Cada día de baseline tiene su propia configuración (por defecto la del Type); se muestra en su columna
+  const baselineConfigByDate = useMemo(() => {
+    const short: Record<string, string> = { SECONDS: "sec", MINUTES: "min", HOURS: "h", DAYS: "d" }
+    const map = new Map<string, string>()
+    for (const b of activeItem.baseline ?? []) {
+      if (!b.date) continue
+      const count = b.suggestedNumberOfRecordings && b.suggestedNumberOfRecordings > 0 ? b.suggestedNumberOfRecordings : numberOfIntervals
+      const length = b.intervalLength && b.intervalLength > 0 ? b.intervalLength : intervalLength
+      const unit = short[b.unitOfTime || unitOfTime] ?? ""
+      map.set(getDateKey(parseLocalDate(b.date)), `${count} × ${length} ${unit}`)
+    }
+    return map
+  }, [activeItem.baseline, numberOfIntervals, intervalLength, unitOfTime])
+
   // --- Gap detection ---
   const gapDateKeys = useMemo(() => {
     const bls = activeItem.baseline
@@ -108,6 +122,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     [baselineCollapsed, baselineDays, visibleDays],
   )
   const hasBaselineDays = baselineDays.length > 0
+  const hasAnyBaseline = baselineConfigByDate.size > 0
 
   const fetchStart = useMemo(() => {
     const rangeStart = ds.dateRange.start
@@ -320,6 +335,14 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                       <span className={cn("font-bold leading-none", ds.rangeMode === "month" ? "text-sm" : "text-lg")}>{format(day, "dd")}</span>
                       <span className={cn("font-semibold uppercase leading-none mt-0.5", ds.rangeMode === "month" ? "text-[8px]" : "text-[10px]", today ? "text-white/80" : "text-slate-400")}>{format(day, "MMM")}</span>
                     </div>
+                    {isBaseline && baselineConfigByDate.has(key) && (
+                      <span
+                        className="text-[10px] font-semibold text-red-400 tabular-nums whitespace-nowrap"
+                        title="Intervals × interval length configured for this baseline day"
+                      >
+                        {baselineConfigByDate.get(key)}
+                      </span>
+                    )}
                     {!isBaseline && clientAppointments.appointmentsByDate.get(key)?.blocked === false && (
                       <div className="flex items-center gap-0.5" title="Editable">
                         <CalendarCheck2 className="h-3 w-3 text-emerald-700" />
@@ -500,6 +523,11 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
         <p className="text-sm font-semibold text-slate-700">
           Interval length: {intervalLength} {unitLabel}
         </p>
+        {hasAnyBaseline && (
+          <p className="text-xs text-slate-500">
+            Baseline days use their own number of intervals and interval length (shown under each baseline date).
+          </p>
+        )}
         <p className="text-xs text-slate-500">
           Legend: (−) Non occurrence of event, (+) Occurrence of event
         </p>

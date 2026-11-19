@@ -182,17 +182,17 @@ export function useIntervalDatasheet(
 
   const setInitials = useCallback((dateKey: string, value: string) => {
     setEntries((prev) => {
-      const entry = prev[dateKey] ?? createEmptyIntervalDayEntry(numberOfIntervals)
+      const entry = prev[dateKey] ?? createEmptyIntervalDayEntry(countFor(dateKey))
       return { ...prev, [dateKey]: { ...entry, initials: value.toUpperCase().slice(0, 3) } }
     })
-  }, [numberOfIntervals])
+  }, [countFor])
 
   const setNote = useCallback((dateKey: string, value: string) => {
     setEntries((prev) => {
-      const entry = prev[dateKey] ?? createEmptyIntervalDayEntry(numberOfIntervals)
+      const entry = prev[dateKey] ?? createEmptyIntervalDayEntry(countFor(dateKey))
       return { ...prev, [dateKey]: { ...entry, environmentalNote: value } }
     })
-  }, [numberOfIntervals])
+  }, [countFor])
 
   // Seed DC records from API
   const seedDcRecords = useCallback((records: { dateKey: string; value: number; environmentalChange?: string | null }[]) => {
