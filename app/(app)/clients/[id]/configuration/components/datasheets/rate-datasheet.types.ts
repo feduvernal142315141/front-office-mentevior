@@ -61,13 +61,6 @@ export function unitOfTimeLabel(unit: ServicePlanUnitOfTime): string {
   }
 }
 
-const UNIT_IN_SECONDS: Record<ServicePlanUnitOfTime, number> = {
-  [ServicePlanUnitOfTime.SECONDS]: 1,
-  [ServicePlanUnitOfTime.MINUTES]: 60,
-  [ServicePlanUnitOfTime.HOURS]: 3600,
-  [ServicePlanUnitOfTime.DAYS]: 86400,
-}
-
 /** Period catalog name ("Hour", "Minutes"…) → unit of time. Null if it isn't a time unit. */
 export function periodNameToUnitOfTime(name?: string | null): ServicePlanUnitOfTime | null {
   const n = (name ?? "").trim().toLowerCase()
@@ -79,21 +72,17 @@ export function periodNameToUnitOfTime(name?: string | null): ServicePlanUnitOfT
 }
 
 /**
- * Manual session duration of each baseline (keyed by YYYY-MM-DD), converted from the
- * baseline's Period to the item's unit of time. A Period that isn't a time unit is taken
- * as already expressed in the item's unit. Baselines without a duration are left out.
+ * Manual session duration of each baseline (keyed by YYYY-MM-DD). The baseline always follows
+ * the item's Unit of time (the one chosen above in the item), so the duration is already in
+ * that unit; the stored Period is not used to convert it. Baselines without a duration are left out.
  */
 export function buildBaselineDurationMap(
-  baselines: { date: string; sessionDuration?: number | null; periodCatalogId: string }[] | undefined,
-  periodNameById: Map<string, string>,
-  unitOfTime: ServicePlanUnitOfTime,
+  baselines: { date: string; sessionDuration?: number | null }[] | undefined,
 ): Map<string, number> {
   const map = new Map<string, number>()
   for (const b of baselines ?? []) {
     if (!b.date || !b.sessionDuration || b.sessionDuration <= 0) continue
-    const from = periodNameToUnitOfTime(periodNameById.get(b.periodCatalogId))
-    const inUnit = from ? (b.sessionDuration * UNIT_IN_SECONDS[from]) / UNIT_IN_SECONDS[unitOfTime] : b.sessionDuration
-    map.set(getDateKeyLocal(b.date), inUnit)
+    map.set(getDateKeyLocal(b.date), b.sessionDuration)
   }
   return map
 }

@@ -69,8 +69,9 @@ interface BaselinesTabContentProps {
   /** Rate/Duration: muestra el campo para cargar a mano la duración de la sesión */
   requiresSessionDuration?: boolean
   /**
-   * Rate: el Period se reemplaza por la "Unit of time" del item (solo lectura). Las filas
-   * que ya guardaron otra unidad conservan su Period para no reinterpretar su duración.
+   * Rate, Duration, Latency e Interresponse time: el Period se reemplaza por la "Unit of time"
+   * del item (solo lectura). Todas las filas, nuevas o ya guardadas, siguen la unidad elegida
+   * arriba. `id` es el Period del catálogo equivalente ("" si el catálogo no tiene esa unidad).
    */
   rateUnit?: { id: string; label: string }
   /**
@@ -99,7 +100,7 @@ export function BaselinesTabContent({
 
   const sessionDurationLabel = useCallback(
     (periodCatalogId: string) => {
-      const period = periodSelectOptions.find((o) => o.value === (periodCatalogId || rateUnit?.id))?.label
+      const period = rateUnit?.label ?? periodSelectOptions.find((o) => o.value === periodCatalogId)?.label
       return period ? `Session duration (${period.toLowerCase()})` : "Session duration"
     },
     [periodSelectOptions, rateUnit]
@@ -187,6 +188,7 @@ export function BaselinesTabContent({
                         min={1}
                         max={9999}
                         hasError={showErrors && !(Number(row.intervalLength) > 0)}
+                        disabled={actionsDisabled}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -227,7 +229,7 @@ export function BaselinesTabContent({
                   />
                 </div>
                 <div className="flex-1 min-w-0 relative">
-                  {rateUnit && (!row.periodCatalogId || row.periodCatalogId === rateUnit.id) ? (
+                  {rateUnit ? (
                     <FloatingInput
                       label="Unit of time"
                       value={rateUnit.label}

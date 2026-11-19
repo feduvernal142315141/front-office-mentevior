@@ -22,7 +22,6 @@ import { ChartDateRangeToolbar } from "./ChartDateRangeToolbar"
 import { getDateKey, parseLocalDate } from "./frequency-datasheet.types"
 import { RateChart } from "./RateChart"
 import { buildBaselineDurationMap, getSessionDurationInUnit, unitOfTimeLabel } from "./rate-datasheet.types"
-import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
 import {
   DatasheetGridFrame, DatasheetHeader, RowLabel, NoteButton, SaveBar, EnvironmentalChangesLegend, AnimatePresence,
 } from "./shared-datasheet-components"
@@ -47,10 +46,9 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
   const unitLabel = unitOfTimeLabel(unitOfTime)
 
   // Baselines are an independent collection (no appointment): their duration is loaded by hand
-  const { items: periodCatalog } = usePeriodCatalog()
   const baselineDurationByDate = useMemo(
-    () => buildBaselineDurationMap(activeItem.baseline, new Map(periodCatalog.map((p) => [p.id, p.name])), unitOfTime),
-    [activeItem.baseline, periodCatalog, unitOfTime],
+    () => buildBaselineDurationMap(activeItem.baseline),
+    [activeItem.baseline],
   )
 
   // --- Compute visible days FIRST ---

@@ -531,13 +531,22 @@ export function ItemDetailPanel({
     [resolvedType.group, watchedIntervalLength, watchedUnitOfTime, watchedSuggestedRecordings],
   )
 
-  // Rate y Duration: el baseline usa la Unit of time del item; solo aplica si el catálogo de Period tiene esa unidad
+  // Rate, Duration, Latency e Interresponse time: el baseline usa la Unit of time del item.
+  // Todas las filas (también las ya guardadas) siguen la unidad elegida arriba; `id` es el
+  // Period equivalente del catálogo, que es lo que el contrato del baseline todavía pide.
   const rateUnit = useMemo(() => {
     if (!typeUsesItemUnitInBaseline(resolvedType.name) || !watchedUnitOfTime) return undefined
-    const match = periodCatalog.find((p) => periodNameToUnitOfTime(p.name) === watchedUnitOfTime)
     const label = SERVICE_PLAN_UNIT_OF_TIME_OPTIONS.find((o) => o.value === watchedUnitOfTime)?.label
-    return match && label ? { id: match.id, label } : undefined
+    if (!label) return undefined
+    const match = periodCatalog.find((p) => periodNameToUnitOfTime(p.name) === watchedUnitOfTime)
+    return { id: match?.id ?? "", label }
   }, [resolvedType.name, watchedUnitOfTime, periodCatalog])
+
+  // Lo que ven los objetivos (prefill del Period desde el último baseline) también sigue la unidad de arriba
+  const baselinesWithItemUnit = useMemo(
+    () => (rateUnit?.id ? baselines.map((b) => ({ ...b, periodCatalogId: rateUnit.id })) : baselines),
+    [baselines, rateUnit],
+  )
 
   const { groups: unitMeasurementGroups, isLoading: isLoadingUnitMeasurement } =
     useUnitMeasurementCatalog(isMeasurementLogType)
@@ -621,7 +630,7 @@ export function ItemDetailPanel({
     if (isReadOnly) return
     // Rate/Duration: el backend exige la duración de la sesión (> 0) en cada baseline
     const missingSessionDuration = needsSessionDuration && baselines.some(
-      (b) => b.date && (b.periodCatalogId || rateUnit?.id) && !(Number(b.sessionDuration) > 0)
+      (b) => b.date && (rateUnit || b.periodCatalogId) && !(Number(b.sessionDuration) > 0)
     )
     const invalidTimeSampling = !!timeSampling && baselines.some(
       (b) =>
@@ -656,8 +665,12 @@ export function ItemDetailPanel({
       const baselinesPayload = baselines
         .map((b) => ({
           ...b,
-          // Time-sampling no muestra Period: el contrato todavía lo pide, se manda uno cualquiera del catálogo
-          periodCatalogId: b.periodCatalogId || rateUnit?.id || (timeSampling ? periodCatalog[0]?.id ?? "" : ""),
+          // Tipos con Unit of time arriba: toda fila (nueva o editada) toma esa unidad.
+          // Time-sampling no muestra Period: el contrato todavía lo pide, se manda uno cualquiera del catálogo.
+          // Si el catálogo no tiene la unidad del item, se conserva el Period guardado para no perder la fila.
+          periodCatalogId: rateUnit
+            ? rateUnit.id || b.periodCatalogId || periodCatalog[0]?.id || ""
+            : b.periodCatalogId || (timeSampling ? periodCatalog[0]?.id ?? "" : ""),
         }))
         .filter((b) => b.date && b.periodCatalogId)
         .map((b) => ({
@@ -1242,7 +1255,7 @@ export function ItemDetailPanel({
             <Button
               type="button"
               onClick={() => {
-                const lastPeriod = rateUnit?.id ?? (baselines.length > 0 ? baselines[baselines.length - 1].periodCatalogId : "")
+                const lastPeriod = rateUnit?.id || (baselines.length > 0 ? baselines[baselines.length - 1].periodCatalogId : "")
                 handleBaselinesChange([
                   ...baselines,
                   { ...createEmptyBaseline(), periodCatalogId: lastPeriod, ...(timeSampling ? timeSamplingDefaults(timeSampling) : {}) },
@@ -1283,7 +1296,7 @@ export function ItemDetailPanel({
           categoryCatalogId={categoryCatalogId}
           categoryName={categoryName}
           unitOfTime={watchedUnitOfTime}
-          baselines={baselines}
+          baselines={baselinesWithItemUnit}
           externalTitle
           hideButtons
           disableActions={isReadOnly || baselines.length === 0}
