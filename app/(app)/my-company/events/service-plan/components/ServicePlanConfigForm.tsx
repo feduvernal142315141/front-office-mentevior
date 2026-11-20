@@ -10,18 +10,11 @@ import { Card } from "@/components/custom/Card"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { EditGate } from "@/components/layout/PermissionGate"
 import { FloatingInput } from "@/components/custom/FloatingInput"
-import { FloatingSelect } from "@/components/custom/FloatingSelect"
 import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { FloatingColorPicker } from "@/components/custom/FloatingColorPicker"
 import { MultiSelect } from "@/components/custom/MultiSelect"
 import { useUpsertServicePlanConfig } from "@/lib/modules/service-plan-config/hooks/use-upsert-service-plan-config"
 
-const NOTE_EXPIRATION_OPTIONS = [
-  { label: "48 hrs", value: "2" },
-  { label: "72 hrs", value: "3" },
-  { label: "1 week", value: "7" },
-  { label: "2 weeks", value: "14" },
-]
 import { useFocusFirstError } from "@/lib/hooks/use-focus-first-error"
 import { useBillingCodes } from "@/lib/modules/billing-codes/hooks/use-billing-codes"
 import { useBillingCodesVisibleTagsWide } from "@/lib/hooks/use-billing-codes-visible-tags-wide"
@@ -195,7 +188,6 @@ export function ServicePlanConfigForm({
 
       // Appearance
       color: config.color ?? "",
-      noteExpirationDate: config.noteExpirationDate != null ? String(config.noteExpirationDate) : "",
     })
   }, [config, form])
 
@@ -257,7 +249,6 @@ export function ServicePlanConfigForm({
 
       // Appearance
       color: data.color ?? "",
-      noteExpirationDate: data.noteExpirationDate ? Number(data.noteExpirationDate) : null,
     })
 
     if (result) router.push(onSavedRedirectPath)
@@ -389,17 +380,6 @@ export function ServicePlanConfigForm({
                     onBlur={() => form.trigger("color")}
                     hasError={!!errors.color}
                   />
-                </div>
-                <div className="w-full">
-                  <FloatingSelect
-                    label="Note expiration"
-                    value={w.noteExpirationDate}
-                    onChange={(v) => setValue("noteExpirationDate", v)}
-                    onBlur={() => form.trigger("noteExpirationDate")}
-                    hasError={!!errors.noteExpirationDate}
-                    options={NOTE_EXPIRATION_OPTIONS}
-                  />
-                  {renderFieldError(errors.noteExpirationDate?.message)}
                 </div>
               </div>
 
