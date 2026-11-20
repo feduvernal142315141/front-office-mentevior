@@ -143,9 +143,10 @@ export function useAppointmentForm({
     billingCodes: mainBillingCodes,
     priorAuthorization: activePriorAuth,
     hasPriorAuthWithoutCodes,
+    hasExpiredPriorAuth,
     isLoading: mainBillingCodesLoading,
     error: mainBillingCodesError,
-  } = useApprovedBillingCodes(formData.clientId || null, billingCodeType, effectiveProviderId)
+  } = useApprovedBillingCodes(formData.clientId || null, billingCodeType, effectiveProviderId, formData.date || undefined)
 
   // ─── Determine if selected BC allows inline supervision ───
   const selectedBillingCode = useMemo(
@@ -450,11 +451,15 @@ export function useAppointmentForm({
   }, [activePriorAuth, mainBillingCodes.length])
 
   useEffect(() => {
-    if (mainBillingCodesLoading) return
+    if (mainBillingCodesLoading || mainBillingCodesError) return
+    if (formData.billingCodeId && !billingCodeOptions.some((option) => option.value === formData.billingCodeId)) {
+      updateField("billingCodeId", "")
+      return
+    }
     if (billingCodeOptions.length === 1 && !formData.billingCodeId) {
       setFormData((prev) => ({ ...prev, billingCodeId: billingCodeOptions[0].value }))
     }
-  }, [billingCodeOptions, mainBillingCodesLoading, formData.billingCodeId])
+  }, [billingCodeOptions, mainBillingCodesLoading, mainBillingCodesError, formData.billingCodeId, updateField])
 
   // Reset billing code on event type change
   useEffect(() => {
@@ -518,8 +523,10 @@ export function useAppointmentForm({
 
   // Main validation effect
   useEffect(() => {
+    if (mainBillingCodesLoading) return
     const { clientId, billingCodeId, startTime, endTime, date, eventType } = formData
     if (!clientId || !billingCodeId || !startTime || !endTime || !date) return
+    if (!mainBillingCodes.some((code) => code.id === billingCodeId)) return
 
     const key = buildMainValidateKey({ clientId, billingCodeId, startTime, endTime, date, eventType })
     if (key === mainValidateKey.current) return
@@ -589,7 +596,11 @@ export function useAppointmentForm({
       }
     }
     void run()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      mainValidateKey.current = ""
+      setIsValidatingMain(false)
+    }
   }, [
     formData.clientId,
     formData.billingCodeId,
@@ -598,6 +609,7 @@ export function useAppointmentForm({
     formData.date,
     formData.eventType,
     mainBillingCodes,
+    mainBillingCodesLoading,
     isEditing,
     appointment?.id,
   ])
@@ -772,6 +784,7 @@ export function useAppointmentForm({
     activePriorAuth,
     hasActivePriorAuth: activePriorAuth !== null,
     hasPriorAuthWithoutCodes,
+    hasExpiredPriorAuth,
     durationMinutes,
     billableUnits,
     supervisionCodeOptions,

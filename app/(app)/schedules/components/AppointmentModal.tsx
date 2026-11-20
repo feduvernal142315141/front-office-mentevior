@@ -92,6 +92,7 @@ export function AppointmentModal({
     handleSubmit,
     isSubmitting,
     hasPriorAuthWithoutCodes,
+    hasExpiredPriorAuth,
     billableUnits,
   } = useAppointmentForm({
     open,
@@ -275,12 +276,17 @@ export function AppointmentModal({
             />
             {mainBillingCodesLoading && <Hint>Loading billing codes…</Hint>}
             {mainBillingCodesError && <HintError>{mainBillingCodesError.message}</HintError>}
-            {hasPriorAuthWithoutCodes && (
+            {hasExpiredPriorAuth && (
+              <Hint className="text-amber-600">
+                Current prior authorization expired. Please check in client's profile.
+              </Hint>
+            )}
+            {!hasExpiredPriorAuth && hasPriorAuthWithoutCodes && (
               <Hint className="text-amber-600">
                 No billing codes available. The provider may not have billing codes configured or is not associated with this client.
               </Hint>
             )}
-            {!hasPriorAuthWithoutCodes && formData.clientId && !mainBillingCodesLoading && !mainBillingCodesError && billingCodeOptions.length === 0 && (
+            {!hasExpiredPriorAuth && !hasPriorAuthWithoutCodes && formData.clientId && !mainBillingCodesLoading && !mainBillingCodesError && billingCodeOptions.length === 0 && (
               <Hint className="text-amber-600">
                 No billing codes available. Verify that the provider has billing codes configured and is associated with this client.
               </Hint>

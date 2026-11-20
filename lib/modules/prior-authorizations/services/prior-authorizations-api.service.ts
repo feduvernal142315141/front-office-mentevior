@@ -29,6 +29,7 @@ function normalizeBillingCodeLabel({
 function normalizePA(raw: Record<string, unknown>): PriorAuthorization {
   return {
     id: raw.id as string,
+    active: raw.active as boolean | undefined,
     clientId: (raw.clientId as string) ?? "",
     authNumber: (raw.authNumber as string) ?? "",
     insuranceId: (raw.insuranceId as string) ?? "",
