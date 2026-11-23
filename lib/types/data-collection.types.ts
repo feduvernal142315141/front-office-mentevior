@@ -70,6 +70,8 @@ export interface DataCollectionBaselineData {
   intervalLength?: number
   unitOfTime?: string
   suggestedNumberOfRecordings?: number
+  /** Time-sampling: Daily Average % (string con coma o punto); es el valor que se grafica */
+  dailyAveragePercent?: string
   comments?: string
   environmentalChanges?: string
   show: boolean

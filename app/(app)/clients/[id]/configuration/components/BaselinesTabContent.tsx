@@ -12,6 +12,7 @@ import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper
 import { SERVICE_PLAN_UNIT_OF_TIME_OPTIONS } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
+import { isValidDailyAveragePercent, sanitizeDailyAveragePercentInput } from "@/lib/utils/daily-average-percent"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import {
   deleteClientCategoryBaseline,
@@ -30,6 +31,8 @@ export interface BaselineRow {
   intervalLength?: string
   unitOfTime?: string
   suggestedNumberOfRecordings?: string
+  /** Time-sampling: Daily Average % (string, coma o punto); es lo que se grafica */
+  dailyAveragePercent?: string
   comments: string
   show: boolean
 }
@@ -209,6 +212,18 @@ export function BaselinesTabContent({
                         onBlur={() => {}}
                         inputMode="numeric"
                         hasError={showErrors && row.suggestedNumberOfRecordings !== undefined && !(Number(row.suggestedNumberOfRecordings) > 0)}
+                        required
+                        disabled={actionsDisabled}
+                      />
+                    </div>
+                    <div className="col-span-2 flex-1 min-w-0 sm:col-span-1">
+                      <FloatingInput
+                        label="Daily Average %"
+                        value={row.dailyAveragePercent ?? ""}
+                        onChange={(v) => handleUpdate(row.localId, "dailyAveragePercent", sanitizeDailyAveragePercentInput(v))}
+                        onBlur={() => {}}
+                        inputMode="decimal"
+                        hasError={showErrors && !isValidDailyAveragePercent(row.dailyAveragePercent)}
                         required
                         disabled={actionsDisabled}
                       />

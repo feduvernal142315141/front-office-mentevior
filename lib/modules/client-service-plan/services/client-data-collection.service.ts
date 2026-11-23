@@ -103,6 +103,7 @@ interface ApiBaseline {
   intervalLength?: number | string | null
   unitOfTime?: string | null
   suggestedNumberOfRecordings?: number | string | null
+  dailyAveragePercent?: number | string | null
   comments?: string
   environmentalChanges?: string
   show?: boolean | number | string
@@ -125,6 +126,7 @@ function normalizeBaselines(raw: unknown): DataCollectionBaselineData[] {
         intervalLength: asOptionalNumber(b.intervalLength),
         unitOfTime: asOptionalString(b.unitOfTime),
         suggestedNumberOfRecordings: asOptionalNumber(b.suggestedNumberOfRecordings),
+        dailyAveragePercent: b.dailyAveragePercent != null && String(b.dailyAveragePercent).trim() !== "" ? String(b.dailyAveragePercent) : undefined,
         comments: asString(b.comments),
         environmentalChanges: asString(b.environmentalChanges),
         show: asBoolean(b.show, true),
@@ -715,6 +717,7 @@ function toApiBaselines(baselines: DataCollectionBaselineData[]): ApiBaseline[] 
     ...(b.intervalLength != null ? { intervalLength: b.intervalLength } : {}),
     ...(b.unitOfTime ? { unitOfTime: b.unitOfTime } : {}),
     ...(b.suggestedNumberOfRecordings != null ? { suggestedNumberOfRecordings: b.suggestedNumberOfRecordings } : {}),
+    ...(b.dailyAveragePercent ? { dailyAveragePercent: b.dailyAveragePercent } : {}),
     environmentalChanges: b.environmentalChanges ?? b.comments ?? "",
     show: b.show,
   }))
@@ -876,6 +879,8 @@ export async function patchItemObjectiveStartDate(
 export interface UpdateBaselineValueEntry {
   id: string
   value: number
+  /** Time-sampling: Daily Average % recalculado al editar los "+" en la datasheet */
+  dailyAveragePercent?: string
   /** Nota del baseline editada desde la grilla del datasheet */
   environmentalChanges?: string | null
 }

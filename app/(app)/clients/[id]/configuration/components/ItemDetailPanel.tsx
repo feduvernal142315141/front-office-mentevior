@@ -29,6 +29,7 @@ import { GroupedSelect } from "@/components/custom/GroupedSelect"
 import { Button } from "@/components/custom/Button"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
+import { isValidDailyAveragePercent } from "@/lib/utils/daily-average-percent"
 
 import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
@@ -336,6 +337,7 @@ export function ItemDetailPanel({
             intervalLength: b.intervalLength != null ? String(b.intervalLength) : undefined,
             unitOfTime: b.unitOfTime ?? undefined,
             suggestedNumberOfRecordings: b.suggestedNumberOfRecordings != null ? String(b.suggestedNumberOfRecordings) : undefined,
+            dailyAveragePercent: b.dailyAveragePercent,
             comments: b.environmentalChanges ?? b.comments ?? "",
             show: b.show,
           }))
@@ -637,12 +639,13 @@ export function ItemDetailPanel({
         b.date &&
         !(
           Number(b.intervalLength || timeSampling.intervalLength) > 0 &&
-          (b.suggestedNumberOfRecordings === undefined ? timeSampling.suggestedNumberOfRecordings : Number(b.suggestedNumberOfRecordings)) > 0
+          (b.suggestedNumberOfRecordings === undefined ? timeSampling.suggestedNumberOfRecordings : Number(b.suggestedNumberOfRecordings)) > 0 &&
+          isValidDailyAveragePercent(b.dailyAveragePercent)
         )
     )
     if (invalidTimeSampling) {
       setBaselinesError(true)
-      toast.error("Interval length and Suggested number of recordings are required in each baseline")
+      toast.error("Interval length, Suggested number of recordings and Daily Average % (0-100) are required in each baseline")
       return
     }
     if (missingSessionDuration) {
@@ -687,6 +690,7 @@ export function ItemDetailPanel({
                   b.suggestedNumberOfRecordings === undefined
                     ? timeSampling.suggestedNumberOfRecordings
                     : Number(b.suggestedNumberOfRecordings),
+                dailyAveragePercent: (b.dailyAveragePercent ?? "").trim(),
               }
             : {}),
           environmentalChanges: b.comments,

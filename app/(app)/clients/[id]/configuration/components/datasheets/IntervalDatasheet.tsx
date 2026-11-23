@@ -1,5 +1,6 @@
 "use client"
 
+import { parseDailyAveragePercent } from "@/lib/utils/daily-average-percent"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { BarChart3, FileText, User, CalendarCheck2, ChevronLeft, ChevronRight } from "lucide-react"
 import { addDays, format } from "date-fns"
@@ -266,10 +267,14 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     const points: { dateKey: string; percentage: number }[] = []
     for (const b of activeItem.baseline ?? []) {
       if (!b.show || !b.date) continue
+      // Lo que se grafica es el Daily Average % cargado en el baseline; sin él (datos antiguos) se calcula con los "+"
+      const dailyAverage = parseDailyAveragePercent(b.dailyAveragePercent)
       const dayCount = b.suggestedNumberOfRecordings && b.suggestedNumberOfRecordings > 0 ? b.suggestedNumberOfRecordings : numberOfIntervals
       points.push({
         dateKey: getDateKey(parseLocalDate(b.date)),
-        percentage: Math.round(Math.min(100, (b.value / dayCount) * 100) * 10) / 10,
+        percentage: dailyAverage !== null
+          ? Math.round(Math.min(100, Math.max(0, dailyAverage)) * 10) / 10
+          : Math.round(Math.min(100, (b.value / dayCount) * 100) * 10) / 10,
       })
     }
     return points
@@ -406,7 +411,9 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                 const entry = ds.getEntry(key)
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
-                const pct = calculateIntervalPercentage(entry)
+                const calcPct = calculateIntervalPercentage(entry)
+                const typedPct = isBaseline && entry ? ds.baselineTypedPercent(key, entry.intervals.filter((v) => v === "+").length) : null
+                const pct = typedPct ?? calcPct
                 return (
                   <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/3")}>
                     {pct !== null ? (

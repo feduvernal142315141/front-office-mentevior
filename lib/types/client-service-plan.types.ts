@@ -48,6 +48,8 @@ export interface ClientServicePlanItemBaseline {
   intervalLength?: number | null
   unitOfTime?: string | null
   suggestedNumberOfRecordings?: number | null
+  /** Time-sampling: promedio diario en % (string con coma o punto); es lo que se grafica */
+  dailyAveragePercent?: string | null
   environmentalChanges?: string
   show: boolean
 }
