@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { CustomModal } from "@/components/custom/CustomModal"
@@ -39,6 +39,8 @@ export function BillingCodeModal({
   isLoading = false,
   isLoadingCatalog = false,
 }: BillingCodeModalProps) {
+  // Keep the typed separator and trailing zeros while the form stores a number.
+  const [approvedUnitsText, setApprovedUnitsText] = useState("")
   const form = useForm<BillingCodeEntryValues>({
     resolver: zodResolver(billingCodeEntrySchema),
     mode: "onSubmit",
@@ -49,6 +51,7 @@ export function BillingCodeModal({
   // Populate form when editing
   useEffect(() => {
     if (editingCode) {
+      setApprovedUnitsText(String(editingCode.approvedUnits))
       form.reset({
         billingCodeId: editingCode.billingCodeId,
         approvedUnits: editingCode.approvedUnits,
@@ -62,6 +65,7 @@ export function BillingCodeModal({
         maxCountPerMonth: editingCode.maxCountPerMonth ?? null,
       })
     } else {
+      setApprovedUnitsText("")
       form.reset(billingCodeEntryDefaults)
     }
   }, [editingCode, open, form])
@@ -69,7 +73,7 @@ export function BillingCodeModal({
   const billingCodeOptions = billingCodes
     .filter(
       (bc) =>
-        (bc.active !== false) &&
+        bc.active &&
         (!usedBillingCodeIds.includes(bc.id) || editingCode?.billingCodeId === bc.id)
     )
     .map((bc) => ({
@@ -90,6 +94,7 @@ export function BillingCodeModal({
   })
 
   const handleClose = () => {
+    setApprovedUnitsText("")
     form.reset(billingCodeEntryDefaults)
     onClose()
   }
@@ -129,6 +134,7 @@ export function BillingCodeModal({
                     "approvedUnits",
                     autoUnits !== undefined ? autoUnits : (null as unknown as number),
                   )
+                  setApprovedUnitsText(autoUnits !== undefined ? String(autoUnits) : "")
                 }}
                 onBlur={field.onBlur}
                 options={billingCodeOptions}
@@ -159,17 +165,15 @@ export function BillingCodeModal({
               <div>
                 <FloatingInput
                   label="Approved Units"
-                  value={field.value === null || field.value === undefined ? "" : String(field.value)}
+                  value={approvedUnitsText}
                   onChange={(v) => {
-                    if (v === "") {
-                      field.onChange(null as unknown as number)
-                      return
-                    }
-                    const parsed = parseInt(v, 10)
-                    if (!isNaN(parsed)) field.onChange(parsed)
+                    if (!/^\d*(?:[.,]\d*)?$/.test(v)) return
+                    setApprovedUnitsText(v)
+                    const parsed = v === "" ? Number.NaN : Number(v.replace(",", "."))
+                    field.onChange(Number.isFinite(parsed) ? parsed : (null as unknown as number))
                   }}
                   onBlur={field.onBlur}
-                  inputMode="numeric"
+                  inputMode="decimal"
                   hasError={!!fieldState.error}
                   required
                 />

@@ -31,9 +31,11 @@ export async function getApprovedBillingCodesByClient(
   clientId: string,
   billingCodeType: string = "Session",
   providerId?: string,
+  date?: string,
 ): Promise<ApprovedBillingCodesResponse | null> {
   const params = new URLSearchParams({ billingCodeType })
   if (providerId) params.set("providerId", providerId)
+  if (date) params.set("date", date)
   const url = `/prior-authorizations/approved-billing-codes/by-client/${clientId}?${params.toString()}`
   const response = await serviceGetSilent<ApprovedBillingCodesResponse | null>(url)
 
@@ -41,7 +43,7 @@ export async function getApprovedBillingCodesByClient(
     throw new Error(getApiErrorMessage(response?.data, "Failed to load approved billing codes"))
   }
 
-  // API returns null when no active prior authorization exists
+  // API returns null when no active prior authorization covers the requested date.
   if (response.data === null || response.data === undefined) {
     return null
   }

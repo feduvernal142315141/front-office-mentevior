@@ -92,6 +92,7 @@ export function AppointmentModal({
     handleSubmit,
     isSubmitting,
     hasPriorAuthWithoutCodes,
+    hasExpiredPriorAuth,
     billableUnits,
   } = useAppointmentForm({
     open,
@@ -275,12 +276,17 @@ export function AppointmentModal({
             />
             {mainBillingCodesLoading && <Hint>Loading billing codes…</Hint>}
             {mainBillingCodesError && <HintError>{mainBillingCodesError.message}</HintError>}
-            {hasPriorAuthWithoutCodes && (
+            {hasExpiredPriorAuth && (
+              <Hint className="text-amber-600">
+                Current prior authorization expired. Please check in client's profile.
+              </Hint>
+            )}
+            {!hasExpiredPriorAuth && hasPriorAuthWithoutCodes && (
               <Hint className="text-amber-600">
                 No billing codes available. The provider may not have billing codes configured or is not associated with this client.
               </Hint>
             )}
-            {!hasPriorAuthWithoutCodes && formData.clientId && !mainBillingCodesLoading && !mainBillingCodesError && billingCodeOptions.length === 0 && (
+            {!hasExpiredPriorAuth && !hasPriorAuthWithoutCodes && formData.clientId && !mainBillingCodesLoading && !mainBillingCodesError && billingCodeOptions.length === 0 && (
               <Hint className="text-amber-600">
                 No billing codes available. Verify that the provider has billing codes configured and is associated with this client.
               </Hint>
@@ -410,7 +416,7 @@ export function AppointmentModal({
               pendingValidation ||
               !!validationError
             }
-            className="h-10 min-w-0 sm:min-w-[180px]"
+            className="h-10 min-w-0 sm:min-w-45"
             onClick={handleSubmit}
           >
             {isEditing ? "Update" : "Create"} Session
@@ -468,7 +474,7 @@ function SummaryBar({
       : { border: "border-[#037ECC]/15", bg: "from-[#037ECC]/[0.06] to-[#079CFB]/[0.04]", accent: "text-[#037ECC]", divider: "bg-[#037ECC]/20", label: "text-[#037ECC]/70" }
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-4 rounded-xl border px-4 py-2.5", colors.border, `bg-gradient-to-br ${colors.bg}`)}>
+    <div className={cn("flex flex-wrap items-center gap-4 rounded-xl border px-4 py-2.5", colors.border, `bg-linear-to-br ${colors.bg}`)}>
       <span className={cn("text-[10px] font-semibold uppercase tracking-wider", colors.label)}>{label}</span>
       <div className={cn("h-3.5 w-px", colors.divider)} />
       <div className="flex items-center gap-1.5">
@@ -490,7 +496,7 @@ function SummaryBar({
             <Shield className={cn("h-3.5 w-3.5", priorAuthMissing ? "text-amber-600" : colors.accent)} />
             <span
               className={cn(
-                "text-xs truncate max-w-[220px]",
+                "text-xs truncate max-w-55",
                 priorAuthMissing ? "font-semibold text-amber-700" : "text-slate-600",
               )}
             >

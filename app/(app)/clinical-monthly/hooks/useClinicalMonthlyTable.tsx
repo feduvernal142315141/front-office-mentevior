@@ -213,13 +213,6 @@ export function useClinicalMonthlyTable() {
     setItemToDelete(null)
   }, [])
 
-  // El listado no devuelve `providerName` todavía; la columna aparece sola en
-  // cuanto el backend lo mande, en vez de ocupar espacio con guiones.
-  const showProviderColumn = useMemo(
-    () => clinicalMonthlies.some((item) => !!item.providerName),
-    [clinicalMonthlies],
-  )
-
   const columns: CustomTableColumn<ClinicalMonthlyListItem>[] = useMemo(() => [
     {
       key: "clientName",
@@ -228,15 +221,13 @@ export function useClinicalMonthlyTable() {
         <span className="text-sm font-semibold text-slate-900">{item.clientName || "—"}</span>
       ),
     },
-    ...(showProviderColumn
-      ? [{
-          key: "providerName",
-          header: "Provider",
-          render: (item: ClinicalMonthlyListItem) => (
-            <span className="text-sm text-slate-700">{item.providerName || "—"}</span>
-          ),
-        }]
-      : []),
+    {
+      key: "creatorName",
+      header: "Provider",
+      render: (item) => (
+        <span className="text-sm text-slate-700">{item.creatorName || "—"}</span>
+      ),
+    },
     {
       key: "period",
       header: "Period",
@@ -359,7 +350,7 @@ export function useClinicalMonthlyTable() {
         </div>
       ),
     },
-  ], [showProviderColumn, canEdit, canDelete, router, openAuditModal, handleDeleteClick])
+  ], [canEdit, canDelete, router, openAuditModal, handleDeleteClick])
 
   return {
     data: clinicalMonthlies,

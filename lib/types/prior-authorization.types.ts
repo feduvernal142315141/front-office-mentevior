@@ -22,6 +22,7 @@ export interface PriorAuthBillingCode {
 
 export interface PriorAuthorization {
   id: string
+  active?: boolean
   clientId: string
   authNumber: string
   insuranceId: string

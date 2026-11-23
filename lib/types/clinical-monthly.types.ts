@@ -8,9 +8,8 @@
  * devuelve en listado y detalle; `ClinicalMonthlyItemData` quedó retirado, así
  * que los items ya no llevan textos.
  *
- * Todavía faltan campos que la HU pide (`providerId`/`providerName` y `status`
- * en el listado); están marcados como opcionales para que la UI se pueda
- * construir completa y se active sola en cuanto el backend los mande. Ver
+ * El listado identifica al autor mediante `creatorName`. Sigue pendiente
+ * el campo `status` que pide la HU. Ver
  * `plans/SCRUM-163-clinical-monthly.md`.
  */
 
@@ -45,10 +44,9 @@ export interface ClinicalMonthlyListItem {
   /** URL utilizable de la firma histórica del creador, si existe. */
   creatorSign?: string | null
 
-  /**
-   * Pendiente de backend: el detalle sí lo resuelve, el listado todavía no.
-   * La columna Provider de la tabla aparece sola en cuanto empiece a venir.
-   */
+  /** Nombre del creador del reporte, utilizado en la columna Provider. */
+  creatorName?: string | null
+  /** Campo opcional legacy; no identifica al autor del reporte. */
   providerName?: string
   /** Pendiente de backend (gap B2) */
   status?: ClinicalMonthlyStatus
@@ -146,6 +144,10 @@ export interface ClinicalMonthlyDetail {
   active: boolean
   recipientName: string
   providerName: string
+  /** Autor persistido del reporte; no corresponde al provider de las citas. */
+  creatorName?: string | null
+  /** Abreviatura de la credencial del autor, por ejemplo BCBA o BCaBA. */
+  creatorCredential?: string | null
   payer: string
   /**
    * Comentario único del reporte, persistido en `clinical_monthly.summary`.

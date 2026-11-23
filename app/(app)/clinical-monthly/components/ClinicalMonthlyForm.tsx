@@ -186,7 +186,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Provider</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-              <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{clinicalMonthly.providerName || "—"}</span></div>
+              <div><span className="text-slate-400">Name:</span> <span className="font-medium text-slate-800">{[clinicalMonthly.creatorName, clinicalMonthly.creatorCredential].filter(Boolean).join(", ") || "—"}</span></div>
               <div><span className="text-slate-400">Report month:</span> <span className="font-medium text-slate-800 tabular-nums">{clinicalMonthly.startMonthYear}</span></div>
             </div>
           </div>
@@ -248,7 +248,6 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             onBlur={() => {}}
             guidance={CLINICAL_MONTHLY_SUMMARY_GUIDANCE}
             rows={10}
-            showLengthCounter
             disabled={isBusy}
             hasError={!!summaryError}
             required
