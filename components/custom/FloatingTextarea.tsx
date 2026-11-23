@@ -25,6 +25,8 @@ export interface FloatingTextareaProps {
    * La validación que bloquea el guardado vive en el `handleSubmit` del formulario.
    */
   showLengthCounter?: boolean
+  /** Incluye el contador de caracteres junto al de palabras. */
+  showCharacterCounter?: boolean
   hasError?: boolean
   maxLength?: number
   rows?: number
@@ -41,6 +43,7 @@ export function FloatingTextarea({
   placeholder,
   guidance,
   showLengthCounter,
+  showCharacterCounter = true,
   hasError,
   maxLength,
   rows = 4,
@@ -200,7 +203,7 @@ export function FloatingTextarea({
         )}
       </div>
 
-      {showLengthCounter && !disabled && <LengthCounter value={value} />}
+      {showLengthCounter && !disabled && <LengthCounter value={value} showCharacterCounter={showCharacterCounter} />}
     </div>
   )
 }
@@ -209,7 +212,7 @@ export function FloatingTextarea({
  * Contador en vivo bajo el campo. Va fuera de la caja para no chocar con el
  * overlay de guía ni con el handle de resize.
  */
-function LengthCounter({ value }: { value: string }) {
+function LengthCounter({ value, showCharacterCounter }: { value: string; showCharacterCounter: boolean }) {
   const { words, chars, isEmpty, isValid } = getNarrativeLengthState(value)
 
   const tone = isEmpty ? "neutral" : isValid ? "valid" : "under"
@@ -226,17 +229,21 @@ function LengthCounter({ value }: { value: string }) {
       >
         {words} words (min {NARRATIVE_MIN_WORDS})
       </span>
-      <span className="text-slate-300" aria-hidden="true">
-        ·
-      </span>
-      <span
-        className={cn(
-          "transition-colors",
-          isEmpty || chars >= NARRATIVE_MIN_CHARS ? "text-slate-400" : "text-amber-600",
-        )}
-      >
-        {chars} / {NARRATIVE_MIN_CHARS} chars
-      </span>
+      {showCharacterCounter && (
+        <>
+          <span className="text-slate-300" aria-hidden="true">
+            ·
+          </span>
+          <span
+            className={cn(
+              "transition-colors",
+              isEmpty || chars >= NARRATIVE_MIN_CHARS ? "text-slate-400" : "text-amber-600",
+            )}
+          >
+            {chars} / {NARRATIVE_MIN_CHARS} chars
+          </span>
+        </>
+      )}
     </div>
   )
 }

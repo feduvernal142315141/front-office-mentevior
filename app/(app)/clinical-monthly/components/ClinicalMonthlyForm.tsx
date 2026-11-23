@@ -248,6 +248,8 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             onBlur={() => {}}
             guidance={CLINICAL_MONTHLY_SUMMARY_GUIDANCE}
             rows={10}
+            showLengthCounter
+            showCharacterCounter={false}
             disabled={isBusy}
             hasError={!!summaryError}
             required
