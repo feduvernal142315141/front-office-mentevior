@@ -12,9 +12,9 @@ interface PdfSectionsVisibilityProps {
 }
 
 /**
- * Switches de las secciones del PDF que se arman desde el expediente del
- * cliente (contactos, médicos, documentos…) y no tienen sección propia en el
- * formulario. El resto de flags vive en el header de su sección.
+ * Switches restantes de las secciones del PDF que se arman desde el expediente
+ * del cliente y no tienen sección propia en el formulario. Contacto de
+ * emergencia y cuidadores se muestran dentro de Background.
  */
 export function PdfSectionsVisibility({ flags, disabled, onUpdate }: PdfSectionsVisibilityProps) {
   return (

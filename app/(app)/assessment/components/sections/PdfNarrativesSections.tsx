@@ -4,6 +4,7 @@ import { FileText } from "lucide-react"
 import { CollapsableSection } from "@/components/custom/CollapsableSection"
 import { FloatingTextarea } from "@/components/custom/FloatingTextarea"
 import {
+  ASSESSMENT_PDF_CONSENT_NARRATIVE,
   ASSESSMENT_PDF_GENERAL_NARRATIVES,
   ASSESSMENT_PDF_STRATEGY_GROUPS,
 } from "@/lib/constants/assessment.constants"
@@ -63,7 +64,9 @@ export function PdfNarrativesSections({
       ))}
 
       {/* General narratives after strategies */}
-      {ASSESSMENT_PDF_GENERAL_NARRATIVES.map(({ key, label }) => (
+      {ASSESSMENT_PDF_GENERAL_NARRATIVES
+        .filter(({ key }) => key !== ASSESSMENT_PDF_CONSENT_NARRATIVE.key)
+        .map(({ key, label }) => (
         <CollapsableSection
           key={key}
           icon={<FileText className="h-4 w-4" />}
@@ -87,5 +90,37 @@ export function PdfNarrativesSections({
         </CollapsableSection>
       ))}
     </>
+  )
+}
+
+export function PdfConsentSection({
+  values,
+  errors,
+  disabled,
+  onUpdate,
+}: PdfNarrativesSectionsProps) {
+  const { key, label } = ASSESSMENT_PDF_CONSENT_NARRATIVE
+
+  return (
+    <CollapsableSection
+      icon={<FileText className="h-4 w-4" />}
+      title={label}
+      defaultOpen={true}
+      forceOpen={errors[key] ? true : undefined}
+    >
+      <div data-field={key}>
+        <FloatingTextarea
+          label={label}
+          value={values[key]}
+          onChange={(value) => onUpdate(key, value)}
+          onBlur={() => {}}
+          rows={10}
+          disabled={disabled}
+          hasError={!!errors[key]}
+          required
+        />
+        {errors[key] && <p className="mt-1.5 text-xs font-medium text-red-500">{errors[key]}</p>}
+      </div>
+    </CollapsableSection>
   )
 }

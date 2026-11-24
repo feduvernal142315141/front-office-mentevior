@@ -67,6 +67,9 @@ export const ASSESSMENT_PDF_GENERAL_NARRATIVES: {
   { key: "assessmentTreatmentConsent", flagKey: "showConsentAssessmentTreatment", label: "Consent for Assessment & Treatment" },
 ]
 
+export const ASSESSMENT_PDF_CONSENT_NARRATIVE =
+  ASSESSMENT_PDF_GENERAL_NARRATIVES.find(({ key }) => key === "assessmentTreatmentConsent")!
+
 /** Bloques de estrategias del PDF: un flag controla el bloque completo */
 export const ASSESSMENT_PDF_STRATEGY_GROUPS: {
   title: string
@@ -106,14 +109,16 @@ export const ASSESSMENT_PDF_STRATEGY_GROUPS: {
       { key: "plannedIgnoring", label: "Planned ignoring" },
       { key: "alternativeRedirection", label: "Redirection to an alternative response" },
       { key: "stopRedirectReinforce", label: "Stop-Redirect-Reinforce" },
-      { key: "matchingLawTreatment", label: "Matching law-informed reinforcement" },
+      { key: "matchingLawTreatment", label: "Matching law-informed reinforcement- based treatment" },
     ],
   },
 ]
 
 /**
  * Secciones del PDF que se arman desde el expediente del cliente y no tienen
- * sección propia en este formulario; sus switches viven agrupados aparte.
+ * campos editables propios en este formulario. Contacto de emergencia y
+ * cuidadores se ubican dentro de Background; los demás switches quedan en el
+ * bloque general del expediente.
  */
 /**
  * Secciones que van siempre en el assessment y siempre en el PDF: no tienen
@@ -147,10 +152,13 @@ export const ASSESSMENT_PDF_MANDATORY_FLAGS: ReadonlySet<AssessmentPdfFlagKey> =
   "showOtherServices",
 ])
 
-export const ASSESSMENT_PDF_CLIENT_RECORD_FLAGS: { key: AssessmentPdfFlagKey; label: string }[] = [
+export const ASSESSMENT_PDF_BACKGROUND_CLIENT_RECORD_FLAGS: { key: AssessmentPdfFlagKey; label: string }[] = [
   { key: "showEmergencyContactInformation", label: "Emergency Contact Information" },
-  { key: "showReferringPhysicians", label: "Referring Physicians" },
   { key: "showFamilyCaregiversGuardians", label: "Family, Caregivers & Guardians" },
+]
+
+export const ASSESSMENT_PDF_CLIENT_RECORD_FLAGS: { key: AssessmentPdfFlagKey; label: string }[] = [
+  { key: "showReferringPhysicians", label: "Referring Physicians" },
   { key: "showDocumentsReviewed", label: "Documents Reviewed" },
   { key: "showServiceLocations", label: "Service Locations" },
 ]

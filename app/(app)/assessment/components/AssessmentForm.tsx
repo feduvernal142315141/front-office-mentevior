@@ -49,8 +49,10 @@ import { FloatingTimePicker } from "@/components/custom/FloatingTimePicker"
 import { CollapsableSection } from "@/components/custom/CollapsableSection"
 import { FormBottomBar } from "@/components/custom/FormBottomBar"
 import { MultiSelectWithSearch } from "@/components/custom/MultiSelectWithSearch"
+import { PremiumSwitch } from "@/components/custom/PremiumSwitch"
 import {
   ASSESSMENT_BACKGROUND_FIELDS,
+  ASSESSMENT_PDF_BACKGROUND_CLIENT_RECORD_FLAGS,
   HOUSING_TYPE_OPTIONS,
   TYPE_OF_BIRTH_OPTIONS,
 } from "@/lib/constants/assessment.constants"
@@ -80,7 +82,7 @@ import { AbcDataSection } from "./sections/AbcDataSection"
 import { BillingCodesSection } from "./sections/BillingCodesSection"
 import { CategoryItemsSection } from "./sections/CategoryItemsSection"
 import { MedicationsSection } from "./sections/MedicationsSection"
-import { PdfNarrativesSections } from "./sections/PdfNarrativesSections"
+import { PdfConsentSection, PdfNarrativesSections } from "./sections/PdfNarrativesSections"
 import { PdfSectionsVisibility } from "./sections/PdfSectionsVisibility"
 import { ProposedScheduleSection } from "./sections/ProposedScheduleSection"
 import { ProviderFilesSection } from "./sections/ProviderFilesSection"
@@ -509,6 +511,28 @@ export function AssessmentForm({
             required
           />
           <FieldError message={errors.housingInformation} />
+        </div>
+
+        <SubHeading
+          icon={<Contact className="h-3.5 w-3.5" />}
+          title="Emergency contact & family care"
+          className="mt-6"
+        />
+        <p className="mb-3 text-xs text-slate-500">
+          Printed from the client&apos;s record; choose which sections to include in the PDF.
+        </p>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {ASSESSMENT_PDF_BACKGROUND_CLIENT_RECORD_FLAGS.map(({ key, label }) => (
+            <div key={key} className="rounded-xl border border-slate-200 bg-slate-50/40 px-4 py-2.5">
+              <PremiumSwitch
+                checked={formData.pdfFlags[key]}
+                onCheckedChange={(value) => updatePdfFlag(key, value)}
+                label={label}
+                disabled={fieldsDisabled}
+                className="flex-row-reverse justify-end gap-3"
+              />
+            </div>
+          ))}
         </div>
 
         {/* School fields (opcionales, dentro de Background) */}
@@ -962,7 +986,7 @@ export function AssessmentForm({
         onUpdate={updatePdfText}
       />
 
-      {/* ─── Billing Codes (después de Consent for Assessment & Treatment) ─── */}
+      {/* ─── Billing Codes ─── */}
       <Section
         icon={<Receipt className="h-4 w-4" />}
         title="Billing Codes"
@@ -990,6 +1014,14 @@ export function AssessmentForm({
 
       {/* Secciones del PDF que salen del expediente del cliente (sin sección propia acá) */}
       <PdfSectionsVisibility flags={formData.pdfFlags} disabled={fieldsDisabled} onUpdate={updatePdfFlag} />
+
+      {/* Consent queda al final, inmediatamente antes de las firmas del documento. */}
+      <PdfConsentSection
+        values={formData.pdfTexts}
+        errors={errors}
+        disabled={fieldsDisabled}
+        onUpdate={updatePdfText}
+      />
       </div>
 
       <AlertDialog
