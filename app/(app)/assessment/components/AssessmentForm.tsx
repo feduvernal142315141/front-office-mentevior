@@ -576,7 +576,6 @@ export function AssessmentForm({
                 guidance={ASSESSMENT_BACKGROUND_GUIDANCE[key]}
                 rows={4}
                 hasError={!!errors[key]}
-                required
               />
               <FieldError message={errors[key]} />
             </div>
@@ -789,7 +788,7 @@ export function AssessmentForm({
           intensities={intensities}
           isLoading={categoriesLoading}
           values={formData.categoryItems}
-          disabled={isSaving}
+          disabled={fieldsDisabled}
           onUpdate={updateCategoryItem}
           onClear={clearCategoryItem}
         />

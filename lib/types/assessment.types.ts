@@ -181,6 +181,8 @@ export interface AssessmentObservationInput {
  */
 export interface AssessmentCategoryItemInput {
   clientServicePlanCategoryItemId: string
+  description: string
+  procedures: string
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string
   hypothesizedFunction: HypothesizedFunction[]
@@ -436,6 +438,8 @@ export interface AssessmentConductedEntry {
 /** Fila de `categoriesItems` en el detalle, con el nombre del item resuelto */
 export interface AssessmentCategoryItemEntry {
   clientServicePlanCategoryItemId: string
+  description?: string
+  procedures?: string
   itemName: string
   intensityKey: AssessmentIntensityKey | null
   intensityDescription: string

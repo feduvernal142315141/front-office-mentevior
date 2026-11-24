@@ -304,6 +304,8 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
 
   const categoriesItems: AssessmentCategoryItemEntry[] = arr(raw.categoriesItems).map((i) => ({
     clientServicePlanCategoryItemId: str(i.clientServicePlanCategoryItemId),
+    description: typeof i.description === "string" ? i.description : undefined,
+    procedures: typeof i.procedures === "string" ? i.procedures : undefined,
     itemName: str(i.clientServicePlanCategoryItemName) || str(i.itemName),
     intensityKey: str(i.intensityKey) || null,
     intensityDescription: str(i.intensityDescription),

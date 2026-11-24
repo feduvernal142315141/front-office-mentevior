@@ -48,6 +48,8 @@ interface CategoryItemsSectionProps {
 
 function isTouched(value: CategoryItemFormValue): boolean {
   return (
+    value.description !== undefined ||
+    value.procedures !== undefined ||
     !!value.intensityKey ||
     !!value.intensityDescription.trim() ||
     value.hypothesizedFunction.length > 0 ||
@@ -307,18 +309,18 @@ export function CategoryItemsSection({
                     <div className="mt-4 space-y-4">
                       <FloatingTextarea
                         label="Description"
-                        value={item.description ?? ""}
-                        onChange={() => {}}
+                        value={value.description ?? item.description ?? ""}
+                        onChange={(v) => onUpdate(item.id, "description", v)}
                         onBlur={() => {}}
-                        disabled
+                        disabled={disabled}
                         rows={8}
                       />
                       <FloatingTextarea
                         label="Procedures"
-                        value={item.procedures ?? ""}
-                        onChange={() => {}}
+                        value={value.procedures ?? item.procedures ?? ""}
+                        onChange={(v) => onUpdate(item.id, "procedures", v)}
                         onBlur={() => {}}
-                        disabled
+                        disabled={disabled}
                         rows={8}
                       />
                     </div>

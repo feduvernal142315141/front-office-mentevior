@@ -29,7 +29,6 @@ import type {
   SaveAssessmentDto,
 } from "@/lib/types/assessment.types"
 import {
-  ASSESSMENT_BACKGROUND_FIELDS,
   ASSESSMENT_PDF_GENERAL_NARRATIVES,
   ASSESSMENT_PDF_MANDATORY_FLAGS,
   ASSESSMENT_PDF_STRATEGY_GROUPS,
@@ -58,6 +57,9 @@ import { useRelationshipCatalog } from "@/lib/modules/relationships/hooks/use-re
 export interface CategoryItemFormValue {
   intensityKey: string
   intensityDescription: string
+  /** Sin edición se muestra el texto del item; "" conserva una edición vacía. */
+  description?: string
+  procedures?: string
   /** Vacía = el usuario no la tocó; se muestra la precarga del Service Plan */
   hypothesizedFunction: HypothesizedFunction[]
   /** UUIDs del catálogo de Place of Service */
@@ -358,6 +360,8 @@ export function parseManagementStrategies(value: string): string[] {
  */
 function isCategoryItemTouched(v: CategoryItemFormValue): boolean {
   return (
+    v.description !== undefined ||
+    v.procedures !== undefined ||
     !!v.intensityKey ||
     !!v.intensityDescription.trim() ||
     v.hypothesizedFunction.length > 0 ||
@@ -421,6 +425,8 @@ function formDataFromAssessment(assessment: AssessmentDetail): AssessmentFormDat
     categoryItems[entry.clientServicePlanCategoryItemId] = {
       intensityKey: entry.intensityKey ?? "",
       intensityDescription: entry.intensityDescription ?? "",
+      description: entry.description?.trim() ? entry.description : undefined,
+      procedures: entry.procedures?.trim() ? entry.procedures : undefined,
       hypothesizedFunction: entry.hypothesizedFunction,
       placesOfServiceIds: entry.placesOfService ?? [],
       preventiveStrategies: entry.preventiveStrategies ?? "",
@@ -906,12 +912,6 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       if (/^(Yes|true)$/i.test(formData.previousAbaTherapy) && !formData.previousAgencyName.trim()) newErrors.previousAgencyName = required
     }
 
-    if (sectionBlocksSave(flags, "showBackgroundInformation")) {
-      for (const { key } of ASSESSMENT_BACKGROUND_FIELDS) {
-        if (!formData[key].trim()) newErrors[key] = required
-      }
-    }
-
     if (
       sectionBlocksSave(flags, "showCurrentMedications") &&
       !formData.currentMedicationsDenied &&
@@ -997,12 +997,15 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   }, [validationAttempted, validate])
 
   const buildPayload = useCallback((): SaveAssessmentDto => {
+    const itemsById = new Map(categories.flatMap((category) => category.items.map((item) => [item.id, item] as const)))
     const categoriesItems: AssessmentCategoryItemInput[] = Object.entries(formData.categoryItems)
       .filter(([, value]) => isCategoryItemTouched(value))
       .map(([itemId, value]) => ({
         clientServicePlanCategoryItemId: itemId,
         intensityKey: value.intensityKey || null,
         intensityDescription: value.intensityDescription.trim(),
+        description: (value.description ?? itemsById.get(itemId)?.description ?? "").trim(),
+        procedures: (value.procedures ?? itemsById.get(itemId)?.procedures ?? "").trim(),
         // Viaja lo que el usuario ve: su elección o, si no tocó el selector, la
         // precarga del Service Plan.
         hypothesizedFunction:
@@ -1134,7 +1137,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       ) as AssessmentPdfTextsPayload),
       ...formData.pdfFlags,
     }
-  }, [formData, hypothesizedFunctionByItemId, isEditing, replacementSource?.updateAt, selectedAssessmentType])
+  }, [formData, categories, hypothesizedFunctionByItemId, isEditing, replacementSource?.updateAt, selectedAssessmentType])
 
   const scrollToFirstError = useCallback((newErrors: Record<string, string>) => {
     setTimeout(() => {
