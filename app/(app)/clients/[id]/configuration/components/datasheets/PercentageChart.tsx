@@ -16,6 +16,7 @@ import { format } from "date-fns"
 import type { DataCollectionConfig } from "@/lib/types/data-collection.types"
 import type { ChartDatasetVisualConfig } from "@/lib/modules/service-plans/constants/chart.constants"
 import { DEFAULT_CHART_CONFIG } from "@/lib/modules/service-plans/constants/chart.constants"
+import { resolveChartYAxisTitle } from "@/lib/modules/service-plans/constants/chart-y-axis-title"
 import { parseLocalDate } from "./datasheet-utils"
 import { type PercentageDayEntry, getDateKey, calculatePercentage, countYes } from "./percentage-datasheet.types"
 import { computeTrendInfo, resolveActiveObjective, TrendFooter } from "./chart-trend"
@@ -126,7 +127,7 @@ export function PercentageChart({
     [objectives],
   )
 
-  const yTitle = chartConfig.yAxis?.title ?? "Percentage (%)"
+  const yTitle = resolveChartYAxisTitle("percentage", chartConfig.yAxis?.title)
   const xTitle = chartConfig.xAxis?.title ?? "Dates"
 
   const totalDatasetConfig = useMemo<ChartDatasetVisualConfig | null>(() => {

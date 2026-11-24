@@ -100,6 +100,7 @@ export function SessionItemChartPanel({
       appointmentId={appointmentId}
       itemBaselines={selectedItem.baseline}
       itemObjectives={selectedItem.objetive}
+      typeName={selectedItem.typeEventCatalogName ?? undefined}
       compact={compact}
     />
   )
@@ -323,6 +324,7 @@ function ItemChartView({
   appointmentId,
   itemBaselines,
   itemObjectives,
+  typeName,
   compact,
 }: {
   itemId: string
@@ -332,6 +334,8 @@ function ItemChartView({
   appointmentId: string | null
   itemBaselines?: ClientServicePlanItemBaseline[]
   itemObjectives?: ClientServicePlanItemObjective[]
+  /** Type del item: define el título del eje Y de la gráfica */
+  typeName?: string
   compact: boolean
 }) {
   // The session day anchors the calendar window, so the value being collected now always
@@ -417,6 +421,7 @@ function ItemChartView({
           interval={chartRange.interval}
           itemBaselines={itemBaselines}
           itemObjectives={itemObjectives}
+          typeName={typeName}
           compact={compact}
         />
       )}
