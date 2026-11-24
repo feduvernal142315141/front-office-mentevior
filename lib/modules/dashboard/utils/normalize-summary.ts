@@ -1,5 +1,6 @@
 import type {
   AuthorizationUtilizationItem,
+  ClinicalMonthlyPendingSignature,
   DashboardSummary,
   ExpiringItem,
   ExpiringKind,
@@ -205,6 +206,25 @@ function normalizeMonthlySupervisionPendingSignature(
   }
 }
 
+function normalizeClinicalMonthlyPendingSignature(
+  raw: unknown,
+): ClinicalMonthlyPendingSignature | undefined {
+  if (!isObject(raw)) return undefined
+  const id = toText(raw.id)
+  const clientName = toText(raw.clientName)
+  if (!id || !clientName) return undefined
+
+  return {
+    id,
+    clientId: toText(raw.clientId),
+    clientName,
+    startMonthYear: toText(raw.startMonthYear),
+    createAt: toText(raw.createAt),
+    supervisorName: toText(raw.supervisorName),
+    coSignerName: toText(raw.coSignerName) ?? toText(raw.supervisorName),
+  }
+}
+
 // ============================================
 // Entrada
 // ============================================
@@ -318,6 +338,12 @@ export function normalizeDashboardSummary(payload: unknown): DashboardSummary {
       .filter((item): item is MonthlySupervisionPendingSignature => item !== undefined)
 
     summary.monthlySupervisionsPendingSignature = items
+  }
+
+  if (Array.isArray(root.clinicalMonthliesPendingSignature)) {
+    summary.clinicalMonthliesPendingSignature = root.clinicalMonthliesPendingSignature
+      .map(normalizeClinicalMonthlyPendingSignature)
+      .filter((item): item is ClinicalMonthlyPendingSignature => item !== undefined)
   }
 
   return summary

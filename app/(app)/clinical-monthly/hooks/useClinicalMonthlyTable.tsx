@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Calendar, Edit2, FileDown, Trash2 } from "lucide-react"
+import { Calendar, Edit2, Eye, FileDown, Trash2 } from "lucide-react"
 import type { CustomTableColumn } from "@/components/custom/CustomTable"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { PermissionModule } from "@/lib/utils/permissions-new"
@@ -22,20 +22,17 @@ import { useDeleteClinicalMonthly } from "@/lib/modules/clinical-monthly/hooks/u
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 
 /**
- * El Clinical Monthly no tiene provider propio: el provider es el usuario
- * logueado que lo crea. Por eso filtrar "por Provider" significa quedarse con
- * los reportes de los clientes que tienen ese provider asignado, navegando la
- * relación `client.clientProviders.providerId` (formato confirmado por backend).
+ * El filtro legacy de Provider es normalizado por backend al autor persistido
+ * del Clinical Monthly; no identifica al provider de las citas.
  */
 const PROVIDER_FILTER_FIELD = "client.clientProviders.providerId"
 
-/** El listado todavía no devuelve `status` (gap B2 del plan) */
-export const STATUS_FILTER_ENABLED = false
+/** El backend filtra el estado calculado de las firmas. */
+export const STATUS_FILTER_ENABLED = true
 
 const STATUS_CONFIG: Record<ClinicalMonthlyStatus, { label: string; className: string }> = {
-  DRAFT: { label: "Draft", className: "bg-slate-50 border-slate-200 text-slate-600" },
-  COMPLETED: { label: "Completed", className: "bg-blue-50 border-blue-100 text-blue-700" },
-  SIGNED: { label: "Signed", className: "bg-emerald-50 border-emerald-100 text-emerald-700" },
+  Completed: { label: "Completed", className: "bg-emerald-50 border-emerald-100 text-emerald-700" },
+  Pending: { label: "Pending", className: "bg-amber-50 border-amber-200 text-amber-700" },
 }
 
 const STATUS_OPTIONS = [
@@ -66,6 +63,7 @@ export function useClinicalMonthlyTable() {
   // el control real lo tiene que hacer el backend.
   const canCreate = permission.create(PermissionModule.CLINICAL_MONTHLY)
   const canEdit = permission.edit(PermissionModule.CLINICAL_MONTHLY)
+  const canView = permission.view(PermissionModule.CLINICAL_MONTHLY)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -244,7 +242,7 @@ export function useClinicalMonthlyTable() {
       key: "status",
       header: "Status",
       render: (item) => {
-        const config = item.status ? STATUS_CONFIG[item.status] : null
+        const config = STATUS_CONFIG[item.status]
         if (!config) {
           return <span className="text-sm text-slate-400">—</span>
         }
@@ -292,7 +290,7 @@ export function useClinicalMonthlyTable() {
           >
             <FileDown className="w-4 h-4 text-slate-600 group-hover/pdf:text-slate-800 transition-colors duration-200" />
           </button>
-          {canEdit && (
+          {canView && (
             <button
               type="button"
               onClick={(e) => {
@@ -310,10 +308,12 @@ export function useClinicalMonthlyTable() {
                 "transition-all duration-200 ease-out",
                 "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2",
               )}
-              title="Edit"
-              aria-label="Edit"
+              title={canEdit ? "Edit" : "View report"}
+              aria-label={canEdit ? "Edit" : "View report"}
             >
-              <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+              {canEdit
+                ? <Edit2 className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />
+                : <Eye className="w-4 h-4 text-blue-600 group-hover/edit:text-blue-700 transition-colors duration-200" />}
             </button>
           )}
           {canDelete && (
@@ -350,7 +350,7 @@ export function useClinicalMonthlyTable() {
         </div>
       ),
     },
-  ], [canEdit, canDelete, router, openAuditModal, handleDeleteClick])
+  ], [canEdit, canView, canDelete, router, openAuditModal, handleDeleteClick])
 
   return {
     data: clinicalMonthlies,

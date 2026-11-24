@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Building2, CalendarRange, ClipboardList, FileDown, Loader2, MessageSquareText, PenTool, User } from "lucide-react"
 import { toast } from "sonner"
@@ -12,7 +12,7 @@ import { DocumentViewer } from "@/components/custom/DocumentViewer"
 import { useClientsByLoggedUser } from "@/lib/modules/clients/hooks/use-clients-by-logged-user"
 import { useClinicalMonthlyById } from "@/lib/modules/clinical-monthly/hooks/use-clinical-monthly-by-id"
 import { useSaveClinicalMonthly } from "@/lib/modules/clinical-monthly/hooks/use-save-clinical-monthly"
-import { getClinicalMonthlyPdfUrl } from "@/lib/modules/clinical-monthly/services/clinical-monthly.service"
+import { ClinicalMonthlySignatureConflictError, getClinicalMonthlyPdfUrl, signClinicalMonthly } from "@/lib/modules/clinical-monthly/services/clinical-monthly.service"
 import { CLINICAL_MONTHLY_SUMMARY_GUIDANCE } from "@/lib/constants/clinical-monthly-guidance"
 import { getNarrativeLengthState, validateNarrativeLength } from "@/lib/utils/narrative-length"
 import { MonthPicker } from "@/components/custom/MonthPicker"
@@ -35,23 +35,30 @@ interface ClinicalMonthlyFormProps {
  */
 export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormProps) {
   const router = useRouter()
-  const isEditing = !!clinicalMonthlyId
   const { user } = useAuth()
   const { create, edit } = usePermission()
-  const canPersist = isEditing ? edit(PermissionModule.CLINICAL_MONTHLY) : create(PermissionModule.CLINICAL_MONTHLY)
 
   const [clientId, setClientId] = useState("")
   const [reportMonth, setReportMonth] = useState(() => (clinicalMonthlyId ? "" : currentReportMonth()))
   const [summary, setSummary] = useState("")
   const [creatorSign, setCreatorSign] = useState<string | null>(null)
+  const [coSignerSign, setCoSignerSign] = useState<string | null>(null)
+  const [isSigning, setIsSigning] = useState(false)
+  const signingRef = useRef(false)
   const [signatureError, setSignatureError] = useState(false)
   const [monthError, setMonthError] = useState<string | null>(null)
   const [summaryError, setSummaryError] = useState<string | null>(null)
   const [previewId, setPreviewId] = useState<string | null>(null)
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
-  const { clinicalMonthly, isLoading: detailLoading } = useClinicalMonthlyById(clinicalMonthlyId)
-  const { save, isSaving } = useSaveClinicalMonthly({ clinicalMonthlyId })
+  const { save, clinicalMonthlyId: persistedId, isSaving } = useSaveClinicalMonthly({ clinicalMonthlyId })
+  const isEditing = !!persistedId
+  const canPersist = isEditing ? edit(PermissionModule.CLINICAL_MONTHLY) : create(PermissionModule.CLINICAL_MONTHLY)
+  const { clinicalMonthly, isLoading: detailLoading, error: detailError, refetch } = useClinicalMonthlyById(persistedId)
+  const hasUnsavedChanges = !!clinicalMonthly && (
+    reportMonth !== parseReportMonth(clinicalMonthly.startMonthYear)
+    || summary.trim() !== (clinicalMonthly.summary ?? "").trim()
+  )
 
   const clientOptions = useMemo(
     () => clients.filter((c) => c.fullName).map((c) => ({ value: c.id, label: c.fullName })),
@@ -65,7 +72,8 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     setClientId(clinicalMonthly.clientId)
     setReportMonth(parseReportMonth(clinicalMonthly.startMonthYear) ?? "")
     setSummary(clinicalMonthly.summary ?? "")
-    setCreatorSign(typeof clinicalMonthly.creatorSign === "string" ? clinicalMonthly.creatorSign : null)
+    setCreatorSign(clinicalMonthly.creatorSign ?? null)
+    setCoSignerSign(clinicalMonthly.coSignerSign ?? null)
   }, [clinicalMonthly])
 
   // Con un solo cliente no tiene sentido hacer elegir: se autocompleta.
@@ -76,6 +84,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
   }, [clients, clientId, isEditing])
 
   const persist = useCallback(async (): Promise<string | null> => {
+    if (!canPersist) return null
     if (!clientId) {
       toast.error("Select a client first")
       return null
@@ -111,16 +120,16 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     }
     setSignatureError(false)
 
-    // Sin `items`: el formulario ya no los captura. Se omite la clave en vez de
-    // mandar `[]` para no disparar el borrado lógico del PUT sobre reportes viejos.
-    return save({
+    const id = await save({
       clientId,
       startMonthYear: monthYear,
       endMonthYear: monthYear,
       summary: trimmedSummary,
       ...(isEditing ? {} : { creatorSign: creatorSign ?? "" }),
     })
-  }, [clientId, creatorSign, isEditing, reportMonth, save, summary])
+    if (id && isEditing) await refetch()
+    return id
+  }, [canPersist, clientId, creatorSign, isEditing, refetch, reportMonth, save, summary])
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
     event.preventDefault()
@@ -130,18 +139,45 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     router.push("/clinical-monthly")
   }, [isEditing, persist, router])
 
-  // Generar el PDF exige que el registro exista, así que previsualizar guarda primero
+  // Un reporte guardado se puede revisar sin mutarlo ni invalidar su firma.
   const handlePreview = useCallback(async () => {
+    if (persistedId && clinicalMonthly && !hasUnsavedChanges) {
+      setPreviewId(persistedId)
+      return
+    }
     const id = await persist()
     if (id) setPreviewId(id)
-  }, [persist])
+  }, [clinicalMonthly, hasUnsavedChanges, persist, persistedId])
 
-  const isBusy = isSaving || detailLoading
+  const handleCoSignature = async () => {
+    if (!persistedId || !clinicalMonthly?.canSign || !clinicalMonthly.signatureContentHash
+      || !coSignerSign || hasUnsavedChanges || !canPersist || signingRef.current) return
+    signingRef.current = true
+    setIsSigning(true)
+    try {
+      await signClinicalMonthly(persistedId, coSignerSign, clinicalMonthly.signatureContentHash)
+      toast.success("Clinical Monthly signature saved")
+      await refetch()
+    } catch (error) {
+      toast.error("Error signing Clinical Monthly", {
+        description: error instanceof Error ? error.message : "Please try again",
+      })
+      if (error instanceof ClinicalMonthlySignatureConflictError) {
+        setCoSignerSign(null)
+        await refetch()
+      }
+    } finally {
+      signingRef.current = false
+      setIsSigning(false)
+    }
+  }
+
+  const isBusy = isSaving || detailLoading || isSigning
   const hasMonth = !!reportMonth
-  // Guardar y previsualizar son la misma operación (el preview persiste), así que
-  // ambos exigen lo mismo: cliente, período y summary.
+  // Crear o guardar cambios exige cliente, período, summary y la firma del autor.
   const canSave = !!clientId && hasMonth && getNarrativeLengthState(summary).isValid
-    && (isEditing || !!creatorSign) && !isBusy && canPersist
+    && (isEditing || !!creatorSign) && !isBusy && canPersist && (!isEditing || !!clinicalMonthly)
+  const canPreview = !isBusy && ((!!clinicalMonthly && !hasUnsavedChanges) || canSave)
 
   if (isEditing && detailLoading) {
     return (
@@ -151,21 +187,39 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
     )
   }
 
+  if (isEditing && !clinicalMonthly) {
+    return <p className="py-10 text-center text-sm text-red-600">{detailError?.message || "Clinical Monthly not found"}</p>
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5 pb-32">
-      {/* ─── Preview: exige guardar antes, el PDF sale de un registro existente ─── */}
-      <div className="flex justify-end">
+      {/* El preview sólo guarda cuando hay cambios o aún no existe el reporte. */}
+      <div className="flex items-center justify-end gap-3">
+        {clinicalMonthly && (
+          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${clinicalMonthly.status === "Completed"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "border-amber-200 bg-amber-50 text-amber-700"}`}>
+            {clinicalMonthly.status}
+          </span>
+        )}
         <Button
           type="button"
           variant="secondary"
           onClick={handlePreview}
-          disabled={!canSave}
+          disabled={!canPreview}
           className="gap-2 flex items-center"
         >
           <FileDown className="h-4 w-4" />
-          Save &amp; Preview PDF
+          {clinicalMonthly && !hasUnsavedChanges ? "Preview PDF" : "Save & Preview PDF"}
         </Button>
       </div>
+
+      {clinicalMonthly?.status === "Pending" && (
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="font-semibold">Document Pending Signature</span>
+          {clinicalMonthly.coSignerName && ` · Awaiting ${clinicalMonthly.coSignerName}${clinicalMonthly.coSignerRole ? ` (${clinicalMonthly.coSignerRole})` : ""}`}
+        </p>
+      )}
 
       {/* ─── Context Header: Recipient + Provider ─── */}
       {clinicalMonthly && (
@@ -205,7 +259,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             value={clientId}
             onChange={setClientId}
             options={clientOptions}
-            disabled={clientsLoading || isEditing}
+            disabled={clientsLoading || isEditing || !canPersist}
             hasError={!clientId && !!monthError}
             searchable
             required
@@ -219,7 +273,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             }}
             required
             hasError={!!monthError}
-            disabled={isBusy}
+            disabled={isBusy || !canPersist}
           />
         </div>
 
@@ -250,7 +304,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
             rows={10}
             showLengthCounter
             showCharacterCounter={false}
-            disabled={isBusy}
+            disabled={isBusy || !canPersist}
             hasError={!!summaryError}
             required
           />
@@ -267,6 +321,7 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
       >
         <ClinicalMonthlySignature
           memberUserId={user?.id ?? null}
+          providerName={clinicalMonthly?.creatorName}
           signature={creatorSign}
           onChange={(value) => {
             setCreatorSign(value)
@@ -277,12 +332,60 @@ export function ClinicalMonthlyForm({ clinicalMonthlyId }: ClinicalMonthlyFormPr
         />
       </Section>
 
-      <FormBottomBar
-        isSubmitting={isSaving}
-        onCancel={() => router.push("/clinical-monthly")}
-        submitText={isEditing ? "Update Clinical Monthly" : "Create Clinical Monthly"}
-        disabled={!canSave}
-      />
+      {clinicalMonthly?.requiresCoSignature && (
+        <Section
+          icon={<PenTool className="h-4 w-4" />}
+          title="Other provider signature"
+          subtitle={clinicalMonthly.coSignerSignedAt
+            ? `Signed on ${new Date(clinicalMonthly.coSignerSignedAt).toLocaleDateString()}`
+            : `Pending ${clinicalMonthly.coSignerRole || "provider"} signature`}
+        >
+          <div className="space-y-4">
+            <ClinicalMonthlySignature
+              role="coSigner"
+              professionalRole={clinicalMonthly.coSignerRole}
+              providerName={clinicalMonthly.coSignerName}
+              memberUserId={clinicalMonthly.coSignerId ?? null}
+              signature={coSignerSign}
+              onChange={setCoSignerSign}
+              disabled={!clinicalMonthly.canSign || !clinicalMonthly.signatureContentHash || isBusy || !canPersist}
+            />
+            {clinicalMonthly.coSignerSignedAt && hasUnsavedChanges && (
+              <p className="text-sm text-amber-700">Saving changes will require the other provider to sign again.</p>
+            )}
+            {clinicalMonthly.canSign && (
+              <div className="space-y-2">
+                {hasUnsavedChanges && (
+                  <p className="text-sm text-amber-700">Save or discard your changes before signing the report.</p>
+                )}
+                <Button
+                  type="button"
+                  onClick={handleCoSignature}
+                  loading={isSigning}
+                  disabled={!coSignerSign || !clinicalMonthly.signatureContentHash || isBusy || hasUnsavedChanges || !canPersist}
+                >
+                  Sign Clinical Monthly
+                </Button>
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
+
+      {canPersist ? (
+        <FormBottomBar
+          isSubmitting={isSaving || isSigning}
+          onCancel={() => router.push("/clinical-monthly")}
+          submitText={isEditing ? "Update Clinical Monthly" : "Create Clinical Monthly"}
+          disabled={!canSave}
+        />
+      ) : (
+        <div className="flex justify-end">
+          <Button type="button" variant="secondary" onClick={() => router.push("/clinical-monthly")}>
+            Back to Clinical Monthly
+          </Button>
+        </div>
+      )}
 
       {previewId && (
         <DocumentViewer

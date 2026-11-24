@@ -167,6 +167,7 @@ export default function DashboardPage() {
                 <ExpiringList
                   items={filteredItems}
                   monthlySupervisionItems={summary?.monthlySupervisionsPendingSignature}
+                  clinicalMonthlyItems={summary?.clinicalMonthliesPendingSignature}
                   hasData={!!summary?.expiring}
                   truncatedCount={truncatedCount}
                   isLoading={isLoading}

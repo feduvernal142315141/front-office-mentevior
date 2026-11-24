@@ -212,6 +212,11 @@ export async function getAssessmentDataByClient(
     backgroundMotorSkills: str(raw.backgroundMotorSkills),
     currentMedicationsDenied: raw.currentMedicationsDenied === true,
     currentMedicationsNote: str(raw.currentMedicationsNote),
+    documentsReviewed: arr(raw.documentsReviewed).map((document) => ({
+      documentConfigId: str(document.documentConfigId),
+      name: str(document.name),
+      date: str(document.date) || null,
+    })),
     currentMedications: arr(raw.currentMedications).map((m) => ({
       name: str(m.name),
       dosage: str(m.dosage),
@@ -291,6 +296,7 @@ function emptyDraftForClient(clientId: string, categories: ClientCategoryWithIte
     backgroundMotorSkills: "",
     currentMedicationsDenied: false,
     currentMedicationsNote: "",
+    documentsReviewed: [],
     currentMedications: [],
     assessmentConductedCatalogIds: [],
     categories,

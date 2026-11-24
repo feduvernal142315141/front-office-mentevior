@@ -19,6 +19,7 @@ import type {
   AssessmentDetail,
   AssessmentDraft,
   AssessmentMedicationInput,
+  AssessmentReviewedDocument,
   AssessmentProposedScheduleInput,
   AssessmentProviderFileInput,
   AssessmentPreferenceRow,
@@ -121,6 +122,7 @@ export interface AssessmentFormData extends AssessmentBackgroundFields {
   /** Contrato 2026-09-07: el caregiver declaró que no hay medicación */
   currentMedicationsDenied: boolean
   currentMedicationsNote: string
+  documentsReviewed: AssessmentReviewedDocument[]
   currentMedications: AssessmentMedicationInput[]
   assessmentConductedCatalogIds: string[]
   /** Por id de item del SP; solo los items "tocados" van al payload */
@@ -253,6 +255,7 @@ function applyAssessmentDraft(prev: AssessmentFormData, draft: AssessmentDraft):
     currentMedicationsNote:
       draft.currentMedicationsNote ||
       (draft.currentMedicationsDenied ? CURRENT_MEDICATIONS_DENIED_DEFAULT_NOTE : ""),
+    documentsReviewed: draft.documentsReviewed,
     currentMedications: draft.currentMedications,
     assessmentConductedCatalogIds: draft.assessmentConductedCatalogIds,
     categoryItems: categoryItemsFromDraft(draft.categories),
@@ -326,6 +329,7 @@ const EMPTY_FORM: AssessmentFormData = {
   backgroundMotorSkills: "",
   currentMedicationsDenied: false,
   currentMedicationsNote: "",
+  documentsReviewed: [],
   currentMedications: [],
   assessmentConductedCatalogIds: [],
   categoryItems: {},
@@ -498,6 +502,7 @@ function formDataFromAssessment(assessment: AssessmentDetail): AssessmentFormDat
     })),
     abcData: assessment.abcData ?? [],
     providerFiles: assessment.providerFiles ?? [],
+    documentsReviewed: assessment.documentsReviewed ?? [],
     preferenceAssessment: assessment.preferenceAssessment ?? [],
     // Una narrativa persistida vacía (registros previos a los defaults del
     // backend) se rellena con su texto estándar: nunca se muestra vacía
@@ -680,6 +685,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
             proposedSchedule: [],
             abcData: [],
             assessmentConductedCatalogIds: [],
+            documentsReviewed: [],
             currentMedications: [],
           }
         }
@@ -1107,6 +1113,10 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
           frequency: m.frequency.trim(),
           prescriber: m.prescriber.trim(),
         })),
+      documentsReviewed: formData.documentsReviewed.map((document) => ({
+        ...document,
+        date: document.date || null,
+      })),
       assessmentConductedCatalogIds: formData.assessmentConductedCatalogIds,
       categoriesItems,
       billingCodes,

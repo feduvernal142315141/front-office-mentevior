@@ -89,6 +89,28 @@ export async function updateClinicalMonthly(
   return extractId(response.data, "update") || id
 }
 
+export class ClinicalMonthlySignatureConflictError extends Error {}
+
+/** Firma el otro profesional asociado sobre la versión exacta que revisó. */
+export async function signClinicalMonthly(
+  id: string,
+  coSignerSign: string,
+  expectedContentHash: string,
+): Promise<string> {
+  const response = await servicePut<{ supervisorSign: string; expectedContentHash: string }, string>(
+    `${BASE_URL}/${id}/sign`,
+    { supervisorSign: coSignerSign, expectedContentHash },
+  )
+
+  if (response.status !== 200 && response.status !== 204) {
+    const message = response.data?.message || "Failed to sign clinical monthly"
+    if (response.status === 409) throw new ClinicalMonthlySignatureConflictError(message)
+    throw new Error(message)
+  }
+
+  return extractId(response.data, "update") || id
+}
+
 export async function deleteClinicalMonthly(id: string): Promise<boolean> {
   const response = await serviceDelete<boolean>(`${BASE_URL}/${id}`)
 

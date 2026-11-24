@@ -15,9 +15,9 @@ export default function EditClinicalMonthlyPage({
 }) {
   const { id } = use(params)
   const router = useRouter()
-  const canEdit = useRequirePermission(PermissionModule.CLINICAL_MONTHLY, PermissionAction.EDIT)
+  const canView = useRequirePermission(PermissionModule.CLINICAL_MONTHLY, PermissionAction.READ)
 
-  if (!canEdit) {
+  if (!canView) {
     return null
   }
 
@@ -37,9 +37,9 @@ export default function EditClinicalMonthlyPage({
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#037ECC] to-[#079CFB] bg-clip-text text-transparent">
-              Edit Clinical Monthly
+              Clinical Monthly
             </h1>
-            <p className="text-slate-600 mt-1">Update the monthly progress for each service plan item</p>
+            <p className="text-slate-600 mt-1">Review report details and signatures</p>
           </div>
         </div>
 

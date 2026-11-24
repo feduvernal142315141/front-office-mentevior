@@ -14,6 +14,9 @@ interface ClinicalMonthlySignatureProps {
   onChange: (dataUrl: string | null) => void
   disabled?: boolean
   hasError?: boolean
+  role?: "creator" | "coSigner"
+  professionalRole?: "BCBA" | "BCaBA" | null
+  providerName?: string | null
 }
 
 export function ClinicalMonthlySignature({
@@ -22,6 +25,9 @@ export function ClinicalMonthlySignature({
   onChange,
   disabled = false,
   hasError = false,
+  role = "creator",
+  providerName,
+  professionalRole,
 }: ClinicalMonthlySignatureProps) {
   const [editing, setEditing] = useState(false)
   const [choosing, setChoosing] = useState(false)
@@ -51,9 +57,11 @@ export function ClinicalMonthlySignature({
   }
 
   const isDisabled = disabled || isLoadingRegisteredSignature
+  const roleLabel = role === "coSigner" ? professionalRole || "Associated provider" : "Report creator"
+  const signatureLabel = role === "coSigner" ? `${professionalRole || "Provider"} signature` : "Creator signature"
 
   return (
-    <div className="space-y-3" data-section="creator-signature">
+    <div className="space-y-3" data-section={`${role}-signature`}>
       <div className={cn(
         "overflow-hidden rounded-2xl border bg-white",
         hasError ? "border-red-300" : "border-[#037ECC]/20",
@@ -61,11 +69,13 @@ export function ClinicalMonthlySignature({
         <div className="grid grid-cols-1 sm:grid-cols-2">
           <div className="border-b px-6 py-5 sm:border-b-0 sm:border-r border-[#037ECC]/10">
             <span className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-[#037ECC]/70">
-              Report creator
+              {roleLabel}
             </span>
-            <p className="text-sm font-semibold text-slate-800">Your signature</p>
+            <p className="text-sm font-semibold text-slate-800">{providerName || signatureLabel}</p>
             <p className="mt-0.5 text-xs text-slate-500">
-              Choose a registered signature or draw a new one for this report.
+              {disabled
+                ? (signature ? "Signature saved with this report." : role === "coSigner" ? "Waiting for the other associated provider to sign." : "No creator signature saved with this report.")
+                : "Choose a registered signature or draw a new one for this report."}
             </p>
           </div>
 
@@ -80,7 +90,7 @@ export function ClinicalMonthlySignature({
                   onClick={handleEdit}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-[#037ECC]/40 hover:text-[#037ECC]"
                   title="Edit signature"
-                  aria-label="Edit creator signature"
+                  aria-label={`Edit ${signatureLabel.toLowerCase()}`}
                 >
                   <PenLine className="h-3.5 w-3.5" />
                 </button>
@@ -92,7 +102,7 @@ export function ClinicalMonthlySignature({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={signature}
-                  alt="Creator signature"
+                  alt={signatureLabel}
                   className="max-h-[52px] max-w-full object-contain brightness-50 contrast-150"
                 />
               ) : (
@@ -102,7 +112,7 @@ export function ClinicalMonthlySignature({
                   disabled={isDisabled}
                   className="text-xs italic text-slate-300 transition-colors hover:text-[#037ECC] disabled:hover:text-slate-300"
                 >
-                  {isLoadingRegisteredSignature ? "Loading registered signature..." : "Click to sign"}
+                  {isLoadingRegisteredSignature ? "Loading registered signature..." : isDisabled ? "Signature pending" : "Click to sign"}
                 </button>
               )}
               <div className="absolute bottom-0 left-0 right-0 border-b border-[#037ECC]/20" />
@@ -112,7 +122,7 @@ export function ClinicalMonthlySignature({
       </div>
 
       {hasError && (
-        <p className="text-xs font-medium text-red-500">The creator signature is required</p>
+        <p className="text-xs font-medium text-red-500">The {role === "coSigner" ? "provider" : "creator"} signature is required</p>
       )}
 
       <SignatureEditorModal
@@ -124,7 +134,7 @@ export function ClinicalMonthlySignature({
       <CustomModal
         open={choosing}
         onOpenChange={(open) => !open && setChoosing(false)}
-        title="Creator signature"
+        title={signatureLabel}
         description="You already have a registered signature. Choose how to sign this Clinical Monthly."
         maxWidthClassName="sm:max-w-[520px]"
       >
@@ -141,6 +151,7 @@ export function ClinicalMonthlySignature({
 
           <div className="flex flex-wrap justify-end gap-2">
             <Button
+              type="button"
               variant="secondary"
               onClick={() => {
                 setChoosing(false)
@@ -149,7 +160,7 @@ export function ClinicalMonthlySignature({
             >
               Use a new signature
             </Button>
-            <Button onClick={handleUseRegisteredSignature}>
+            <Button type="button" onClick={handleUseRegisteredSignature}>
               Use registered signature
             </Button>
           </div>

@@ -111,6 +111,17 @@ export interface MonthlySupervisionPendingSignature {
   createAt?: string
 }
 
+export interface ClinicalMonthlyPendingSignature {
+  id: string
+  clientId?: string
+  clientName: string
+  startMonthYear?: string
+  createAt?: string
+  /** @deprecated Usar coSignerName. */
+  supervisorName?: string
+  coSignerName?: string
+}
+
 export interface DashboardSummary {
   generatedAt: string
   actionCenter?: ActionCenterSummary
@@ -120,6 +131,7 @@ export interface DashboardSummary {
   trend?: { points: TrendPoint[] }
   documentCompliance?: DocumentComplianceBreakdown
   monthlySupervisionsPendingSignature?: MonthlySupervisionPendingSignature[]
+  clinicalMonthliesPendingSignature?: ClinicalMonthlyPendingSignature[]
 }
 
 /** Alcance del resumen: lo del usuario o lo de toda la compañía */

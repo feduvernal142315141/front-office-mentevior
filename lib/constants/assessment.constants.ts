@@ -159,7 +159,6 @@ export const ASSESSMENT_PDF_BACKGROUND_CLIENT_RECORD_FLAGS: { key: AssessmentPdf
 
 export const ASSESSMENT_PDF_CLIENT_RECORD_FLAGS: { key: AssessmentPdfFlagKey; label: string }[] = [
   { key: "showReferringPhysicians", label: "Referring Physicians" },
-  { key: "showDocumentsReviewed", label: "Documents Reviewed" },
   { key: "showServiceLocations", label: "Service Locations" },
 ]
 

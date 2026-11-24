@@ -435,6 +435,11 @@ function normalizeAssessmentDetail(raw: Record<string, unknown>): AssessmentDeta
     currentMedicationsDenied: raw.currentMedicationsDenied === true,
     currentMedicationsNote: str(raw.currentMedicationsNote),
     currentMedications,
+    documentsReviewed: arr(raw.documentsReviewed).map((document) => ({
+      documentConfigId: str(document.documentConfigId),
+      name: str(document.name),
+      date: str(document.date) || null,
+    })),
     assessmentConductedList,
     categoriesItems,
     categories,

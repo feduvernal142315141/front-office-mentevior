@@ -136,6 +136,7 @@ export interface AssessmentDraft {
   backgroundMotorSkills: string
   currentMedicationsDenied: boolean
   currentMedicationsNote: string
+  documentsReviewed: AssessmentReviewedDocument[]
   currentMedications: AssessmentMedicationInput[]
   assessmentConductedCatalogIds: string[]
   categories: ClientCategoryWithItems[]
@@ -149,6 +150,13 @@ export interface AssessmentDraft {
   pdfFlags: AssessmentPdfFlags
 }
 
+
+export interface AssessmentReviewedDocument {
+  documentConfigId: string
+  name: string
+  /** Calendar date (yyyy-MM-dd); null means no review date. */
+  date: string | null
+}
 
 export interface AssessmentMedicationInput {
   name: string
@@ -392,6 +400,7 @@ export interface SaveAssessmentDto extends AssessmentBackgroundFields, Assessmen
   currentMedicationsDenied: boolean
   /** Vacía = el backend imprime el texto estándar. */
   currentMedicationsNote: string | null
+  documentsReviewed: AssessmentReviewedDocument[]
   currentMedications: AssessmentMedicationInput[]
   assessmentConductedCatalogIds: string[]
   categoriesItems: AssessmentCategoryItemInput[]
@@ -501,6 +510,7 @@ export interface AssessmentDetail extends AssessmentBackgroundFields, Assessment
   otherServicesFacilityName: string
   currentMedicationsDenied: boolean
   currentMedicationsNote: string
+  documentsReviewed: AssessmentReviewedDocument[]
   currentMedications: AssessmentMedicationInput[]
   assessmentConductedList: AssessmentConductedEntry[]
   categoriesItems: AssessmentCategoryItemEntry[]

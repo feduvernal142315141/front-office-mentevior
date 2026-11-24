@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Checkbox } from "@/components/custom/Checkbox"
 import { DocumentViewer } from "@/components/custom/DocumentViewer"
+import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { FloatingInput } from "@/components/custom/FloatingInput"
 import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper"
 import { FloatingSelect } from "@/components/custom/FloatingSelect"
@@ -697,6 +698,45 @@ export function AssessmentForm({
         />
           <FieldError message={errors.currentMedications} />
         </div>
+      </Section>
+
+      <Section
+        icon={<FileText className="h-4 w-4" />}
+        title="Document reviewed"
+        subtitle="Review dates for the client's clinical documents"
+        contentHidden={!formData.pdfFlags.showDocumentsReviewed}
+        headerAction={<SectionPdfToggle checked={formData.pdfFlags.showDocumentsReviewed} onChange={(value) => updatePdfFlag("showDocumentsReviewed", value)} disabled={fieldsDisabled} />}
+      >
+        {formData.documentsReviewed.length === 0 ? (
+          <p className="text-sm text-slate-500">No clinical documents available.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-left text-slate-600">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-semibold">Name</th>
+                  <th scope="col" className="min-w-64 px-4 py-3 font-semibold">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.documentsReviewed.map((document, index) => (
+                  <tr key={document.documentConfigId} className="border-t border-slate-100">
+                    <td className="px-4 py-3 text-slate-700">{document.name}</td>
+                    <td className="px-4 py-3">
+                      <PremiumDatePicker
+                        label="Review date"
+                        value={document.date ?? ""}
+                        onClear={() => updateField("documentsReviewed", formData.documentsReviewed.map((row, rowIndex) => rowIndex === index ? { ...row, date: null } : row))}
+                        onChange={(date) => updateField("documentsReviewed", formData.documentsReviewed.map((row, rowIndex) => rowIndex === index ? { ...row, date: date || null } : row))}
+                        disabled={fieldsDisabled}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Section>
 
       {/* ─── Assessment Conducted ─── */}

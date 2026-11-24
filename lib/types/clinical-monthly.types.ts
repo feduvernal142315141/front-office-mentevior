@@ -8,16 +8,12 @@
  * devuelve en listado y detalle; `ClinicalMonthlyItemData` quedó retirado, así
  * que los items ya no llevan textos.
  *
- * El listado identifica al autor mediante `creatorName`. Sigue pendiente
- * el campo `status` que pide la HU. Ver
- * `plans/SCRUM-163-clinical-monthly.md`.
+ * El listado identifica al autor mediante `creatorName`. El estado depende de
+ * todas las firmas requeridas: Completed o Pending.
  */
 
-/**
- * Estatus del documento. PENDIENTE de definición del backend (gap B2): hoy el
- * listado sólo devuelve `active: boolean`.
- */
-export type ClinicalMonthlyStatus = "DRAFT" | "COMPLETED" | "SIGNED"
+/** Estado calculado por backend a partir de las firmas requeridas. */
+export type ClinicalMonthlyStatus = "Completed" | "Pending"
 
 export interface ClinicalMonthlyListItem {
   id: string
@@ -43,13 +39,19 @@ export interface ClinicalMonthlyListItem {
   active: boolean
   /** URL utilizable de la firma histórica del creador, si existe. */
   creatorSign?: string | null
+  requiresCoSignature?: boolean
+  coSignerId?: string | null
+  coSignerSignedAt?: string | null
+  /** @deprecated Usar los campos coSigner. */
+  requiresSupervisorSignature?: boolean
+  supervisorId?: string | null
+  supervisorSignedAt?: string | null
 
   /** Nombre del creador del reporte, utilizado en la columna Provider. */
   creatorName?: string | null
   /** Campo opcional legacy; no identifica al autor del reporte. */
   providerName?: string
-  /** Pendiente de backend (gap B2) */
-  status?: ClinicalMonthlyStatus
+  status: ClinicalMonthlyStatus
 }
 
 /** Mismo cuerpo para crear (`POST /preview`) y actualizar (`PUT /{id}`) */
@@ -146,6 +148,27 @@ export interface ClinicalMonthlyDetail {
   providerName: string
   /** Autor persistido del reporte; no corresponde al provider de las citas. */
   creatorName?: string | null
+  creatorId?: string | null
+  creatorSign?: string | null
+  requiresCoSignature?: boolean
+  coSignerId?: string | null
+  coSignerSignedAt?: string | null
+  /** @deprecated Usar los campos coSigner. */
+  requiresSupervisorSignature?: boolean
+  supervisorId?: string | null
+  supervisorSignedAt?: string | null
+  supervisorName?: string | null
+  status: ClinicalMonthlyStatus
+  coSignerName?: string | null
+  coSignerRole?: "BCBA" | "BCaBA" | null
+  coSignerSign?: string | null
+  /** Autorización para la segunda firma del usuario actual. */
+  canSign: boolean
+  supervisorSign?: string | null
+  /** @deprecated Usar canSign. */
+  canSignSupervisor?: boolean
+  /** Versión exacta del contenido revisado, requerida al firmar. */
+  signatureContentHash?: string
   /** Abreviatura de la credencial del autor, por ejemplo BCBA o BCaBA. */
   creatorCredential?: string | null
   payer: string
