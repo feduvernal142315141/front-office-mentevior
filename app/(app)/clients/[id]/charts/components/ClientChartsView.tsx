@@ -270,7 +270,7 @@ function CategoryChartsSection({
       {items.length === 0 ? (
         <EmptyChartsCard message={`No items in ${category.categoryName}.`} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+        <div className="flex flex-col gap-4">
           {items.map((item) => {
             const typeId = item.dataCollection?.typeEventCatalogId || category.typeEventCatalogId
             const methodName =

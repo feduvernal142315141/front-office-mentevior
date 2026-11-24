@@ -1,5 +1,6 @@
 "use client"
 
+import { ExportableChart } from "./ExportableChart"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   BarChart3, Hash, FileText, Clock,
@@ -427,7 +428,12 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
       <div className="space-y-3">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} customStart={chartRange.customStart} customEnd={chartRange.customEnd} onCustomRangeChange={chartRange.setCustomRange} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
-        <RateChart
+        <ExportableChart
+          itemName={activeItem.itemName}
+          rangeLabel={chartRange.rangeLabel}
+          fileName={`${activeItem.itemName} - ${categoryTypeName ?? "Chart"}.pdf`}
+        >
+          <RateChart
           environmentalChanges={activeItem.environmentalChanges}
           weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig}
           chartDays={chartRange.chartDays} tickInterval={chartRange.tickInterval}
@@ -438,6 +444,7 @@ export function RateDatasheet({ clientId, activeItem, categoryTypeName, dcConfig
           unitOfTime={unitOfTime}
           baselineDurationByDate={baselineDurationByDate}
         />
+        </ExportableChart>
       </div>
 
       {/* Footer */}

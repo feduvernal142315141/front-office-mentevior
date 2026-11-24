@@ -1,5 +1,6 @@
 "use client"
 
+import { plottedBaselineValue, hasNormalizedBaselineValue } from "@/lib/utils/baseline-plot-value"
 import { useMemo } from "react"
 import { format } from "date-fns"
 import { LineChart, Loader2, LockKeyhole } from "lucide-react"
@@ -121,9 +122,10 @@ export function ReadOnlyItemChart({
     const result: WeekEntries = {}
 
     for (const baseline of baselines ?? []) {
-      if (!baseline.show || !baseline.date || baseline.value <= 0) continue
+      const plotted = plottedBaselineValue(baseline)
+      if (!baseline.show || !baseline.date || plotted == null || plotted <= 0) continue
       result[baseline.date.slice(0, 10)] = {
-        occurrences: baseline.value,
+        occurrences: plotted,
         initials: "",
         environmentalNote: baseline.environmentalChanges ?? "",
       }

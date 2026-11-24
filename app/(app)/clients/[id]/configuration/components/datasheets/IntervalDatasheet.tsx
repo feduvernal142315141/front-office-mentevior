@@ -1,5 +1,6 @@
 "use client"
 
+import { ExportableChart } from "./ExportableChart"
 import { parseDailyAveragePercent } from "@/lib/utils/daily-average-percent"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { BarChart3, FileText, User, CalendarCheck2, ChevronLeft, ChevronRight } from "lucide-react"
@@ -267,14 +268,17 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
     const points: { dateKey: string; percentage: number }[] = []
     for (const b of activeItem.baseline ?? []) {
       if (!b.show || !b.date) continue
-      // Lo que se grafica es el Daily Average % cargado en el baseline; sin él (datos antiguos) se calcula con los "+"
+      // Lo que se grafica es el Daily Average % del baseline (escrito o calculado por backend).
+      // Sin porcentaje y sin conteo el día no tiene resultado y no se dibuja.
       const dailyAverage = parseDailyAveragePercent(b.dailyAveragePercent)
+      if (dailyAverage === null && b.value == null) continue
       const dayCount = b.suggestedNumberOfRecordings && b.suggestedNumberOfRecordings > 0 ? b.suggestedNumberOfRecordings : numberOfIntervals
       points.push({
         dateKey: getDateKey(parseLocalDate(b.date)),
+        // Porcentaje a dos decimales (HALF_UP), como pide el contrato
         percentage: dailyAverage !== null
-          ? Math.round(Math.min(100, Math.max(0, dailyAverage)) * 10) / 10
-          : Math.round(Math.min(100, (b.value / dayCount) * 100) * 10) / 10,
+          ? Math.min(100, dailyAverage)
+          : Math.round(Math.min(100, ((b.value ?? 0) / dayCount) * 100) * 100) / 100,
       })
     }
     return points
@@ -412,8 +416,9 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
                 const today = ds.isToday(day)
                 const isBaseline = ds.isBaselineDate(key)
                 const calcPct = calculateIntervalPercentage(entry)
-                const typedPct = isBaseline && entry ? ds.baselineTypedPercent(key, entry.intervals.filter((v) => v === "+").length) : null
-                const pct = typedPct ?? calcPct
+                // Día de baseline: el porcentaje escrito por el analista; si no hay, el calculado con los intervalos
+                const stored = isBaseline ? ds.storedPercentFor(key, entry ? entry.intervals.filter((v) => v === "+").length : null) : null
+                const pct = stored ?? calcPct
                 return (
                   <div key={key} className={cn("flex items-center justify-center px-2 py-3", isBaseline && "bg-red-50/60", today && !isBaseline && "bg-[#037ECC]/3")}>
                     {pct !== null ? (
@@ -488,7 +493,12 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
       <div className="space-y-3">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} customStart={chartRange.customStart} customEnd={chartRange.customEnd} onCustomRangeChange={chartRange.setCustomRange} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
-        <PercentageChart
+        <ExportableChart
+          itemName={activeItem.itemName}
+          rangeLabel={chartRange.rangeLabel}
+          fileName={`${activeItem.itemName} - ${categoryTypeName ?? "Chart"}.pdf`}
+        >
+          <PercentageChart
           environmentalChanges={activeItem.environmentalChanges}
           weekDays={ds.weekDays}
           entries={percentageChartEntries}
@@ -498,6 +508,7 @@ export function IntervalDatasheet({ clientId, activeItem, categoryTypeName, dcCo
           gapDateKeys={chartHiddenDayKeys}
           baselinePoints={baselinePoints}
         />
+        </ExportableChart>
       </div>
 
       {/* Footer */}

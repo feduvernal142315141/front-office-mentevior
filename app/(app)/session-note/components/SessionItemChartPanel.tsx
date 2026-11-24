@@ -212,7 +212,8 @@ function useItemChartData(
     // Add baseline values as entries
     if (itemBaselines) {
       for (const bl of itemBaselines) {
-        if (!bl.show || !bl.date || bl.value <= 0) continue
+        // Este panel dibuja todos los tipos como conteo: usa el valor original, no normalizedValue
+        if (!bl.show || !bl.date || bl.value == null || bl.value <= 0) continue
         const dateKey = bl.date.slice(0, 10)
         result[dateKey] = { occurrences: bl.value, initials: "", environmentalNote: bl.environmentalChanges ?? "" }
       }

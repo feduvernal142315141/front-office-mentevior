@@ -218,7 +218,13 @@ export async function getAppointmentNote(
                   ? item.baseline.map((b: Record<string, unknown>) => ({
                       id: String(b.id ?? ""),
                       date: String(b.date ?? ""),
-                      value: typeof b.value === "number" ? b.value : 0,
+                      // null = día sin registrar (no equivale a cero)
+                      value: typeof b.value === "number" ? b.value : null,
+                      dailyAveragePercent: typeof b.dailyAveragePercent === "string" ? b.dailyAveragePercent : null,
+                      dailyAveragePercentSource:
+                        b.dailyAveragePercentSource === "MANUAL" || b.dailyAveragePercentSource === "INTERVALS"
+                          ? b.dailyAveragePercentSource
+                          : null,
                       periodCatalogId: String(b.periodCatalogId ?? ""),
                       environmentalChanges: typeof b.environmentalChanges === "string" ? b.environmentalChanges : undefined,
                       show: b.show !== false,

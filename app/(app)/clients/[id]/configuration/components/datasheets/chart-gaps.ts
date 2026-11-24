@@ -23,7 +23,7 @@ import { getDateKey, parseLocalDate } from "./datasheet-utils"
 
 interface BaselineLike {
   date?: string
-  value?: number
+  value?: number | null
   show?: boolean
 }
 

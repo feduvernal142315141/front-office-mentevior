@@ -1,5 +1,6 @@
 "use client"
 
+import { plottedBaselineValue, hasNormalizedBaselineValue } from "@/lib/utils/baseline-plot-value"
 import { useMemo } from "react"
 import {
   ResponsiveContainer,
@@ -129,7 +130,7 @@ export function FrequencyChart({
   const baselines = useMemo(() => {
     if (itemBaselines && itemBaselines.length > 0) {
       return itemBaselines.map((b) => ({
-        date: b.date, value: b.value, show: b.show,
+        date: b.date, value: plottedBaselineValue(b), show: b.show,
         comments: b.environmentalChanges ?? "", periodCatalogId: b.periodCatalogId,
       }))
     }
@@ -157,13 +158,13 @@ export function FrequencyChart({
 
     // DAILY MODE: build from raw entries (existing logic)
     const visibleBaselines = baselines
-      .filter((b) => b.show && b.value > 0 && b.date)
+      .filter((b) => b.show && (b.value ?? 0) > 0 && b.date)
       .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
 
     const baselineDateKeys = new Set(visibleBaselines.map((b) => getDateKey(parseLocalDate(b.date))))
     const baselineMap = new Map<string, { value: number; note: string }>()
     for (const b of visibleBaselines) {
-      baselineMap.set(getDateKey(parseLocalDate(b.date)), { value: b.value, note: b.comments ?? "" })
+      baselineMap.set(getDateKey(parseLocalDate(b.date)), { value: b.value ?? 0, note: b.comments ?? "" })
     }
 
     const gap = gapDateKeys ?? new Set<string>()

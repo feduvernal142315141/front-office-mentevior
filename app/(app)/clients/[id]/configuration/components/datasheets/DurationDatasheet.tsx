@@ -1,5 +1,6 @@
 "use client"
 
+import { ExportableChart } from "./ExportableChart"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   BarChart3, FileText, User, CalendarCheck2, ChevronLeft, ChevronRight,
@@ -387,7 +388,12 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
       <div className="space-y-3">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} customStart={chartRange.customStart} customEnd={chartRange.customEnd} onCustomRangeChange={chartRange.setCustomRange} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
-        <DurationChart
+        <ExportableChart
+          itemName={activeItem.itemName}
+          rangeLabel={chartRange.rangeLabel}
+          fileName={`${activeItem.itemName} - ${categoryTypeName ?? "Chart"}.pdf`}
+        >
+          <DurationChart
           environmentalChanges={activeItem.environmentalChanges}
           weekDays={ds.weekDays} entries={chartCompatibleEntries} dcConfig={dcConfig}
           chartDays={chartRange.chartDays} tickInterval={chartRange.tickInterval}
@@ -395,6 +401,7 @@ export function DurationDatasheet({ clientId, activeItem, categoryTypeName, dcCo
           gapDateKeys={chartHiddenDayKeys} collectedDateKeys={collectedDateKeys} aggregatedData={chartData.aggregatedPoints}
           interval={chartRange.interval} unitLabel={unitLabel}
         />
+        </ExportableChart>
       </div>
 
       {/* Footer */}

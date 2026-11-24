@@ -40,7 +40,10 @@ export interface ClientServicePlanCategorySummary {
 export interface ClientServicePlanItemBaseline {
   id: string
   date: string
-  value: number
+  /** null = día de Time-sampling sin registrar (no equivale a cero) */
+  value: number | null
+  /** Valor en la unidad actual del ítem (contrato 2026-11-23). Ausente = backend sin el contrato */
+  normalizedValue?: number | null
   periodCatalogId: string
   /** Duración de la sesión del baseline, en la unidad del Period (solo Rate/Duration) */
   sessionDuration?: number | null
@@ -48,8 +51,10 @@ export interface ClientServicePlanItemBaseline {
   intervalLength?: number | null
   unitOfTime?: string | null
   suggestedNumberOfRecordings?: number | null
-  /** Time-sampling: promedio diario en % (string con coma o punto); es lo que se grafica */
+  /** Time-sampling: Daily Average % (string con coma o punto); es lo que se grafica */
   dailyAveragePercent?: string | null
+  /** Origen del porcentaje: MANUAL (escrito por el analista) o INTERVALS (calculado con los intervalos) */
+  dailyAveragePercentSource?: "MANUAL" | "INTERVALS" | null
   environmentalChanges?: string
   show: boolean
 }

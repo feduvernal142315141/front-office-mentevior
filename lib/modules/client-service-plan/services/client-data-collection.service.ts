@@ -97,7 +97,8 @@ interface ApiChart {
 interface ApiBaseline {
   id?: string
   date?: string
-  value?: number | string
+  value?: number | string | null
+  normalizedValue?: number | null
   periodCatalogId?: string
   sessionDuration?: number | string | null
   intervalLength?: number | string | null
@@ -120,7 +121,9 @@ function normalizeBaselines(raw: unknown): DataCollectionBaselineData[] {
       return {
         recordId: asOptionalString(b.id),
         date,
-        value: asOptionalNumber(b.value) ?? 0,
+        // null = Time-sampling sin registrar; no se convierte en 0
+        value: b.value === null ? null : (asOptionalNumber(b.value) ?? 0),
+        ...(b.normalizedValue !== undefined ? { normalizedValue: b.normalizedValue } : {}),
         periodCatalogId: asString(b.periodCatalogId),
         sessionDuration: asOptionalNumber(b.sessionDuration),
         intervalLength: asOptionalNumber(b.intervalLength),
@@ -711,7 +714,7 @@ function toApiBaselines(baselines: DataCollectionBaselineData[]): ApiBaseline[] 
   return baselines.map((b) => ({
     ...(b.recordId ? { id: b.recordId } : {}),
     date: b.date,
-    value: b.value,
+    ...(b.value !== undefined ? { value: b.value } : {}),
     periodCatalogId: b.periodCatalogId,
     ...(b.sessionDuration != null ? { sessionDuration: b.sessionDuration } : {}),
     ...(b.intervalLength != null ? { intervalLength: b.intervalLength } : {}),
@@ -878,7 +881,8 @@ export async function patchItemObjectiveStartDate(
 
 export interface UpdateBaselineValueEntry {
   id: string
-  value: number
+  /** null = reinicia el resultado de un día de Time-sampling */
+  value: number | null
   /** Time-sampling: Daily Average % recalculado al editar los "+" en la datasheet */
   dailyAveragePercent?: string
   /** Nota del baseline editada desde la grilla del datasheet */

@@ -204,7 +204,7 @@ export function useDurationDatasheet(
       if (valueChanged || note !== (bl.environmentalChanges ?? "")) {
         changed.push({
           id: bl.id,
-          value: agg !== null ? Math.round(agg * 100) / 100 : bl.value,
+          value: agg !== null ? Math.round(agg * 100) / 100 : (bl.value ?? 0),
           environmentalChanges: note.trim() || null,
         })
       }

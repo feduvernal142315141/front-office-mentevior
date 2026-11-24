@@ -1,5 +1,6 @@
 "use client"
 
+import { plottedBaselineValue, hasNormalizedBaselineValue } from "@/lib/utils/baseline-plot-value"
 import { useMemo } from "react"
 import {
   ResponsiveContainer,
@@ -112,7 +113,7 @@ export function DurationChart({
 
   const baselines = useMemo(() => {
     if (itemBaselines && itemBaselines.length > 0) {
-      return itemBaselines.map((b) => ({ date: b.date, value: b.value, show: b.show, comments: b.environmentalChanges ?? "", periodCatalogId: b.periodCatalogId }))
+      return itemBaselines.map((b) => ({ date: b.date, value: plottedBaselineValue(b), show: b.show, comments: b.environmentalChanges ?? "", periodCatalogId: b.periodCatalogId }))
     }
     return dcConfig?.baselines ?? []
   }, [itemBaselines, dcConfig?.baselines])
@@ -128,10 +129,10 @@ export function DurationChart({
       }))
     }
 
-    const visibleBaselines = baselines.filter((b) => b.show && b.value > 0 && b.date).sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
+    const visibleBaselines = baselines.filter((b) => b.show && (b.value ?? 0) > 0 && b.date).sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
     const baselineDateKeys = new Set(visibleBaselines.map((b) => getDateKey(parseLocalDate(b.date))))
     const baselineMap = new Map<string, { value: number; note: string }>()
-    for (const b of visibleBaselines) baselineMap.set(getDateKey(parseLocalDate(b.date)), { value: b.value, note: b.comments ?? "" })
+    for (const b of visibleBaselines) baselineMap.set(getDateKey(parseLocalDate(b.date)), { value: b.value ?? 0, note: b.comments ?? "" })
 
     const gap = gapDateKeys ?? new Set<string>()
     const allDayKeys = new Set<string>()

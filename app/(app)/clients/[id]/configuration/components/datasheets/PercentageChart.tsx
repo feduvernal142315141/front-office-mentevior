@@ -115,9 +115,9 @@ export function PercentageChart({
 
   const baselineValue = useMemo(() => {
     if (baselinePoints) return baselinePoints.length > 0 ? 0 : null
-    const shown = baselines.filter((b) => b.show && b.value > 0)
+    const shown = baselines.filter((b) => b.show && (b.value ?? 0) > 0)
     if (shown.length === 0) return null
-    const average = shown.reduce((sum, b) => sum + b.value, 0) / shown.length
+    const average = shown.reduce((sum, b) => sum + (b.value ?? 0), 0) / shown.length
     return Math.round(average * 10) / 10
   }, [baselines, baselinePoints])
 

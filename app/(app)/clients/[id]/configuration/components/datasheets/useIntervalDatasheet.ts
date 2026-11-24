@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react"
-import { parseDailyAveragePercent } from "@/lib/utils/daily-average-percent"
+import { isValidDailyAveragePercent, parseDailyAveragePercent } from "@/lib/utils/daily-average-percent"
 import { addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, isToday as isTodayFn } from "date-fns"
 import type { ClientServicePlanItemBaseline } from "@/lib/types/client-service-plan.types"
 import type { UpdateBaselineValueEntry } from "@/lib/modules/client-service-plan/services/client-data-collection.service"
@@ -45,13 +45,28 @@ export function useIntervalDatasheet(
     }
     return map
   }, [baselines])
-  // Cantidad de "+" que representa un día de baseline: el Daily Average % escrito por el analista
-  // (40% de 10 intervalos = 4 "+", los primeros 4); sin él (datos antiguos) se usa `value`.
+  const baselineByDateKey = useMemo(() => {
+    const map = new Map<string, ClientServicePlanItemBaseline>()
+    for (const bl of baselines ?? []) {
+      if (bl.date) map.set(getDateKey(parseLocalDate(bl.date)), bl)
+    }
+    return map
+  }, [baselines])
+
+  // Cantidad de "+" de un día de baseline. Si hay conteo registrado, ese conteo manda. Si el día
+  // solo tiene Daily Average % manual (sin conteo), se dibuja su equivalente visual (40% de 10 = 4 "+")
+  // sin guardarlo como conteo. Un día sin nada no tiene "+".
   const positiveFor = useCallback((bl: ClientServicePlanItemBaseline, dayCount: number) => {
+    if (bl.value != null) return Math.min(bl.value, dayCount)
     const pct = parseDailyAveragePercent(bl.dailyAveragePercent)
-    if (pct === null) return Math.min(bl.value, dayCount)
+    if (pct === null) return 0
     return Math.min(dayCount, Math.max(0, Math.round((pct / 100) * dayCount)))
   }, [])
+  // Día de baseline con algo que mostrar: conteo registrado o porcentaje manual válido
+  const hasBaselineResult = useCallback(
+    (bl: ClientServicePlanItemBaseline) => bl.value != null || isValidDailyAveragePercent(bl.dailyAveragePercent),
+    [],
+  )
   const countFor = useCallback(
     (dateKey: string) => baselineCountByDate.get(dateKey) ?? numberOfIntervals,
     [baselineCountByDate, numberOfIntervals],
@@ -76,7 +91,8 @@ export function useIntervalDatasheet(
     setEntries((prev) => {
       const next = { ...prev }
       for (const bl of baselines) {
-        if (!bl.date) continue
+        // Día sin registrar (sin conteo ni porcentaje): no tiene intervalos marcados
+        if (!bl.date || !hasBaselineResult(bl)) continue
         const key = getDateKey(parseLocalDate(bl.date))
         const dayCount = countFor(key)
         const existing = next[key] ?? createEmptyIntervalDayEntry(dayCount)
@@ -92,7 +108,7 @@ export function useIntervalDatasheet(
 
     const baselineSnapshot: IntervalWeekEntries = {}
     for (const bl of baselines) {
-      if (!bl.date) continue
+      if (!bl.date || !hasBaselineResult(bl)) continue
       const key = getDateKey(parseLocalDate(bl.date))
       const dayCount = countFor(key)
       const positiveCount = positiveFor(bl, dayCount)
@@ -103,7 +119,7 @@ export function useIntervalDatasheet(
       baselineSnapshot[key].intervals = intervals
     }
     setOriginalBaselineEntries(baselineSnapshot)
-  }, [baselines, numberOfIntervals, countFor, positiveFor])
+  }, [baselines, numberOfIntervals, countFor, positiveFor, hasBaselineResult])
 
   // Min date (first baseline)
   const minDate = useMemo(() => {
@@ -175,16 +191,17 @@ export function useIntervalDatasheet(
   }, [entries, countFor])
 
   const isToday = useCallback((day: Date) => isTodayFn(day), [])
-  // Daily average mostrado en un día de baseline: el valor escrito, mientras los "+" no se hayan tocado
-  const baselineTypedPercent = useCallback((dateKey: string, positives: number): string | null => {
-    for (const bl of baselines ?? []) {
-      if (!bl.date || getDateKey(parseLocalDate(bl.date)) !== dateKey) continue
-      const pct = parseDailyAveragePercent(bl.dailyAveragePercent)
-      if (pct === null) return null
-      return positives === positiveFor(bl, countFor(dateKey)) ? String(bl.dailyAveragePercent).trim() : null
-    }
-    return null
-  }, [baselines, countFor, positiveFor])
+  // Porcentaje escrito por el analista de un día de baseline, tal cual (coma o punto). Se muestra
+  // mientras los "+" no difieran del conteo que representa; si el analista los cambia, se muestra el calculado.
+  // `positives` es null cuando el día no tiene celdas cargadas.
+  const storedPercentFor = useCallback((dateKey: string, positives: number | null): string | null => {
+    const bl = baselineByDateKey.get(dateKey)
+    if (!bl) return null
+    const stored = (bl.dailyAveragePercent ?? "").trim()
+    if (!isValidDailyAveragePercent(stored)) return null
+    if (positives === null) return stored
+    return positives === positiveFor(bl, countFor(dateKey)) ? stored : null
+  }, [baselineByDateKey, countFor, positiveFor])
   const isBaselineDate = useCallback((dateKey: string) => baselineDateKeys.has(dateKey), [baselineDateKeys])
 
   // Entry mutations
@@ -279,21 +296,22 @@ export function useIntervalDatasheet(
       const current = entries[key]
       if (!current) continue
       const currentCount = countPositive(current)
-      // A note edited in the grid is a baseline change too, even when the value stays the same
-      const note = current.environmentalNote ?? ""
       const dayCount = countFor(key)
       const countChanged = currentCount !== positiveFor(bl, dayCount)
-      if (countChanged || note !== (bl.environmentalChanges ?? "")) {
-        changed.push({
-          id: bl.id,
-          value: currentCount,
-          // Al cambiar los "+", el Daily Average % se recalcula; si solo cambió la nota se conserva el escrito
-          ...(countChanged && dayCount > 0
-            ? { dailyAveragePercent: String(Math.round((currentCount / dayCount) * 1000) / 10) }
-            : {}),
-          environmentalChanges: note.trim() || null,
-        })
-      }
+      // A note edited in the grid is a baseline change too, even when the value stays the same
+      const note = current.environmentalNote ?? ""
+      const noteChanged = note !== (bl.environmentalChanges ?? "")
+      if (!countChanged && !noteChanged) continue
+      // Día con Daily Average % manual y sin conteo: /values exige `value` y un null limpiaría el
+      // porcentaje, así que la nota no se envía por aquí. Pendiente de contrato con backend.
+      if (!countChanged && bl.value == null && isValidDailyAveragePercent(bl.dailyAveragePercent)) continue
+      // Al cambiar los "+" no se envía porcentaje: backend lo recalcula con los intervalos (origen INTERVALS)
+      changed.push({
+        id: bl.id,
+        // Día sin registrar que sólo cambió de nota: null no registra un cero
+        value: !countChanged && bl.value == null ? null : currentCount,
+        environmentalChanges: note.trim() || null,
+      })
     }
     return changed
   }, [entries, baselines, countFor, positiveFor])
@@ -418,7 +436,7 @@ export function useIntervalDatasheet(
     // Entries
     entries, getEntry, toggleInterval, setInitials, setNote,
     // Checks
-    isToday, isBaselineDate, baselineTypedPercent,
+    isToday, isBaselineDate, storedPercentFor, hasBaselineResult,
     // DC seeding
     seedDcRecords,
     // Dirty tracking

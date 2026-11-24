@@ -12,7 +12,11 @@ import { FloatingNumberStepper } from "@/components/custom/FloatingNumberStepper
 import { SERVICE_PLAN_UNIT_OF_TIME_OPTIONS } from "@/lib/modules/service-plans/constants/data-collection.constants"
 import { PremiumDatePicker } from "@/components/custom/PremiumDatePicker"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
-import { isValidDailyAveragePercent, sanitizeDailyAveragePercentInput } from "@/lib/utils/daily-average-percent"
+import {
+  isDailyAveragePercentPending,
+  isValidDailyAveragePercent,
+  sanitizeDailyAveragePercentInput,
+} from "@/lib/utils/daily-average-percent"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import {
   deleteClientCategoryBaseline,
@@ -33,6 +37,8 @@ export interface BaselineRow {
   suggestedNumberOfRecordings?: string
   /** Time-sampling: Daily Average % (string, coma o punto); es lo que se grafica */
   dailyAveragePercent?: string
+  /** Porcentaje tal como llegó del backend: sirve para saber si el analista lo cambió */
+  loadedDailyAveragePercent?: string
   comments: string
   show: boolean
 }
@@ -74,9 +80,10 @@ interface BaselinesTabContentProps {
   /**
    * Rate, Duration, Latency e Interresponse time: el Period se reemplaza por la "Unit of time"
    * del item (solo lectura). Todas las filas, nuevas o ya guardadas, siguen la unidad elegida
-   * arriba. `id` es el Period del catálogo equivalente ("" si el catálogo no tiene esa unidad).
+   * arriba solo para las filas nuevas (`unit`, `id` = Period equivalente). Las filas ya guardadas
+   * conservan su unidad y su Period (cada fila muestra la suya); cambiar la unidad del ítem no las reinterpreta.
    */
-  rateUnit?: { id: string; label: string }
+  rateUnit?: { id: string; label: string; unit: string }
   /**
    * Time-sampling: cada día de baseline lleva su propio Interval length, Unit of time y
    * Suggested number of recordings (en lugar de Value y Period). Estos son los valores por
@@ -101,12 +108,21 @@ export function BaselinesTabContent({
   const actionsDisabled = readOnly || !canEdit
   const showAdd = !hideAddButton && canCreate && !actionsDisabled
 
+  /** Unidad que muestra una fila: la guardada en el baseline; si no tiene, la del ítem (filas nuevas) */
+  const rowUnitLabel = useCallback(
+    (row: BaselineRow) => {
+      if (!rateUnit) return undefined
+      return SERVICE_PLAN_UNIT_OF_TIME_OPTIONS.find((o) => o.value === row.unitOfTime)?.label ?? rateUnit.label
+    },
+    [rateUnit]
+  )
+
   const sessionDurationLabel = useCallback(
-    (periodCatalogId: string) => {
-      const period = rateUnit?.label ?? periodSelectOptions.find((o) => o.value === periodCatalogId)?.label
+    (row: BaselineRow) => {
+      const period = rowUnitLabel(row) ?? periodSelectOptions.find((o) => o.value === row.periodCatalogId)?.label
       return period ? `Session duration (${period.toLowerCase()})` : "Session duration"
     },
-    [periodSelectOptions, rateUnit]
+    [periodSelectOptions, rowUnitLabel]
   )
 
   const handleAdd = useCallback(() => {
@@ -115,6 +131,7 @@ export function BaselinesTabContent({
       {
         ...createEmptyBaseline(),
         periodCatalogId: rateUnit?.id ?? "",
+        ...(rateUnit ? { unitOfTime: rateUnit.unit } : {}),
         ...(timeSampling ? timeSamplingDefaults(timeSampling) : {}),
       },
     ])
@@ -223,7 +240,7 @@ export function BaselinesTabContent({
                         onChange={(v) => handleUpdate(row.localId, "dailyAveragePercent", sanitizeDailyAveragePercentInput(v))}
                         onBlur={() => {}}
                         inputMode="decimal"
-                        hasError={showErrors && !isValidDailyAveragePercent(row.dailyAveragePercent)}
+                        hasError={showErrors && isDailyAveragePercentPending(row) && !isValidDailyAveragePercent(row.dailyAveragePercent)}
                         required
                         disabled={actionsDisabled}
                       />
@@ -247,7 +264,7 @@ export function BaselinesTabContent({
                   {rateUnit ? (
                     <FloatingInput
                       label="Unit of time"
-                      value={rateUnit.label}
+                      value={rowUnitLabel(row) ?? ""}
                       onChange={() => {}}
                       onBlur={() => {}}
                       disabled
@@ -270,7 +287,7 @@ export function BaselinesTabContent({
                 {requiresSessionDuration && (
                   <div className="col-span-2 flex-1 min-w-0 sm:col-span-1">
                     <FloatingInput
-                      label={sessionDurationLabel(row.periodCatalogId)}
+                      label={sessionDurationLabel(row)}
                       value={row.sessionDuration}
                       onChange={(v) => handleUpdate(row.localId, "sessionDuration", v.replace(/[^0-9.]/g, ""))}
                       onBlur={() => {}}

@@ -1,5 +1,6 @@
 "use client"
 
+import { ExportableChart } from "./ExportableChart"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   BarChart3, Hash, FileText,
@@ -437,7 +438,13 @@ export function FrequencyDatasheet({ clientId, activeItem, categoryTypeName, dcC
       <div className="space-y-2">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} customStart={chartRange.customStart} customEnd={chartRange.customEnd} onCustomRangeChange={chartRange.setCustomRange} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
-        <FrequencyChart weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig} chartDays={chartRange.chartDays} tickInterval={chartRange.tickInterval} itemBaselines={activeItem.baseline} itemObjectives={activeItem.objetive} gapDateKeys={chartHiddenDayKeys} collectedDateKeys={collectedDateKeys} aggregatedData={chartData.aggregatedPoints} interval={chartRange.interval} environmentalChanges={activeItem.environmentalChanges} />
+        <ExportableChart
+          itemName={activeItem.itemName}
+          rangeLabel={chartRange.rangeLabel}
+          fileName={`${activeItem.itemName} - ${categoryTypeName ?? "Chart"}.pdf`}
+        >
+          <FrequencyChart weekDays={ds.weekDays} entries={ds.entries} dcConfig={dcConfig} chartDays={chartRange.chartDays} tickInterval={chartRange.tickInterval} itemBaselines={activeItem.baseline} itemObjectives={activeItem.objetive} gapDateKeys={chartHiddenDayKeys} collectedDateKeys={collectedDateKeys} aggregatedData={chartData.aggregatedPoints} interval={chartRange.interval} environmentalChanges={activeItem.environmentalChanges} />
+        </ExportableChart>
       </div>
 
       {/* Footer */}

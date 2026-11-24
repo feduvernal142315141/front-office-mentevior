@@ -1,5 +1,6 @@
 "use client"
 
+import { ExportableChart } from "./ExportableChart"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Target, Percent, FileText,
@@ -389,7 +390,12 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
       <div className="space-y-2">
         <ChartDateRangeToolbar preset={chartRange.preset} rangeLabel={chartRange.rangeLabel} isAtToday={chartRange.isAtToday} interval={chartRange.interval} presetsDisabled={chartRange.presetsDisabled} onPresetChange={chartRange.setPreset} onIntervalChange={chartRange.setInterval} onPrev={chartRange.goToPrev} onNext={chartRange.goToNext} onToday={chartRange.goToToday} customStart={chartRange.customStart} customEnd={chartRange.customEnd} onCustomRangeChange={chartRange.setCustomRange} />
         <ActiveObjectiveBanner objectives={activeItem.objetive} />
-        <PercentageChart
+        <ExportableChart
+          itemName={activeItem.itemName}
+          rangeLabel={chartRange.rangeLabel}
+          fileName={`${activeItem.itemName} - ${categoryTypeName ?? "Chart"}.pdf`}
+        >
+          <PercentageChart
           environmentalChanges={activeItem.environmentalChanges}
           weekDays={ds.weekDays}
           entries={percentageEntries}
@@ -398,6 +404,7 @@ export function PercentageDatasheet({ clientId, activeItem, categoryTypeName, dc
           tickInterval={chartRange.tickInterval}
           gapDateKeys={chartHiddenDayKeys}
         />
+        </ExportableChart>
       </div>
 
       {/* Footer */}

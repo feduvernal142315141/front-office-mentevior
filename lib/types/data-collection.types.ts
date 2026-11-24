@@ -62,7 +62,10 @@ export interface DataCollectionObjectiveData {
 export interface DataCollectionBaselineData {
   recordId?: string
   date: string
-  value: number
+  /** null = día de Time-sampling sin registrar. undefined = no enviar (conserva el valor guardado) */
+  value?: number | null
+  /** Valor en la unidad actual del ítem (contrato 2026-11-23). Ausente = backend sin el contrato */
+  normalizedValue?: number | null
   periodCatalogId: string
   /** Duración de la sesión del baseline, en la unidad del Period (solo Rate/Duration) */
   sessionDuration?: number

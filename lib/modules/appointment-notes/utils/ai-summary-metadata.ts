@@ -38,6 +38,8 @@ function buildDataCollectionItems(
             .map((b) => ({
               date: toDay(b.date),
               value: b.value,
+              dailyAveragePercent: b.dailyAveragePercent ?? null,
+              dailyAveragePercentSource: b.dailyAveragePercentSource ?? null,
               period: periodName(b.periodCatalogId),
               sessionDuration: b.sessionDuration ?? null,
               environmentalChanges: b.environmentalChanges?.trim() || null,

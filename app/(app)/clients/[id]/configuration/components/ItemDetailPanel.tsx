@@ -29,7 +29,7 @@ import { GroupedSelect } from "@/components/custom/GroupedSelect"
 import { Button } from "@/components/custom/Button"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
-import { isValidDailyAveragePercent } from "@/lib/utils/daily-average-percent"
+import { isDailyAveragePercentPending, isValidDailyAveragePercent } from "@/lib/utils/daily-average-percent"
 
 import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
@@ -331,13 +331,14 @@ export function ItemDetailPanel({
             localId: crypto.randomUUID(),
             recordId: b.recordId,
             date: fromISO(b.date),
-            value: String(b.value),
+            value: b.value != null ? String(b.value) : "",
             periodCatalogId: b.periodCatalogId,
             sessionDuration: b.sessionDuration != null ? String(b.sessionDuration) : "",
             intervalLength: b.intervalLength != null ? String(b.intervalLength) : undefined,
             unitOfTime: b.unitOfTime ?? undefined,
             suggestedNumberOfRecordings: b.suggestedNumberOfRecordings != null ? String(b.suggestedNumberOfRecordings) : undefined,
             dailyAveragePercent: b.dailyAveragePercent,
+            loadedDailyAveragePercent: b.dailyAveragePercent,
             comments: b.environmentalChanges ?? b.comments ?? "",
             show: b.show,
           }))
@@ -541,7 +542,7 @@ export function ItemDetailPanel({
     const label = SERVICE_PLAN_UNIT_OF_TIME_OPTIONS.find((o) => o.value === watchedUnitOfTime)?.label
     if (!label) return undefined
     const match = periodCatalog.find((p) => periodNameToUnitOfTime(p.name) === watchedUnitOfTime)
-    return { id: match?.id ?? "", label }
+    return { id: match?.id ?? "", label, unit: watchedUnitOfTime }
   }, [resolvedType.name, watchedUnitOfTime, periodCatalog])
 
   // Lo que ven los objetivos (prefill del Period desde el último baseline) también sigue la unidad de arriba
@@ -630,28 +631,48 @@ export function ItemDetailPanel({
   // --- Save ---
   const handleSave = async (values: ClientDataCollectionFormValues) => {
     if (isReadOnly) return
-    // Rate/Duration: el backend exige la duración de la sesión (> 0) en cada baseline
+    // Rate: la duración de sesión (> 0) es obligatoria en las filas nuevas. Las ya guardadas
+    // conservan la suya si no se toca (el backend la mantiene al editar).
     const missingSessionDuration = needsSessionDuration && baselines.some(
-      (b) => b.date && (rateUnit || b.periodCatalogId) && !(Number(b.sessionDuration) > 0)
+      (b) => b.date && !b.recordId && !(Number(b.sessionDuration) > 0)
     )
+    const suggestedFor = (b: BaselineRow) =>
+      b.suggestedNumberOfRecordings === undefined ? timeSampling?.suggestedNumberOfRecordings ?? 0 : Number(b.suggestedNumberOfRecordings)
     const invalidTimeSampling = !!timeSampling && baselines.some(
-      (b) =>
-        b.date &&
-        !(
-          Number(b.intervalLength || timeSampling.intervalLength) > 0 &&
-          (b.suggestedNumberOfRecordings === undefined ? timeSampling.suggestedNumberOfRecordings : Number(b.suggestedNumberOfRecordings)) > 0 &&
-          isValidDailyAveragePercent(b.dailyAveragePercent)
-        )
+      (b) => b.date && !(Number(b.intervalLength || timeSampling.intervalLength) > 0 && suggestedFor(b) > 0)
+    )
+    // El porcentaje es obligatorio en las filas nuevas y en las que el analista cambió; un legado sin
+    // porcentaje puede guardarse mientras no se toque
+    const invalidDailyAverage = !!timeSampling && baselines.some(
+      (b) => b.date && isDailyAveragePercentPending(b) && !isValidDailyAveragePercent(b.dailyAveragePercent)
+    )
+    // Un día ya registrado no puede tener más "+" que intervalos configurados para ese día
+    const exceedsRecorded = !!timeSampling && baselines.some(
+      (b) => b.date && b.value !== "" && Number(b.value) > suggestedFor(b)
     )
     if (invalidTimeSampling) {
       setBaselinesError(true)
-      toast.error("Interval length, Suggested number of recordings and Daily Average % (0-100) are required in each baseline")
+      toast.error("Interval length and Suggested number of recordings are required in each baseline")
+      return
+    }
+    if (invalidDailyAverage) {
+      setBaselinesError(true)
+      toast.error("Daily Average % is required", {
+        description: "Enter a value from 0 to 100 with up to 2 decimals (e.g. 66,7).",
+      })
+      return
+    }
+    if (exceedsRecorded) {
+      setBaselinesError(true)
+      toast.error("Recorded value is above the suggested number of recordings", {
+        description: "Lower the recorded value or raise the suggested number of recordings for that day.",
+      })
       return
     }
     if (missingSessionDuration) {
       setBaselinesError(true)
       toast.error("Session duration is required", {
-        description: "Enter a session duration greater than 0 on every baseline.",
+        description: "Enter a session duration greater than 0 on every new baseline.",
       })
       return
     }
@@ -668,29 +689,31 @@ export function ItemDetailPanel({
       const baselinesPayload = baselines
         .map((b) => ({
           ...b,
-          // Tipos con Unit of time arriba: toda fila (nueva o editada) toma esa unidad.
-          // Time-sampling no muestra Period: el contrato todavía lo pide, se manda uno cualquiera del catálogo.
-          // Si el catálogo no tiene la unidad del item, se conserva el Period guardado para no perder la fila.
+          // Filas nuevas: el Period de la unidad del item. Filas guardadas: conservan su Period.
           periodCatalogId: rateUnit
-            ? rateUnit.id || b.periodCatalogId || periodCatalog[0]?.id || ""
+            ? b.periodCatalogId || rateUnit.id || periodCatalog[0]?.id || ""
             : b.periodCatalogId || (timeSampling ? periodCatalog[0]?.id ?? "" : ""),
         }))
         .filter((b) => b.date && b.periodCatalogId)
         .map((b) => ({
           recordId: b.recordId,
           date: toISO(b.date),
-          value: Number(b.value) || 0,
+          // Time-sampling: el resultado lo maneja la datasheet (/values). Una fila guardada no se
+          // sobrescribe desde aquí (undefined); una nueva nace sin registrar (null), no como cero.
+          value: timeSampling
+            ? (b.recordId ? undefined : b.value === "" ? null : Number(b.value))
+            : Number(b.value) || 0,
           periodCatalogId: b.periodCatalogId,
+          // Rate: cada fila conserva su unidad guardada; las nuevas usan la del item
+          ...(rateUnit && b.unitOfTime ? { unitOfTime: b.unitOfTime } : {}),
           sessionDuration: needsSessionDuration && b.sessionDuration !== "" ? Number(b.sessionDuration) : undefined,
           ...(timeSampling
             ? {
                 intervalLength: Number(b.intervalLength || timeSampling.intervalLength),
                 unitOfTime: b.unitOfTime || timeSampling.unitOfTime,
-                suggestedNumberOfRecordings:
-                  b.suggestedNumberOfRecordings === undefined
-                    ? timeSampling.suggestedNumberOfRecordings
-                    : Number(b.suggestedNumberOfRecordings),
-                dailyAveragePercent: (b.dailyAveragePercent ?? "").trim(),
+                suggestedNumberOfRecordings: suggestedFor(b),
+                // Solo se envía si es nuevo o cambió: un porcentaje guardado sin tocar conserva su origen
+                ...(isDailyAveragePercentPending(b) ? { dailyAveragePercent: (b.dailyAveragePercent ?? "").trim() } : {}),
               }
             : {}),
           environmentalChanges: b.comments,
@@ -1262,7 +1285,12 @@ export function ItemDetailPanel({
                 const lastPeriod = rateUnit?.id || (baselines.length > 0 ? baselines[baselines.length - 1].periodCatalogId : "")
                 handleBaselinesChange([
                   ...baselines,
-                  { ...createEmptyBaseline(), periodCatalogId: lastPeriod, ...(timeSampling ? timeSamplingDefaults(timeSampling) : {}) },
+                  {
+                    ...createEmptyBaseline(),
+                    periodCatalogId: lastPeriod,
+                    ...(rateUnit ? { unitOfTime: rateUnit.unit } : {}),
+                    ...(timeSampling ? timeSamplingDefaults(timeSampling) : {}),
+                  },
                 ])
               }}
               className="gap-1.5 text-sm h-8 px-3"

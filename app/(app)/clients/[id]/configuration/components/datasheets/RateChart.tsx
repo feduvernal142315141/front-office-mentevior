@@ -1,5 +1,6 @@
 "use client"
 
+import { plottedBaselineValue, hasNormalizedBaselineValue } from "@/lib/utils/baseline-plot-value"
 import { useMemo } from "react"
 import {
   ResponsiveContainer,
@@ -131,7 +132,7 @@ export function RateChart({
   const baselines = useMemo(() => {
     if (itemBaselines && itemBaselines.length > 0) {
       return itemBaselines.map((b) => ({
-        date: b.date, value: b.value, show: b.show,
+        date: b.date, value: plottedBaselineValue(b), normalizedValue: b.normalizedValue, show: b.show,
         comments: b.environmentalChanges ?? "", periodCatalogId: b.periodCatalogId,
       }))
     }
@@ -161,7 +162,7 @@ export function RateChart({
 
     // DAILY MODE: calculate rate per day
     const visibleBaselines = baselines
-      .filter((b) => b.show && b.value > 0 && b.date)
+      .filter((b) => b.show && (b.value ?? 0) > 0 && b.date)
       .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
 
     const baselineDateKeys = new Set(visibleBaselines.map((b) => getDateKey(parseLocalDate(b.date))))
@@ -169,7 +170,10 @@ export function RateChart({
     for (const b of visibleBaselines) {
       const dateKey = getDateKey(parseLocalDate(b.date))
       const baselineDuration = baselineDurationByDate?.get(dateKey)
-      baselineMap.set(dateKey, { value: baselineDuration ? b.value / baselineDuration : b.value, note: b.comments ?? "" })
+      // Con normalizedValue la tasa ya viene calculada en la unidad del ítem: no se divide otra vez
+      const raw = b.value ?? 0
+      const rate = baselineDuration && !hasNormalizedBaselineValue(b) ? raw / baselineDuration : raw
+      baselineMap.set(dateKey, { value: rate, note: b.comments ?? "" })
     }
 
     const gap = gapDateKeys ?? new Set<string>()
