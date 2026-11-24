@@ -30,6 +30,7 @@ import { Button } from "@/components/custom/Button"
 import { useModulePermissions } from "@/lib/hooks/use-module-permissions"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { isDailyAveragePercentPending, isValidDailyAveragePercent } from "@/lib/utils/daily-average-percent"
+import { hasRecordedTimeSamplingResult, isTimeSamplingConfigPending } from "@/lib/utils/baseline-time-sampling-config"
 
 import { useUnsavedChangesGuard } from "@/lib/hooks/use-unsaved-changes-guard"
 import { usePeriodCatalog } from "@/lib/modules/client-service-plan/hooks/use-period-catalog"
@@ -339,6 +340,9 @@ export function ItemDetailPanel({
             suggestedNumberOfRecordings: b.suggestedNumberOfRecordings != null ? String(b.suggestedNumberOfRecordings) : undefined,
             dailyAveragePercent: b.dailyAveragePercent,
             loadedDailyAveragePercent: b.dailyAveragePercent,
+            loadedIntervalLength: b.intervalLength != null ? String(b.intervalLength) : undefined,
+            loadedUnitOfTime: b.unitOfTime ?? undefined,
+            loadedSuggestedNumberOfRecordings: b.suggestedNumberOfRecordings != null ? String(b.suggestedNumberOfRecordings) : undefined,
             comments: b.environmentalChanges ?? b.comments ?? "",
             show: b.show,
           }))
@@ -638,8 +642,16 @@ export function ItemDetailPanel({
     )
     const suggestedFor = (b: BaselineRow) =>
       b.suggestedNumberOfRecordings === undefined ? timeSampling?.suggestedNumberOfRecordings ?? 0 : Number(b.suggestedNumberOfRecordings)
+    // Solo se valida la configuración que se va a enviar (filas nuevas o cambiadas)
     const invalidTimeSampling = !!timeSampling && baselines.some(
-      (b) => b.date && !(Number(b.intervalLength || timeSampling.intervalLength) > 0 && suggestedFor(b) > 0)
+      (b) =>
+        b.date &&
+        isTimeSamplingConfigPending(b) &&
+        !(Number(b.intervalLength || timeSampling.intervalLength) > 0 && suggestedFor(b) > 0)
+    )
+    // El backend no permite cambiar la configuración de un día con resultado sin reiniciarlo antes
+    const recordedConfigChanged = !!timeSampling && baselines.some(
+      (b) => b.date && isTimeSamplingConfigPending(b) && hasRecordedTimeSamplingResult(b)
     )
     // El porcentaje es obligatorio en las filas nuevas y en las que el analista cambió; un legado sin
     // porcentaje puede guardarse mientras no se toque
@@ -653,6 +665,13 @@ export function ItemDetailPanel({
     if (invalidTimeSampling) {
       setBaselinesError(true)
       toast.error("Interval length and Suggested number of recordings are required in each baseline")
+      return
+    }
+    if (recordedConfigChanged) {
+      setBaselinesError(true)
+      toast.error("This day already has results", {
+        description: "Reset its result before changing its interval, unit or number of recordings.",
+      })
       return
     }
     if (invalidDailyAverage) {
@@ -709,9 +728,14 @@ export function ItemDetailPanel({
           sessionDuration: needsSessionDuration && b.sessionDuration !== "" ? Number(b.sessionDuration) : undefined,
           ...(timeSampling
             ? {
-                intervalLength: Number(b.intervalLength || timeSampling.intervalLength),
-                unitOfTime: b.unitOfTime || timeSampling.unitOfTime,
-                suggestedNumberOfRecordings: suggestedFor(b),
+                // Configuración: solo si la fila es nueva o cambió; un día guardado sin cambios conserva la suya
+                ...(isTimeSamplingConfigPending(b)
+                  ? {
+                      intervalLength: Number(b.intervalLength || timeSampling.intervalLength),
+                      unitOfTime: b.unitOfTime || timeSampling.unitOfTime,
+                      suggestedNumberOfRecordings: suggestedFor(b),
+                    }
+                  : {}),
                 // Solo se envía si es nuevo o cambió: un porcentaje guardado sin tocar conserva su origen
                 ...(isDailyAveragePercentPending(b) ? { dailyAveragePercent: (b.dailyAveragePercent ?? "").trim() } : {}),
               }
@@ -768,6 +792,16 @@ export function ItemDetailPanel({
       }
 
       // Reset dirty state BEFORE navigating away
+      // Lo guardado pasa a ser la referencia para detectar cambios en el siguiente guardado
+      setBaselines((prev) =>
+        prev.map((r) => ({
+          ...r,
+          loadedIntervalLength: r.intervalLength,
+          loadedUnitOfTime: r.unitOfTime,
+          loadedSuggestedNumberOfRecordings: r.suggestedNumberOfRecordings,
+          loadedDailyAveragePercent: r.dailyAveragePercent ?? "",
+        }))
+      )
       baselinesSnapshotRef.current = snapshotRows(baselines)
       objectivesSnapshotRef.current = snapshotRows(objectives)
       teachingProceduresSnapshotRef.current = snapshotSelection(teachingProcedures)

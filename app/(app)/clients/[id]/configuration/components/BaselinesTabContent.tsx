@@ -39,6 +39,10 @@ export interface BaselineRow {
   dailyAveragePercent?: string
   /** Porcentaje tal como llegó del backend: sirve para saber si el analista lo cambió */
   loadedDailyAveragePercent?: string
+  /** Configuración tal como llegó del backend (Time-sampling): solo se envía si cambia */
+  loadedIntervalLength?: string
+  loadedUnitOfTime?: string
+  loadedSuggestedNumberOfRecordings?: string
   comments: string
   show: boolean
 }
