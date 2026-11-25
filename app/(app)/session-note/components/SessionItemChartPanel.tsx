@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns"
 import { BarChart3, Loader2, Maximize2, Minimize2, Save, FileText } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { orderItemsByType } from "@/lib/modules/appointment-notes/utils/group-items-by-type"
 import type { AppointmentNoteCategory } from "@/lib/types/appointment-note.types"
 import type { CategoryItemFormData } from "../hooks/useSessionNoteForm"
 import { ServicePlanValueType } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
@@ -40,7 +41,7 @@ export function SessionItemChartPanel({
   activeItemId,
   onActiveItemChange,
 }: SessionItemChartPanelProps) {
-  const items = category.items
+  const items = useMemo(() => orderItemsByType(category.items), [category.items])
   // Use external activeItemId if provided, otherwise internal
   const effectiveItemId = activeItemId && items.some((i) => i.id === activeItemId) ? activeItemId : items[0]?.id ?? ""
   const [isFullscreen, setIsFullscreen] = useState(false)
