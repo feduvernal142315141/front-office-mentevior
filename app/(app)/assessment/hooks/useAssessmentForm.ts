@@ -58,7 +58,7 @@ import { useRelationshipCatalog } from "@/lib/modules/relationships/hooks/use-re
 export interface CategoryItemFormValue {
   intensityKey: string
   intensityDescription: string
-  /** Sin edición se muestra el texto del item; "" conserva una edición vacía. */
+  /** `undefined` permite la precarga inicial; `""` conserva un valor borrado y guardado. */
   description?: string
   procedures?: string
   /** Vacía = el usuario no la tocó; se muestra la precarga del Service Plan */
@@ -429,8 +429,11 @@ function formDataFromAssessment(assessment: AssessmentDetail): AssessmentFormDat
     categoryItems[entry.clientServicePlanCategoryItemId] = {
       intensityKey: entry.intensityKey ?? "",
       intensityDescription: entry.intensityDescription ?? "",
-      description: entry.description?.trim() ? entry.description : undefined,
-      procedures: entry.procedures?.trim() ? entry.procedures : undefined,
+      // Un Assessment guardado es la fuente de verdad, incluso cuando el
+      // usuario decidió dejar estos campos vacíos. Sólo `undefined` activa la
+      // precarga del Service Plan durante la creación inicial.
+      description: entry.description ?? "",
+      procedures: entry.procedures ?? "",
       hypothesizedFunction: entry.hypothesizedFunction,
       placesOfServiceIds: entry.placesOfService ?? [],
       preventiveStrategies: entry.preventiveStrategies ?? "",
