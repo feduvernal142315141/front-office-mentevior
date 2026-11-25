@@ -1,5 +1,6 @@
 "use client"
 
+import { resolveChartValueKind, resolveChartYAxisTitle } from "@/lib/modules/service-plans/constants/chart-y-axis-title"
 import { plottedBaselineValue, hasNormalizedBaselineValue } from "@/lib/utils/baseline-plot-value"
 import { useMemo } from "react"
 import {
@@ -53,6 +54,11 @@ interface FrequencyChartProps {
   /** Narrow layouts (e.g. session note side panel): shorter chart, wrapping legend, earlier scroll. */
   compact?: boolean
   /**
+   * Type del item cuando esta gráfica se usa para otros tipos (panel de la session note): define el
+   * título del eje Y y, en porcentajes, el rango 0–100. Sin él se comporta como Frequency.
+   */
+  typeName?: string
+  /**
    * Cómo pinta este item sus environmental changes (contrato 2026-09-07).
    * Sin config, el comportamiento histórico: línea de fase + listado.
    */
@@ -81,7 +87,7 @@ export function FrequencyChart({
   weekDays, entries, dcConfig, chartDays, tickInterval = 0,
   itemBaselines, itemObjectives, gapDateKeys, collectedDateKeys,
   aggregatedData, interval = ChartInterval.DAILY, compact = false,
-  environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES,
+  environmentalChanges = DEFAULT_ENVIRONMENTAL_CHANGES, typeName,
 }: FrequencyChartProps) {
   const days = chartDays ?? weekDays
   // Narrow panels get short dates so every column can keep its own label instead of being thinned
@@ -288,9 +294,12 @@ export function FrequencyChart({
 
   // ─── Y-axis range ──────────────────────────────────────────────────────
 
-  const yTitle = chartConfig.yAxis?.title ?? "Number of occurrences"
+  const valueKind = resolveChartValueKind(typeName)
+  const yTitle = resolveChartYAxisTitle(valueKind, chartConfig.yAxis?.title)
 
   const { yMin, yMax, yTicks } = useMemo(() => {
+    // Porcentajes: el eje siempre es 0–100
+    if (valueKind === "percentage") return { yMin: 0, yMax: 100, yTicks: [0, 20, 40, 60, 80, 100] }
     const allValues: number[] = []
     for (const point of data) {
       if (point.occurrences != null) allValues.push(point.occurrences)
@@ -304,7 +313,7 @@ export function FrequencyChart({
     const ticks: number[] = []
     for (let v = 0; v <= ceilMax; v += step) ticks.push(v)
     return { yMin: 0, yMax: ceilMax, yTicks: ticks }
-  }, [data, chartConfig.yAxis?.suggestedMax])
+  }, [data, chartConfig.yAxis?.suggestedMax, valueKind])
 
   // ─── Dataset visual configs ────────────────────────────────────────────
 

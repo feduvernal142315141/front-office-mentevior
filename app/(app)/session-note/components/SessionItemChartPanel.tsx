@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns"
 import { BarChart3, Loader2, Maximize2, Minimize2, Save, FileText } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { orderItemsByType } from "@/lib/modules/appointment-notes/utils/group-items-by-type"
 import type { AppointmentNoteCategory } from "@/lib/types/appointment-note.types"
 import type { CategoryItemFormData } from "../hooks/useSessionNoteForm"
 import { ServicePlanValueType } from "@/lib/modules/service-plans/constants/service-plan-data-collection.enums"
@@ -40,7 +41,7 @@ export function SessionItemChartPanel({
   activeItemId,
   onActiveItemChange,
 }: SessionItemChartPanelProps) {
-  const items = category.items
+  const items = useMemo(() => orderItemsByType(category.items), [category.items])
   // Use external activeItemId if provided, otherwise internal
   const effectiveItemId = activeItemId && items.some((i) => i.id === activeItemId) ? activeItemId : items[0]?.id ?? ""
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -100,6 +101,7 @@ export function SessionItemChartPanel({
       appointmentId={appointmentId}
       itemBaselines={selectedItem.baseline}
       itemObjectives={selectedItem.objetive}
+      typeName={selectedItem.typeEventCatalogName ?? undefined}
       compact={compact}
     />
   )
@@ -323,6 +325,7 @@ function ItemChartView({
   appointmentId,
   itemBaselines,
   itemObjectives,
+  typeName,
   compact,
 }: {
   itemId: string
@@ -332,6 +335,8 @@ function ItemChartView({
   appointmentId: string | null
   itemBaselines?: ClientServicePlanItemBaseline[]
   itemObjectives?: ClientServicePlanItemObjective[]
+  /** Type del item: define el título del eje Y de la gráfica */
+  typeName?: string
   compact: boolean
 }) {
   // The session day anchors the calendar window, so the value being collected now always
@@ -417,6 +422,7 @@ function ItemChartView({
           interval={chartRange.interval}
           itemBaselines={itemBaselines}
           itemObjectives={itemObjectives}
+          typeName={typeName}
           compact={compact}
         />
       )}
