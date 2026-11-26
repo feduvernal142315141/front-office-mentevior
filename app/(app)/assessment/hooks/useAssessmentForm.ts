@@ -1,6 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { toast } from "sonner"
+import { hasServicePlanChanges, SERVICE_PLAN_CHANGE_WARNING } from "./assessment-service-plan-changes"
 import {
   ASSESSMENT_PDF_FLAG_KEYS,
   ASSESSMENT_PDF_TEXT_KEYS,
@@ -556,6 +558,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   const [errors, setErrors] = useState<Record<string, string>>({})
   /** Evita re-aplicar el borrador si el usuario ya lo recibió para ese cliente. */
   const hydratedDraftClientIdRef = useRef<string | null>(null)
+  const servicePlanBaselineRef = useRef<Record<string, CategoryItemFormValue>>({})
 
   const {
     draft: clientDraft,
@@ -638,6 +641,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
   useEffect(() => {
     if (isEditing) return
     hydratedDraftClientIdRef.current = null
+    servicePlanBaselineRef.current = {}
     setFormData((prev) => ({ ...EMPTY_FORM, clientId: prev.clientId }))
   }, [assessmentType, isEditing])
 
@@ -649,6 +653,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     const draftKey = `${assessmentType}:${formData.clientId}`
     if (hydratedDraftClientIdRef.current === draftKey) return
     hydratedDraftClientIdRef.current = draftKey
+    servicePlanBaselineRef.current = categoryItemsFromDraft(clientDraft.categories)
     setFormData((prev) => applyAssessmentDraft(prev, clientDraft))
   }, [assessmentType, clientDraft, formData.clientId, isEditing, loadedAssessmentType])
 
@@ -657,7 +662,9 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     pendingReplacementId.current = null
     setEditedAssessmentType(null)
     setReplacementSource(null)
-    setFormData(formDataFromAssessment(assessment))
+    const initialForm = formDataFromAssessment(assessment)
+    servicePlanBaselineRef.current = initialForm.categoryItems
+    setFormData(initialForm)
   }, [assessment])
 
   const replaceWithLatestAssessment = useCallback(async () => {
@@ -679,6 +686,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
         // Cambiar de cliente invalida la evaluación y el borrador del SP anterior
         if (field === "clientId" && value !== prev.clientId) {
           hydratedDraftClientIdRef.current = null
+          servicePlanBaselineRef.current = {}
           return {
             ...prev,
             clientId: value as string,
@@ -1179,8 +1187,13 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     }, 50)
   }, [])
 
+  const hasServicePlanFieldChanges = useCallback(
+    () => hasServicePlanChanges(categories, formData.categoryItems, servicePlanBaselineRef.current),
+    [categories, formData.categoryItems],
+  )
+
   /** Devuelve el id guardado, o null si la validación o el request fallaron */
-  const handleSubmit = useCallback(async (): Promise<string | null> => {
+  const handleSubmit = useCallback(async ({ notifySuccess = false } = {}): Promise<string | null> => {
     if (isEditing && assessment?.notCanEdit) return null
 
     setValidationAttempted(true)
@@ -1192,10 +1205,19 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     }
     setErrors({})
 
+    const servicePlanChanged = hasServicePlanFieldChanges()
+    if (servicePlanChanged) toast.warning("Service Plan", { description: SERVICE_PLAN_CHANGE_WARNING })
+
     const id = await save(buildPayload())
-    if (id) pendingReplacementId.current = null
+    if (id) {
+      pendingReplacementId.current = null
+      servicePlanBaselineRef.current = formData.categoryItems
+      if (notifySuccess && !servicePlanChanged) {
+        toast.success(isEditing ? "Assessment updated" : "Assessment created")
+      }
+    }
     return id
-  }, [validate, buildPayload, save, scrollToFirstError, isEditing, assessment?.notCanEdit])
+  }, [validate, buildPayload, save, scrollToFirstError, isEditing, assessment?.notCanEdit, hasServicePlanFieldChanges, formData.categoryItems])
 
   return {
     formRef,
@@ -1256,6 +1278,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     updatePdfFlag,
     // Submit
     handleSubmit,
+    hasServicePlanFieldChanges,
     isSaving,
   }
 }

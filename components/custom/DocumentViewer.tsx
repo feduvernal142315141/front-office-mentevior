@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, FileText, Loader2 } from "lucide-react";
+import { X, FileText, Loader2, AlertTriangle } from "lucide-react";
 import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -11,9 +11,10 @@ interface DocumentViewerProps {
   onClose: () => void;
   documentUrl: string;
   fileName?: string;
+  warning?: string;
 }
 
-export function DocumentViewer({ open, onClose, documentUrl, fileName = "document.pdf" }: DocumentViewerProps) {
+export function DocumentViewer({ open, onClose, documentUrl, fileName = "document.pdf", warning }: DocumentViewerProps) {
   const [loading, setLoading] = useState(true);
 
   const displayFileName = fileName || 'document.pdf';
@@ -82,6 +83,13 @@ export function DocumentViewer({ open, onClose, documentUrl, fileName = "documen
               </div>
             </div>
           </div>
+
+          {warning && (
+            <div role="alert" className="flex shrink-0 items-start gap-2 border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-900">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{warning}</p>
+            </div>
+          )}
 
           <div className={cn(
             "flex-1 bg-gray-50 relative",

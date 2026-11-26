@@ -75,6 +75,7 @@ import { useDirtyBaseline } from "@/lib/hooks/use-dirty-baseline"
 import { PermissionModule } from "@/lib/utils/permissions-new"
 import { cn } from "@/lib/utils"
 import { useAssessmentForm } from "../hooks/useAssessmentForm"
+import { SERVICE_PLAN_CHANGE_WARNING } from "../hooks/assessment-service-plan-changes"
 import {
   deriveAssessmentStatusInfo,
   type AssessmentStatusInfo,
@@ -129,6 +130,7 @@ export function AssessmentForm({
   const canAdminAction = isAdmin && canBlock(PermissionModule.ASSESSMENT)
 
   const [previewId, setPreviewId] = useState<string | null>(null)
+  const [previewWarning, setPreviewWarning] = useState(false)
   const [isChangingStatus, setIsChangingStatus] = useState(false)
   const [showTypeConfirmation, setShowTypeConfirmation] = useState(false)
   const [isReplacing, setIsReplacing] = useState(false)
@@ -188,6 +190,7 @@ export function AssessmentForm({
     removePreferenceAssessmentRow,
     updatePreferenceAssessmentRow,
     handleSubmit,
+    hasServicePlanFieldChanges,
     isSaving,
   } = useAssessmentForm({ assessmentId, assessmentType })
 
@@ -269,26 +272,28 @@ export function AssessmentForm({
     async (event: React.FormEvent) => {
       event.preventDefault()
       if (formDisabled || showTypeConfirmation) return
-      const id = await handleSubmit()
+      const id = await handleSubmit({ notifySuccess: true })
       if (!id) return
       rebaseline()
-      toast.success(isEditing ? "Assessment updated" : "Assessment created")
       router.push("/assessment")
     },
-    [handleSubmit, isEditing, rebaseline, router, formDisabled, showTypeConfirmation],
+    [handleSubmit, rebaseline, router, formDisabled, showTypeConfirmation],
   )
 
   const handlePreview = useCallback(async () => {
     if (formDisabled && assessmentId) {
+      setPreviewWarning(false)
       setPreviewId(assessmentId)
       return
     }
+    const servicePlanChanged = hasServicePlanFieldChanges()
     const id = await handleSubmit()
     if (id) {
       rebaseline()
+      setPreviewWarning(servicePlanChanged)
       setPreviewId(id)
     }
-  }, [handleSubmit, formDisabled, assessmentId, rebaseline])
+  }, [handleSubmit, hasServicePlanFieldChanges, formDisabled, assessmentId, rebaseline])
 
   const handleStatusChange = useCallback(
     async (next: "lock" | "active") => {
@@ -1117,6 +1122,7 @@ export function AssessmentForm({
           onClose={() => setPreviewId(null)}
           documentUrl={getAssessmentPdfUrl(previewId)}
           fileName="Behavior Analysis Assessment and Support Plan.pdf"
+          warning={previewWarning ? SERVICE_PLAN_CHANGE_WARNING : undefined}
         />
       )}
     </form>
