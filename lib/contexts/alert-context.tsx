@@ -135,8 +135,9 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     if (alert.type === "confirm" && alert.onCancel) {
       alert.onCancel()
     }
+    alert.onClose?.()
     close()
-  }, [alert.type, alert.onCancel, close])
+  }, [alert.type, alert.onCancel, alert.onClose, close])
 
   const actions: AlertActions = {
     success,

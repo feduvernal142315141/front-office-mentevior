@@ -8,6 +8,8 @@ import { createAssessment, updateAssessment } from "../services/assessments.serv
 interface UseSaveAssessmentOptions {
   /** Id del assessment cuando se está editando uno existente */
   assessmentId?: string
+  /** Lleva al campo relacionado una vez que el usuario cierra la alerta. */
+  onErrorDismiss?: (message: string) => void
 }
 
 interface UseSaveAssessmentReturn {
@@ -42,12 +44,15 @@ export function useSaveAssessment(options?: UseSaveAssessmentOptions): UseSaveAs
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save assessment"
       setError(message)
-      toast.error("Error saving Assessment", { description: message })
+      toast.error("Error saving Assessment", {
+        description: message,
+        onDismiss: () => options?.onErrorDismiss?.(message),
+      })
       return null
     } finally {
       setIsSaving(false)
     }
-  }, [])
+  }, [options])
 
   return { save, isSaving, error }
 }

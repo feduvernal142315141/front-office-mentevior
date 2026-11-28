@@ -39,6 +39,8 @@ interface CategoryItemsSectionProps {
   intensities?: IntensityCatalogItem[]
   isLoading: boolean
   values: Record<string, CategoryItemFormValue>
+  /** Errores por campo dinámico, indexados con el id del item. */
+  errors?: Record<string, string>
   /** Pinta los empty states en rojo cuando la sección exige al menos un item evaluado */
   hasError?: boolean
   disabled?: boolean
@@ -71,6 +73,7 @@ export function CategoryItemsSection({
   intensities = [],
   isLoading,
   values,
+  errors = {},
   hasError,
   disabled,
   onUpdate,
@@ -180,6 +183,7 @@ export function CategoryItemsSection({
               const managementStrategies = parseManagementStrategies(value.managementStrategies)
               // Precarga del Service Plan: se muestra hasta que el usuario elija otras
               const hypothesizedFunction = hypothesizedFunctionByItemId[item.id] ?? []
+              const hypothesizedFunctionError = errors[`hypothesized-function-${item.id}`]
 
               const intensitySelectOptions =
                 value.intensityKey && !intensityOptions.some((o) => o.value === value.intensityKey)
@@ -190,6 +194,7 @@ export function CategoryItemsSection({
                 <div
                   key={item.id}
                   data-field={`category-item-${item.id}`}
+                  data-validation-label={item.name}
                   className={`rounded-xl border p-4 transition-colors ${
                     touched ? "border-[#037ECC]/30 bg-[#037ECC]/[0.03]" : "border-slate-200 bg-slate-50/40"
                   }`}
@@ -211,20 +216,24 @@ export function CategoryItemsSection({
                   </div>
                   {showIntensity && isMaladaptive && (
                     <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-[200px_1fr]">
-                      <FloatingSelect
-                        label="Intensity"
-                        value={value.intensityKey}
-                        onChange={(v) => handleIntensityChange(item.id, v, value)}
-                        options={intensitySelectOptions}
-                        disabled={disabled}
-                      />
-                      <FloatingInput
-                        label="Intensity description"
-                        value={value.intensityDescription}
-                        onChange={(v) => onUpdate(item.id, "intensityDescription", v)}
-                        onBlur={() => {}}
-                        disabled={disabled}
-                      />
+                      <div data-field={`intensity-${item.id}`}>
+                        <FloatingSelect
+                          label="Intensity"
+                          value={value.intensityKey}
+                          onChange={(v) => handleIntensityChange(item.id, v, value)}
+                          options={intensitySelectOptions}
+                          disabled={disabled}
+                        />
+                      </div>
+                      <div data-field={`intensity-description-${item.id}`}>
+                        <FloatingInput
+                          label="Intensity description"
+                          value={value.intensityDescription}
+                          onChange={(v) => onUpdate(item.id, "intensityDescription", v)}
+                          onBlur={() => {}}
+                          disabled={disabled}
+                        />
+                      </div>
                     </div>
                   )}
                   {/* Fuera de Maladaptive sólo hay dos selects: se reparten el ancho y muestran hasta 8 tags antes del "+N more" */}
@@ -235,94 +244,115 @@ export function CategoryItemsSection({
                         : "grid grid-cols-1 items-start gap-4 md:grid-cols-2"
                     }
                   >
-                    <MultiSelect
-                      label="Hypothesized function"
-                      value={
-                        value.hypothesizedFunction.length > 0
-                          ? value.hypothesizedFunction
-                          : hypothesizedFunction
-                      }
-                      onChange={(v) => onUpdate(item.id, "hypothesizedFunction", v)}
-                      options={HYPOTHESIZED_FUNCTION_OPTIONS}
-                      disabled={disabled}
-                      tone="neutral"
-                      placeholder="Select functions"
-                      maxVisibleTags={isMaladaptive ? 2 : 8}
-                    />
-                    <MultiSelect
-                      label="POS"
-                      value={value.placesOfServiceIds}
-                      onChange={(v) => onUpdate(item.id, "placesOfServiceIds", v)}
-                      options={posOptions}
-                      disabled={disabled}
-                      searchable
-                      tone="neutral"
-                      placeholder="Select POS"
-                      maxVisibleTags={isMaladaptive ? 2 : 8}
-                    />
+                    <div data-field={`hypothesized-function-${item.id}`}>
+                      <MultiSelect
+                        label="Hypothesized function"
+                        value={
+                          value.hypothesizedFunction.length > 0
+                            ? value.hypothesizedFunction
+                            : hypothesizedFunction
+                        }
+                        onChange={(v) => onUpdate(item.id, "hypothesizedFunction", v)}
+                        options={HYPOTHESIZED_FUNCTION_OPTIONS}
+                        hasError={!!hypothesizedFunctionError}
+                        disabled={disabled}
+                        required
+                        tone="neutral"
+                        placeholder="Select functions"
+                        maxVisibleTags={isMaladaptive ? 2 : 8}
+                      />
+                      {hypothesizedFunctionError && (
+                        <p className="mt-1.5 text-xs font-medium text-red-500">{hypothesizedFunctionError}</p>
+                      )}
+                    </div>
+                    <div data-field={`places-of-service-${item.id}`} data-validation-label="POS">
+                      <MultiSelect
+                        label="POS"
+                        value={value.placesOfServiceIds}
+                        onChange={(v) => onUpdate(item.id, "placesOfServiceIds", v)}
+                        options={posOptions}
+                        disabled={disabled}
+                        searchable
+                        tone="neutral"
+                        placeholder="Select POS"
+                        maxVisibleTags={isMaladaptive ? 2 : 8}
+                      />
+                    </div>
                     {isMaladaptive ? (
                       <>
-                        <MultiSelect
-                          label="Preventive & Antecedent Strategies"
-                          value={value.preventiveStrategies ? value.preventiveStrategies.split(", ").filter(Boolean) : []}
-                          onChange={(v) => onUpdate(item.id, "preventiveStrategies", v.join(", "))}
-                          options={preventiveStrategyOptions}
-                          disabled={disabled}
-                          searchable
-                          tone="neutral"
-                          placeholder="Select strategies"
-                          maxVisibleTags={1}
-                        />
+                        <div data-field={`preventive-antecedent-strategies-${item.id}`}>
+                          <MultiSelect
+                            label="Preventive & Antecedent Strategies"
+                            value={value.preventiveStrategies ? value.preventiveStrategies.split(", ").filter(Boolean) : []}
+                            onChange={(v) => onUpdate(item.id, "preventiveStrategies", v.join(", "))}
+                            options={preventiveStrategyOptions}
+                            disabled={disabled}
+                            searchable
+                            tone="neutral"
+                            placeholder="Select strategies"
+                            maxVisibleTags={1}
+                          />
+                        </div>
                         {value.preventiveStrategies.includes("Other") && (
-                          <FloatingInput
-                            label="Other preventive strategy"
-                            value={value.otherPreventiveStrategies ?? ""}
-                            onChange={(v) => onUpdate(item.id, "otherPreventiveStrategies", v)}
-                            onBlur={() => {}}
-                            disabled={disabled}
-                          />
+                          <div data-field={`other-preventive-strategy-${item.id}`}>
+                            <FloatingInput
+                              label="Other preventive strategy"
+                              value={value.otherPreventiveStrategies ?? ""}
+                              onChange={(v) => onUpdate(item.id, "otherPreventiveStrategies", v)}
+                              onBlur={() => {}}
+                              disabled={disabled}
+                            />
+                          </div>
                         )}
-                        <MultiSelect
-                          label="Consequence-Based Strategies"
-                          value={managementStrategies}
-                          onChange={(v) => onUpdate(item.id, "managementStrategies", v.join(", "))}
-                          options={consequenceStrategyOptions}
-                          disabled={disabled}
-                          searchable
-                          tone="neutral"
-                          placeholder="Select strategies"
-                          maxVisibleTags={1}
-                        />
-                        {managementStrategies.includes("Other") && (
-                          <FloatingInput
-                            label="Other strategy"
-                            value={value.otherManagementStrategies}
-                            onChange={(v) => onUpdate(item.id, "otherManagementStrategies", v)}
-                            onBlur={() => {}}
+                        <div data-field={`consequence-based-strategies-${item.id}`}>
+                          <MultiSelect
+                            label="Consequence-Based Strategies"
+                            value={managementStrategies}
+                            onChange={(v) => onUpdate(item.id, "managementStrategies", v.join(", "))}
+                            options={consequenceStrategyOptions}
                             disabled={disabled}
+                            searchable
+                            tone="neutral"
+                            placeholder="Select strategies"
+                            maxVisibleTags={1}
                           />
+                        </div>
+                        {managementStrategies.includes("Other") && (
+                          <div data-field={`other-consequence-strategy-${item.id}`}>
+                            <FloatingInput
+                              label="Other strategy"
+                              value={value.otherManagementStrategies}
+                              onChange={(v) => onUpdate(item.id, "otherManagementStrategies", v)}
+                              onBlur={() => {}}
+                              disabled={disabled}
+                            />
+                          </div>
                         )}
                       </>
                     ) : null}
                   </div>
                   {!isMaladaptive && (
                     <div className="mt-4 space-y-4">
-                      <FloatingTextarea
-                        label="Description"
-                        value={value.description ?? item.description ?? ""}
-                        onChange={(v) => onUpdate(item.id, "description", v)}
-                        onBlur={() => {}}
-                        disabled={disabled}
-                        rows={8}
-                      />
-                      <FloatingTextarea
-                        label="Procedures"
-                        value={value.procedures ?? item.procedures ?? ""}
-                        onChange={(v) => onUpdate(item.id, "procedures", v)}
-                        onBlur={() => {}}
-                        disabled={disabled}
-                        rows={8}
-                      />
+                      <div data-field={`description-${item.id}`}>
+                        <FloatingTextarea
+                          label="Description"
+                          value={value.description ?? item.description ?? ""}
+                          onChange={(v) => onUpdate(item.id, "description", v)}
+                          onBlur={() => {}}
+                          disabled={disabled}
+                          rows={8}
+                        />
+                      </div>
+                      <div data-field={`procedures-${item.id}`}>
+                        <FloatingTextarea
+                          label="Procedures"
+                          value={value.procedures ?? item.procedures ?? ""}
+                          onChange={(v) => onUpdate(item.id, "procedures", v)}
+                          onBlur={() => {}}
+                          disabled={disabled}
+                          rows={8}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

@@ -496,14 +496,17 @@ export function AssessmentForm({
             min={0}
           />
         </div>
-        <div className="mt-4">
+        <div className="mt-4" data-field="housingMemberRelationshipCatalogIds">
           <MultiSelectWithSearch
             label="Household members"
             items={relationshipChoices}
             selectedIds={formData.housingMemberRelationshipCatalogIds}
             onChange={(ids) => updateField("housingMemberRelationshipCatalogIds", ids)}
             isLoading={isLoadingCatalogs}
+            hasError={!!errors.housingMemberRelationshipCatalogIds}
+            required
           />
+          <FieldError message={errors.housingMemberRelationshipCatalogIds} />
         </div>
         <div className="mt-4" data-field="housingInformation">
           <FloatingTextarea
@@ -857,6 +860,7 @@ export function AssessmentForm({
           intensities={intensities}
           isLoading={categoriesLoading}
           values={formData.categoryItems}
+          errors={errors}
           disabled={fieldsDisabled}
           onUpdate={updateCategoryItem}
           onClear={clearCategoryItem}

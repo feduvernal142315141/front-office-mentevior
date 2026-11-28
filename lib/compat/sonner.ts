@@ -4,6 +4,7 @@ type SonnerType = "success" | "error" | "warning" | "info"
 
 interface SonnerOptions {
   description?: string
+  onDismiss?: () => void
 }
 
 function normalizeNonErrorDescription(description?: string) {
@@ -28,6 +29,7 @@ function notify(type: SonnerType, title: string, options?: SonnerOptions) {
       type === "error"
         ? options?.description
         : normalizeNonErrorDescription(options?.description),
+    onClose: options?.onDismiss,
   })
 }
 

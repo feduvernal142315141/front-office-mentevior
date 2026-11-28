@@ -531,14 +531,39 @@ interface UseAssessmentFormProps {
   assessmentType?: AssessmentType
 }
 
+const VALIDATION_TOKEN_STOP_WORDS = new Set([
+  "a", "an", "and", "are", "assessment", "at", "be", "cannot", "error", "failed",
+  "field", "for", "id", "ids", "in", "is", "of", "or", "required", "save", "saving",
+  "select", "shown", "the", "to", "validation", "when", "while", "catalog",
+])
+
+function validationTokens(value: string): string[] {
+  return Array.from(new Set(
+    value
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .map((token) => {
+        if (token.endsWith("ies") && token.length > 4) return `${token.slice(0, -3)}y`
+        if (token.endsWith("s") && token.length > 3) return token.slice(0, -1)
+        return token
+      })
+      .filter((token) => token.length > 1 && !VALIDATION_TOKEN_STOP_WORDS.has(token)),
+  ))
+}
+
 export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSESSMENT" }: UseAssessmentFormProps) {
   const isEditing = !!assessmentId
   const formRef = useRef<HTMLFormElement>(null)
+  const saveErrorDismissHandlerRef = useRef<(message: string) => void>(() => {})
   const [validationAttempted, setValidationAttempted] = useState(false)
 
   const { assessment, isLoading: detailLoading, error: detailError, refetch: refetchAssessment } =
     useAssessmentById(assessmentId)
-  const { save, isSaving } = useSaveAssessment({ assessmentId })
+  const { save, isSaving } = useSaveAssessment({
+    assessmentId,
+    onErrorDismiss: (message) => saveErrorDismissHandlerRef.current(message),
+  })
 
   const { clients, isLoading: clientsLoading } = useClientsByLoggedUser({ page: 0, pageSize: 200 })
   const { grades, conductedOptions, intensities, isLoading: catalogsLoading } = useAssessmentCatalogs()
@@ -916,6 +941,9 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
 
     if (sectionBlocksSave(flags, "showHousingFamily")) {
       if (!formData.housingType) newErrors.housingType = "Select a housing type"
+      if (formData.housingMemberRelationshipCatalogIds.length === 0) {
+        newErrors.housingMemberRelationshipCatalogIds = "Select at least one household member relationship"
+      }
       if (!formData.housingInformation.trim()) newErrors.housingInformation = required
     }
 
@@ -948,6 +976,18 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       !Object.values(formData.categoryItems).some((v) => isCategoryItemTouched(v))
     ) {
       newErrors.categoriesItems = "Evaluate at least one item"
+    }
+
+    if (sectionBlocksSave(flags, "showAssessmentCategories")) {
+      for (const [itemId, value] of Object.entries(formData.categoryItems)) {
+        if (!isCategoryItemTouched(value)) continue
+        const hypothesizedFunction = value.hypothesizedFunction.length > 0
+          ? value.hypothesizedFunction
+          : (hypothesizedFunctionByItemId[itemId] ?? [])
+        if (hypothesizedFunction.length === 0) {
+          newErrors[`hypothesized-function-${itemId}`] = "Select at least one hypothesized function"
+        }
+      }
     }
 
     if (sectionBlocksSave(flags, "showRecommendedServices") && !formData.billingCodes.some((row) => !isBillingCodeEmpty(row))) {
@@ -1006,7 +1046,7 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
     })
 
     return newErrors
-  }, [formData, hasCategoryItems])
+  }, [formData, hasCategoryItems, hypothesizedFunctionByItemId])
 
   // Después del primer intento, retirar el rojo sólo cuando el dato sea válido.
   useEffect(() => {
@@ -1174,6 +1214,11 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       )
       if (!focusable) el.tabIndex = -1
       const focusTarget = focusable ?? el
+      // Respaldo para errores del backend cuyos controles todavía no tengan
+      // una prop `hasError`: el mismo helper garantiza el borde rojo.
+      focusTarget.classList.add("premium-input-error")
+      focusTarget.dataset.assessmentServerError = "true"
+      focusTarget.setAttribute("aria-invalid", "true")
       focusTarget.focus({ preventScroll: true })
       const scrollContainer = document.getElementById("main-scroll")
       if (scrollContainer) {
@@ -1186,6 +1231,44 @@ export function useAssessmentForm({ assessmentId, assessmentType = "INITIAL_ASSE
       }
     }, 50)
   }, [])
+
+  const focusBackendError = useCallback((message: string) => {
+    const fields = Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-field]") ?? [])
+    const messageTokens = validationTokens(message)
+    let bestMatch: { field: string; score: number } | null = null
+
+    for (const element of fields) {
+      const field = element.dataset.field
+      if (!field) continue
+      const fieldTokens = validationTokens(`${field} ${element.dataset.validationLabel ?? ""}`)
+      const score = fieldTokens.reduce(
+        (total, token) => total + (messageTokens.includes(token) ? 1 : 0),
+        0,
+      )
+      if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+        bestMatch = { field, score }
+      }
+    }
+
+    if (!bestMatch) return
+    const serverError = { [bestMatch.field]: message }
+    setErrors((current) => ({ ...current, ...serverError }))
+    scrollToFirstError(serverError)
+  }, [scrollToFirstError])
+
+  saveErrorDismissHandlerRef.current = focusBackendError
+
+  // Retira el estilo de respaldo en cuanto el campo deja de estar inválido.
+  useEffect(() => {
+    const markedControls = formRef.current?.querySelectorAll<HTMLElement>("[data-assessment-server-error='true']") ?? []
+    for (const control of markedControls) {
+      const field = control.closest<HTMLElement>("[data-field]")?.dataset.field
+      if (field && errors[field]) continue
+      control.classList.remove("premium-input-error")
+      delete control.dataset.assessmentServerError
+      control.removeAttribute("aria-invalid")
+    }
+  }, [errors])
 
   const hasServicePlanFieldChanges = useCallback(
     () => hasServicePlanChanges(categories, formData.categoryItems, servicePlanBaselineRef.current),

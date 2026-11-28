@@ -15,6 +15,8 @@ export interface AlertConfig {
   onConfirm?: () => void | Promise<void>
   onCancel?: () => void
   onDiscard?: () => void
+  /** Se ejecuta después de que el usuario cierre la alerta. */
+  onClose?: () => void
   autoCloseDuration?: number
 }
 
